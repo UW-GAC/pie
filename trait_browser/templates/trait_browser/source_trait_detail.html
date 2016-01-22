@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+
+{% block head_title %}
+     | {{ source_trait.trait_name }} details
+{% endblock %}
+
+{% block content %}
+    <h2>Source Trait Data Information</h2>
+    {% for pair in field_tups %}
+        <p><strong>{{ pair.0 }}</strong> : {{ pair.1 }}</p>
+    {% endfor %}
+    
+    {% if source_trait.sourceencodedvalue_set.all %}
+        <h3>Encoded Values</h3>
+        <table>
+            <tr>
+                <th>Category</th>
+                <th>Value</th>
+            </tr>
+            {% for ev in source_trait.sourceencodedvalue_set.all %}
+                <tr>
+                    <td>{{ ev.category }}</td>
+                    <td>{{ ev.value }}</td>
+                </tr>
+            {% endfor %}
+        </table>
+    {% endif %}
+{% endblock %}

@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+
+{% block head_title %}
+     | Home
+{% endblock %}
+
+
+{% block content %}
+    {% for item in home_items %}
+        <h2>{{ item.title }}</h2>
+        {{ item.content }}
+        <hr>
+    {% endfor %}
+{% endblock %}
