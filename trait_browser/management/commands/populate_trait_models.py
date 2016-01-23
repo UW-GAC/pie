@@ -10,40 +10,26 @@ import mysql.connector
 import socket
 from trait_browser.models import SourceTrait, SourceEncodedValue
 
-## database functions ##
-def getCnfDict(cnfFile):
-    '''
-    '''
-    with open(cnfFile) as f:
-        lines = f.readlines()
-    stripped = [x.strip('\n') for x in lines]
-
-    # list comprehension to split each line by '=' and make it a key,value pair for a dictionary.
-    cnf = dict([ (a[0].strip(), a[1].strip()) for a in [s.split('=') for s in stripped] if len(a) == 2])
-    return(cnf)
-
-
 def getDb(dbname):
     # Use this function lifted almost directly from OLGApipeline.py, for now
     '''
     '''
-    # if a mac, use the workstation cnf file
-    workstations = ['gcc-mac-001.in.biostat.washington.edu',
-                    'gcc-mac-003.in.gcc.biostat.washington.edu',
-                    'gcc-mac-004.in.gcc.biostat.washington.edu']
+    servers = ('fisher',
+               'pearson0',
+               'pearson1',
+               'neyman')
+    
+    cnf_map = {'server': '/projects/geneva/gcc-fs2/OLGA/pipeline/.pipeline_olga-mysql-server-ro.cnf',
+               'workstation': '/projects/geneva/gcc-fs2/OLGA/pipeline/.pipeline_olga-mysql-workstation-ro.cnf'}
+ 
     host = socket.gethostname()
     
-    if host in workstations:
-        cnf_file = '/projects/geneva/gcc-fs2/OLGA/pipeline/.pipeline_olga-mysql-workstation-ro.cnf'
+    if host in servers:
+        cnf_file = cnf_map['server']
     else:
-        cnf_file = '/projects/geneva/gcc-fs2/OLGA/pipeline/.pipeline_olga-mysql-server-ro.cnf'
+        cnf_file = cnf_map['workstation']
 
-    if (host in workstations) & (dbname not in ('olga_analysis_test', 'test')):
-        print('Do not update full database from workstations.')
-        cnx = None
-    else:
-        cnf = getCnfDict(cnf_file)
-        cnx = mysql.connector.connect(database=dbname, charset='latin1', use_unicode=False, **cnf)
+    cnx = mysql.connector.connect(option_files=cnf_file, database=dbname, charset='latin1', use_unicode=False)
     
     return cnx
 
