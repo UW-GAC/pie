@@ -6,3 +6,11 @@ body {
 .table-nonfluid {
    width: auto;
 }
+
+.glyphicon-large {
+    font-size: 150px;
+}
+
+.jumbotron {
+    text-align: center;
+}
