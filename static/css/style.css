@@ -7,10 +7,29 @@ body {
    width: auto;
 }
 
-.glyphicon-large {
+.glyphicon-home {
     font-size: 150px;
+    opacity: 0.4;
+}
+
+.glyphicon-home:hover {
+    opacity: 1;
 }
 
 .jumbotron {
     text-align: center;
+    background: white;
+}
+
+
+.blue {
+    color: #0066ff;
+}
+
+.red {
+    color: #ff3300;
+}
+
+.green {
+    color: #009900;
 }
