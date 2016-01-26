@@ -1,6 +1,24 @@
 {% extends 'base.html' %}
 
 {% block content %}
-This is the TOPMed phenotype inventory home page.
-It will be fancied up soon.
+<!-- TO DO: remove body top padding only for the home page, is that possible?? -->
+
+<!-- Main jumbotron for a primary marketing message or call to action -->
+<div class="jumbotron">
+  <div class="container">
+    <h1>NHLBI TOPMed Phenotype Inventory</h1>
+    <p>Some text!</p>
+  </div>
+</div>
+
+   <div class="container">
+  <!-- Example row of columns -->
+  <div class="row">
+    <div class="col-md-4">
+      <h2>Source traits</h2>
+      <p>We collected these traits from dbGaP. </p>
+      <p><a class="btn btn-default" href="#" role="button">Browse source traits &raquo;</a></p>
+    </div>
+  </div>
+
 {% endblock %}
