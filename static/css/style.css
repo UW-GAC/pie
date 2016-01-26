@@ -1,0 +1,8 @@
+body {
+  padding-top: 100px;
+}
+
+/* class that makes the table width but determined by cell contents */
+.table-nonfluid {
+   width: auto;
+}
