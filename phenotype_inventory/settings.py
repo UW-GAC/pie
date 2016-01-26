@@ -42,7 +42,7 @@ INSTALLED_APPS = (
     'django_tables2', # from https://github.com/bradleyayers/django-tables2
     'ordered_model', # from https://github.com/bfirsh/django-ordered-model
     'trait_browser',
-    'home',
+    #'home',
 
 )
 

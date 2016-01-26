@@ -14,13 +14,17 @@ Including another URLconf
     2. Add a URL to urlpatterns:  url(r'^blog/', include(blog_urls))
 """
 from django.conf.urls import include, url
+from django.views.generic import TemplateView # for static pages
 from django.contrib import admin
 
+
 urlpatterns = [
-    url(r'^home/', include('home.urls')),                        # Home page app
+    url(r'^home/', TemplateView.as_view(template_name="home.html")), # static home page
+    url(r'^about/', TemplateView.as_view(template_name="about.html")), # static home page
+    url(r'^contact/', TemplateView.as_view(template_name="contact.html")), # static home page
     url(r'^pages/', include('django.contrib.flatpages.urls')),   # Flat pages 
     url(r'^admin/', include(admin.site.urls)),                   # Admin interface
-    url(r'^trait_browser/', include('trait_browser.urls'))      # Trait browser app
+    url(r'^trait_browser/', include('trait_browser.urls')),      # Trait browser app
 ]
 
 # Set the name for the admin site
