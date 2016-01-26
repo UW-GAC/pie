@@ -2,10 +2,7 @@ body {
   padding-top: 100px;
 }
 
-table img {
-    height: 3em;
-}
-
-img {
-    height: 300px;
+/* class that makes the table width but determined by cell contents */
+.table-nonfluid {
+   width: auto;
 }
