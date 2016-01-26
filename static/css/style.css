@@ -16,20 +16,60 @@ body {
     opacity: 1;
 }
 
+.glyphicon-disabled {
+    color: gray;
+}
+
+.glyphicon-disabled:hover {
+    opacity: 0.4;
+}
+
 .jumbotron {
     text-align: center;
     background: white;
 }
 
-
-.blue {
-    color: #0066ff;
+.source-color {
+    color: #1b9e77;
 }
 
-.red {
-    color: #ff3300;
+.request-color {
+    color: #d95f02;
 }
 
-.green {
-    color: #009900;
+.harmonized-color {
+    color: #7570b3;
+}
+
+/* corner ribbons */
+.box {
+  width: 200px; height: 300px;
+  position: relative;
+  border: 1px solid #BBB;
+  background: #EEE;
+}
+.ribbon {
+  position: absolute;
+  right: -5px; top: -5px;
+  z-index: 1;
+  overflow: hidden;
+  width: 75px; height: 75px;
+  text-align: right;
+}
+.ribbon span {
+  font-size: 10px;
+  font-weight: bold;
+  color: #FFF;
+  text-transform: uppercase;
+  text-align: center;
+  line-height: 20px;
+  transform: rotate(45deg);
+  -webkit-transform: rotate(45deg);
+  width: 100px;
+  display: block;
+  background: #808080;
+  /*background: linear-gradient(#B6BAC9 0%, #808080 100%);*/
+  /box-shadow: 0 3px 10px -5px rgba(0, 0, 0, 1);
+  position: absolute;
+  top: 19px; right: -21px;
 }
