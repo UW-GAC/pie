@@ -40,10 +40,7 @@ INSTALLED_APPS = (
     'django.contrib.sites', # Added this to enable the flatpages app
     'django.contrib.flatpages', 
     'django_tables2', # from https://github.com/bradleyayers/django-tables2
-    'ordered_model', # from https://github.com/bfirsh/django-ordered-model
     'trait_browser',
-    'home',
-
 )
 
 # Added this to enable the flatpages app

@@ -17,7 +17,6 @@ from django.conf.urls import include, url
 from django.contrib import admin
 
 urlpatterns = [
-    url(r'^home/', include('home.urls')),                        # Home page app
     url(r'^pages/', include('django.contrib.flatpages.urls')),   # Flat pages 
     url(r'^admin/', include(admin.site.urls)),                   # Admin interface
     url(r'^trait_browser/', include('trait_browser.urls'))      # Trait browser app
