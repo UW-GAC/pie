@@ -1,0 +1,10 @@
+# You can run these commands in Terminal to check a few important URLs for the site
+# Make sure to run ./manage.py runserver before running these commands
+# We will probably remove this file before setting up the production site
+
+open -a safari http://localhost:8000/trait_browser/source_trait/99/detail/
+open -a safari http://localhost:8000/trait_browser/source_trait/5/detail/
+open -a safari http://localhost:8000/trait_browser/table/source_trait/
+open -a safari http://localhost:8000/home/
+open -a safari http://localhost:8000/trait_browser/
+open -a safari http://localhost:8000/admin/
