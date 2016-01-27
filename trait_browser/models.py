@@ -49,6 +49,17 @@ class SourceTrait(Trait):
             value = getattr(self, field_name, None)
             yield (field_name, value)
     
+    def detail_iter(self):
+        '''
+        Iterator used by the SourceTrait detail view and template
+        
+        Yields:
+            a (formatted_field_name, field_value) tuple
+        '''
+        for fd in ('name', 'description', 'study_name', 'data_type', 'unit', ):
+            yield (fd.replace('_', ' ').title(), getattr(self, fd, None))
+        
+
 class EncodedValue(models.Model):
     '''
     Abstract SuperClass for SourceEncodedValue and HarmonizedEncodedValue

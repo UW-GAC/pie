@@ -6,7 +6,7 @@
 
 {% block content %}
     <h2>Source Trait Data Information</h2>
-    {% for pair in field_tups %}
+    {% for pair in source_trait.detail_iter %}
         <p><strong>{{ pair.0 }}</strong> : {{ pair.1 }}</p>
     {% endfor %}
     

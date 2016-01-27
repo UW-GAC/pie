@@ -8,10 +8,8 @@ def index(request):
 
 def source_trait_detail(request, source_trait_id):
     source_trait = get_object_or_404(SourceTrait, dcc_trait_id=source_trait_id)
-    show_fields = ('name', 'description', 'study_name', 'data_type', 'unit', )
-    field_tups = tuple([(el, getattr(source_trait, el, None)) for el in show_fields])
     return render(request, 'trait_browser/source_trait_detail.html',
-                  {'source_trait' : source_trait, 'field_tups': field_tups})
+                  {'source_trait' : source_trait})
 
 def source_trait_table(request):
     trait_type = 'Source'
