@@ -11,6 +11,9 @@
     }
 }
 
+.text-disabled {
+  color: #aaaaaa;
+}
 
 /* home page glyphicons */
 .glyphicon-home {
