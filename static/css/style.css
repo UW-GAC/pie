@@ -46,38 +46,26 @@
     color: #7570b3;
 }
 
-/* corner ribbons */
-.ribbon-parent {
-  overflow: hidden; /* required */
-  position: relative; /* required  for demo*/
-}
-
+/* over-image ribbons */
 .ribbon {
-  margin: 0;
-  padding: 0;
-  background: #444444;
-  color:white;
-  padding:0.5em 0;
+  background-color: #444;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.ribbon {
   position: absolute;
-  top:0;
-  right:0;
-  transform: translateX(30%) translateY(0%) rotate(45deg);
-  transform-origin: top left;
-}
-.ribbon:before,
-.ribbon:after {
-  content: '';
-  position: absolute;
-  top:0;
-  margin: 0 -1px; /* tweak */
-  width: 100%;
-  height: 100%;
-  background: #444444;
-}
-.ribbon:before {
-  right:100%;
-}
-
-.ribbon:after {
-  left:100%;
+  left: 50%;
+  top: 50px;
+  z-index: 1; /* place on top of other divs */
+  transform: translate(-50%, 0%);
+  color: #fff;
+  display: block;
+  margin: 1px 0;
+  padding: 10px 50px;
+  text-align: center;
+  text-decoration: none;
+  font-weight: bold;
+  -webkit-box-shadow: 0 0 10px #888;
+  -moz-box-shadow: 0 0 10px #888;
+  box-shadow: 0 0 10px #888;
 }
