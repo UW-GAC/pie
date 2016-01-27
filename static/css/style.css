@@ -1,8 +1,75 @@
-body {
-  padding-top: 100px;
+body { 
+    padding-top: 65px; 
 }
 
 /* class that makes the table width but determined by cell contents */
 .table-nonfluid {
    width: auto;
+}
+
+
+/* two line nav-bar */
+@media (min-width: 768px) { 
+    .twoRow .navbar-collapse {
+        clear: left;
+    }
+}
+
+.text-disabled {
+  color: #aaaaaa;
+}
+
+/* home page glyphicons */
+.glyphicon-home {
+    font-size: 150px;
+    opacity: 0.4;
+}
+
+.glyphicon-disabled {
+    color: gray;
+}
+
+.glyphicon-disabled:hover {
+    opacity: 0.4;
+}
+
+.jumbotron {
+    text-align: center;
+    background: white;
+}
+
+.source-color {
+    color: #1b9e77;
+}
+
+.request-color {
+    color: #d95f02;
+}
+
+.harmonized-color {
+    color: #7570b3;
+}
+
+/* over-image ribbons */
+.ribbon {
+  background-color: #444;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.ribbon {
+  position: absolute;
+  left: 50%;
+  top: 50px;
+  z-index: 1; /* place on top of other divs */
+  transform: translate(-50%, 0%);
+  color: #fff;
+  display: block;
+  margin: 1px 0;
+  padding: 10px 50px;
+  text-align: center;
+  text-decoration: none;
+  font-weight: bold;
+  -webkit-box-shadow: 0 0 10px #888;
+  -moz-box-shadow: 0 0 10px #888;
+  box-shadow: 0 0 10px #888;
 }
