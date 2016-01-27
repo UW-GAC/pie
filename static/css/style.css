@@ -1,12 +1,18 @@
-body {
-  padding-top: 100px;
-}
-
 /* class that makes the table width but determined by cell contents */
 .table-nonfluid {
    width: auto;
 }
 
+
+/* two line nav-bar */
+@media (min-width: 768px) { 
+    .twoRow .navbar-collapse {
+        clear: left;
+    }
+}
+
+
+/* home page glyphicons */
 .glyphicon-home {
     font-size: 150px;
     opacity: 0.4;
