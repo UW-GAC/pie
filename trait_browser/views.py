@@ -7,12 +7,9 @@ def index(request):
     return HttpResponse("Hello, world. You're looking at the trait_browser index page.")
 
 def source_trait_detail(request, source_trait_id):
-    source_trait = get_object_or_404(SourceTrait, trait_id=source_trait_id)
-    show_fields = ('trait_id', 'trait_name', 'short_description', 'data_type',
-                   'dbgap_study_id', 'dbgap_study_version', 'dbgap_variable_id',
-                   'dbgap_comment', 'dbgap_unit', 'dataset_description', 'web_date_added')
+    source_trait = get_object_or_404(SourceTrait, dcc_trait_id=source_trait_id)
+    show_fields = ('name', 'description', 'study_name', 'data_type', 'unit', )
     field_tups = tuple([(el, getattr(source_trait, el, None)) for el in show_fields])
-        
     return render(request, 'trait_browser/source_trait_detail.html',
                   {'source_trait' : source_trait, 'field_tups': field_tups})
 

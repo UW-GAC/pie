@@ -15,17 +15,17 @@ class SourceTraitAdmin(ReadOnlyAdmin):
     # Make all fields read-only
     readonly_fields = SourceTrait._meta.get_all_field_names()
     # Which fields to display
-    list_display = ('trait_id', 'trait_name', 'data_type', 'dbgap_study_id', 'web_date_added', )
+    list_display = ('dcc_trait_id', 'name', 'data_type', 'study_name', 'web_date_added', )
     # Allow filtering on these fields
-    list_filter = ('web_date_added', 'data_type', )
+    list_filter = ('web_date_added', 'data_type', 'study_name', )
     # Allow searching based on these fields
-    search_fields = ('trait_id', 'trait_name', )
+    search_fields = ('dcc_trait_id', 'name', )
 
 class SourceEncodedValueAdmin(ReadOnlyAdmin):
     # Make all fields read-only
     readonly_fields = SourceEncodedValue._meta.get_all_field_names()
     # Which fields to display
-    list_display = ('id', 'category', 'value', 'web_date_added', 'trait_id', )
+    list_display = ('id', 'category', 'value', 'get_source_trait_name', 'get_source_trait_study', 'web_date_added', )
     # Allow filtering on these fields
     list_filter = ('web_date_added', )
     # Allow searching in these fields
