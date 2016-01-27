@@ -21,10 +21,6 @@
     opacity: 0.4;
 }
 
-.glyphicon-home:hover {
-    opacity: 1;
-}
-
 .glyphicon-disabled {
     color: gray;
 }
