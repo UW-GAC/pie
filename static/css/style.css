@@ -73,3 +73,12 @@ body {
   -moz-box-shadow: 0 0 10px #888;
   box-shadow: 0 0 10px #888;
 }
+
+.table-container th.asc:after {
+    content: '\0000a0\0025b2';
+    float: right;
+}
+.table-container th.desc:after {
+    content: '\0000a0\0025bc';
+    float: right;
+}
