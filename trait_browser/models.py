@@ -48,6 +48,17 @@ class SourceTrait(Trait):
         for field_name in self._meta.get_all_field_names():
             value = getattr(self, field_name, None)
             yield (field_name, value)
+
+    def get_phv_number(self):
+        number = int(self.phv_string.replace("phv", ""))
+        return number
+
+    def get_dbgap_link(self):
+        base_link = "http://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/variable.cgi?study_id=%s&phv=%d"
+        phv_number = self.get_phv_number()
+        this_link = base_link % (self.phs_string, phv_number)
+        return this_link
+
     
     def detail_iter(self):
         '''

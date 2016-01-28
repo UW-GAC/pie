@@ -6,6 +6,8 @@
 
 {% block content %}
     <h2>Source Trait Data Information</h2>
+    <p><strong>See this trait at dbGaP:</strong> <a target="_blank" href="{{ source_trait.get_dbgap_link }}">{{source_trait.phv_string}}</a></p>
+
     {% for pair in source_trait.detail_iter %}
         <p><strong>{{ pair.0 }}</strong> : {{ pair.1 }}</p>
     {% endfor %}
@@ -23,10 +25,6 @@
                     <td>{{ ev.value }}</td>
                 </tr>
             {% endfor %}
-            <tr>
-                <td>this is a really long test category</td>
-                <td>and a value</td>
-            </tr>
         </table>
     {% endif %}
 {% endblock %}
