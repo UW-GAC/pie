@@ -74,11 +74,15 @@ body {
   box-shadow: 0 0 10px #888;
 }
 
+/* Show custom glyphicons for sorting direction in django-tables2 */
 .table-container th.asc:after {
-    content: '\0000a0\0025b2';
+    font-family: 'Glyphicons Halflings';
+    content: '\e113';
     float: right;
 }
+
 .table-container th.desc:after {
-    content: '\0000a0\0025bc';
+    font-family: 'Glyphicons Halflings';
+    content: '\e114';
     float: right;
 }
