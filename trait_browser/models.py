@@ -10,8 +10,8 @@ class Trait(models.Model):
     DATA_TYPE_CHOICES = tuple([(el, el) for el in DATA_TYPES])
     # Set up the model fields
     dcc_trait_id           = models.IntegerField(primary_key=True, db_column='dcc_trait_id')
-    name                   = models.CharField(max_length=100)
-    description            = models.CharField(max_length=500)
+    name                   = models.CharField(max_length=100, verbose_name='Trait name')
+    description            = models.CharField(max_length=500, verbose_name='Trait description')
     data_type              = models.CharField(max_length=max([len(s) for s in DATA_TYPES]),choices=DATA_TYPE_CHOICES)
     unit                   = models.CharField(max_length=45, null=True)
     web_date_added         = models.DateTimeField(auto_now_add=True, auto_now=False)
@@ -25,7 +25,7 @@ class SourceTrait(Trait):
     '''
     
     # Set Attributes
-    study_name             = models.CharField(max_length=150)
+    study_name             = models.CharField(max_length=150, verbose_name='Study name')
     # dbGaP dataset id in phsNNNNN.vN.pN format
     phs_string             = models.CharField(max_length=12)
     # dbGaP variable id in phvNNNNNNN format
