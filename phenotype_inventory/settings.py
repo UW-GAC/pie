@@ -41,6 +41,7 @@ INSTALLED_APPS = (
     'django.contrib.flatpages', 
     'django_tables2', # from https://github.com/bradleyayers/django-tables2
     'trait_browser',
+    'core', # Custom app for data migrations in built-in apps (e.g. sites)
 )
 
 # Added this to enable the flatpages app
