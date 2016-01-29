@@ -1,5 +1,17 @@
 from django.db import models
 
+class Study(models.Model):
+    '''
+    Class to store study info
+    '''
+    study_id = models.IntegerField(primary_key=True, db_column='study_id')
+    dbgap_id = models.CharField(max_length=10)
+    name     = models.CharField(max_length=100)
+
+    class Meta:
+        # because grammar. "Studys" bothers me too much.
+        verbose_name_plural = "Studies"
+
 class Trait(models.Model):
     '''
     Abstract super class for SourceTrait and HarmonizedTrait
