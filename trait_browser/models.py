@@ -1,5 +1,21 @@
 from django.db import models
 
+class Study(models.Model):
+    '''
+    Class to store study info
+    '''
+    study_id = models.IntegerField(primary_key=True, db_column='study_id')
+    dbgap_id = models.CharField(max_length=10)
+    name     = models.CharField(max_length=100)
+
+    class Meta:
+        # because grammar. "Studys" bothers me too much.
+        verbose_name_plural = "Studies"
+
+    def __str__(self):
+        '''Pretty printing of Study objects'''
+        return self.name
+
 class Trait(models.Model):
     '''
     Abstract super class for SourceTrait and HarmonizedTrait
@@ -24,16 +40,18 @@ class SourceTrait(Trait):
     Class to store data on the 'raw' source variable metadata
     '''
     
-    # Set Attributes
-    study_name             = models.CharField(max_length=150)
+    study     = models.ForeignKey(Study)
+    # This adds two fields: study is the actual Study object that this instance is linked to,
+    # and study_id is the primary key of the linked Study object
+
     # dbGaP dataset id in phsNNNNN.vN.pN format
-    phs_string             = models.CharField(max_length=12)
+    phs_string             = models.CharField(max_length=20)
     # dbGaP variable id in phvNNNNNNN format
     phv_string             = models.CharField(max_length=15)
     
     def __str__(self):
         '''Pretty printing of SourceTrait objects'''
-        print_parms = ['dcc_trait_id', 'name', 'data_type', 'study_name', 'unit', 'web_date_added']
+        print_parms = ['dcc_trait_id', 'name', 'data_type', 'unit', 'web_date_added']
         print_list = ['{0} : {1}'.format(k, str(self.__dict__[k])) for k in print_parms]
         return '\n'.join(print_list)
     
@@ -68,7 +86,11 @@ class SourceTrait(Trait):
             a (formatted_field_name, field_value) tuple
         '''
         for fd in ('name', 'description', 'study_name', 'data_type', 'unit', ):
-            yield (fd.replace('_', ' ').title(), getattr(self, fd, None))
+            if fd == 'study_name':
+                value = self.study.name
+            else:
+                value = getattr(self, fd, None)
+            yield (fd.replace('_', ' ').title(), value)
         
 
 class EncodedValue(models.Model):
