@@ -16,7 +16,7 @@ def source_trait_table(request):
     trait_table = SourceTraitTable(SourceTrait.objects.all())
     # If you're going to change this later to some kind of filtered list (e.g. only the most
     # recent version of each trait), then you should wrap the SourceTrait.filter() in get_list_or_404
-    RequestConfig(request, paginate={'per_page': 100}).configure(trait_table)
+    RequestConfig(request, paginate={'per_page': 50}).configure(trait_table)
     return render(request, "trait_browser/trait_table.html", {'trait_table': trait_table,
                                                               'trait_type': trait_type})
 

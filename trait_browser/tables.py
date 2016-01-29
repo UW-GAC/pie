@@ -11,5 +11,6 @@ class SourceTraitTable(tables.Table):
     class Meta:
         model = SourceTrait
         fields = ('name', 'description', 'study_name', )
-        attrs = {'class': 'table table-striped table-bordered table-hover', 'template': 'trait_browser/bootstrap_tables2.html'}
+        attrs = {'class': 'table table-striped table-bordered table-hover'}
+        template = 'trait_browser/bootstrap_tables2.html'
         order_by = ('name', 'study_name', )
