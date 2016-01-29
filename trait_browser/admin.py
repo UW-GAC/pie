@@ -26,9 +26,9 @@ class SourceTraitAdmin(ReadOnlyAdmin):
     # Make all fields read-only
     readonly_fields = SourceTrait._meta.get_all_field_names()
     # Which fields to display
-    list_display = ('dcc_trait_id', 'name', 'data_type', 'study_name', 'web_date_added', )
+    list_display = ('dcc_trait_id', 'name', 'data_type', 'study', 'web_date_added', )
     # Allow filtering on these fields
-    list_filter = ('web_date_added', 'data_type', 'study_name', )
+    list_filter = ('web_date_added', 'data_type', 'study', )
     # Allow searching based on these fields
     search_fields = ('dcc_trait_id', 'name', )
 
