@@ -8,7 +8,7 @@ from datetime                    import datetime
 
 import mysql.connector
 import socket
-from trait_browser.models import SourceTrait, SourceEncodedValue
+from trait_browser.models import SourceTrait, SourceEncodedValue, Study
 
 def getDb(dbname):
     # Use this function lifted almost directly from OLGApipeline.py, for now
@@ -42,51 +42,71 @@ def fixByteArray(row_dict):
     return fixed_row
     
 class Command(BaseCommand):
-    help ='Populate the SourceTrait and EncodedValue models with a query to snuffles'
-    
-    # def add_arguments(self, parser):
-    #     parser.add_agrument()
-    
-    def _getStudies(self, source_db):
+    help ='Populate the Study, SourceTrait, and EncodedValue models with a query to snuffles'
+
+
+    def _make_study_trait_args(self, row_dict):
         '''
-        Called by _populate_source_traits function. Gets study table from snuffles and makes a dict
-        to map dbgap_study_id to study_name.
-        
+        Converts a dictionary containing {colname: row value} pairs from a database query into a
+        dict with the necessary arguments for constructing a Study object. If there is a schema change
+        in snuffles, this function may need to be modified.
+
         Returns:
-            a dict of (study_id: study_name) pairs
+            a dict of (required_StudyTrait_attribute: attribute_value) pairs
+        '''
+
+        new_args = {'study_id': row_dict['study_id'],
+                    'dbgap_id': row_dict['dbgap_id'],
+                    'name': row_dict['study_name']}
+        return new_args
+    
+    
+    def _populate_studies(self, source_db):
+        '''
+        Pulls study information from snuffles, converts it where necessary, and populates entries
+        in the Study model of the trait_browser app.
         '''
         cursor = source_db.cursor(buffered=True, dictionary=True)
-        study_query = 'SELECT * FROM study;'
+        study_query = 'SELECT * FROM study'
         cursor.execute(study_query)
-        study_rows = cursor.fetchall()
-        # Fix the bytearray type 
-        study_rows = [fixByteArray(row) for row in study_rows]
-        # Make a dict from the db table
-        study_dict = { row['study_id']: row['study_name'] for row in study_rows}
-        cursor.close()
-        return study_dict
 
-    def _makeSourceTraitArgs(self, row_dict, study_dict):
+        # Iterate over rows from the source db and add them to the Study model
+        for row in cursor:
+            type_fixed_row = fixByteArray(row)
+
+            study_args = self._make_study_trait_args(type_fixed_row)
+            add_var = Study(**study_args)
+            add_var.save()
+            print(" ".join(('Added study', str(study_args['study_id']))))
+
+        cursor.close()
+    
+
+    def _makeSourceTraitArgs(self, row_dict):
         '''
         Converts a dict containing (colname: row value) pairs into a dict with the necessary arguments
-        for constructing a SourceTrait object. If there's a schema change in snuffles, this is the
-        function to modify.
+        for constructing a SourceTrait object. If there's a schema change in snuffles, this function
+        may need to be modified.
         
         Returns:
             a dict of (required_SourceTrait_attribute: attribute_value) pairs
         '''
+        study = Study.objects.get(study_id=row_dict['study_id'])
+        phs_string = "%s.v%d.p%d" % (study.dbgap_id,
+                                     row_dict['dbgap_study_version'],
+                                     row_dict['dbgap_participant_set'])
+
         new_args = {'dcc_trait_id': row_dict['source_trait_id'],
                     'name': row_dict['trait_name'],
                     'description': row_dict['short_description'],
                     'data_type': row_dict['data_type'],
                     'unit': row_dict['dbgap_unit'],
-                    'study_name': study_dict[ row_dict['dbgap_study_id'] ],
-                    'phs_string': ''.join( (row_dict['dbgap_study_id'],
-                                            '.v', str(row_dict['dbgap_study_version']),
-                                            '.p', str(row_dict['dbgap_participant_set']), ) ),
+                    'study': study,
+                    'phs_string': phs_string,
                     'phv_string': row_dict['dbgap_variable_id']
                     }
         return new_args
+
 
     def _populate_source_traits(self, source_db):
         '''
@@ -105,15 +125,15 @@ class Command(BaseCommand):
             # print(type_fixed_row)
             
             # Properly format the data from the db for the site's model
-            study_dict = self._getStudies(source_db)
-            model_args = self._makeSourceTraitArgs(type_fixed_row, study_dict)
+            model_args = self._makeSourceTraitArgs(type_fixed_row)
     
             # Add this row to the SourceTrait model
             add_var = SourceTrait(**model_args)
             add_var.save()
             print(" ".join(('Added trait', str(model_args['dcc_trait_id']))))
         cursor.close()
-   
+
+
     def _makeSourceEncodedValueArgs(self, row_dict):
         '''
         '''
@@ -122,6 +142,7 @@ class Command(BaseCommand):
                     'source_trait': SourceTrait.objects.get(dcc_trait_id = row_dict['source_trait_id'])
                     }
         return new_args
+
 
     def _populate_encoded_values(self, source_db):
         '''
@@ -144,8 +165,10 @@ class Command(BaseCommand):
             print(" ".join(('Added encoded value for', str(type_fixed_row['source_trait_id']))))
         cursor.close()
 
+
     def handle(self, *args, **options):
         db = getDb("test")
+        self._populate_studies(db)
         self._populate_source_traits(db)
         self._populate_encoded_values(db)
         db.close()
