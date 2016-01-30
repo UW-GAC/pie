@@ -20,3 +20,5 @@ def source_trait_table(request):
     return render(request, "trait_browser/trait_table.html", {'trait_table': trait_table,
                                                               'trait_type': trait_type})
 
+def source_trait_search(request):
+    return render(request, "trait_browser/search.html", {})
