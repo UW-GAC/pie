@@ -36,12 +36,14 @@ class SourceTraitCrispySearchForm(forms.Form):
     </a>
     <div class="collapse" id="traitStudyFilterField">
         <div class="well">
+            <div class="col-lg-2">
         """),
    
         InlineCheckboxes('study'),
         # end the collapsible divs
         # the <hr> adds some space between this button and the submit button
         HTML("""
+                </div>
               </div>
             </div>
             <hr>
