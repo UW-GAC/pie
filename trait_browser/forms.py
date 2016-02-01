@@ -7,7 +7,8 @@ from crispy_forms.bootstrap import AppendedText, PrependedText, FormActions, Inl
 from . models import Study, SourceTrait
 
 class SourceTraitCrispySearchForm(forms.Form):
-    text = forms.CharField(label="search text", max_length=100)
+    text = forms.CharField(label="search text", max_length=100,
+        help_text="Both trait names and descriptions will be searched.")
 
     # may need to move this into an __init__ method?
     # but it seems to be ok for now.
@@ -15,9 +16,9 @@ class SourceTraitCrispySearchForm(forms.Form):
     STUDIES = [[x.pk, x.name] for x in Study.objects.all().order_by('name')]
 
     # allow selection of multiple studies in which to search
-    studies = forms.MultipleChoiceField(choices=STUDIES,
+    study = forms.MultipleChoiceField(choices=STUDIES,
         widget=forms.CheckboxSelectMultiple(), required=False,
-        help_text="If no study is selected, source traits from all studies will be searched")
+        help_text="If no studies are selected, source traits from all studies will be searched. Multiple studies can be selected.")
 
     helper = FormHelper()
     helper.form_class = 'form-horizontal'
@@ -37,7 +38,7 @@ class SourceTraitCrispySearchForm(forms.Form):
         <div class="well">
         """),
    
-        InlineCheckboxes('studies'),
+        InlineCheckboxes('study'),
         # end the collapsible divs
         # the <hr> adds some space between this button and the submit button
         HTML("""
