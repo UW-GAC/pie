@@ -23,7 +23,7 @@ class SourceTraitCrispySearchForm(forms.Form):
     helper.form_class = 'form-horizontal'
     helper.label_class = 'col-lg-2'
     helper.field_class = 'col-lg-8'
-    #helper.form_method = 'get'
+    helper.form_method = 'get'
 
     helper.layout = Layout(
         Field('text'),

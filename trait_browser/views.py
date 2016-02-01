@@ -18,21 +18,22 @@ def source_trait_table(request):
     trait_table = SourceTraitTable(SourceTrait.objects.all())
     # If you're going to change this later to some kind of filtered list (e.g. only the most
     # recent version of each trait), then you should wrap the SourceTrait.filter() in get_list_or_404
+    # RequestConfig seems to be necessary for sorting to work
     RequestConfig(request, paginate={'per_page': 50}).configure(trait_table)
     return render(request, "trait_browser/trait_table.html", {'trait_table': trait_table,
                                                               'trait_type': trait_type})
 
 def source_trait_search(request):
     # process form data
-    if request.method == "POST":
+    if request.method == "GET":
         # create a form instance with data from the request
-        form = SourceTraitCrispySearchForm(request.POST)
+        form = SourceTraitCrispySearchForm(request.GET)
         # check validity of form
         if form.is_valid():
             
             # process data
             query = form.cleaned_data.get("text", None)
-            studies = form.cleaned_data.get('studies', [])
+            studies = form.cleaned_data.get('study', [])
 
             # search text
             traits = SourceTrait.objects.filter(Q(description__contains=query) | Q(name__contains=query))
@@ -41,6 +42,8 @@ def source_trait_search(request):
                 traits = traits.filter(study__in=studies)
             
             trait_table = SourceTraitTable(traits)
+            
+            RequestConfig(request, paginate={'per_page': 50}).configure(trait_table)
             return render(request, "trait_browser/search.html", {'trait_table': trait_table, 'query': query, 'form': form, 'results': True})
     else:
         form = SourceTraitCrispySearchForm()
