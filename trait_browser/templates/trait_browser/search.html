@@ -1,8 +1,17 @@
 {% extends 'base.html' %}
+{% load crispy_forms_tags %}
+{% load render_table from django_tables2 %}
 
 {% block content %}
     <h1>Search source traits</h1>
-        
+        {% crispy form %}
     <hr>
+
+
+    {% if results %}
+        <h2>{{ trait_table.rows|length }} trait{{ trait_table.rows|length|pluralize }} found</h2>
+
+        {% render_table trait_table %}
+    {% endif %}
 
 {% endblock %}
