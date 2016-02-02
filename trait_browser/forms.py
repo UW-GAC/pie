@@ -22,15 +22,15 @@ class SourceTraitCrispySearchForm(forms.Form):
 
     helper = FormHelper()
     helper.form_class = 'form-horizontal'
-    helper.label_class = 'col-lg-2'
-    helper.field_class = 'col-lg-8'
+    helper.label_class = 'col-sm-2'
+    helper.field_class = 'col-sm-10'
     helper.form_method = 'get'
 
     helper.layout = Layout(
         Field('text'),
         # make the study checkboxes collapsible
         HTML("""
-            <hr>
+            
             <a class="btn btn-default" role="button" data-toggle="collapse" href="#traitStudyFilterField" aria-expanded="false" aria-controls="collapseMountainRange">
   Select by study:
     </a>
