@@ -23,6 +23,29 @@ def source_trait_table(request):
     return render(request, "trait_browser/trait_table.html", {'trait_table': trait_table,
                                                               'trait_type': trait_type})
 
+
+
+def search(text_query, trait_type, studies=[]):
+    '''
+    Function to search either source or (eventually) harmonized traits for a given query
+    '''
+    if trait_type == "source":
+        traits = SourceTrait.objects.all()
+    elif trait_type == "harmonized":
+        # once we have a harmnized trait model, grab that here
+        pass
+    
+    # filter by study first
+    if (len(studies) > 0):
+        traits = traits.filter(study__in=studies)
+    
+    # then search text
+    traits = traits.filter(Q(description__contains=text_query) | Q(name__contains=text_query))
+    
+    # return the queryset
+    return(traits)
+
+
 def source_trait_search(request):
     # process form data
     if request.method == "GET":
@@ -36,10 +59,7 @@ def source_trait_search(request):
             studies = form.cleaned_data.get('study', [])
 
             # search text
-            traits = SourceTrait.objects.filter(Q(description__contains=query) | Q(name__contains=query))
-            # then mountain ranges
-            if (len(studies) > 0):
-                traits = traits.filter(study__in=studies)
+            traits = search(query, "source", studies)
             
             trait_table = SourceTraitTable(traits)
             
