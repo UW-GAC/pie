@@ -18,7 +18,7 @@ class SourceTraitCrispySearchForm(forms.Form):
     # allow selection of multiple studies in which to search
     study = forms.MultipleChoiceField(choices=STUDIES,
         widget=forms.CheckboxSelectMultiple(), required=False,
-        help_text="If no studies are selected, source traits from all studies will be searched. Multiple studies can be selected.")
+        help_text="If no studies are selected, source traits from all studies will be searched.")
 
     helper = FormHelper()
     helper.form_class = 'form-horizontal'
