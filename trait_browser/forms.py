@@ -28,24 +28,7 @@ class SourceTraitCrispySearchForm(forms.Form):
 
     helper.layout = Layout(
         Field('text'),
-        # make the study checkboxes collapsible
-        HTML("""
-            
-            <a class="btn btn-default" role="button" data-toggle="collapse" href="#traitStudyFilterField" aria-expanded="false" aria-controls="collapseMountainRange">
-  Select by study:
-    </a>
-    <div class="collapse" id="traitStudyFilterField">
-        <div class="well">
-        """),
-   
         InlineCheckboxes('study'),
-        # end the collapsible divs
-        # the <hr> adds some space between this button and the submit button
-        HTML("""
-              </div>
-            </div>
-            <hr>
-            """),
         FormActions(
             Submit('submit', 'Search', css_class="btn-primary btn-disable"),
             Reset('name', 'Reset', css_class="btn-disable"),
