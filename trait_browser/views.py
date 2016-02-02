@@ -64,8 +64,17 @@ def source_trait_search(request):
             trait_table = SourceTraitTable(traits)
             
             RequestConfig(request, paginate={'per_page': 50}).configure(trait_table)
-            return render(request, "trait_browser/search.html", {'trait_table': trait_table, 'query': query, 'form': form, 'results': True})
+            
+            page_data = {'trait_table': trait_table,
+                    'query': query,
+                    'form': form,
+                    'results': True,
+                    'trait_type': 'source'}
+            return render(request, "trait_browser/search.html", page_data)
     else:
         form = SourceTraitCrispySearchForm()
 
-    return render(request, "trait_browser/search.html", {'form': form, 'results': False})
+    page_data = {'form': form,
+            'results': False,
+            'trait_type': 'source'}
+    return render(request, "trait_browser/search.html", page_data)
