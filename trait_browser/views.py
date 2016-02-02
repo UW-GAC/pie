@@ -46,6 +46,8 @@ def search(text_query, trait_type, studies=[]):
     return(traits)
 
 
+# to make this eventually work for harmonized traits, we could add a trait_type argument to the function definition
+# plus some if statements to select proper forms/models
 def source_trait_search(request):
     # process form data
     if request.method == "GET":
