@@ -20,6 +20,19 @@ https://docs.djangoproject.com/en/1.8/ref/settings/
 
 import os
 
+# Normally you should not import ANYTHING from Django directly
+# into your settings, but ImproperlyConfigured is an exception.
+from django.core.exceptions import ImproperlyConfigured
+
+# Use this function to get required environmental variables for settings
+def get_env_variable(var_name):
+    """Get the environment variable or return exception."""
+    try:
+        return os.environ[var_name]
+    except KeyError:
+        error_msg = "Set the {} environment variable".format(var_name)
+        raise ImproperlyConfigured(error_msg)
+
 
 ########## PATH CONFIGURATION
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
@@ -122,8 +135,8 @@ INSTALLED_APPS = (
     'crispy_forms',       # https://github.com/maraujop/django-crispy-forms
     
     # Our custom apps.
-    'trait_browser',    # handles table-based viewing and searching of trait data
-    'core',             # handles data migrations for built-in apps (e.g. sites)
+    'trait_browser',   # handles table-based viewing and searching of trait data
+    'core',            # handles data migrations for built-in apps (e.g. sites)
 )
 ########## END APP CONFIGURATION
 

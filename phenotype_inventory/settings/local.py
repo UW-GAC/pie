@@ -19,5 +19,8 @@ DATABASES = {
 ########## END DATABASE CONFIGURATION
 
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = '5-baroul^vr5_nmx(x2b5y+8k7)73@wld5z^+$^ni65dsxd@7m'
+########## SECRET_KEY CONFIGURATION
+# Requires DJANGO_SECRET_KEY environmental variable to be set
+SECRET_KEY = get_env_variable('DJANGO_SECRET_KEY')
+########## END SECRET_KEY CONFIGURATION
+
