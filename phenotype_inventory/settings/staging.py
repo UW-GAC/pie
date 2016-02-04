@@ -3,7 +3,7 @@ import json
 
 ########## SECRETS CONFIGURATION
 # JSON-based secrets module
-with open(".secrets.json") as f:
+with open(os.path.normpath(os.path.join(BASE_DIR, 'settings', '.secrets.json'))) as f:
     secrets = json.loads(f.read())
 
 def get_secret(setting, secrets=secrets):
@@ -27,7 +27,7 @@ DEBUG = True
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.normpath(join(SITE_ROOT, 'site_db.sqlite3')),
+        'NAME': os.path.normpath(os.path.join(SITE_ROOT, 'site_db.sqlite3')),
         'USER': '',
         'PASSWORD': '',
         'HOST': '',
