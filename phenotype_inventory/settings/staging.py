@@ -1,9 +1,25 @@
 from .base import *
+import json
+
+########## SECRETS CONFIGURATION
+# JSON-based secrets module
+with open(".secrets.json") as f:
+    secrets = json.loads(f.read())
+
+def get_secret(setting, secrets=secrets):
+    """Get the secret variable or return explicit exception."""
+    try:
+        return secrets[setting]
+    except KeyError:
+        error_msg = "Set the {0} environment variable".format(setting)
+        raise ImproperlyConfigured(error_msg)
+
+SECRET_KEY = get_secret("DJANGO_SECRET_KEY")
+########## END SECRETS CONFIGURATION
 
 
 ########## DEBUG CONFIGURATION
 DEBUG = True
-TEMPLATE_DEBUG = DEBUG
 ########## END DEBUG CONFIGURATION
 
 
@@ -11,7 +27,7 @@ TEMPLATE_DEBUG = DEBUG
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.normpath(join(SITE_ROOT, 'site_db', 'sqlite3')),
+        'NAME': os.path.normpath(join(SITE_ROOT, 'site_db.sqlite3')),
         'USER': '',
         'PASSWORD': '',
         'HOST': '',
