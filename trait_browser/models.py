@@ -29,7 +29,7 @@ class Trait(models.Model):
     name                   = models.CharField(max_length=100)
     description            = models.CharField(max_length=500)
     data_type              = models.CharField(max_length=max([len(s) for s in DATA_TYPES]),choices=DATA_TYPE_CHOICES)
-    unit                   = models.CharField(max_length=45, null=True)
+    unit                   = models.CharField(max_length=45)
     web_date_added         = models.DateTimeField(auto_now_add=True, auto_now=False)
 
     class Meta:
