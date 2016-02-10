@@ -96,76 +96,77 @@ class TraitBrowserSearchTestCase(TestCase):
         self.assertIn(st_match, search1) 
         self.assertNotIn(st_nonmatch, search1) 
 
-# 
-# class TraitBrowserViewsTestCase(TestCase):
-#     
-#     # The database is reset for each test method!
-#     
-#     def test_source_trait_table_empty(self):
-#         """Tests that the source_trait_table view works with an empty queryset
-#         and that the SourceTraitTable object has no rows."""
-#         # No valid SourceTraits exist
-#         url = reverse('trait_browser_source_trait_table')
-#         response = self.client.get(url)
-#         # Does the URL work
-#         self.assertEqual(response.status_code, 200)
-#         # Is trait_table a SourceTraitTable object
-#         self.assertIsInstance(response.context['trait_table'], SourceTraitTable)
-#         # Does the source trait table object have 0 rows
-#         self.assertEqual(len(response.context['trait_table'].rows), 0)
-#     
-#     def test_source_trait_table_one_page(self):
-#         """Tests that the source_trait_table view works with fewer rows than
-#         will require a second page."""
-#         # Make less than one page of SourceTraits
-#         create_study()
-#         n_traits = TABLE_PER_PAGE - 2
-#         for n in range(n_traits):
-#             create_source_trait(dcc_trait_id=n+1)
-#         # Test the view
-#         url = reverse('trait_browser_source_trait_table')
-#         response = self.client.get(url)
-#         # Does the URL work
-#         self.assertEqual(response.status_code, 200)
-#         # Does the source trait table object have n_traits rows
-#         self.assertEqual(len(response.context['trait_table'].rows), n_traits)
-# 
-#     def test_source_trait_table_two_pages(self):
-#         """Tests that the source_trait_table view works with two pages' worth of
-#         rows."""
-#         # Make less than one page of SourceTraits
-#         create_study()
-#         n_traits = TABLE_PER_PAGE * 2
-#         for n in range(n_traits):
-#             create_source_trait(dcc_trait_id=n+1)
-#         # Test the view
-#         url = reverse('trait_browser_source_trait_table')
-#         response = self.client.get(url)
-#         # Does the URL work
-#         self.assertEqual(response.status_code, 200)
-#         # Does the source trait table object have n_traits rows
-#         self.assertEqual(len(response.context['trait_table'].rows), n_traits)
-# 
-#     def test_source_trait_detail_valid(self):
-#         """Tests that the SourceTrait detail page returns 200 with a valid pk"""
-#         # Set up a valid study and source trait
-#         create_study()
-#         create_source_trait()
-#         # Get the pk of a valid SourceTrait
-#         good_pk = SourceTrait.objects.all()[0].dcc_trait_id
-#         # Test that the page works with a valid pk
-#         url = reverse('trait_browser_source_trait_detail', args=[good_pk])
-#         response = self.client.get(url)
-#         self.assertEqual(response.status_code, 200)
-#         
-#     def test_source_trait_detail_invalid(self):
-#         """Tests that the SourceTrait detail page returns 404 with an invalid pk"""
-#         # No valid SourceTraits exist
-#         url = reverse('trait_browser_source_trait_detail', args=[10])
-#         response = self.client.get(url)
-#         self.assertEqual(response.status_code, 404)
-#     
-#     def test_source_trait_search(self):
-#         pass
-#     
-#     
+
+class TraitBrowserViewsTestCase(TestCase):
+    
+    # The database is reset for each test method!
+    
+    def test_source_trait_table_empty(self):
+        """Tests that the source_trait_table view works with an empty queryset
+        and that the SourceTraitTable object has no rows."""
+        # No valid SourceTraits exist
+        url = reverse('trait_browser_source_trait_table')
+        response = self.client.get(url)
+        # Does the URL work
+        self.assertEqual(response.status_code, 200)
+        # Is trait_table a SourceTraitTable object
+        self.assertIsInstance(response.context['trait_table'], SourceTraitTable)
+        # Does the source trait table object have 0 rows
+        self.assertEqual(len(response.context['trait_table'].rows), 0)
+    
+    def test_source_trait_table_one_page(self):
+        """Tests that the source_trait_table view works with fewer rows than
+        will require a second page."""
+        # Make less than one page of SourceTraits
+        create_study()
+        n_traits = TABLE_PER_PAGE - 2
+        for n in range(n_traits):
+            create_source_trait(dcc_trait_id=n+1)
+        # Test the view
+        url = reverse('trait_browser_source_trait_table')
+        response = self.client.get(url)
+        # Does the URL work
+        self.assertEqual(response.status_code, 200)
+        # Does the source trait table object have n_traits rows
+        self.assertEqual(len(response.context['trait_table'].rows), n_traits)
+
+    def test_source_trait_table_two_pages(self):
+        """Tests that the source_trait_table view works with two pages' worth of
+        rows."""
+        # Make less than one page of SourceTraits
+        create_study()
+        n_traits = TABLE_PER_PAGE * 2
+        for n in range(n_traits):
+            create_source_trait(dcc_trait_id=n+1)
+        # Test the view
+        url = reverse('trait_browser_source_trait_table')
+        response = self.client.get(url)
+        # Does the URL work
+        self.assertEqual(response.status_code, 200)
+        # Does the source trait table object have n_traits rows
+        self.assertEqual(len(response.context['trait_table'].rows), n_traits)
+
+    def test_source_trait_detail_valid(self):
+        """Tests that the SourceTrait detail page returns 200 with a valid pk"""
+        # Set up a valid study and source trait
+        create_study()
+        create_source_trait()
+        # Get the pk of a valid SourceTrait
+        good_pk = SourceTrait.objects.all()[0].dcc_trait_id
+        # Test that the page works with a valid pk
+        url = reverse('trait_browser_source_trait_detail', args=[good_pk])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        
+    def test_source_trait_detail_invalid(self):
+        """Tests that the SourceTrait detail page returns 404 with an invalid pk"""
+        # No valid SourceTraits exist
+        url = reverse('trait_browser_source_trait_detail', args=[10])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 404)
+    
+    # Will need to implement test_forms.py first before trying to test this view
+    def test_source_trait_search(self):
+        pass
+    
+    
