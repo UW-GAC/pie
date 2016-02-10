@@ -33,13 +33,29 @@ def getDb(dbname):
     
     return cnx
 
-def fixByteArray(row_dict):
-    '''
-    '''
-    fixed_row = { (k) : (row_dict[k].decode('utf-8') if type(row_dict[k]) is bytearray
-                                                else timezone.make_aware(row_dict[k], timezone.get_current_timezone()) if type(row_dict[k]) is datetime
-                                                else row_dict[k]) for k in row_dict }
+def fix_bytearray(row_dict):
+    """Convert byteArrays into decoded strings. 
+    Reference: https://dev.mysql.com/doc/relnotes/connector-python/en/news-2-0-0.html
+    """
+    fixed_row = { (k) : (row_dict[k].decode('utf-8')
+                         if type(row_dict[k]) is bytearray
+                         else row_dict[k]) for k in row_dict }
     return fixed_row
+
+def fix_null(row_dict):
+    """Convert None values to empty strings."""
+    fixed_row = { (k) : ('' if row_dict[k] is None
+                         else row_dict[k]) for k in row_dict }
+    return fixed_row
+    
+
+def fix_timezone(row_dict):
+    """Add timezone awareness to datetime objects."""
+    fixed_row = { (k) : (timezone.make_aware(row_dict[k], timezone.get_current_timezone())
+                         if type(row_dict[k]) is datetime
+                         else row_dict[k]) for k in row_dict }
+    return fixed_row
+    
     
 class Command(BaseCommand):
     help ='Populate the Study, SourceTrait, and EncodedValue models with a query to snuffles'
@@ -72,7 +88,7 @@ class Command(BaseCommand):
 
         # Iterate over rows from the source db and add them to the Study model
         for row in cursor:
-            type_fixed_row = fixByteArray(row)
+            type_fixed_row = fix_bytearray(fix_null(row))
 
             study_args = self._make_study_trait_args(type_fixed_row)
             add_var = Study(**study_args)
@@ -118,12 +134,7 @@ class Command(BaseCommand):
         cursor.execute(trait_query)
         # Iterate over rows from the source db, adding them to the SourceTrait model
         for row in cursor:
-            type_fixed_row = { (k) : (row[k].decode('utf-8') if type(row[k]) is bytearray
-                                      else timezone.make_aware(row[k], timezone.get_current_timezone()) if type(row[k]) is datetime
-                                      else row[k]) for k in row }
-            
-            # print(type_fixed_row)
-            
+            type_fixed_row = fix_bytearray(fix_null(row))
             # Properly format the data from the db for the site's model
             model_args = self._makeSourceTraitArgs(type_fixed_row)
     
@@ -152,7 +163,7 @@ class Command(BaseCommand):
         cursor.execute(trait_query)
         # Iterate over rows from the source db, adding them to the EncodedValue model
         for row in cursor:
-            type_fixed_row = fixByteArray(row)
+            type_fixed_row = fix_bytearray(fix_null(row))
 
             # print(type_fixed_row)
  
