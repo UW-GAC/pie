@@ -99,7 +99,7 @@ class Command(BaseCommand):
         cursor.close()
     
 
-    def _makeSourceTraitArgs(self, row_dict):
+    def _make_source_trait_args(self, row_dict):
         '''
         Converts a dict containing (colname: row value) pairs into a dict with the necessary arguments
         for constructing a SourceTrait object. If there's a schema change in the source db, this function
@@ -137,7 +137,7 @@ class Command(BaseCommand):
         for row in cursor:
             type_fixed_row = self._fix_bytearray(self._fix_null(row))
             # Properly format the data from the db for the site's model
-            model_args = self._makeSourceTraitArgs(type_fixed_row)
+            model_args = self._make_source_trait_args(type_fixed_row)
     
             # Add this row to the SourceTrait model
             add_var = SourceTrait(**model_args)
@@ -146,7 +146,7 @@ class Command(BaseCommand):
         cursor.close()
 
 
-    def _makeSourceEncodedValueArgs(self, row_dict):
+    def _make_source_encoded_value_args(self, row_dict):
         '''
         '''
         new_args = {'category': row_dict['category'],
@@ -169,7 +169,7 @@ class Command(BaseCommand):
             # print(type_fixed_row)
  
             # Properly format the data from the db for the site's model 
-            model_args = self._makeSourceEncodedValueArgs(type_fixed_row)
+            model_args = self._make_source_encoded_value_args(type_fixed_row)
 
             # Add this row to the SourceEncodedValue model
             add_var = SourceEncodedValue(**model_args)
