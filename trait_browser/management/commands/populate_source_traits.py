@@ -43,7 +43,7 @@ class Command(BaseCommand):
         Reference: https://dev.mysql.com/doc/relnotes/connector-python/en/news-2-0-0.html
         """
         fixed_row = { (k) : (row_dict[k].decode('utf-8')
-                             if type(row_dict[k]) is bytearray
+                             if isinstance(row_dict[k], bytearray)
                              else row_dict[k]) for k in row_dict }
         return fixed_row
     
@@ -57,7 +57,7 @@ class Command(BaseCommand):
     def _fix_timezone(self, row_dict):
         """Add timezone awareness to datetime objects."""
         fixed_row = { (k) : (timezone.make_aware(row_dict[k], timezone.get_current_timezone())
-                             if type(row_dict[k]) is datetime
+                             if isinstance(row_dict[k], datetime)
                              else row_dict[k]) for k in row_dict }
         return fixed_row
 
