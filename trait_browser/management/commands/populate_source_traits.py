@@ -1,71 +1,72 @@
-from django.core.management.base import BaseCommand, CommandError
-from django.utils                import timezone
-from datetime                    import datetime
-
 # References:
 # [python - Good ways to import data into Django - Stack Overflow](http://stackoverflow.com/questions/14504585/good-ways-to-import-data-into-django)
 # [Providing initial data for models | Django documentation | Django](https://docs.djangoproject.com/en/1.8/howto/initial-data/)
+
+from django.core.management.base import BaseCommand, CommandError
+from django.utils                import timezone
+from datetime                    import datetime
 
 import mysql.connector
 import socket
 from trait_browser.models import SourceTrait, SourceEncodedValue, Study
 
-def getDb(dbname):
-    # Use this function lifted almost directly from OLGApipeline.py, for now
-    '''
-    '''
-    servers = ('fisher',
-               'pearson0',
-               'pearson1',
-               'neyman')
-    
-    cnf_map = {'server': '/projects/geneva/gcc-fs2/OLGA/pipeline/.pipeline_olga-mysql-server-ro.cnf',
-               'workstation': '/projects/geneva/gcc-fs2/OLGA/pipeline/.pipeline_olga-mysql-workstation-ro.cnf'}
- 
-    host = socket.gethostname()
-    
-    if host in servers:
-        cnf_file = cnf_map['server']
-    else:
-        cnf_file = cnf_map['workstation']
-
-    cnx = mysql.connector.connect(option_files=cnf_file, database=dbname, charset='latin1', use_unicode=False)
-    
-    return cnx
-
-def fix_bytearray(row_dict):
-    """Convert byteArrays into decoded strings. 
-    Reference: https://dev.mysql.com/doc/relnotes/connector-python/en/news-2-0-0.html
-    """
-    fixed_row = { (k) : (row_dict[k].decode('utf-8')
-                         if type(row_dict[k]) is bytearray
-                         else row_dict[k]) for k in row_dict }
-    return fixed_row
-
-def fix_null(row_dict):
-    """Convert None values to empty strings."""
-    fixed_row = { (k) : ('' if row_dict[k] is None
-                         else row_dict[k]) for k in row_dict }
-    return fixed_row
-    
-
-def fix_timezone(row_dict):
-    """Add timezone awareness to datetime objects."""
-    fixed_row = { (k) : (timezone.make_aware(row_dict[k], timezone.get_current_timezone())
-                         if type(row_dict[k]) is datetime
-                         else row_dict[k]) for k in row_dict }
-    return fixed_row
-    
     
 class Command(BaseCommand):
-    help ='Populate the Study, SourceTrait, and EncodedValue models with a query to snuffles'
+    help ='Populate the Study, SourceTrait, and EncodedValue models with a query to the source db'
+
+
+    def _get_db(self, dbname):
+        # Use this function lifted almost directly from OLGApipeline.py, for now
+        '''
+        '''
+        servers = ('fisher',
+                   'pearson0',
+                   'pearson1',
+                   'neyman')
+        
+        cnf_map = {'server': '/projects/geneva/gcc-fs2/OLGA/pipeline/.pipeline_olga-mysql-server-ro.cnf',
+                   'workstation': '/projects/geneva/gcc-fs2/OLGA/pipeline/.pipeline_olga-mysql-workstation-ro.cnf'}
+     
+        host = socket.gethostname()
+        
+        if host in servers:
+            cnf_file = cnf_map['server']
+        else:
+            cnf_file = cnf_map['workstation']
+    
+        cnx = mysql.connector.connect(option_files=cnf_file, database=dbname, charset='latin1', use_unicode=False)
+        
+        return cnx
+    
+    def _fix_bytearray(self, row_dict):
+        """Convert byteArrays into decoded strings. 
+        Reference: https://dev.mysql.com/doc/relnotes/connector-python/en/news-2-0-0.html
+        """
+        fixed_row = { (k) : (row_dict[k].decode('utf-8')
+                             if type(row_dict[k]) is bytearray
+                             else row_dict[k]) for k in row_dict }
+        return fixed_row
+    
+    def _fix_null(self, row_dict):
+        """Convert None values (NULL in the db) to empty strings."""
+        fixed_row = { (k) : ('' if row_dict[k] is None
+                             else row_dict[k]) for k in row_dict }
+        return fixed_row
+        
+    
+    def _fix_timezone(self, row_dict):
+        """Add timezone awareness to datetime objects."""
+        fixed_row = { (k) : (timezone.make_aware(row_dict[k], timezone.get_current_timezone())
+                             if type(row_dict[k]) is datetime
+                             else row_dict[k]) for k in row_dict }
+        return fixed_row
 
 
     def _make_study_trait_args(self, row_dict):
         '''
         Converts a dictionary containing {colname: row value} pairs from a database query into a
         dict with the necessary arguments for constructing a Study object. If there is a schema change
-        in snuffles, this function may need to be modified.
+        in the source db, this function may need to be modified.
 
         Returns:
             a dict of (required_StudyTrait_attribute: attribute_value) pairs
@@ -79,7 +80,7 @@ class Command(BaseCommand):
     
     def _populate_studies(self, source_db):
         '''
-        Pulls study information from snuffles, converts it where necessary, and populates entries
+        Pulls study information from the source db, converts it where necessary, and populates entries
         in the Study model of the trait_browser app.
         '''
         cursor = source_db.cursor(buffered=True, dictionary=True)
@@ -88,7 +89,7 @@ class Command(BaseCommand):
 
         # Iterate over rows from the source db and add them to the Study model
         for row in cursor:
-            type_fixed_row = fix_bytearray(fix_null(row))
+            type_fixed_row = self._fix_bytearray(self._fix_null(row))
 
             study_args = self._make_study_trait_args(type_fixed_row)
             add_var = Study(**study_args)
@@ -101,7 +102,7 @@ class Command(BaseCommand):
     def _makeSourceTraitArgs(self, row_dict):
         '''
         Converts a dict containing (colname: row value) pairs into a dict with the necessary arguments
-        for constructing a SourceTrait object. If there's a schema change in snuffles, this function
+        for constructing a SourceTrait object. If there's a schema change in the source db, this function
         may need to be modified.
         
         Returns:
@@ -126,7 +127,7 @@ class Command(BaseCommand):
 
     def _populate_source_traits(self, source_db):
         '''
-        Pulls source trait data from snuffles, converts it where necessary, and populates entries
+        Pulls source trait data from the source db, converts it where necessary, and populates entries
         in the SourceTrait model of the trait_browser app.
         '''
         cursor = source_db.cursor(buffered=True, dictionary=True)
@@ -134,7 +135,7 @@ class Command(BaseCommand):
         cursor.execute(trait_query)
         # Iterate over rows from the source db, adding them to the SourceTrait model
         for row in cursor:
-            type_fixed_row = fix_bytearray(fix_null(row))
+            type_fixed_row = self._fix_bytearray(self._fix_null(row))
             # Properly format the data from the db for the site's model
             model_args = self._makeSourceTraitArgs(type_fixed_row)
     
@@ -163,7 +164,7 @@ class Command(BaseCommand):
         cursor.execute(trait_query)
         # Iterate over rows from the source db, adding them to the EncodedValue model
         for row in cursor:
-            type_fixed_row = fix_bytearray(fix_null(row))
+            type_fixed_row = self._fix_bytearray(self._fix_null(row))
 
             # print(type_fixed_row)
  
@@ -178,37 +179,9 @@ class Command(BaseCommand):
 
 
     def handle(self, *args, **options):
-        db = getDb("test")
+        db = self._get_db("test")
         self._populate_studies(db)
         self._populate_source_traits(db)
         self._populate_encoded_values(db)
         db.close()
 
-# if __name__ == '__main__':
-#     db = getDb('test')
-#     cursor = db.cursor(buffered=True, dictionary=True)
-# 
-#     trait_query = 'SELECT * FROM source_variable_metadata LIMIT 100;'
-#     print(trait_query)
-#     cursor.execute(trait_query)
-#     
-#     # TRAIT_ID_COL = 'source_trait_id'
-#     # trait_columns = cursor.column_names
-#     # non_id_columns = set(trait_columns) - set((TRAIT_ID_COL,))
-# 
-#     # Iterate over rows from the source db, adding them to the SourceTrait model
-#     for row in cursor:
-#         add_var = SourceTrait(**row)
-#         add_var.save()
-# 
-#     # code_value_query = ('SELECT * FROM source_encoded_values LIMIT 100;')
-#     # print(code_value_query)
-#     # cursor.execute(code_value_query)
-#     # 
-#     # # Add each encoded value row to the EncodedValue model
-#     # for row in cursor:
-#     #     add_var = EncodedValue(**row)
-#     #     add_var.save()
-#     
-#     cursor.close()
-#     db.close()
