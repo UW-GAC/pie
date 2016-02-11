@@ -89,7 +89,7 @@ class DbFixersTestCase(TestCase):
         row = {}
         cmd = Command()
         fixed_row = cmd._fix_bytearray(row)
-        self.assertEqual(fixed_row, {})
+        self.assertDictEqual(fixed_row, {})
     
     def test_fix_bytearray_no_bytearrays(self):
         """Ensure that the row_dict is unchanged when _fix_bytearray is given a
@@ -97,7 +97,7 @@ class DbFixersTestCase(TestCase):
         row = {'a':1, 'b':'foobar', 'c':1.56, 'd': datetime(2000, 1, 1)}
         cmd = Command()
         fixed_row = cmd._fix_bytearray(row)
-        self.assertEqual(row, fixed_row)
+        self.assertDictEqual(row, fixed_row)
     
     def test_fix_null_no_none_left(self):
         """Ensure that None is completely removed by _fix_null"""
@@ -132,14 +132,14 @@ class DbFixersTestCase(TestCase):
         row = {'a':1, 'b':'foobar', 'c':1.56, 'd': datetime(2000, 1, 1)}
         cmd = Command()
         fixed_row = cmd._fix_null(row)
-        self.assertEqual(row, fixed_row)
+        self.assertDictEqual(row, fixed_row)
     
     def test_fix_null_empty_dict(self):
         """Ensure that an empty dict is unchanged by _fix_null"""
         row = {}
         cmd = Command()
         fixed_row = cmd._fix_null(row)
-        self.assertEqual(row, fixed_row)
+        self.assertDictEqual(row, fixed_row)
     
     def test_fix_timezone_result_is_aware(self):
         """Ensure that the resulting datetimes from _fix_timezone are in fact
@@ -178,7 +178,7 @@ class DbFixersTestCase(TestCase):
         row = {}
         cmd = Command()
         fixed_row = cmd._fix_timezone(row)
-        self.assertEqual(fixed_row, row)
+        self.assertDictEqual(fixed_row, row)
     
     def test_fix_timezone_no_datetimes(self):
         """Ensure that a dict containing no datetime objects is unaltered by
@@ -187,7 +187,7 @@ class DbFixersTestCase(TestCase):
                'e':bytearray('foobar', 'utf-8')}
         cmd = Command()
         fixed_row = cmd._fix_timezone(row)
-        self.assertEqual(fixed_row, row)
+        self.assertDictEqual(fixed_row, row)
     
 
 class MakeArgsTestCase(TestCase):
