@@ -63,7 +63,7 @@ class SourceTrait(Trait):
         pass
         
     def field_iter(self):
-        for field_name in self._meta.get_all_field_names():
+        for field_name in [f.name for f in self._meta.get_fields()]:
             value = getattr(self, field_name, None)
             yield (field_name, value)
 
