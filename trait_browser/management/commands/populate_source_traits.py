@@ -62,7 +62,7 @@ class Command(BaseCommand):
         return fixed_row
 
 
-    def _make_study_trait_args(self, row_dict):
+    def _make_study_args(self, row_dict):
         '''
         Converts a dictionary containing {colname: row value} pairs from a database query into a
         dict with the necessary arguments for constructing a Study object. If there is a schema change
@@ -91,7 +91,7 @@ class Command(BaseCommand):
         for row in cursor:
             type_fixed_row = self._fix_bytearray(self._fix_null(row))
 
-            study_args = self._make_study_trait_args(type_fixed_row)
+            study_args = self._make_study_args(type_fixed_row)
             add_var = Study(**study_args)
             add_var.save()
             print(" ".join(('Added study', str(study_args['study_id']))))
