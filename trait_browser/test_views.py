@@ -7,8 +7,10 @@ from .tables import SourceTraitTable
 from .views import TABLE_PER_PAGE, search
 
 # NB: The database is reset for each test method within a class!
+# NB: for test methods with multiple assertions, the first failed assert statement
+# will preclude any subsequent assertions
 
-class TraitBrowserSearchTestCase(TestCase):
+class SearchTestCase(TestCase):
     
     def test_search_source_trait_name_exact(self):
         """Test that the search function finds an exact match in the SourceTrait
@@ -75,7 +77,7 @@ class TraitBrowserSearchTestCase(TestCase):
         self.assertNotIn(st_nonmatch, search1) 
 
 
-class TraitBrowserViewsTestCase(TestCase):
+class ViewsTestCase(TestCase):
     
     
     def test_source_trait_table_empty(self):
@@ -135,8 +137,103 @@ class TraitBrowserViewsTestCase(TestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 404)
     
-    # Will need to implement test_forms.py first before trying to test this view
-    def test_source_trait_search(self):
-        pass
+
+class SourceTraitSearchViewTestCase(TestCase):
+
+    def test_source_trait_search_with_valid_results(self):
+        """Tests that the source_trait_search view has a 200 reponse code and
+        the number of results is accurate when search text is entered and there
+        are search results to display"""
+        # Make ten random SourceTraits
+        SourceTraitFactory.create_batch(10)
+        # Make one SourceTrait that will match your (improbable) search term
+        SourceTraitFactory.create(name='asdfghjkl')
+        # Get the URL for the search page
+        url = reverse('trait_browser_source_trait_search')
+        response = self.client.get(url, {'text': 'asdfghjkl'})
+        self.assertEqual(response.status_code, 200)
+        # Test that the results are in the view properly
+        self.assertTrue(response.context['results']) # results is True
+        self.assertIsInstance(response.context['trait_table'], SourceTraitTable) # trait_table is a table object
+        self.assertEqual(len(response.context['trait_table'].rows),1) # There's 1 result row
     
+    def test_source_trait_search_with_no_results(self):
+        """Tests that the source_trait_search view has a 200 reponse code when
+        search text is entered and there are no search results to display"""
+        # Make ten random SourceTraits
+        SourceTraitFactory.create_batch(10)
+        # Get the URL for the search page
+        url = reverse('trait_browser_source_trait_search')
+        response = self.client.get(url, {'text': 'asdfghjkl'})
+        self.assertEqual(response.status_code, 200)
+        # Test that the results are in the view properly
+        self.assertTrue(response.context['results']) # results is True
+        self.assertIsInstance(response.context['trait_table'], SourceTraitTable) # trait_table is a table object
+        self.assertEqual(len(response.context['trait_table'].rows), 0) # There's 0 results rows
     
+    def test_source_trait_search_with_no_search_text_entered(self):
+        """Test that there is no trait table displayed when no search text is
+        entered and the form is not bound to data. 
+        """
+        # Make some SourceTrait objects
+        SourceTraitFactory.create_batch(10)
+        # Get the URL for the search page
+        url = reverse('trait_browser_source_trait_search')
+        response = self.client.get(url)
+        # Test that the view will display something
+        self.assertEqual(response.status_code, 200)
+        # Test that the results are in the view properly
+        self.assertFalse(response.context['results']) # results is False
+        self.assertNotIn('trait_table', response.context)
+        self.assertFalse(response.context['form'].is_bound) # Form is not bound to data
+        
+    def test_source_trait_search_with_valid_results_and_study_filter(self):
+        """Tests that the source_trait_search view has a 200 reponse code and
+        the number of results is accurate when search text and study filter is
+        entered and there are search results to display."""
+        # Make ten random SourceTraits
+        SourceTraitFactory.create_batch(10)
+        # Make one SourceTrait that will match your (improbable) search term
+        good_trait = SourceTraitFactory.create(name='asdfghjkl')
+        # Get the URL for the search page
+        url = reverse('trait_browser_source_trait_search')
+        response = self.client.get(url, {'text': 'asdfghjkl', 'study':[good_trait.study.study_id]})
+        self.assertEqual(response.status_code, 200)
+        # Test that the results are in the view properly
+        self.assertTrue(response.context['results']) # results is True
+        self.assertIsInstance(response.context['trait_table'], SourceTraitTable) # trait_table is a table object
+        self.assertEqual(len(response.context['trait_table'].rows),1) # There's 1 result row
+
+    def test_source_trait_search_with_no_results_and_study_filter(self):
+        """Tests that the source_trait_search view has a 200 response code and
+        the number of results is accurate when search text and study filter is
+        entered and there are no valid search results to display."""
+        # Make ten random SourceTraits
+        traits = SourceTraitFactory.create_batch(10)
+        # Make one SourceTrait that will match your (improbable) search term
+        good_trait = SourceTraitFactory.create(name='asdfghjkl')
+        # Get the URL for the search page
+        url = reverse('trait_browser_source_trait_search')
+        response = self.client.get(url, {'text': 'asdfghjkl', 'study':[traits[0].study.study_id]})
+        self.assertEqual(response.status_code, 200)
+        # Test that the results are in the view properly
+        self.assertTrue(response.context['results']) # results is True
+        self.assertIsInstance(response.context['trait_table'], SourceTraitTable) # trait_table is a table object
+        self.assertEqual(len(response.context['trait_table'].rows), 0) # There's 0 results rows
+
+    def test_source_trait_search_with_no_search_text_entered_and_study_filter(self):
+        """Test that there is no trait table displayed when no search text is
+        entered, but the study filter is entered, and the form is not bound to data. 
+        """
+        # Make some SourceTrait objects
+        SourceTraitFactory.create_batch(10)
+        # Get the URL for the search page
+        url = reverse('trait_browser_source_trait_search')
+        response = self.client.get(url, {'study': [st.pk for st in Study.objects.all()[:3]]})
+        # Test that the view will display something
+        self.assertEqual(response.status_code, 200)
+        # Test that the results are in the view properly
+        self.assertFalse(response.context['results']) # results is False
+        self.assertNotIn('trait_table', response.context)
+        self.assertFalse(response.context['form'].is_bound) # Form is not bound to data
+        
