@@ -7,18 +7,18 @@ from crispy_forms.bootstrap import AppendedText, PrependedText, FormActions, Inl
 from . models import Study, SourceTrait
 
 class SourceTraitCrispySearchForm(forms.Form):
+    
+    # Override the init method, to allow dynamic setting of the choices for the
+    # study field, which enables proper testing
+    def __init__(self, *args, **kwargs):
+        super(SourceTraitCrispySearchForm, self).__init__(*args, **kwargs)
+        self.STUDIES = [[x.pk, x.name] for x in Study.objects.all().order_by('name')]
+        self.fields['study'] = forms.MultipleChoiceField(choices=self.STUDIES,
+            widget=forms.CheckboxSelectMultiple(), required=False,
+            help_text="If no studies are selected, source traits from all studies will be searched.")
+    
     text = forms.CharField(label="search text", max_length=100,
         help_text="Both trait names and descriptions will be searched.")
-
-    # may need to move this into an __init__ method?
-    # but it seems to be ok for now.
-    # we will not be adding studies frequently, anyway
-    STUDIES = [[x.pk, x.name] for x in Study.objects.all().order_by('name')]
-
-    # allow selection of multiple studies in which to search
-    study = forms.MultipleChoiceField(choices=STUDIES,
-        widget=forms.CheckboxSelectMultiple(), required=False,
-        help_text="If no studies are selected, source traits from all studies will be searched.")
 
     helper = FormHelper()
     helper.form_class = 'form-horizontal'

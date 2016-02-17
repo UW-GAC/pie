@@ -5,6 +5,9 @@ from .models          import SourceEncodedValue, SourceTrait
 from .tables          import SourceTraitTable
 from .forms           import SourceTraitCrispySearchForm
 
+# A single setting to control the per_page rows for all the table views
+TABLE_PER_PAGE = 50
+
 def index(request):
     return HttpResponse("Hello, world. You're looking at the trait_browser index page.")
 
@@ -19,7 +22,7 @@ def source_trait_table(request):
     # If you're going to change this later to some kind of filtered list (e.g. only the most
     # recent version of each trait), then you should wrap the SourceTrait.filter() in get_list_or_404
     # RequestConfig seems to be necessary for sorting to work
-    RequestConfig(request, paginate={'per_page': 50}).configure(trait_table)
+    RequestConfig(request, paginate={'per_page': TABLE_PER_PAGE}).configure(trait_table)
     return render(request, "trait_browser/trait_table.html", {'trait_table': trait_table,
                                                               'trait_type': trait_type})
 
@@ -49,11 +52,13 @@ def search(text_query, trait_type, studies=[]):
 # to make this eventually work for harmonized traits, we could add a trait_type argument to the function definition
 # plus some if statements to select proper forms/models
 def source_trait_search(request):
-    # process form data
-    if request.method == "GET":
+    # If search test has been entered into the form...
+    if request.GET.get('text', None) is not None:
+
         # create a form instance with data from the request
         form = SourceTraitCrispySearchForm(request.GET)
-        # check validity of form
+        
+        # If the form data is valid
         if form.is_valid():
             
             # process data
@@ -65,18 +70,28 @@ def source_trait_search(request):
             
             trait_table = SourceTraitTable(traits)
             
-            RequestConfig(request, paginate={'per_page': 50}).configure(trait_table)
+            RequestConfig(request, paginate={'per_page': TABLE_PER_PAGE}).configure(trait_table)
             
+            # Show the search results
             page_data = {'trait_table': trait_table,
                     'query': query,
                     'form': form,
                     'results': True,
                     'trait_type': 'source'}
             return render(request, "trait_browser/search.html", page_data)
+        
+        # If the form data isn't valid, show the data to modify
+        else:
+            page_data = {'form': form,
+                'results': False,
+                'trait_type': 'source'}
+            return render(request, "trait_browser/search.html", page_data)
+
+    # if there was no data entered, show the empty form
     else:
         form = SourceTraitCrispySearchForm()
 
-    page_data = {'form': form,
-            'results': False,
-            'trait_type': 'source'}
-    return render(request, "trait_browser/search.html", page_data)
+        page_data = {'form': form,
+                'results': False,
+                'trait_type': 'source'}
+        return render(request, "trait_browser/search.html", page_data)

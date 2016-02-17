@@ -25,7 +25,7 @@ class Trait(models.Model):
     # Make a properly formatted tuple of ("stored_value", "readable_name") pairs
     DATA_TYPE_CHOICES = tuple([(el, el) for el in DATA_TYPES])
     # Set up the model fields
-    dcc_trait_id           = models.IntegerField(primary_key=True, db_column='dcc_trait_id')
+    dcc_trait_id           = models.PositiveIntegerField(primary_key=True, db_column='dcc_trait_id')
     name                   = models.CharField(max_length=100)
     description            = models.CharField(max_length=500)
     data_type              = models.CharField(max_length=max([len(s) for s in DATA_TYPES]),choices=DATA_TYPE_CHOICES)
@@ -63,7 +63,7 @@ class SourceTrait(Trait):
         pass
         
     def field_iter(self):
-        for field_name in self._meta.get_all_field_names():
+        for field_name in [f.name for f in self._meta.get_fields()]:
             value = getattr(self, field_name, None)
             yield (field_name, value)
 
