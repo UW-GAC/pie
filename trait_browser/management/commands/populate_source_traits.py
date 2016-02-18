@@ -38,23 +38,23 @@ class Command(BaseCommand):
         """Convert byteArrays into decoded strings. 
         Reference: https://dev.mysql.com/doc/relnotes/connector-python/en/news-2-0-0.html
         """
-        fixed_row = { (k) : (row_dict[k].decode('utf-8')
-                             if isinstance(row_dict[k], bytearray)
-                             else row_dict[k]) for k in row_dict }
+        fixed_row = {(k) : (row_dict[k].decode('utf-8')
+                     if isinstance(row_dict[k], bytearray)
+                     else row_dict[k]) for k in row_dict }
         return fixed_row
     
     def _fix_null(self, row_dict):
         """Convert None values (NULL in the db) to empty strings."""
-        fixed_row = { (k) : ('' if row_dict[k] is None
-                             else row_dict[k]) for k in row_dict }
+        fixed_row = {(k) : ('' if row_dict[k] is None
+                     else row_dict[k]) for k in row_dict }
         return fixed_row
         
     
     def _fix_timezone(self, row_dict):
         """Add timezone awareness to datetime objects."""
-        fixed_row = { (k) : (timezone.make_aware(row_dict[k], timezone.get_current_timezone())
-                             if isinstance(row_dict[k], datetime)
-                             else row_dict[k]) for k in row_dict }
+        fixed_row = {(k) : (timezone.make_aware(row_dict[k], timezone.get_current_timezone())
+                     if isinstance(row_dict[k], datetime)
+                     else row_dict[k]) for k in row_dict }
         return fixed_row
 
 
@@ -68,9 +68,11 @@ class Command(BaseCommand):
             a dict of (required_StudyTrait_attribute: attribute_value) pairs
         '''
 
-        new_args = {'study_id': row_dict['study_id'],
-                    'dbgap_id': row_dict['dbgap_id'],
-                    'name': row_dict['study_name']}
+        new_args = {
+            'study_id': row_dict['study_id'],
+            'dbgap_id': row_dict['dbgap_id'],
+            'name': row_dict['study_name']
+        }
         return new_args
     
     
@@ -109,15 +111,16 @@ class Command(BaseCommand):
                                      row_dict['dbgap_study_version'],
                                      row_dict['dbgap_participant_set'])
 
-        new_args = {'dcc_trait_id': row_dict['source_trait_id'],
-                    'name': row_dict['trait_name'],
-                    'description': row_dict['dcc_description'],
-                    'data_type': row_dict['data_type'],
-                    'unit': row_dict['dbgap_unit'],
-                    'study': study,
-                    'phs_string': phs_string,
-                    'phv_string': row_dict['dbgap_variable_id']
-                    }
+        new_args = {
+            'dcc_trait_id': row_dict['source_trait_id'],
+            'name': row_dict['trait_name'],
+            'description': row_dict['dcc_description'],
+            'data_type': row_dict['data_type'],
+            'unit': row_dict['dbgap_unit'],
+            'study': study,
+            'phs_string': phs_string,
+            'phv_string': row_dict['dbgap_variable_id']
+        }
         return new_args
 
 
@@ -145,10 +148,11 @@ class Command(BaseCommand):
     def _make_source_encoded_value_args(self, row_dict):
         '''
         '''
-        new_args = {'category': row_dict['category'],
-                    'value': row_dict['value'],
-                    'source_trait': SourceTrait.objects.get(dcc_trait_id = row_dict['source_trait_id'])
-                    }
+        new_args = {
+            'category': row_dict['category'],
+            'value': row_dict['value'],
+            'source_trait': SourceTrait.objects.get(dcc_trait_id = row_dict['source_trait_id'])
+        }
         return new_args
 
 

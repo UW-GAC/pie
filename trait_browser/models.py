@@ -127,10 +127,12 @@ class SourceEncodedValue(EncodedValue):
     
     def __str__(self):
         '''Pretty printing of SourceEncodedValue objects'''
-        to_print = (('SourceTrait id', self.source_trait.dcc_trait_id,),
+        to_print = (
+            ('SourceTrait id', self.source_trait.dcc_trait_id,),
             ('SourceTrait name', self.source_trait.name,),
             ('category', self.category,),
-            ('value', self.value,),)
+            ('value', self.value,),
+        )
         print_list = ['{0} : {1}'.format(el[0], el[1]) for el in to_print]
         return '\n'.join(print_list)
     

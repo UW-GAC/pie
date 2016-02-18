@@ -183,8 +183,13 @@ class DbFixersTestCase(TestCase):
     def test_fix_timezone_no_datetimes(self):
         """Ensure that a dict containing no datetime objects is unaltered by
         _fix_timezone."""
-        row = {'a':1, 'b':'foobar', 'c':1.56, 'd': None,
-               'e':bytearray('foobar', 'utf-8')}
+        row = {
+            'a':1, 
+            'b':'foobar', 
+            'c':1.56, 
+            'd': None,
+            'e':bytearray('foobar', 'utf-8')
+        }
         cmd = Command()
         fixed_row = cmd._fix_timezone(row)
         self.assertDictEqual(fixed_row, row)
@@ -221,9 +226,11 @@ class MakeArgsTestCase(TestCase):
         row_dict = cursor.fetchone()
         row_dict = cmd._fix_null(cmd._fix_bytearray(row_dict))
         # Have to make a Study object first
-        study = Study(study_id=row_dict['study_id'],
-                      dbgap_id='phs000001',
-                      name='Any Study')
+        study = Study(
+            study_id=row_dict['study_id'],
+            dbgap_id='phs000001',
+            name='Any Study'
+        )
         study.save()
         source_trait_args = cmd._make_source_trait_args(row_dict)
         trait = SourceTrait(**source_trait_args)
@@ -244,18 +251,22 @@ class MakeArgsTestCase(TestCase):
         row_dict = cursor.fetchone()
         row_dict = cmd._fix_null(cmd._fix_bytearray(row_dict))
         # Have to make Study and SourceTrait objects first
-        study = Study(study_id=1,
-                      dbgap_id='phs000001',
-                      name='Any Study')
+        study = Study(
+            study_id=1,
+            dbgap_id='phs000001',
+            name='Any Study'
+        )
         study.save()
-        trait = SourceTrait(dcc_trait_id=row_dict['source_trait_id'],
-                            name='a_name',
-                            description='some interesting trait',
-                            data_type='encoded',
-                            unit='',
-                            study=study,
-                            phs_string='phs000001',
-                            phv_string='phv00000001')
+        trait = SourceTrait(
+            dcc_trait_id=row_dict['source_trait_id'],
+            name='a_name',
+            description='some interesting trait',
+            data_type='encoded',
+            unit='',
+            study=study,
+            phs_string='phs000001',
+            phv_string='phv00000001'
+        )
         trait.save()
         value_args = cmd._make_source_encoded_value_args(row_dict)
         value = SourceEncodedValue(**value_args)

@@ -26,7 +26,10 @@ class SourceTraitCrispySearchFormTestCase(TestCase):
         """Test that the form is valid when given valid search text and
         multiple valid studies."""
         studies = StudyFactory.create_batch(10)
-        input = {'text': 'some_string', 'study': [studies[0].study_id, studies[3].study_id]}
+        input = {
+            'text': 'some_string', 
+            'study': [studies[0].study_id, studies[3].study_id]
+        }
         form = SourceTraitCrispySearchForm(input)        
         self.assertTrue(form.is_valid())
         
@@ -34,7 +37,10 @@ class SourceTraitCrispySearchFormTestCase(TestCase):
         """Test that the form is invalid when given invalid search text and
         one valid study."""
         studies = StudyFactory.create_batch(10)
-        input = {'text': '', 'study': [studies[0].study_id, studies[3].study_id]}
+        input = {
+            'text': '', 
+            'study': [studies[0].study_id, studies[3].study_id]
+        }
         form = SourceTraitCrispySearchForm(input)        
         self.assertFalse(form.is_valid())
     
@@ -89,4 +95,3 @@ class SourceTraitCrispySearchFormTestCase(TestCase):
         # print(current_studies)
         # print(form.STUDIES)
         self.assertEqual(current_studies, form.STUDIES)
-        

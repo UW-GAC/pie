@@ -66,12 +66,21 @@ class SearchTestCase(TestCase):
         # Set up study and SourceTrait objects
         study1 = StudyFactory.create()
         study2 = StudyFactory.create()
-        st_match = SourceTraitFactory.create(name='foo_bar', dcc_trait_id=1,
-                                             study=study1)
-        st_nonmatch = SourceTraitFactory.create(name='foo_bar', dcc_trait_id=2,
-                                                study=study2)
+        st_match = SourceTraitFactory.create(
+            name='foo_bar', 
+            dcc_trait_id=1,
+            study=study1
+        )
+        st_nonmatch = SourceTraitFactory.create(
+            name='foo_bar', 
+            dcc_trait_id=2,
+            study=study2
+        )
         # Get the search results
-        search1 = search('bar', 'source', studies=[(study1.study_id, study1.name)])
+        search1 = search(
+            'bar', 'source', 
+            studies=[(study1.study_id, study1.name)]
+        )
         # Check that the matching trait is found, but the non-match is not
         self.assertIn(st_match, search1) 
         self.assertNotIn(st_nonmatch, search1) 
@@ -197,7 +206,8 @@ class SourceTraitSearchViewTestCase(TestCase):
         good_trait = SourceTraitFactory.create(name='asdfghjkl')
         # Get the URL for the search page
         url = reverse('trait_browser_source_trait_search')
-        response = self.client.get(url, {'text': 'asdfghjkl', 'study':[good_trait.study.study_id]})
+        response = self.client.get(url, {'text': 'asdfghjkl', 
+                                         'study':[good_trait.study.study_id]})
         self.assertEqual(response.status_code, 200)
         # Test that the results are in the view properly
         self.assertTrue(response.context['results']) # results is True
@@ -214,7 +224,8 @@ class SourceTraitSearchViewTestCase(TestCase):
         good_trait = SourceTraitFactory.create(name='asdfghjkl')
         # Get the URL for the search page
         url = reverse('trait_browser_source_trait_search')
-        response = self.client.get(url, {'text': 'asdfghjkl', 'study':[traits[0].study.study_id]})
+        response = self.client.get(url, {'text': 'asdfghjkl', 
+                                         'study':[traits[0].study.study_id]})
         self.assertEqual(response.status_code, 200)
         # Test that the results are in the view properly
         self.assertTrue(response.context['results']) # results is True
