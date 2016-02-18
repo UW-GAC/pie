@@ -1,4 +1,5 @@
 from .base import *
+import os
 
 ########## DEBUG CONFIGURATION
 DEBUG = True
@@ -18,6 +19,10 @@ DATABASES = {
 }
 ########## END DATABASE CONFIGURATION
 
+
+########## SNUFFLES DATABASE CONNECTION INFO
+CNF_PATH = os.path.join(os.path.expanduser("~"), ".mysql-topmed.cnf")
+########## END SNUFFLES DATABASE CONNECTION INFO
 
 ########## SECRET_KEY CONFIGURATION
 # Requires DJANGO_SECRET_KEY environmental variable to be set

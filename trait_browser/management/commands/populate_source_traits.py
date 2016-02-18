@@ -4,39 +4,35 @@
 
 from django.core.management.base import BaseCommand, CommandError
 from django.utils                import timezone
+from django.conf                 import settings
 from datetime                    import datetime
 
 import mysql.connector
 import socket
 from trait_browser.models import SourceTrait, SourceEncodedValue, Study
 
+
     
 class Command(BaseCommand):
     help ='Populate the Study, SourceTrait, and EncodedValue models with a query to the source db'
 
-
-    def _get_db(self, dbname):
+    def _get_snuffles(self, test=True, cnf_path=settings.CNF_PATH):
         # Use this function lifted almost directly from OLGApipeline.py, for now
         '''
         '''
-        servers = ('fisher',
-                   'pearson0',
-                   'pearson1',
-                   'neyman')
+        #cnf_file = os.path.expanduser('~')  + "/.mysql-topmed.cnf"
         
-        cnf_map = {'server': '/projects/geneva/gcc-fs2/OLGA/pipeline/.pipeline_olga-mysql-server-ro.cnf',
-                   'workstation': '/projects/geneva/gcc-fs2/OLGA/pipeline/.pipeline_olga-mysql-workstation-ro.cnf'}
-     
-        host = socket.gethostname()
-        
-        if host in servers:
-            cnf_file = cnf_map['server']
+        if test:
+            test_string = "_test"
         else:
-            cnf_file = cnf_map['workstation']
-    
-        cnx = mysql.connector.connect(option_files=cnf_file, database=dbname, charset='latin1', use_unicode=False)
+            test_string = "_production"
+        
+        cnf_group = ["client", "mysql_topmed_readonly" + test_string]
+        
+        cnx = mysql.connector.connect(option_files=cnf_path, option_groups=cnf_group, charset='latin1', use_unicode=False)
         
         return cnx
+
     
     def _fix_bytearray(self, row_dict):
         """Convert byteArrays into decoded strings. 
@@ -115,7 +111,7 @@ class Command(BaseCommand):
 
         new_args = {'dcc_trait_id': row_dict['source_trait_id'],
                     'name': row_dict['trait_name'],
-                    'description': row_dict['short_description'],
+                    'description': row_dict['dcc_description'],
                     'data_type': row_dict['data_type'],
                     'unit': row_dict['dbgap_unit'],
                     'study': study,
@@ -179,9 +175,9 @@ class Command(BaseCommand):
 
 
     def handle(self, *args, **options):
-        db = self._get_db("test")
-        self._populate_studies(db)
-        self._populate_source_traits(db)
-        self._populate_encoded_values(db)
-        db.close()
+        snuffles_db = self._get_snuffles(test=True)
+        self._populate_studies(snuffles_db)
+        self._populate_source_traits(snuffles_db)
+        self._populate_encoded_values(snuffles_db)
+        snuffles_db.close()
 
