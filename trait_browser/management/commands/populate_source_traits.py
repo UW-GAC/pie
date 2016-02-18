@@ -16,8 +16,7 @@ from trait_browser.models import SourceTrait, SourceEncodedValue, Study
 class Command(BaseCommand):
     help ='Populate the Study, SourceTrait, and EncodedValue models with a query to the source db'
 
-    # change this name to _get_snuffles for "clarity"
-    def _get_db(self, test=True, cnf_path=settings.CNF_PATH):
+    def _get_snuffles(self, test=True, cnf_path=settings.CNF_PATH):
         # Use this function lifted almost directly from OLGApipeline.py, for now
         '''
         '''
@@ -176,9 +175,9 @@ class Command(BaseCommand):
 
 
     def handle(self, *args, **options):
-        db = self._get_db(test=True)
-        self._populate_studies(db)
-        self._populate_source_traits(db)
-        self._populate_encoded_values(db)
-        db.close()
+        snuffles_db = self._get_snuffles(test=True)
+        self._populate_studies(snuffles_db)
+        self._populate_source_traits(snuffles_db)
+        self._populate_encoded_values(snuffles_db)
+        snuffles_db.close()
 
