@@ -4,23 +4,24 @@
 
 from django.core.management.base import BaseCommand, CommandError
 from django.utils                import timezone
+from django.conf                 import settings
 from datetime                    import datetime
-import os
 
 import mysql.connector
 import socket
 from trait_browser.models import SourceTrait, SourceEncodedValue, Study
 
+
     
 class Command(BaseCommand):
     help ='Populate the Study, SourceTrait, and EncodedValue models with a query to the source db'
 
-
-    def _get_db(self, test=True):
+    # change this name to _get_snuffles for "clarity"
+    def _get_db(self, test=True, cnf_path=settings.CNF_PATH):
         # Use this function lifted almost directly from OLGApipeline.py, for now
         '''
         '''
-        cnf_file = os.path.expanduser('~')  + "/.mysql-topmed.cnf"
+        #cnf_file = os.path.expanduser('~')  + "/.mysql-topmed.cnf"
         
         if test:
             test_string = "_test"
@@ -29,7 +30,7 @@ class Command(BaseCommand):
         
         cnf_group = ["client", "mysql_topmed_readonly" + test_string]
         
-        cnx = mysql.connector.connect(option_files=cnf_file, option_groups=cnf_group, charset='latin1', use_unicode=False)
+        cnx = mysql.connector.connect(option_files=cnf_path, option_groups=cnf_group, charset='latin1', use_unicode=False)
         
         return cnx
 
