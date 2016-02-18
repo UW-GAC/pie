@@ -35,9 +35,9 @@ def source_trait_table(request):
 
 
 def search(text_query, trait_type, studies=[]):
-    '''
+    """
     Function to search either source or (eventually) harmonized traits for a given query
-    '''
+    """
     if trait_type == "source":
         traits = SourceTrait.objects.all()
     elif trait_type == "harmonized":

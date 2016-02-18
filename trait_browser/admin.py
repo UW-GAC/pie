@@ -3,9 +3,9 @@ from .models                     import Study, SourceEncodedValue, SourceTrait
 from django.contrib.sites.models import Site
 
 class ReadOnlyAdmin(admin.ModelAdmin):
-    '''
+    """
     A SuperClass to set up non-editable (but viewable) models in the admin interface. 
-    '''
+    """
     def has_add_permission(self, request, obj=None):
         return False
     def has_delete_permission(self, request, obj=None):

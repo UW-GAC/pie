@@ -18,8 +18,8 @@ class Command(BaseCommand):
 
     def _get_snuffles(self, test=True, cnf_path=settings.CNF_PATH):
         # Use this function lifted almost directly from OLGApipeline.py, for now
-        '''
-        '''
+        """
+        """
         #cnf_file = os.path.expanduser('~')  + "/.mysql-topmed.cnf"
         
         if test:
@@ -59,14 +59,14 @@ class Command(BaseCommand):
 
 
     def _make_study_args(self, row_dict):
-        '''
+        """
         Converts a dictionary containing {colname: row value} pairs from a database query into a
         dict with the necessary arguments for constructing a Study object. If there is a schema change
         in the source db, this function may need to be modified.
 
         Returns:
             a dict of (required_StudyTrait_attribute: attribute_value) pairs
-        '''
+        """
 
         new_args = {
             'study_id': row_dict['study_id'],
@@ -77,10 +77,10 @@ class Command(BaseCommand):
     
     
     def _populate_studies(self, source_db):
-        '''
+        """
         Pulls study information from the source db, converts it where necessary, and populates entries
         in the Study model of the trait_browser app.
-        '''
+        """
         cursor = source_db.cursor(buffered=True, dictionary=True)
         study_query = 'SELECT * FROM study'
         cursor.execute(study_query)
@@ -98,14 +98,14 @@ class Command(BaseCommand):
     
 
     def _make_source_trait_args(self, row_dict):
-        '''
+        """
         Converts a dict containing (colname: row value) pairs into a dict with the necessary arguments
         for constructing a SourceTrait object. If there's a schema change in the source db, this function
         may need to be modified.
         
         Returns:
             a dict of (required_SourceTrait_attribute: attribute_value) pairs
-        '''
+        """
         study = Study.objects.get(study_id=row_dict['study_id'])
         phs_string = "%s.v%d.p%d" % (study.dbgap_id,
                                      row_dict['dbgap_study_version'],
@@ -125,10 +125,10 @@ class Command(BaseCommand):
 
 
     def _populate_source_traits(self, source_db):
-        '''
+        """
         Pulls source trait data from the source db, converts it where necessary, and populates entries
         in the SourceTrait model of the trait_browser app.
-        '''
+        """
         cursor = source_db.cursor(buffered=True, dictionary=True)
         trait_query = 'SELECT * FROM source_variable_metadata LIMIT 400;'
         cursor.execute(trait_query)
@@ -146,8 +146,8 @@ class Command(BaseCommand):
 
 
     def _make_source_encoded_value_args(self, row_dict):
-        '''
-        '''
+        """
+        """
         new_args = {
             'category': row_dict['category'],
             'value': row_dict['value'],
@@ -157,8 +157,8 @@ class Command(BaseCommand):
 
 
     def _populate_encoded_values(self, source_db):
-        '''
-        '''
+        """
+        """
         cursor = source_db.cursor(buffered=True, dictionary=True)
         trait_query = 'SELECT * FROM source_encoded_values LIMIT 400;'
         cursor.execute(trait_query)
