@@ -32,7 +32,31 @@ from django.core.exceptions import ImproperlyConfigured
 
 # Use this function to get required environmental variables for settings
 def get_env_variable(var_name):
-    """Get the environment variable or return exception."""
+    """Get the environment variable or return exception.
+    
+    From Two Scoops of Django, this function is the recommended way to
+    access local vs. production settings for a django site. This is from
+    example 5.15 from the book. For local settings, do "export VAR_NAME=value"
+    in a setting file for the conda env or virtualenv used for the project.
+    Then this function can retrieve the environmental variable from bash
+    using the variable name. 
+    
+    This funciton also prints an informative error message and raises an 
+    informative exception if the environmental variable is not already set. 
+    
+    Source: 
+        https://github.com/twoscoops/two-scoops-of-django-1.8/blob/master/code/chapter_05_example_15.py
+    
+    Arguments: 
+        var_name is a string of the name of the variable to get from the bash
+        environment
+    
+    Returns:
+        string value of the environmental variable value
+    
+    Raises: 
+        ImproperlyConfigured when an environment variable is not set first.
+    """
     try:
         return os.environ[var_name]
     except KeyError:

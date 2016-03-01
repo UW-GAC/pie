@@ -9,6 +9,7 @@ from .forms           import SourceTraitCrispySearchForm
 TABLE_PER_PAGE = 50
 
 def source_trait_detail(request, source_trait_id):
+    """Detail view for SourceTrait objects."""
     source_trait = get_object_or_404(SourceTrait, dcc_trait_id=source_trait_id)
     return render(
         request, 
@@ -17,6 +18,11 @@ def source_trait_detail(request, source_trait_id):
     )
 
 def source_trait_table(request):
+    """Table view for SourceTrait objects. 
+    
+    This view uses Django-tables2 to display a pretty table of the SourceTraits
+    in the database for browsing. 
+    """
     trait_type = 'Source'
     trait_table = SourceTraitTable(SourceTrait.objects.all())
     # If you're going to change this later to some kind of filtered list (e.g. only the most
@@ -32,9 +38,21 @@ def source_trait_table(request):
 
 
 def search(text_query, trait_type, studies=[]):
+    """Search either source or (eventually) harmonized traits for a given query.
+    
+    Function to search the trait name and trait description for the given query
+    text, and possibly filtering to the list of studies specified. The search is 
+    case-insensitive. Do not include quotes. This is a very simple search.
+    
+    Arguments:
+        text_query -- string; text to search for within descriptions and names
+        trait_type -- string; "source" or "harmonized"
+        studies -- list of (primary_key, study_name) tuples  
+    
+    Returns: 
+        queryset of SourceTrait or HarmonizedTrait objects
     """
-    Function to search either source or (eventually) harmonized traits for a given query
-    """
+    # TODO add try/except to catch invalid trait_type values
     if trait_type == "source":
         traits = SourceTrait.objects.all()
     elif trait_type == "harmonized":
@@ -55,7 +73,13 @@ def search(text_query, trait_type, studies=[]):
 # to make this eventually work for harmonized traits, we could add a trait_type argument to the function definition
 # plus some if statements to select proper forms/models
 def source_trait_search(request):
-    # If search test has been entered into the form...
+    """SourceTrait search form view. 
+    
+    Displays the SourceTraitCrispySearchForm and any search results as a 
+    django-tables2 table view. 
+    """
+
+    # If search text has been entered into the form...
     if request.GET.get('text', None) is not None:
 
         # create a form instance with data from the request

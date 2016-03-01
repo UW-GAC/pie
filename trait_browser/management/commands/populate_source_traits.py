@@ -11,14 +11,21 @@ import mysql.connector
 import socket
 from trait_browser.models import SourceTrait, SourceEncodedValue, Study
 
-
-    
 class Command(BaseCommand):
+    """Management command to pull initial data from the source phenotype db."""
+
     help ='Populate the Study, SourceTrait, and EncodedValue models with a query to the source db'
 
     def _get_snuffles(self, test=True, cnf_path=settings.CNF_PATH):
-        # Use this function lifted almost directly from OLGApipeline.py, for now
-        """
+        """Get a connection to the source phenotype db.
+        
+        Arguments:
+            test -- boolean; whether to connect to a test db or not
+            cnf_path -- string; path to the mySQL config file with db connection 
+                settings
+        
+        Returns: 
+            a mysql.connector open db connection
         """
         #cnf_file = os.path.expanduser('~')  + "/.mysql-topmed.cnf"
         
@@ -31,12 +38,30 @@ class Command(BaseCommand):
         
         cnx = mysql.connector.connect(option_files=cnf_path, option_groups=cnf_group, charset='latin1', use_unicode=False)
         
+        # TODO add a try/except block here in case the db connection fails
         return cnx
 
     
     def _fix_bytearray(self, row_dict):
         """Convert byteArrays into decoded strings. 
+            
+        mysql.connector returns all character data from a database as a 
+        bytearray python type. This is because of the different ways that python2
+        and python3 handle strings and they didn't want to have to maintain
+        separate code for the different python versions. This function takes a
+        row of data from a database connection and converts all of the bytearray
+        objects into strings by decoding the bytearrays with utf-8.
+        
         Reference: https://dev.mysql.com/doc/relnotes/connector-python/en/news-2-0-0.html
+        
+        Arguments: 
+            row_dict -- a dictionary for one row of data, obtained from 
+                cursor.fetchone or iterating over cursor.fetchall (where the 
+                connection for the cursor has dictionary=True)
+
+        Returns: 
+            a dictionary with identical values to row_dict, where all bytearrays
+            are now string type
         """
         fixed_row = {(k) : (row_dict[k].decode('utf-8')
                      if isinstance(row_dict[k], bytearray)
@@ -44,14 +69,43 @@ class Command(BaseCommand):
         return fixed_row
     
     def _fix_null(self, row_dict):
-        """Convert None values (NULL in the db) to empty strings."""
+        """Convert None values (NULL in the db) to empty strings.
+        
+        mysql.connector returns all NULL values from a database as None. However,
+        Django stores NULL values as empty strings. This function converts results 
+        from a database call containing None to have empty strings instead. 
+        
+        Arguments: 
+            row_dict -- a dictionary for one row of data, obtained from 
+                cursor.fetchone or iterating over cursor.fetchall (where the 
+                connection for the cursor has dictionary=True)
+        
+        Returns: 
+            a dictionary with identical values to row_dict, where all Nones have 
+            been replaced with empty strings
+        """
         fixed_row = {(k) : ('' if row_dict[k] is None
                      else row_dict[k]) for k in row_dict }
         return fixed_row
         
     
     def _fix_timezone(self, row_dict):
-        """Add timezone awareness to datetime objects."""
+        """Add timezone awareness to datetime objects.
+        
+        mysql.connector appropriately returns date and time type values from a 
+        database as datetime type. However, these datetime objects are not 
+        connected to the current timezone setting of the Django site. This function
+        adds timezone settings to each datetime object in a row of data 
+        retrieved from a database. 
+        
+        Arguments:
+            row_dict -- a dictionary for one row of data, obtained from 
+                cursor.fetchone or iterating over cursor.fetchall (where the 
+                connection for the cursor has dictionary=True)
+        Returns: 
+            a dictionary with identical values to row_dict, where all datetime 
+            objects are now timezone aware
+        """
         fixed_row = {(k) : (timezone.make_aware(row_dict[k], timezone.get_current_timezone())
                      if isinstance(row_dict[k], datetime)
                      else row_dict[k]) for k in row_dict }
@@ -59,10 +113,12 @@ class Command(BaseCommand):
 
 
     def _make_study_args(self, row_dict):
-        """
-        Converts a dictionary containing {colname: row value} pairs from a database query into a
-        dict with the necessary arguments for constructing a Study object. If there is a schema change
-        in the source db, this function may need to be modified.
+        """Get args for making a Study object from a source db row.
+        
+        Converts a dictionary containing {colname: row value} pairs from a database
+        query into a dict with the necessary arguments for constructing a Study 
+        object. If there is a schema change in the source db, this function may 
+        need to be modified.
 
         Returns:
             a dict of (required_StudyTrait_attribute: attribute_value) pairs
@@ -77,9 +133,15 @@ class Command(BaseCommand):
     
     
     def _populate_studies(self, source_db):
-        """
-        Pulls study information from the source db, converts it where necessary, and populates entries
-        in the Study model of the trait_browser app.
+        """Add study data to the website db models. 
+        
+        This function pulls study information from the source db, converts it 
+        where necessary, and populates entries in the Study model of the 
+        trait_browser app. This will fill in the rows of the trait_browser_study 
+        table. 
+        
+        Arguments: 
+            source_db -- an open connection to the source database
         """
         cursor = source_db.cursor(buffered=True, dictionary=True)
         study_query = 'SELECT * FROM study'
@@ -98,9 +160,11 @@ class Command(BaseCommand):
     
 
     def _make_source_trait_args(self, row_dict):
-        """
-        Converts a dict containing (colname: row value) pairs into a dict with the necessary arguments
-        for constructing a SourceTrait object. If there's a schema change in the source db, this function
+        """Get args for making a SourceTrait object from a source db row. 
+        
+        Converts a dict containing (colname: row value) pairs into a dict with 
+        the necessary arguments for constructing a SourceTrait object. If there's 
+        a schema change in the source db, this function
         may need to be modified.
         
         Returns:
@@ -125,9 +189,15 @@ class Command(BaseCommand):
 
 
     def _populate_source_traits(self, source_db):
-        """
-        Pulls source trait data from the source db, converts it where necessary, and populates entries
-        in the SourceTrait model of the trait_browser app.
+        """Add source trait data to the website db models. 
+        
+        This function pulls source trait data from the source db, converts it 
+        where necessary, and populates entries in the SourceTrait model of the 
+        trait_browser app. This will fill in the rows of the trait_browser_sourcetrait
+        table. 
+        
+        Arguments: 
+            source_db -- an open connection to the source database
         """
         cursor = source_db.cursor(buffered=True, dictionary=True)
         trait_query = 'SELECT * FROM source_variable_metadata LIMIT 400;'
@@ -146,7 +216,15 @@ class Command(BaseCommand):
 
 
     def _make_source_encoded_value_args(self, row_dict):
-        """
+        """Get args for making a SourceEncodedValue object from a source db row. 
+        
+        Converts a dictionary containing {colname: row value} pairs from a 
+        database query into a dict with the necessary arguments for constructing 
+        a Study object. If there is a schema change in the source db, this function 
+        may need to be changed. 
+        
+        Arguments: 
+            source_db -- an open connection to the source database
         """
         new_args = {
             'category': row_dict['category'],
@@ -157,7 +235,15 @@ class Command(BaseCommand):
 
 
     def _populate_encoded_values(self, source_db):
-        """
+        """Add encoded value data to the website db models. 
+        
+        This function pulls study information from the source db, converts it 
+        where necessary, and populates entries in the SourceEncodedValue model of
+        the trait_browser app. This will fill in the trait_browser_sourceencodedvalue
+        table. 
+        
+        Arguments: 
+            source_db -- an open connection to the source database
         """
         cursor = source_db.cursor(buffered=True, dictionary=True)
         trait_query = 'SELECT * FROM source_encoded_values LIMIT 400;'
@@ -179,6 +265,16 @@ class Command(BaseCommand):
 
 
     def handle(self, *args, **options):
+        """Handle the main functions of this management command. 
+        
+        Get a connection to the source db, populate Study objects, populate 
+        SourceTrait objects, and finally populate SourceEncodedValue objects. 
+        Then close the connection to the db. 
+        
+        Arguments: 
+            **args and **options are handled as per the superclass handling; these
+            argument dicts will pass on command line options
+        """
         snuffles_db = self._get_snuffles(test=True)
         self._populate_studies(snuffles_db)
         self._populate_source_traits(snuffles_db)

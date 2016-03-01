@@ -6,6 +6,7 @@ from django.utils import timezone
 from .models import Study, SourceTrait, SourceEncodedValue
 
 class StudyFactory(factory.DjangoModelFactory):
+    """Factory for Study objects using Faker faked data."""
     
     class Meta:
         model = Study
@@ -17,6 +18,7 @@ class StudyFactory(factory.DjangoModelFactory):
 
 
 class SourceTraitFactory(factory.DjangoModelFactory):
+    """Factory for SourceTrait objects using Faker faked data."""
     
     class Meta:
         model = SourceTrait
@@ -34,6 +36,7 @@ class SourceTraitFactory(factory.DjangoModelFactory):
 
 
 class SourceEncodedValueFactory(factory.DjangoModelFactory):
+    """Factory for SourceEncodedValue objects using Faker faked data."""
     
     class Meta:
         model = SourceEncodedValue

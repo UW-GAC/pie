@@ -7,6 +7,11 @@ from crispy_forms.bootstrap import AppendedText, PrependedText, FormActions, Inl
 from . models import Study, SourceTrait
 
 class SourceTraitCrispySearchForm(forms.Form):
+    """Form to handle searching within SourceTrait objects.
+    
+    This form class is a Subclass of crispy_forms.Form. Crispy forms is a
+    Django app that improves upon the built in Django Form object. 
+    """
     
     # Override the init method, to allow dynamic setting of the choices for the
     # study field, which enables proper testing
@@ -19,13 +24,13 @@ class SourceTraitCrispySearchForm(forms.Form):
     
     text = forms.CharField(label="search text", max_length=100,
         help_text="Both trait names and descriptions will be searched.")
-
+    
     helper = FormHelper()
     helper.form_class = 'form-horizontal'
     helper.label_class = 'col-sm-2'
     helper.field_class = 'col-sm-10'
     helper.form_method = 'get'
-
+    
     helper.layout = Layout(
         Field('text'),
         InlineCheckboxes('study'),

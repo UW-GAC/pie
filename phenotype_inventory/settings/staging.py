@@ -7,7 +7,34 @@ with open(os.path.normpath(os.path.join(BASE_DIR, 'settings', '.secrets.json')))
     secrets = json.loads(f.read())
 
 def get_secret(setting, secrets=secrets):
-    """Get the secret variable or return explicit exception."""
+    """Get the secret variable or return explicit exception.
+    
+    This function implements the recommended way to set secret variables for 
+    production and/or staging settings using Apache (where bash variables don't
+    persist for the Apache process to use them). This recommendation is from the 
+    Two Scoops of Django book, example 5.19. 
+    
+    With this function, the server's secret settings are kept in the .secrets.json
+    file, which is listed in the .gitignore file so that it is not tracked by 
+    version control. These secret settings are retrieved by this function from the
+    secrets file, which is read in above. 
+    
+    An informative error message is reported when the secret setting requested
+    is not found in the json file.
+    
+    Source: https://github.com/twoscoops/two-scoops-of-django-1.8/blob/master/code/chapter_05_example_19.py
+    
+    Arguments: 
+        setting -- string name of the variable setting to retrieve from the json file
+        secrets -- a loaded json format file containing secret settings; default 
+            is the .secrets.json file loaded above
+    
+    Returns: 
+        the string value of the requested secret setting
+        
+    Raises:
+        ImproperlyConfigured
+    """
     try:
         return secrets[setting]
     except KeyError:
@@ -16,7 +43,6 @@ def get_secret(setting, secrets=secrets):
 
 SECRET_KEY = get_secret("DJANGO_SECRET_KEY")
 CNF_PATH = get_secret("CNF_PATH")
-
 ########## END SECRETS CONFIGURATION
 
 

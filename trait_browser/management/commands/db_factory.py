@@ -7,9 +7,25 @@ from faker import Faker
 fake = Faker()
 
 def fake_row_dict():
-    """Return a fake dictionary, similar to what would be returned by a
+    """Make fake sql table data (factory).
+    
+    Generate a fake dictionary, similar to what would be returned by a
     mysql cursor object with dictionary=True. This dict contains one of
-    each type of data that could be returned from a database."""
+    each type of data that could be returned from a database.
+    
+    Returns: 
+        a dict with data of several types
+        
+        dict keys: 
+            text
+            word
+            bytearray_word
+            date
+            company
+            int
+            none
+            empty_string
+    """
     return {
         'text': fake.text(),
         'word': fake.word(),

@@ -1,5 +1,4 @@
-"""
-Print a new randomly-generated crypto key, to be used as Django's
+"""Print a new randomly-generated crypto key, to be used as Django's
 SECRET_KEY setting.
 """
 from django.utils.crypto import get_random_string

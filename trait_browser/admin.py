@@ -3,15 +3,16 @@ from .models                     import Study, SourceEncodedValue, SourceTrait
 from django.contrib.sites.models import Site
 
 class ReadOnlyAdmin(admin.ModelAdmin):
-    """
-    A SuperClass to set up non-editable (but viewable) models in the admin interface. 
-    """
+    """SuperClass for non-editable admin models."""
+    
     def has_add_permission(self, request, obj=None):
         return False
     def has_delete_permission(self, request, obj=None):
         return False
 
 class StudyAdmin(ReadOnlyAdmin):
+    """Admin class for Study objects."""
+    
     # Make all fields read-only
     readonly_fields = Study._meta.get_all_field_names()
     # Which fields to display
@@ -23,6 +24,8 @@ class StudyAdmin(ReadOnlyAdmin):
 
 
 class SourceTraitAdmin(ReadOnlyAdmin):
+    """Admin class for SourceTrait objects."""
+    
     # Make all fields read-only
     readonly_fields = SourceTrait._meta.get_all_field_names()
     # Which fields to display
@@ -33,6 +36,8 @@ class SourceTraitAdmin(ReadOnlyAdmin):
     search_fields = ('dcc_trait_id', 'name', )
 
 class SourceEncodedValueAdmin(ReadOnlyAdmin):
+    """Admin class for SourceEncodedValue objects."""
+    
     # Make all fields read-only
     readonly_fields = SourceEncodedValue._meta.get_all_field_names()
     # Which fields to display

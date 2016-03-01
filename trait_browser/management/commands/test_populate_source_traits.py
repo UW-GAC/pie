@@ -47,8 +47,7 @@ class DbFixersTestCase(TestCase):
             self.assertNotIsInstance(fixed_row[k], bytearray)
     
     def test_fix_bytearray_only_bytearrays_altered(self):
-        """Ensure that the non-bytearray values from the row_dict are not
-        altered by _fix_bytearray."""
+        """Ensure that the non-bytearray values from the row_dict are not altered by _fix_bytearray."""
         row = fake_row_dict()
         cmd = Command()
         fixed_row = cmd._fix_bytearray(row)
@@ -58,8 +57,7 @@ class DbFixersTestCase(TestCase):
             self.assertEqual(row[k], fixed_row[k])
 
     def test_fix_bytearray_to_string(self):
-        """Ensure that the bytearray values from the row_dict are converted
-        to string type."""
+        """Ensure that the bytearray values from the row_dict are converted to string type."""
         row = fake_row_dict()
         cmd = Command()
         fixed_row = cmd._fix_bytearray(row)
@@ -69,16 +67,14 @@ class DbFixersTestCase(TestCase):
             self.assertIsInstance(fixed_row[k], str)
         
     def test_fix_bytearray_empty_bytearray(self):
-        """Ensure that the _fix_bytearray function works on an empty
-        bytearray."""
+        """Ensure that the _fix_bytearray function works on an empty bytearray."""
         row = {'empty_bytearray': bytearray('', 'utf-8')}
         cmd = Command()
         fixed_row = cmd._fix_bytearray(row)
         self.assertEqual(fixed_row['empty_bytearray'], '')
     
     def test_fix_bytearray_non_utf8(self):
-        """Ensure that _fix_bytearray works on a bytearray with a different
-        encoding that utf-8."""
+        """Ensure that _fix_bytearray works on a bytearray with a different encoding that utf-8."""
         row = {'ascii_bytearray': bytearray('foobar', 'ascii')}
         cmd = Command()
         fixed_row = cmd._fix_bytearray(row)
@@ -92,15 +88,14 @@ class DbFixersTestCase(TestCase):
         self.assertDictEqual(fixed_row, {})
     
     def test_fix_bytearray_no_bytearrays(self):
-        """Ensure that the row_dict is unchanged when _fix_bytearray is given a
-        dict with no bytearrays in it."""
+        """Ensure that the row_dict is unchanged when _fix_bytearray is given a dict with no bytearrays in it."""
         row = {'a':1, 'b':'foobar', 'c':1.56, 'd': datetime(2000, 1, 1)}
         cmd = Command()
         fixed_row = cmd._fix_bytearray(row)
         self.assertDictEqual(row, fixed_row)
     
     def test_fix_null_no_none_left(self):
-        """Ensure that None is completely removed by _fix_null"""
+        """Ensure that None is completely removed by _fix_null."""
         row = fake_row_dict()
         cmd = Command()
         fixed_row = cmd._fix_null(row)
@@ -118,7 +113,7 @@ class DbFixersTestCase(TestCase):
             self.assertEqual(row[k], fixed_row[k])
     
     def test_fix_null_to_empty_string(self):
-        """Ensure that the dict values of None are changed to empty strings"""
+        """Ensure that the dict values of None are changed to empty strings."""
         row = fake_row_dict()
         cmd = Command()
         fixed_row = cmd._fix_null(row)
@@ -128,22 +123,21 @@ class DbFixersTestCase(TestCase):
             self.assertEqual(fixed_row[k], '')
     
     def test_fix_null_no_nones(self):
-        """Ensure that a dict containing no Nones is unchanged by _fix_null"""
+        """Ensure that a dict containing no Nones is unchanged by _fix_null."""
         row = {'a':1, 'b':'foobar', 'c':1.56, 'd': datetime(2000, 1, 1)}
         cmd = Command()
         fixed_row = cmd._fix_null(row)
         self.assertDictEqual(row, fixed_row)
     
     def test_fix_null_empty_dict(self):
-        """Ensure that an empty dict is unchanged by _fix_null"""
+        """Ensure that an empty dict is unchanged by _fix_null."""
         row = {}
         cmd = Command()
         fixed_row = cmd._fix_null(row)
         self.assertDictEqual(row, fixed_row)
     
     def test_fix_timezone_result_is_aware(self):
-        """Ensure that the resulting datetimes from _fix_timezone are in fact
-        timezone aware."""
+        """Ensure that the resulting datetimes from _fix_timezone are in fact timezone aware."""
         row = fake_row_dict()
         cmd = Command()
         fixed_row = cmd._fix_timezone(row)
@@ -153,8 +147,7 @@ class DbFixersTestCase(TestCase):
                                 fixed_row[k].tzinfo.utcoffset(fixed_row[k]) is not None)
     
     def test_fix_timezone_only_datetimes_altered(self):
-        """Ensure that non-datetime objects in the dict are not altered by
-        _fix_timezone."""
+        """Ensure that non-datetime objects in the dict are not altered by _fix_timezone."""
         row = fake_row_dict()
         cmd = Command()
         fixed_row = cmd._fix_timezone(row)
@@ -163,8 +156,7 @@ class DbFixersTestCase(TestCase):
                 self.assertEqual(row[k], fixed_row[k])
     
     def test_fix_timezone_still_datetime(self):
-        """Ensure that datetime objects in the dict are still of datetime type
-        after conversion by _fix_timezone."""
+        """Ensure that datetime objects in the dict are still of datetime type after conversion by _fix_timezone."""
         row = fake_row_dict()
         cmd = Command()
         fixed_row = cmd._fix_timezone(row)
@@ -173,16 +165,14 @@ class DbFixersTestCase(TestCase):
                 self.assertTrue(isinstance(fixed_row[k], datetime))
     
     def test_fix_timezone_empty_dict(self):
-        """Ensure that _fix_timezone works properly (doesn't alter) an empty
-        dictionary input."""
+        """Ensure that _fix_timezone works properly (doesn't alter) an empt dictionary input."""
         row = {}
         cmd = Command()
         fixed_row = cmd._fix_timezone(row)
         self.assertDictEqual(fixed_row, row)
     
     def test_fix_timezone_no_datetimes(self):
-        """Ensure that a dict containing no datetime objects is unaltered by
-        _fix_timezone."""
+        """Ensure that a dict containing no datetime objects is unaltered by _fix_timezone."""
         row = {
             'a':1, 
             'b':'foobar', 
@@ -198,9 +188,7 @@ class DbFixersTestCase(TestCase):
 class MakeArgsTestCase(TestCase):
     
     def test_make_study_args_one_row_make_study_obj(self):
-        """Get a single row of test data from the database and see if the
-        results from _make_study_args can be used to successfully make and
-        save a Study object."""
+        """Get a single row of test data from the database and see if the results from _make_study_args can be used to successfully make and save a Study object."""
         cmd = Command()
         source_db = cmd._get_snuffles(test=True)
         cursor = source_db.cursor(buffered=True, dictionary=True)
@@ -215,9 +203,7 @@ class MakeArgsTestCase(TestCase):
         source_db.close()
         
     def test_make_source_trait_args_one_row_make_source_trait_obj(self):
-        """Get a single row of test data from the database and see if the
-        results from _make_source_trait_args can be used to successfully make
-        and save a SourceTrait object."""
+        """Get a single row of test data from the database and see if the results from _make_source_trait_args can be used to successfully make and save a SourceTrait object."""
         cmd = Command()
         source_db = cmd._get_snuffles(test=True)
         cursor = source_db.cursor(buffered=True, dictionary=True)
@@ -240,9 +226,7 @@ class MakeArgsTestCase(TestCase):
         source_db.close()
 
     def test_make_source_encoded_value_args_one_row_make_source_encoded_value_obj(self):
-        """Get a single row of test data from the database and see if the
-        results from _make_source_encoded_value_args can be used to successfully
-        make and save a SourceEncodedValue object."""
+        """Get a single row of test data from the database and see if the results from _make_source_encoded_value_args can be used to successfully make and save a SourceEncodedValue object."""
         cmd = Command()
         source_db = cmd._get_snuffles(test=True)
         cursor = source_db.cursor(buffered=True, dictionary=True)
@@ -277,14 +261,16 @@ class MakeArgsTestCase(TestCase):
 
 
 class IntegrationTest(TestCase):
-    """It's very difficult to test just one function at a time here, because of
+    """Integration test of the whole management command. 
+    
+    It's very difficult to test just one function at a time here, because of
     all the inter-object relationships and the data being pulled from the
     source database. So just run one big integration test here rather than
-    nice unit tests. """
+    nice unit tests.
+    """
     
     def test_everything(self):
-        """Ensure that the whole workflow of the management command works to
-        add objects to the website databse."""
+        """Ensure that the whole workflow of the management command works to add objects to the website databse."""
         cmd = Command()
         source_db = cmd._get_snuffles(test=True)
         cmd._populate_studies(source_db)

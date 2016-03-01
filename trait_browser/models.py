@@ -1,8 +1,12 @@
 from django.db import models
 
 class Study(models.Model):
-    """
-    Class to store study info
+    """Model for Study table.
+    
+    Fields: 
+        study_id
+        dbgap_id
+        name
     """
     study_id = models.IntegerField(primary_key=True, db_column='study_id')
     dbgap_id = models.CharField(max_length=10)
@@ -13,12 +17,22 @@ class Study(models.Model):
         verbose_name_plural = "Studies"
 
     def __str__(self):
-        """Pretty printing of Study objects"""
+        """Pretty printing of Study objects."""
         return self.name
 
 class Trait(models.Model):
-    """
-    Abstract super class for SourceTrait and HarmonizedTrait
+    """Abstract superclass model for SourceTrait and HarmonizedTrait.
+    
+    SourceTrait and HarmonizedTrait Models inherit from this Model, but the Trait
+    model itself won't be used to create a db table. 
+    
+    Fields: 
+        dcc_trait_id
+        name
+        description
+        data_type
+        unit
+        web_date_added
     """
     # Set value choices for data_type
     DATA_TYPES = ("string", "integer", "encoded", "decimal") # All of the available data types
@@ -36,8 +50,14 @@ class Trait(models.Model):
         abstract = True
 
 class SourceTrait(Trait):
-    """
-    Class to store data on the 'raw' source variable metadata
+    """Model for 'raw' source variable metadata as received from dbGaP. 
+    
+    Extends the Trait abstract model. 
+    
+    Fields: 
+        study
+        phs_string
+        phv_string
     """
     
     study     = models.ForeignKey(Study)
@@ -50,28 +70,40 @@ class SourceTrait(Trait):
     phv_string             = models.CharField(max_length=15)
     
     def __str__(self):
-        """Pretty printing of SourceTrait objects"""
+        """Pretty printing of SourceTrait objects."""
         print_parms = ['dcc_trait_id', 'name', 'data_type', 'unit', 'web_date_added']
         print_list = ['{0} : {1}'.format(k, str(self.__dict__[k])) for k in print_parms]
         return '\n'.join(print_list)
     
     def is_latest_version(self):
-        """
-        For Later: a function to determine if this instance of a SourceTrait is the latest version
-        of a particular trait.
+        """Test whether this is the latest version of a given trait. 
+        
+        Returns: 
+            boolean True or False
         """
         pass
         
     def field_iter(self):
+        """Iterate over field_name, field_value pairs for the SourceTrait."""
         for field_name in [f.name for f in self._meta.get_fields()]:
             value = getattr(self, field_name, None)
             yield (field_name, value)
 
     def get_phv_number(self):
+        """Extract just the numeric part of the phv_string. 
+        
+        Returns: 
+            int value of the numeric part of the phv_string
+        """
         number = int(self.phv_string.replace("phv", ""))
         return number
 
     def get_dbgap_link(self):
+        """Build the dbGaP link URL with info for this trait. 
+        
+        Returns: 
+            string URL of the dbGaP web address for the trait informational page
+        """
         base_link = "http://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/variable.cgi?study_id=%s&phv=%d"
         phv_number = self.get_phv_number()
         this_link = base_link % (self.phs_string, phv_number)
@@ -79,8 +111,9 @@ class SourceTrait(Trait):
 
     
     def detail_iter(self):
-        """
-        Iterator used by the SourceTrait detail view and template
+        """Iterate over a specific set of formatted field names and field values. 
+        
+        This iterator is used by the SourceTrait detail view and template. 
         
         Yields:
             a (formatted_field_name, field_value) tuple
@@ -94,8 +127,15 @@ class SourceTrait(Trait):
         
 
 class EncodedValue(models.Model):
-    """
-    Abstract SuperClass for SourceEncodedValue and HarmonizedEncodedValue
+    """Abstract superclass model for SourceEncodedValue and HarmonizedEncodedValue.
+    
+    SourceEncodedValue and HarmonizedEncodedValue models inherit from this Model,
+    but the EncodedValue model itself won't be used to create a db table. 
+    
+    Fields: 
+        category
+        value
+        web_date_added
     """
     # Set up model fields
     category         = models.CharField(max_length=45)
@@ -106,18 +146,13 @@ class EncodedValue(models.Model):
         abstract = True
 
 class SourceEncodedValue(EncodedValue):
-    """
-    Class to store data on encoded value categories for SourceTraits
-    """
-    # DESCRIBE source_encoded_values;
-    # +-----------------+--------------+------+-----+---------+-------+
-    # | Field           | Type         | Null | Key | Default | Extra |
-    # +-----------------+--------------+------+-----+---------+-------+
-    # | source_trait_id | int(11)      | NO   | PRI | NULL    |       |
-    # | category        | varchar(45)  | NO   | PRI | NULL    |       |
-    # | value           | varchar(100) | NO   |     | NULL    |       |
-    # +-----------------+--------------+------+-----+---------+-------+
+    """Model for encoded values from 'raw' dbGaP data, as received from dbGaP.
     
+    Extends the EncodedValue abstract superclass. 
+    
+    Fields: 
+        source_trait
+    """
     # Set Attributes
     source_trait     = models.ForeignKey(SourceTrait)
     # This adds two fields: source_trait is the actual SourceTrait object that this instance is linked to,
@@ -126,7 +161,7 @@ class SourceEncodedValue(EncodedValue):
     # This will have an automatic primary key field, "id", since I didn't set a primary key
     
     def __str__(self):
-        """Pretty printing of SourceEncodedValue objects"""
+        """Pretty printing of SourceEncodedValue objects."""
         to_print = (
             ('SourceTrait id', self.source_trait.dcc_trait_id,),
             ('SourceTrait name', self.source_trait.name,),
@@ -137,17 +172,27 @@ class SourceEncodedValue(EncodedValue):
         return '\n'.join(print_list)
     
     def get_source_trait_name(self):
-        """
+        """Get the name of the linked SourceTrait object. 
+        
+        This function is used to properly display the SourceTrait Name column 
+        in the admin interface.
+        
         Returns:
             name of the linked SourceTrait object
         """
         return self.source_trait.name
+    # Set this model attribute to the value of this function, for the admin interface
     get_source_trait_name.short_description = 'SourceTrait Name'
     
     def get_source_trait_study(self):
-        """
+        """Get the name of the linked Study object. 
+        
+        This function is used to properly display the Study Name column in the 
+        admin interface.  
+        
         Returns:
             study_name of the linked SourceTrait object
         """
         return self.source_trait.study_name
+    # Set this model attribute to the value of this function, for the admin interface 
     get_source_trait_study.short_description = 'Study Name'
