@@ -1,3 +1,5 @@
+"""Models for trait_browser app."""
+
 from django.db import models
 
 class Study(models.Model):

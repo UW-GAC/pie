@@ -1,8 +1,14 @@
-# This test module won't run with the usual Django test command, because it's in
-# this unusual location. Instead, you must specify the path containing this test
-# module to get these tests to run. E.g:
-#
-# ./manage.py test trait_browser/management/commands/
+"""Test the classes and functions in the populate_source_traits management command.
+
+This test module won't run with the usual Django test command, because it's 
+in an unusual location. Instead, you must specify the path containing this 
+test module to get these tests to run. 
+
+Usage: 
+./manage.py test trait_browser/management/commands
+
+This test module runs several unit tests and one integration test.
+"""
 
 import mysql.connector
 from datetime import datetime

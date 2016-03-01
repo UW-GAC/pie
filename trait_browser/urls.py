@@ -1,3 +1,9 @@
+"""URL configuration for the trait_browser app.
+
+These urlpatterns are included in the project's urlpatterns, so these
+urls will show up under /trait_browser.
+"""
+
 from django.conf.urls import url
 from .                import views
 

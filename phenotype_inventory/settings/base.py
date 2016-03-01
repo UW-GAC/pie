@@ -1,5 +1,4 @@
-"""
-Base Django settings for phenotype_inventory project.
+"""Base Django settings for phenotype_inventory project.
 
 Setup according to Jacob Kaplan-Moss's 'One True Way'
 (https://speakerdeck.com/jacobian/the-best-and-worst-of-django?slide=81)
@@ -7,21 +6,19 @@ and recommendations from Two Scoops of Django 1.8
 
 Base settings are applicable to all environments, and
 local.py, production.py, and staging.py all build on
-base.py.
+base.py. Each setting module is specified either through an 
+argument to manage.py runserver, or through setting environment
+or secret variables, depending on the environment where your
+site is set up. 
 
-To use the appropriate settings files, set your PYTHONPATH and
-DJANGO_SETTINGS_MODULE environmental variables. For example:
-
-    export DJANGO_SETTINGS_MODULE='phenotype_inventory.settings.local'
-    export PYTHONPATH='~/devel/phenotype_inventory'
+Functions: 
+    get_env_variable
     
-PYTHONPATH is the project's top level directory, containing all scripts for
-the website.
-DJANGO_SETTINGS_MODULE is the appropriate settings module to use for the
-given environment and should be one of the following:
-phenotype_inventory.settings.local
-phenotype_inventory.settings.staging
-phenotype_inventory.settings.production
+Custom Constants:
+    SITE_NAME
+    SITE_ROOT
+    SITE_ID
+    CRISPY_TEMPLATE_PACK
 """
 
 import os

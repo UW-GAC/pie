@@ -1,3 +1,5 @@
+"""View functions and classes for the trait_browser app."""
+
 from django.shortcuts import render, get_object_or_404, HttpResponse
 from django.db.models import Q # allows complex queries when searching
 from django_tables2   import RequestConfig

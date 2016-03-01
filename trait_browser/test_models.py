@@ -1,3 +1,5 @@
+"""Test functions and classes from models.py."""
+
 from django.test import TestCase
 from django.core.validators import URLValidator
 

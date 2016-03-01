@@ -1,3 +1,5 @@
+"""Form classes for the trait_browser app."""
+
 from django import forms
 
 from crispy_forms.helper import FormHelper

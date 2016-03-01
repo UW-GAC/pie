@@ -1,3 +1,12 @@
+"""Management commands for the trait_browser app. 
+
+management commands added:
+    populate_source_traits -- fills the SourceTrait, Study, and 
+        SourceEncodedValue tables with data from the source database
+
+Requires the CNF_PATH setting from the specified settings module. 
+"""
+
 # References:
 # [python - Good ways to import data into Django - Stack Overflow](http://stackoverflow.com/questions/14504585/good-ways-to-import-data-into-django)
 # [Providing initial data for models | Django documentation | Django](https://docs.djangoproject.com/en/1.8/howto/initial-data/)

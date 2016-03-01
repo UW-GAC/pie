@@ -1,3 +1,5 @@
+"""Customization of the admin interface for the trait_browser app."""
+
 from django.contrib              import admin
 from .models                     import Study, SourceEncodedValue, SourceTrait
 from django.contrib.sites.models import Site

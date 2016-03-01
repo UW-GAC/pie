@@ -1,6 +1,4 @@
-"""
-Factory functions to produce fake data for testing populate_source_traits.py
-"""
+"""Factory functions to produce fake data for testing trait_browser's populate_source_traits management command."""
 
 from faker import Faker
 

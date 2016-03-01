@@ -1,3 +1,5 @@
+"""Test the functions and classes from forms.py."""
+
 from django.test import TestCase
 from django.core.urlresolvers import reverse
 

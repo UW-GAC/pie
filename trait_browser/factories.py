@@ -1,3 +1,5 @@
+"""Factory classes for generating test data for each of the trait_browser models."""
+
 import factory
 import factory.fuzzy
 from datetime import datetime

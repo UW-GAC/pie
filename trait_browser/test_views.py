@@ -1,3 +1,5 @@
+"""Test the functions and classes for views.py"""
+
 from django.test import TestCase
 from django.core.urlresolvers import reverse
 
