@@ -8,9 +8,6 @@ from .forms           import SourceTraitCrispySearchForm
 # A single setting to control the per_page rows for all the table views
 TABLE_PER_PAGE = 50
 
-def index(request):
-    return HttpResponse("Hello, world. You're looking at the trait_browser index page.")
-
 def source_trait_detail(request, source_trait_id):
     source_trait = get_object_or_404(SourceTrait, dcc_trait_id=source_trait_id)
     return render(
