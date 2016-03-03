@@ -5,7 +5,10 @@
 <div class="jumbotron">
   <div class="container">
     <h1>NHLBI TOPMed Phenotype Inventory</h1>
-    <p>Some text!</p>
+    <p>This inventory describes the phenotype data currently available to
+    the Data Coordinating Center. This is a centralized location for TOPMed investigators to
+    search and browse through the source phenotype data, search and browse harmonized data,
+    and submit requests for phenotype harmonization.</p>
   </div>
 </div>
 <hr>
@@ -16,7 +19,8 @@
       <span class="glyphicon glyphicon-arrow-down glyphicon-home source-color" aria-hidden="true"></span>
     </a>
     <h2>Study source traits</h2>
-    <p>We collected these traits from dbGaP. </p>
+    <p>Source traits for each study were downloaded from dbGaP.
+    Source traits will be used to generate harmonized traits.</p>
     <p><a class="btn btn-default" href="{% url 'trait_browser_source_trait_table' %}" role="button">Browse source traits &raquo;</a></p>
   </div>
 
@@ -24,7 +28,7 @@
     <div class="ribbon">Coming soon!</div>
     <span class="glyphicon glyphicon-arrow-up glyphicon-home glyphicon-disabled" aria-hidden="true"></span>
     <h2 class="text-disabled">TOPMed harmonized traits</h2>
-    <p class="text-disabled">We harmonized these traits. </p>
+    <p class="text-disabled">Harmonized traits will be posted here once they are available.</p>
     <p><a class="btn btn-default disabled" href="#" role="button">Browse harmonized traits &raquo;</a></p>
   </div>
 
@@ -32,7 +36,8 @@
     <div class="ribbon">Coming soon!</div>
     <span class="glyphicon glyphicon-edit glyphicon-home glyphicon-disabled" aria-hidden="true"></span>
     <h2 class="text-disabled">Harmonization request</h2>
-    <p class="text-disabled">You too can submit a request!</p>
+    <p class="text-disabled">If you are an investigator associated with an approved manuscript proposal,
+    you will be able to submit a request for the harmonization of source traits here.</p>
     <p><a class="btn btn-default disabled" href="#" role="button">Submit a request &raquo;</a></p>
   </div>
 </div>
