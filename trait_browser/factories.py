@@ -1,9 +1,11 @@
 """Factory classes for generating test data for each of the trait_browser models."""
 
+from datetime import datetime
+
+from django.utils import timezone
+
 import factory
 import factory.fuzzy
-from datetime import datetime
-from django.utils import timezone
 
 from .models import Study, SourceTrait, SourceEncodedValue
 

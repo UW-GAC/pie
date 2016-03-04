@@ -17,8 +17,9 @@ CNF_PATH is the user's home directory msyql .cnf
 SECRET_KEY is obtained from the bash environment variable
 """
 
-from .base import *
 import os
+
+from .base import *
 
 
 ########## DEBUG CONFIGURATION

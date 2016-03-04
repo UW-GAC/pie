@@ -11,13 +11,15 @@ Requires the CNF_PATH setting from the specified settings module.
 # [python - Good ways to import data into Django - Stack Overflow](http://stackoverflow.com/questions/14504585/good-ways-to-import-data-into-django)
 # [Providing initial data for models | Django documentation | Django](https://docs.djangoproject.com/en/1.8/howto/initial-data/)
 
+from datetime                    import datetime
+import socket
+
 from django.core.management.base import BaseCommand, CommandError
 from django.utils                import timezone
 from django.conf                 import settings
-from datetime                    import datetime
 
 import mysql.connector
-import socket
+
 from trait_browser.models import SourceTrait, SourceEncodedValue, Study
 
 

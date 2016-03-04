@@ -1,6 +1,7 @@
 """Table classes for trait_browser app, using django-tables2."""
 
 import django_tables2 as tables
+
 from .models import SourceTrait
 
 

@@ -5,6 +5,7 @@ urls will show up under /trait_browser.
 """
 
 from django.conf.urls import url
+
 from .                import views
 
 

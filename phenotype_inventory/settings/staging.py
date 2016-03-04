@@ -22,8 +22,9 @@ Set Constants:
     WSGI_APPLICATION
 """
 
-from .base import *
 import json
+
+from .base import *
 
 
 ########## SECRETS CONFIGURATION

@@ -10,8 +10,9 @@ Usage:
 This test module runs several unit tests and one integration test.
 """
 
-import mysql.connector
 from datetime import datetime
+
+import mysql.connector
 from django.test import TestCase
 from django.utils import timezone
 
