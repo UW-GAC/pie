@@ -5,7 +5,7 @@ is pointed at the staging_wsgi.py script in the .conf file and the
 DJANGO_SETTINGS_MODULE environment variable is set within that wsgi script. For
 these specific settings, here is how the variable is set:
   
-os.environ["DJANGO_SETTINGS_MODULE"] = "phenotype_inventory.settings.staging"
+os.environ['DJANGO_SETTINGS_MODULE'] = 'phenotype_inventory.settings.staging'
 
 Secret values are set in a .secrets.json file rather than as environmental
 variables. In particular, DJANGO_SECRET_KEY and CNF_PATH must be set in the
@@ -65,12 +65,12 @@ def get_secret(setting, secrets=secrets):
     try:
         return secrets[setting]
     except KeyError:
-        error_msg = "Set the {0} environment variable".format(setting)
+        error_msg = 'Set the {0} environment variable'.format(setting)
         raise ImproperlyConfigured(error_msg)
 
 
-SECRET_KEY = get_secret("DJANGO_SECRET_KEY")
-CNF_PATH = get_secret("CNF_PATH")
+SECRET_KEY = get_secret('DJANGO_SECRET_KEY')
+CNF_PATH = get_secret('CNF_PATH')
 ########## END SECRETS CONFIGURATION
 
 

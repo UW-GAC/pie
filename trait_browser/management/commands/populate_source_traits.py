@@ -39,12 +39,11 @@ class Command(BaseCommand):
         Returns: 
             a mysql.connector open db connection
         """
-        #cnf_file = os.path.expanduser('~')  + "/.mysql-topmed.cnf"        
         if test:
-            test_string = "_test"
+            test_string = '_test'
         else:
-            test_string = "_production"
-        cnf_group = ["client", "mysql_topmed_readonly" + test_string]
+            test_string = '_production'
+        cnf_group = ['client', 'mysql_topmed_readonly' + test_string]
         cnx = mysql.connector.connect(option_files=cnf_path, option_groups=cnf_group, charset='latin1', use_unicode=False)
         # TODO add a try/except block here in case the db connection fails
         return cnx
@@ -161,7 +160,7 @@ class Command(BaseCommand):
             study_args = self._make_study_args(type_fixed_row)
             add_var = Study(**study_args)
             add_var.save()
-            print(" ".join(('Added study', str(study_args['study_id']))))
+            print(' '.join(('Added study', str(study_args['study_id']))))
         cursor.close()
 
     def _make_source_trait_args(self, row_dict):
@@ -176,7 +175,7 @@ class Command(BaseCommand):
             a dict of (required_SourceTrait_attribute: attribute_value) pairs
         """
         study = Study.objects.get(study_id=row_dict['study_id'])
-        phs_string = "%s.v%d.p%d" % (study.dbgap_id,
+        phs_string = '%s.v%d.p%d' % (study.dbgap_id,
                                      row_dict['dbgap_study_version'],
                                      row_dict['dbgap_participant_set'])
 
@@ -214,7 +213,7 @@ class Command(BaseCommand):
             # Add this row to the SourceTrait model
             add_var = SourceTrait(**model_args)
             add_var.save()
-            print(" ".join(('Added trait', str(model_args['dcc_trait_id']))))
+            print(' '.join(('Added trait', str(model_args['dcc_trait_id']))))
         cursor.close()
 
     def _make_source_encoded_value_args(self, row_dict):
@@ -257,7 +256,7 @@ class Command(BaseCommand):
             # Add this row to the SourceEncodedValue model
             add_var = SourceEncodedValue(**model_args)
             add_var.save()
-            print(" ".join(('Added encoded value for', str(type_fixed_row['source_trait_id']))))
+            print(' '.join(('Added encoded value for', str(type_fixed_row['source_trait_id']))))
         cursor.close()
 
     def handle(self, *args, **options):

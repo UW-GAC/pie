@@ -18,7 +18,7 @@ class Study(models.Model):
 
     class Meta:
         # because grammar. "Studys" bothers me too much.
-        verbose_name_plural = "Studies"
+        verbose_name_plural = 'Studies'
 
     def __str__(self):
         """Pretty printing of Study objects."""
@@ -41,7 +41,7 @@ class Trait(models.Model):
     """
 
     # Set value choices for data_type
-    DATA_TYPES = ("string", "integer", "encoded", "decimal") # All of the available data types
+    DATA_TYPES = ('string', 'integer', 'encoded', 'decimal') # All of the available data types
     # Make a properly formatted tuple of ("stored_value", "readable_name") pairs
     DATA_TYPE_CHOICES = tuple([(el, el) for el in DATA_TYPES])
     # Set up the model fields
@@ -101,7 +101,7 @@ class SourceTrait(Trait):
         Returns: 
             int value of the numeric part of the phv_string
         """
-        number = int(self.phv_string.replace("phv", ""))
+        number = int(self.phv_string.replace('phv', ''))
         return number
 
     def get_dbgap_link(self):
@@ -110,7 +110,7 @@ class SourceTrait(Trait):
         Returns: 
             string URL of the dbGaP web address for the trait informational page
         """
-        base_link = "http://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/variable.cgi?study_id=%s&phv=%d"
+        base_link = 'http://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/variable.cgi?study_id=%s&phv=%d'
         phv_number = self.get_phv_number()
         this_link = base_link % (self.phs_string, phv_number)
         return this_link

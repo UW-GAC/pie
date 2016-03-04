@@ -37,7 +37,7 @@ def source_trait_table(request):
     RequestConfig(request, paginate={'per_page': TABLE_PER_PAGE}).configure(trait_table)
     return render(
         request, 
-        "trait_browser/trait_table.html", 
+        'trait_browser/trait_table.html', 
         {'trait_table': trait_table, 'trait_type': trait_type}
     )
 
@@ -58,9 +58,9 @@ def search(text_query, trait_type, studies=[]):
         queryset of SourceTrait or HarmonizedTrait objects
     """
     # TODO add try/except to catch invalid trait_type values
-    if trait_type == "source":
+    if trait_type == 'source':
         traits = SourceTrait.objects.all()
-    elif trait_type == "harmonized":
+    elif trait_type == 'harmonized':
         # once we have a harmnized trait model, grab that here
         pass
     # filter by study first
@@ -87,10 +87,10 @@ def source_trait_search(request):
         # If the form data is valid
         if form.is_valid():
             # process data
-            query = form.cleaned_data.get("text", None)
+            query = form.cleaned_data.get('text', None)
             studies = form.cleaned_data.get('study', [])
             # search text
-            traits = search(query, "source", studies)
+            traits = search(query, 'source', studies)
             trait_table = SourceTraitTable(traits)
             RequestConfig(request, paginate={'per_page': TABLE_PER_PAGE}).configure(trait_table)
             # Show the search results
@@ -101,7 +101,7 @@ def source_trait_search(request):
                 'results': True,
                 'trait_type': 'source'
             }
-            return render(request, "trait_browser/search.html", page_data)
+            return render(request, 'trait_browser/search.html', page_data)
         # If the form data isn't valid, show the data to modify
         else:
             page_data = {
@@ -109,7 +109,7 @@ def source_trait_search(request):
                 'results': False,
                 'trait_type': 'source'
             }
-            return render(request, "trait_browser/search.html", page_data)
+            return render(request, 'trait_browser/search.html', page_data)
     # if there was no data entered, show the empty form
     else:
         form = SourceTraitCrispySearchForm()
@@ -119,4 +119,4 @@ def source_trait_search(request):
             'results': False,
             'trait_type': 'source'
         }
-        return render(request, "trait_browser/search.html", page_data)
+        return render(request, 'trait_browser/search.html', page_data)

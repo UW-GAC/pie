@@ -34,7 +34,7 @@ def get_env_variable(var_name):
     
     From Two Scoops of Django, this function is the recommended way to
     access local vs. production settings for a django site. This is from
-    example 5.15 from the book. For local settings, do "export VAR_NAME=value"
+    example 5.15 from the book. For local settings, do 'export VAR_NAME=value'
     in a setting file for the conda env or virtualenv used for the project.
     Then this function can retrieve the environmental variable from bash
     using the variable name. 
@@ -58,7 +58,7 @@ def get_env_variable(var_name):
     try:
         return os.environ[var_name]
     except KeyError:
-        error_msg = "Set the {} environment variable".format(var_name)
+        error_msg = 'Set the {} environment variable'.format(var_name)
         raise ImproperlyConfigured(error_msg)
 
 
@@ -97,7 +97,7 @@ USE_TZ = True
 STATIC_URL = '/static/'
 # Additional locations of static files.
 STATICFILES_DIRS = (
-    os.path.join(SITE_ROOT, "static"), 
+    os.path.join(SITE_ROOT, 'static'), 
     )
 ########## END STATIC FILE CONFIGURATION
 
