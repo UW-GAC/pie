@@ -1,7 +1,7 @@
 """View functions and classes for the trait_browser app."""
 
 from django.shortcuts import render, get_object_or_404, HttpResponse
-from django.db.models import Q # allows complex queries when searching
+from django.db.models import Q    # Allows complex queries when searching.
 from django_tables2   import RequestConfig
 
 from .models import SourceEncodedValue, SourceTrait
@@ -9,8 +9,7 @@ from .tables import SourceTraitTable
 from .forms import SourceTraitCrispySearchForm
 
 
-# A single setting to control the per_page rows for all the table views
-TABLE_PER_PAGE = 50
+TABLE_PER_PAGE = 50    # Setting for per_page rows for all table views.  
 
 
 def source_trait_detail(request, source_trait_id):
@@ -33,7 +32,7 @@ def source_trait_table(request):
     trait_table = SourceTraitTable(SourceTrait.objects.all())
     # If you're going to change this later to some kind of filtered list (e.g. only the most
     # recent version of each trait), then you should wrap the SourceTrait.filter() in get_list_or_404
-    # RequestConfig seems to be necessary for sorting to work
+    # RequestConfig seems to be necessary for sorting to work.
     RequestConfig(request, paginate={'per_page': TABLE_PER_PAGE}).configure(trait_table)
     return render(
         request,
@@ -57,23 +56,23 @@ def search(text_query, trait_type, studies=[]):
     Returns:
         queryset of SourceTrait or HarmonizedTrait objects
     """
-    # TODO add try/except to catch invalid trait_type values
+    # TODO: add try/except to catch invalid trait_type values.
     if trait_type == 'source':
         traits = SourceTrait.objects.all()
     elif trait_type == 'harmonized':
-        # once we have a harmnized trait model, grab that here
+        # TODO: search through harmonized trait model objects. 
         pass
-    # filter by study first
+    # Filter by study first.
     if (len(studies) > 0):
         traits = traits.filter(study__in=studies)
-    # then search text
+    # Then search text.
     traits = traits.filter(Q(description__contains=text_query) | Q(name__contains=text_query))
-    # return the queryset
     return(traits)
 
 
-# to make this eventually work for harmonized traits, we could add a trait_type argument to the function definition
-# plus some if statements to select proper forms/models
+# To make this eventually work for harmonized traits, we could add a trait_type
+# argument to the function definition plus some if statements to select proper
+# forms/models.
 def source_trait_search(request):
     """SourceTrait search form view.
     
@@ -82,18 +81,18 @@ def source_trait_search(request):
     """
     # If search text has been entered into the form...
     if request.GET.get('text', None) is not None:
-        # create a form instance with data from the request
+        # ...create a form instance with data from the request.
         form = SourceTraitCrispySearchForm(request.GET)
-        # If the form data is valid
+        # If the form data is valid...
         if form.is_valid():
-            # process data
+            # ...process form data.
             query = form.cleaned_data.get('text', None)
             studies = form.cleaned_data.get('study', [])
-            # search text
+            # Search text.
             traits = search(query, 'source', studies)
             trait_table = SourceTraitTable(traits)
             RequestConfig(request, paginate={'per_page': TABLE_PER_PAGE}).configure(trait_table)
-            # Show the search results
+            # Show the search results.
             page_data = {
                 'trait_table': trait_table,
                 'query': query,
@@ -102,7 +101,7 @@ def source_trait_search(request):
                 'trait_type': 'source'
             }
             return render(request, 'trait_browser/search.html', page_data)
-        # If the form data isn't valid, show the data to modify
+        # If the form data isn't valid, show the data to modify.
         else:
             page_data = {
                 'form': form,
@@ -110,7 +109,7 @@ def source_trait_search(request):
                 'trait_type': 'source'
             }
             return render(request, 'trait_browser/search.html', page_data)
-    # if there was no data entered, show the empty form
+    # If there was no data entered, show the empty form.
     else:
         form = SourceTraitCrispySearchForm()
 

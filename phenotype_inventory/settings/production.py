@@ -30,13 +30,12 @@ import json
 from .staging import *
 
 
-########## DEBUG CONFIGURATION
+# DEBUG SETTINGS
 DEBUG = False
 ALLOWED_HOSTS = []
-########## END DEBUG CONFIGURATION
 
 
-########## DATABASE CONFIGURATION
+# DATABASE SETTINGS
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
@@ -47,10 +46,8 @@ DATABASES = {
         'PORT': '',
     }
 }
-########## END DATABASE CONFIGURATION
 
 
-########## STATIC FILE CONFIGURATION
-# Change this later
+# STATIC FILE SETTINGS
+# TODO: change the path for the static files for deployment.
 STATIC_ROOT = '/var/django/topmed_pheno_site/static_collected/'
-########## END STATIC FILE CONFIGURATION

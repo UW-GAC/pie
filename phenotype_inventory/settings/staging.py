@@ -27,8 +27,8 @@ import json
 from .base import *
 
 
-########## SECRETS CONFIGURATION
-# JSON-based secrets module
+# SECRETS SETTINGS
+# Get json secrets file contents.
 with open(os.path.normpath(os.path.join(BASE_DIR, 'settings', '.secrets.json'))) as f:
     secrets = json.loads(f.read())
 
@@ -71,15 +71,13 @@ def get_secret(setting, secrets=secrets):
 
 SECRET_KEY = get_secret('DJANGO_SECRET_KEY')
 CNF_PATH = get_secret('CNF_PATH')
-########## END SECRETS CONFIGURATION
 
 
-########## DEBUG CONFIGURATION
+# DEBUG SETTINGS
 DEBUG = True
-########## END DEBUG CONFIGURATION
 
 
-########## DATABASE CONFIGURATION
+# DATABASE SETTINGS
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
@@ -90,14 +88,11 @@ DATABASES = {
         'PORT': '',
     }
 }
-########## END DATABASE CONFIGURATION
 
 
-########## STATIC FILE CONFIGURATION
+# STATIC FILE SETTINGS
 STATIC_ROOT = '/var/django/topmed_pheno_site/static_collected/'
-########## END STATIC FILE CONFIGURATION
 
 
-########## WSGI CONFIGURATION FOR APACHE MOD_WSGI
+# WSGI SETTINGS FOR APACHE MOD_WSGI
 WSGI_APPLICATION = '%s.wsgi.application' % SITE_NAME
-########## END WSGI CONFIGURATION FOR APACHE MOD_WSGI

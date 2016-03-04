@@ -77,8 +77,6 @@ class SourceTraitCrispySearchFormTestCase(TestCase):
         input = {'text': traits[0].name, 'study': [bad_study_id]}
         form = SourceTraitCrispySearchForm(input)
         form.is_valid()
-        # print(form.STUDIES)
-        # print(bad_study_id)
         self.assertTrue(form.has_error('study'))
         
     def test_form_has_accurate_set_of_studies(self):
@@ -87,6 +85,4 @@ class SourceTraitCrispySearchFormTestCase(TestCase):
         input = {'text': 'some_string'}
         form = SourceTraitCrispySearchForm(input)
         current_studies = [[st.pk, st.name] for st in Study.objects.all().order_by('name')]
-        # print(current_studies)
-        # print(form.STUDIES)
         self.assertEqual(current_studies, form.STUDIES)

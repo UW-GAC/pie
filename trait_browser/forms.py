@@ -17,7 +17,7 @@ class SourceTraitCrispySearchForm(forms.Form):
     """
     
     # Override the init method, to allow dynamic setting of the choices for the
-    # study field, which enables proper testing
+    # study field, which enables proper testing.
     def __init__(self, *args, **kwargs):
         super(SourceTraitCrispySearchForm, self).__init__(*args, **kwargs)
         self.STUDIES = [[x.pk, x.name] for x in Study.objects.all().order_by('name')]
@@ -27,12 +27,12 @@ class SourceTraitCrispySearchForm(forms.Form):
     
     text = forms.CharField(label='search text', max_length=100,
         help_text='Both trait names and descriptions will be searched.')
+
     helper = FormHelper()
     helper.form_class = 'form-horizontal'
     helper.label_class = 'col-sm-2'
     helper.field_class = 'col-sm-10'
     helper.form_method = 'get'
-    
     helper.layout = Layout(
         Field('text'),
         InlineCheckboxes('study'),

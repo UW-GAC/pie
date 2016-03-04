@@ -17,7 +17,7 @@ class Study(models.Model):
     name = models.CharField(max_length=100)
 
     class Meta:
-        # because grammar. "Studys" bothers me too much.
+        # Fix pluralization of this model, because grammar. 
         verbose_name_plural = 'Studies'
 
     def __str__(self):
@@ -40,11 +40,10 @@ class Trait(models.Model):
         web_date_added
     """
 
-    # Set value choices for data_type
+    # Set value choices for data_type.
     DATA_TYPES = ('string', 'integer', 'encoded', 'decimal') # All of the available data types
-    # Make a properly formatted tuple of ("stored_value", "readable_name") pairs
     DATA_TYPE_CHOICES = tuple([(el, el) for el in DATA_TYPES])
-    # Set up the model fields
+    
     dcc_trait_id = models.PositiveIntegerField(primary_key=True, db_column='dcc_trait_id')
     name = models.CharField(max_length=100)
     description = models.CharField(max_length=500)
@@ -67,12 +66,10 @@ class SourceTrait(Trait):
         phv_string
     """
     
+    # This adds two fields: study is the actual Study object that this instance 
+    # is linked to, and study_id is the primary key of the linked Study object.
     study = models.ForeignKey(Study)
-    # This adds two fields: study is the actual Study object that this instance is linked to,
-    # and study_id is the primary key of the linked Study object
-    # dbGaP dataset id in phsNNNNN.vN.pN format
     phs_string = models.CharField(max_length=20)
-    # dbGaP variable id in phvNNNNNNN format
     phv_string = models.CharField(max_length=15)
     
     def __str__(self):
@@ -143,7 +140,6 @@ class EncodedValue(models.Model):
         web_date_added
     """
     
-    # Set up model fields
     category = models.CharField(max_length=45)
     value = models.CharField(max_length=100)
     web_date_added = models.DateTimeField(auto_now_add=True, auto_now=False)
@@ -160,11 +156,11 @@ class SourceEncodedValue(EncodedValue):
         source_trait
     """
     
-    # Set Attributes
+    # This adds two fields: source_trait is the actual SourceTrait object that
+    # this instance is linked to, and source_trait_id is the primary key of the
+    # linked SourceTrait object.
     source_trait = models.ForeignKey(SourceTrait)
-    # This adds two fields: source_trait is the actual SourceTrait object that this instance is linked to,
-    # and source_trait_id is the primary key of the linked SourceTrait object
-    # This will have an automatic primary key field, "id", since I didn't set a primary key
+    # This will have an automatic primary key field, "id", since pk isn't set.
     
     def __str__(self):
         """Pretty printing of SourceEncodedValue objects."""
@@ -187,7 +183,7 @@ class SourceEncodedValue(EncodedValue):
             name of the linked SourceTrait object
         """
         return self.source_trait.name
-    # Set this model attribute to the value of this function, for the admin interface
+    # Set this model attribute to the value of this function, for the admin interface.
     get_source_trait_name.short_description = 'SourceTrait Name'
     
     def get_source_trait_study(self):
@@ -200,5 +196,5 @@ class SourceEncodedValue(EncodedValue):
             study_name of the linked SourceTrait object
         """
         return self.source_trait.study_name
-    # Set this model attribute to the value of this function, for the admin interface
+    # Set this model attribute to the value of this function, for the admin interface.
     get_source_trait_study.short_description = 'Study Name'

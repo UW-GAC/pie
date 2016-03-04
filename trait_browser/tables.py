@@ -14,10 +14,10 @@ class SourceTraitTable(tables.Table):
     for use with SourceTrait objects.
     """
 
-    # in this section, define the variables referenced below in Meta
+    # Set custom column values that need extra settings.
     name = tables.LinkColumn('trait_browser_source_trait_detail', args=[tables.utils.A('pk')], verbose_name='Trait name')
     description = tables.Column('Trait description', orderable=False)
-    # grab the name from the Study linked to this trait
+    # Get the name from the Study linked to this trait.
     study_name = tables.Column('Study name', accessor='study.name')
     
     class Meta:

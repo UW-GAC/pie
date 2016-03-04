@@ -45,7 +45,7 @@ class Command(BaseCommand):
             test_string = '_production'
         cnf_group = ['client', 'mysql_topmed_readonly' + test_string]
         cnx = mysql.connector.connect(option_files=cnf_path, option_groups=cnf_group, charset='latin1', use_unicode=False)
-        # TODO add a try/except block here in case the db connection fails
+        # TODO add a try/except block here in case the db connection fails.
         return cnx
     
     def _fix_bytearray(self, row_dict):
@@ -154,11 +154,10 @@ class Command(BaseCommand):
         cursor = source_db.cursor(buffered=True, dictionary=True)
         study_query = 'SELECT * FROM study'
         cursor.execute(study_query)
-        # Iterate over rows from the source db and add them to the Study model
         for row in cursor:
             type_fixed_row = self._fix_bytearray(self._fix_null(row))
             study_args = self._make_study_args(type_fixed_row)
-            add_var = Study(**study_args)
+            add_var = Study(**study_args)    # temp Study to add
             add_var.save()
             print(' '.join(('Added study', str(study_args['study_id']))))
         cursor.close()
@@ -205,13 +204,10 @@ class Command(BaseCommand):
         cursor = source_db.cursor(buffered=True, dictionary=True)
         trait_query = 'SELECT * FROM source_variable_metadata LIMIT 400;'
         cursor.execute(trait_query)
-        # Iterate over rows from the source db, adding them to the SourceTrait model
         for row in cursor:
             type_fixed_row = self._fix_bytearray(self._fix_null(row))
-            # Properly format the data from the db for the site's model
             model_args = self._make_source_trait_args(type_fixed_row)
-            # Add this row to the SourceTrait model
-            add_var = SourceTrait(**model_args)
+            add_var = SourceTrait(**model_args)    # temp SourceTrait to add
             add_var.save()
             print(' '.join(('Added trait', str(model_args['dcc_trait_id']))))
         cursor.close()
@@ -248,13 +244,10 @@ class Command(BaseCommand):
         cursor = source_db.cursor(buffered=True, dictionary=True)
         trait_query = 'SELECT * FROM source_encoded_values LIMIT 400;'
         cursor.execute(trait_query)
-        # Iterate over rows from the source db, adding them to the EncodedValue model
         for row in cursor:
             type_fixed_row = self._fix_bytearray(self._fix_null(row))
-            # Properly format the data from the db for the site's model
             model_args = self._make_source_encoded_value_args(type_fixed_row)
-            # Add this row to the SourceEncodedValue model
-            add_var = SourceEncodedValue(**model_args)
+            add_var = SourceEncodedValue(**model_args)    # temp SourceEncodedValue to add
             add_var.save()
             print(' '.join(('Added encoded value for', str(type_fixed_row['source_trait_id']))))
         cursor.close()

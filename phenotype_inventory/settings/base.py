@@ -24,11 +24,11 @@ Custom Constants:
 import os
 
 # Normally you should not import ANYTHING from Django directly
-# into your settings, but ImproperlyConfigured is an exception.
+# into your settings, but ImproperlyConfigured is an exception
+# here for the purpose of returning an informative error message.
 from django.core.exceptions import ImproperlyConfigured
 
 
-# Use this function to get required environmental variables for settings
 def get_env_variable(var_name):
     """Get the environment variable or return exception.
     
@@ -62,47 +62,42 @@ def get_env_variable(var_name):
         raise ImproperlyConfigured(error_msg)
 
 
-########## PATH CONFIGURATION
+# PATH SETTINGS
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-## These are some custom settings based on an online example
+## These are some custom settings based on an online example:
 ## https://www.rdegges.com/2011/the-perfect-django-settings-file/
-# Site name.
+# Get the project name from the base directory name.
 SITE_NAME = os.path.basename(BASE_DIR)
 # Absolute filesystem path to the top-level project folder.
 SITE_ROOT = os.path.dirname(BASE_DIR)
-########## END PATH CONFIGURATION
 
 
-########## DEBUG CONFIGURATION
+# DEBUG SETTINGS
 # Disable debugging by default.
 DEBUG = False
-########## END DEBUG CONFIGURATION
 
 
-########## LOCALE CONFIGURATION
-# Internationalization
+# LOCALE SETTINGS
 # https://docs.djangoproject.com/en/1.8/topics/i18n/
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'America/Vancouver'
 USE_I18N = True
 USE_L10N = True
 USE_TZ = True
-########## END LOCALE CONFIGURATION
 
 
-########## STATIC FILE CONFIGURATION
+#STATIC FILE SETTINGS
 # URL prefix for static files
 STATIC_URL = '/static/'
 # Additional locations of static files.
 STATICFILES_DIRS = (
     os.path.join(SITE_ROOT, 'static'),
     )
-########## END STATIC FILE CONFIGURATION
 
 
-########## TEMPLATE CONFIGURATION
+# TEMPLATE SETTINGS
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -119,10 +114,9 @@ TEMPLATES = [
         },
     },
 ]
-########## END TEMPLATE CONFIGURATION
 
 
-########## MIDDLEWARE CONFIGURATION
+# MIDDLEWARE SETTINGS
 MIDDLEWARE_CLASSES = (
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -133,10 +127,9 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django.middleware.security.SecurityMiddleware',
 )
-########## END MIDDLEWARE CONFIGURATION
 
 
-########## APP CONFIGURATION
+# APP SETTINGS
 INSTALLED_APPS = (
     # Built-in apps.
     'django.contrib.admin',
@@ -145,31 +138,24 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    
     # Sites and flatpages.
-    'django.contrib.sites',       # https://docs.djangoproject.com/en/1.8/ref/contrib/sites/
-    'django.contrib.flatpages',   # https://docs.djangoproject.com/es/1.9/ref/contrib/flatpages/
-    
+    'django.contrib.sites',    # https://docs.djangoproject.com/en/1.8/ref/contrib/sites/
+    'django.contrib.flatpages',    # https://docs.djangoproject.com/es/1.9/ref/contrib/flatpages/
     # 3rd party apps.
-    'django_tables2',     # https://github.com/bradleyayers/django-tables2
-    'crispy_forms',       # https://github.com/maraujop/django-crispy-forms
-    
+    'django_tables2',    # https://github.com/bradleyayers/django-tables2
+    'crispy_forms',    # https://github.com/maraujop/django-crispy-forms
     # Our custom apps.
-    'trait_browser',   # handles table-based viewing and searching of trait data
-    'core',            # handles data migrations for built-in apps (e.g. sites)
+    'trait_browser',    # Handles table-based viewing and searching of trait data.
+    'core',    # Handles data migrations for built-in apps (e.g. sites).
 )
-########## END APP CONFIGURATION
 
 
-########## URL CONFIGURATION
+# URL SETTINGS
 ROOT_URLCONF = '%s.urls' % SITE_NAME
-########## END URL CONFIGURATION
 
 
-########## APP-SPECIFIC CONFIGURATION
-# django.contrib.sites
+# APP-SPECIFIC SETTINGS
+# django.contrib.sites SETTINGS variables.
 SITE_ID = 1
-
-# crispy_forms
+# crispy_forms SETTINGS variables.
 CRISPY_TEMPLATE_PACK = 'bootstrap3'
-########## END APP-SPECIFIC CONFIGURATION

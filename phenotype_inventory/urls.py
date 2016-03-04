@@ -20,13 +20,13 @@ from django.contrib import admin
 
 
 urlpatterns = [
-    url(r'^home/', TemplateView.as_view(template_name='home.html')), # static home page
-    url(r'^about/', TemplateView.as_view(template_name='about.html')), # static about page
-    url(r'^contact/', TemplateView.as_view(template_name='contact.html')), # static contact page
-    url(r'^pages/', include('django.contrib.flatpages.urls')),   # Flat pages
-    url(r'^admin/', include(admin.site.urls)),                   # Admin interface
-    url(r'^trait_browser/', include('trait_browser.urls')),      # Trait browser app
+    url(r'^home/', TemplateView.as_view(template_name='home.html')),    # static home page
+    url(r'^about/', TemplateView.as_view(template_name='about.html')),    # static about page
+    url(r'^contact/', TemplateView.as_view(template_name='contact.html')),    # static contact page
+    url(r'^pages/', include('django.contrib.flatpages.urls')),    # Flat pages
+    url(r'^admin/', include(admin.site.urls)),    # Admin interface
+    url(r'^trait_browser/', include('trait_browser.urls')),    # Trait browser app
 ]
 
-# Set the name for the admin site
+# Set the name for the admin site.
 admin.site.site_header = 'NHLBI TOPMed Phenotype Inventory Administration'

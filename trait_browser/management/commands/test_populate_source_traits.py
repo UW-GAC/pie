@@ -36,11 +36,11 @@ class GetDbTestCase(TestCase):
         self.assertIsInstance(db, mysql.connector.MySQLConnection)
     
     def test_get_snuffles_db_on_server(self):
-        # Figure out a way to test that this works specifically on a server
+        # TODO: Figure out a way to test that this works specifically on a server.
         pass
     
     def test_get_snuffles_db_on_workstation(self):
-        # Figure out a way to test that this works specifically on a workstation
+        # TODO: Figure out a way to test that this works specifically on a workstation.
         pass
 
 
@@ -279,20 +279,20 @@ class IntegrationTest(TestCase):
     
     def test_everything(self):
         """Ensure that the whole workflow of the management command works to add objects to the website databse."""
-        # Get the connection to the db
+        # Get the connection to the db.
         cmd = Command()
         source_db = cmd._get_snuffles(test=True)
-        # Test that adding studies works, and results in right number of studies
+        # Test that adding studies works, and results in right number of studies.
         cmd._populate_studies(source_db)
         cursor = source_db.cursor()
         study_query = 'SELECT COUNT(*) FROM study;'
         cursor.execute(study_query)
         study_count = cursor.fetchone()[0]
         self.assertEqual(study_count, Study.objects.count())
-        # Test that adding SourceTraits works, and results in right number of traits
+        # Test that adding SourceTraits works, and results in right number of traits.
         cmd._populate_source_traits(source_db)
         self.assertEqual(400, SourceTrait.objects.count())
-        # Test that adding SourceEncodedValues works, and results in right number of encodedvalues
+        # Test that adding SourceEncodedValues works, and results in right number of encodedvalues.
         cmd._populate_encoded_values(source_db)
         self.assertEqual(400, SourceEncodedValue.objects.count())
         source_db.close()
