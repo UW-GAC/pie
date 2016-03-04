@@ -52,7 +52,7 @@ class SourceTraitTestCase(TestCase):
         """Ensure that get_dbgap_link builds a validly constructed URL (though this URL may be a broken link)."""
         # this will use regex to test that the link is a good URL
         # this will find poorly formed URLs, but not broken links
-        validate = URLValidator 
+        validate = URLValidator
         trait = SourceTraitFactory.build()
         # There is not assertNotRaises, so this one will just fail with an error
         

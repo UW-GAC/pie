@@ -13,10 +13,10 @@ def fake_row_dict():
     mysql cursor object with dictionary=True. This dict contains one of
     each type of data that could be returned from a database.
     
-    Returns: 
+    Returns:
         a dict with data of several types
         
-        dict keys: 
+        dict keys:
             text
             word
             bytearray_word

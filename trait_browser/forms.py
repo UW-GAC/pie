@@ -13,7 +13,7 @@ class SourceTraitCrispySearchForm(forms.Form):
     """Form to handle searching within SourceTrait objects.
     
     This form class is a Subclass of crispy_forms.Form. Crispy forms is a
-    Django app that improves upon the built in Django Form object. 
+    Django app that improves upon the built in Django Form object.
     """
     
     # Override the init method, to allow dynamic setting of the choices for the

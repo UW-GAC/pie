@@ -23,8 +23,8 @@ class SearchTestCase(TestCase):
         # Get the search results
         search1 = search('foo_bar', 'source')
         # Check that the matching trait is found, but the non-match is not
-        self.assertIn(st_match, search1) 
-        self.assertNotIn(st_nonmatch, search1) 
+        self.assertIn(st_match, search1)
+        self.assertNotIn(st_nonmatch, search1)
     
     def test_search_source_trait_name_substring(self):
         """Test that the search function finds a substring match in the SourceTrait name field, but doesn't find a non-match."""
@@ -34,8 +34,8 @@ class SearchTestCase(TestCase):
         # Get the search results
         search1 = search('bar', 'source')
         # Check that the matching trait is found, but the non-match is not
-        self.assertIn(st_match, search1) 
-        self.assertNotIn(st_nonmatch, search1) 
+        self.assertIn(st_match, search1)
+        self.assertNotIn(st_nonmatch, search1)
 
     def test_search_source_trait_description_exact(self):
         """Test that the search function finds an exact match in the SourceTrait description field, but doesn't find a non-match."""
@@ -45,8 +45,8 @@ class SearchTestCase(TestCase):
         # Get the search results
         search1 = search('foo and bar', 'source')
         # Check that the matching trait is found, but the non-match is not
-        self.assertIn(st_match, search1) 
-        self.assertNotIn(st_nonmatch, search1) 
+        self.assertIn(st_match, search1)
+        self.assertNotIn(st_nonmatch, search1)
     
     def test_search_source_trait_description_substring(self):
         """Test that the search function finds a substring match in the SourceTrait description field, but doesn't find a non-match."""
@@ -56,8 +56,8 @@ class SearchTestCase(TestCase):
         # Get the search results
         search1 = search('bar', 'source')
         # Check that the matching trait is found, but the non-match is not
-        self.assertIn(st_match, search1) 
-        self.assertNotIn(st_nonmatch, search1) 
+        self.assertIn(st_match, search1)
+        self.assertNotIn(st_nonmatch, search1)
         
     def test_search_source_trait_name_in_study(self):
         """Test that the search function finds a matching name in one particular study, but doesn't find a match from a different study. """
@@ -65,23 +65,23 @@ class SearchTestCase(TestCase):
         study1 = StudyFactory.create()
         study2 = StudyFactory.create()
         st_match = SourceTraitFactory.create(
-            name='foo_bar', 
+            name='foo_bar',
             dcc_trait_id=1,
             study=study1
         )
         st_nonmatch = SourceTraitFactory.create(
-            name='foo_bar', 
+            name='foo_bar',
             dcc_trait_id=2,
             study=study2
         )
         # Get the search results
         search1 = search(
-            'bar', 'source', 
+            'bar', 'source',
             studies=[(study1.study_id, study1.name)]
         )
         # Check that the matching trait is found, but the non-match is not
-        self.assertIn(st_match, search1) 
-        self.assertNotIn(st_nonmatch, search1) 
+        self.assertIn(st_match, search1)
+        self.assertNotIn(st_nonmatch, search1)
 
 
 class ViewsTestCase(TestCase):
@@ -193,7 +193,7 @@ class SourceTraitSearchViewTestCase(TestCase):
         good_trait = SourceTraitFactory.create(name='asdfghjkl')
         # Get the URL for the search page
         url = reverse('trait_browser_source_trait_search')
-        response = self.client.get(url, {'text': 'asdfghjkl', 
+        response = self.client.get(url, {'text': 'asdfghjkl',
                                          'study':[good_trait.study.study_id]})
         self.assertEqual(response.status_code, 200)
         # Test that the results are in the view properly
@@ -209,7 +209,7 @@ class SourceTraitSearchViewTestCase(TestCase):
         good_trait = SourceTraitFactory.create(name='asdfghjkl')
         # Get the URL for the search page
         url = reverse('trait_browser_source_trait_search')
-        response = self.client.get(url, {'text': 'asdfghjkl', 
+        response = self.client.get(url, {'text': 'asdfghjkl',
                                          'study':[traits[0].study.study_id]})
         self.assertEqual(response.status_code, 200)
         # Test that the results are in the view properly

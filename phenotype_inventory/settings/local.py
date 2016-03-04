@@ -1,4 +1,4 @@
-"""Local development settings for the phenotype_inventory project. 
+"""Local development settings for the phenotype_inventory project.
 
 To use the this settings module, set your PYTHONPATH and
 DJANGO_SETTINGS_MODULE environmental variables. For example:

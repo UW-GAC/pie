@@ -6,12 +6,12 @@ and recommendations from Two Scoops of Django 1.8
 
 Base settings are applicable to all environments, and
 local.py, production.py, and staging.py all build on
-base.py. Each setting module is specified either through an 
+base.py. Each setting module is specified either through an
 argument to manage.py runserver, or through setting environment
 or secret variables, depending on the environment where your
-site is set up. 
+site is set up.
 
-Functions: 
+Functions:
     get_env_variable
     
 Custom Constants:
@@ -37,22 +37,22 @@ def get_env_variable(var_name):
     example 5.15 from the book. For local settings, do 'export VAR_NAME=value'
     in a setting file for the conda env or virtualenv used for the project.
     Then this function can retrieve the environmental variable from bash
-    using the variable name. 
+    using the variable name.
     
-    This funciton also prints an informative error message and raises an 
-    informative exception if the environmental variable is not already set. 
+    This funciton also prints an informative error message and raises an
+    informative exception if the environmental variable is not already set.
     
-    Source: 
+    Source:
         https://github.com/twoscoops/two-scoops-of-django-1.8/blob/master/code/chapter_05_example_15.py
     
-    Arguments: 
+    Arguments:
         var_name is a string of the name of the variable to get from the bash
         environment
     
     Returns:
         string value of the environmental variable value
     
-    Raises: 
+    Raises:
         ImproperlyConfigured when an environment variable is not set first.
     """
     try:
@@ -97,7 +97,7 @@ USE_TZ = True
 STATIC_URL = '/static/'
 # Additional locations of static files.
 STATICFILES_DIRS = (
-    os.path.join(SITE_ROOT, 'static'), 
+    os.path.join(SITE_ROOT, 'static'),
     )
 ########## END STATIC FILE CONFIGURATION
 
@@ -106,7 +106,7 @@ STATICFILES_DIRS = (
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        # Directories to search when loading templates. 
+        # Directories to search when loading templates.
         'DIRS': [os.path.join(SITE_ROOT, 'templates')],
         'APP_DIRS': True,
         'OPTIONS': {

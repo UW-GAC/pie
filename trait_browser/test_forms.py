@@ -20,27 +20,27 @@ class SourceTraitCrispySearchFormTestCase(TestCase):
         """Test that the form is valid when given valid search text and one valid study."""
         studies = StudyFactory.create_batch(10)
         input = {'text': 'some_string', 'study': [studies[0].study_id]}
-        form = SourceTraitCrispySearchForm(input)        
+        form = SourceTraitCrispySearchForm(input)
         self.assertTrue(form.is_valid())
     
     def test_form_with_valid_text_and_multiple_studies(self):
         """Test that the form is valid when given valid search text and multiple valid studies."""
         studies = StudyFactory.create_batch(10)
         input = {
-            'text': 'some_string', 
+            'text': 'some_string',
             'study': [studies[0].study_id, studies[3].study_id]
         }
-        form = SourceTraitCrispySearchForm(input)        
+        form = SourceTraitCrispySearchForm(input)
         self.assertTrue(form.is_valid())
         
     def test_form_with_invalid_text_and_one_study(self):
         """Test that the form is invalid when given invalid search text and one valid study."""
         studies = StudyFactory.create_batch(10)
         input = {
-            'text': '', 
+            'text': '',
             'study': [studies[0].study_id, studies[3].study_id]
         }
-        form = SourceTraitCrispySearchForm(input)        
+        form = SourceTraitCrispySearchForm(input)
         self.assertFalse(form.is_valid())
     
     def test_form_with_valid_text_and_invalid_study(self):

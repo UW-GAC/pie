@@ -1,10 +1,10 @@
 """Test the classes and functions in the populate_source_traits management command.
 
-This test module won't run with the usual Django test command, because it's 
-in an unusual location. Instead, you must specify the path containing this 
-test module to get these tests to run. 
+This test module won't run with the usual Django test command, because it's
+in an unusual location. Instead, you must specify the path containing this
+test module to get these tests to run.
 
-Usage: 
+Usage:
 ./manage.py test trait_browser/management/commands
 
 This test module runs several unit tests and one integration test.
@@ -182,9 +182,9 @@ class DbFixersTestCase(TestCase):
     def test_fix_timezone_no_datetimes(self):
         """Ensure that a dict containing no datetime objects is unaltered by _fix_timezone."""
         row = {
-            'a':1, 
-            'b':'foobar', 
-            'c':1.56, 
+            'a':1,
+            'b':'foobar',
+            'c':1.56,
             'd': None,
             'e':bytearray('foobar', 'utf-8')
         }
@@ -269,7 +269,7 @@ class MakeArgsTestCase(TestCase):
 
 
 class IntegrationTest(TestCase):
-    """Integration test of the whole management command. 
+    """Integration test of the whole management command.
     
     It's very difficult to test just one function at a time here, because of
     all the inter-object relationships and the data being pulled from the
