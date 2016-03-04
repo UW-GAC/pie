@@ -1,7 +1,10 @@
+"""Test the factory functions, which are used for testing."""
+
 from django.test import TestCase
 
 from .factories import SourceEncodedValueFactory, SourceTraitFactory, StudyFactory
 from .models import Study, SourceEncodedValue, SourceTrait
+
 
 class TestFactories(TestCase):
     
