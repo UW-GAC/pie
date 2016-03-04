@@ -39,7 +39,7 @@ class SourceTraitCrispySearchForm(forms.Form):
         FormActions(
             Submit('submit', 'Search', css_class="btn-primary btn-disable"),
             Reset('name', 'Reset', css_class="btn-disable"),
-            )
         )
+    )
 
 

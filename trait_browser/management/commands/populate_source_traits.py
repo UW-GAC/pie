@@ -72,9 +72,11 @@ class Command(BaseCommand):
             a dictionary with identical values to row_dict, where all bytearrays
             are now string type
         """
-        fixed_row = {(k) : (row_dict[k].decode('utf-8')
-                     if isinstance(row_dict[k], bytearray)
-                     else row_dict[k]) for k in row_dict }
+        fixed_row = {
+            (k) : (row_dict[k].decode('utf-8')
+            if isinstance(row_dict[k], bytearray)
+            else row_dict[k]) for k in row_dict 
+        }
         return fixed_row
     
     def _fix_null(self, row_dict):
@@ -93,8 +95,10 @@ class Command(BaseCommand):
             a dictionary with identical values to row_dict, where all Nones have 
             been replaced with empty strings
         """
-        fixed_row = {(k) : ('' if row_dict[k] is None
-                     else row_dict[k]) for k in row_dict }
+        fixed_row = {
+            (k) : ('' if row_dict[k] is None
+            else row_dict[k]) for k in row_dict 
+        }
         return fixed_row
         
     
@@ -115,9 +119,11 @@ class Command(BaseCommand):
             a dictionary with identical values to row_dict, where all datetime 
             objects are now timezone aware
         """
-        fixed_row = {(k) : (timezone.make_aware(row_dict[k], timezone.get_current_timezone())
-                     if isinstance(row_dict[k], datetime)
-                     else row_dict[k]) for k in row_dict }
+        fixed_row = {
+            (k) : (timezone.make_aware(row_dict[k], timezone.get_current_timezone())
+            if isinstance(row_dict[k], datetime)
+            else row_dict[k]) for k in row_dict 
+        }
         return fixed_row
 
 

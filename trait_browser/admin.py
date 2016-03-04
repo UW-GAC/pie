@@ -43,7 +43,10 @@ class SourceEncodedValueAdmin(ReadOnlyAdmin):
     # Make all fields read-only
     readonly_fields = SourceEncodedValue._meta.get_all_field_names()
     # Which fields to display
-    list_display = ('id', 'category', 'value', 'get_source_trait_name', 'get_source_trait_study', 'web_date_added', )
+    list_display = (
+        'id', 'category', 'value', 'get_source_trait_name', 
+        'get_source_trait_study', 'web_date_added', 
+    )
     # Allow filtering on these fields
     list_filter = ('web_date_added', )
     # Allow searching in these fields
