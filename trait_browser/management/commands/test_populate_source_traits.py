@@ -19,6 +19,7 @@ from trait_browser.management.commands.populate_source_traits import Command
 from trait_browser.management.commands.db_factory import fake_row_dict
 from trait_browser.models import Study, SourceTrait, SourceEncodedValue
 
+
 class PopulateSourceTraitsTestCase(TestCase):
     
     def test_populate(self):
@@ -277,22 +278,20 @@ class IntegrationTest(TestCase):
     
     def test_everything(self):
         """Ensure that the whole workflow of the management command works to add objects to the website databse."""
+        # Get the connection to the db
         cmd = Command()
         source_db = cmd._get_snuffles(test=True)
+        # Test that adding studies works, and results in right number of studies
         cmd._populate_studies(source_db)
-        # Check that the right number of studies was added to the db
         cursor = source_db.cursor()
         study_query = 'SELECT COUNT(*) FROM study;'
         cursor.execute(study_query)
         study_count = cursor.fetchone()[0]
         self.assertEqual(study_count, Study.objects.count())
-        
+        # Test that adding SourceTraits works, and results in right number of traits
         cmd._populate_source_traits(source_db)
-        # Check on the number of SourceTraits
         self.assertEqual(400, SourceTrait.objects.count())
-        
+        # Test that adding SourceEncodedValues works, and results in right number of encodedvalues
         cmd._populate_encoded_values(source_db)
-        # Check on the number of SourceEncodedValues
         self.assertEqual(400, SourceEncodedValue.objects.count())
-        
         source_db.close()

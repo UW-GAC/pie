@@ -28,6 +28,7 @@ Set Constants:
 from .staging import *
 import json
 
+
 ########## DEBUG CONFIGURATION
 DEBUG = False
 ALLOWED_HOSTS = []
@@ -52,5 +53,3 @@ DATABASES = {
 # Change this later
 STATIC_ROOT = '/var/django/topmed_pheno_site/static_collected/'
 ########## END STATIC FILE CONFIGURATION
-
-

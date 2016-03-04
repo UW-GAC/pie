@@ -12,6 +12,7 @@ from .views import TABLE_PER_PAGE, search
 # NB: for test methods with multiple assertions, the first failed assert statement
 # will preclude any subsequent assertions
 
+
 class SearchTestCase(TestCase):
     
     def test_search_source_trait_name_exact(self):
@@ -84,7 +85,6 @@ class SearchTestCase(TestCase):
 
 
 class ViewsTestCase(TestCase):
-    
     
     def test_source_trait_table_empty(self):
         """Tests that the source_trait_table view works with an empty queryset and that the SourceTraitTable object has no rows."""
@@ -230,4 +230,3 @@ class SourceTraitSearchViewTestCase(TestCase):
         self.assertFalse(response.context['results']) # results is False
         self.assertNotIn('trait_table', response.context)
         self.assertFalse(response.context['form'].is_bound) # Form is not bound to data
-        

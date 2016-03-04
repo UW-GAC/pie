@@ -20,6 +20,7 @@ import mysql.connector
 import socket
 from trait_browser.models import SourceTrait, SourceEncodedValue, Study
 
+
 class Command(BaseCommand):
     """Management command to pull initial data from the source phenotype db."""
 
@@ -36,20 +37,15 @@ class Command(BaseCommand):
         Returns: 
             a mysql.connector open db connection
         """
-        #cnf_file = os.path.expanduser('~')  + "/.mysql-topmed.cnf"
-        
+        #cnf_file = os.path.expanduser('~')  + "/.mysql-topmed.cnf"        
         if test:
             test_string = "_test"
         else:
             test_string = "_production"
-        
         cnf_group = ["client", "mysql_topmed_readonly" + test_string]
-        
         cnx = mysql.connector.connect(option_files=cnf_path, option_groups=cnf_group, charset='latin1', use_unicode=False)
-        
         # TODO add a try/except block here in case the db connection fails
         return cnx
-
     
     def _fix_bytearray(self, row_dict):
         """Convert byteArrays into decoded strings. 
@@ -100,7 +96,6 @@ class Command(BaseCommand):
             else row_dict[k]) for k in row_dict 
         }
         return fixed_row
-        
     
     def _fix_timezone(self, row_dict):
         """Add timezone awareness to datetime objects.
@@ -126,7 +121,6 @@ class Command(BaseCommand):
         }
         return fixed_row
 
-
     def _make_study_args(self, row_dict):
         """Get args for making a Study object from a source db row.
         
@@ -138,14 +132,12 @@ class Command(BaseCommand):
         Returns:
             a dict of (required_StudyTrait_attribute: attribute_value) pairs
         """
-
         new_args = {
             'study_id': row_dict['study_id'],
             'dbgap_id': row_dict['dbgap_id'],
             'name': row_dict['study_name']
         }
         return new_args
-    
     
     def _populate_studies(self, source_db):
         """Add study data to the website db models. 
@@ -161,18 +153,14 @@ class Command(BaseCommand):
         cursor = source_db.cursor(buffered=True, dictionary=True)
         study_query = 'SELECT * FROM study'
         cursor.execute(study_query)
-
         # Iterate over rows from the source db and add them to the Study model
         for row in cursor:
             type_fixed_row = self._fix_bytearray(self._fix_null(row))
-
             study_args = self._make_study_args(type_fixed_row)
             add_var = Study(**study_args)
             add_var.save()
             print(" ".join(('Added study', str(study_args['study_id']))))
-
         cursor.close()
-    
 
     def _make_source_trait_args(self, row_dict):
         """Get args for making a SourceTrait object from a source db row. 
@@ -202,7 +190,6 @@ class Command(BaseCommand):
         }
         return new_args
 
-
     def _populate_source_traits(self, source_db):
         """Add source trait data to the website db models. 
         
@@ -222,13 +209,11 @@ class Command(BaseCommand):
             type_fixed_row = self._fix_bytearray(self._fix_null(row))
             # Properly format the data from the db for the site's model
             model_args = self._make_source_trait_args(type_fixed_row)
-    
             # Add this row to the SourceTrait model
             add_var = SourceTrait(**model_args)
             add_var.save()
             print(" ".join(('Added trait', str(model_args['dcc_trait_id']))))
         cursor.close()
-
 
     def _make_source_encoded_value_args(self, row_dict):
         """Get args for making a SourceEncodedValue object from a source db row. 
@@ -248,7 +233,6 @@ class Command(BaseCommand):
         }
         return new_args
 
-
     def _populate_encoded_values(self, source_db):
         """Add encoded value data to the website db models. 
         
@@ -266,18 +250,13 @@ class Command(BaseCommand):
         # Iterate over rows from the source db, adding them to the EncodedValue model
         for row in cursor:
             type_fixed_row = self._fix_bytearray(self._fix_null(row))
-
-            # print(type_fixed_row)
- 
             # Properly format the data from the db for the site's model 
             model_args = self._make_source_encoded_value_args(type_fixed_row)
-
             # Add this row to the SourceEncodedValue model
             add_var = SourceEncodedValue(**model_args)
             add_var.save()
             print(" ".join(('Added encoded value for', str(type_fixed_row['source_trait_id']))))
         cursor.close()
-
 
     def handle(self, *args, **options):
         """Handle the main functions of this management command. 
@@ -295,4 +274,3 @@ class Command(BaseCommand):
         self._populate_source_traits(snuffles_db)
         self._populate_encoded_values(snuffles_db)
         snuffles_db.close()
-

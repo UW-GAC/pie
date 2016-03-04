@@ -7,6 +7,7 @@ from .forms import SourceTraitCrispySearchForm
 from .factories import StudyFactory, SourceTraitFactory
 from .models import Study
 
+
 class SourceTraitCrispySearchFormTestCase(TestCase):
 
     def test_form_with_valid_text_no_study(self):

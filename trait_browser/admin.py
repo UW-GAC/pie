@@ -4,6 +4,7 @@ from django.contrib              import admin
 from .models                     import Study, SourceEncodedValue, SourceTrait
 from django.contrib.sites.models import Site
 
+
 class ReadOnlyAdmin(admin.ModelAdmin):
     """SuperClass for non-editable admin models."""
     
@@ -11,6 +12,7 @@ class ReadOnlyAdmin(admin.ModelAdmin):
         return False
     def has_delete_permission(self, request, obj=None):
         return False
+
 
 class StudyAdmin(ReadOnlyAdmin):
     """Admin class for Study objects."""
@@ -37,6 +39,7 @@ class SourceTraitAdmin(ReadOnlyAdmin):
     # Allow searching based on these fields
     search_fields = ('dcc_trait_id', 'name', )
 
+
 class SourceEncodedValueAdmin(ReadOnlyAdmin):
     """Admin class for SourceEncodedValue objects."""
     
@@ -51,6 +54,7 @@ class SourceEncodedValueAdmin(ReadOnlyAdmin):
     list_filter = ('web_date_added', )
     # Allow searching in these fields
     search_fields = ('category', 'id', )
+
 
 # Register your models here.
 admin.site.register(Study, StudyAdmin)

@@ -7,6 +7,7 @@ from django.utils import timezone
 
 from .models import Study, SourceTrait, SourceEncodedValue
 
+
 class StudyFactory(factory.DjangoModelFactory):
     """Factory for Study objects using Faker faked data."""
     
@@ -46,4 +47,4 @@ class SourceEncodedValueFactory(factory.DjangoModelFactory):
     category = factory.Faker('word')
     value = factory.Faker('text', max_nb_chars=50)
     web_date_added = factory.fuzzy.FuzzyDateTime(start_dt=timezone.make_aware(datetime(2016, 1, 1)))
-    source_trait = factory.SubFactory(SourceTraitFactory)
+    source_trait = factory.SubFactory(SourceTraitFactory) 

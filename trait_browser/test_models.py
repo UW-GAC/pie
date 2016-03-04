@@ -6,6 +6,7 @@ from django.core.validators import URLValidator
 from .factories import StudyFactory, SourceTraitFactory, SourceEncodedValueFactory
 from .models import SourceEncodedValue, SourceTrait, Study
 
+
 class StudyTestCase(TestCase):
     
     def test_printing(self):
@@ -67,11 +68,9 @@ class SourceTraitTestCase(TestCase):
         self.assertIsInstance(trait.__str__(), str)
         
 
-
 class SourceTraitEncodedValueTestCase(TestCase):
     
     def test_printing(self):
         """Ensure that the custom printing method works."""
         enc_value = SourceEncodedValueFactory.build()
         self.assertIsInstance(enc_value.__str__(), str)
-

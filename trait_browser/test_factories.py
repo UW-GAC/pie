@@ -5,6 +5,7 @@ from django.test import TestCase
 from .factories import SourceEncodedValueFactory, SourceTraitFactory, StudyFactory
 from .models import Study, SourceEncodedValue, SourceTrait
 
+
 class TestFactories(TestCase):
     
     def test_study_factory_build(self):

@@ -8,6 +8,7 @@ from crispy_forms.bootstrap import AppendedText, PrependedText, FormActions, Inl
 
 from . models import Study, SourceTrait
 
+
 class SourceTraitCrispySearchForm(forms.Form):
     """Form to handle searching within SourceTrait objects.
     
@@ -26,7 +27,6 @@ class SourceTraitCrispySearchForm(forms.Form):
     
     text = forms.CharField(label="search text", max_length=100,
         help_text="Both trait names and descriptions will be searched.")
-    
     helper = FormHelper()
     helper.form_class = 'form-horizontal'
     helper.label_class = 'col-sm-2'
@@ -41,5 +41,3 @@ class SourceTraitCrispySearchForm(forms.Form):
             Reset('name', 'Reset', css_class="btn-disable"),
         )
     )
-
-

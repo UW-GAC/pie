@@ -2,6 +2,7 @@
 
 from django.db import models
 
+
 class Study(models.Model):
     """Model for Study table.
     
@@ -10,6 +11,7 @@ class Study(models.Model):
         dbgap_id
         name
     """
+    
     study_id = models.IntegerField(primary_key=True, db_column='study_id')
     dbgap_id = models.CharField(max_length=10)
     name     = models.CharField(max_length=100)
@@ -21,6 +23,7 @@ class Study(models.Model):
     def __str__(self):
         """Pretty printing of Study objects."""
         return self.name
+
 
 class Trait(models.Model):
     """Abstract superclass model for SourceTrait and HarmonizedTrait.
@@ -36,6 +39,7 @@ class Trait(models.Model):
         unit
         web_date_added
     """
+
     # Set value choices for data_type
     DATA_TYPES = ("string", "integer", "encoded", "decimal") # All of the available data types
     # Make a properly formatted tuple of ("stored_value", "readable_name") pairs
@@ -51,6 +55,7 @@ class Trait(models.Model):
     class Meta:
         abstract = True
 
+
 class SourceTrait(Trait):
     """Model for 'raw' source variable metadata as received from dbGaP. 
     
@@ -65,7 +70,6 @@ class SourceTrait(Trait):
     study     = models.ForeignKey(Study)
     # This adds two fields: study is the actual Study object that this instance is linked to,
     # and study_id is the primary key of the linked Study object
-
     # dbGaP dataset id in phsNNNNN.vN.pN format
     phs_string             = models.CharField(max_length=20)
     # dbGaP variable id in phvNNNNNNN format
@@ -111,7 +115,6 @@ class SourceTrait(Trait):
         this_link = base_link % (self.phs_string, phv_number)
         return this_link
 
-    
     def detail_iter(self):
         """Iterate over a specific set of formatted field names and field values. 
         
@@ -139,6 +142,7 @@ class EncodedValue(models.Model):
         value
         web_date_added
     """
+    
     # Set up model fields
     category         = models.CharField(max_length=45)
     value            = models.CharField(max_length=100)
@@ -155,11 +159,11 @@ class SourceEncodedValue(EncodedValue):
     Fields: 
         source_trait
     """
+    
     # Set Attributes
     source_trait     = models.ForeignKey(SourceTrait)
     # This adds two fields: source_trait is the actual SourceTrait object that this instance is linked to,
     # and source_trait_id is the primary key of the linked SourceTrait object
-
     # This will have an automatic primary key field, "id", since I didn't set a primary key
     
     def __str__(self):

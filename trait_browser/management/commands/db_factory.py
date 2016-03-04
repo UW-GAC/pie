@@ -2,7 +2,9 @@
 
 from faker import Faker
 
+
 fake = Faker()
+
 
 def fake_row_dict():
     """Make fake sql table data (factory).

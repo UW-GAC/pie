@@ -7,8 +7,10 @@ from .models          import SourceEncodedValue, SourceTrait
 from .tables          import SourceTraitTable
 from .forms           import SourceTraitCrispySearchForm
 
+
 # A single setting to control the per_page rows for all the table views
 TABLE_PER_PAGE = 50
+
 
 def source_trait_detail(request, source_trait_id):
     """Detail view for SourceTrait objects."""
@@ -18,6 +20,7 @@ def source_trait_detail(request, source_trait_id):
         'trait_browser/source_trait_detail.html',
         {'source_trait' : source_trait}
     )
+
 
 def source_trait_table(request):
     """Table view for SourceTrait objects. 
@@ -36,7 +39,6 @@ def source_trait_table(request):
         "trait_browser/trait_table.html", 
         {'trait_table': trait_table, 'trait_type': trait_type}
     )
-
 
 
 def search(text_query, trait_type, studies=[]):
@@ -60,14 +62,11 @@ def search(text_query, trait_type, studies=[]):
     elif trait_type == "harmonized":
         # once we have a harmnized trait model, grab that here
         pass
-    
     # filter by study first
     if (len(studies) > 0):
         traits = traits.filter(study__in=studies)
-    
     # then search text
     traits = traits.filter(Q(description__contains=text_query) | Q(name__contains=text_query))
-    
     # return the queryset
     return(traits)
 
@@ -80,27 +79,19 @@ def source_trait_search(request):
     Displays the SourceTraitCrispySearchForm and any search results as a 
     django-tables2 table view. 
     """
-
     # If search text has been entered into the form...
     if request.GET.get('text', None) is not None:
-
         # create a form instance with data from the request
         form = SourceTraitCrispySearchForm(request.GET)
-        
         # If the form data is valid
         if form.is_valid():
-            
             # process data
             query = form.cleaned_data.get("text", None)
             studies = form.cleaned_data.get('study', [])
-
             # search text
             traits = search(query, "source", studies)
-            
             trait_table = SourceTraitTable(traits)
-            
             RequestConfig(request, paginate={'per_page': TABLE_PER_PAGE}).configure(trait_table)
-            
             # Show the search results
             page_data = {
                 'trait_table': trait_table,
@@ -110,7 +101,6 @@ def source_trait_search(request):
                 'trait_type': 'source'
             }
             return render(request, "trait_browser/search.html", page_data)
-        
         # If the form data isn't valid, show the data to modify
         else:
             page_data = {
@@ -119,7 +109,6 @@ def source_trait_search(request):
                 'trait_type': 'source'
             }
             return render(request, "trait_browser/search.html", page_data)
-
     # if there was no data entered, show the empty form
     else:
         form = SourceTraitCrispySearchForm()

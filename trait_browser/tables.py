@@ -3,6 +3,7 @@
 import django_tables2 as tables
 from .models import SourceTrait
 
+
 # Define the table classes for displaying nice HTML tables with django-tables2
 class SourceTraitTable(tables.Table):
     """Class for tables2 handling of SourceTrait objects for nice table display.

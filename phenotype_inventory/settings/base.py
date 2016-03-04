@@ -27,6 +27,7 @@ import os
 # into your settings, but ImproperlyConfigured is an exception.
 from django.core.exceptions import ImproperlyConfigured
 
+
 # Use this function to get required environmental variables for settings
 def get_env_variable(var_name):
     """Get the environment variable or return exception.
@@ -67,10 +68,8 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 ## These are some custom settings based on an online example
 ## https://www.rdegges.com/2011/the-perfect-django-settings-file/
-
 # Site name.
 SITE_NAME = os.path.basename(BASE_DIR)
-
 # Absolute filesystem path to the top-level project folder.
 SITE_ROOT = os.path.dirname(BASE_DIR)
 ########## END PATH CONFIGURATION
@@ -79,10 +78,6 @@ SITE_ROOT = os.path.dirname(BASE_DIR)
 ########## DEBUG CONFIGURATION
 # Disable debugging by default.
 DEBUG = False
-
-# We'll need to set ALLOWED_HOSTS for DEBUG=False to work
-# but this should be in production settings
-# ALLOWED_HOSTS = []
 ########## END DEBUG CONFIGURATION
 
 
@@ -100,7 +95,6 @@ USE_TZ = True
 ########## STATIC FILE CONFIGURATION
 # URL prefix for static files
 STATIC_URL = '/static/'
-
 # Additional locations of static files.
 STATICFILES_DIRS = (
     os.path.join(SITE_ROOT, "static"), 
@@ -125,7 +119,6 @@ TEMPLATES = [
         },
     },
 ]
-
 ########## END TEMPLATE CONFIGURATION
 
 
@@ -180,8 +173,3 @@ SITE_ID = 1
 # crispy_forms
 CRISPY_TEMPLATE_PACK = 'bootstrap3'
 ########## END APP-SPECIFIC CONFIGURATION
-
-
-
-
-

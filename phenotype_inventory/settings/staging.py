@@ -25,10 +25,12 @@ Set Constants:
 from .base import *
 import json
 
+
 ########## SECRETS CONFIGURATION
 # JSON-based secrets module
 with open(os.path.normpath(os.path.join(BASE_DIR, 'settings', '.secrets.json'))) as f:
     secrets = json.loads(f.read())
+
 
 def get_secret(setting, secrets=secrets):
     """Get the secret variable or return explicit exception.
@@ -65,6 +67,7 @@ def get_secret(setting, secrets=secrets):
         error_msg = "Set the {0} environment variable".format(setting)
         raise ImproperlyConfigured(error_msg)
 
+
 SECRET_KEY = get_secret("DJANGO_SECRET_KEY")
 CNF_PATH = get_secret("CNF_PATH")
 ########## END SECRETS CONFIGURATION
@@ -97,5 +100,3 @@ STATIC_ROOT = '/var/django/topmed_pheno_site/static_collected/'
 ########## WSGI CONFIGURATION FOR APACHE MOD_WSGI
 WSGI_APPLICATION = '%s.wsgi.application' % SITE_NAME 
 ########## END WSGI CONFIGURATION FOR APACHE MOD_WSGI
-
-
