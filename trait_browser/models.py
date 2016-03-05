@@ -195,6 +195,6 @@ class SourceEncodedValue(EncodedValue):
         Returns:
             study_name of the linked SourceTrait object
         """
-        return self.source_trait.study_name
+        return self.source_trait.name
     # Set this model attribute to the value of this function, for the admin interface.
     get_source_trait_study.short_description = 'Study Name'
