@@ -43,14 +43,6 @@ class GetDbTestCase(TestCase):
         db = cmd._get_snuffles(which_db='production')
         self.assertIsInstance(db, mysql.connector.MySQLConnection)
     
-    def test_get_snuffles_db_on_server(self):
-        # TODO: Figure out a way to test that this works specifically on a server.
-        pass
-    
-    def test_get_snuffles_db_on_workstation(self):
-        # TODO: Figure out a way to test that this works specifically on a workstation.
-        pass
-
 
 class DbFixersTestCase(TestCase):
 
