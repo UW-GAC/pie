@@ -91,7 +91,9 @@ DATABASES = {
 
 
 # STATIC FILE SETTINGS
-STATIC_ROOT = '/var/django/topmed_pheno_site/static_collected/'
+STATIC_ROOT = '/var/django/static_files/phenotype_inventory'
+# URL prefix for static files.
+STATIC_URL = '/pheno/static/'
 
 
 # WSGI SETTINGS FOR APACHE MOD_WSGI
