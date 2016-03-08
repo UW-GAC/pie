@@ -9,6 +9,7 @@ from .models import Study, SourceEncodedValue, SourceTrait
 class ReadOnlyAdmin(admin.ModelAdmin):
     """SuperClass for non-editable admin models."""
     
+    # There's not a good way to include these in unit-testing.
     def has_add_permission(self, request, obj=None):
         return False
     def has_delete_permission(self, request, obj=None):
