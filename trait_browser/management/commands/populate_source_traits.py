@@ -252,6 +252,15 @@ class Command(BaseCommand):
             print(' '.join(('Added encoded value for', str(type_fixed_row['source_trait_id']))))
         cursor.close()
 
+    def add_arguments(self, parser):
+        
+        parser.add_argument('--n_studies', action='store', type='int',
+                            help='Maximum number of studies to import from snuffles.')
+        parser.add_argument('--n_traits', action='store', type='int',
+                            help='Maximum number of traits to import for each study.')
+        
+        
+
     def handle(self, *args, **options):
         """Handle the main functions of this management command.
         
@@ -264,7 +273,7 @@ class Command(BaseCommand):
             argument dicts will pass on command line options
         """
         snuffles_db = self._get_snuffles(test=True)
-        self._populate_studies(snuffles_db)
-        self._populate_source_traits(snuffles_db)
+        self._populate_studies(snuffles_db, options['n_studies'])
+        self._populate_source_traits(snuffles_db, options['n_traits'])
         self._populate_encoded_values(snuffles_db)
         snuffles_db.close()
