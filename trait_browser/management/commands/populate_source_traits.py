@@ -140,7 +140,7 @@ class Command(BaseCommand):
         }
         return new_args
     
-    def _populate_studies(self, source_db):
+    def _populate_studies(self, source_db, n_studies):
         """Add study data to the website db models.
         
         This function pulls study information from the source db, converts it
@@ -153,6 +153,9 @@ class Command(BaseCommand):
         """
         cursor = source_db.cursor(buffered=True, dictionary=True)
         study_query = 'SELECT * FROM study'
+        # Add a limit statement if n_studies is set
+        if n_studies is not None:
+            study_query += ' LIMIT {}'.format(n_studies)
         cursor.execute(study_query)
         for row in cursor:
             type_fixed_row = self._fix_bytearray(self._fix_null(row))
