@@ -267,6 +267,7 @@ class MakeArgsTestCase(TestCase):
         cursor.close()
         source_db.close()
 
+# TODO: add tests of get_current_studies and get_current_traits
 
 class IntegrationTest(TestCase):
     """Integration test of the whole management command.
@@ -278,21 +279,66 @@ class IntegrationTest(TestCase):
     """
     
     def test_everything(self):
-        """Ensure that the whole workflow of the management command works to add objects to the website databse."""
-        # Get the connection to the db.
+        """Ensure that the whole workflow of the management command works to add objects to the website databse, without limits."""
+        # The test database should be a small size for this test to work well.
         cmd = Command()
         source_db = cmd._get_snuffles(test=True)
         # Test that adding studies works, and results in right number of studies.
-        cmd._populate_studies(source_db)
+        cmd._populate_studies(source_db, None)
         cursor = source_db.cursor()
         study_query = 'SELECT COUNT(*) FROM study;'
         cursor.execute(study_query)
         study_count = cursor.fetchone()[0]
         self.assertEqual(study_count, Study.objects.count())
         # Test that adding SourceTraits works, and results in right number of traits.
-        cmd._populate_source_traits(source_db)
-        self.assertEqual(400, SourceTrait.objects.count())
+        cmd._populate_source_traits(source_db, None)
+        trait_query = 'SELECT COUNT(*) FROM source_variable_metadata'
+        cursor.execute(trait_query)
+        trait_count = cursor.fetchone()[0]
+        self.assertEqual(trait_count, SourceTrait.objects.count())
         # Test that adding SourceEncodedValues works, and results in right number of encodedvalues.
         cmd._populate_encoded_values(source_db)
-        self.assertEqual(400, SourceEncodedValue.objects.count())
+        value_query = 'SELECT COUNT(*) FROM source_encoded_values'
+        cursor.execute(value_query)
+        value_count = cursor.fetchone()[0]
+        self.assertEqual(value_count, SourceEncodedValue.objects.count())
+        source_db.close()
+    
+    def test_limits(self):
+        """Ensure that the management command workflow functions properly with n_studies and n_traits limits."""
+        cmd = Command()
+        source_db = cmd._get_snuffles(test=True)
+        # Test that adding studies works, and results in right number of studies.
+        n_studies = '2'
+        cmd._populate_studies(source_db, n_studies)
+        cursor = source_db.cursor()
+        study_query = 'SELECT COUNT(*) FROM study;'
+        cursor.execute(study_query)
+        study_count = cursor.fetchone()[0]
+        # Make sure the number of studies added is either n_studies or number of studies in the db.
+        n_studies = int(n_studies)
+        if study_count < n_studies:
+            self.assertEqual(study_count, Study.objects.count())
+        else:
+            self.assertEqual(n_studies, Study.objects.count())
+        # Test that adding SourceTraits works, and results in right number of traits.
+        n_traits = '25'
+        cmd._populate_source_traits(source_db, n_traits)
+        studies_in_db = cmd._get_current_studies()
+        trait_query = 'SELECT COUNT(*) FROM source_variable_metadata WHERE study_id IN ({})'.format(','.join(studies_in_db))
+        cursor.execute(trait_query)
+        trait_count = cursor.fetchone()[0]
+        n_traits = int(n_traits)
+        total_traits = n_studies * n_traits
+        if trait_count < total_traits:
+            self.assertEqual(trait_count, SourceTrait.objects.count())
+        else:
+            self.assertEqual(total_traits, SourceTrait.objects.count())
+        # Test that adding SourceEncodedValues works, and results in right number of encodedvalues.
+        cmd._populate_encoded_values(source_db)
+        traits_in_db = cmd._get_current_traits()
+        value_query = 'SELECT COUNT(*) FROM source_encoded_values WHERE source_trait_id IN ({})'.format(','.join(traits_in_db))
+        cursor.execute(value_query)
+        value_count = cursor.fetchone()[0]
+        self.assertEqual(value_count, SourceEncodedValue.objects.count())
         source_db.close()
