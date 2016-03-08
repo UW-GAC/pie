@@ -30,10 +30,17 @@ class PopulateSourceTraitsTestCase(TestCase):
 
 class GetDbTestCase(TestCase):
     
-    def test_get_snuffles_db_returns_connection(self):
-        """Ensure that _get_snuffles returns a connector.connection object."""
+    def test_get_snuffles_db_returns_connection_testdb(self):
+        """Ensure that _get_snuffles returns a connector.connection object from the test db."""
         cmd = Command()
-        db = cmd._get_snuffles(test=True)
+        db = cmd._get_snuffles(which_db='test')
+        self.assertIsInstance(db, mysql.connector.MySQLConnection)
+    
+    def test_get_snuffles_db_returns_connection_productiondb(self):
+        """Ensure that _get_snuffles returns a connector.connection object from the production db."""
+        # TODO: make sure this works after Rober finished setting up the new topmed db on hippocras.
+        cmd = Command()
+        db = cmd._get_snuffles(which_db='production')
         self.assertIsInstance(db, mysql.connector.MySQLConnection)
     
     def test_get_snuffles_db_on_server(self):
@@ -199,7 +206,7 @@ class MakeArgsTestCase(TestCase):
     def test_make_study_args_one_row_make_study_obj(self):
         """Get a single row of test data from the database and see if the results from _make_study_args can be used to successfully make and save a Study object."""
         cmd = Command()
-        source_db = cmd._get_snuffles(test=True)
+        source_db = cmd._get_snuffles(which_db='test')
         cursor = source_db.cursor(buffered=True, dictionary=True)
         study_query = 'SELECT * FROM study;'
         cursor.execute(study_query)
@@ -214,7 +221,7 @@ class MakeArgsTestCase(TestCase):
     def test_make_source_trait_args_one_row_make_source_trait_obj(self):
         """Get a single row of test data from the database and see if the results from _make_source_trait_args can be used to successfully make and save a SourceTrait object."""
         cmd = Command()
-        source_db = cmd._get_snuffles(test=True)
+        source_db = cmd._get_snuffles(which_db='test')
         cursor = source_db.cursor(buffered=True, dictionary=True)
         trait_query = 'SELECT * FROM source_variable_metadata LIMIT 1;'
         cursor.execute(trait_query)
@@ -237,7 +244,7 @@ class MakeArgsTestCase(TestCase):
     def test_make_source_encoded_value_args_one_row_make_source_encoded_value_obj(self):
         """Get a single row of test data from the database and see if the results from _make_source_encoded_value_args can be used to successfully make and save a SourceEncodedValue object."""
         cmd = Command()
-        source_db = cmd._get_snuffles(test=True)
+        source_db = cmd._get_snuffles(which_db='test')
         cursor = source_db.cursor(buffered=True, dictionary=True)
         value_query = 'SELECT * FROM source_encoded_values LIMIT 1;'
         cursor.execute(value_query)
@@ -299,7 +306,7 @@ class IntegrationTest(TestCase):
         """Ensure that the whole workflow of the management command works to add objects to the website databse, without limits."""
         # The test database should be a small size for this test to work well.
         cmd = Command()
-        source_db = cmd._get_snuffles(test=True)
+        source_db = cmd._get_snuffles(which_db='test')
         # Test that adding studies works, and results in right number of studies.
         cmd._populate_studies(source_db, None)
         cursor = source_db.cursor()
@@ -324,7 +331,7 @@ class IntegrationTest(TestCase):
     def test_limits(self):
         """Ensure that the management command workflow functions properly with n_studies and n_traits limits."""
         cmd = Command()
-        source_db = cmd._get_snuffles(test=True)
+        source_db = cmd._get_snuffles(which_db='test')
         # Test that adding studies works, and results in right number of studies.
         n_studies = '2'
         cmd._populate_studies(source_db, n_studies)

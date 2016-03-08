@@ -36,7 +36,7 @@ class Command(BaseCommand):
         """Get a str list of dcc_trait_id for SourceTraits currently in the django site db."""
         return [str(evalue.dcc_trait_id) for evalue in SourceTrait.objects.all()]
 
-    def _get_snuffles(self, test=True, cnf_path=settings.CNF_PATH):
+    def _get_snuffles(self, which_db, cnf_path=settings.CNF_PATH):
         """Get a connection to the source phenotype db.
         
         Arguments:
@@ -47,9 +47,9 @@ class Command(BaseCommand):
         Returns:
             a mysql.connector open db connection
         """
-        if test:
+        if which_db == 'test':
             test_string = '_test'
-        else:
+        elif which_db == 'production':
             test_string = '_production'
         cnf_group = ['client', 'mysql_topmed_readonly' + test_string]
         cnx = mysql.connector.connect(option_files=cnf_path, option_groups=cnf_group, charset='latin1', use_unicode=False)
@@ -301,6 +301,9 @@ class Command(BaseCommand):
                             help='Maximum number of studies to import from snuffles.')
         parser.add_argument('--n_traits', action='store', type=int,
                             help='Maximum number of traits to import for each study.')
+        parser.add_argument('--which_db', action='store', type=str,
+                            choices=['test', 'production'], default='test',
+                            help='Which source database to connect to for retrieving source data.')
 
     def handle(self, *args, **options):
         """Handle the main functions of this management command.
@@ -313,7 +316,7 @@ class Command(BaseCommand):
             **args and **options are handled as per the superclass handling; these
             argument dicts will pass on command line options
         """
-        snuffles_db = self._get_snuffles(test=True)
+        snuffles_db = self._get_snuffles(test=options['which_db'])
         self._populate_studies(snuffles_db, options['n_studies'])
         self._populate_source_traits(snuffles_db, options['n_traits'])
         self._populate_encoded_values(snuffles_db)
