@@ -77,13 +77,12 @@ USE_TZ = True
 
 
 ########## STATIC FILE CONFIGURATION
-# URL prefix for static files
-STATIC_URL = '/static/'
-
 # Additional locations of static files.
 STATICFILES_DIRS = (
     os.path.join(SITE_ROOT, "static"), 
     )
+# This may be overridden for a particular deployment.
+STATIC_URL = '/static/'
 ########## END STATIC FILE CONFIGURATION
 
 

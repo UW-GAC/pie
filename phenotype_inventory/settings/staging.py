@@ -40,7 +40,9 @@ DATABASES = {
 
 
 ########## STATIC FILE CONFIGURATION
-STATIC_ROOT = '/var/django/topmed_pheno_site/static_collected/'
+STATIC_ROOT = '/var/django/static_files/phenotype_inventory'
+# URL prefix for static files.
+STATIC_URL = '/pheno/static/'
 ########## END STATIC FILE CONFIGURATION
 
 
