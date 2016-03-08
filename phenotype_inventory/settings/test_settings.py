@@ -15,7 +15,8 @@ class SettingsTestCase(TestCase):
         test_string = 'test_string'
         os.environ['TEST'] = test_string
         self.assertEqual(test_string, get_env_variable('TEST'))
+        del os.environ['TEST']
     
     def test_get_env_variable_with_bad_var(self):
-        """Test that the function for getting environmental variables raises an error when a variable definitely exists."""
+        """Test that the function for getting environmental variables raises an error when a variable has not been set."""
         self.assertRaises(ImproperlyConfigured, get_env_variable, 'IMPROBABLE_VARIABLE_NAME')
