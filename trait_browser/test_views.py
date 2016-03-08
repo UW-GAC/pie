@@ -154,14 +154,14 @@ class SourceTraitSearchViewTestCase(TestCase):
         self.assertEqual(len(response.context['trait_table'].rows), 0) # There's 0 results rows.
     
     def test_source_trait_search_with_no_search_text_entered(self):
-        """Test that there is no trait table displayed when no search text isentered and the form is not bound to data."""
+        """Test that there is no trait table displayed when no search text is entered and the form is not bound to data."""
         SourceTraitFactory.create_batch(10)
         url = reverse('trait_browser_source_trait_search')
-        response = self.client.get(url)
+        response = self.client.get(url, {'text': ''})
         self.assertEqual(response.status_code, 200)    # The view will display something.
-        self.assertFalse(response.context['results']) # results is False.
-        self.assertNotIn('trait_table', response.context) # trait_table is found.
-        self.assertFalse(response.context['form'].is_bound) # Form is not bound to data
+        self.assertFalse(response.context['results'])    # results is False.
+        self.assertNotIn('trait_table', response.context)    # trait_table is found.
+        self.assertTrue(response.context['form'].is_bound)    # Form is bound to data
         
     def test_source_trait_search_with_valid_results_and_study_filter(self):
         """Tests that the source_trait_search view has a 200 reponse code and the number of results is accurate when search text and study filter is entered and there are search results to display."""
