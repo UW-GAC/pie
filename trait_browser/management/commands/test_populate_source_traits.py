@@ -19,6 +19,7 @@ from django.utils import timezone
 from trait_browser.management.commands.populate_source_traits import Command
 from trait_browser.management.commands.db_factory import fake_row_dict
 from trait_browser.models import Study, SourceTrait, SourceEncodedValue
+from trait_browser.factories import StudyFactory, SourceTraitFactory
 
 
 class PopulateSourceTraitsTestCase(TestCase):
@@ -267,7 +268,23 @@ class MakeArgsTestCase(TestCase):
         cursor.close()
         source_db.close()
 
-# TODO: add tests of get_current_studies and get_current_traits
+class GetCurrentListsTest(TestCase):
+    
+    def test_get_current_studies(self):
+        """Test that Command._get_current_studies() returns the right number of study ids."""
+        n = 32
+        StudyFactory.create_batch(n)
+        cmd = Command()
+        current_studies = cmd._get_current_studies()
+        self.assertEqual(len(current_studies), n)
+    
+    def test_get_current_traits(self):
+        """Test that Command._get_current_traits() returns the right number of trait ids."""
+        n = 32
+        SourceTraitFactory.create_batch(n)
+        cmd = Command()
+        current_traits = cmd._get_current_traits()
+        self.assertEqual(len(current_traits), n)
 
 class IntegrationTest(TestCase):
     """Integration test of the whole management command.
