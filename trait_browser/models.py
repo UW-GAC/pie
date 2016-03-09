@@ -155,27 +155,6 @@ class SourceTrait(Trait):
         STUDY_URL = 'http://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id={}'
         return STUDY_URL.format(self.study_accession)
 
-    def field_iter(self):
-        """Iterate over field_name, field_value pairs for the SourceTrait."""
-        for field_name in [f.name for f in self._meta.get_fields()]:
-            value = getattr(self, field_name, None)
-            yield (field_name, value)
-
-    def detail_iter(self):
-        """Iterate over a specific set of formatted field names and field values.
-        
-        This iterator is used by the SourceTrait detail view and template.
-        
-        Yields:
-            a (formatted_field_name, field_value) tuple
-        """
-        for fd in ('name', 'description', 'study_name', 'data_type', 'unit', ):
-            if fd == 'study_name':
-                value = self.study.name
-            else:
-                value = getattr(self, fd, None)
-            yield (fd.replace('_', ' ').title(), value)
-        
 
 class EncodedValue(models.Model):
     """Abstract superclass model for SourceEncodedValue and HarmonizedEncodedValue.

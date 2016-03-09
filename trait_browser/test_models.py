@@ -20,26 +20,6 @@ class SourceTraitTestCase(TestCase):
     def test_is_latest_version(self):
         pass
     
-    def test_field_iter_runs(self):
-        """Ensure that the field_iter generator runs."""
-        trait = SourceTraitFactory.build()
-        for item in trait.field_iter():
-            self.assertIsNotNone(item)
-            
-    def test_get_dbgap_link_runs(self):
-        """Ensure that get_dbgap_link builds a validly constructed URL (though this URL may be a broken link)."""
-        # Django's URLValidator uses regex to test that the link is a good URL.
-        # This will find poorly formed URLs, but not broken links.
-        validate = URLValidator
-        trait = SourceTraitFactory.build()
-        # There is no assertNotRaises, so this one will just fail with an error
-        
-    def test_detail_iter_runs(self):
-        """Ensure that the SourceTrait.detail_iter function will run."""
-        trait = SourceTraitFactory.build()
-        for item in trait.detail_iter():
-            self.assertIsNotNone(item)
-        
     def test_printing(self):
         """Ensure that the __str__ function works for printing the object."""
         trait = SourceTraitFactory.build()

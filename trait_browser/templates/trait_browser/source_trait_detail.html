@@ -5,26 +5,43 @@
 {% endblock %}
 
 {% block content %}
-    <h2>Source Trait Data Information</h2>
-    <p><strong>See this trait at dbGaP:</strong> <a target="_blank" href="{{ source_trait.dbgap_variable_link }}">phv{{ source_trait.phv|stringformat:"06d" }}</a></p>
-
-    {% for pair in source_trait.detail_iter %}
-        <p><strong>{{ pair.0 }}</strong> : {{ pair.1 }}</p>
-    {% endfor %}
+    <div class="well">
     
-    {% if source_trait.sourceencodedvalue_set.all %}
-        <h3>Encoded Values</h3>
-        <table class="table table-nonfluid table-condensed table-sm table-striped table-bordered">
-            <tr>
-                <th>Category</th>
-                <th>Value</th>
-            </tr>
-            {% for ev in source_trait.sourceencodedvalue_set.all %}
-                <tr>
-                    <td>{{ ev.category }}</td>
-                    <td>{{ ev.value }}</td>
-                </tr>
-            {% endfor %}
-        </table>
-    {% endif %}
+        <h2>Source trait details for {{ source_trait.name }}</h2>
+        
+    
+        <p><strong>{{ "Trait name" }}</strong> : {{ source_trait.name }}</p>
+        <p><strong>{{ "Study name" }}</strong> : {{ source_trait.study.name }}</p>
+        <p><strong>{{ "Trait description" }}</strong> : {{ source_trait.description }}</p>
+        <p><strong>{{ "Data type" }}</strong> : {{ source_trait.data_type }}</p>
+        <p><strong>{{ "Unit" }}</strong> : {{ source_trait.unit }}</p>
+
+        <hr>
+       
+        {% if source_trait.sourceencodedvalue_set.all %}
+           <h4>Encoded Values</h4>
+           <table class="table table-nonfluid table-condensed table-sm table-striped table-bordered">
+               <tr>
+                   <th>Category</th>
+                   <th>Value</th>
+               </tr>
+               {% for ev in source_trait.sourceencodedvalue_set.all %}
+                   <tr>
+                       <td>{{ ev.category }}</td>
+                       <td>{{ ev.value }}</td>
+                   </tr>
+               {% endfor %}
+           </table>
+       {% endif %}
+
+        <div class="panel panel-default">
+            <div class="panel-heading"><h4>Links to dbGaP information</h4></div>
+            <div class="panel-body">
+                <p><strong>Trait variable:</strong> <a target="_blank" href="{{ source_trait.dbgap_variable_link }}">{{ source_trait.variable_accession }}</a></p>
+                <p><strong>Study:</strong> <a target="_blank" href="{{ source_trait.dbgap_study_link }}">{{ source_trait.study_accession }}</a></p>
+            </div>
+        </div>
+ 
+    </div>
+    
 {% endblock %}
