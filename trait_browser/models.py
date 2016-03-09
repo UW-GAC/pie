@@ -126,25 +126,31 @@ class SourceTrait(Trait):
         pass
         
     def set_study_accession(self):
-        """ ."""
+        """Automatically set study_accession field from study.phs, study_version, and participant_set."""
         return 'phs{:06}.v{}.p{}'.format(self.study.phs, self.study_version, self.participant_set)
 
     def set_dataset_accession(self):
-        """ ."""
+        """Automatically set dataset_accession field from pht, dataset_version, and participant_set."""
         return 'pht{:06}.v{}.p{}'.format(self.pht, self.dataset_version, self.participant_set)
     
     def set_variable_accession(self):
-        """ ."""
+        """Automatically set variable_accession from phv, variable_version, and participant_set."""
         return 'phv{:08}.v{}.p{}'.format(self.phv, self.variable_version, self.participant_set)
 
     def set_dbgap_variable_link(self):
-        """
+        """Automatically set dbgap_variable_link from study_accession and phv.
+        
+        Construct a URL to the dbGaP variable information page using a base URL
+        and some fields from this SourceTrait.
         """
         VARIABLE_URL = 'http://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/variable.cgi?study_id={}&phv={:08}'
         return VARIABLE_URL.format(self.study_accession, self.phv)
 
     def set_dbgap_study_link(self):
-        """
+        """Automatically set dbgap_study_link from study_accession.
+        
+        Construct a URL to the dbGaP study information page using a base URL
+        and some fields from this SourceTrait.
         """
         STUDY_URL = 'http://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id={}'
         return STUDY_URL.format(self.study_accession)
