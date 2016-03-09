@@ -143,7 +143,7 @@ class Command(BaseCommand):
         """
         new_args = {
             'study_id': row_dict['study_id'],
-            'dbgap_id': row_dict['dbgap_id'],
+            'phs': int(row_dict['dbgap_id'].replace('phs', '')),
             'name': row_dict['study_name']
         }
         return new_args
@@ -189,9 +189,6 @@ class Command(BaseCommand):
             a dict of (required_SourceTrait_attribute: attribute_value) pairs
         """
         study = Study.objects.get(study_id=row_dict['study_id'])
-        phs_string = '%s.v%d.p%d' % (study.dbgap_id,
-                                     row_dict['dbgap_study_version'],
-                                     row_dict['dbgap_participant_set'])
 
         new_args = {
             'dcc_trait_id': row_dict['source_trait_id'],
@@ -200,8 +197,12 @@ class Command(BaseCommand):
             'data_type': row_dict['data_type'],
             'unit': row_dict['dbgap_unit'],
             'study': study,
-            'phs_string': phs_string,
-            'phv_string': row_dict['dbgap_variable_id']
+            'phv': int(row_dict['dbgap_variable_id'].replace('phv', '')),
+            'pht': int(row_dict['dbgap_dataset_id'].replace('pht', '')),
+            'study_version': row_dict['dbgap_study_version'],
+            'dataset_version': row_dict['dbgap_dataset_version'],
+            'variable_version': row_dict['dbgap_variable_version'],
+            'participant_set': row_dict['dbgap_participant_set'],
         }
         return new_args
 
@@ -316,7 +317,7 @@ class Command(BaseCommand):
             **args and **options are handled as per the superclass handling; these
             argument dicts will pass on command line options
         """
-        snuffles_db = self._get_snuffles(test=options['which_db'])
+        snuffles_db = self._get_snuffles(which_db=options['which_db'])
         self._populate_studies(snuffles_db, options['n_studies'])
         self._populate_source_traits(snuffles_db, options['n_traits'])
         self._populate_encoded_values(snuffles_db)

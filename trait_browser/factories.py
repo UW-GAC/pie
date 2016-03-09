@@ -1,6 +1,7 @@
 """Factory classes for generating test data for each of the trait_browser models."""
 
 from datetime import datetime
+from random import randint
 
 from django.utils import timezone
 
@@ -15,7 +16,7 @@ class StudyFactory(factory.DjangoModelFactory):
         
     name = factory.Faker('company')
     study_id = factory.Sequence(lambda n: n)
-    dbgap_id = factory.Sequence(lambda n: 'phs{0}'.format(n))
+    phs = randint(1, 999999)
     
     class Meta:
         model = Study
@@ -31,9 +32,14 @@ class SourceTraitFactory(factory.DjangoModelFactory):
     data_type = factory.fuzzy.FuzzyChoice(SourceTrait.DATA_TYPES)
     unit = factory.Faker('word')
     web_date_added = factory.fuzzy.FuzzyDateTime(start_dt=timezone.make_aware(datetime(2016, 1, 1)))
-    phs_string = factory.Sequence(lambda n: 'phs{0}'.format(n))
-    phv_string = factory.Sequence(lambda n: 'phv{0}'.format(n))
     study = factory.SubFactory(StudyFactory)
+    
+    phv = randint(1, 99999999)
+    pht = randint(1, 999999)
+    study_version = randint(1,9)
+    dataset_version = randint(1, 9)
+    variable_version = randint(1, 9)
+    participant_set = randint(1, 9)
     
     class Meta:
         model = SourceTrait

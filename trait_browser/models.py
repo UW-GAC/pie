@@ -8,12 +8,12 @@ class Study(models.Model):
     
     Fields:
         study_id
-        dbgap_id
+        phs
         name
     """
     
     study_id = models.IntegerField(primary_key=True, db_column='study_id')
-    dbgap_id = models.CharField(max_length=10)
+    phs = models.IntegerField()
     name = models.CharField(max_length=100)
 
     class Meta:
@@ -62,21 +62,60 @@ class SourceTrait(Trait):
     
     Fields:
         study
-        phs_string
-        phv_string
+        phv
+        pht
+        study_version
+        dataset_version
+        variable_version
+        participant_set
+        study_accession
+        dataset_accession
+        variable_accession
+        dbgap_study_link
+        dbgap_variable_link
     """
     
+    study = models.ForeignKey(Study)
     # This adds two fields: study is the actual Study object that this instance 
     # is linked to, and study_id is the primary key of the linked Study object.
-    study = models.ForeignKey(Study)
-    phs_string = models.CharField(max_length=20)
-    phv_string = models.CharField(max_length=15)
+    # dbGaP variable and dataset ids.
+    phv = models.IntegerField()
+    pht = models.IntegerField()
+    # dbGaP version numbers.
+    study_version = models.IntegerField()
+    dataset_version = models.IntegerField()
+    variable_version = models.IntegerField()
+    participant_set = models.IntegerField()
+    # dbGaP accession numbers
+    study_accession = models.CharField(max_length=15)
+    dataset_accession = models.CharField(max_length=15)
+    variable_accession = models.CharField(max_length=17)
+    # dbGaP links.
+    # Since these are URLFields, they will be validated as well-formed URLs.
+    dbgap_study_link = models.URLField(max_length=200)
+    dbgap_variable_link = models.URLField(max_length=200)
     
     def __str__(self):
         """Pretty printing of SourceTrait objects."""
         print_parms = ['dcc_trait_id', 'name', 'data_type', 'unit', 'web_date_added']
         print_list = ['{0} : {1}'.format(k, str(self.__dict__[k])) for k in print_parms]
         return '\n'.join(print_list)
+    
+    def save(self, *args, **kwargs):
+        """Custom save method for default dbGaP accessions and links.
+        
+        Automatically sets values for various dbGaP accession numbers and dbGaP
+        link URLs. 
+        """
+        # Set values for dbGaP accession numbers.
+        self.study_accession = self.set_study_accession()
+        self.dataset_accession = self.set_dataset_accession()
+        self.variable_accession = self.set_variable_accession()
+        # Set values for dbGaP links.
+        self.dbgap_study_link = self.set_dbgap_study_link()
+        self.dbgap_variable_link = self.set_dbgap_variable_link()
+        # Call the "real" save method.
+        super(SourceTrait, self).save(*args, **kwargs)
     
     def is_latest_version(self):
         """Test whether this is the latest version of a given trait.
@@ -86,31 +125,35 @@ class SourceTrait(Trait):
         """
         pass
         
+    def set_study_accession(self):
+        """ ."""
+        return 'phs{:06}.v{}.p{}'.format(self.study.phs, self.study_version, self.participant_set)
+
+    def set_dataset_accession(self):
+        """ ."""
+        return 'pht{:06}.v{}.p{}'.format(self.pht, self.dataset_version, self.participant_set)
+    
+    def set_variable_accession(self):
+        """ ."""
+        return 'phv{:08}.v{}.p{}'.format(self.phv, self.variable_version, self.participant_set)
+
+    def set_dbgap_variable_link(self):
+        """
+        """
+        VARIABLE_URL = 'http://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/variable.cgi?study_id={}&phv={:08}'
+        return VARIABLE_URL.format(self.study_accession, self.phv)
+
+    def set_dbgap_study_link(self):
+        """
+        """
+        STUDY_URL = 'http://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id={}'
+        return STUDY_URL.format(self.study_accession)
+
     def field_iter(self):
         """Iterate over field_name, field_value pairs for the SourceTrait."""
         for field_name in [f.name for f in self._meta.get_fields()]:
             value = getattr(self, field_name, None)
             yield (field_name, value)
-
-    def get_phv_number(self):
-        """Extract just the numeric part of the phv_string.
-        
-        Returns:
-            int value of the numeric part of the phv_string
-        """
-        number = int(self.phv_string.replace('phv', ''))
-        return number
-
-    def get_dbgap_link(self):
-        """Build the dbGaP link URL with info for this trait.
-        
-        Returns:
-            string URL of the dbGaP web address for the trait informational page
-        """
-        base_link = 'http://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/variable.cgi?study_id=%s&phv=%d'
-        phv_number = self.get_phv_number()
-        this_link = base_link % (self.phs_string, phv_number)
-        return this_link
 
     def detail_iter(self):
         """Iterate over a specific set of formatted field names and field values.

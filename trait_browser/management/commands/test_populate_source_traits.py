@@ -220,11 +220,7 @@ class MakeArgsTestCase(TestCase):
         row_dict = cursor.fetchone()
         row_dict = cmd._fix_null(cmd._fix_bytearray(row_dict))
         # Have to make a Study object first
-        study = Study(
-            study_id=row_dict['study_id'],
-            dbgap_id='phs000001',
-            name='Any Study'
-        )
+        study = Study(study_id=row_dict['study_id'], phs=1, name='Any Study')
         study.save()
         source_trait_args = cmd._make_source_trait_args(row_dict)
         trait = SourceTrait(**source_trait_args)
@@ -243,21 +239,13 @@ class MakeArgsTestCase(TestCase):
         row_dict = cursor.fetchone()
         row_dict = cmd._fix_null(cmd._fix_bytearray(row_dict))
         # Have to make Study and SourceTrait objects first
-        study = Study(
-            study_id=1,
-            dbgap_id='phs000001',
-            name='Any Study'
-        )
+        study = Study(study_id=1, phs=1, name='Any Study')
         study.save()
         trait = SourceTrait(
-            dcc_trait_id=row_dict['source_trait_id'],
-            name='a_name',
-            description='some interesting trait',
-            data_type='encoded',
-            unit='',
-            study=study,
-            phs_string='phs000001',
-            phv_string='phv00000001'
+            dcc_trait_id=row_dict['source_trait_id'], name='a_name',
+            description='some interesting trait', data_type='encoded',
+            unit='', study=study, phv=1, pht=1, study_version=1,
+            dataset_version=1, variable_version=1, participant_set=1
         )
         trait.save()
         value_args = cmd._make_source_encoded_value_args(row_dict)

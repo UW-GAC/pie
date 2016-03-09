@@ -22,9 +22,9 @@ class StudyAdmin(ReadOnlyAdmin):
     # Make all fields read-only
     readonly_fields = Study._meta.get_all_field_names()
     # Set fields to display, filter, and search on.
-    list_display = ('study_id', 'dbgap_id', 'name', )
-    list_filter = ('dbgap_id', 'name', )
-    search_fields = ('dbgap_id', 'name', )
+    list_display = ('study_id', 'phs', 'name', )
+    list_filter = ('phs', 'name', )
+    search_fields = ('phs', 'name', )
 
 
 class SourceTraitAdmin(ReadOnlyAdmin):
