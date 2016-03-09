@@ -28,16 +28,15 @@ def source_trait_table(request):
     This view uses Django-tables2 to display a pretty table of the SourceTraits
     in the database for browsing.
     """
-    trait_type = 'Source'
+    table_title = 'Source phenotypes currently available'
+    page_title = 'Source trait table'
     trait_table = SourceTraitTable(SourceTrait.objects.all())
     # If you're going to change this later to some kind of filtered list (e.g. only the most
     # recent version of each trait), then you should wrap the SourceTrait.filter() in get_list_or_404
     # RequestConfig seems to be necessary for sorting to work.
     RequestConfig(request, paginate={'per_page': TABLE_PER_PAGE}).configure(trait_table)
-    return render(
-        request,
-        'trait_browser/trait_table.html',
-        {'trait_table': trait_table, 'trait_type': trait_type}
+    return render( request, 'trait_browser/trait_table.html',
+        {'trait_table': trait_table, 'table_title': table_title, 'page_title': page_title}
     )
 
 
