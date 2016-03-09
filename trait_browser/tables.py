@@ -19,10 +19,14 @@ class SourceTraitTable(tables.Table):
     description = tables.Column('Trait description', orderable=False)
     # Get the name from the Study linked to this trait.
     study_name = tables.Column('Study name', accessor='study.name')
+    dbGaP_study = tables.TemplateColumn(orderable=False,
+        template_code='<a target="_blank" href={{ record.dbgap_study_link }}>{{ record.study_accession }}</a>')
+    dbGaP_variable = tables.TemplateColumn(orderable=False,
+        template_code='<a target="_blank" href={{ record.dbgap_variable_link }}>{{ record.variable_accession }}</a>')
     
     class Meta:
         model = SourceTrait
-        fields = ('name', 'description', 'study_name')
+        fields = ('name', 'description', 'study_name', )
         attrs = {'class': 'table table-striped table-bordered table-hover'}
         template = 'trait_browser/bootstrap_tables2.html'
         order_by = ('name', 'study_name', )
