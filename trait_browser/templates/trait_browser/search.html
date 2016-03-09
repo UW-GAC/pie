@@ -9,6 +9,21 @@
 {% block content %}
     <h1>Search source traits</h1>
         {% crispy form %}
+    
+    <!-- Embed the New Search button inside of a form and some divs just like
+    the crispy form uses, so that the buttons are aligned. -->
+    <form class="form-horizontal">
+        <div class="form-group">
+            <div class="aab controls col-sm-2">
+                
+            </div>
+            <div class="controls col-sm-10">
+                <a href="{% url 'trait_browser_source_trait_search' %}" class="btn btn-default" role="button">
+                    New Search</a>
+            </div>
+        </div>
+    </form>
+
     <hr>
 
 
