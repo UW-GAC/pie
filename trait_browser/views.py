@@ -2,6 +2,8 @@
 
 from django.shortcuts import render, get_object_or_404, HttpResponse
 from django.db.models import Q    # Allows complex queries when searching.
+from django.views.generic import DetailView
+
 from django_tables2   import RequestConfig
 
 from .models import SourceEncodedValue, SourceTrait
@@ -12,14 +14,12 @@ from .forms import SourceTraitCrispySearchForm
 TABLE_PER_PAGE = 50    # Setting for per_page rows for all table views.  
 
 
-def source_trait_detail(request, source_trait_id):
-    """Detail view for SourceTrait objects."""
-    source_trait = get_object_or_404(SourceTrait, dcc_trait_id=source_trait_id)
-    return render(
-        request,
-        'trait_browser/source_trait_detail.html',
-        {'source_trait' : source_trait}
-    )
+class SourceTraitDetail(DetailView):
+    """Detail view class for SourceTraits. Inherits from django.views.generic.DetailView."""    
+    
+    model = SourceTrait
+    context_object_name = 'source_trait'
+    template_name = 'trait_browser/source_trait_detail.html'
 
 
 def source_trait_table(request):
