@@ -11,8 +11,8 @@ from . import views
 
 urlpatterns = [
     url(
-        r'^source_trait/(?P<source_trait_id>[0-9]+)/detail/$',
-        views.source_trait_detail,
+        r'^source_trait/(?P<pk>\d+)/detail/$',
+        views.SourceTraitDetail.as_view(),
         name='trait_browser_source_trait_detail'
     ),
     url(

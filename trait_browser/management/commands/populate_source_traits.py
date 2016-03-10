@@ -28,7 +28,15 @@ class Command(BaseCommand):
 
     help ='Populate the Study, SourceTrait, and EncodedValue models with a query to the source db'
 
-    def _get_snuffles(self, test=True, cnf_path=settings.CNF_PATH):
+    def _get_current_studies(self):
+        """Get a str list of study_id for Studies currently in the django site db."""
+        return [str(study.study_id) for study in Study.objects.all()]
+    
+    def _get_current_traits(self):
+        """Get a str list of dcc_trait_id for SourceTraits currently in the django site db."""
+        return [str(evalue.dcc_trait_id) for evalue in SourceTrait.objects.all()]
+
+    def _get_snuffles(self, which_db, cnf_path=settings.CNF_PATH):
         """Get a connection to the source phenotype db.
         
         Arguments:
@@ -39,9 +47,9 @@ class Command(BaseCommand):
         Returns:
             a mysql.connector open db connection
         """
-        if test:
+        if which_db == 'test':
             test_string = '_test'
-        else:
+        elif which_db == 'production':
             test_string = '_production'
         cnf_group = ['client', 'mysql_topmed_readonly' + test_string]
         cnx = mysql.connector.connect(option_files=cnf_path, option_groups=cnf_group, charset='latin1', use_unicode=False)
@@ -135,12 +143,12 @@ class Command(BaseCommand):
         """
         new_args = {
             'study_id': row_dict['study_id'],
-            'dbgap_id': row_dict['dbgap_id'],
+            'phs': int(row_dict['dbgap_id'].replace('phs', '')),
             'name': row_dict['study_name']
         }
         return new_args
     
-    def _populate_studies(self, source_db):
+    def _populate_studies(self, source_db, n_studies):
         """Add study data to the website db models.
         
         This function pulls study information from the source db, converts it
@@ -148,11 +156,18 @@ class Command(BaseCommand):
         trait_browser app. This will fill in the rows of the trait_browser_study
         table.
         
+        If the n_studies argument is set at the command line, a maximum of
+        n_studies will be retrieved from the source database.
+        
         Arguments:
             source_db -- an open connection to the source database
+            n_studies -- maximum number of studies to retrieve
         """
         cursor = source_db.cursor(buffered=True, dictionary=True)
         study_query = 'SELECT * FROM study'
+        # Add a limit statement if n_studies is set.
+        if n_studies is not None:
+            study_query += ' LIMIT {}'.format(n_studies)
         cursor.execute(study_query)
         for row in cursor:
             type_fixed_row = self._fix_bytearray(self._fix_null(row))
@@ -174,9 +189,6 @@ class Command(BaseCommand):
             a dict of (required_SourceTrait_attribute: attribute_value) pairs
         """
         study = Study.objects.get(study_id=row_dict['study_id'])
-        phs_string = '%s.v%d.p%d' % (study.dbgap_id,
-                                     row_dict['dbgap_study_version'],
-                                     row_dict['dbgap_participant_set'])
 
         new_args = {
             'dcc_trait_id': row_dict['source_trait_id'],
@@ -185,12 +197,16 @@ class Command(BaseCommand):
             'data_type': row_dict['data_type'],
             'unit': row_dict['dbgap_unit'],
             'study': study,
-            'phs_string': phs_string,
-            'phv_string': row_dict['dbgap_variable_id']
+            'phv': int(row_dict['dbgap_variable_id'].replace('phv', '')),
+            'pht': int(row_dict['dbgap_dataset_id'].replace('pht', '')),
+            'study_version': row_dict['dbgap_study_version'],
+            'dataset_version': row_dict['dbgap_dataset_version'],
+            'variable_version': row_dict['dbgap_variable_version'],
+            'participant_set': row_dict['dbgap_participant_set'],
         }
         return new_args
 
-    def _populate_source_traits(self, source_db):
+    def _populate_source_traits(self, source_db, n_traits):
         """Add source trait data to the website db models.
         
         This function pulls source trait data from the source db, converts it
@@ -198,18 +214,41 @@ class Command(BaseCommand):
         trait_browser app. This will fill in the rows of the trait_browser_sourcetrait
         table.
         
+        This function retrieves only those SourceTraits whose study_id foreign key
+        is already loaded into the django site db. If the n_traits argument is set
+        at the command line, a maximum of n_traits trait records will be retrieved
+        from the source db. This necessitates running a separate query for each
+        study id. In contrast, if n_traits is not set, only one query will be run.
+        
         Arguments:
             source_db -- an open connection to the source database
+            n_traits -- maximum number of traits to retrieve for each study
+                found in the site db
         """
         cursor = source_db.cursor(buffered=True, dictionary=True)
-        trait_query = 'SELECT * FROM source_variable_metadata LIMIT 400;'
-        cursor.execute(trait_query)
-        for row in cursor:
-            type_fixed_row = self._fix_bytearray(self._fix_null(row))
-            model_args = self._make_source_trait_args(type_fixed_row)
-            add_var = SourceTrait(**model_args)    # temp SourceTrait to add
-            add_var.save()
-            print(' '.join(('Added trait', str(model_args['dcc_trait_id']))))
+        study_ids = self._get_current_studies()    # list of string study ids
+        # If there's a per-study trait limit, loop over studies with a LIMIT statement.
+        if n_traits is not None:
+            for pk in study_ids:
+                trait_query = "SELECT * FROM source_variable_metadata WHERE study_id={} LIMIT {}".format(pk, n_traits)
+                cursor.execute(trait_query)
+                for row in cursor:
+                    type_fixed_row = self._fix_bytearray(self._fix_null(row))
+                    model_args = self._make_source_trait_args(type_fixed_row)
+                    add_var = SourceTrait(**model_args)    # temp SourceTrait to add
+                    add_var.save()
+                    print(' '.join(('Added trait', str(model_args['dcc_trait_id']))))
+        # Without n_traits, you can pull out all studies at once.
+        else:
+            study_ids = ','.join(study_ids)    # csv study_id string
+            trait_query = 'SELECT * FROM source_variable_metadata WHERE study_id IN ({})'.format(study_ids)
+            cursor.execute(trait_query)
+            for row in cursor:
+                type_fixed_row = self._fix_bytearray(self._fix_null(row))
+                model_args = self._make_source_trait_args(type_fixed_row)
+                add_var = SourceTrait(**model_args)    # temp SourceTrait to add
+                add_var.save()
+                print(' '.join(('Added trait', str(model_args['dcc_trait_id']))))
         cursor.close()
 
     def _make_source_encoded_value_args(self, row_dict):
@@ -236,13 +275,18 @@ class Command(BaseCommand):
         This function pulls study information from the source db, converts it
         where necessary, and populates entries in the SourceEncodedValue model of
         the trait_browser app. This will fill in the trait_browser_sourceencodedvalue
-        table.
+        table. Only encoded values for the traits already present in the django
+        site db are retrieved from the source db.
         
         Arguments:
             source_db -- an open connection to the source database
         """
         cursor = source_db.cursor(buffered=True, dictionary=True)
-        trait_query = 'SELECT * FROM source_encoded_values LIMIT 400;'
+        # Only retrieve the values for SourceTraits that were retrieved already.
+        current_traits = self._get_current_traits()
+        trait_query = 'SELECT * FROM source_encoded_values WHERE source_trait_id IN ({})'.format(','.join(current_traits))
+        # TODO: The IN clause of this SQL query might need to be changed later if
+        # the number of traits in the db gets too high.
         cursor.execute(trait_query)
         for row in cursor:
             type_fixed_row = self._fix_bytearray(self._fix_null(row))
@@ -251,6 +295,16 @@ class Command(BaseCommand):
             add_var.save()
             print(' '.join(('Added encoded value for', str(type_fixed_row['source_trait_id']))))
         cursor.close()
+
+    def add_arguments(self, parser):
+        """Add custom command line arguments to this management command."""
+        parser.add_argument('--n_studies', action='store', type=int,
+                            help='Maximum number of studies to import from snuffles.')
+        parser.add_argument('--n_traits', action='store', type=int,
+                            help='Maximum number of traits to import for each study.')
+        parser.add_argument('--which_db', action='store', type=str,
+                            choices=['test', 'production'], default='test',
+                            help='Which source database to connect to for retrieving source data.')
 
     def handle(self, *args, **options):
         """Handle the main functions of this management command.
@@ -263,8 +317,8 @@ class Command(BaseCommand):
             **args and **options are handled as per the superclass handling; these
             argument dicts will pass on command line options
         """
-        snuffles_db = self._get_snuffles(test=True)
-        self._populate_studies(snuffles_db)
-        self._populate_source_traits(snuffles_db)
+        snuffles_db = self._get_snuffles(which_db=options['which_db'])
+        self._populate_studies(snuffles_db, options['n_studies'])
+        self._populate_source_traits(snuffles_db, options['n_traits'])
         self._populate_encoded_values(snuffles_db)
         snuffles_db.close()

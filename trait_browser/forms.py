@@ -1,6 +1,7 @@
 """Form classes for the trait_browser app."""
 
 from django import forms
+from django.core.urlresolvers import reverse_lazy
 
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Layout, Div, Submit, HTML, Button, Row, Field, Reset
@@ -38,6 +39,5 @@ class SourceTraitCrispySearchForm(forms.Form):
         InlineCheckboxes('study'),
         FormActions(
             Submit('submit', 'Search', css_class='btn-primary btn-disable'),
-            Reset('name', 'Reset', css_class='btn-disable'),
         )
     )

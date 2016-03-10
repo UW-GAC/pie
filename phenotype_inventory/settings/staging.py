@@ -62,6 +62,8 @@ def get_secret(setting, secrets=secrets):
     Raises:
         ImproperlyConfigured
     """
+    # This function is not tested, because it was very difficult to write a test
+    # using the appropriate settings module. 
     try:
         return secrets[setting]
     except KeyError:

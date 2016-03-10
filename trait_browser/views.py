@@ -2,6 +2,8 @@
 
 from django.shortcuts import render, get_object_or_404, HttpResponse
 from django.db.models import Q    # Allows complex queries when searching.
+from django.views.generic import DetailView
+
 from django_tables2   import RequestConfig
 
 from .models import SourceEncodedValue, SourceTrait
@@ -12,14 +14,12 @@ from .forms import SourceTraitCrispySearchForm
 TABLE_PER_PAGE = 50    # Setting for per_page rows for all table views.  
 
 
-def source_trait_detail(request, source_trait_id):
-    """Detail view for SourceTrait objects."""
-    source_trait = get_object_or_404(SourceTrait, dcc_trait_id=source_trait_id)
-    return render(
-        request,
-        'trait_browser/source_trait_detail.html',
-        {'source_trait' : source_trait}
-    )
+class SourceTraitDetail(DetailView):
+    """Detail view class for SourceTraits. Inherits from django.views.generic.DetailView."""    
+    
+    model = SourceTrait
+    context_object_name = 'source_trait'
+    template_name = 'trait_browser/source_trait_detail.html'
 
 
 def source_trait_table(request):
@@ -28,16 +28,15 @@ def source_trait_table(request):
     This view uses Django-tables2 to display a pretty table of the SourceTraits
     in the database for browsing.
     """
-    trait_type = 'Source'
+    table_title = 'Source phenotypes currently available'
+    page_title = 'Source trait table'
     trait_table = SourceTraitTable(SourceTrait.objects.all())
     # If you're going to change this later to some kind of filtered list (e.g. only the most
     # recent version of each trait), then you should wrap the SourceTrait.filter() in get_list_or_404
     # RequestConfig seems to be necessary for sorting to work.
     RequestConfig(request, paginate={'per_page': TABLE_PER_PAGE}).configure(trait_table)
-    return render(
-        request,
-        'trait_browser/trait_table.html',
-        {'trait_table': trait_table, 'trait_type': trait_type}
+    return render( request, 'trait_browser/trait_table.html',
+        {'trait_table': trait_table, 'table_title': table_title, 'page_title': page_title}
     )
 
 
