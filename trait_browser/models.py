@@ -175,6 +175,7 @@ class EncodedValue(models.Model):
     class Meta:
         abstract = True
 
+
 class SourceEncodedValue(EncodedValue):
     """Model for encoded values from 'raw' dbGaP data, as received from dbGaP.
     
@@ -223,6 +224,6 @@ class SourceEncodedValue(EncodedValue):
         Returns:
             study_name of the linked SourceTrait object
         """
-        return self.source_trait.name
+        return self.source_trait.study.name
     # Set this model attribute to the value of this function, for the admin interface.
     get_source_trait_study.short_description = 'Study Name'
