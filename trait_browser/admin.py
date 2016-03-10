@@ -1,5 +1,7 @@
 """Customization of the admin interface for the trait_browser app."""
 
+from itertools import chain
+
 from django.contrib import admin
 from django.contrib.sites.models import Site
 
@@ -20,7 +22,11 @@ class StudyAdmin(ReadOnlyAdmin):
     """Admin class for Study objects."""
     
     # Make all fields read-only
-    readonly_fields = Study._meta.get_all_field_names()
+    readonly_fields = list(set(chain.from_iterable(
+        (field.name, field.attname) if hasattr(field, 'attname') else (field.name,)
+        for field in Study._meta.get_fields()
+        if not field.is_relation    # Exclude foreign keys from the results.
+    )))
     # Set fields to display, filter, and search on.
     list_display = ('study_id', 'phs', 'name', )
     list_filter = ('phs', 'name', )
@@ -31,7 +37,11 @@ class SourceTraitAdmin(ReadOnlyAdmin):
     """Admin class for SourceTrait objects."""
     
     # Make all fields read-only
-    readonly_fields = SourceTrait._meta.get_all_field_names()
+    readonly_fields = list(set(chain.from_iterable(
+        (field.name, field.attname) if hasattr(field, 'attname') else (field.name,)
+        for field in SourceTrait._meta.get_fields()
+        # if not field.is_relation    # Exclude foreign keys from the results.
+    )))
     # Set fields to display, filter, and search on.
     list_display = ('dcc_trait_id', 'name', 'data_type', 'study', 'web_date_added', )
     list_filter = ('web_date_added', 'data_type', 'study', )
@@ -42,7 +52,11 @@ class SourceEncodedValueAdmin(ReadOnlyAdmin):
     """Admin class for SourceEncodedValue objects."""
     
     # Make all fields read-only.
-    readonly_fields = SourceEncodedValue._meta.get_all_field_names()
+    readonly_fields = list(set(chain.from_iterable(
+        (field.name, field.attname) if hasattr(field, 'attname') else (field.name,)
+        for field in SourceEncodedValue._meta.get_fields()
+        # if not field.is_relation    # Exclude foreign keys from the results.
+    )))
     # Set fields to display, filter, and search on.
     list_display = (
         'id', 'category', 'value', 'get_source_trait_name',
