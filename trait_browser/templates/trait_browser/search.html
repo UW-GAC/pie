@@ -28,8 +28,10 @@
 
 
     {% if results %}
-        <h2>{{ trait_table.rows|length }} trait{{ trait_table.rows|length|pluralize }} found</h2>
-
+        <div class="alert alert-info" role="alert">
+            <strong><font size="4">{{ trait_table.rows|length }} trait{{ trait_table.rows|length|pluralize }} found</font></strong>
+        </div>
+        
         {% render_table trait_table %}
     {% endif %}
 
