@@ -97,6 +97,7 @@ body {
 
 .corner-ribbon {
   width: 200px;
+  opacity: 0.9;
   background: #f0ad4e;
   position: fixed;
   top: 25px;
