@@ -87,9 +87,9 @@ class SourceTrait(Trait):
     variable_version = models.IntegerField()
     participant_set = models.IntegerField()
     # dbGaP accession numbers
-    study_accession = models.CharField(max_length=15)
-    dataset_accession = models.CharField(max_length=15)
-    variable_accession = models.CharField(max_length=17)
+    study_accession = models.CharField(max_length=20)
+    dataset_accession = models.CharField(max_length=20)
+    variable_accession = models.CharField(max_length=23)
     # dbGaP links.
     # Since these are URLFields, they will be validated as well-formed URLs.
     dbgap_study_link = models.URLField(max_length=200)
