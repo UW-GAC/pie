@@ -74,7 +74,8 @@ class SearchTestCase(TestCase):
         self.assertNotIn(st_nonmatch, search1)
 
 
-class ViewsTestCase(TestCase):
+class SourceViewsTestCase(TestCase):
+    """Unit tests for the views about source traits."""
     
     def test_source_trait_table_empty(self):
         """Tests that the source_trait_table view works with an empty queryset and that the SourceTraitTable object has no rows."""
