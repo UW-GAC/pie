@@ -2,7 +2,7 @@
 
 import django_tables2 as tables
 
-from .models import SourceTrait
+from .models import SourceTrait, Study
 
 
 # Define the table classes for displaying nice HTML tables with django-tables2
@@ -27,6 +27,28 @@ class SourceTraitTable(tables.Table):
     class Meta:
         model = SourceTrait
         fields = ('name', 'description', 'study_name', )
-        attrs = {'class': 'table table-striped table-bordered table-hover'}
+        attrs = {'class': 'table table-striped table-bordered table-hover table-condensed'}
         template = 'trait_browser/bootstrap_tables2.html'
         order_by = ('name', 'study_name', )
+
+
+class StudyTable(tables.Table):
+    """Class for tables2 handling of Study objects for nice table display.
+    
+    This class extends the django_tables2.Table class for use with Study
+    objects. It is used for the Browse by Study page.
+    """
+    
+    name = tables.LinkColumn('trait_browser_study_source_trait_table', args=[tables.utils.A('pk')],
+                             verbose_name='Study name', orderable=False)
+    dbGaP_accession = tables.TemplateColumn(orderable=False,
+        template_code='<a target="_blank" href={{record.dbgap_latest_version_link}}>phs{{ record.dbgap_accession }}</a>'
+    )
+    
+    
+    class Meta:
+        model = Study
+        fields = ('name', )
+        attrs = {'class': 'table table-striped table-hover table-bordered', 'style': 'width: auto;'}
+        template = 'trait_browser/bootstrap_tables2.html'
+        order_by = ('name', )
