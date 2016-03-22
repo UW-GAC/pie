@@ -10,11 +10,15 @@ class Study(models.Model):
         study_id
         phs
         name
+        dbgap_accession
+        dbgap_latest_version_link
     """
     
     study_id = models.IntegerField(primary_key=True, db_column='study_id')
     phs = models.IntegerField()
     name = models.CharField(max_length=100)
+    dbgap_accession = models.CharField(max_length=20)
+    dbgap_latest_version_link = models.CharField(max_length=200)
 
     class Meta:
         # Fix pluralization of this model, because grammar. 
@@ -23,6 +27,34 @@ class Study(models.Model):
     def __str__(self):
         """Pretty printing of Study objects."""
         return self.name
+    
+    def save(self, *args, **kwargs):
+        """Custom save method for default dbGaP latest version study link.
+        
+        Automatically sets the value for the study's latest version dbGaP link.
+        """
+        self.dbgap_accession = self.set_dbgap_accession()
+        self.dbgap_latest_version_link = self.set_dbgap_latest_version_link()
+        # Call the "real" save method.
+        super(Study, self).save(*args, **kwargs)
+    
+    def set_dbgap_accession(self):
+        """Automatically set dbgap_accession from the study's phs.
+        
+        Properly format the phs number for this study, so it's easier to get to
+        in templates.
+        """
+        return '{:06}'.format(self.phs)
+
+    def set_dbgap_latest_version_link(self):
+        """Automatically set dbgap_latest_version_link from the study's phs.
+        
+        Construct a URL to the dbGaP study information page using a base URL.
+        Without a specified version number, the dbGaP link takes you to the
+        latest version.
+        """
+        STUDY_URL = 'http://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id={}'
+        return STUDY_URL.format(self.dbgap_accession)
 
 
 class Trait(models.Model):
