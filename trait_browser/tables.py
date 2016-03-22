@@ -15,8 +15,8 @@ class SourceTraitTable(tables.Table):
     """
 
     # Set custom column values that need extra settings.
-    name = tables.LinkColumn('trait_browser:source_trait_detail', args=[tables.utils.A('pk')], verbose_name='Trait name')
-    description = tables.Column('Trait description', orderable=False)
+    name = tables.LinkColumn('trait_browser:source_trait_detail', args=[tables.utils.A('pk')], verbose_name='Phenotype name')
+    description = tables.Column('Phenotype description', orderable=False)
     # Get the name from the Study linked to this trait.
     study_name = tables.Column('Study name', accessor='study.name')
     dbGaP_study = tables.TemplateColumn(orderable=False,
