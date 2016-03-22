@@ -5,7 +5,7 @@ from django.core.urlresolvers import reverse
 
 from .models import SourceEncodedValue, SourceTrait, Study
 from .factories import SourceEncodedValueFactory, SourceTraitFactory, StudyFactory
-from .tables import SourceTraitTable
+from .tables import SourceTraitTable, StudyTable
 from .views import TABLE_PER_PAGE, search
 
 # NB: The database is reset for each test method within a class!
@@ -127,6 +127,105 @@ class ViewsTestCase(TestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 404)
     
+    def test_study_source_table_empty(self):
+        """Tests that the study_source_table view works with an empty queryset and that the StudyTable object has no rows."""
+        url = reverse('trait_browser_study_source_table')
+        response = self.client.get(url)
+        # Does the URL work?
+        self.assertEqual(response.status_code, 200)
+        # Is study_table a StudyTable object?
+        self.assertIsInstance(response.context['study_table'], StudyTable)
+        # Does the source study table object have 0 rows?
+        self.assertEqual(len(response.context['study_table'].rows), 0)
+
+    def test_study_source_table_one_page(self):
+        """Tests that the study_source_table view works with fewer rows than will require a second page."""
+        # Make less than one page of Studies.
+        n_studies = TABLE_PER_PAGE - 2
+        StudyFactory.create_batch(n_studies)
+        url = reverse('trait_browser_study_source_table')
+        response = self.client.get(url)
+        # Does the URL work?
+        self.assertEqual(response.status_code, 200)
+        # Does the study table object have n_studies rows?
+        self.assertEqual(len(response.context['study_table'].rows), n_studies)
+
+    def test_study_source_table_two_pages(self):
+        """Tests that the study_source_table view works with two pages' worth of rows."""
+        # Make less than one page of Studies.
+        n_studies = TABLE_PER_PAGE * 2
+        StudyFactory.create_batch(n_studies)
+        url = reverse('trait_browser_study_source_table')
+        response = self.client.get(url)
+        # Does the URL work?
+        self.assertEqual(response.status_code, 200)
+        # Does the study source table object have n_studies rows?
+        self.assertEqual(len(response.context['study_table'].rows), n_studies)
+
+    def test_study_source_trait_table_invalid(self):
+        """Tests that the study_source_trait_table view returns 404 with an invalid pk."""
+        # No valid Studies
+        url = reverse('trait_browser_study_source_trait_table', args=[10])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 404)
+
+    def test_study_source_trait_table_empty(self):
+        """Tests that the study_source_trait_table view works with an empty queryset and that the SourceTraitTable object has no rows."""
+        # No valid SourceTraits exist here.
+        this_study = StudyFactory.create()
+        url = reverse('trait_browser_study_source_trait_table', args=[this_study.study_id])
+        response = self.client.get(url)
+        # Does the URL work?
+        self.assertEqual(response.status_code, 200)
+        # Is trait_table a SourceTraitTable object?
+        self.assertIsInstance(response.context['trait_table'], SourceTraitTable)
+        # Does the source trait table object have 0 rows?
+        self.assertEqual(len(response.context['trait_table'].rows), 0)
+
+    def test_study_source_trait_table_one_page(self):
+        """Tests that the study_source_trait_table view works with one page of results and that the SourceTraitTable object the correct number of rows."""
+        n_traits = TABLE_PER_PAGE - 2
+        this_study = StudyFactory.create()
+        SourceTraitFactory.create_batch(n_traits, study=this_study)
+        url = reverse('trait_browser_study_source_trait_table', args=[this_study.study_id])
+        response = self.client.get(url)
+        # Does the URL work?
+        self.assertEqual(response.status_code, 200)
+        # Is trait_table a SourceTraitTable object?
+        self.assertIsInstance(response.context['trait_table'], SourceTraitTable)
+        # Does the source trait table object have correct number of rows?
+        self.assertEqual(len(response.context['trait_table'].rows), n_traits)
+    
+    def test_study_source_trait_table_one_page_plus_other_study(self):
+        """Tests that the study_source_trait_table view works with one page of results and that the SourceTraitTable object the correct number of rows, when there is a second study."""
+        n_traits = TABLE_PER_PAGE - 2
+        this_study = StudyFactory.create()
+        SourceTraitFactory.create_batch(n_traits, study=this_study)
+        other_study = StudyFactory.create()
+        SourceTraitFactory.create_batch(n_traits, study=other_study)
+        url = reverse('trait_browser_study_source_trait_table', args=[this_study.study_id])
+        response = self.client.get(url)
+        # Does the URL work?
+        self.assertEqual(response.status_code, 200)
+        # Is trait_table a SourceTraitTable object?
+        self.assertIsInstance(response.context['trait_table'], SourceTraitTable)
+        # Does the source trait table object have correct number of rows?
+        self.assertEqual(len(response.context['trait_table'].rows), n_traits)
+
+    def test_study_source_trait_table_two_pages(self):
+        """Tests that the study_source_trait_table view works with two pages of results and that the SourceTraitTable object the correct number of rows."""
+        n_traits = TABLE_PER_PAGE * 2
+        this_study = StudyFactory.create()
+        SourceTraitFactory.create_batch(n_traits, study=this_study)
+        url = reverse('trait_browser_study_source_trait_table', args=[this_study.study_id])
+        response = self.client.get(url)
+        # Does the URL work?
+        self.assertEqual(response.status_code, 200)
+        # Is trait_table a SourceTraitTable object?
+        self.assertIsInstance(response.context['trait_table'], SourceTraitTable)
+        # Does the source trait table object have correct number of rows?
+        self.assertEqual(len(response.context['trait_table'].rows), n_traits)
+        
 
 class SourceTraitSearchViewTestCase(TestCase):
 
