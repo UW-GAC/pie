@@ -60,7 +60,13 @@ def study_source_trait_table(request, pk):
 
 
 def study_source_table(request):
-    """ """
+    """Table view for a table listing each of the studies, with links.
+    
+    This view uses Django-tables2 to display a pretty table of the Study
+    objects in the database for browsing. Study name links will take you
+    to a view of the source traits in a single study and dbGaP links will
+    take you to the latest dbGaP study information page.
+    """
     table_title = 'Studies with available source phenotypes'
     page_title = 'Browse studies - source phenotypes'
     study_table = StudyTable(Study.objects.all())
