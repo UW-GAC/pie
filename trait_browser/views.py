@@ -29,7 +29,7 @@ def source_trait_table(request):
     in the database for browsing.
     """
     table_title = 'Source phenotypes currently available'
-    page_title = 'Source trait table'
+    page_title = 'Source phenotypes'
     trait_table = SourceTraitTable(SourceTrait.objects.all())
     # If you're going to change this later to some kind of filtered list (e.g. only the most
     # recent version of each trait), then you should wrap the SourceTrait.filter() in get_list_or_404
@@ -68,7 +68,7 @@ def study_source_table(request):
     take you to the latest dbGaP study information page.
     """
     table_title = 'Studies with available source phenotypes'
-    page_title = 'Browse studies - source phenotypes'
+    page_title = 'Browse source by study'
     study_table = StudyTable(Study.objects.all())
     RequestConfig(request, paginate={'per_page': TABLE_PER_PAGE}).configure(study_table)
     return render(request, 'trait_browser/study_table.html',
