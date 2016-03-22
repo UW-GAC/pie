@@ -77,8 +77,8 @@ class Trait(models.Model):
     DATA_TYPE_CHOICES = tuple([(el, el) for el in DATA_TYPES])
     
     dcc_trait_id = models.PositiveIntegerField(primary_key=True, db_column='dcc_trait_id')
-    name = models.CharField(max_length=100)
-    description = models.CharField(max_length=500)
+    name = models.CharField(max_length=100, verbose_name='phenotype name')
+    description = models.CharField(max_length=500, verbose_name='phenotype description')
     data_type = models.CharField(max_length=max([len(s) for s in DATA_TYPES]),choices=DATA_TYPE_CHOICES)
     unit = models.CharField(max_length=45)
     web_date_added = models.DateTimeField(auto_now_add=True, auto_now=False)
