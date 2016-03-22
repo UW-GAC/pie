@@ -22,7 +22,7 @@ class SourceTraitDetail(DetailView):
     template_name = 'trait_browser/source_trait_detail.html'
 
 
-def source_trait_table(request):
+def source_all(request):
     """Table view for SourceTrait objects.
     
     This view uses Django-tables2 to display a pretty table of the SourceTraits
@@ -40,7 +40,7 @@ def source_trait_table(request):
     )
 
 
-def study_source_trait_table(request, pk):
+def source_study_detail(request, pk):
     """Table view for a table of SourceTraits for a single study.
     
     This view uses Django-tables2 to display a pretty table of the SourceTraits
@@ -59,7 +59,7 @@ def study_source_trait_table(request, pk):
     )
 
 
-def study_source_table(request):
+def study_list(request):
     """Table view for a table listing each of the studies, with links.
     
     This view uses Django-tables2 to display a pretty table of the Study
@@ -108,7 +108,7 @@ def search(text_query, trait_type, studies=[]):
 # To make this eventually work for harmonized traits, we could add a trait_type
 # argument to the function definition plus some if statements to select proper
 # forms/models.
-def source_trait_search(request):
+def source_search(request):
     """SourceTrait search form view.
     
     Displays the SourceTraitCrispySearchForm and any search results as a

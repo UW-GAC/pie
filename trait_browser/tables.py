@@ -15,7 +15,7 @@ class SourceTraitTable(tables.Table):
     """
 
     # Set custom column values that need extra settings.
-    name = tables.LinkColumn('trait_browser:source_trait_detail', args=[tables.utils.A('pk')], verbose_name='Phenotype name')
+    name = tables.LinkColumn('trait_browser:source_detail', args=[tables.utils.A('pk')], verbose_name='Phenotype name')
     description = tables.Column('Phenotype description', orderable=False)
     # Get the name from the Study linked to this trait.
     study_name = tables.Column('Study name', accessor='study.name')
@@ -39,7 +39,7 @@ class StudyTable(tables.Table):
     objects. It is used for the Browse by Study page.
     """
     
-    name = tables.LinkColumn('trait_browser:study_source_trait_table', args=[tables.utils.A('pk')],
+    name = tables.LinkColumn('trait_browser:source_study_detail', args=[tables.utils.A('pk')],
                              verbose_name='Study name', orderable=False)
     dbGaP_accession = tables.TemplateColumn(orderable=False,
         template_code='<a target="_blank" href={{record.dbgap_latest_version_link}}>phs{{ record.dbgap_accession }}</a>'

@@ -17,13 +17,13 @@
           <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Source phenotypes <span class="caret"></span></a>
           <ul class="dropdown-menu">
             <li>
-              <a href="{% url 'trait_browser:source_trait_table' %}"><span class="glyphicon glyphicon-list"></span> View all</a>
+              <a href="{% url 'trait_browser:source_all' %}"><span class="glyphicon glyphicon-list"></span> View all</a>
             </li>
             <li>
-              <a href="{% url 'trait_browser:study_source_table' %}"><span class="glyphicon glyphicon-th-large"></span> Browse by study</a>
+              <a href="{% url 'trait_browser:study_list' %}"><span class="glyphicon glyphicon-th-large"></span> Browse by study</a>
             </li>
             <li>
-              <a href="{% url 'trait_browser:source_trait_search' %}"><span class="glyphicon glyphicon-search"></span> Search</a>
+              <a href="{% url 'trait_browser:source_search' %}"><span class="glyphicon glyphicon-search"></span> Search</a>
             </li>
           </ul>
         </li>
