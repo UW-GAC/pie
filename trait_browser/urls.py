@@ -11,9 +11,10 @@ from . import views
 
 urlpatterns = [
     # General views
-    url(r'^studies/$', views.study_list, name='study_list'),
+    # url(r'^studies/$', views.study_list, name='study_list'),
     # Source trait views
     url(r'^source/all/$', views.source_all, name='source_all'),
+    url(r'^source/study/all/$', views.source_study_list, name='source_study_list'),
     url(r'^source/study/(?P<pk>\d+)/$', views.source_study_detail, name='source_study_detail'),
     url(r'^source/detail/(?P<pk>\d+)/$', views.SourceTraitDetail.as_view(), name='source_detail'),
     url(r'^source/search/$', views.source_search, name='source_search'),

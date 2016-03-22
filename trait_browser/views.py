@@ -59,7 +59,7 @@ def source_study_detail(request, pk):
     )
 
 
-def study_list(request):
+def source_study_list(request):
     """Table view for a table listing each of the studies, with links.
     
     This view uses Django-tables2 to display a pretty table of the Study

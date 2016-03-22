@@ -129,7 +129,7 @@ class ViewsTestCase(TestCase):
     
     def test_study_source_table_empty(self):
         """Tests that the study_source_table view works with an empty queryset and that the StudyTable object has no rows."""
-        url = reverse('trait_browser:study_list')
+        url = reverse('trait_browser:source_study_list')
         response = self.client.get(url)
         # Does the URL work?
         self.assertEqual(response.status_code, 200)
@@ -143,7 +143,7 @@ class ViewsTestCase(TestCase):
         # Make less than one page of Studies.
         n_studies = TABLE_PER_PAGE - 2
         StudyFactory.create_batch(n_studies)
-        url = reverse('trait_browser:study_list')
+        url = reverse('trait_browser:source_study_list')
         response = self.client.get(url)
         # Does the URL work?
         self.assertEqual(response.status_code, 200)
@@ -155,7 +155,7 @@ class ViewsTestCase(TestCase):
         # Make less than one page of Studies.
         n_studies = TABLE_PER_PAGE * 2
         StudyFactory.create_batch(n_studies)
-        url = reverse('trait_browser:study_list')
+        url = reverse('trait_browser:source_study_list')
         response = self.client.get(url)
         # Does the URL work?
         self.assertEqual(response.status_code, 200)
