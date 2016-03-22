@@ -7,7 +7,7 @@
 {% endblock %}
 
 {% block content %}
-    <h1>Search source traits</h1>
+    <h1>Search source phenotypes</h1>
         {% crispy form %}
     
     <!-- Embed the New Search button inside of a form and some divs just like
@@ -18,7 +18,7 @@
                 
             </div>
             <div class="controls col-sm-10">
-                <a href="{% url 'trait_browser:source_trait_search' %}" class="btn btn-default" role="button">
+                <a href="{% url 'trait_browser:source_search' %}" class="btn btn-default" role="button">
                     New Search</a>
             </div>
         </div>
@@ -29,7 +29,7 @@
 
     {% if results %}
         <div class="alert alert-info" role="alert">
-            <strong><font size="4">{{ trait_table.rows|length }} trait{{ trait_table.rows|length|pluralize }} found</font></strong>
+            <strong><font size="4">{{ trait_table.rows|length }} phenotype{{ trait_table.rows|length|pluralize }} found</font></strong>
         </div>
         
         {% render_table trait_table %}

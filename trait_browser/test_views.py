@@ -74,12 +74,13 @@ class SearchTestCase(TestCase):
         self.assertNotIn(st_nonmatch, search1)
 
 
-class ViewsTestCase(TestCase):
+class SourceViewsTestCase(TestCase):
+    """Unit tests for the views about source traits."""
     
     def test_source_trait_table_empty(self):
         """Tests that the source_trait_table view works with an empty queryset and that the SourceTraitTable object has no rows."""
         # No valid SourceTraits exist here.
-        url = reverse('trait_browser:source_trait_table')
+        url = reverse('trait_browser:source_all')
         response = self.client.get(url)
         # Does the URL work?
         self.assertEqual(response.status_code, 200)
@@ -93,7 +94,7 @@ class ViewsTestCase(TestCase):
         # Make less than one page of SourceTraits.
         n_traits = TABLE_PER_PAGE - 2
         SourceTraitFactory.create_batch(n_traits)
-        url = reverse('trait_browser:source_trait_table')
+        url = reverse('trait_browser:source_all')
         response = self.client.get(url)
         # Does the URL work?
         self.assertEqual(response.status_code, 200)
@@ -105,7 +106,7 @@ class ViewsTestCase(TestCase):
         # Make less than one page of SourceTraits.
         n_traits = TABLE_PER_PAGE * 2
         SourceTraitFactory.create_batch(n_traits)
-        url = reverse('trait_browser:source_trait_table')
+        url = reverse('trait_browser:source_all')
         response = self.client.get(url)
         # Does the URL work?
         self.assertEqual(response.status_code, 200)
@@ -116,20 +117,20 @@ class ViewsTestCase(TestCase):
         """Tests that the SourceTrait detail page returns 200 with a valid pk."""
         trait = SourceTraitFactory.create()
         # Test that the page works with a valid pk.
-        url = reverse('trait_browser:source_trait_detail', args=[trait.dcc_trait_id])
+        url = reverse('trait_browser:source_detail', args=[trait.dcc_trait_id])
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         
     def test_source_trait_detail_invalid(self):
         """Tests that the SourceTrait detail page returns 404 with an invalid pk."""
         # No valid SourceTraits exist here.
-        url = reverse('trait_browser:source_trait_detail', args=[10])
+        url = reverse('trait_browser:source_detail', args=[10])
         response = self.client.get(url)
         self.assertEqual(response.status_code, 404)
     
     def test_study_source_table_empty(self):
         """Tests that the study_source_table view works with an empty queryset and that the StudyTable object has no rows."""
-        url = reverse('trait_browser:study_source_table')
+        url = reverse('trait_browser:source_study_list')
         response = self.client.get(url)
         # Does the URL work?
         self.assertEqual(response.status_code, 200)
@@ -143,7 +144,7 @@ class ViewsTestCase(TestCase):
         # Make less than one page of Studies.
         n_studies = TABLE_PER_PAGE - 2
         StudyFactory.create_batch(n_studies)
-        url = reverse('trait_browser:study_source_table')
+        url = reverse('trait_browser:source_study_list')
         response = self.client.get(url)
         # Does the URL work?
         self.assertEqual(response.status_code, 200)
@@ -155,7 +156,7 @@ class ViewsTestCase(TestCase):
         # Make less than one page of Studies.
         n_studies = TABLE_PER_PAGE * 2
         StudyFactory.create_batch(n_studies)
-        url = reverse('trait_browser:study_source_table')
+        url = reverse('trait_browser:source_study_list')
         response = self.client.get(url)
         # Does the URL work?
         self.assertEqual(response.status_code, 200)
@@ -165,7 +166,7 @@ class ViewsTestCase(TestCase):
     def test_study_source_trait_table_invalid(self):
         """Tests that the study_source_trait_table view returns 404 with an invalid pk."""
         # No valid Studies
-        url = reverse('trait_browser:study_source_trait_table', args=[10])
+        url = reverse('trait_browser:source_study_detail', args=[10])
         response = self.client.get(url)
         self.assertEqual(response.status_code, 404)
 
@@ -173,7 +174,7 @@ class ViewsTestCase(TestCase):
         """Tests that the study_source_trait_table view works with an empty queryset and that the SourceTraitTable object has no rows."""
         # No valid SourceTraits exist here.
         this_study = StudyFactory.create()
-        url = reverse('trait_browser:study_source_trait_table', args=[this_study.study_id])
+        url = reverse('trait_browser:source_study_detail', args=[this_study.study_id])
         response = self.client.get(url)
         # Does the URL work?
         self.assertEqual(response.status_code, 200)
@@ -187,7 +188,7 @@ class ViewsTestCase(TestCase):
         n_traits = TABLE_PER_PAGE - 2
         this_study = StudyFactory.create()
         SourceTraitFactory.create_batch(n_traits, study=this_study)
-        url = reverse('trait_browser:study_source_trait_table', args=[this_study.study_id])
+        url = reverse('trait_browser:source_study_detail', args=[this_study.study_id])
         response = self.client.get(url)
         # Does the URL work?
         self.assertEqual(response.status_code, 200)
@@ -203,7 +204,7 @@ class ViewsTestCase(TestCase):
         SourceTraitFactory.create_batch(n_traits, study=this_study)
         other_study = StudyFactory.create()
         SourceTraitFactory.create_batch(n_traits, study=other_study)
-        url = reverse('trait_browser:study_source_trait_table', args=[this_study.study_id])
+        url = reverse('trait_browser:source_study_detail', args=[this_study.study_id])
         response = self.client.get(url)
         # Does the URL work?
         self.assertEqual(response.status_code, 200)
@@ -217,7 +218,7 @@ class ViewsTestCase(TestCase):
         n_traits = TABLE_PER_PAGE * 2
         this_study = StudyFactory.create()
         SourceTraitFactory.create_batch(n_traits, study=this_study)
-        url = reverse('trait_browser:study_source_trait_table', args=[this_study.study_id])
+        url = reverse('trait_browser:source_study_detail', args=[this_study.study_id])
         response = self.client.get(url)
         # Does the URL work?
         self.assertEqual(response.status_code, 200)
@@ -235,7 +236,7 @@ class SourceTraitSearchViewTestCase(TestCase):
         SourceTraitFactory.create_batch(10)
         # Make one SourceTrait that will match your (improbable) search term.
         SourceTraitFactory.create(name='asdfghjkl')
-        url = reverse('trait_browser:source_trait_search')
+        url = reverse('trait_browser:source_search')
         response = self.client.get(url, {'text': 'asdfghjkl'})
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.context['results'])    # results is True.
@@ -245,7 +246,7 @@ class SourceTraitSearchViewTestCase(TestCase):
     def test_source_trait_search_with_no_results(self):
         """Tests that the source_trait_search view has a 200 reponse code when search text is entered and there are no search results to display."""
         SourceTraitFactory.create_batch(10)
-        url = reverse('trait_browser:source_trait_search')
+        url = reverse('trait_browser:source_search')
         response = self.client.get(url, {'text': 'asdfghjkl'})
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.context['results'])    # results is True.
@@ -255,7 +256,7 @@ class SourceTraitSearchViewTestCase(TestCase):
     def test_source_trait_search_with_no_search_text_entered(self):
         """Test that there is no trait table displayed when no search text is entered and the form is not bound to data."""
         SourceTraitFactory.create_batch(10)
-        url = reverse('trait_browser:source_trait_search')
+        url = reverse('trait_browser:source_search')
         response = self.client.get(url, {'text': ''})
         self.assertEqual(response.status_code, 200)    # The view will display something.
         self.assertFalse(response.context['results'])    # results is False.
@@ -266,7 +267,7 @@ class SourceTraitSearchViewTestCase(TestCase):
         """Tests that the source_trait_search view has a 200 reponse code and the number of results is accurate when search text and study filter is entered and there are search results to display."""
         SourceTraitFactory.create_batch(10)
         good_trait = SourceTraitFactory.create(name='asdfghjkl')
-        url = reverse('trait_browser:source_trait_search')
+        url = reverse('trait_browser:source_search')
         response = self.client.get(url, {'text': 'asdfghjkl',
                                          'study':[good_trait.study.study_id]})
         self.assertEqual(response.status_code, 200)    # The page displays something.
@@ -278,7 +279,7 @@ class SourceTraitSearchViewTestCase(TestCase):
         """Tests that the source_trait_search view has a 200 response code and the number of results is accurate when search text and study filter is entered and there are no valid search results to display."""
         traits = SourceTraitFactory.create_batch(10)
         good_trait = SourceTraitFactory.create(name='asdfghjkl')
-        url = reverse('trait_browser:source_trait_search')
+        url = reverse('trait_browser:source_search')
         response = self.client.get(url, {'text': 'asdfghjkl',
                                          'study':[traits[0].study.study_id]})
         self.assertEqual(response.status_code, 200)    # The page displays something.
@@ -289,7 +290,7 @@ class SourceTraitSearchViewTestCase(TestCase):
     def test_source_trait_search_with_no_search_text_entered_and_study_filter(self):
         """Test that there is no trait table displayed when no search text is entered, but the study filter is entered, and the form is not bound to data. """
         SourceTraitFactory.create_batch(10)
-        url = reverse('trait_browser:source_trait_search')
+        url = reverse('trait_browser:source_search')
         response = self.client.get(url, {'study': [st.pk for st in Study.objects.all()[:3]]})
         self.assertEqual(response.status_code, 200)    # The page displays something.
         self.assertFalse(response.context['results'])    # results is False.

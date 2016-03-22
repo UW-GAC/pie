@@ -25,7 +25,7 @@ urlpatterns = [
     url(r'^contact/$', TemplateView.as_view(template_name="contact.html"), name='contact'),    # static home page
     url(r'^pages/', include('django.contrib.flatpages.urls')),    # Flat pages 
     url(r'^admin/', include(admin.site.urls)),    # Admin interface
-    url(r'^trait_browser/', include('trait_browser.urls', namespace='trait_browser')),    # Trait browser app
+    url(r'^phenotypes/', include('trait_browser.urls', namespace='trait_browser')),    # Trait browser app
 ]
 
 # Set the name for the admin site.

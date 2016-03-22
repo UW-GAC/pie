@@ -22,14 +22,14 @@ class SourceTraitDetail(DetailView):
     template_name = 'trait_browser/source_trait_detail.html'
 
 
-def source_trait_table(request):
+def source_all(request):
     """Table view for SourceTrait objects.
     
     This view uses Django-tables2 to display a pretty table of the SourceTraits
     in the database for browsing.
     """
     table_title = 'Source phenotypes currently available'
-    page_title = 'Source trait table'
+    page_title = 'Source phenotypes'
     trait_table = SourceTraitTable(SourceTrait.objects.all())
     # If you're going to change this later to some kind of filtered list (e.g. only the most
     # recent version of each trait), then you should wrap the SourceTrait.filter() in get_list_or_404
@@ -40,7 +40,7 @@ def source_trait_table(request):
     )
 
 
-def study_source_trait_table(request, pk):
+def source_study_detail(request, pk):
     """Table view for a table of SourceTraits for a single study.
     
     This view uses Django-tables2 to display a pretty table of the SourceTraits
@@ -59,7 +59,7 @@ def study_source_trait_table(request, pk):
     )
 
 
-def study_source_table(request):
+def source_study_list(request):
     """Table view for a table listing each of the studies, with links.
     
     This view uses Django-tables2 to display a pretty table of the Study
@@ -68,7 +68,7 @@ def study_source_table(request):
     take you to the latest dbGaP study information page.
     """
     table_title = 'Studies with available source phenotypes'
-    page_title = 'Browse studies - source phenotypes'
+    page_title = 'Browse source by study'
     study_table = StudyTable(Study.objects.all())
     RequestConfig(request, paginate={'per_page': TABLE_PER_PAGE}).configure(study_table)
     return render(request, 'trait_browser/study_table.html',
@@ -108,7 +108,7 @@ def search(text_query, trait_type, studies=[]):
 # To make this eventually work for harmonized traits, we could add a trait_type
 # argument to the function definition plus some if statements to select proper
 # forms/models.
-def source_trait_search(request):
+def source_search(request):
     """SourceTrait search form view.
     
     Displays the SourceTraitCrispySearchForm and any search results as a
