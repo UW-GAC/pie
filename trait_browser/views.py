@@ -7,7 +7,7 @@ from django.views.generic import DetailView
 from django_tables2   import RequestConfig
 
 from .models import SourceEncodedValue, SourceTrait, Study
-from .tables import SourceTraitTable
+from .tables import SourceTraitTable, StudyTable
 from .forms import SourceTraitCrispySearchForm
 
 
@@ -35,7 +35,7 @@ def source_trait_table(request):
     # recent version of each trait), then you should wrap the SourceTrait.filter() in get_list_or_404
     # RequestConfig seems to be necessary for sorting to work.
     RequestConfig(request, paginate={'per_page': TABLE_PER_PAGE}).configure(trait_table)
-    return render( request, 'trait_browser/trait_table.html',
+    return render(request, 'trait_browser/trait_table.html',
         {'trait_table': trait_table, 'table_title': table_title, 'page_title': page_title}
     )
 
@@ -56,6 +56,17 @@ def study_source_trait_table(request, pk):
     RequestConfig(request, paginate={'per_page': TABLE_PER_PAGE}).configure(trait_table)
     return render( request, 'trait_browser/trait_table.html',
         {'trait_table': trait_table, 'table_title': table_title, 'page_title': page_title}
+    )
+
+
+def study_source_table(request):
+    """ """
+    table_title = 'Studies with available source phenotypes'
+    page_title = 'Browse studies - source phenotypes'
+    study_table = StudyTable(Study.objects.all())
+    RequestConfig(request, paginate={'per_page': TABLE_PER_PAGE}).configure(study_table)
+    return render(request, 'trait_browser/study_table.html',
+        {'study_table': study_table, 'table_title': table_title, 'page_title': page_title}
     )
 
 
