@@ -24,10 +24,10 @@ class SourceTraitCrispySearchForm(forms.Form):
         self.STUDIES = [[x.pk, x.name] for x in Study.objects.all().order_by('name')]
         self.fields['study'] = forms.MultipleChoiceField(choices=self.STUDIES,
             widget=forms.CheckboxSelectMultiple(), required=False,
-            help_text='If no studies are selected, source traits from all studies will be searched.')
+            help_text='If no studies are selected, source phenotypes from all studies will be searched.')
     
     text = forms.CharField(label='search text', max_length=100,
-        help_text='Both trait names and descriptions will be searched.')
+        help_text='Both phenotype names and descriptions will be searched.')
 
     helper = FormHelper()
     helper.form_class = 'form-horizontal'
