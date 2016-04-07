@@ -13,7 +13,8 @@ from selenium.webdriver.support.wait import WebDriverWait
 from django.contrib.staticfiles.testing import StaticLiveServerTestCase
 from django.contrib import admin
 from django.core.urlresolvers import reverse
-
+from django.test import Client
+from django.contrib.auth.models import User
 
 # Default operation timeout in seconds.
 TIMEOUT = 10
@@ -145,13 +146,33 @@ class HomeTest(SeleniumTestCase):
         # Click on the Source phenotypes dropdown menu.
         source_list = self.selenium.find_element_by_link_text('Source phenotypes')
         source_list.click()
+        time.sleep(5)
+        view_all = self.selenium.find_element_by_link_text('View all')
+        view_all.click()
+        time.sleep(5)
+        self.selenium.execute_script("window.history.go(-1)")
 
 
 class AdminTest(SeleniumTestCase):
+    
+    @classmethod
+    def setUpClass(cls):
+        super(AdminTest, cls).setUpClass()
+        # Add a test user to the db.
+        cls.client = Client()
+        cls.user = User.objects.create_superuser(username='selenium', email='foo@bar.com', password='atomicnumber34')
 
     def test_admin(self):
-        # User opens web browser and navigates to admin page.
+        # Open web browser and navigate to admin page.
         self.get_reverse('admin:index')
         body = self.selenium.find_element_by_tag_name('body')
         self.assertIn('Administration', body.text)
-        # Navigate to each of the admin model interfaces in turn. 
+        # Log in to the admin interface.
+        username = self.selenium.find_element_by_id("id_username")
+        password = self.selenium.find_element_by_id("id_password")
+        username.send_keys('selenium')
+        password.send_keys('atomicnumber34')
+        self.selenium.find_element_by_class_name('submit-row').click()       
+        time.sleep(5)
+        # Navigate to each of the admin model interfaces in turn.
+        
