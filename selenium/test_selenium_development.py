@@ -16,6 +16,8 @@ from django.core.urlresolvers import reverse
 from django.test import Client
 from django.contrib.auth.models import User
 
+from trait_browser.factories import StudyFactory, SourceTraitFactory, SourceEncodedValueFactory
+
 # Default operation timeout in seconds.
 TIMEOUT = 10
  
@@ -91,11 +93,25 @@ class SeleniumTestCase(StaticLiveServerTestCase):
     def setUpClass(cls):
         super(SeleniumTestCase, cls).setUpClass()
         cls.selenium = webdriver.Firefox()
-
+        # Use Safari browser.
         # environ["SELENIUM_SERVER_JAR"] = "selenium-server-standalone-2.53.0.jar"
         # cls.selenium = webdriver.Safari(quiet=True)
-        
+        # Use Chrome browser.
         # cls.selenium = webdriver.Chrome(executable_path='./chromedriver')
+
+        # Add a superuser to the db.
+        cls.client = Client()
+        cls.user_password = 'atomicnumber34'
+        cls.user = User.objects.create_superuser(username='selenium', email='foo@bar.com', password=cls.user_password)
+        
+        # Fill the test db with fake data.
+        studies = StudyFactory.create_batch(5) # Make 5 studies.
+        for study in studies:
+            # Make 40 source traits for each study, 10 each with 4 encoded values.
+            SourceTraitFactory.create_batch(30, study=study)
+            enc_val_traits = SourceTraitFactory.create_batch(10, study=study)
+            for trait in enc_val_traits:
+                SourceEncodedValueFactory.create_batch(4, source_trait=trait)
 
     @classmethod
     def tearDownClass(cls):
@@ -144,23 +160,25 @@ class HomeTest(SeleniumTestCase):
         navbar = self.selenium.find_element_by_class_name('navbar')
         self.assertIsNotNone(navbar)
         # Click on the Source phenotypes dropdown menu.
-        source_list = self.selenium.find_element_by_link_text('Source phenotypes')
-        source_list.click()
-        time.sleep(5)
-        view_all = self.selenium.find_element_by_link_text('View all')
-        view_all.click()
-        time.sleep(5)
+        self.selenium.find_element_by_link_text('Source phenotypes').click()
+        time.sleep(1)
+        
+        self.selenium.find_element_by_link_text('View all').click()
+        time.sleep(1)
+        self.selenium.execute_script("window.history.go(-1)")
+
+        self.selenium.find_element_by_link_text('Source phenotypes').click()
+        self.selenium.find_element_by_link_text('Browse by study').click()
+        time.sleep(1)
+        self.selenium.execute_script("window.history.go(-1)")
+
+        self.selenium.find_element_by_link_text('Source phenotypes').click()
+        self.selenium.find_element_by_link_text('Search').click()
+        time.sleep(1)
         self.selenium.execute_script("window.history.go(-1)")
 
 
 class AdminTest(SeleniumTestCase):
-    
-    @classmethod
-    def setUpClass(cls):
-        super(AdminTest, cls).setUpClass()
-        # Add a test user to the db.
-        cls.client = Client()
-        cls.user = User.objects.create_superuser(username='selenium', email='foo@bar.com', password='atomicnumber34')
 
     def test_admin(self):
         # Open web browser and navigate to admin page.
@@ -170,9 +188,19 @@ class AdminTest(SeleniumTestCase):
         # Log in to the admin interface.
         username = self.selenium.find_element_by_id("id_username")
         password = self.selenium.find_element_by_id("id_password")
-        username.send_keys('selenium')
-        password.send_keys('atomicnumber34')
+        username.send_keys(self.user.username)
+        password.send_keys(self.user_password)
         self.selenium.find_element_by_class_name('submit-row').click()       
-        time.sleep(5)
+        time.sleep(1)
         # Navigate to each of the admin model interfaces in turn.
+        self.selenium.find_element_by_link_text('Source encoded values').click()
+        time.sleep(1)
+        self.selenium.execute_script("window.history.go(-1)")
+
+        self.selenium.find_element_by_link_text('Source traits').click()
+        time.sleep(1)
+        self.selenium.execute_script("window.history.go(-1)")
         
+        self.selenium.find_element_by_link_text('Studies').click()
+        time.sleep(1)
+        self.selenium.execute_script("window.history.go(-1)")        
