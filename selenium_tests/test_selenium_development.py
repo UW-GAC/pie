@@ -48,6 +48,10 @@ class SeleniumTestCase(StaticLiveServerTestCase):
     def get_reverse(self, view_name):
         """Use selenium to get the URL for the given reversed view_name URL."""
         self.selenium.get(self.live_server_url + reverse(view_name))
+    
+    def go_back(self):
+        """Use selenium driver to go back one page."""
+        self.selenium.execute_script("window.history.go(-1)")
 
 
 class HomeTest(SeleniumTestCase):
@@ -67,17 +71,17 @@ class HomeTest(SeleniumTestCase):
         
         self.selenium.find_element_by_link_text('View all').click()
         time.sleep(1)
-        self.selenium.execute_script("window.history.go(-1)")
+        self.go_back()
 
         self.selenium.find_element_by_link_text('Source phenotypes').click()
         self.selenium.find_element_by_link_text('Browse by study').click()
         time.sleep(1)
-        self.selenium.execute_script("window.history.go(-1)")
+        self.go_back()
 
         self.selenium.find_element_by_link_text('Source phenotypes').click()
         self.selenium.find_element_by_link_text('Search').click()
         time.sleep(1)
-        self.selenium.execute_script("window.history.go(-1)")
+        self.go_back()
 
 
 class AdminTest(SeleniumTestCase):
@@ -97,15 +101,15 @@ class AdminTest(SeleniumTestCase):
         # Navigate to each of the admin model interfaces in turn.
         self.selenium.find_element_by_link_text('Source encoded values').click()
         time.sleep(1)
-        self.selenium.execute_script("window.history.go(-1)")
+        self.go_back()
 
         self.selenium.find_element_by_link_text('Source traits').click()
         time.sleep(1)
-        self.selenium.execute_script("window.history.go(-1)")
+        self.go_back()
         
         self.selenium.find_element_by_link_text('Studies').click()
         time.sleep(1)
-        self.selenium.execute_script("window.history.go(-1)")
+        self.go_back()
 
 
 class SourceTraitSearchTest(SeleniumTestCase):
