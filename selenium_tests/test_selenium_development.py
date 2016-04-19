@@ -3,6 +3,8 @@
 import time
 from os import environ
 from selenium import webdriver
+from selenium.common.exceptions import NoSuchElementException
+import re
 
 from django.contrib.staticfiles.testing import StaticLiveServerTestCase
 from django.contrib import admin
@@ -12,8 +14,11 @@ from django.contrib.auth.models import User
 
 from trait_browser.factories import StudyFactory, SourceTraitFactory, SourceEncodedValueFactory
 from trait_browser.models import Study, SourceTrait, SourceEncodedValue
+from trait_browser.views import TABLE_PER_PAGE
 
 class SeleniumTestCase(StaticLiveServerTestCase):
+
+    page_regex = re.compile(r'Page (\d+) of (\d+)')
 
     @classmethod
     def setUpClass(cls):
@@ -52,6 +57,73 @@ class SeleniumTestCase(StaticLiveServerTestCase):
     def go_back(self):
         """Use selenium driver to go back one page."""
         self.selenium.execute_script("window.history.go(-1)")
+
+    def check_table_view(self, expected_rows=None):
+        """Reusable testing function for django-tables2 views.
+        
+        Tests functionality of a django-tables2 view page, and checks that it has
+        the expected number of rows.
+        
+        Args:
+            expected_rows: int; the number of rows that should be in the table
+            on the page being tested
+        """
+        # Is there a table?
+        try:
+            table = self.selenium.find_element_by_class_name('table-container')
+        except NoSuchElementException:
+            table = None
+        self.assertIsNotNone(table, msg='There is no table on this page.')
+        
+        # Does sorting by columns work?
+        
+        
+        # Does a variable detail page link work?
+        
+        
+        # Does the help show up?
+
+        # Count the pages, table rows, and table columns.
+        column_count = len(self.selenium.find_elements_by_tag_name('th'))
+        # This would include the header row, if not for subtracting 1.
+        row_count_page1 = len(self.selenium.find_elements_by_tag_name('tr')) - 1
+        # Get the number of pages, if multiple.
+        try:
+            page_count_text = self.selenium.find_element_by_class_name('cardinality').text
+            page_regex_match = re.search(self.page_regex, page_count_text)
+            current_page = page_regex_match.group(1)
+            page_count = int(page_regex_match.group(2))
+        except NoSuchElementException:
+            current_page = 1
+            page_count = 1
+        
+        # Check that the number of rows is correct.
+        if expected_rows is not None:
+            # Get the count of rows from all the pages, if you know there are multiple pages.
+            if page_count > 1:
+                # Add page number specification for the last page to the current URL.
+                current_url = self.selenium.current_url
+                if '?' in current_url:
+                    last_page_url = current_url + '&page={}'.format(page_count)
+                else:
+                    last_page_url = current_url +'?page={}'.format(page_count)
+                # Go to the last page and get the number of rows there. 
+                self.selenium.get(last_page_url)
+                time.sleep(2)
+                row_count_last_page = len(self.selenium.find_elements_by_tag_name('tr')) - 1
+                # Go back to the first page URL.
+                self.selenium.get(current_url)
+                time.sleep(1)
+                # Total the rows for all pages.
+                previous_page_rows = TABLE_PER_PAGE * (page_count - 1)
+                total_rows = previous_page_rows + row_count_last_page
+            else:
+                total_rows = row_count_page1
+            # Test the number of expected rows.
+            self.assertEqual(expected_rows, total_rows)
+
+
+    
 
 
 class HomeTest(SeleniumTestCase):
@@ -169,7 +241,12 @@ class SourceTraitSearchTest(SeleniumTestCase):
         study_trait = study.sourcetrait_set.all()[0]
         good_text = study_trait.description
         self.run_search(good_text, [studies[1]])
+
+
+class TablePageTestCase(SeleniumTestCase):
     
-        
-        
-        
+    def test_all_source_trait_page(self):
+        total_source_traits = SourceTrait.objects.count()
+        self.get_reverse('trait_browser:source_all')
+        # self.get_reverse('home')
+        self.check_table_view(expected_rows=total_source_traits)
