@@ -58,6 +58,22 @@ class SeleniumTestCase(StaticLiveServerTestCase):
         """Use selenium driver to go back one page."""
         self.selenium.execute_script("window.history.go(-1)")
 
+    def check_table_presence(self):
+        """Check that a table is present on the page."""
+        try:
+            table = self.selenium.find_element_by_class_name('table-container')
+        except NoSuchElementException:
+            table = None
+        self.assertIsNotNone(table, msg='There is no table on this page.')
+    
+    def click_next_button(self):
+        """Click on the first link with text 'Next'."""
+        self.selenium.find_element_by_link_text('Next').click()
+    
+    def click_previous_button(self):
+        """Click on the first link with text 'Previous'."""
+        self.selenium.find_element_by_link_text('Previous').click()
+        
     def check_table_view(self, expected_rows=None):
         """Reusable testing function for django-tables2 views.
         
@@ -69,20 +85,16 @@ class SeleniumTestCase(StaticLiveServerTestCase):
             on the page being tested
         """
         # Is there a table?
-        try:
-            table = self.selenium.find_element_by_class_name('table-container')
-        except NoSuchElementException:
-            table = None
-        self.assertIsNotNone(table, msg='There is no table on this page.')
+        self.check_table_presence()
         
         # Does sorting by columns work?
+        sortable_column_names = [el.text for el in self.selenium.find_elements_by_class_name('orderable')]
+        for column_name in sortable_column_names:
+            link = self.selenium.find_element_by_link_text(column_name)
+            link.click()
+            self.check_table_presence()
+            self.go_back()
         
-        
-        # Does a variable detail page link work?
-        
-        
-        # Does the help show up?
-
         # Count the pages, table rows, and table columns.
         column_count = len(self.selenium.find_elements_by_tag_name('th'))
         # This would include the header row, if not for subtracting 1.
@@ -97,6 +109,13 @@ class SeleniumTestCase(StaticLiveServerTestCase):
             current_page = 1
             page_count = 1
         
+        # Check next and previous buttons, if multiple pages.
+        if page_count > 1:
+            self.click_next_button()
+            self.check_table_presence()
+            self.click_previous_button()
+            self.check_table_presence()
+        
         # Check that the number of rows is correct.
         if expected_rows is not None:
             # Get the count of rows from all the pages, if you know there are multiple pages.
@@ -109,11 +128,9 @@ class SeleniumTestCase(StaticLiveServerTestCase):
                     last_page_url = current_url +'?page={}'.format(page_count)
                 # Go to the last page and get the number of rows there. 
                 self.selenium.get(last_page_url)
-                time.sleep(2)
                 row_count_last_page = len(self.selenium.find_elements_by_tag_name('tr')) - 1
                 # Go back to the first page URL.
                 self.selenium.get(current_url)
-                time.sleep(1)
                 # Total the rows for all pages.
                 previous_page_rows = TABLE_PER_PAGE * (page_count - 1)
                 total_rows = previous_page_rows + row_count_last_page
@@ -121,9 +138,6 @@ class SeleniumTestCase(StaticLiveServerTestCase):
                 total_rows = row_count_page1
             # Test the number of expected rows.
             self.assertEqual(expected_rows, total_rows)
-
-
-    
 
 
 class HomeTest(SeleniumTestCase):
