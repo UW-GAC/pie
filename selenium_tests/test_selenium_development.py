@@ -285,6 +285,7 @@ class TablePageTestCase(SeleniumTestCase):
     def test_source_study_detail_table(self):
         """Run check_table_view on the Study detail list page (from a link in the Browse by study table)."""
         study = Study.objects.get(pk=1)
+        trait_count = study.sourcetrait_set.count()
         self.get_reverse('trait_browser:source_study_detail', 1)
-        time.sleep(3)
+        self.check_table_view(expected_rows=trait_count)
         
