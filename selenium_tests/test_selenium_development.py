@@ -259,8 +259,15 @@ class SourceTraitSearchTest(SeleniumTestCase):
 
 class TablePageTestCase(SeleniumTestCase):
     
-    def test_all_source_trait_page(self):
+    def test_source_trait_all_page(self):
+        """Run check_table_view on the All source traits table page. Check the link for a source trait detail page."""
         total_source_traits = SourceTrait.objects.count()
         self.get_reverse('trait_browser:source_all')
-        # self.get_reverse('home')
         self.check_table_view(expected_rows=total_source_traits)
+        # Check the detail page for the first listed SourceTrait.
+        check_name = SourceTrait.objects.all().order_by('name')[0].name
+        detail_link = self.selenium.find_element_by_link_text(check_name)
+        detail_link.click()
+        self.go_back()
+    
+    
