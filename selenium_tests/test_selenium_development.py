@@ -50,9 +50,9 @@ class SeleniumTestCase(StaticLiveServerTestCase):
         cls.selenium.quit()
         super(SeleniumTestCase, cls).tearDownClass()
         
-    def get_reverse(self, view_name):
+    def get_reverse(self, view_name, *args):
         """Use selenium to get the URL for the given reversed view_name URL."""
-        self.selenium.get(self.live_server_url + reverse(view_name))
+        self.selenium.get(self.live_server_url + reverse(view_name, args=args))
     
     def go_back(self):
         """Use selenium driver to go back one page."""
@@ -259,7 +259,7 @@ class SourceTraitSearchTest(SeleniumTestCase):
 
 class TablePageTestCase(SeleniumTestCase):
     
-    def test_source_trait_all_page(self):
+    def test_source_all_table(self):
         """Run check_table_view on the All source traits table page. Check the link for a source trait detail page."""
         total_source_traits = SourceTrait.objects.count()
         self.get_reverse('trait_browser:source_all')
@@ -270,4 +270,21 @@ class TablePageTestCase(SeleniumTestCase):
         detail_link.click()
         self.go_back()
     
-    
+    def test_source_study_list_table(self):
+        """Run check_table_view on the Browse by study table page. Follow the link for one study."""
+        study_count = Study.objects.count()
+        self.get_reverse('trait_browser:source_study_list')
+        self.check_table_view(expected_rows=study_count)
+        # Check the page for the first listed Study.
+        study_name = Study.objects.all().order_by('name')[0].name
+        study_link = self.selenium.find_element_by_link_text(study_name)
+        study_link.click()
+        self.check_table_presence()
+        self.go_back()
+        
+    def test_source_study_detail_table(self):
+        """Run check_table_view on the Study detail list page (from a link in the Browse by study table)."""
+        study = Study.objects.get(pk=1)
+        self.get_reverse('trait_browser:source_study_detail', 1)
+        time.sleep(3)
+        
