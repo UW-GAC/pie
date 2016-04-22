@@ -14,7 +14,7 @@ from django.contrib.auth.models import User
 
 from trait_browser.factories import StudyFactory, SourceTraitFactory, SourceEncodedValueFactory
 from trait_browser.models import Study, SourceTrait, SourceEncodedValue
-from trait_browser.views import TABLE_PER_PAGE
+from trait_browser.views import TABLE_PER_PAGE, search
 
 class SeleniumTestCase(StaticLiveServerTestCase):
 
@@ -100,12 +100,12 @@ class SeleniumTestCase(StaticLiveServerTestCase):
         # This would include the header row, if not for subtracting 1.
         row_count_page1 = len(self.selenium.find_elements_by_tag_name('tr')) - 1
         # Get the number of pages, if multiple.
-        try:
+        try:    # There are multiple pages.
             page_count_text = self.selenium.find_element_by_class_name('cardinality').text
             page_regex_match = re.search(self.page_regex, page_count_text)
             current_page = page_regex_match.group(1)
             page_count = int(page_regex_match.group(2))
-        except NoSuchElementException:
+        except NoSuchElementException:    # There is only one page.
             current_page = 1
             page_count = 1
         
@@ -214,20 +214,26 @@ class SourceTraitSearchTest(SeleniumTestCase):
             studies_with_ranks = [(study, i+1) for (i, study,) in enumerate(Study.objects.all().order_by('name')) if study in study_list]
             for (study, rank) in studies_with_ranks:
                 self.selenium.find_element_by_id('id_study_{}'.format(rank)).click()
-            time.sleep(2)
+            time.sleep(1)
         self.selenium.find_element_by_id('submit-id-submit').click()
-        time.sleep(3)
+        time.sleep(1)
     
     def test_source_trait_search_all_studies_good_text(self):
         """Test the SourceTrait search page with a string you know is in one of the SourceTraits in the test db."""
         # Get the trait name for the first trait you can find.
         good_text = SourceTrait.objects.all()[0].name
         self.run_search(good_text)
+        result_count = len(search(good_text, 'source'))
+        self.check_table_view(expected_rows=result_count)
     
     def test_source_trait_search_all_studies_bad_text(self):
         """Test the SourceTrait search page with a string is not in any of the traits in the test db."""
         bad_text = 'very_unlikely_search_string!'
         self.run_search(bad_text)
+        self.check_table_view()
+        # TODO: proper handling when there are 0 expected rows. Currently, the row count
+        # is 1 when it should be 0 because "no results" is in a row of the table.
+        # This will likely need to change anyway because of changes to searching later on.
     
     def test_source_trait_search_single_study_good_text(self):
         """Test the SourceTrait search page with a trait name that is in a given study, searching only within that study."""
@@ -284,7 +290,7 @@ class TablePageTestCase(SeleniumTestCase):
         
     def test_source_study_detail_table(self):
         """Run check_table_view on the Study detail list page (from a link in the Browse by study table)."""
-        study = Study.objects.get(pk=1)
+        study = Study.objects.all()[0]
         trait_count = study.sourcetrait_set.count()
         self.get_reverse('trait_browser:source_study_detail', 1)
         self.check_table_view(expected_rows=trait_count)
