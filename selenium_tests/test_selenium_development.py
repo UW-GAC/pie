@@ -1,20 +1,24 @@
 """Test the admin interface."""
 
-import time
+from contextlib import contextmanager
 from os import environ
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
+from selenium.webdriver.support.expected_conditions import staleness_of
+from selenium.webdriver.support.ui import WebDriverWait
 import re
+import time
 
-from django.contrib.staticfiles.testing import StaticLiveServerTestCase
 from django.contrib import admin
+from django.contrib.auth.models import User
+from django.contrib.staticfiles.testing import StaticLiveServerTestCase
 from django.core.urlresolvers import reverse
 from django.test import Client
-from django.contrib.auth.models import User
 
 from trait_browser.factories import StudyFactory, SourceTraitFactory, SourceEncodedValueFactory
 from trait_browser.models import Study, SourceTrait, SourceEncodedValue
 from trait_browser.views import TABLE_PER_PAGE, search
+
 
 class SeleniumTestCase(StaticLiveServerTestCase):
 
