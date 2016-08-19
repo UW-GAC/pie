@@ -27,12 +27,16 @@ class SeleniumTestCase(StaticLiveServerTestCase):
     @classmethod
     def setUpClass(cls):
         super(SeleniumTestCase, cls).setUpClass()
-        cls.selenium = webdriver.Firefox()
+        # cls.selenium = webdriver.Firefox()
+        # Firefox now no longer works natively with the Webdriver. Instead you have to install
+        # a driver much like for Safari and Chrome. Look into this further later.
+        
         # Use Safari browser.
-        # environ["SELENIUM_SERVER_JAR"] = "selenium-server-standalone-2.53.0.jar"
+        # environ["SELENIUM_SERVER_JAR"] = "selenium_tests/selenium-server-standalone-2.53.0.jar"
         # cls.selenium = webdriver.Safari(quiet=True)
+        
         # Use Chrome browser.
-        # cls.selenium = webdriver.Chrome(executable_path='./chromedriver')
+        cls.selenium = webdriver.Chrome(executable_path='selenium_tests/chromedriver')
         
     def setUp(self):
         super(SeleniumTestCase, self).setUp()
