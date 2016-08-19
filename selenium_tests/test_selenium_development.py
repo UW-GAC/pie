@@ -3,9 +3,9 @@
 from contextlib import contextmanager
 from os import environ
 from selenium import webdriver
-from selenium.common.exceptions import NoSuchElementException, TimeoutException
+from selenium.common.exceptions import NoSuchElementException
+from selenium.webdriver.support.expected_conditions import staleness_of
 from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions
 import re
 import time
 
@@ -76,8 +76,7 @@ class SeleniumTestCase(StaticLiveServerTestCase):
     
     def click_next_button(self):
         """Click on the first link with text 'Next'."""
-        with self.wait_for_page_load():
-            self.selenium.find_element_by_link_text('Next').click()
+        self.selenium.find_element_by_link_text('Next').click()
     
     def click_previous_button(self):
         """Click on the first link with text 'Previous'."""
