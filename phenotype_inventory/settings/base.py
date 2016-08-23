@@ -145,6 +145,7 @@ INSTALLED_APPS = (
     # 3rd party apps.
     'django_tables2',    # https://github.com/bradleyayers/django-tables2
     'crispy_forms',    # https://github.com/maraujop/django-crispy-forms
+    'django_extensions',    # https://github.com/django-extensions/django-extensions
     # Our custom apps.
     'trait_browser',    # Handles table-based viewing and searching of trait data.
     'core',    # Handles data migrations for built-in apps (e.g. sites).
