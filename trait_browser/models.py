@@ -27,17 +27,19 @@ class Study(models.Model):
     """Model for Study table.
     
     Fields:
-        study_id
+        i_accession
+        i_study_name
+        global_study
         phs
-        name
-        dbgap_accession
         dbgap_latest_version_link
     """
     
-    study_id = models.IntegerField(primary_key=True, db_column='study_id')
-    phs = models.IntegerField()
-    name = models.CharField(max_length=100)
-    dbgap_accession = models.CharField(max_length=20)
+    i_accession = models.IntegerField(primary_key=True, db_column='i_accession')
+    i_study_name = models.CharField(max_length=200)
+    global_study = models.ForeignKey(GlobalStudy)
+    # This adds two fields: global_study is the actual GlobalStudy object that this instance 
+    # is linked to, and global_study_id is the primary key of the linked GlobalStudy object.
+    phs = models.CharField(max_length=20)
     dbgap_latest_version_link = models.CharField(max_length=200)
 
     class Meta:
@@ -46,7 +48,7 @@ class Study(models.Model):
 
     def __str__(self):
         """Pretty printing of Study objects."""
-        return self.name
+        return self.i_study_name
     
     def save(self, *args, **kwargs):
         """Custom save method for default dbGaP latest version study link.
