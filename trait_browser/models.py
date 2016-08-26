@@ -154,9 +154,18 @@ class SourceDataset(models.Model):
 
 
 class SourceDatasetSubcohorts(models.Model):
+    """Model for Subcohorts found within each dbGaP source dataset.
+    
+    Fields:
+        i_id 
+        source_dataset
+        subcohort
     """
-    """
-    pass
+    i_id = models.IntegerField(primary_key=True, db_column='i_id')
+    source_dataset = models.ForeignKey(SourceDataset)
+    # Adds .source_dataset (object) and .source_dataset_id (pk).
+    subcohort = models.ForeignKey(Subcohort)
+    # Adds .subcohort (object) and .subcohort_id (pk).
 
 
 # Trait models.
