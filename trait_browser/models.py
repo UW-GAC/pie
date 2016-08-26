@@ -55,13 +55,13 @@ class Study(models.Model):
         
         Automatically sets the value for the study's latest version dbGaP link.
         """
-        self.dbgap_accession = self.set_dbgap_accession()
+        self.phs = self.set_phs()
         self.dbgap_latest_version_link = self.set_dbgap_latest_version_link()
         # Call the "real" save method.
         super(Study, self).save(*args, **kwargs)
     
-    def set_dbgap_accession(self):
-        """Automatically set dbgap_accession from the study's phs.
+    def set_phs(self):
+        """Automatically set phs from the study's accession number.
         
         Properly format the phs number for this study, so it's easier to get to
         in templates.
@@ -76,7 +76,7 @@ class Study(models.Model):
         latest version.
         """
         STUDY_URL = 'http://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id={}'
-        return STUDY_URL.format(self.dbgap_accession)
+        return STUDY_URL.format(self.phs)
 
 
 class Trait(models.Model):
