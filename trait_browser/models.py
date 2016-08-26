@@ -4,6 +4,8 @@
 
 from django.db import models
 
+# Study models.
+# ------------------------------------------------------------------------------
 class GlobalStudy(models.Model):
     """Model for Global Study table.
     
@@ -79,6 +81,34 @@ class Study(models.Model):
         return STUDY_URL.format(self.phs)
 
 
+class SourceStudyVersion(models.Model):
+    """
+    """
+    pass
+
+
+class Subcohort(models.Model):
+    """
+    """
+    pass
+
+
+# Dataset related models.
+# ------------------------------------------------------------------------------
+class SourceDataset(models.Model):
+    """
+    """
+    pass
+
+
+class SourceDatasetSubcohorts(models.Model):
+    """
+    """
+    pass
+
+
+# Trait models.
+# ------------------------------------------------------------------------------
 class Trait(models.Model):
     """Abstract superclass model for SourceTrait and HarmonizedTrait.
     
@@ -86,12 +116,7 @@ class Trait(models.Model):
     model itself won't be used to create a db table.
     
     Fields:
-        dcc_trait_id
-        name
-        description
-        data_type
-        unit
-        web_date_added
+
     """
 
     # Set value choices for data_type.
@@ -210,6 +235,16 @@ class SourceTrait(Trait):
         return STUDY_URL.format(self.study_accession)
 
 
+class HarmonizedTrait(Trait):
+    """Model for traits harmonized by the DCC.
+    
+    Extends the Trait abstract superclass. 
+    """
+    pass
+
+
+# Encoded Value models.
+# ------------------------------------------------------------------------------
 class EncodedValue(models.Model):
     """Abstract superclass model for SourceEncodedValue and HarmonizedEncodedValue.
     
