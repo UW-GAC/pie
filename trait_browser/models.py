@@ -1,6 +1,26 @@
 """Models for trait_browser app."""
 
+# Model fields that are imported directly from Snuffles are preceded with i_
+
 from django.db import models
+
+class GlobalStudy(models.Model):
+    """Model for Global Study table.
+    
+    Global study connects data that are from the same dbGaP study, but may spread across
+    parent and child accessions. Use GlobalStudy for all of the queries you think you might
+    want to use Study for.
+    
+    Fields:
+        i_id
+        i_name
+    """
+
+    i_id = models.IntegerField(primary_key=True, db_column='study_id')
+    i_name = models.CharField(max_length=200)
+
+    class Meta:
+        verbose_name_plural = 'GlobalStudies'
 
 
 class Study(models.Model):
