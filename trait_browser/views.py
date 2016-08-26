@@ -3,6 +3,7 @@
 from django.shortcuts import render, get_object_or_404, HttpResponse
 from django.db.models import Q    # Allows complex queries when searching.
 from django.views.generic import DetailView
+from django.contrib.auth.decorators import login_required
 
 from django_tables2   import RequestConfig
 
@@ -21,7 +22,7 @@ class SourceTraitDetail(DetailView):
     context_object_name = 'source_trait'
     template_name = 'trait_browser/source_trait_detail.html'
 
-
+@login_required
 def source_all(request):
     """Table view for SourceTrait objects.
     
@@ -40,6 +41,7 @@ def source_all(request):
     )
 
 
+@login_required
 def source_study_detail(request, pk):
     """Table view for a table of SourceTraits for a single study.
     
@@ -59,6 +61,7 @@ def source_study_detail(request, pk):
     )
 
 
+@login_required
 def source_study_list(request):
     """Table view for a table listing each of the studies, with links.
     
@@ -76,6 +79,7 @@ def source_study_list(request):
     )
 
 
+@login_required
 def search(text_query, trait_type, studies=[]):
     """Search either source or (eventually) harmonized traits for a given query.
     
@@ -108,6 +112,7 @@ def search(text_query, trait_type, studies=[]):
 # To make this eventually work for harmonized traits, we could add a trait_type
 # argument to the function definition plus some if statements to select proper
 # forms/models.
+@login_required
 def source_search(request):
     """SourceTrait search form view.
     
