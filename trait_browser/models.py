@@ -168,6 +168,23 @@ class SourceDatasetSubcohorts(models.Model):
     # Adds .subcohort (object) and .subcohort_id (pk).
 
 
+class SourceDatasetUniqueKeys(models.Model):
+    """Model for unique keys within each dbGaP source dataset.
+    
+    Fields:
+        i_id
+        source_dataset
+        source_trait
+        i_is_visit_column
+    """
+    i_id = models.IntegerField(primary_key=True, db_column='i_id')
+    source_dataset = models.ForeignKey(SourceDataset)
+    # Adds .source_dataset (object) and .source_dataset_id (pk).
+    source_trait = models.ForeignKey(SourceTrait)
+    # Adds .source_trait (object) and .source_trait_id (pk).
+    i_is_visit_column
+    
+
 # Trait models.
 # ------------------------------------------------------------------------------
 class Trait(models.Model):
