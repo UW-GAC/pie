@@ -7,9 +7,9 @@ from django.db import models
 # Study models.
 # ------------------------------------------------------------------------------
 class GlobalStudy(models.Model):
-    """Model for Global Study table.
+    """Model for "global study", which links studies between parent & child accessions.
     
-    Global study connects data that are from the same dbGaP study, but may spread across
+    Global study connects data that are from the same parent study, but may be spread across
     parent and child accessions. Use GlobalStudy for all of the queries you think you might
     want to use Study for.
     
@@ -26,7 +26,7 @@ class GlobalStudy(models.Model):
 
 
 class Study(models.Model):
-    """Model for Study table.
+    """Model for dbGaP study accessions.
     
     Fields:
         i_accession
