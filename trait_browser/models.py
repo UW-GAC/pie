@@ -3,6 +3,8 @@
 # Model fields that are imported directly from Snuffles are preceded with i_
 # ForeignKey fields do not have this prefix, since they are links within the
 # Django database.
+# Custom primary_key fields have db_column set as well, otherwise their column
+# names in the backend db would have "_id" appended to them.
 
 from django.db import models
 
@@ -107,9 +109,16 @@ class SourceStudyVersion(models.Model):
     
 
 class Subcohort(models.Model):
+    """Model for subcohorts.
+    
+    Fields:
+    
     """
-    """
-    pass
+    i_id = models.IntegerField(primary_key=True, db_column='i_id')
+    study = models.ForeignKey(Study)
+    # This adds two fields: study is the actual study object that this instance 
+    # is linked to, and study_id is the primary key of the linked Study object.
+    i_name = models.CharField(45)
 
 
 # Dataset related models.
