@@ -1,6 +1,8 @@
 """Models for trait_browser app."""
 
 # Model fields that are imported directly from Snuffles are preceded with i_
+# ForeignKey fields do not have this prefix, since they are links within the
+# Django database.
 
 from django.db import models
 
@@ -82,10 +84,27 @@ class Study(models.Model):
 
 
 class SourceStudyVersion(models.Model):
+    """Model for versions of each dbGaP study accession.
+    
+    Fields:
+        i_id
+        study
+        i_version
+        i_participant_set
+        i_dbgap_date
+        i_prerelease
+        i_deprecated
     """
-    """
-    pass
-
+    i_id = models.IntegerField(primary_key=True, db_column='i_id')
+    study = models.ForeignKey(Study)
+    # This adds two fields: study is the actual study object that this instance 
+    # is linked to, and study_id is the primary key of the linked Study object.
+    i_version = models.IntegerField()
+    i_participant_set = models.IntegerField()
+    i_dbagp_date = models.DateTimeField()
+    i_prerelease = models.BooleanField()
+    i_deprecated = models.BooleanField()
+    
 
 class Subcohort(models.Model):
     """
