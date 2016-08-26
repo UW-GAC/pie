@@ -26,6 +26,7 @@ urlpatterns = [
     url(r'^pages/', include('django.contrib.flatpages.urls')),    # Flat pages 
     url(r'^admin/', include(admin.site.urls)),    # Admin interface
     url(r'^phenotypes/', include('trait_browser.urls', namespace='trait_browser')),    # Trait browser app
+    url('^', include('django.contrib.auth.urls')), # authentication views
 ]
 
 # Set the name for the admin site.
