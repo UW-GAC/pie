@@ -124,9 +124,33 @@ class Subcohort(models.Model):
 # Dataset related models.
 # ------------------------------------------------------------------------------
 class SourceDataset(models.Model):
+    """Model for dbGaP datasets from which SourceTraits are obtained.
+    
+    Fields:
+        i_id
+        study_version
+        i_accession
+        i_version
+        i_visit_code
+        i_visit_number
+        i_is_subject_file
+        i_study_subject_column
+        i_is_medication_dataset
+        i_dbgap_description
+        i_dcc_description
     """
-    """
-    pass
+    i_id = models.IntegerField(primary_key=True, db_column='i_id')
+    study_version = models.ForeignKey(SourceStudyVersion)
+    i_accession = models.IntegerField()
+    i_version = models.IntegerField()
+    i_visit_code = models.CharField(max_length=100)
+    i_visit_number = models.CharField(max_length=45)
+    i_is_subject_file = models.BooleanField()
+    i_study_subject_column = models.CharField(max_length=45)
+    i_is_medication_dataset = models.BooleanField()
+    # These TextFields use longtext in MySQL rather than just text, like in snuffles.
+    i_dbgap_description = models.TextField() 
+    i_dcc_description = models.TextField()
 
 
 class SourceDatasetSubcohorts(models.Model):
