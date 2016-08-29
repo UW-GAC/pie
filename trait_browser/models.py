@@ -25,6 +25,7 @@ class GlobalStudy(models.Model):
 
     i_id = models.PositiveIntegerField(primary_key=True, db_column='study_id')
     i_name = models.CharField(max_length=200)
+    web_date_added = models.DateTimeField(auto_now_add=True, auto_now=False)
 
     class Meta:
         verbose_name_plural = 'GlobalStudies'
@@ -47,6 +48,7 @@ class Study(models.Model):
     i_study_name = models.CharField(max_length=200)
     phs = models.CharField(max_length=9)
     dbgap_latest_version_link = models.CharField(max_length=200)
+    web_date_added = models.DateTimeField(auto_now_add=True, auto_now=False)
 
     class Meta:
         # Fix pluralization of this model, because grammar. 
@@ -108,6 +110,7 @@ class SourceStudyVersion(models.Model):
     i_is_prerelease = models.BooleanField()
     i_is_deprecated = models.BooleanField()
     phs_version_string = models.CharField(max_length=20)
+    web_date_added = models.DateTimeField(auto_now_add=True, auto_now=False)
     
     def save(self, *args, **kwargs):
         """Custom save method for setting default dbGaP accession strings.
@@ -134,6 +137,7 @@ class Subcohort(models.Model):
     # Adds .study (object) and .study_id (pk).
     i_id = models.PositiveIntegerField(primary_key=True, db_column='i_id')
     i_name = models.CharField(45)
+    web_date_added = models.DateTimeField(auto_now_add=True, auto_now=False)
 
 
 # Dataset related models.
@@ -169,6 +173,7 @@ class SourceDataset(models.Model):
     i_dbgap_description = models.TextField() 
     i_dcc_description = models.TextField()
     pht_version_string = models.CharField(max_length=20)
+    web_date_added = models.DateTimeField(auto_now_add=True, auto_now=False)
 
     def save(self, *args, **kwargs):
         """Custom save method for setting default dbGaP accession strings.
@@ -198,6 +203,7 @@ class SourceDatasetSubcohorts(models.Model):
     subcohort = models.ForeignKey(Subcohort)
     # Adds .subcohort (object) and .subcohort_id (pk).
     i_id = models.PositiveIntegerField(primary_key=True, db_column='i_id')
+    web_date_added = models.DateTimeField(auto_now_add=True, auto_now=False)
 
 
 class SourceDatasetUniqueKeys(models.Model):
@@ -216,6 +222,7 @@ class SourceDatasetUniqueKeys(models.Model):
     # Adds .source_trait (object) and .source_trait_id (pk).
     i_id = models.PositiveIntegerField(primary_key=True, db_column='i_id')
     i_is_visit_column = models.BooleanField()
+    web_date_added = models.DateTimeField(auto_now_add=True, auto_now=False)
     
 
 class HarmonizedTraitSet(models.Model):
@@ -233,6 +240,7 @@ class HarmonizedTraitSet(models.Model):
     i_trait_set_name = models.CharField(max_length=45)
     i_version = models.PositiveIntegerField()
     i_description = models.CharField(max_length=1000)
+    web_date_added = models.DateTimeField(auto_now_add=True, auto_now=False)
     
 
 # Trait models.
@@ -401,6 +409,7 @@ class TraitEncodedValue(models.Model):
     # Has auto-added id primary key field.
     i_category = models.CharField(max_length=45)
     i_value = models.CharField(max_length=1000)
+    web_date_added = models.DateTimeField(auto_now_add=True, auto_now=False)
 
     class Meta:
         abstract = True
