@@ -43,8 +43,7 @@ class Study(models.Model):
     i_accession = models.IntegerField(primary_key=True, db_column='i_accession')
     i_study_name = models.CharField(max_length=200)
     global_study = models.ForeignKey(GlobalStudy)
-    # This adds two fields: global_study is the actual GlobalStudy object that this instance 
-    # is linked to, and global_study_id is the primary key of the linked GlobalStudy object.
+    # Adds .global_study (object) and .global_study_id (pk).
     phs = models.CharField(max_length=20)
     dbgap_latest_version_link = models.CharField(max_length=200)
 
@@ -99,8 +98,7 @@ class SourceStudyVersion(models.Model):
     """
     i_id = models.IntegerField(primary_key=True, db_column='i_id')
     study = models.ForeignKey(Study)
-    # This adds two fields: study is the actual study object that this instance 
-    # is linked to, and study_id is the primary key of the linked Study object.
+    # Adds .study (object) and .study_id (pk).
     i_version = models.IntegerField()
     i_participant_set = models.IntegerField()
     i_dbagp_date = models.DateTimeField()
@@ -116,8 +114,7 @@ class Subcohort(models.Model):
     """
     i_id = models.IntegerField(primary_key=True, db_column='i_id')
     study = models.ForeignKey(Study)
-    # This adds two fields: study is the actual study object that this instance 
-    # is linked to, and study_id is the primary key of the linked Study object.
+    # Adds .study (object) and .study_id (pk).
     i_name = models.CharField(45)
 
 
@@ -233,8 +230,7 @@ class SourceTrait(Trait):
     """
     
     study = models.ForeignKey(Study)
-    # This adds two fields: study is the actual Study object that this instance 
-    # is linked to, and study_id is the primary key of the linked Study object.
+    # Adds .study (object) and .study_id (pk).
     # dbGaP variable and dataset ids.
     phv = models.IntegerField()
     pht = models.IntegerField()
