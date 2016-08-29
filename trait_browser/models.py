@@ -8,6 +8,10 @@
 
 from django.db import models
 
+# Set value choices for data_type.
+DATA_TYPES = ('string', 'integer', 'encoded', 'decimal') # All of the available data types
+DATA_TYPE_CHOICES = tuple([(el, el) for el in DATA_TYPES])
+
 # Study models.
 # ------------------------------------------------------------------------------
 class GlobalStudy(models.Model):
@@ -191,18 +195,14 @@ class Trait(models.Model):
     model itself won't be used to create a db table.
     
     Fields:
-
+        i_trait_id
+        i_trait_name
+        i_description
+        web_date_added
     """
-
-    # Set value choices for data_type.
-    DATA_TYPES = ('string', 'integer', 'encoded', 'decimal') # All of the available data types
-    DATA_TYPE_CHOICES = tuple([(el, el) for el in DATA_TYPES])
-    
-    dcc_trait_id = models.PositiveIntegerField(primary_key=True, db_column='dcc_trait_id')
-    name = models.CharField(max_length=100, verbose_name='phenotype name')
-    description = models.CharField(max_length=500, verbose_name='phenotype description')
-    data_type = models.CharField(max_length=max([len(s) for s in DATA_TYPES]),choices=DATA_TYPE_CHOICES)
-    unit = models.CharField(max_length=45)
+    i_trait_id = models.PositiveIntegerField(primary_key=True, db_column='i_trait_id')
+    i_trait_name = models.CharField(max_length=100, verbose_name='phenotype name')
+    i_description = models.TextField(verbose_name='phenotype description')
     web_date_added = models.DateTimeField(auto_now_add=True, auto_now=False)
 
     class Meta:
