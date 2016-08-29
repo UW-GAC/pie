@@ -48,7 +48,7 @@ class Study(models.Model):
     i_study_name = models.CharField(max_length=200)
     global_study = models.ForeignKey(GlobalStudy)
     # Adds .global_study (object) and .global_study_id (pk).
-    phs = models.CharField(max_length=20)
+    phs = models.CharField(max_length=9)
     dbgap_latest_version_link = models.CharField(max_length=200)
 
     class Meta:
@@ -75,7 +75,7 @@ class Study(models.Model):
         Properly format the phs number for this study, so it's easier to get to
         in templates.
         """
-        return '{:06}'.format(self.phs)
+        return 'phs{:06}'.format(self.phs)
 
     def set_dbgap_latest_version_link(self):
         """Automatically set dbgap_latest_version_link from the study's phs.
@@ -99,6 +99,7 @@ class SourceStudyVersion(models.Model):
         i_dbgap_date
         i_prerelease
         i_deprecated
+        phs_version_string
     """
     
     i_id = models.IntegerField(primary_key=True, db_column='i_id')
@@ -109,6 +110,20 @@ class SourceStudyVersion(models.Model):
     i_dbagp_date = models.DateTimeField()
     i_prerelease = models.BooleanField()
     i_deprecated = models.BooleanField()
+    phs_version_string = models.CharField(max_length=20)
+    
+    def save(self, *args, **kwargs):
+        """Custom save method for setting default dbGaP accession strings.
+        
+        Automatically sets the value for phs_version_string.
+        """
+        self.phs_version_string = self.set_phs_version_string()
+        # Call the "real" save method.
+        super(Study, self).save(*args, **kwargs)
+    
+    def set_phs_version_string(self):
+        """Automatically set phs_version_string from the study's phs value."""
+        return '{}.v{}.p{}'.format(self.study.phs, self.i_version, self.i_participant_set)
     
 
 class Subcohort(models.Model):
@@ -144,7 +159,7 @@ class SourceDataset(models.Model):
     """
     
     i_id = models.IntegerField(primary_key=True, db_column='i_id')
-    study_version = models.ForeignKey(SourceStudyVersion)
+    source_study_version = models.ForeignKey(SourceStudyVersion)
     i_accession = models.IntegerField()
     i_version = models.IntegerField()
     i_visit_code = models.CharField(max_length=100)
@@ -155,7 +170,20 @@ class SourceDataset(models.Model):
     # These TextFields use longtext in MySQL rather than just text, like in snuffles.
     i_dbgap_description = models.TextField() 
     i_dcc_description = models.TextField()
+    pht_version_string = models.CharField(max_length=20)
 
+    def save(self, *args, **kwargs):
+        """Custom save method for setting default dbGaP accession strings.
+        
+        Automatically sets the value for pht_version_string.
+        """
+        self.pht_version_string = self.set_pht_version_string()
+        # Call the "real" save method.
+        super(Study, self).save(*args, **kwargs)
+
+    def set_pht_version_string(self):
+        """Automatically set pht_version_string from the accession, version, and particpant set."""
+        return 'pht{:06}.v{}.p{}'.format(self.i_accession, self.i_version, self.source_study_version.participant_set)
 
 class SourceDatasetSubcohorts(models.Model):
     """Model for Subcohorts found within each dbGaP source dataset.
@@ -289,25 +317,27 @@ class SourceTrait(Trait):
         pass
         
     def set_study_accession(self):
-        """Automatically set study_accession field from study.phs, study_version, and participant_set."""
-        return 'phs{:06}.v{}.p{}'.format(self.study.phs, self.study_version, self.participant_set)
+        """Automatically set study_accession field from the linked SourceStudyVersion."""
+        return self.source_dataset.source_study_version.phs_version_string
 
     def set_dataset_accession(self):
-        """Automatically set dataset_accession field from pht, dataset_version, and participant_set."""
-        return 'pht{:06}.v{}.p{}'.format(self.pht, self.dataset_version, self.participant_set)
+        """Automatically set dataset_accession field from the linked SourceDataset."""
+        return self.source_dataset.pht_version_string
     
     def set_variable_accession(self):
-        """Automatically set variable_accession from phv, variable_version, and participant_set."""
-        return 'phv{:08}.v{}.p{}'.format(self.phv, self.variable_version, self.participant_set)
+        """Automatically set variable_accession from the linked SourceStudyVersion and dbGaP accession."""
+        return 'phv{:08}.v{}.p{}'.format(self.dbgap_variable_accession,
+                                         self.dbgap_variable_version,
+                                         self.source_dataset.source_study_version.participant_set)
 
     def set_dbgap_variable_link(self):
-        """Automatically set dbgap_variable_link from study_accession and phv.
+        """Automatically set dbgap_variable_link from study_accession and dbgap_variable_accession.
         
         Construct a URL to the dbGaP variable information page using a base URL
         and some fields from this SourceTrait.
         """
         VARIABLE_URL = 'http://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/variable.cgi?study_id={}&phv={:08}'
-        return VARIABLE_URL.format(self.study_accession, self.phv)
+        return VARIABLE_URL.format(self.study_accession, self.dbgap_variable_accession)
 
     def set_dbgap_study_link(self):
         """Automatically set dbgap_study_link from study_accession.
