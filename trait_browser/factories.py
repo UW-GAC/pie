@@ -8,7 +8,21 @@ from django.utils import timezone
 import factory
 import factory.fuzzy
 
-from .models import Study, SourceTrait, SourceEncodedValue
+from .models import (GlobalStudy, Study, SourceStudyVersion, Subcohort,
+                     SourceDataset, SourceDatasetSubcohorts, SourceDatasetUniqueKeys, HarmonizedTraitSet,
+                     SourceTrait, HarmonizedTrait, SourceTraitEncodedValue, HarmonizedTraitEncodedValue)
+
+
+class GlobalStudyFactory(factor.DjangoModelFactory):
+    """Factory for GlobalStudy objects using Faker faked data."""
+    
+    i_id = factory.Sequence(lambda n: n)
+    i_name = factory.Faker('company')
+    web_date_added = factory.fuzzy.FuzzyDateTime(start_dt=timezone.make_aware(datetime(2016, 1, 1)))
+    
+    class Meta:
+        model = GlobalStudy
+        django_get_or_create = ('i_id', 'i_name')
 
 
 class StudyFactory(factory.DjangoModelFactory):
