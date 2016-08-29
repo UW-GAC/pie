@@ -383,48 +383,45 @@ class HarmonizedTrait(Trait):
 
 # Encoded Value models.
 # ------------------------------------------------------------------------------
-class EncodedValue(models.Model):
+class TraitEncodedValue(models.Model):
     """Abstract superclass model for SourceEncodedValue and HarmonizedEncodedValue.
     
     SourceEncodedValue and HarmonizedEncodedValue models inherit from this Model,
     but the EncodedValue model itself won't be used to create a db table.
     
     Fields:
-        category
-        value
+        i_category
+        i_value
         web_date_added
     """
     
-    category = models.CharField(max_length=45)
-    value = models.CharField(max_length=100)
-    web_date_added = models.DateTimeField(auto_now_add=True, auto_now=False)
+    # Has auto-added id primary key field.
+    i_category = models.CharField(max_length=45)
+    i_value = models.CharField(max_length=1000)
 
     class Meta:
         abstract = True
 
 
-class SourceEncodedValue(EncodedValue):
+class SourceTraitEncodedValue(TraitEncodedValue):
     """Model for encoded values from 'raw' dbGaP data, as received from dbGaP.
     
-    Extends the EncodedValue abstract superclass.
+    Extends the TraitEncodedValue abstract superclass.
     
     Fields:
         source_trait
     """
     
-    # This adds two fields: source_trait is the actual SourceTrait object that
-    # this instance is linked to, and source_trait_id is the primary key of the
-    # linked SourceTrait object.
     source_trait = models.ForeignKey(SourceTrait)
-    # This will have an automatic primary key field, "id", since pk isn't set.
+    # Adds .source_trait (object) and .source_trait_id (pk)
     
     def __str__(self):
-        """Pretty printing of SourceEncodedValue objects."""
+        """Pretty printing of SourceTraitEncodedValue objects."""
         to_print = (
-            ('SourceTrait id', self.source_trait.dcc_trait_id,),
-            ('SourceTrait name', self.source_trait.name,),
-            ('category', self.category,),
-            ('value', self.value,),
+            ('SourceTrait id', self.source_trait.i_trait_id,),
+            ('SourceTrait name', self.source_trait.i_trait_name,),
+            ('category', self.i_category,),
+            ('value', self.i_value,),
         )
         print_list = ['{0} : {1}'.format(el[0], el[1]) for el in to_print]
         return '\n'.join(print_list)
@@ -438,7 +435,7 @@ class SourceEncodedValue(EncodedValue):
         Returns:
             name of the linked SourceTrait object
         """
-        return self.source_trait.name
+        return self.source_trait.i_trait_name
     # Set this model attribute to the value of this function, for the admin interface.
     get_source_trait_name.short_description = 'SourceTrait Name'
     
@@ -451,6 +448,8 @@ class SourceEncodedValue(EncodedValue):
         Returns:
             study_name of the linked SourceTrait object
         """
-        return self.source_trait.study.name
+        return self.source_trait.source_dataset.source_study_version.study.global_study.name
     # Set this model attribute to the value of this function, for the admin interface.
-    get_source_trait_study.short_description = 'Study Name'
+    get_source_trait_study.short_description = 'Global Study Name'
+
+
