@@ -23,7 +23,7 @@ class GlobalStudy(models.Model):
         i_name
     """
 
-    i_id = models.IntegerField(primary_key=True, db_column='study_id')
+    i_id = models.PositiveIntegerField(primary_key=True, db_column='study_id')
     i_name = models.CharField(max_length=200)
 
     class Meta:
@@ -43,7 +43,7 @@ class Study(models.Model):
     
     global_study = models.ForeignKey(GlobalStudy)
     # Adds .global_study (object) and .global_study_id (pk).
-    i_accession = models.IntegerField(primary_key=True, db_column='i_accession')
+    i_accession = models.PositiveIntegerField(primary_key=True, db_column='i_accession')
     i_study_name = models.CharField(max_length=200)
     phs = models.CharField(max_length=9)
     dbgap_latest_version_link = models.CharField(max_length=200)
@@ -101,9 +101,9 @@ class SourceStudyVersion(models.Model):
     
     study = models.ForeignKey(Study)
     # Adds .study (object) and .study_id (pk).
-    i_id = models.IntegerField(primary_key=True, db_column='i_id')
-    i_version = models.IntegerField()
-    i_participant_set = models.IntegerField()
+    i_id = models.PositiveIntegerField(primary_key=True, db_column='i_id')
+    i_version = models.PositiveIntegerField()
+    i_participant_set = models.PositiveIntegerField()
     i_dbagp_date = models.DateTimeField()
     i_is_prerelease = models.BooleanField()
     i_is_deprecated = models.BooleanField()
@@ -132,7 +132,7 @@ class Subcohort(models.Model):
     
     study = models.ForeignKey(Study)
     # Adds .study (object) and .study_id (pk).
-    i_id = models.IntegerField(primary_key=True, db_column='i_id')
+    i_id = models.PositiveIntegerField(primary_key=True, db_column='i_id')
     i_name = models.CharField(45)
 
 
@@ -157,9 +157,9 @@ class SourceDataset(models.Model):
     
     source_study_version = models.ForeignKey(SourceStudyVersion)
     # Adds .source_study_version (object) and .source_study_version_id (pk).
-    i_id = models.IntegerField(primary_key=True, db_column='i_id')
-    i_accession = models.IntegerField()
-    i_version = models.IntegerField()
+    i_id = models.PositiveIntegerField(primary_key=True, db_column='i_id')
+    i_accession = models.PositiveIntegerField()
+    i_version = models.PositiveIntegerField()
     i_visit_code = models.CharField(max_length=100)
     i_visit_number = models.CharField(max_length=45)
     i_is_subject_file = models.BooleanField()
@@ -197,7 +197,7 @@ class SourceDatasetSubcohorts(models.Model):
     # Adds .source_dataset (object) and .source_dataset_id (pk).
     subcohort = models.ForeignKey(Subcohort)
     # Adds .subcohort (object) and .subcohort_id (pk).
-    i_id = models.IntegerField(primary_key=True, db_column='i_id')
+    i_id = models.PositiveIntegerField(primary_key=True, db_column='i_id')
 
 
 class SourceDatasetUniqueKeys(models.Model):
@@ -214,7 +214,7 @@ class SourceDatasetUniqueKeys(models.Model):
     # Adds .source_dataset (object) and .source_dataset_id (pk).
     source_trait = models.ForeignKey(SourceTrait)
     # Adds .source_trait (object) and .source_trait_id (pk).
-    i_id = models.IntegerField(primary_key=True, db_column='i_id')
+    i_id = models.PositiveIntegerField(primary_key=True, db_column='i_id')
     i_is_visit_column = models.BooleanField()
     
 
@@ -229,9 +229,9 @@ class HarmonizedTraitSet(models.Model):
         i_description
     """
 
-    i_id = models.IntegerField(primary_key=True, db_column='i_id')
+    i_id = models.PositiveIntegerField(primary_key=True, db_column='i_id')
     i_trait_set_name = models.CharField(max_length=45)
-    i_version = models.IntegerField()
+    i_version = models.PositiveIntegerField()
     i_description = models.CharField(max_length=1000)
     
 
@@ -287,12 +287,12 @@ class SourceTrait(Trait):
     i_detected_type = models.CharField(max_length=100)
     i_dbgap_type = models.CharField(max_length=100)
     i_visit_number = models.CharField(max_length=45)
-    i_dbgap_variable_accession = models.IntegerField()
-    i_dbgap_variable_version = models.IntegerField()
+    i_dbgap_variable_accession = models.PositiveIntegerField()
+    i_dbgap_variable_version = models.PositiveIntegerField()
     i_dbgap_comment = models.TextField()
     i_dbgap_unit = models.CharField(max_length=45)
-    i_n_records = models.IntegerField()
-    i_n_missing = models.IntegerField()
+    i_n_records = models.PositiveIntegerField()
+    i_n_missing = models.PositiveIntegerField()
     # dbGaP accession numbers
     study_accession = models.CharField(max_length=20)
     dataset_accession = models.CharField(max_length=20)
