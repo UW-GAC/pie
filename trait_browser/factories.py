@@ -28,13 +28,14 @@ class GlobalStudyFactory(factor.DjangoModelFactory):
 class StudyFactory(factory.DjangoModelFactory):
     """Factory for Study objects using Faker faked data."""
         
-    name = factory.Faker('company')
-    study_id = factory.Sequence(lambda n: n)
-    phs = randint(1, 999999)
+    global_study = factory.SubFactory(GlobalStudy)
+    i_accession = randint(1, 999999)
+    i_study_name = factory.Faker('company')
+    web_date_added = factory.fuzzy.FuzzyDateTime(start_dt=timezone.make_aware(datetime(2016, 1, 1)))    
     
     class Meta:
         model = Study
-        django_get_or_create = ('name', 'study_id', )
+        django_get_or_create = ('i_accession', 'i_study_name', )
 
 
 class SourceTraitFactory(factory.DjangoModelFactory):
