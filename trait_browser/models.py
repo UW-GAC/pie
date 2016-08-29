@@ -453,3 +453,37 @@ class SourceTraitEncodedValue(TraitEncodedValue):
     get_source_trait_study.short_description = 'Global Study Name'
 
 
+class HarmonizedTraitEncodedValue(TraitEncodedValue):
+    """Model for encoded values from DCC harmonized traits.
+    
+    Extends the TraitEncodedValue superclass.
+    
+    Fields:
+    
+    """
+    harmonized_trait = models.ForeignKey(HarmonizedTrait)
+    # Adds .harmonized_trait (object) and .harmonized_trait_id (pk).
+    
+    def __str__(self):
+        """Pretty printing of HarmonizedTraitEncodedValue objects."""
+        to_print = (
+            ('HarmonizedTrait id', self.harmonized_trait.i_trait_id,),
+            ('HarmonizedTrait name', self.harmonized_trait.i_trait_name,),
+            ('category', self.i_category,),
+            ('value', self.i_value,),
+        )
+        print_list = ['{0} : {1}'.format(el[0], el[1]) for el in to_print]
+        return '\n'.join(print_list)
+    
+    def get_harmonized_trait_name(self):
+        """Get the name of the linked HarmonizedTrait object.
+        
+        This function is used to properly display the HarmonizedTrait Name column
+        in the admin interface.
+        
+        Returns:
+            name of the linked HarmonizedTrait object
+        """
+        return self.harmonized_trait.i_trait_name
+    # Set this model attribute to the value of this function, for the admin interface.
+    get_source_trait_name.short_description = 'HarmonizedTrait Name'
