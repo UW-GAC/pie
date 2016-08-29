@@ -219,6 +219,23 @@ class SourceDatasetUniqueKeys(models.Model):
     i_is_visit_column = models.BooleanField()
     
 
+class HarmonizedTraitSet(models.Model):
+    """Model for harmonized trait set from snuffles. Analagous to the SourceDataset
+    for source traits.
+    
+    Fields:
+        i_id
+        i_trait_set_name
+        i_version
+        i_description
+    """
+
+    i_id = models.IntegerField(primary_key=True, db_column='i_id')
+    i_trait_set_name = models.CharField(max_length=45)
+    i_version = models.IntegerField()
+    i_description = models.CharField(max_length=1000)
+    
+
 # Trait models.
 # ------------------------------------------------------------------------------
 class Trait(models.Model):
