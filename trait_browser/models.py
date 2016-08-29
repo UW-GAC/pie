@@ -221,13 +221,16 @@ class SourceTrait(Trait):
     Extends the Trait abstract model.
     
     Fields:
-        study
-        phv
-        pht
-        study_version
-        dataset_version
-        variable_version
-        participant_set
+        source_dataset
+        i_detected_type
+        i_dbgap_type
+        i_visit_number
+        i_dbgap_variable_accession
+        i_dbgap_variable_version
+        i_dbgap_comment
+        i_dbgap_unit
+        i_n_records
+        i_n_missing
         study_accession
         dataset_accession
         variable_accession
@@ -235,16 +238,17 @@ class SourceTrait(Trait):
         dbgap_variable_link
     """
     
-    study = models.ForeignKey(Study)
-    # Adds .study (object) and .study_id (pk).
-    # dbGaP variable and dataset ids.
-    phv = models.IntegerField()
-    pht = models.IntegerField()
-    # dbGaP version numbers.
-    study_version = models.IntegerField()
-    dataset_version = models.IntegerField()
-    variable_version = models.IntegerField()
-    participant_set = models.IntegerField()
+    source_dataset = models.ForeignKey(SourceDataset)
+    # Adds .source_dataset (object) and .source_dataset_id (pk).
+    i_detected_type = models.CharField(max_length=100)
+    i_dbgap_type = models.CharField(max_length=100)
+    i_visit_number = models.CharField(max_length=45)
+    i_dbgap_variable_accession = models.IntegerField()
+    i_dbgap_variable_version = models.IntegerField()
+    i_dbgap_comment = models.TextField()
+    i_dbgap_unit = models.CharField(max_length=45)
+    i_n_records = models.IntegerField()
+    i_n_missing = models.IntegerField()
     # dbGaP accession numbers
     study_accession = models.CharField(max_length=20)
     dataset_accession = models.CharField(max_length=20)
@@ -256,7 +260,7 @@ class SourceTrait(Trait):
     
     def __str__(self):
         """Pretty printing of SourceTrait objects."""
-        print_parms = ['dcc_trait_id', 'name', 'data_type', 'unit', 'web_date_added']
+        print_parms = ['i_trait_id', 'i_trait_name', 'i_detected_type', 'i_dbgap_unit', 'web_date_added']
         print_list = ['{0} : {1}'.format(k, str(self.__dict__[k])) for k in print_parms]
         return '\n'.join(print_list)
     
