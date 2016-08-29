@@ -188,7 +188,7 @@ class SourceDatasetUniqueKeys(models.Model):
     # Adds .source_dataset (object) and .source_dataset_id (pk).
     source_trait = models.ForeignKey(SourceTrait)
     # Adds .source_trait (object) and .source_trait_id (pk).
-    i_is_visit_column
+    i_is_visit_column = models.BooleanField()
     
 
 # Trait models.
