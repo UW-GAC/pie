@@ -8,9 +8,6 @@
 
 from django.db import models
 
-# Set value choices for data_type.
-DATA_TYPES = ('string', 'integer', 'encoded', 'decimal') # All of the available data types
-DATA_TYPE_CHOICES = tuple([(el, el) for el in DATA_TYPES])
 
 # Study models.
 # ------------------------------------------------------------------------------
@@ -370,8 +367,18 @@ class HarmonizedTrait(Trait):
     """Model for traits harmonized by the DCC.
     
     Extends the Trait abstract superclass. 
+    
+    Fields:
+        harmonized_trait_set
+        i_data_type
+        i_unit
+        i_is_unique_key
     """
-    pass
+    
+    harmonized_trait_set = models.ForeignKey(HarmonizedTraitSet)
+    i_data_type = models.CharField(max_length=45)
+    i_unit = models.CharField(max_length=100)
+    i_is_unique_key = models.BooleanField()
 
 
 # Encoded Value models.
