@@ -105,8 +105,8 @@ class SourceStudyVersion(models.Model):
     i_version = models.IntegerField()
     i_participant_set = models.IntegerField()
     i_dbagp_date = models.DateTimeField()
-    i_prerelease = models.BooleanField()
-    i_deprecated = models.BooleanField()
+    i_is_prerelease = models.BooleanField()
+    i_is_deprecated = models.BooleanField()
     phs_version_string = models.CharField(max_length=20)
     
     def save(self, *args, **kwargs):
@@ -182,6 +182,7 @@ class SourceDataset(models.Model):
     def set_pht_version_string(self):
         """Automatically set pht_version_string from the accession, version, and particpant set."""
         return 'pht{:06}.v{}.p{}'.format(self.i_accession, self.i_version, self.source_study_version.participant_set)
+
 
 class SourceDatasetSubcohorts(models.Model):
     """Model for Subcohorts found within each dbGaP source dataset.
