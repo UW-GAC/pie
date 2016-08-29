@@ -41,10 +41,10 @@ class Study(models.Model):
         dbgap_latest_version_link
     """
     
-    i_accession = models.IntegerField(primary_key=True, db_column='i_accession')
-    i_study_name = models.CharField(max_length=200)
     global_study = models.ForeignKey(GlobalStudy)
     # Adds .global_study (object) and .global_study_id (pk).
+    i_accession = models.IntegerField(primary_key=True, db_column='i_accession')
+    i_study_name = models.CharField(max_length=200)
     phs = models.CharField(max_length=9)
     dbgap_latest_version_link = models.CharField(max_length=200)
 
@@ -99,9 +99,9 @@ class SourceStudyVersion(models.Model):
         phs_version_string
     """
     
-    i_id = models.IntegerField(primary_key=True, db_column='i_id')
     study = models.ForeignKey(Study)
     # Adds .study (object) and .study_id (pk).
+    i_id = models.IntegerField(primary_key=True, db_column='i_id')
     i_version = models.IntegerField()
     i_participant_set = models.IntegerField()
     i_dbagp_date = models.DateTimeField()
@@ -130,9 +130,9 @@ class Subcohort(models.Model):
     
     """
     
-    i_id = models.IntegerField(primary_key=True, db_column='i_id')
     study = models.ForeignKey(Study)
     # Adds .study (object) and .study_id (pk).
+    i_id = models.IntegerField(primary_key=True, db_column='i_id')
     i_name = models.CharField(45)
 
 
@@ -155,8 +155,9 @@ class SourceDataset(models.Model):
         i_dcc_description
     """
     
-    i_id = models.IntegerField(primary_key=True, db_column='i_id')
     source_study_version = models.ForeignKey(SourceStudyVersion)
+    # Adds .source_study_version (object) and .source_study_version_id (pk).
+    i_id = models.IntegerField(primary_key=True, db_column='i_id')
     i_accession = models.IntegerField()
     i_version = models.IntegerField()
     i_visit_code = models.CharField(max_length=100)
@@ -191,11 +192,11 @@ class SourceDatasetSubcohorts(models.Model):
         subcohort
     """
     
-    i_id = models.IntegerField(primary_key=True, db_column='i_id')
     source_dataset = models.ForeignKey(SourceDataset)
     # Adds .source_dataset (object) and .source_dataset_id (pk).
     subcohort = models.ForeignKey(Subcohort)
     # Adds .subcohort (object) and .subcohort_id (pk).
+    i_id = models.IntegerField(primary_key=True, db_column='i_id')
 
 
 class SourceDatasetUniqueKeys(models.Model):
@@ -208,11 +209,11 @@ class SourceDatasetUniqueKeys(models.Model):
         i_is_visit_column
     """
     
-    i_id = models.IntegerField(primary_key=True, db_column='i_id')
     source_dataset = models.ForeignKey(SourceDataset)
     # Adds .source_dataset (object) and .source_dataset_id (pk).
     source_trait = models.ForeignKey(SourceTrait)
     # Adds .source_trait (object) and .source_trait_id (pk).
+    i_id = models.IntegerField(primary_key=True, db_column='i_id')
     i_is_visit_column = models.BooleanField()
     
 
@@ -376,6 +377,7 @@ class HarmonizedTrait(Trait):
     """
     
     harmonized_trait_set = models.ForeignKey(HarmonizedTraitSet)
+    # Adds .harmonized_trait_set (object) and .harmonized_trait_set_id (pk).
     i_data_type = models.CharField(max_length=45)
     i_unit = models.CharField(max_length=100)
     i_is_unique_key = models.BooleanField()
