@@ -100,6 +100,7 @@ class SourceStudyVersion(models.Model):
         i_prerelease
         i_deprecated
     """
+    
     i_id = models.IntegerField(primary_key=True, db_column='i_id')
     study = models.ForeignKey(Study)
     # Adds .study (object) and .study_id (pk).
@@ -116,6 +117,7 @@ class Subcohort(models.Model):
     Fields:
     
     """
+    
     i_id = models.IntegerField(primary_key=True, db_column='i_id')
     study = models.ForeignKey(Study)
     # Adds .study (object) and .study_id (pk).
@@ -140,6 +142,7 @@ class SourceDataset(models.Model):
         i_dbgap_description
         i_dcc_description
     """
+    
     i_id = models.IntegerField(primary_key=True, db_column='i_id')
     study_version = models.ForeignKey(SourceStudyVersion)
     i_accession = models.IntegerField()
@@ -162,6 +165,7 @@ class SourceDatasetSubcohorts(models.Model):
         source_dataset
         subcohort
     """
+    
     i_id = models.IntegerField(primary_key=True, db_column='i_id')
     source_dataset = models.ForeignKey(SourceDataset)
     # Adds .source_dataset (object) and .source_dataset_id (pk).
@@ -178,6 +182,7 @@ class SourceDatasetUniqueKeys(models.Model):
         source_trait
         i_is_visit_column
     """
+    
     i_id = models.IntegerField(primary_key=True, db_column='i_id')
     source_dataset = models.ForeignKey(SourceDataset)
     # Adds .source_dataset (object) and .source_dataset_id (pk).
@@ -200,6 +205,7 @@ class Trait(models.Model):
         i_description
         web_date_added
     """
+    
     i_trait_id = models.PositiveIntegerField(primary_key=True, db_column='i_trait_id')
     i_trait_name = models.CharField(max_length=100, verbose_name='phenotype name')
     i_description = models.TextField(verbose_name='phenotype description')
