@@ -95,6 +95,19 @@ class SourceDatasetFactory(factory.DjangoModelFactory):
         django_get_or_create = ('i_id', )
 
 
+class SourceDatasetSubcohortsFactory(factory.DjangoModelFactory):
+    """Factory for SourceDatasetSubcohorts objects using Faker faked data."""
+    
+    source_dataset = factory.SubFactory(SourceDataset)
+    subcohort = factory.SubFactory(Subcohort)
+    i_id = factory.Sequence(lambda n: n)
+    web_date_added = factory.fuzzy.FuzzyDateTime(start_dt=timezone.make_aware(datetime(2016, 1, 1)))
+    
+    class Meta:
+        model = SourceDatasetSubcohorts
+        django_get_or_create = ('i_id', )
+
+
 class SourceTraitFactory(factory.DjangoModelFactory):
     """Factory for SourceTrait objects using Faker faked data."""
     
