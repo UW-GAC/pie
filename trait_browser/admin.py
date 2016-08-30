@@ -125,6 +125,21 @@ class SourceDatasetUniqueKeysAdmin(ReadOnlyAdmin):
     search_fields = ('i_id', )
 
 
+class HarmonizedTraitSetAdmin(ReadOnlyAdmin):
+    """Admin class for HarmonizedTraitSet objects."""
+    
+    # Make all fields read-only
+    readonly_fields = list(set(chain.from_iterable(
+        (field.name, field.attname) if hasattr(field, 'attname') else (field.name,)
+        for field in Study._meta.get_fields()
+        if not field.is_relation    # Exclude foreign keys from the results.
+    )))
+    # Set fields to display, filter, and search on.
+    list_display = ('i_id', 'i_trait_set_name', 'i_version', )
+    list_filter = ('i_id', 'i_trait_set_name', )
+    search_fields = ('i_id', 'i_trait_set_name', )
+
+
 
 
 
