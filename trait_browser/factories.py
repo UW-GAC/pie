@@ -180,13 +180,27 @@ class HarmonizedTraitFactory(factory.DjangoModelFactory):
         django_get_or_create = ('i_trait_id', )
 
 
-class SourceEncodedValueFactory(factory.DjangoModelFactory):
-    """Factory for SourceEncodedValue objects using Faker faked data."""
+class SourceTraitEncodedValueFactory(factory.DjangoModelFactory):
+    """Factory for SourceTraitEncodedValue objects using Faker faked data."""
     
-    category = factory.Faker('word')
-    value = factory.Faker('text', max_nb_chars=50)
+    i_category = factory.Faker('word')
+    i_value = factory.Faker('text', max_nb_chars=50)
     web_date_added = factory.fuzzy.FuzzyDateTime(start_dt=timezone.make_aware(datetime(2016, 1, 1)))
+    
     source_trait = factory.SubFactory(SourceTraitFactory) 
        
     class Meta:
-        model = SourceEncodedValue
+        model = SourceTraitEncodedValue
+
+
+class HarmonizedTraitEncodedValueFactory(factory.DjangoModelFactory):
+    """Factory for HarmonizedTraitEncodedValue objects using Faker faked data."""
+    
+    i_category = factory.Faker('word')
+    i_value = factory.Faker('text', max_nb_chars=50)
+    web_date_added = factory.fuzzy.FuzzyDateTime(start_dt=timezone.make_aware(datetime(2016, 1, 1)))
+    
+    harmonized_trait = factory.SubFactory(HarmonizedTraitFactory) 
+       
+    class Meta:
+        model = HarmonizedTraitEncodedValue
