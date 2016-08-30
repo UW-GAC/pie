@@ -11,18 +11,18 @@
 
     <div class="well">
     
-        <h2>Source phenotype details for {{ source_trait.name }}</h2>
+        <h2>Source phenotype details for {{ source_trait.i_trait_name }}</h2>
         
     
-        <p><strong>Phenotype name</strong> : {{ source_trait.name }}</p>
-        <p><strong>Study name</strong> : {{ source_trait.study.name }}</p>
-        <p><strong>Phenotype description</strong> : {{ source_trait.description }}</p>
-        <p><strong>Data type</strong> : {{ source_trait.data_type }}</p>
-        <p><strong>Unit</strong> : {{ source_trait.unit }}</p>
+        <p><strong>Phenotype name</strong> : {{ source_trait.i_trait_name }}</p>
+        <p><strong>Study name</strong> : {{ source_trait.study.i_study_name }}</p>
+        <p><strong>Phenotype description</strong> : {{ source_trait.i_description }}</p>
+        <p><strong>Data type</strong> : {{ source_trait.i_detected_type }}</p>
+        <p><strong>Unit</strong> : {{ source_trait.dbgap_unit }}</p>
 
         <hr>
        
-        {% if source_trait.sourceencodedvalue_set.all %}
+        {% if source_trait.sourcetraitencodedvalue_set.all %}
            <h4>Encoded Values</h4>
            <table class="table table-nonfluid table-condensed table-sm table-striped table-bordered">
                <tr>
@@ -31,8 +31,8 @@
                </tr>
                {% for ev in source_trait.sourceencodedvalue_set.all %}
                    <tr>
-                       <td>{{ ev.category }}</td>
-                       <td>{{ ev.value }}</td>
+                       <td>{{ ev.i_category }}</td>
+                       <td>{{ ev.i_value }}</td>
                    </tr>
                {% endfor %}
            </table>
