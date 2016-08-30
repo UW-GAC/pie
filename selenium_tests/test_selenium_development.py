@@ -147,6 +147,19 @@ class SeleniumTestCase(StaticLiveServerTestCase):
             # Test the number of expected rows.
             self.assertEqual(expected_rows, total_rows)
 
+class AutoLoginSeleniumTestCase(SeleniumTestCase):
+
+    def setUp(self):
+        super(AutoLoginSeleniumTestCase, self).setUp()
+        # login
+        self.get_reverse('login')
+        username = self.selenium.find_element_by_id('id_username')
+        password = self.selenium.find_element_by_id('id_password')
+        username.send_keys(self.user.username)
+        password.send_keys(self.user_password)
+        self.selenium.find_element_by_id('submit-button').click()       
+        time.sleep(1)
+
 
 class HomeTest(SeleniumTestCase):
     
@@ -206,12 +219,13 @@ class AdminTest(SeleniumTestCase):
         self.go_back()
 
 
-class SourceTraitSearchTest(SeleniumTestCase):
+class SourceTraitSearchTest(AutoLoginSeleniumTestCase):
     
     def setUp(self):
         super(SourceTraitSearchTest, self).setUp()
         # Open the Search page.
         self.get_reverse('trait_browser:source_search')
+        time.sleep(1)
         
     def run_search(self, search_string, study_list=None):
         """Submit a search for the given search string."""
@@ -271,7 +285,7 @@ class SourceTraitSearchTest(SeleniumTestCase):
         self.run_search(good_text, [studies[1]])
 
 
-class TablePageTestCase(SeleniumTestCase):
+class TablePageTestCase(AutoLoginSeleniumTestCase):
     
     def test_source_all_table(self):
         """Run check_table_view on the All source traits table page. Check the link for a source trait detail page."""
