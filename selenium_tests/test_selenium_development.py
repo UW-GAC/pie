@@ -41,9 +41,12 @@ class SeleniumTestCase(StaticLiveServerTestCase):
     def setUp(self):
         super(SeleniumTestCase, self).setUp()
         # Add a superuser to the db.
-        self.user_password = 'atomicnumber34'
-        self.user = User.objects.create_superuser(username='selenium', email='foo@bar.com', password=self.user_password)
+        self.superuser_password = 'atomicnumber34'
+        self.superuser = User.objects.create_superuser(username='selenium', email='foo@bar.com', password=self.superuser_password)
         
+        self.user_password = 'atomicnumber16'
+        self.user = User.objects.create_user(username='sulfur', email='sulphur@bar.com', password=self.user_password)
+
         # Fill the test db with fake data.
         studies = StudyFactory.create_batch(5) # Make 5 studies.
         for study in studies:
@@ -147,10 +150,10 @@ class SeleniumTestCase(StaticLiveServerTestCase):
             # Test the number of expected rows.
             self.assertEqual(expected_rows, total_rows)
 
-class AutoLoginSeleniumTestCase(SeleniumTestCase):
+class UserAutoLoginSeleniumTestCase(SeleniumTestCase):
 
     def setUp(self):
-        super(AutoLoginSeleniumTestCase, self).setUp()
+        super(UserAutoLoginSeleniumTestCase, self).setUp()
         # login
         self.get_reverse('login')
         username = self.selenium.find_element_by_id('id_username')
@@ -201,8 +204,8 @@ class AdminTest(SeleniumTestCase):
         # Log in to the admin interface.
         username = self.selenium.find_element_by_id('id_username')
         password = self.selenium.find_element_by_id('id_password')
-        username.send_keys(self.user.username)
-        password.send_keys(self.user_password)
+        username.send_keys(self.superuser.username)
+        password.send_keys(self.superuser_password)
         self.selenium.find_element_by_class_name('submit-row').click()       
         time.sleep(1)
         # Navigate to each of the admin model interfaces in turn.
@@ -219,7 +222,7 @@ class AdminTest(SeleniumTestCase):
         self.go_back()
 
 
-class SourceTraitSearchTest(AutoLoginSeleniumTestCase):
+class SourceTraitSearchTest(UserAutoLoginSeleniumTestCase):
     
     def setUp(self):
         super(SourceTraitSearchTest, self).setUp()
@@ -285,7 +288,7 @@ class SourceTraitSearchTest(AutoLoginSeleniumTestCase):
         self.run_search(good_text, [studies[1]])
 
 
-class TablePageTestCase(AutoLoginSeleniumTestCase):
+class TablePageTestCase(UserAutoLoginSeleniumTestCase):
     
     def test_source_all_table(self):
         """Run check_table_view on the All source traits table page. Check the link for a source trait detail page."""
