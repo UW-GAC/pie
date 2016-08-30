@@ -122,6 +122,20 @@ class SourceDatasetUniqueKeysFactory(factory.DjangoModelFactory):
         django_get_or_create = ('i_id', )
 
 
+class HarmonizedTraitSetFactory(factory.DjangoModelFactory):
+    """Factory for HarmonizedTraitSet model using Faker faked data."""
+    
+    i_id = factory.Sequence(lambda n: n)
+    i_trait_set_name = factory.Faker('word')
+    i_version = factory.Sequence(lambda n: n)
+    i_description = factory.Faker('text')
+    web_date_added = factory.fuzzy.FuzzyDateTime(start_dt=timezone.make_aware(datetime(2016, 1, 1)))
+    
+    class Meta:
+        model = HarmonizedTraitSet
+        django_get_or_create = ('i_id', )
+
+
 class SourceTraitFactory(factory.DjangoModelFactory):
     """Factory for SourceTrait objects using Faker faked data."""
     
