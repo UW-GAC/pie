@@ -18,6 +18,8 @@ class ViewsAutoLoginTestCase(TestCase):
     # since all views require login, this needs to be run before each test
     # make a class that we can extend for the other test cases
     def setUp(self):
+        super(ViewsAutoLoginTestCase, self).setUp()
+
         self.client = Client()
         self.user = User.objects.create_user('unittest', 'foo@bar.com', 'passwd')
         self.client.login(username='unittest', password='passwd')
