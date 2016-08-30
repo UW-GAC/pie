@@ -173,15 +173,8 @@ class HarmonizedTraitAdmin(ReadOnlyAdmin):
     search_fields = ('i_trait_id', 'i_trait_name', )
 
 
-
-
-
-
-
-
-
-class SourceEncodedValueAdmin(ReadOnlyAdmin):
-    """Admin class for SourceEncodedValue objects."""
+class SourceTraitEncodedValueAdmin(ReadOnlyAdmin):
+    """Admin class for SourceTraitEncodedValue objects."""
     
     # Make all fields read-only.
     readonly_fields = list(set(chain.from_iterable(
@@ -190,12 +183,10 @@ class SourceEncodedValueAdmin(ReadOnlyAdmin):
         # if not field.is_relation    # Exclude foreign keys from the results.
     )))
     # Set fields to display, filter, and search on.
-    list_display = (
-        'id', 'category', 'value', 'get_source_trait_name',
-        'get_source_trait_study', 'web_date_added',
-    )
+    list_display = ('id', 'i_category', 'i_value',
+                    'get_source_trait_name', 'get_source_trait_study', 'web_date_added', )
     list_filter = ('web_date_added', )
-    search_fields = ('category', 'id', )
+    search_fields = ('i_category', 'i_id', )
 
 
 # Register models for showing them in the admin interface.
