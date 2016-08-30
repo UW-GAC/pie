@@ -43,9 +43,9 @@ class StudyAdmin(ReadOnlyAdmin):
         if not field.is_relation    # Exclude foreign keys from the results.
     )))
     # Set fields to display, filter, and search on.
-    list_display = ('study_id', 'phs', 'name', )
-    list_filter = ('phs', 'name', )
-    search_fields = ('phs', 'name', )
+    list_display = ('i_id', 'i_accession', 'i_study_name', )
+    list_filter = ('i_accession', 'i_study_name', )
+    search_fields = ('i_accession', 'i_study_name', )
 
 
 class SourceTraitAdmin(ReadOnlyAdmin):
