@@ -48,7 +48,7 @@ class StudyTable(tables.Table):
     
     class Meta:
         model = Study
-        fields = ('name', )
+        fields = ('i_study_name', )
         attrs = {'class': 'table table-striped table-hover table-bordered', 'style': 'width: auto;'}
         template = 'trait_browser/bootstrap_tables2.html'
-        order_by = ('name', )
+        order_by = ('i_study_name', )
