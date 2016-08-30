@@ -26,7 +26,7 @@ class GlobalStudyAdmin(ReadOnlyAdmin):
     # Make all fields read-only
     readonly_fields = list(set(chain.from_iterable(
         (field.name, field.attname) if hasattr(field, 'attname') else (field.name,)
-        for field in Study._meta.get_fields()
+        for field in GlobalStudy._meta.get_fields()
         if not field.is_relation    # Exclude foreign keys from the results.
     )))
     # Set fields to display, filter, and search on.
@@ -45,7 +45,7 @@ class StudyAdmin(ReadOnlyAdmin):
         if not field.is_relation    # Exclude foreign keys from the results.
     )))
     # Set fields to display, filter, and search on.
-    list_display = ('i_id', 'i_accession', 'i_study_name', )
+    list_display = ('i_accession', 'i_study_name', )
     list_filter = ('i_accession', 'i_study_name', )
     search_fields = ('i_accession', 'i_study_name', )
 
@@ -56,7 +56,7 @@ class SourceStudyVersionAdmin(ReadOnlyAdmin):
     # Make all fields read-only
     readonly_fields = list(set(chain.from_iterable(
         (field.name, field.attname) if hasattr(field, 'attname') else (field.name,)
-        for field in Study._meta.get_fields()
+        for field in SourceStudyVersion._meta.get_fields()
         if not field.is_relation    # Exclude foreign keys from the results.
     )))
     # Set fields to display, filter, and search on.
@@ -71,12 +71,12 @@ class SubcohortAdmin(ReadOnlyAdmin):
     # Make all fields read-only
     readonly_fields = list(set(chain.from_iterable(
         (field.name, field.attname) if hasattr(field, 'attname') else (field.name,)
-        for field in Study._meta.get_fields()
+        for field in Subcohort._meta.get_fields()
         if not field.is_relation    # Exclude foreign keys from the results.
     )))
     # Set fields to display, filter, and search on.
     list_display = ('i_id', 'study_id', 'i_name', )
-    list_filter = ('i_id', 'i_study_id', )
+    list_filter = ('i_id', )
     search_fields = ('i_id', 'study_id', 'i_name', )
 
 
@@ -86,7 +86,7 @@ class SourceDatasetAdmin(ReadOnlyAdmin):
     # Make all fields read-only
     readonly_fields = list(set(chain.from_iterable(
         (field.name, field.attname) if hasattr(field, 'attname') else (field.name,)
-        for field in Study._meta.get_fields()
+        for field in SourceDataset._meta.get_fields()
         if not field.is_relation    # Exclude foreign keys from the results.
     )))
     # Set fields to display, filter, and search on.
@@ -103,26 +103,11 @@ class SourceDatasetSubcohortsAdmin(ReadOnlyAdmin):
     # Make all fields read-only
     readonly_fields = list(set(chain.from_iterable(
         (field.name, field.attname) if hasattr(field, 'attname') else (field.name,)
-        for field in Study._meta.get_fields()
+        for field in SourceDatasetSubcohorts._meta.get_fields()
         if not field.is_relation    # Exclude foreign keys from the results.
     )))
     # Set fields to display, filter, and search on.
     list_display = ('i_id', 'subcohort_id', 'source_dataset_id', )
-    list_filter = ('i_id', )
-    search_fields = ('i_id', )
-
-
-class SourceDatasetUniqueKeysAdmin(ReadOnlyAdmin):
-    """Admin class for SourceDatasetUniqueKeys objects."""
-    
-    # Make all fields read-only
-    readonly_fields = list(set(chain.from_iterable(
-        (field.name, field.attname) if hasattr(field, 'attname') else (field.name,)
-        for field in Study._meta.get_fields()
-        if not field.is_relation    # Exclude foreign keys from the results.
-    )))
-    # Set fields to display, filter, and search on.
-    list_display = ('i_id', 'source_dataset_id', 'source_trait_id', 'i_is_visit_column', )
     list_filter = ('i_id', )
     search_fields = ('i_id', )
 
@@ -133,7 +118,7 @@ class HarmonizedTraitSetAdmin(ReadOnlyAdmin):
     # Make all fields read-only
     readonly_fields = list(set(chain.from_iterable(
         (field.name, field.attname) if hasattr(field, 'attname') else (field.name,)
-        for field in Study._meta.get_fields()
+        for field in HarmonizedTraitSet._meta.get_fields()
         if not field.is_relation    # Exclude foreign keys from the results.
     )))
     # Set fields to display, filter, and search on.
@@ -155,7 +140,7 @@ class SourceTraitAdmin(ReadOnlyAdmin):
     list_display = ('i_trait_id', 'i_trait_name', 'i_detected_type',
                     'i_dbgap_variable_accession', 'i_dbgap_variable_version',
                     'dbgap_study_link', 'web_date_added', )
-    list_filter = ('web_date_added', 'study', 'i_trait_id', 'i_trait_name', )
+    list_filter = ('web_date_added', 'i_trait_id', 'i_trait_name', )
     search_fields = ('i_trait_id', 'i_trait_name', )
 
 
@@ -181,7 +166,7 @@ class SourceTraitEncodedValueAdmin(ReadOnlyAdmin):
     # Make all fields read-only.
     readonly_fields = list(set(chain.from_iterable(
         (field.name, field.attname) if hasattr(field, 'attname') else (field.name,)
-        for field in SourceEncodedValue._meta.get_fields()
+        for field in SourceTraitEncodedValue._meta.get_fields()
         # if not field.is_relation    # Exclude foreign keys from the results.
     )))
     # Set fields to display, filter, and search on.
@@ -197,7 +182,7 @@ class HarmonizedTraitEncodedValueAdmin(ReadOnlyAdmin):
     # Make all fields read-only.
     readonly_fields = list(set(chain.from_iterable(
         (field.name, field.attname) if hasattr(field, 'attname') else (field.name,)
-        for field in HarmonizedEncodedValue._meta.get_fields()
+        for field in HarmonizedTraitEncodedValue._meta.get_fields()
         # if not field.is_relation    # Exclude foreign keys from the results.
     )))
     # Set fields to display, filter, and search on.
@@ -205,6 +190,21 @@ class HarmonizedTraitEncodedValueAdmin(ReadOnlyAdmin):
                     'get_harmonized_trait_name', 'web_date_added', )
     list_filter = ('web_date_added', )
     search_fields = ('i_category', 'i_id', )
+
+
+class SourceDatasetUniqueKeysAdmin(ReadOnlyAdmin):
+    """Admin class for SourceDatasetUniqueKeys objects."""
+    
+    # Make all fields read-only
+    readonly_fields = list(set(chain.from_iterable(
+        (field.name, field.attname) if hasattr(field, 'attname') else (field.name,)
+        for field in SourceDatasetUniqueKeys._meta.get_fields()
+        if not field.is_relation    # Exclude foreign keys from the results.
+    )))
+    # Set fields to display, filter, and search on.
+    list_display = ('i_id', 'i_is_visit_column', )
+    list_filter = ('i_id', )
+    search_fields = ('i_id', )
 
 
 # Register models for showing them in the admin interface.
