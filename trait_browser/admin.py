@@ -110,6 +110,21 @@ class SourceDatasetSubcohortsAdmin(ReadOnlyAdmin):
     search_fields = ('i_id', )
 
 
+class SourceDatasetUniqueKeysAdmin(ReadOnlyAdmin):
+    """Admin class for SourceDatasetUniqueKeys objects."""
+    
+    # Make all fields read-only
+    readonly_fields = list(set(chain.from_iterable(
+        (field.name, field.attname) if hasattr(field, 'attname') else (field.name,)
+        for field in Study._meta.get_fields()
+        if not field.is_relation    # Exclude foreign keys from the results.
+    )))
+    # Set fields to display, filter, and search on.
+    list_display = ('i_id', 'source_dataset_id', 'source_trait_id', 'i_is_visit_column', )
+    list_filter = ('i_id', )
+    search_fields = ('i_id', )
+
+
 
 
 
