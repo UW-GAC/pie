@@ -136,7 +136,7 @@ class Subcohort(models.Model):
     study = models.ForeignKey(Study)
     # Adds .study (object) and .study_id (pk).
     i_id = models.PositiveIntegerField(primary_key=True, db_column='i_id')
-    i_name = models.CharField(45)
+    i_name = models.CharField(max_length=45)
     web_date_added = models.DateTimeField(auto_now_add=True, auto_now=False)
 
 
@@ -205,25 +205,6 @@ class SourceDatasetSubcohorts(models.Model):
     i_id = models.PositiveIntegerField(primary_key=True, db_column='i_id')
     web_date_added = models.DateTimeField(auto_now_add=True, auto_now=False)
 
-
-class SourceDatasetUniqueKeys(models.Model):
-    """Model for unique keys within each dbGaP source dataset.
-    
-    Fields:
-        i_id
-        source_dataset
-        source_trait
-        i_is_visit_column
-    """
-    
-    source_dataset = models.ForeignKey(SourceDataset)
-    # Adds .source_dataset (object) and .source_dataset_id (pk).
-    source_trait = models.ForeignKey(SourceTrait)
-    # Adds .source_trait (object) and .source_trait_id (pk).
-    i_id = models.PositiveIntegerField(primary_key=True, db_column='i_id')
-    i_is_visit_column = models.BooleanField()
-    web_date_added = models.DateTimeField(auto_now_add=True, auto_now=False)
-    
 
 class HarmonizedTraitSet(models.Model):
     """Model for harmonized trait set from snuffles. Analagous to the SourceDataset
@@ -498,4 +479,25 @@ class HarmonizedTraitEncodedValue(TraitEncodedValue):
         """
         return self.harmonized_trait.i_trait_name
     # Set this model attribute to the value of this function, for the admin interface.
-    get_source_trait_name.short_description = 'HarmonizedTrait Name'
+    get_harmonized_trait_name.short_description = 'HarmonizedTrait Name'
+
+
+class SourceDatasetUniqueKeys(models.Model):
+    """Model for unique keys within each dbGaP source dataset.
+    
+    Fields:
+        i_id
+        source_dataset
+        source_trait
+        i_is_visit_column
+    """
+    
+    source_dataset = models.ForeignKey(SourceDataset)
+    # Adds .source_dataset (object) and .source_dataset_id (pk).
+    source_trait = models.ForeignKey(SourceTrait)
+    # Adds .source_trait (object) and .source_trait_id (pk).
+    i_id = models.PositiveIntegerField(primary_key=True, db_column='i_id')
+    i_is_visit_column = models.BooleanField()
+    web_date_added = models.DateTimeField(auto_now_add=True, auto_now=False)
+    
+
