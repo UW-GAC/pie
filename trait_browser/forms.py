@@ -7,7 +7,7 @@ from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Layout, Div, Submit, HTML, Button, Row, Field, Reset
 from crispy_forms.bootstrap import AppendedText, PrependedText, FormActions, InlineCheckboxes
 
-from . models import Study, SourceTrait
+from . models import GlobalStudy, SourceTrait
 
 
 class SourceTraitCrispySearchForm(forms.Form):
@@ -21,7 +21,7 @@ class SourceTraitCrispySearchForm(forms.Form):
     # study field, which enables proper testing.
     def __init__(self, *args, **kwargs):
         super(SourceTraitCrispySearchForm, self).__init__(*args, **kwargs)
-        self.STUDIES = [[x.pk, x.name] for x in Study.objects.all().order_by('name')]
+        self.STUDIES = [[x.pk, x.name] for x in GlobalStudy.objects.all().order_by('i_name')]
         self.fields['study'] = forms.MultipleChoiceField(choices=self.STUDIES,
             widget=forms.CheckboxSelectMultiple(), required=False,
             help_text='If no studies are selected, source phenotypes from all studies will be searched.')
