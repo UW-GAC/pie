@@ -6,7 +6,7 @@ from django.views.generic import DetailView
 
 from django_tables2   import RequestConfig
 
-from .models import SourceEncodedValue, SourceTrait, Study
+from .models import SourceTraitEncodedValue, SourceTrait, Study
 from .tables import SourceTraitTable, StudyTable
 from .forms import SourceTraitCrispySearchForm
 
@@ -101,7 +101,7 @@ def search(text_query, trait_type, studies=[]):
     if (len(studies) > 0):
         traits = traits.filter(study__in=studies)
     # Then search text.
-    traits = traits.filter(Q(description__contains=text_query) | Q(name__contains=text_query))
+    traits = traits.filter(Q(i_description__contains=text_query) | Q(i_trait_name__contains=text_query))
     return(traits)
 
 
