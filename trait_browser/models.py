@@ -106,7 +106,7 @@ class SourceStudyVersion(models.Model):
     i_id = models.PositiveIntegerField(primary_key=True, db_column='i_id')
     i_version = models.PositiveIntegerField()
     i_participant_set = models.PositiveIntegerField()
-    i_dbagp_date = models.DateTimeField()
+    i_dbgap_date = models.DateTimeField()
     i_is_prerelease = models.BooleanField()
     i_is_deprecated = models.BooleanField()
     phs_version_string = models.CharField(max_length=20)
