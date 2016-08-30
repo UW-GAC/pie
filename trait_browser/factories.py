@@ -1,7 +1,7 @@
 """Factory classes for generating test data for each of the trait_browser models."""
 
 from datetime import datetime
-from random import randint
+from random import choice, randint
 
 from django.utils import timezone
 
@@ -13,13 +13,15 @@ from .models import (GlobalStudy, Study, SourceStudyVersion, Subcohort,
                      SourceTrait, HarmonizedTrait, SourceTraitEncodedValue, HarmonizedTraitEncodedValue)
 
 # Use these later for SourceStudyVersion factories.
-VISIT_CHOICES = ("one_visit_per_file",
-                 "visit_as_variable",
-                 "event_data",
-                 "not_associated_with_specific_visit",
-                 "visit_in_variable_descriptions",
-                 "complicated",
-                 "missing_visit_information")
+VISIT_CHOICES = ('one_visit_per_file',
+                 'visit_as_variable',
+                 'event_data',
+                 'not_associated_with_specific_visit',
+                 'visit_in_variable_descriptions',
+                 'complicated',
+                 'missing_visit_information',
+                 '')
+VISIT_NUMBERS = tuple([str(el) for el in range(1, 20)]) + ('', )
 
 class GlobalStudyFactory(factor.DjangoModelFactory):
     """Factory for GlobalStudy objects using Faker faked data."""
@@ -139,24 +141,25 @@ class HarmonizedTraitSetFactory(factory.DjangoModelFactory):
 class SourceTraitFactory(factory.DjangoModelFactory):
     """Factory for SourceTrait objects using Faker faked data."""
     
-    dcc_trait_id = factory.Sequence(lambda n: n)
-    name = factory.Faker('word')
-    description = factory.Faker('text')
-    data_type = factory.fuzzy.FuzzyChoice(SourceTrait.DATA_TYPES)
-    unit = factory.Faker('word')
+    i_trait_id = factory.Sequence(lambda n: n)
+    i_trait_name = factory.Faker('word')
+    i_description = factory.Faker('text')
     web_date_added = factory.fuzzy.FuzzyDateTime(start_dt=timezone.make_aware(datetime(2016, 1, 1)))
-    study = factory.SubFactory(StudyFactory)
     
-    phv = randint(1, 99999999)
-    pht = randint(1, 999999)
-    study_version = randint(1,9)
-    dataset_version = randint(1, 9)
-    variable_version = randint(1, 9)
-    participant_set = randint(1, 9)
+    source_dataset = factory.SubFactory(SourceDataset)
+    i_detected_type = factory.Faker('word')
+    i_dbgap_type = factory.Faker('word')
+    i_visit_number = choice(VISIT_NUMBERS)
+    i_dbgap_variable_accession = randint(1, 99999999)
+    i_dbgap_variable_version = randint(1, 15)
+    i_dbgap_comment = factory.Faker('text')
+    i_dbgap_unit = factory.Faker('word')
+    i_n_records = randint(100, 5000)
+    i_n_missing = randint(0, 100) # This will always be less than i_n_records.
     
     class Meta:
         model = SourceTrait
-        django_get_or_create = ('dcc_trait_id', )
+        django_get_or_create = ('i_trait_id', )
 
 
 class SourceEncodedValueFactory(factory.DjangoModelFactory):
