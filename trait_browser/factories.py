@@ -51,13 +51,11 @@ class SourceStudyVersionFactory(factory.DjangoModelFactory):
     
     study = factory.SubFactory(Study)
     i_id = factory.Sequence(lambda n: n)
-    i_accession = randint(1, 999999)
     i_version = randint(1, 10)
-    i_is_subject_file = factory.Faker('boolean')
-    i_study_subject_column = factory.Faker('pystr', max_chars=45)
-    i_is_medication_dataset = factory.Faker('boolean')
-    i_dbgap_description = factory.Faker('text')
-    i_dcc_description = factory.Faker('text')
+    i_participant_set = randint(1, 10)
+    i_dbgap_date = timezone.make_aware(factory.Faker('date_time_this_decade'))
+    i_is_prerelease = False
+    i_is_deprecated = False
     web_date_added = factory.fuzzy.FuzzyDateTime(start_dt=timezone.make_aware(datetime(2016, 1, 1)))    
     
     class Meta:
@@ -75,6 +73,25 @@ class SubcohortFactory(factory.DjangoModelFactory):
 
     class Meta:
         model = Subcohort
+        django_get_or_create = ('i_id', )
+
+
+class SourceDatasetFactory(factory.DjangoModelFactory):
+    """Factory for SourceDataset objects using Faker faked data."""
+    
+    source_study_version = factory.SubFactory(SourceStudyVersion)
+    i_id = factory.Sequence(lambda n: n)
+    i_accession = randint(1, 999999)
+    i_version = randint(1, 10)
+    i_is_subject_file = False
+    i_study_subject_column = factory.Faker('pystr', max_chars=45)
+    i_is_medication_dataset = factory.Faker('boolean')
+    i_dbgap_description = factory.Faker('text')
+    i_dcc_description = factory.Faker('text')
+    web_date_added = factory.fuzzy.FuzzyDateTime(start_dt=timezone.make_aware(datetime(2016, 1, 1)))    
+
+    class Meta:
+        model = SourceDataset
         django_get_or_create = ('i_id', )
 
 
