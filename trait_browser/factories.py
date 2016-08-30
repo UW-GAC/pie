@@ -65,6 +65,19 @@ class SourceStudyVersionFactory(factory.DjangoModelFactory):
         django_get_or_create = ('i_id', )
 
 
+class SubcohortFactory(factory.DjangoModelFactory):
+    """Factory for Subcohort objects using Faker faked data."""
+    
+    study = factory.SubFactory(Study)
+    i_id = factory.Sequence(lambda n: n)
+    i_name = factory.Faker('job')
+    web_date_added = factory.fuzzy.FuzzyDateTime(start_dt=timezone.make_aware(datetime(2016, 1, 1)))    
+
+    class Meta:
+        model = Subcohort
+        django_get_or_create = ('i_id', )
+
+
 class SourceTraitFactory(factory.DjangoModelFactory):
     """Factory for SourceTrait objects using Faker faked data."""
     
