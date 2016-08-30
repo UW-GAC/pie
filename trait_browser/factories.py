@@ -108,6 +108,20 @@ class SourceDatasetSubcohortsFactory(factory.DjangoModelFactory):
         django_get_or_create = ('i_id', )
 
 
+class SourceDatasetUniqueKeysFactory(factory.DjangoModelFactory):
+    """Factory for SourceDatasetUniqueKeys objects using Faker faked data."""
+    
+    source_dataset = factory.SubFactory(SourceDataset)
+    source_trait = factory.SubFactory(SourceTrait)
+    i_id = factory.Sequence(lambda n: n)
+    i_is_visit_column = factory.Faker('boolean', chance_of_getting_true=10)
+    web_date_added = factory.fuzzy.FuzzyDateTime(start_dt=timezone.make_aware(datetime(2016, 1, 1)))
+    
+    class Meta:
+        model = SourceDatasetUniqueKeys
+        django_get_or_create = ('i_id', )
+
+
 class SourceTraitFactory(factory.DjangoModelFactory):
     """Factory for SourceTrait objects using Faker faked data."""
     
