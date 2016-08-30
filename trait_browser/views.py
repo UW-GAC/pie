@@ -79,7 +79,6 @@ def source_study_list(request):
     )
 
 
-@login_required
 def search(text_query, trait_type, studies=[]):
     """Search either source or (eventually) harmonized traits for a given query.
     
