@@ -1,6 +1,7 @@
 """Test the functions and classes for views.py"""
 
-from django.test import TestCase
+from django.contrib.auth.models import User
+from django.test import TestCase, Client
 from django.core.urlresolvers import reverse
 
 from .models import SourceEncodedValue, SourceTrait, Study
@@ -11,6 +12,17 @@ from .views import TABLE_PER_PAGE, search
 # NB: The database is reset for each test method within a class!
 # NB: for test methods with multiple assertions, the first failed assert statement
 # will preclude any subsequent assertions
+
+class ViewsAutoLoginTestCase(TestCase):
+
+    # since all views require login, this needs to be run before each test
+    # make a class that we can extend for the other test cases
+    def setUp(self):
+        super(ViewsAutoLoginTestCase, self).setUp()
+
+        self.client = Client()
+        self.user = User.objects.create_user('unittest', 'foo@bar.com', 'passwd')
+        self.client.login(username='unittest', password='passwd')
 
 
 class SearchTestCase(TestCase):
@@ -74,7 +86,7 @@ class SearchTestCase(TestCase):
         self.assertNotIn(st_nonmatch, search1)
 
 
-class SourceViewsTestCase(TestCase):
+class SourceViewsTestCase(ViewsAutoLoginTestCase):
     """Unit tests for the views about source traits."""
     
     def test_source_trait_table_empty(self):
@@ -228,7 +240,7 @@ class SourceViewsTestCase(TestCase):
         self.assertEqual(len(response.context['trait_table'].rows), n_traits)
         
 
-class SourceTraitSearchViewTestCase(TestCase):
+class SourceTraitSearchViewTestCase(ViewsAutoLoginTestCase):
 
     def test_source_trait_search_with_valid_results(self):
         """Tests that the source_trait_search view has a 200 reponse code and the number of results is accurate when search text is entered and there are search results to display."""

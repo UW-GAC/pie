@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+
+{% block head_title %}
+     | {{ page_title }}
+{% endblock %}
+
+{% block content %}
+<p>Username: {{ user.username }}</p>
+<p>email: {{ user.email }}</p>
+<p><a href="{% url 'password_reset' %}">reset password</a></p>
+{% endblock %}
