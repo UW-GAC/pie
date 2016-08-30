@@ -18,6 +18,21 @@ class ReadOnlyAdmin(admin.ModelAdmin):
         return False
 
 
+class GlobalStudyAdmin(ReadOnlyAdmin):
+    """Admin class for GlobalStudy objects."""
+    
+    # Make all fields read-only
+    readonly_fields = list(set(chain.from_iterable(
+        (field.name, field.attname) if hasattr(field, 'attname') else (field.name,)
+        for field in Study._meta.get_fields()
+        if not field.is_relation    # Exclude foreign keys from the results.
+    )))
+    # Set fields to display, filter, and search on.
+    list_display = ('i_id', 'i_name', )
+    list_filter = ('i_id', 'i_name', )
+    search_fields = ('i_id', 'i_name', )
+
+
 class StudyAdmin(ReadOnlyAdmin):
     """Admin class for Study objects."""
     
