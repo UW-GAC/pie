@@ -157,6 +157,29 @@ class SourceTraitAdmin(ReadOnlyAdmin):
     search_fields = ('i_trait_id', 'i_trait_name', )
 
 
+class HarmonizedTraitAdmin(ReadOnlyAdmin):
+    """Admin class for HarmonizedTrait objects."""
+    
+    # Make all fields read-only
+    readonly_fields = list(set(chain.from_iterable(
+        (field.name, field.attname) if hasattr(field, 'attname') else (field.name,)
+        for field in HarmonizedTrait._meta.get_fields()
+        # if not field.is_relation    # Exclude foreign keys from the results.
+    )))
+    # Set fields to display, filter, and search on.
+    list_display = ('i_trait_id', 'i_trait_name', 'i_data_type',
+                    'harmonized_trait_set_id', 'i_is_unique_key', 'web_date_added', )
+    list_filter = ('web_date_added', 'harmonized_trait_set', 'i_trait_id', 'i_trait_name', )
+    search_fields = ('i_trait_id', 'i_trait_name', )
+
+
+
+
+
+
+
+
+
 class SourceEncodedValueAdmin(ReadOnlyAdmin):
     """Admin class for SourceEncodedValue objects."""
     
