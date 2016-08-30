@@ -140,9 +140,6 @@ class HarmonizedTraitSetAdmin(ReadOnlyAdmin):
     search_fields = ('i_id', 'i_trait_set_name', )
 
 
-
-
-
 class SourceTraitAdmin(ReadOnlyAdmin):
     """Admin class for SourceTrait objects."""
     
@@ -153,9 +150,11 @@ class SourceTraitAdmin(ReadOnlyAdmin):
         # if not field.is_relation    # Exclude foreign keys from the results.
     )))
     # Set fields to display, filter, and search on.
-    list_display = ('dcc_trait_id', 'name', 'data_type', 'study', 'web_date_added', )
-    list_filter = ('web_date_added', 'data_type', 'study', )
-    search_fields = ('dcc_trait_id', 'name', )
+    list_display = ('i_trait_id', 'i_trait_name', 'i_detected_type',
+                    'i_dbgap_variable_accession', 'i_dbgap_variable_version',
+                    'dbgap_study_link', 'web_date_added', )
+    list_filter = ('web_date_added', 'study', 'i_trait_id', 'i_trait_name', )
+    search_fields = ('i_trait_id', 'i_trait_name', )
 
 
 class SourceEncodedValueAdmin(ReadOnlyAdmin):
