@@ -5,7 +5,9 @@ from itertools import chain
 from django.contrib import admin
 from django.contrib.sites.models import Site
 
-from .models import Study, SourceEncodedValue, SourceTrait
+from .models import (GlobalStudy, Study, SourceStudyVersion, Subcohort,
+                     SourceDataset, SourceDatasetSubcohorts, SourceDatasetUniqueKeys, HarmonizedTraitSet,
+                     SourceTrait, HarmonizedTrait, SourceTraitEncodedValue, HarmonizedTraitEncodedValue)
 
 
 class ReadOnlyAdmin(admin.ModelAdmin):
@@ -206,7 +208,16 @@ class HarmonizedTraitEncodedValueAdmin(ReadOnlyAdmin):
 
 
 # Register models for showing them in the admin interface.
+admin.site.register(GlobalStudy, GlobalStudyAdmin)
 admin.site.register(Study, StudyAdmin)
+admin.site.register(SourceStudyVersion, SourceStudyVersionAdmin)
+admin.site.register(Subcohort, SubcohortAdmin)
+admin.site.register(SourceDataset, SourceDatasetAdmin)
+admin.site.register(SourceDatasetSubcohorts, SourceDatasetSubcohortsAdmin)
+admin.site.register(SourceDatasetUniqueKeys, SourceDatasetUniqueKeysAdmin)
+admin.site.register(HarmonizedTraitSet, HarmonizedTraitSetAdmin)
 admin.site.register(SourceTrait, SourceTraitAdmin)
-admin.site.register(SourceEncodedValue, SourceEncodedValueAdmin)
+admin.site.register(HarmonizedTrait, HarmonizedTraitAdmin)
+admin.site.register(SourceTraitEncodedValue, SourceTraitEncodedValueAdmin)
+admin.site.register(HarmonizedTraitEncodedValue, HarmonizedTraitEncodedValueAdmin)
 admin.site.unregister(Site)
