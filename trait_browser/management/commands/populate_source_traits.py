@@ -149,12 +149,12 @@ class Command(BaseCommand):
         need to be modified.
 
         Returns:
-            a dict of (required_StudyTrait_attribute: attribute_value) pairs
+            a dict of (required_Study_attribute: attribute_value) pairs
         """
         new_args = {
-            'study_id': row_dict['study_id'],
-            'phs': int(row_dict['dbgap_id'].replace('phs', '')),
-            'name': row_dict['study_name']
+            'i_accession': row_dict['accession'],
+            'global_study_id': row_dict['global_study'],
+            'i_study_name': row_dict['study_name']
         }
         return new_args
     
