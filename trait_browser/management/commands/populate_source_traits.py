@@ -20,7 +20,9 @@ from django.conf import settings
 
 import mysql.connector
 
-from trait_browser.models import SourceTrait, SourceEncodedValue, Study
+from .models import (GlobalStudy, Study, SourceStudyVersion, Subcohort,
+                     SourceDataset, SourceDatasetSubcohorts, SourceDatasetUniqueKeys, 
+                     SourceTrait, SourceTraitEncodedValue )
 
 
 class Command(BaseCommand):
@@ -29,12 +31,20 @@ class Command(BaseCommand):
     help ='Populate the Study, SourceTrait, and EncodedValue models with a query to the source db'
 
     def _get_current_studies(self):
-        """Get a str list of study_id for Studies currently in the django site db."""
-        return [str(study.study_id) for study in Study.objects.all()]
+        """Get a str list of i_accession for Studies currently in the django site db."""
+        return [str(study.i_accession) for study in Study.objects.all()]
     
+    def _get_current_source_study_versions(self):
+        """Get a str list of i_id for SourceStudyVersions currently in the django site db."""
+        return [str(study_version.i_id) for study_version in SourceStudyVersion.objects.all()]
+    
+    def _get_current_datasets(self):
+        """Get a str list of i_id for SourceDatasets currently in the django site db."""
+        return [str(dataset.i_id) for dataset in SourceDataset.objects.all()]
+        
     def _get_current_traits(self):
-        """Get a str list of dcc_trait_id for SourceTraits currently in the django site db."""
-        return [str(evalue.dcc_trait_id) for evalue in SourceTrait.objects.all()]
+        """Get a str list of i_trait_id for SourceTraits currently in the django site db."""
+        return [str(trait.i_trait_id) for trait in SourceTrait.objects.all()]
 
     def _get_snuffles(self, which_db, cnf_path=settings.CNF_PATH):
         """Get a connection to the source phenotype db.
