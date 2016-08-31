@@ -28,7 +28,7 @@ from .models import (GlobalStudy, Study, SourceStudyVersion, Subcohort,
 class Command(BaseCommand):
     """Management command to pull initial data from the source phenotype db."""
 
-    help ='Populate the Study, SourceTrait, and EncodedValue models with a query to the source db'
+    help ='Populate the db models with a query to the source db (snuffles).'
 
     def _get_current_studies(self):
         """Get a str list of i_accession for Studies currently in the django site db."""
@@ -310,11 +310,15 @@ class Command(BaseCommand):
         """Add custom command line arguments to this management command."""
         parser.add_argument('--n_studies', action='store', type=int,
                             help='Maximum number of studies to import from snuffles.')
-        parser.add_argument('--n_traits', action='store', type=int,
-                            help='Maximum number of traits to import for each study.')
+        parser.add_argument('--max_traits', action='store', type=int,
+                            help='Maximum number of traits to import FOR EACH STUDY VERSION.')
+        parser.add_argument('--max_study_versions', action='store', type=int,
+                            help='Maximum number of versions to import for each study.')
         parser.add_argument('--which_db', action='store', type=str,
                             choices=['test', 'production'], default='test',
                             help='Which source database to connect to for retrieving source data.')
+        parser.add_argument('--only_update_existing', action='store_true', type=bool,
+                            help='Only update the db records that are already in the db, and do not add new ones.')
 
     def handle(self, *args, **options):
         """Handle the main functions of this management command.
