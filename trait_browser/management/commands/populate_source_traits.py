@@ -332,7 +332,15 @@ class Command(BaseCommand):
             argument dicts will pass on command line options
         """
         snuffles_db = self._get_snuffles(which_db=options['which_db'])
-        self._populate_studies(snuffles_db, options['n_studies'])
+        
+        self._populate_global_studies(snuffles_db, options['n_studies'])
+        self._populate_studies(snuffles_db)
+        self._populate_source_study_versions(snuffles_db)
+        self._populate_source_datasets(snuffles_db)
         self._populate_source_traits(snuffles_db, options['n_traits'])
-        self._populate_encoded_values(snuffles_db)
+        self._populate_source_trait_encoded_values(snuffles_db)
+        self._populate_source_dataset_unique_keys(snuffles_db)
+        self._populate_subcohorts(snuffles_db)
+        self._populate_source_dataset_subcohorts(snuffles_db)
+        
         snuffles_db.close()
