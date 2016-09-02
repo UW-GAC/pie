@@ -140,6 +140,52 @@ class Command(BaseCommand):
         }
         return fixed_row
 
+    def _make_global_study_args(self, row_dict):
+        """Get args for making a GlobalStudy object from a source db row.
+        
+        Converts a dictionary containing {colname: row value} pairs from a database
+        query into a dict with the necessary arguments for constructing a GlobalStudy
+        object. If there is a schema change in the source db, this function may
+        need to be modified.
+
+        Returns:
+            a dict of (required_Study_attribute: attribute_value) pairs
+        """
+        new_args = {
+            'i_id': row_dict['id'],
+            'i_name': row_dict['name']
+        }
+        return new_args
+
+    def _populate_global_studies(self, source_db, n_studies):
+        """Add global study data to the website db models.
+        
+        This function pulls GlobalStudy information from the source db, converts it
+        where necessary, and populates entries in the GlobalStudy model of the
+        trait_browser app. This will fill in the rows of the
+        trait_browser_global_study table.
+        
+        If the n_studies argument is set at the command line, that is the maximum
+        number of global studies that will be retrieved from the source database.
+        
+        Arguments:
+            source_db -- an open connection to the source database
+            n_studies -- maximum number of global studies to retrieve
+        """
+        cursor = source_db.cursor(buffered=True, dictionary=True)
+        global_study_query = 'SELECT * FROM global_study'
+        # Add a limit statement if n_studies is set.
+        if n_studies is not None:
+            global_study_query += ' LIMIT {}'.format(n_studies)
+        cursor.execute(global_study_query)
+        for row in cursor:
+            type_fixed_row = self._fix_bytearray(self._fix_null(row))
+            global_study_args = self._make_global_study_args(type_fixed_row)
+            add_var = GlobalStudy(**global_study_args)    # temp GlobalStudy to add
+            add_var.save()
+            print(' '.join(('Added global_study', str(global_study_args['global_study_id']))))
+        cursor.close()
+
     def _make_study_args(self, row_dict):
         """Get args for making a Study object from a source db row.
         
