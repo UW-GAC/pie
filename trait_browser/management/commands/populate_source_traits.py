@@ -30,7 +30,7 @@ class Command(BaseCommand):
 
     help ='Populate the db models with a query to the source db (snuffles).'
 
-    def _get_snuffles(self, which_db, cnf_path=settings.CNF_PATH):
+    def _get_source_db(self, which_db, cnf_path=settings.CNF_PATH):
         """Get a connection to the source phenotype db.
         
         Arguments:
@@ -362,7 +362,7 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         """Add custom command line arguments to this management command."""
         parser.add_argument('--n_studies', action='store', type=int,
-                            help='Maximum number of studies to import from snuffles.')
+                            help='Maximum number of studies to import from source_db.')
         parser.add_argument('--max_traits', action='store', type=int,
                             help='Maximum number of traits to import FOR EACH STUDY VERSION.')
         parser.add_argument('--max_study_versions', action='store', type=int,
@@ -384,16 +384,16 @@ class Command(BaseCommand):
             **args and **options are handled as per the superclass handling; these
             argument dicts will pass on command line options
         """
-        snuffles_db = self._get_snuffles(which_db=options['which_db'])
+        source_db_db = self._get_source_db(which_db=options['which_db'])
         
-        self._populate_global_studies(snuffles_db, options['n_studies'])
-        self._populate_studies(snuffles_db)
-        self._populate_source_study_versions(snuffles_db)
-        self._populate_source_datasets(snuffles_db)
-        self._populate_source_traits(snuffles_db, options['n_traits'])
-        self._populate_source_trait_encoded_values(snuffles_db)
-        self._populate_source_dataset_unique_keys(snuffles_db)
-        self._populate_subcohorts(snuffles_db)
-        self._populate_source_dataset_subcohorts(snuffles_db)
+        self._populate_global_studies(source_db_db, options['n_studies'])
+        self._populate_studies(source_db_db)
+        self._populate_source_study_versions(source_db_db)
+        self._populate_source_datasets(source_db_db)
+        self._populate_source_traits(source_db_db, options['n_traits'])
+        self._populate_source_trait_encoded_values(source_db_db)
+        self._populate_source_dataset_unique_keys(source_db_db)
+        self._populate_subcohorts(source_db_db)
+        self._populate_source_dataset_subcohorts(source_db_db)
         
-        snuffles_db.close()
+        source_db_db.close()
