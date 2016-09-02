@@ -204,9 +204,10 @@ class Command(BaseCommand):
         Returns:
             a dict of (required_Study_attribute: attribute_value) pairs
         """
+        global_study = GlobalStudy.objects.get(i_id=row_dict['i_id'])
         new_args = {
+            'global_study': global_study,
             'i_accession': row_dict['accession'],
-            'global_study_id': row_dict['global_study'],
             'i_study_name': row_dict['study_name']
         }
         return new_args
@@ -226,11 +227,13 @@ class Command(BaseCommand):
             source_db -- an open connection to the source database
             n_studies -- maximum number of studies to retrieve
         """
+        loaded_global_study_ids = self._get_current_global_studies()
         cursor = source_db.cursor(buffered=True, dictionary=True)
-        study_query = 'SELECT * FROM study'
-        # Add a limit statement if n_studies is set.
+        # If n_studies is set, filter the list of studies to import.
         if n_studies is not None:
-            study_query += ' LIMIT {}'.format(n_studies)
+            study_query = 'SELECT * FROM study WHERE global_study_id IN (' + ','.join(loaded_global_study_ids) + ')'
+        else:
+            study_query = 'SELECT * FROM study'
         cursor.execute(study_query)
         for row in cursor:
             type_fixed_row = self._fix_bytearray(self._fix_null(row))
@@ -359,6 +362,7 @@ class Command(BaseCommand):
             print(' '.join(('Added encoded value for', str(type_fixed_row['source_trait_id']))))
         cursor.close()
 
+    # Methods to actually do the management command.
     def add_arguments(self, parser):
         """Add custom command line arguments to this management command."""
         parser.add_argument('--n_studies', action='store', type=int,
@@ -387,7 +391,7 @@ class Command(BaseCommand):
         source_db_db = self._get_source_db(which_db=options['which_db'])
         
         self._populate_global_studies(source_db_db, options['n_studies'])
-        self._populate_studies(source_db_db)
+        self._populate_studies(source_db_db, options['n_studies'])
         self._populate_source_study_versions(source_db_db)
         self._populate_source_datasets(source_db_db)
         self._populate_source_traits(source_db_db, options['n_traits'])
