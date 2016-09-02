@@ -30,22 +30,6 @@ class Command(BaseCommand):
 
     help ='Populate the db models with a query to the source db (snuffles).'
 
-    def _get_current_studies(self):
-        """Get a str list of i_accession for Studies currently in the django site db."""
-        return [str(study.i_accession) for study in Study.objects.all()]
-    
-    def _get_current_source_study_versions(self):
-        """Get a str list of i_id for SourceStudyVersions currently in the django site db."""
-        return [str(study_version.i_id) for study_version in SourceStudyVersion.objects.all()]
-    
-    def _get_current_datasets(self):
-        """Get a str list of i_id for SourceDatasets currently in the django site db."""
-        return [str(dataset.i_id) for dataset in SourceDataset.objects.all()]
-        
-    def _get_current_traits(self):
-        """Get a str list of i_trait_id for SourceTraits currently in the django site db."""
-        return [str(trait.i_trait_id) for trait in SourceTrait.objects.all()]
-
     def _get_snuffles(self, which_db, cnf_path=settings.CNF_PATH):
         """Get a connection to the source phenotype db.
         
@@ -66,6 +50,7 @@ class Command(BaseCommand):
         # TODO add a try/except block here in case the db connection fails.
         return cnx
     
+    # Helper methods for data munging.
     def _fix_bytearray(self, row_dict):
         """Convert byteArrays into decoded strings.
             
@@ -140,6 +125,28 @@ class Command(BaseCommand):
         }
         return fixed_row
 
+    # Methods to find out which objects are already in the db.
+    def _get_current_global_studies(self):
+        """Get a str list of i_id for GlobalStudies currently in the django site db."""
+        return [str(gstudy.i_id) for gstudy in GlobalStudy.objects.all()]
+
+    def _get_current_studies(self):
+        """Get a str list of i_accession for Studies currently in the django site db."""
+        return [str(study.i_accession) for study in Study.objects.all()]
+    
+    def _get_current_source_study_versions(self):
+        """Get a str list of i_id for SourceStudyVersions currently in the django site db."""
+        return [str(study_version.i_id) for study_version in SourceStudyVersion.objects.all()]
+    
+    def _get_current_datasets(self):
+        """Get a str list of i_id for SourceDatasets currently in the django site db."""
+        return [str(dataset.i_id) for dataset in SourceDataset.objects.all()]
+        
+    def _get_current_traits(self):
+        """Get a str list of i_trait_id for SourceTraits currently in the django site db."""
+        return [str(trait.i_trait_id) for trait in SourceTrait.objects.all()]
+
+    # Methods to fill in django db objects from the source db.
     def _make_global_study_args(self, row_dict):
         """Get args for making a GlobalStudy object from a source db row.
         
