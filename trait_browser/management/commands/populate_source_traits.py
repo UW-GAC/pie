@@ -447,17 +447,17 @@ class Command(BaseCommand):
             **args and **options are handled as per the superclass handling; these
             argument dicts will pass on command line options
         """
-        source_db_db = self._get_source_db(which_db=options['which_db'])
+        source_db = self._get_source_db(which_db=options['which_db'])
         
-        self._populate_global_studies(source_db_db, options['n_studies'])
-        self._populate_studies(source_db_db, options['n_studies'])
-        self._populate_source_study_versions(source_db_db)
+        self._populate_global_studies(source_db, options['n_studies'])
+        self._populate_studies(source_db, options['n_studies'])
+        self._populate_source_study_versions(source_db)
 
-        self._populate_source_datasets(source_db_db)
-        self._populate_source_traits(source_db_db, options['n_traits'])
-        self._populate_source_trait_encoded_values(source_db_db)
-        self._populate_source_dataset_unique_keys(source_db_db)
-        self._populate_subcohorts(source_db_db)
-        self._populate_source_dataset_subcohorts(source_db_db)
+        self._populate_source_datasets(source_db)
+        self._populate_source_traits(source_db, options['n_traits'])
+        self._populate_source_trait_encoded_values(source_db)
+        self._populate_source_dataset_unique_keys(source_db)
+        self._populate_subcohorts(source_db)
+        self._populate_source_dataset_subcohorts(source_db)
         
-        source_db_db.close()
+        source_db.close()
