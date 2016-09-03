@@ -156,7 +156,7 @@ class Command(BaseCommand):
         need to be modified.
 
         Returns:
-            a dict of (required_Study_attribute: attribute_value) pairs
+            a dict of (required_GlobalStudy_attribute: attribute_value) pairs
         """
         new_args = {
             'i_id': row_dict['id'],
@@ -170,7 +170,7 @@ class Command(BaseCommand):
         This function pulls GlobalStudy information from the source db, converts it
         where necessary, and populates entries in the GlobalStudy model of the
         trait_browser app. This will fill in the rows of the
-        trait_browser_global_study table.
+        trait_browser_globalstudy table.
         
         If the n_studies argument is set at the command line, that is the maximum
         number of global studies that will be retrieved from the source database.
@@ -242,6 +242,65 @@ class Command(BaseCommand):
             add_var.save()
             print(' '.join(('Added study', str(study_args['study_id']))))
         cursor.close()
+
+    def _make_source_study_version_args(self, row_dict):
+        """Get args for making a SourceStudyVersion object from a source db row.
+        
+        Converts a dictionary containing {colname: row value} pairs from a database
+        query into a dict with the necessary arguments for constructing a
+        SourceStudyVersion object. If there is a schema change in the source db,
+        this function may need to be modified.
+
+        Returns:
+            a dict of (required_SourceStudyVersion_attribute: attribute_value) pairs
+        """
+        study = Study.objects.get(i_accession=row_dict['i_accession'])
+        new_args = {
+            'study': study,
+            'i_id': row_dict['id'],
+            'i_accession' : row_dict['accession'],
+            'i_version' : row_dict['version'],
+            'i_participant_set' : row_dict['participant_set'],
+            'i_dbgap_date' : row_dict['dbgap_date'],
+            'i_is_deprecated' : row_dict['is_deprecated'],
+            'i_is_prerelease' : row_dict['is_prerelease']
+        }
+        return new_args
+    
+    def _populate_source_study_versions(self, source_db, n_studies):
+        """Add source study version data to the website db models.
+        
+        This function pulls source study version information from the source db,
+        converts it where necessary, and populates entries in the SourceStudyVersion
+        model of the trait_browser app. This will fill in the rows of the
+        trait_browser_sourcestudyversion table.
+        
+        If the n_studies argument is set at the command line, a maximum of
+        n_studies will be retrieved from the source database.
+        
+        Arguments:
+            source_db -- an open connection to the source database
+            n_studies -- maximum number of studies to retrieve
+        """
+        loaded_study_accessions = self._get_current_studies()
+        cursor = source_db.cursor(buffered=True, dictionary=True)
+        # If n_studies is set, filter the list of studies to import.
+        if n_studies is not None:
+            source_study_version_query = 'SELECT * FROM source_study_version WHERE accession IN (' + ','.join(loaded_study_accessions) + ')'
+        else:
+            source_study_version_query = 'SELECT * FROM source_study_version'
+        cursor.execute(source_study_version_query)
+        for row in cursor:
+            type_fixed_row = self._fix_bytearray(self._fix_null(row))
+            source_study_version_args = self._make_source_study_version_args(type_fixed_row)
+            add_var = SourceStudyVersion(**source_study_version_args)    # temp Study to add
+            add_var.save()
+            print(' '.join(('Added source_study_version', str(source_study_version_args['source_study_version_id']))))
+        cursor.close()
+
+
+
+
 
     def _make_source_trait_args(self, row_dict):
         """Get args for making a SourceTrait object from a source db row.
@@ -393,6 +452,7 @@ class Command(BaseCommand):
         self._populate_global_studies(source_db_db, options['n_studies'])
         self._populate_studies(source_db_db, options['n_studies'])
         self._populate_source_study_versions(source_db_db)
+
         self._populate_source_datasets(source_db_db)
         self._populate_source_traits(source_db_db, options['n_traits'])
         self._populate_source_trait_encoded_values(source_db_db)
