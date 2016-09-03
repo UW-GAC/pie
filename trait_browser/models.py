@@ -104,6 +104,7 @@ class SourceStudyVersion(models.Model):
     study = models.ForeignKey(Study)
     # Adds .study (object) and .study_id (pk).
     i_id = models.PositiveIntegerField(primary_key=True, db_column='i_id')
+    i_accession = models.PositiveIntegerField()
     i_version = models.PositiveIntegerField()
     i_participant_set = models.PositiveIntegerField()
     i_dbgap_date = models.DateTimeField()
