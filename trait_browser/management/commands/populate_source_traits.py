@@ -296,6 +296,63 @@ class Command(BaseCommand):
             print(' '.join(('Added source_study_version', str(source_study_version_args['source_study_version_id']))))
         cursor.close()
 
+    def _make_source_dataset_args(self, row_dict):
+        """Get args for making a SourceDataset object from a source db row.
+        
+        Converts a dictionary containing {colname: row value} pairs from a database
+        query into a dict with the necessary arguments for constructing a
+        SourceDataset object. If there is a schema change in the source db,
+        this function may need to be modified.
+
+        Returns:
+            a dict of (required_SourceDataset_attribute: attribute_value) pairs
+        """
+        source_study_version = SourceStudyVersion.objects.get(i_id=row_dict['i_id'])
+        new_args = {
+            'source_study_version' : source_study_version,
+            'i_id' : row_dict['id'],
+            'i_accession' : row_dict['accession'],
+            'i_dbgap_description' : row_dict['dbgap_description'],
+            'i_dcc_description' : row_dict['dcc_description'],
+            'i_is_medication_dataset' : row_dict['is_medication_dataset'],
+            'i_is_subject_file' : row_dict['is_subject_file'],
+            'i_study_subject_column' : row_dict['study_subject_column'],
+            'i_version' : row_dict['version'],
+            'i_visit_code' : row_dict['visit_code'],
+            'i_visit_number' : row_dict['visit_number']
+        }
+        return new_args
+    
+    def _populate_source_datasets(self, source_db, n_studies, ):
+        """Add source study version data to the website db models.
+        
+        This function pulls source study version information from the source db,
+        converts it where necessary, and populates entries in the SourceDataset
+        model of the trait_browser app. This will fill in the rows of the
+        trait_browser_sourcestudyversion table.
+        
+        If the n_studies argument is set at the command line, a maximum of
+        n_studies will be retrieved from the source database.
+        
+        Arguments:
+            source_db -- an open connection to the source database
+            n_studies -- maximum number of studies to retrieve
+        """
+        loaded_study_accessions = self._get_current_studies()
+        cursor = source_db.cursor(buffered=True, dictionary=True)
+        # If n_studies is set, filter the list of studies to import.
+        source_dataset_query = 'SELECT * FROM source_dataset'
+        if n_studies is not None:
+            source_dataset_query += 'WHERE accession IN (' + ','.join(loaded_study_accessions) + ')'
+        cursor.execute(source_dataset_query)
+        for row in cursor:
+            type_fixed_row = self._fix_bytearray(self._fix_null(row))
+            source_dataset_args = self._make_source_dataset_args(type_fixed_row)
+            add_var = SourceDataset(**source_dataset_args)    # temp Study to add
+            add_var.save()
+            print(' '.join(('Added source_dataset', str(source_dataset_args['source_dataset_id']))))
+        cursor.close()
+
 
 
 
@@ -450,8 +507,8 @@ class Command(BaseCommand):
         self._populate_global_studies(source_db, options['n_studies'])
         self._populate_studies(source_db, options['n_studies'])
         self._populate_source_study_versions(source_db, options['n_studies'])
-
         self._populate_source_datasets(source_db, options['n_studies'])
+
         self._populate_source_traits(source_db, options['n_traits'])
         self._populate_source_trait_encoded_values(source_db)
         self._populate_source_dataset_unique_keys(source_db)
