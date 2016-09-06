@@ -73,7 +73,7 @@ class Command(BaseCommand):
             are now string type
         """
         fixed_row = {
-            (k) : (row_dict[k].decode('utf-8')
+            (k): (row_dict[k].decode('utf-8')
             if isinstance(row_dict[k], bytearray)
             else row_dict[k]) for k in row_dict
         }
@@ -96,7 +96,7 @@ class Command(BaseCommand):
             been replaced with empty strings
         """
         fixed_row = {
-            (k) : ('' if row_dict[k] is None
+            (k): ('' if row_dict[k] is None
             else row_dict[k]) for k in row_dict
         }
         return fixed_row
@@ -119,7 +119,7 @@ class Command(BaseCommand):
             objects are now timezone aware
         """
         fixed_row = {
-            (k) : (timezone.make_aware(row_dict[k], timezone.get_current_timezone())
+            (k): (timezone.make_aware(row_dict[k], timezone.get_current_timezone())
             if isinstance(row_dict[k], datetime)
             else row_dict[k]) for k in row_dict
         }
@@ -257,12 +257,12 @@ class Command(BaseCommand):
         new_args = {
             'study': study,
             'i_id': row_dict['id'],
-            'i_accession' : row_dict['accession'],
-            'i_version' : row_dict['version'],
-            'i_participant_set' : row_dict['participant_set'],
-            'i_dbgap_date' : row_dict['dbgap_date'],
-            'i_is_deprecated' : row_dict['is_deprecated'],
-            'i_is_prerelease' : row_dict['is_prerelease']
+            'i_accession': row_dict['accession'],
+            'i_version': row_dict['version'],
+            'i_participant_set': row_dict['participant_set'],
+            'i_dbgap_date': row_dict['dbgap_date'],
+            'i_is_deprecated': row_dict['is_deprecated'],
+            'i_is_prerelease': row_dict['is_prerelease']
         }
         return new_args
     
@@ -309,17 +309,17 @@ class Command(BaseCommand):
         """
         source_study_version = SourceStudyVersion.objects.get(i_id=row_dict['i_id'])
         new_args = {
-            'source_study_version' : source_study_version,
-            'i_id' : row_dict['id'],
-            'i_accession' : row_dict['accession'],
-            'i_dbgap_description' : row_dict['dbgap_description'],
-            'i_dcc_description' : row_dict['dcc_description'],
-            'i_is_medication_dataset' : row_dict['is_medication_dataset'],
-            'i_is_subject_file' : row_dict['is_subject_file'],
-            'i_study_subject_column' : row_dict['study_subject_column'],
-            'i_version' : row_dict['version'],
-            'i_visit_code' : row_dict['visit_code'],
-            'i_visit_number' : row_dict['visit_number']
+            'source_study_version': source_study_version,
+            'i_id': row_dict['id'],
+            'i_accession': row_dict['accession'],
+            'i_dbgap_description': row_dict['dbgap_description'],
+            'i_dcc_description': row_dict['dcc_description'],
+            'i_is_medication_dataset': row_dict['is_medication_dataset'],
+            'i_is_subject_file': row_dict['is_subject_file'],
+            'i_study_subject_column': row_dict['study_subject_column'],
+            'i_version': row_dict['version'],
+            'i_visit_code': row_dict['visit_code'],
+            'i_visit_number': row_dict['visit_number']
         }
         return new_args
     
