@@ -230,10 +230,9 @@ class Command(BaseCommand):
         loaded_global_study_ids = self._get_current_global_studies()
         cursor = source_db.cursor(buffered=True, dictionary=True)
         # If n_studies is set, filter the list of studies to import.
+        study_query = 'SELECT * FROM study'
         if n_studies is not None:
-            study_query = 'SELECT * FROM study WHERE global_study_id IN (' + ','.join(loaded_global_study_ids) + ')'
-        else:
-            study_query = 'SELECT * FROM study'
+            study_query += 'WHERE global_study_id IN (' + ','.join(loaded_global_study_ids) + ')'
         cursor.execute(study_query)
         for row in cursor:
             type_fixed_row = self._fix_bytearray(self._fix_null(row))
@@ -285,10 +284,9 @@ class Command(BaseCommand):
         loaded_study_accessions = self._get_current_studies()
         cursor = source_db.cursor(buffered=True, dictionary=True)
         # If n_studies is set, filter the list of studies to import.
+        source_study_version_query = 'SELECT * FROM source_study_version'
         if n_studies is not None:
-            source_study_version_query = 'SELECT * FROM source_study_version WHERE accession IN (' + ','.join(loaded_study_accessions) + ')'
-        else:
-            source_study_version_query = 'SELECT * FROM source_study_version'
+            source_study_version_query += 'WHERE accession IN (' + ','.join(loaded_study_accessions) + ')'
         cursor.execute(source_study_version_query)
         for row in cursor:
             type_fixed_row = self._fix_bytearray(self._fix_null(row))
@@ -425,11 +423,11 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         """Add custom command line arguments to this management command."""
         parser.add_argument('--n_studies', action='store', type=int,
-                            help='Maximum number of studies to import from source_db.')
+                            help='Number of global studies to import from source_db.')
         parser.add_argument('--max_traits', action='store', type=int,
                             help='Maximum number of traits to import FOR EACH STUDY VERSION.')
-        parser.add_argument('--max_study_versions', action='store', type=int,
-                            help='Maximum number of versions to import for each study.')
+        # parser.add_argument('--max_study_versions', action='store', type=int,
+        #                     help='Maximum number of versions to import for each study.')
         parser.add_argument('--which_db', action='store', type=str,
                             choices=['test', 'production'], default='test',
                             help='Which source database to connect to for retrieving source data.')
@@ -451,9 +449,9 @@ class Command(BaseCommand):
         
         self._populate_global_studies(source_db, options['n_studies'])
         self._populate_studies(source_db, options['n_studies'])
-        self._populate_source_study_versions(source_db)
+        self._populate_source_study_versions(source_db, options['n_studies'])
 
-        self._populate_source_datasets(source_db)
+        self._populate_source_datasets(source_db, options['n_studies'])
         self._populate_source_traits(source_db, options['n_traits'])
         self._populate_source_trait_encoded_values(source_db)
         self._populate_source_dataset_unique_keys(source_db)
