@@ -613,8 +613,8 @@ class Command(BaseCommand):
         self._populate_studies(source_db, options['n_studies'])
         self._populate_source_study_versions(source_db, options['n_studies'])
         self._populate_source_datasets(source_db, options['n_studies'])
-        self._populate_source_traits(source_db, options['n_traits'], options['max_traits'])
-        self._populate_source_dataset_unique_keys(source_db, options['n_traits'])
+        self._populate_source_traits(source_db, options['max_traits'], options['n_traits'])
+        self._populate_source_dataset_unique_keys(source_db, options['max_traits'], options['n_traits'])
         self._populate_subcohorts(source_db, options['n_traits'])
 
         self._populate_source_trait_encoded_values(source_db)
