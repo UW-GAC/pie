@@ -84,7 +84,7 @@ class Study(TimeStampedModel):
         Properly format the phs number for this study, so it's easier to get to
         in templates.
         """
-        return 'phs{:06}'.format(self.phs)
+        return 'phs{:06}'.format(self.i_accession)
 
     def set_dbgap_latest_version_link(self):
         """Automatically set dbgap_latest_version_link from the study's phs.
@@ -129,7 +129,7 @@ class SourceStudyVersion(TimeStampedModel):
         """
         self.phs_version_string = self.set_phs_version_string()
         # Call the "real" save method.
-        super(Study, self).save(*args, **kwargs)
+        super(SourceStudyVersion, self).save(*args, **kwargs)
     
     def set_phs_version_string(self):
         """Automatically set phs_version_string from the study's phs value."""
@@ -190,11 +190,11 @@ class SourceDataset(TimeStampedModel):
         """
         self.pht_version_string = self.set_pht_version_string()
         # Call the "real" save method.
-        super(Study, self).save(*args, **kwargs)
+        super(SourceDataset, self).save(*args, **kwargs)
 
     def set_pht_version_string(self):
         """Automatically set pht_version_string from the accession, version, and particpant set."""
-        return 'pht{:06}.v{}.p{}'.format(self.i_accession, self.i_version, self.source_study_version.participant_set)
+        return 'pht{:06}.v{}.p{}'.format(self.i_accession, self.i_version, self.source_study_version.i_participant_set)
 
 
 class SourceDatasetSubcohorts(TimeStampedModel):
@@ -335,9 +335,9 @@ class SourceTrait(Trait):
     
     def set_variable_accession(self):
         """Automatically set variable_accession from the linked SourceStudyVersion and dbGaP accession."""
-        return 'phv{:08}.v{}.p{}'.format(self.dbgap_variable_accession,
-                                         self.dbgap_variable_version,
-                                         self.source_dataset.source_study_version.participant_set)
+        return 'phv{:08}.v{}.p{}'.format(self.i_dbgap_variable_accession,
+                                         self.i_dbgap_variable_version,
+                                         self.source_dataset.source_study_version.i_participant_set)
 
     def set_dbgap_variable_link(self):
         """Automatically set dbgap_variable_link from study_accession and dbgap_variable_accession.
@@ -346,7 +346,7 @@ class SourceTrait(Trait):
         and some fields from this SourceTrait.
         """
         VARIABLE_URL = 'http://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/variable.cgi?study_id={}&phv={:08}'
-        return VARIABLE_URL.format(self.study_accession, self.dbgap_variable_accession)
+        return VARIABLE_URL.format(self.study_accession, self.i_dbgap_variable_accession)
 
     def set_dbgap_study_link(self):
         """Automatically set dbgap_study_link from study_accession.

@@ -342,8 +342,8 @@ class Command(BaseCommand):
         # If n_studies is set, filter the list of studies to import.
         source_dataset_query = 'SELECT * FROM source_dataset'
         if n_studies is not None:
-            loaded_studies = self._get_current_studies()
-            source_dataset_query += ' WHERE accession IN ({})'.format(','.join(loaded_studies))
+            loaded_source_study_versions = self._get_current_source_study_versions()
+            source_dataset_query += ' WHERE study_version_id IN ({})'.format(','.join(loaded_source_study_versions))
         cursor.execute(source_dataset_query)
         for row in cursor:
             type_fixed_row = self._fix_bytearray(self._fix_null(row))
@@ -373,13 +373,10 @@ class Command(BaseCommand):
             'i_detected_type': row_dict['detected_type'],
             'i_dbgap_type': row_dict['dbgap_type'],
             'i_visit_number': row_dict['visit_number'],
-            'i_dataset_id': row_dict['dataset_id'],
             'i_dbgap_variable_accession': row_dict['dbgap_variable_accession'],
             'i_dbgap_variable_version': row_dict['dbgap_variable_version'],
             'i_dbgap_comment': row_dict['dbgap_comment'],
             'i_dbgap_unit': row_dict['dbgap_unit'],
-            'i_dbgap_min': row_dict['dbgap_min'],
-            'i_dbgap_max': row_dict['dbgap_max'],
             'i_n_records': row_dict['n_records'],
             'i_n_missing': row_dict['n_missing']
         }
@@ -408,9 +405,9 @@ class Command(BaseCommand):
         trait_query = 'SELECT * FROM source_trait'
         # If max_traits is set, loop through by study version.
         if max_traits is not None:
-            loaded_source_study_versions = self._get_current_source_study_versions ()    # list of string study version ids
+            loaded_source_study_versions = self._get_current_source_study_versions()    # list of string study version ids
             for source_study_version_id in loaded_source_study_versions:    # Already filters if n_studies is set.
-                datasets_in_version = [str(dataset.i_id) for dataset in SourceDataset.objects.filter(source_study_version__i_id=source_study_version_id).order_by('id')]
+                datasets_in_version = [str(dataset.i_id) for dataset in SourceDataset.objects.filter(source_study_version__i_id=source_study_version_id).order_by('i_id')]
                 this_query = trait_query + ' WHERE dataset_id IN ({}) LIMIT {}'.format(','.join(datasets_in_version), max_traits)
                 cursor.execute(this_query)
                 for row in cursor:
@@ -599,7 +596,7 @@ class Command(BaseCommand):
         }
         return new_args
 
-    def _populate_encoded_values(self, source_db, max_traits, n_studies):
+    def _populate_source_trait_encoded_values(self, source_db, max_traits, n_studies):
         """Add encoded value data to the website db models.
         
         This function pulls study information from the source db, converts it
@@ -616,7 +613,7 @@ class Command(BaseCommand):
         cursor = source_db.cursor(buffered=True, dictionary=True)
         source_trait_encoded_value_query = 'SELECT * FROM source_trait_encoded_values'
         if n_studies is not None or max_traits is not None:
-            loaded_source_traits = self._get_current_source_traits
+            loaded_source_traits = self._get_current_source_traits()
             source_trait_encoded_value_query += ' WHERE source_trait_id IN ({})'.format(','.join(loaded_source_traits))
         # NB: The IN clause of this SQL query might need to be changed later if the number of traits in the db gets too high.
         cursor.execute(source_trait_encoded_value_query)
@@ -625,7 +622,7 @@ class Command(BaseCommand):
             model_args = self._make_source_trait_encoded_value_args(type_fixed_row)
             add_var = SourceTraitEncodedValue(**model_args)    # temp SourceTraitEncodedValue to add
             add_var.save()
-            print(' '.join(('Added encoded value for', str(type_fixed_row['id']))))
+            print(' '.join(('Added encoded value for', str(add_var.id))))
         cursor.close()
 
     # Methods to actually do the management command.
@@ -657,13 +654,22 @@ class Command(BaseCommand):
         source_db = self._get_source_db(which_db=options['which_db'])
         
         self._populate_global_studies(source_db, options['n_studies'])
+        print("Added global studies")
         self._populate_studies(source_db, options['n_studies'])
+        print("Added studies")
         self._populate_source_study_versions(source_db, options['n_studies'])
+        print("Added source study versions")
         self._populate_source_datasets(source_db, options['n_studies'])
-        self._populate_source_traits(source_db, options['max_traits'], options['n_traits'])
-        self._populate_source_dataset_unique_keys(source_db, options['max_traits'], options['n_traits'])
-        self._populate_subcohorts(source_db, options['n_traits'])
-        self._populate_source_dataset_subcohorts(source_db, options['n_traits'])
-        self._populate_source_trait_encoded_values(source_db, options['max_traits'], options['n_traits'])
+        print("Added source datasets")
+        self._populate_source_traits(source_db, options['max_traits'], options['n_studies'])
+        print("Added source traits")
+        self._populate_source_dataset_unique_keys(source_db, options['max_traits'], options['n_studies'])
+        print("Added source dataset unique keys")
+        self._populate_subcohorts(source_db, options['n_studies'])
+        print("Added subcohorts")
+        self._populate_source_dataset_subcohorts(source_db, options['n_studies'])
+        print("Added source dataset subcohorts")
+        self._populate_source_trait_encoded_values(source_db, options['max_traits'], options['n_studies'])
+        print("Added source trait encoded values")
         
         source_db.close()
