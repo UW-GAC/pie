@@ -385,7 +385,7 @@ class Command(BaseCommand):
         }
         return new_args
 
-    def _populate_source_traits(self, source_db, n_studies, max_traits):
+    def _populate_source_traits(self, source_db, max_traits, n_studies):
         """Add source trait data to the website db models.
         
         This function pulls source trait data from the source db, converts it
@@ -401,8 +401,7 @@ class Command(BaseCommand):
         
         Arguments:
             source_db -- an open connection to the source database
-            max_traits -- maximum number of traits to retrieve for each study
-                found in the site db
+            max_traits -- maximum number of traits to retrieve for each study version
             n_studies -- number of global studies to retrieve from the database
         """
         cursor = source_db.cursor(buffered=True, dictionary=True)
@@ -454,7 +453,7 @@ class Command(BaseCommand):
         }
         return new_args
     
-    def _populate_source_dataset_unique_keys(self, source_db, n_studies):
+    def _populate_source_dataset_unique_keys(self, source_db, max_traits, n_studies):
         """Add source study version data to the website db models.
         
         This function pulls source study version information from the source db,
@@ -467,12 +466,13 @@ class Command(BaseCommand):
         
         Arguments:
             source_db -- an open connection to the source database
+            max_traits -- maximum number of traits to retrieve for each study version
             n_studies -- maximum number of studies to retrieve
         """
         cursor = source_db.cursor(buffered=True, dictionary=True)
-        # If n_studies is set, filter the list of unique_keys to import.
+        # If n_studies OR max_studies is set, filter the list of unique_keys to import.
         source_dataset_unique_keys_query = 'SELECT * FROM source_dataset_unique_keys'
-        if n_studies is not None:
+        if n_studies is not None or max_studies is not None:
             loaded_source_traits = self._get_current_traits()
             source_dataset_unique_keys_query += 'WHERE '
         cursor.execute(source_dataset_unique_keys_query)
