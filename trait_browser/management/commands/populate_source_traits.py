@@ -449,6 +449,8 @@ class Command(BaseCommand):
         source_dataset = SourceDataset.objects.get(i_id=row_dict['dataset_id'])
         source_trait = SourceTrait.objects.get(i_trait_id=row_dict['source_trait_id'])
         new_args = {
+            'source_dataset': source_dataset,
+            'source_trait': source_trait,
             'i_id': row_dict['id'],
             'i_is_visit_column': row_dict['is_visit_column'],
         }
@@ -473,14 +475,14 @@ class Command(BaseCommand):
         cursor = source_db.cursor(buffered=True, dictionary=True)
         # If n_studies OR max_studies is set, filter the list of unique_keys to import.
         source_dataset_unique_keys_query = 'SELECT * FROM source_dataset_unique_keys'
-        if n_studies is not None or max_studies is not None:
+        if n_studies is not None or max_traits is not None:
             loaded_source_traits = self._get_current_source_traits()
             source_dataset_unique_keys_query += ' WHERE source_trait_id IN ({})'.format(','.join(loaded_source_traits))
         cursor.execute(source_dataset_unique_keys_query)
         for row in cursor:
             type_fixed_row = self._fix_row(row)
             source_dataset_unique_keys_args = self._make_source_dataset_unique_keys_args(type_fixed_row)
-            add_var = SourceDatasetUniqueKeys(**source_dataset_unique_keys_args)    # temp Study to add
+            add_var = SourceDatasetUniqueKeys(**source_dataset_unique_keys_args)    # temp SourceDatasetUniqueKeys to add
             add_var.save()
             print(' '.join(('Added source_dataset_unique_keys', str(source_dataset_unique_keys_args['i_id']))))
         cursor.close()
