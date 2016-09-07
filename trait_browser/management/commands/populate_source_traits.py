@@ -580,12 +580,8 @@ class Command(BaseCommand):
             print(' '.join(('Added subcohort', str(subcohort_args['subcohort_id']))))
         cursor.close()
 
-
-
-
-
-    def _make_source_encoded_value_args(self, row_dict):
-        """Get args for making a SourceEncodedValue object from a source db row.
+    def _make_source_trait_encoded_value_args(self, row_dict):
+        """Get args for making a SourceTraitEncodedValue object from a source db row.
         
         Converts a dictionary containing {colname: row value} pairs from a
         database query into a dict with the necessary arguments for constructing
@@ -595,36 +591,39 @@ class Command(BaseCommand):
         Arguments:
             source_db -- an open connection to the source database
         """
+        source_trait = SourceTrait.objects.get(i_trait_id = row_dict['source_trait_id'])
         new_args = {
-            'category': row_dict['category'],
-            'value': row_dict['value'],
-            'source_trait': SourceTrait.objects.get(dcc_trait_id = row_dict['source_trait_id'])
+            'i_category': row_dict['category'],
+            'i_value': row_dict['value'],
+            'source_trait': source_trait
         }
         return new_args
 
-    def _populate_encoded_values(self, source_db):
+    def _populate_encoded_values(self, source_db, max_traits, n_studies):
         """Add encoded value data to the website db models.
         
         This function pulls study information from the source db, converts it
-        where necessary, and populates entries in the SourceEncodedValue model of
+        where necessary, and populates entries in the SourceTraitEncodedValue model of
         the trait_browser app. This will fill in the trait_browser_sourceencodedvalue
         table. Only encoded values for the traits already present in the django
         site db are retrieved from the source db.
         
         Arguments:
             source_db -- an open connection to the source database
+            max_traits -- maximum number of traits to retrieve for each study version
+            n_studies -- maximum number of studies to retrieve
         """
         cursor = source_db.cursor(buffered=True, dictionary=True)
-        # Only retrieve the values for SourceTraits that were retrieved already.
-        current_traits = self._get_current_traits()
-        trait_query = 'SELECT * FROM source_encoded_values WHERE source_trait_id IN ({})'.format(','.join(current_traits))
-        # TODO: The IN clause of this SQL query might need to be changed later if
-        # the number of traits in the db gets too high.
-        cursor.execute(trait_query)
+        source_trait_encoded_value_query = 'SELECT * FROM source_trait_encoded_values'
+        if n_studies is not None or max_traits is not None:
+            loaded_source_traits = self._get_current_traits
+            source_trait_encoded_value_query += ' WHERE source_trait_id IN ({})'.forma(','.join(loaded_source_traits))
+        # NB: The IN clause of this SQL query might need to be changed later if the number of traits in the db gets too high.
+        cursor.execute(source_trait_encoded_value_query)
         for row in cursor:
             type_fixed_row = self._fix_bytearray(self._fix_null(row))
-            model_args = self._make_source_encoded_value_args(type_fixed_row)
-            add_var = SourceEncodedValue(**model_args)    # temp SourceEncodedValue to add
+            model_args = self._make_source_trait_encoded_value_args(type_fixed_row)
+            add_var = SourceTraitEncodedValue(**model_args)    # temp SourceTraitEncodedValue to add
             add_var.save()
             print(' '.join(('Added encoded value for', str(type_fixed_row['source_trait_id']))))
         cursor.close()
@@ -664,8 +663,7 @@ class Command(BaseCommand):
         self._populate_source_traits(source_db, options['max_traits'], options['n_traits'])
         self._populate_source_dataset_unique_keys(source_db, options['max_traits'], options['n_traits'])
         self._populate_subcohorts(source_db, options['n_traits'])
-
-        self._populate_source_trait_encoded_values(source_db)
-        self._populate_source_dataset_subcohorts(source_db)
+        self._populate_source_dataset_subcohorts(source_db, options['n_traits'])
+        self._populate_source_trait_encoded_values(source_db, options['max_traits'], options['n_traits'])
         
         source_db.close()
