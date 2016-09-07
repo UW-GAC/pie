@@ -139,8 +139,8 @@ class SourceTraitAdmin(ReadOnlyAdmin):
     # Set fields to display, filter, and search on.
     list_display = ('i_trait_id', 'i_trait_name', 'i_detected_type',
                     'i_dbgap_variable_accession', 'i_dbgap_variable_version',
-                    'dbgap_study_link', 'web_date_added', )
-    list_filter = ('web_date_added', 'i_trait_id', 'i_trait_name', )
+                    'dbgap_study_link', 'created', 'modified', )
+    list_filter = ('created', 'modified', 'i_trait_id', 'i_trait_name', )
     search_fields = ('i_trait_id', 'i_trait_name', )
 
 
@@ -155,8 +155,8 @@ class HarmonizedTraitAdmin(ReadOnlyAdmin):
     )))
     # Set fields to display, filter, and search on.
     list_display = ('i_trait_id', 'i_trait_name', 'i_data_type',
-                    'harmonized_trait_set_id', 'i_is_unique_key', 'web_date_added', )
-    list_filter = ('web_date_added', 'harmonized_trait_set', 'i_trait_id', 'i_trait_name', )
+                    'harmonized_trait_set_id', 'i_is_unique_key', 'created', 'modified', )
+    list_filter = ('created', 'modified', 'harmonized_trait_set', 'i_trait_id', 'i_trait_name', )
     search_fields = ('i_trait_id', 'i_trait_name', )
 
 
@@ -171,8 +171,8 @@ class SourceTraitEncodedValueAdmin(ReadOnlyAdmin):
     )))
     # Set fields to display, filter, and search on.
     list_display = ('id', 'i_category', 'i_value',
-                    'get_source_trait_name', 'get_source_trait_study', 'web_date_added', )
-    list_filter = ('web_date_added', )
+                    'get_source_trait_name', 'get_source_trait_study', 'created', 'modified', )
+    list_filter = ('created', 'modified', )
     search_fields = ('i_category', 'i_id', )
 
 
@@ -187,8 +187,8 @@ class HarmonizedTraitEncodedValueAdmin(ReadOnlyAdmin):
     )))
     # Set fields to display, filter, and search on.
     list_display = ('id', 'i_category', 'i_value',
-                    'get_harmonized_trait_name', 'web_date_added', )
-    list_filter = ('web_date_added', )
+                    'get_harmonized_trait_name', 'created', 'modified', )
+    list_filter = ('created', 'modified', )
     search_fields = ('i_category', 'i_id', )
 
 

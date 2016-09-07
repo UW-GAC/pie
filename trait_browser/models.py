@@ -8,10 +8,22 @@
 
 from django.db import models
 
+class TimeStampedModel(models.Model):
+    """
+    An abstract base class model that provides selfupdating
+    ``created`` and ``modified`` fields.
+    """
+
+    created = models.DateTimeField(auto_now_add=True)
+    modified = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        abstract = True
+
 
 # Study models.
 # ------------------------------------------------------------------------------
-class GlobalStudy(models.Model):
+class GlobalStudy(TimeStampedModel):
     """Model for "global study", which links studies between parent & child accessions.
     
     Global study connects data that are from the same parent study, but may be spread across
@@ -25,13 +37,12 @@ class GlobalStudy(models.Model):
 
     i_id = models.PositiveIntegerField(primary_key=True, db_column='study_id')
     i_name = models.CharField(max_length=200)
-    web_date_added = models.DateTimeField(auto_now_add=True, auto_now=False)
 
     class Meta:
         verbose_name_plural = 'GlobalStudies'
 
 
-class Study(models.Model):
+class Study(TimeStampedModel):
     """Model for dbGaP study accessions.
     
     Fields:
@@ -48,7 +59,6 @@ class Study(models.Model):
     i_study_name = models.CharField(max_length=200)
     phs = models.CharField(max_length=9)
     dbgap_latest_version_link = models.CharField(max_length=200)
-    web_date_added = models.DateTimeField(auto_now_add=True, auto_now=False)
 
     class Meta:
         # Fix pluralization of this model, because grammar. 
@@ -87,7 +97,7 @@ class Study(models.Model):
         return STUDY_URL.format(self.phs)
 
 
-class SourceStudyVersion(models.Model):
+class SourceStudyVersion(TimeStampedModel):
     """Model for versions of each dbGaP study accession.
     
     Fields:
@@ -111,7 +121,6 @@ class SourceStudyVersion(models.Model):
     i_is_prerelease = models.BooleanField()
     i_is_deprecated = models.BooleanField()
     phs_version_string = models.CharField(max_length=20)
-    web_date_added = models.DateTimeField(auto_now_add=True, auto_now=False)
     
     def save(self, *args, **kwargs):
         """Custom save method for setting default dbGaP accession strings.
@@ -127,7 +136,7 @@ class SourceStudyVersion(models.Model):
         return '{}.v{}.p{}'.format(self.study.phs, self.i_version, self.i_participant_set)
     
 
-class Subcohort(models.Model):
+class Subcohort(TimeStampedModel):
     """Model for subcohorts.
     
     Fields:
@@ -138,12 +147,11 @@ class Subcohort(models.Model):
     # Adds .study (object) and .study_id (pk).
     i_id = models.PositiveIntegerField(primary_key=True, db_column='i_id')
     i_name = models.CharField(max_length=45)
-    web_date_added = models.DateTimeField(auto_now_add=True, auto_now=False)
 
 
 # Dataset related models.
 # ------------------------------------------------------------------------------
-class SourceDataset(models.Model):
+class SourceDataset(TimeStampedModel):
     """Model for dbGaP datasets from which SourceTraits are obtained.
     
     Fields:
@@ -174,7 +182,6 @@ class SourceDataset(models.Model):
     i_dbgap_description = models.TextField() 
     i_dcc_description = models.TextField()
     pht_version_string = models.CharField(max_length=20)
-    web_date_added = models.DateTimeField(auto_now_add=True, auto_now=False)
 
     def save(self, *args, **kwargs):
         """Custom save method for setting default dbGaP accession strings.
@@ -190,7 +197,7 @@ class SourceDataset(models.Model):
         return 'pht{:06}.v{}.p{}'.format(self.i_accession, self.i_version, self.source_study_version.participant_set)
 
 
-class SourceDatasetSubcohorts(models.Model):
+class SourceDatasetSubcohorts(TimeStampedModel):
     """Model for Subcohorts found within each dbGaP source dataset.
     
     Fields:
@@ -204,10 +211,9 @@ class SourceDatasetSubcohorts(models.Model):
     subcohort = models.ForeignKey(Subcohort)
     # Adds .subcohort (object) and .subcohort_id (pk).
     i_id = models.PositiveIntegerField(primary_key=True, db_column='i_id')
-    web_date_added = models.DateTimeField(auto_now_add=True, auto_now=False)
 
 
-class HarmonizedTraitSet(models.Model):
+class HarmonizedTraitSet(TimeStampedModel):
     """Model for harmonized trait set from snuffles. Analagous to the SourceDataset
     for source traits.
     
@@ -222,12 +228,11 @@ class HarmonizedTraitSet(models.Model):
     i_trait_set_name = models.CharField(max_length=45)
     i_version = models.PositiveIntegerField()
     i_description = models.CharField(max_length=1000)
-    web_date_added = models.DateTimeField(auto_now_add=True, auto_now=False)
     
 
 # Trait models.
 # ------------------------------------------------------------------------------
-class Trait(models.Model):
+class Trait(TimeStampedModel):
     """Abstract superclass model for SourceTrait and HarmonizedTrait.
     
     SourceTrait and HarmonizedTrait Models inherit from this Model, but the Trait
@@ -237,13 +242,11 @@ class Trait(models.Model):
         i_trait_id
         i_trait_name
         i_description
-        web_date_added
     """
     
     i_trait_id = models.PositiveIntegerField(primary_key=True, db_column='i_trait_id')
     i_trait_name = models.CharField(max_length=100, verbose_name='phenotype name')
     i_description = models.TextField(verbose_name='phenotype description')
-    web_date_added = models.DateTimeField(auto_now_add=True, auto_now=False)
 
     class Meta:
         abstract = True
@@ -294,7 +297,7 @@ class SourceTrait(Trait):
     
     def __str__(self):
         """Pretty printing of SourceTrait objects."""
-        print_parms = ['i_trait_id', 'i_trait_name', 'i_detected_type', 'i_dbgap_unit', 'web_date_added']
+        print_parms = ['i_trait_id', 'i_trait_name', 'i_detected_type', 'i_dbgap_unit', 'created']
         print_list = ['{0} : {1}'.format(k, str(self.__dict__[k])) for k in print_parms]
         return '\n'.join(print_list)
     
@@ -376,7 +379,7 @@ class HarmonizedTrait(Trait):
 
 # Encoded Value models.
 # ------------------------------------------------------------------------------
-class TraitEncodedValue(models.Model):
+class TraitEncodedValue(TimeStampedModel):
     """Abstract superclass model for SourceEncodedValue and HarmonizedEncodedValue.
     
     SourceEncodedValue and HarmonizedEncodedValue models inherit from this Model,
@@ -385,13 +388,11 @@ class TraitEncodedValue(models.Model):
     Fields:
         i_category
         i_value
-        web_date_added
     """
     
     # Has auto-added id primary key field.
     i_category = models.CharField(max_length=45)
     i_value = models.CharField(max_length=1000)
-    web_date_added = models.DateTimeField(auto_now_add=True, auto_now=False)
 
     class Meta:
         abstract = True
@@ -483,7 +484,7 @@ class HarmonizedTraitEncodedValue(TraitEncodedValue):
     get_harmonized_trait_name.short_description = 'HarmonizedTrait Name'
 
 
-class SourceDatasetUniqueKeys(models.Model):
+class SourceDatasetUniqueKeys(TimeStampedModel):
     """Model for unique keys within each dbGaP source dataset.
     
     Fields:
@@ -499,6 +500,4 @@ class SourceDatasetUniqueKeys(models.Model):
     # Adds .source_trait (object) and .source_trait_id (pk).
     i_id = models.PositiveIntegerField(primary_key=True, db_column='i_id')
     i_is_visit_column = models.BooleanField()
-    web_date_added = models.DateTimeField(auto_now_add=True, auto_now=False)
-    
 
