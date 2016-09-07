@@ -204,7 +204,7 @@ class Command(BaseCommand):
         Returns:
             a dict of (required_Study_attribute: attribute_value) pairs
         """
-        global_study = GlobalStudy.objects.get(i_id=row_dict['i_id'])
+        global_study = GlobalStudy.objects.get(i_id=row_dict['global_study_id'])
         new_args = {
             'global_study': global_study,
             'i_accession': row_dict['accession'],
@@ -253,7 +253,7 @@ class Command(BaseCommand):
         Returns:
             a dict of (required_SourceStudyVersion_attribute: attribute_value) pairs
         """
-        study = Study.objects.get(i_accession=row_dict['i_accession'])
+        study = Study.objects.get(i_accession=row_dict['accession'])
         new_args = {
             'study': study,
             'i_id': row_dict['id'],
@@ -307,7 +307,7 @@ class Command(BaseCommand):
         Returns:
             a dict of (required_SourceDataset_attribute: attribute_value) pairs
         """
-        source_study_version = SourceStudyVersion.objects.get(i_id=row_dict['i_id'])
+        source_study_version = SourceStudyVersion.objects.get(i_id=row_dict['study_version_id'])
         new_args = {
             'source_study_version': source_study_version,
             'i_id': row_dict['id'],
