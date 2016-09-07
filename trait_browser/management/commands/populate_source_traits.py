@@ -124,6 +124,10 @@ class Command(BaseCommand):
             else row_dict[k]) for k in row_dict
         }
         return fixed_row
+    
+    def _fix_row(self, row_dict):
+        """Helper function to run all of the fixers."""
+        return self._fix_timezone(self._fix_bytearray(self._fix_null(row_dict)))
 
     # Methods to find out which objects are already in the db.
     def _get_current_global_studies(self):
@@ -186,7 +190,7 @@ class Command(BaseCommand):
             global_study_query += ' LIMIT {}'.format(n_studies)
         cursor.execute(global_study_query)
         for row in cursor:
-            type_fixed_row = self._fix_bytearray(self._fix_null(row))
+            type_fixed_row = self._fix_row(row)
             global_study_args = self._make_global_study_args(type_fixed_row)
             add_var = GlobalStudy(**global_study_args)    # temp GlobalStudy to add
             add_var.save()
@@ -235,7 +239,7 @@ class Command(BaseCommand):
             study_query += ' WHERE global_study_id IN ({})'.format(','.join(loaded_global_studies))
         cursor.execute(study_query)
         for row in cursor:
-            type_fixed_row = self._fix_bytearray(self._fix_null(row))
+            type_fixed_row = self._fix_row(row)
             study_args = self._make_study_args(type_fixed_row)
             add_var = Study(**study_args)    # temp Study to add
             add_var.save()
@@ -289,7 +293,7 @@ class Command(BaseCommand):
             source_study_version_query += ' WHERE accession IN ({})'.format(','.join(loaded_studies))
         cursor.execute(source_study_version_query)
         for row in cursor:
-            type_fixed_row = self._fix_bytearray(self._fix_null(row))
+            type_fixed_row = self._fix_row(row)
             source_study_version_args = self._make_source_study_version_args(type_fixed_row)
             add_var = SourceStudyVersion(**source_study_version_args)    # temp Study to add
             add_var.save()
@@ -346,7 +350,7 @@ class Command(BaseCommand):
             source_dataset_query += ' WHERE study_version_id IN ({})'.format(','.join(loaded_source_study_versions))
         cursor.execute(source_dataset_query)
         for row in cursor:
-            type_fixed_row = self._fix_bytearray(self._fix_null(row))
+            type_fixed_row = self._fix_row(row)
             source_dataset_args = self._make_source_dataset_args(type_fixed_row)
             add_var = SourceDataset(**source_dataset_args)    # temp Study to add
             add_var.save()
@@ -411,7 +415,7 @@ class Command(BaseCommand):
                 this_query = trait_query + ' WHERE dataset_id IN ({}) LIMIT {}'.format(','.join(datasets_in_version), max_traits)
                 cursor.execute(this_query)
                 for row in cursor:
-                    type_fixed_row = self._fix_bytearray(self._fix_null(row))
+                    type_fixed_row = self._fix_row(row)
                     model_args = self._make_source_trait_args(type_fixed_row)
                     add_var = SourceTrait(**model_args)    # temp SourceTrait to add
                     add_var.save()
@@ -424,7 +428,7 @@ class Command(BaseCommand):
                 trait_query += ' WHERE dataset_id IN ({})'.format(','.join(loaded_source_datasets))
             cursor.execute(trait_query)
             for row in cursor:
-                type_fixed_row = self._fix_bytearray(self._fix_null(row))
+                type_fixed_row = self._fix_row(row)
                 model_args = self._make_source_trait_args(type_fixed_row)
                 add_var = SourceTrait(**model_args)    # temp SourceTrait to add
                 add_var.save()
@@ -474,7 +478,7 @@ class Command(BaseCommand):
             source_dataset_unique_keys_query += ' WHERE source_trait_id IN ({})'.format(','.join(loaded_source_traits))
         cursor.execute(source_dataset_unique_keys_query)
         for row in cursor:
-            type_fixed_row = self._fix_bytearray(self._fix_null(row))
+            type_fixed_row = self._fix_row(row)
             source_dataset_unique_keys_args = self._make_source_dataset_unique_keys_args(type_fixed_row)
             add_var = SourceDatasetUniqueKeys(**source_dataset_unique_keys_args)    # temp Study to add
             add_var.save()
@@ -522,7 +526,7 @@ class Command(BaseCommand):
             subcohort_query += ' WHERE study_accession IN ({})'.format(','.join(loaded_studies))
         cursor.execute(subcohort_query)
         for row in cursor:
-            type_fixed_row = self._fix_bytearray(self._fix_null(row))
+            type_fixed_row = self._fix_row(row)
             subcohort_args = self._make_subcohort_args(type_fixed_row)
             add_var = Subcohort(**subcohort_args)    # temp Study to add
             add_var.save()
@@ -570,7 +574,7 @@ class Command(BaseCommand):
             source_dataset_subcohorts_query += ' WHERE dataset_id IN ({})'.format(','.join(loaded_source_datasets))
         cursor.execute(source_dataset_subcohorts_query)
         for row in cursor:
-            type_fixed_row = self._fix_bytearray(self._fix_null(row))
+            type_fixed_row = self._fix_row(row)
             source_dataset_subcohorts_args = self._make_source_dataset_subcohorts_args(type_fixed_row)
             add_var = SourceDatasetSubcohorts(**source_dataset_subcohorts_args)    # temp Study to add
             add_var.save()
@@ -618,7 +622,7 @@ class Command(BaseCommand):
         # NB: The IN clause of this SQL query might need to be changed later if the number of traits in the db gets too high.
         cursor.execute(source_trait_encoded_value_query)
         for row in cursor:
-            type_fixed_row = self._fix_bytearray(self._fix_null(row))
+            type_fixed_row = self._fix_row(row)
             model_args = self._make_source_trait_encoded_value_args(type_fixed_row)
             add_var = SourceTraitEncodedValue(**model_args)    # temp SourceTraitEncodedValue to add
             add_var.save()
