@@ -20,7 +20,7 @@ from django.conf import settings
 
 import mysql.connector
 
-from .models import (GlobalStudy, Study, SourceStudyVersion, Subcohort,
+from trait_browser.models import (GlobalStudy, Study, SourceStudyVersion, Subcohort,
                      SourceDataset, SourceDatasetSubcohorts, SourceDatasetUniqueKeys, 
                      SourceTrait, SourceTraitEncodedValue )
 
@@ -190,7 +190,7 @@ class Command(BaseCommand):
             global_study_args = self._make_global_study_args(type_fixed_row)
             add_var = GlobalStudy(**global_study_args)    # temp GlobalStudy to add
             add_var.save()
-            print(' '.join(('Added global_study', str(global_study_args['global_study_id']))))
+            print(' '.join(('Added global_study', str(global_study_args['i_name']))))
         cursor.close()
 
     def _make_study_args(self, row_dict):
@@ -239,7 +239,7 @@ class Command(BaseCommand):
             study_args = self._make_study_args(type_fixed_row)
             add_var = Study(**study_args)    # temp Study to add
             add_var.save()
-            print(' '.join(('Added study', str(study_args['study_id']))))
+            print(' '.join(('Added study', str(study_args['i_study_name']))))
         cursor.close()
 
     def _make_source_study_version_args(self, row_dict):
@@ -293,7 +293,7 @@ class Command(BaseCommand):
             source_study_version_args = self._make_source_study_version_args(type_fixed_row)
             add_var = SourceStudyVersion(**source_study_version_args)    # temp Study to add
             add_var.save()
-            print(' '.join(('Added source_study_version', str(source_study_version_args['source_study_version_id']))))
+            print(' '.join(('Added source_study_version', str(source_study_version_args['i_id']))))
         cursor.close()
 
     def _make_source_dataset_args(self, row_dict):
@@ -350,7 +350,7 @@ class Command(BaseCommand):
             source_dataset_args = self._make_source_dataset_args(type_fixed_row)
             add_var = SourceDataset(**source_dataset_args)    # temp Study to add
             add_var.save()
-            print(' '.join(('Added source_dataset', str(source_dataset_args['source_dataset_id']))))
+            print(' '.join(('Added source_dataset', str(source_dataset_args['i_id']))))
         cursor.close()
 
     def _make_source_trait_args(self, row_dict):
@@ -481,7 +481,7 @@ class Command(BaseCommand):
             source_dataset_unique_keys_args = self._make_source_dataset_unique_keys_args(type_fixed_row)
             add_var = SourceDatasetUniqueKeys(**source_dataset_unique_keys_args)    # temp Study to add
             add_var.save()
-            print(' '.join(('Added source_dataset_unique_keys', str(source_dataset_unique_keys_args['source_dataset_unique_keys_id']))))
+            print(' '.join(('Added source_dataset_unique_keys', str(source_dataset_unique_keys_args['i_id']))))
         cursor.close()
 
     def _make_subcohort_args(self, row_dict):
@@ -529,7 +529,7 @@ class Command(BaseCommand):
             subcohort_args = self._make_subcohort_args(type_fixed_row)
             add_var = Subcohort(**subcohort_args)    # temp Study to add
             add_var.save()
-            print(' '.join(('Added subcohort', str(subcohort_args['subcohort_id']))))
+            print(' '.join(('Added subcohort', str(subcohort_args['i_id']))))
         cursor.close()
 
     def _make_source_dataset_subcohorts_args(self, row_dict):
@@ -577,7 +577,7 @@ class Command(BaseCommand):
             source_dataset_subcohorts_args = self._make_source_dataset_subcohorts_args(type_fixed_row)
             add_var = SourceDatasetSubcohorts(**source_dataset_subcohorts_args)    # temp Study to add
             add_var.save()
-            print(' '.join(('Added subcohort', str(subcohort_args['subcohort_id']))))
+            print(' '.join(('Added subcohort', str(subcohort_args['i_id']))))
         cursor.close()
 
     def _make_source_trait_encoded_value_args(self, row_dict):
@@ -625,7 +625,7 @@ class Command(BaseCommand):
             model_args = self._make_source_trait_encoded_value_args(type_fixed_row)
             add_var = SourceTraitEncodedValue(**model_args)    # temp SourceTraitEncodedValue to add
             add_var.save()
-            print(' '.join(('Added encoded value for', str(type_fixed_row['source_trait_id']))))
+            print(' '.join(('Added encoded value for', str(type_fixed_row['id']))))
         cursor.close()
 
     # Methods to actually do the management command.
@@ -640,7 +640,7 @@ class Command(BaseCommand):
         parser.add_argument('--which_db', action='store', type=str,
                             choices=['test', 'production'], default='test',
                             help='Which source database to connect to for retrieving source data.')
-        parser.add_argument('--only_update_existing', action='store_true', type=bool,
+        parser.add_argument('--only_update_existing', action='store_true',
                             help='Only update the db records that are already in the db, and do not add new ones.')
 
     def handle(self, *args, **options):
