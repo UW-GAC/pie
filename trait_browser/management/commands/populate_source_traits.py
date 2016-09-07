@@ -532,6 +532,54 @@ class Command(BaseCommand):
             print(' '.join(('Added subcohort', str(subcohort_args['subcohort_id']))))
         cursor.close()
 
+    def _make_source_dataset_subcohorts_args(self, row_dict):
+        """Get args for making a SourceDatasetSubcohorts object from a source db row.
+        
+        Converts a dictionary containing {colname: row value} pairs from a database
+        query into a dict with the necessary arguments for constructing a
+        SourceDatasetSubcohorts object. If there is a schema change in the source db,
+        this function may need to be modified.
+
+        Returns:
+            a dict of (required_SourceDatasetSubcohorts_attribute: attribute_value) pairs
+        """
+        source_dataset = SourceDataset.objects.get(i_id=row_dict['dataset_id'])
+        subcohort = Subcohort.objects.get(i_id=row_dict['subcohort_id'])
+        new_args = {
+            'i_id': row_dict['id'],
+        }
+        return new_args
+    
+    def _populate_source_dataset_subcohorts(self, source_db, n_studies):
+        """Add source study version data to the website db models.
+        
+        This function pulls source study version information from the source db,
+        converts it where necessary, and populates entries in the SourceDatasetSubcohorts
+        model of the trait_browser app. This will fill in the rows of the
+        trait_browser_sourcestudyversion table.
+        
+        If the n_studies argument is set at the command line, a maximum of
+        n_studies will be retrieved from the source database.
+        
+        Arguments:
+            source_db -- an open connection to the source database
+            n_studies -- maximum number of studies to retrieve
+        """
+        cursor = source_db.cursor(buffered=True, dictionary=True)
+        # If n_studies is set, filter the list of studies to import.
+        source_dataset_subcohorts_query = 'SELECT * FROM source_dataset_subcohorts'
+        if n_studies is not None:
+            loaded_datasets = self._get_current_datasets()
+            source_dataset_subcohorts_query += 'WHERE dataset_id IN ({})'.format(','.join(loaded_datasets))
+        cursor.execute(source_dataset_subcohorts_query)
+        for row in cursor:
+            type_fixed_row = self._fix_bytearray(self._fix_null(row))
+            source_dataset_subcohorts_args = self._make_source_dataset_subcohorts_args(type_fixed_row)
+            add_var = SourceDatasetSubcohorts(**source_dataset_subcohorts_args)    # temp Study to add
+            add_var.save()
+            print(' '.join(('Added subcohort', str(subcohort_args['subcohort_id']))))
+        cursor.close()
+
 
 
 
