@@ -232,7 +232,7 @@ class Command(BaseCommand):
         study_query = 'SELECT * FROM study'
         if n_studies is not None:
             loaded_global_studies = self._get_current_global_studies()
-            study_query += ' WHERE global_study_id IN (' + ','.join(loaded_global_studies) + ')'
+            study_query += ' WHERE global_study_id IN ({})'.format(','.join(loaded_global_studies))
         cursor.execute(study_query)
         for row in cursor:
             type_fixed_row = self._fix_bytearray(self._fix_null(row))
@@ -286,7 +286,7 @@ class Command(BaseCommand):
         source_study_version_query = 'SELECT * FROM source_study_version'
         if n_studies is not None:
             loaded_studies = self._get_current_studies()
-            source_study_version_query += ' WHERE accession IN (' + ','.join(loaded_studies) + ')'
+            source_study_version_query += ' WHERE accession IN ({})'.format(','.join(loaded_studies))
         cursor.execute(source_study_version_query)
         for row in cursor:
             type_fixed_row = self._fix_bytearray(self._fix_null(row))
@@ -343,7 +343,7 @@ class Command(BaseCommand):
         source_dataset_query = 'SELECT * FROM source_dataset'
         if n_studies is not None:
             loaded_studies = self._get_current_studies()
-            source_dataset_query += ' WHERE accession IN (' + ','.join(loaded_studies) + ')'
+            source_dataset_query += ' WHERE accession IN ({})'.format(','.join(loaded_studies))
         cursor.execute(source_dataset_query)
         for row in cursor:
             type_fixed_row = self._fix_bytearray(self._fix_null(row))
@@ -474,7 +474,7 @@ class Command(BaseCommand):
         source_dataset_unique_keys_query = 'SELECT * FROM source_dataset_unique_keys'
         if n_studies is not None or max_studies is not None:
             loaded_source_traits = self._get_current_source_traits()
-            source_dataset_unique_keys_query += ' WHERE '
+            source_dataset_unique_keys_query += ' WHERE source_trait_id IN ({})'.format(','.join(loaded_source_traits))
         cursor.execute(source_dataset_unique_keys_query)
         for row in cursor:
             type_fixed_row = self._fix_bytearray(self._fix_null(row))
@@ -617,7 +617,7 @@ class Command(BaseCommand):
         source_trait_encoded_value_query = 'SELECT * FROM source_trait_encoded_values'
         if n_studies is not None or max_traits is not None:
             loaded_source_traits = self._get_current_source_traits
-            source_trait_encoded_value_query += ' WHERE source_trait_id IN ({})'.forma(','.join(loaded_source_traits))
+            source_trait_encoded_value_query += ' WHERE source_trait_id IN ({})'.format(','.join(loaded_source_traits))
         # NB: The IN clause of this SQL query might need to be changed later if the number of traits in the db gets too high.
         cursor.execute(source_trait_encoded_value_query)
         for row in cursor:
