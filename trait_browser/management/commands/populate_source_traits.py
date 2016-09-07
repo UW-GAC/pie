@@ -353,40 +353,39 @@ class Command(BaseCommand):
             print(' '.join(('Added source_dataset', str(source_dataset_args['source_dataset_id']))))
         cursor.close()
 
-
-
-
-
     def _make_source_trait_args(self, row_dict):
         """Get args for making a SourceTrait object from a source db row.
         
         Converts a dict containing (colname: row value) pairs into a dict with
         the necessary arguments for constructing a SourceTrait object. If there's
-        a schema change in the source db, this function
-        may need to be modified.
+        a schema change in the source db, this function may need to be modified.
         
         Returns:
             a dict of (required_SourceTrait_attribute: attribute_value) pairs
         """
-        study = Study.objects.get(study_id=row_dict['study_id'])
+        source_dataset = SourceDataset.objects.get(i_id=row_dict['dataset_id'])
 
         new_args = {
-            'dcc_trait_id': row_dict['source_trait_id'],
-            'name': row_dict['trait_name'],
-            'description': row_dict['dcc_description'],
-            'data_type': row_dict['data_type'],
-            'unit': row_dict['dbgap_unit'],
-            'study': study,
-            'phv': int(row_dict['dbgap_variable_id'].replace('phv', '')),
-            'pht': int(row_dict['dbgap_dataset_id'].replace('pht', '')),
-            'study_version': row_dict['dbgap_study_version'],
-            'dataset_version': row_dict['dbgap_dataset_version'],
-            'variable_version': row_dict['dbgap_variable_version'],
-            'participant_set': row_dict['dbgap_participant_set'],
+            'source_dataset': source_dataset,
+            'i_trait_id': row_dict['source_trait_id'],
+            'i_trait_name': row_dict['trait_name'],
+            'i_description': row_dict['dcc_description'],
+            'i_detected_type': row_dict['detected_type'],
+            'i_dbgap_type': row_dict['dbgap_type'],
+            'i_visit_number': row_dict['visit_number'],
+            'i_dataset_id': row_dict['dataset_id'],
+            'i_dbgap_variable_accession': row_dict['dbgap_variable_accession'],
+            'i_dbgap_variable_version': row_dict['dbgap_variable_version'],
+            'i_dbgap_comment': row_dict['dbgap_comment'],
+            'i_dbgap_unit': row_dict['dbgap_unit'],
+            'i_dbgap_min': row_dict['dbgap_min'],
+            'i_dbgap_max': row_dict['dbgap_max'],
+            'i_n_records': row_dict['n_records'],
+            'i_n_missing': row_dict['n_missing']
         }
         return new_args
 
-    def _populate_source_traits(self, source_db, n_traits):
+    def _populate_source_traits(self, source_db, n_studies, max_traits):
         """Add source trait data to the website db models.
         
         This function pulls source trait data from the source db, converts it
@@ -406,30 +405,36 @@ class Command(BaseCommand):
                 found in the site db
         """
         cursor = source_db.cursor(buffered=True, dictionary=True)
-        study_ids = self._get_current_studies()    # list of string study ids
-        # If there's a per-study trait limit, loop over studies with a LIMIT statement.
-        if n_traits is not None:
-            for pk in study_ids:
-                trait_query = "SELECT * FROM source_variable_metadata WHERE study_id={} LIMIT {}".format(pk, n_traits)
-                cursor.execute(trait_query)
+        loaded_source_datasets = self._get_current_datasets()    # list of string dataset ids
+        loaded_study_versions = self._get_current_source_study_versions ()    # list of string study version ids
+        trait_query = 'SELECT * FROM source_trait'
+        # If max_traits is set, loop through by study version.
+        if max_traits is not None:
+            for source_study_version_id in loaded_study_versions:    # Already filters if n_studies is set.
+                datasets_in_version = [str(dataset.i_id) for dataset in SourceDataset.objects.filter(source_study_version__i_id=source_study_version_id).order_by('id')]
+                this_query = trait_query + 'WHERE dataset_id IN ({}) LIMIT {}'.format(','.join(datasets_in_version), max_traits)
+                cursor.execute(this_query)
                 for row in cursor:
                     type_fixed_row = self._fix_bytearray(self._fix_null(row))
                     model_args = self._make_source_trait_args(type_fixed_row)
                     add_var = SourceTrait(**model_args)    # temp SourceTrait to add
                     add_var.save()
-                    print(' '.join(('Added trait', str(model_args['dcc_trait_id']))))
-        # Without n_traits, you can pull out all studies at once.
+                    print(' '.join(('Added source_trait', str(model_args['i_trait_id']))))
+        # Otherwise, you can pull out all studies at once.
         else:
-            study_ids = ','.join(study_ids)    # csv study_id string
-            trait_query = 'SELECT * FROM source_variable_metadata WHERE study_id IN ({})'.format(study_ids)
+            # If n_studies is set, filter the list of traits to those connected to already-loaded datasets.
+            if n_studies is not None:
+                trait_query += 'WHERE dataset_id IN ({})'.format(','.join(loaded_source_datasets))
             cursor.execute(trait_query)
             for row in cursor:
                 type_fixed_row = self._fix_bytearray(self._fix_null(row))
                 model_args = self._make_source_trait_args(type_fixed_row)
                 add_var = SourceTrait(**model_args)    # temp SourceTrait to add
                 add_var.save()
-                print(' '.join(('Added trait', str(model_args['dcc_trait_id']))))
+                print(' '.join(('Added source_trait', str(model_args['i_trait_id']))))
         cursor.close()
+
+
 
     def _make_source_encoded_value_args(self, row_dict):
         """Get args for making a SourceEncodedValue object from a source db row.
@@ -508,8 +513,8 @@ class Command(BaseCommand):
         self._populate_studies(source_db, options['n_studies'])
         self._populate_source_study_versions(source_db, options['n_studies'])
         self._populate_source_datasets(source_db, options['n_studies'])
+        self._populate_source_traits(source_db, options['n_traits'], options['max_traits'])
 
-        self._populate_source_traits(source_db, options['n_traits'])
         self._populate_source_trait_encoded_values(source_db)
         self._populate_source_dataset_unique_keys(source_db)
         self._populate_subcohorts(source_db)
