@@ -434,6 +434,54 @@ class Command(BaseCommand):
                 print(' '.join(('Added source_trait', str(model_args['i_trait_id']))))
         cursor.close()
 
+    def _make_source_dataset_unique_keys_args(self, row_dict):
+        """Get args for making a SourceDatasetUniqueKeys object from a source db row.
+        
+        Converts a dictionary containing {colname: row value} pairs from a database
+        query into a dict with the necessary arguments for constructing a
+        SourceDatasetUniqueKeys object. If there is a schema change in the source db,
+        this function may need to be modified.
+
+        Returns:
+            a dict of (required_SourceDatasetUniqueKeys_attribute: attribute_value) pairs
+        """
+        source_dataset = SourceDataset.objects.get(i_id=row_dict['dataset_id'])
+        source_trait = SourceTrait.objects.get(i_trait_id=row_dict['source_trait_id'])
+        new_args = {
+            'i_id': row_dict['id'],
+            'i_is_visit_column': row_dict['is_visit_column'],
+        }
+        return new_args
+    
+    def _populate_source_dataset_unique_keys(self, source_db, n_studies):
+        """Add source study version data to the website db models.
+        
+        This function pulls source study version information from the source db,
+        converts it where necessary, and populates entries in the SourceDatasetUniqueKeys
+        model of the trait_browser app. This will fill in the rows of the
+        trait_browser_sourcestudyversion table.
+        
+        If the n_studies argument is set at the command line, a maximum of
+        n_studies will be retrieved from the source database.
+        
+        Arguments:
+            source_db -- an open connection to the source database
+            n_studies -- maximum number of studies to retrieve
+        """
+        cursor = source_db.cursor(buffered=True, dictionary=True)
+        # If n_studies is set, filter the list of unique_keys to import.
+        source_dataset_unique_keys_query = 'SELECT * FROM source_dataset_unique_keys'
+        if n_studies is not None:
+            loaded_source_traits = self._get_current_traits()
+            source_dataset_unique_keys_query += 'WHERE '
+        cursor.execute(source_dataset_unique_keys_query)
+        for row in cursor:
+            type_fixed_row = self._fix_bytearray(self._fix_null(row))
+            source_dataset_unique_keys_args = self._make_source_dataset_unique_keys_args(type_fixed_row)
+            add_var = SourceDatasetUniqueKeys(**source_dataset_unique_keys_args)    # temp Study to add
+            add_var.save()
+            print(' '.join(('Added source_dataset_unique_keys', str(source_dataset_unique_keys_args['source_dataset_unique_keys_id']))))
+        cursor.close()
 
 
     def _make_source_encoded_value_args(self, row_dict):
@@ -514,9 +562,9 @@ class Command(BaseCommand):
         self._populate_source_study_versions(source_db, options['n_studies'])
         self._populate_source_datasets(source_db, options['n_studies'])
         self._populate_source_traits(source_db, options['n_traits'], options['max_traits'])
+        self._populate_source_dataset_unique_keys(source_db, options['n_traits'])
 
         self._populate_source_trait_encoded_values(source_db)
-        self._populate_source_dataset_unique_keys(source_db)
         self._populate_subcohorts(source_db)
         self._populate_source_dataset_subcohorts(source_db)
         
