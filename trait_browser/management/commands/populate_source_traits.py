@@ -401,8 +401,9 @@ class Command(BaseCommand):
         
         Arguments:
             source_db -- an open connection to the source database
-            n_traits -- maximum number of traits to retrieve for each study
+            max_traits -- maximum number of traits to retrieve for each study
                 found in the site db
+            n_studies -- number of global studies to retrieve from the database
         """
         cursor = source_db.cursor(buffered=True, dictionary=True)
         loaded_source_datasets = self._get_current_datasets()    # list of string dataset ids
