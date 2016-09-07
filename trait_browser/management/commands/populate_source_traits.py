@@ -138,11 +138,11 @@ class Command(BaseCommand):
         """Get a str list of i_id for SourceStudyVersions currently in the django site db."""
         return [str(study_version.i_id) for study_version in SourceStudyVersion.objects.all()]
     
-    def _get_current_datasets(self):
+    def _get_current_source_datasets(self):
         """Get a str list of i_id for SourceDatasets currently in the django site db."""
         return [str(dataset.i_id) for dataset in SourceDataset.objects.all()]
         
-    def _get_current_traits(self):
+    def _get_current_source_traits(self):
         """Get a str list of i_trait_id for SourceTraits currently in the django site db."""
         return [str(trait.i_trait_id) for trait in SourceTrait.objects.all()]
 
@@ -227,12 +227,12 @@ class Command(BaseCommand):
             source_db -- an open connection to the source database
             n_studies -- maximum number of studies to retrieve
         """
-        loaded_global_study_ids = self._get_current_global_studies()
+        loaded_global_studies = self._get_current_global_studies()
         cursor = source_db.cursor(buffered=True, dictionary=True)
         # If n_studies is set, filter the list of studies to import.
         study_query = 'SELECT * FROM study'
         if n_studies is not None:
-            study_query += 'WHERE global_study_id IN (' + ','.join(loaded_global_study_ids) + ')'
+            study_query += 'WHERE global_study_id IN (' + ','.join(loaded_global_studies) + ')'
         cursor.execute(study_query)
         for row in cursor:
             type_fixed_row = self._fix_bytearray(self._fix_null(row))
@@ -281,12 +281,12 @@ class Command(BaseCommand):
             source_db -- an open connection to the source database
             n_studies -- maximum number of studies to retrieve
         """
-        loaded_study_accessions = self._get_current_studies()
+        loaded_studies = self._get_current_studies()
         cursor = source_db.cursor(buffered=True, dictionary=True)
         # If n_studies is set, filter the list of studies to import.
         source_study_version_query = 'SELECT * FROM source_study_version'
         if n_studies is not None:
-            source_study_version_query += 'WHERE accession IN (' + ','.join(loaded_study_accessions) + ')'
+            source_study_version_query += 'WHERE accession IN (' + ','.join(loaded_studies) + ')'
         cursor.execute(source_study_version_query)
         for row in cursor:
             type_fixed_row = self._fix_bytearray(self._fix_null(row))
@@ -338,12 +338,12 @@ class Command(BaseCommand):
             source_db -- an open connection to the source database
             n_studies -- maximum number of studies to retrieve
         """
-        loaded_study_accessions = self._get_current_studies()
+        loaded_studies = self._get_current_studies()
         cursor = source_db.cursor(buffered=True, dictionary=True)
         # If n_studies is set, filter the list of studies to import.
         source_dataset_query = 'SELECT * FROM source_dataset'
         if n_studies is not None:
-            source_dataset_query += 'WHERE accession IN (' + ','.join(loaded_study_accessions) + ')'
+            source_dataset_query += 'WHERE accession IN (' + ','.join(loaded_studies) + ')'
         cursor.execute(source_dataset_query)
         for row in cursor:
             type_fixed_row = self._fix_bytearray(self._fix_null(row))
@@ -405,12 +405,12 @@ class Command(BaseCommand):
             n_studies -- number of global studies to retrieve from the database
         """
         cursor = source_db.cursor(buffered=True, dictionary=True)
-        loaded_source_datasets = self._get_current_datasets()    # list of string dataset ids
-        loaded_study_versions = self._get_current_source_study_versions ()    # list of string study version ids
+        loaded_source_datasets = self._get_current_source_datasets()    # list of string dataset ids
+        loaded_source_study_versions = self._get_current_source_study_versions ()    # list of string study version ids
         trait_query = 'SELECT * FROM source_trait'
         # If max_traits is set, loop through by study version.
         if max_traits is not None:
-            for source_study_version_id in loaded_study_versions:    # Already filters if n_studies is set.
+            for source_study_version_id in loaded_source_study_versions:    # Already filters if n_studies is set.
                 datasets_in_version = [str(dataset.i_id) for dataset in SourceDataset.objects.filter(source_study_version__i_id=source_study_version_id).order_by('id')]
                 this_query = trait_query + 'WHERE dataset_id IN ({}) LIMIT {}'.format(','.join(datasets_in_version), max_traits)
                 cursor.execute(this_query)
@@ -473,7 +473,7 @@ class Command(BaseCommand):
         # If n_studies OR max_studies is set, filter the list of unique_keys to import.
         source_dataset_unique_keys_query = 'SELECT * FROM source_dataset_unique_keys'
         if n_studies is not None or max_studies is not None:
-            loaded_source_traits = self._get_current_traits()
+            loaded_source_traits = self._get_current_source_traits()
             source_dataset_unique_keys_query += 'WHERE '
         cursor.execute(source_dataset_unique_keys_query)
         for row in cursor:
@@ -517,12 +517,12 @@ class Command(BaseCommand):
             source_db -- an open connection to the source database
             n_studies -- maximum number of studies to retrieve
         """
-        loaded_study_accessions = self._get_current_studies()
+        loaded_studies = self._get_current_studies()
         cursor = source_db.cursor(buffered=True, dictionary=True)
         # If n_studies is set, filter the list of studies to import.
         subcohort_query = 'SELECT * FROM subcohort'
         if n_studies is not None:
-            subcohort_query += 'WHERE study_accession IN ({})'.format(','.join(loaded_study_accessions))
+            subcohort_query += 'WHERE study_accession IN ({})'.format(','.join(loaded_studies))
         cursor.execute(subcohort_query)
         for row in cursor:
             type_fixed_row = self._fix_bytearray(self._fix_null(row))
@@ -569,8 +569,8 @@ class Command(BaseCommand):
         # If n_studies is set, filter the list of studies to import.
         source_dataset_subcohorts_query = 'SELECT * FROM source_dataset_subcohorts'
         if n_studies is not None:
-            loaded_datasets = self._get_current_datasets()
-            source_dataset_subcohorts_query += 'WHERE dataset_id IN ({})'.format(','.join(loaded_datasets))
+            loaded_source_datasets = self._get_current_source_datasets()
+            source_dataset_subcohorts_query += 'WHERE dataset_id IN ({})'.format(','.join(loaded_source_datasets))
         cursor.execute(source_dataset_subcohorts_query)
         for row in cursor:
             type_fixed_row = self._fix_bytearray(self._fix_null(row))
@@ -616,7 +616,7 @@ class Command(BaseCommand):
         cursor = source_db.cursor(buffered=True, dictionary=True)
         source_trait_encoded_value_query = 'SELECT * FROM source_trait_encoded_values'
         if n_studies is not None or max_traits is not None:
-            loaded_source_traits = self._get_current_traits
+            loaded_source_traits = self._get_current_source_traits
             source_trait_encoded_value_query += ' WHERE source_trait_id IN ({})'.forma(','.join(loaded_source_traits))
         # NB: The IN clause of this SQL query might need to be changed later if the number of traits in the db gets too high.
         cursor.execute(source_trait_encoded_value_query)
