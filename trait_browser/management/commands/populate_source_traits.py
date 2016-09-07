@@ -484,6 +484,57 @@ class Command(BaseCommand):
             print(' '.join(('Added source_dataset_unique_keys', str(source_dataset_unique_keys_args['source_dataset_unique_keys_id']))))
         cursor.close()
 
+    def _make_subcohort_args(self, row_dict):
+        """Get args for making a Subcohort object from a source db row.
+        
+        Converts a dictionary containing {colname: row value} pairs from a database
+        query into a dict with the necessary arguments for constructing a
+        Subcohort object. If there is a schema change in the source db,
+        this function may need to be modified.
+
+        Returns:
+            a dict of (required_Subcohort_attribute: attribute_value) pairs
+        """
+        study = Study.objects.get(i_accession=row_dict['study_accession'])
+        new_args = {
+            'i_id': row_dict['id'],
+            'i_name': row_dict['name']
+        }
+        return new_args
+    
+    def _populate_subcohorts(self, source_db, n_studies):
+        """Add source study version data to the website db models.
+        
+        This function pulls source study version information from the source db,
+        converts it where necessary, and populates entries in the Subcohort
+        model of the trait_browser app. This will fill in the rows of the
+        trait_browser_sourcestudyversion table.
+        
+        If the n_studies argument is set at the command line, a maximum of
+        n_studies will be retrieved from the source database.
+        
+        Arguments:
+            source_db -- an open connection to the source database
+            n_studies -- maximum number of studies to retrieve
+        """
+        loaded_study_accessions = self._get_current_studies()
+        cursor = source_db.cursor(buffered=True, dictionary=True)
+        # If n_studies is set, filter the list of studies to import.
+        subcohort_query = 'SELECT * FROM subcohort'
+        if n_studies is not None:
+            subcohort_query += 'WHERE study_accession IN ({})'.format(','.join(loaded_study_accessions))
+        cursor.execute(subcohort_query)
+        for row in cursor:
+            type_fixed_row = self._fix_bytearray(self._fix_null(row))
+            subcohort_args = self._make_subcohort_args(type_fixed_row)
+            add_var = Subcohort(**subcohort_args)    # temp Study to add
+            add_var.save()
+            print(' '.join(('Added subcohort', str(subcohort_args['subcohort_id']))))
+        cursor.close()
+
+
+
+
 
     def _make_source_encoded_value_args(self, row_dict):
         """Get args for making a SourceEncodedValue object from a source db row.
@@ -564,9 +615,9 @@ class Command(BaseCommand):
         self._populate_source_datasets(source_db, options['n_studies'])
         self._populate_source_traits(source_db, options['n_traits'], options['max_traits'])
         self._populate_source_dataset_unique_keys(source_db, options['n_traits'])
+        self._populate_subcohorts(source_db, options['n_traits'])
 
         self._populate_source_trait_encoded_values(source_db)
-        self._populate_subcohorts(source_db)
         self._populate_source_dataset_subcohorts(source_db)
         
         source_db.close()
