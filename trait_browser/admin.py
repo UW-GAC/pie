@@ -34,7 +34,6 @@ class GlobalStudyAdmin(ReadOnlyAdmin):
     )))
     # Set fields to display, filter, and search on.
     list_display = ('i_id', 'i_name', 'get_linked_studies', ) + ReadOnlyAdmin.list_display
-    list_filter = ('i_id', 'i_name', )
     search_fields = ('i_id', 'i_name', )
     
     def get_linked_studies(self, global_study):
@@ -61,7 +60,7 @@ class StudyAdmin(ReadOnlyAdmin):
     )))
     # Set fields to display, filter, and search on.
     list_display = ('i_accession', 'i_study_name', 'get_global_study', ) + ReadOnlyAdmin.list_display
-    list_filter = ('i_accession', 'i_study_name', 'global_study__i_name', )
+    list_filter = ('global_study__i_name', )
     search_fields = ('i_accession', 'i_study_name', )
 
     def get_global_study(self, study):
@@ -82,7 +81,7 @@ class SourceStudyVersionAdmin(ReadOnlyAdmin):
     # Set fields to display, filter, and search on.
     list_display = ('i_id', 'study', 'i_version', 'i_is_prerelease', 'i_is_deprecated', 'phs_version_string', ) + ReadOnlyAdmin.list_display
     list_filter = ('study__i_accession', 'i_is_prerelease', 'i_is_deprecated', )
-    search_fields = ('study__i_study_name', 'phs_version_string', )
+    search_fields = ('i_id', 'phs_version_string', )
     
 
 class SubcohortAdmin(ReadOnlyAdmin):
@@ -96,8 +95,8 @@ class SubcohortAdmin(ReadOnlyAdmin):
     )))
     # Set fields to display, filter, and search on.
     list_display = ('i_id', 'i_name', 'study', ) + ReadOnlyAdmin.list_display
-    list_filter = ('i_id', 'study__i_study_name', 'study__i_accession', )
-    search_fields = ('i_id', 'i_name', 'study__i_accession', )
+    list_filter = ('study__i_study_name', 'study__i_accession', )
+    search_fields = ('i_id', 'i_name', )
 
 
 class SourceDatasetAdmin(ReadOnlyAdmin):
@@ -110,10 +109,12 @@ class SourceDatasetAdmin(ReadOnlyAdmin):
         if not field.is_relation    # Exclude foreign keys from the results.
     )))
     # Set fields to display, filter, and search on.
-    list_display = ('i_id', 'i_accession', 'i_version', 'i_visit_code',
-                    'i_visit_number', 'i_is_medication_dataset', 'i_dcc_description',
-                    'i_dbgap_description', 'pht_version_string', )
-    list_filter = ('i_id', 'i_accession', 'i_version', )
+    list_display = ('i_id', 'i_version', 'i_dbgap_description', 'pht_version_string',
+                    'i_visit_code', 'i_visit_number', 'i_is_medication_dataset',
+                    'i_dcc_description', )  + ReadOnlyAdmin.list_display
+    list_filter = ('source_study_version__study__i_accession',
+                   'source_study_version__study__global_study__i_name',
+                   'i_is_medication_dataset', 'i_is_subject_file', )
     search_fields = ('i_id', 'i_accession', 'pht_version_string', )
 
 
@@ -127,9 +128,10 @@ class SourceDatasetSubcohortsAdmin(ReadOnlyAdmin):
         if not field.is_relation    # Exclude foreign keys from the results.
     )))
     # Set fields to display, filter, and search on.
-    list_display = ('i_id', 'subcohort_id', 'source_dataset_id', )
-    list_filter = ('i_id', )
-    search_fields = ('i_id', )
+    list_display = ('i_id', 'subcohort', 'source_dataset', ) + ReadOnlyAdmin.list_display
+    list_filter = ('subcohort__i_name', 'subcohort__study__i_accession',
+                   'subcohort__study__global_study__i_name', )
+    search_fields = ('subcohort__i_name', 'source_dataset__source_study_version__study__i_study_name', )
 
 
 class HarmonizedTraitSetAdmin(ReadOnlyAdmin):
@@ -142,8 +144,7 @@ class HarmonizedTraitSetAdmin(ReadOnlyAdmin):
         if not field.is_relation    # Exclude foreign keys from the results.
     )))
     # Set fields to display, filter, and search on.
-    list_display = ('i_id', 'i_trait_set_name', 'i_version', )
-    list_filter = ('i_id', 'i_trait_set_name', )
+    list_display = ('i_id', 'i_trait_set_name', 'i_version', ) + ReadOnlyAdmin.list_display
     search_fields = ('i_id', 'i_trait_set_name', )
 
 
@@ -157,11 +158,11 @@ class SourceTraitAdmin(ReadOnlyAdmin):
         # if not field.is_relation    # Exclude foreign keys from the results.
     )))
     # Set fields to display, filter, and search on.
-    list_display = ('i_trait_id', 'i_trait_name', 'i_detected_type',
-                    'i_dbgap_variable_accession', 'i_dbgap_variable_version',
-                    'dbgap_study_link', 'created', 'modified', )
-    list_filter = ('created', 'modified', 'i_trait_id', 'i_trait_name', )
-    search_fields = ('i_trait_id', 'i_trait_name', )
+    list_display = ('i_trait_id', 'i_trait_name', 'variable_accession', 'i_description',
+                    'i_visit_number', ) + ReadOnlyAdmin.list_display
+    list_filter = ('source_dataset__source_study_version__study__i_accession',
+                   'source_dataset__source_study_version__study__global_study__i_name', )
+    search_fields = ('i_trait_id', 'i_trait_name', 'i_description', 'variable_accession', )
 
 
 class HarmonizedTraitAdmin(ReadOnlyAdmin):
@@ -174,10 +175,10 @@ class HarmonizedTraitAdmin(ReadOnlyAdmin):
         # if not field.is_relation    # Exclude foreign keys from the results.
     )))
     # Set fields to display, filter, and search on.
-    list_display = ('i_trait_id', 'i_trait_name', 'i_data_type',
-                    'harmonized_trait_set_id', 'i_is_unique_key', 'created', 'modified', )
-    list_filter = ('created', 'modified', 'harmonized_trait_set', 'i_trait_id', 'i_trait_name', )
-    search_fields = ('i_trait_id', 'i_trait_name', )
+    list_display = ('i_trait_id', 'i_trait_name', 'i_description', ) + ReadOnlyAdmin.list_display
+    list_filter = ('i_is_unique_key', )
+    search_fields = ('i_trait_id', 'i_trait_name', 'i_description',
+                     'harmonized_trait_set__i_trait_set_name', )
 
 
 class SourceTraitEncodedValueAdmin(ReadOnlyAdmin):
@@ -190,10 +191,11 @@ class SourceTraitEncodedValueAdmin(ReadOnlyAdmin):
         # if not field.is_relation    # Exclude foreign keys from the results.
     )))
     # Set fields to display, filter, and search on.
-    list_display = ('id', 'i_category', 'i_value',
-                    'get_source_trait_name', 'get_source_trait_study', 'created', 'modified', )
-    list_filter = ('created', 'modified', )
-    search_fields = ('i_category', 'i_id', )
+    list_display = ('id', 'i_category', 'i_value', 'source_trait', ) + ReadOnlyAdmin.list_display
+    # There are too many traits with encoded values to use trait as a filter.
+    list_filter = ('source_trait__source_dataset__source_study_version__study__i_accession',
+                   'source_trait__source_dataset__source_study_version__study__global_study__i_name', )
+    search_fields = ('id', 'i_category', 'i_value', 'source_trait__i_trait_name')
 
 
 class HarmonizedTraitEncodedValueAdmin(ReadOnlyAdmin):
@@ -206,10 +208,8 @@ class HarmonizedTraitEncodedValueAdmin(ReadOnlyAdmin):
         # if not field.is_relation    # Exclude foreign keys from the results.
     )))
     # Set fields to display, filter, and search on.
-    list_display = ('id', 'i_category', 'i_value',
-                    'get_harmonized_trait_name', 'created', 'modified', )
-    list_filter = ('created', 'modified', )
-    search_fields = ('i_category', 'i_id', )
+    list_display = ('id', 'i_category', 'i_value', 'harmonized_trait', ) + ReadOnlyAdmin.list_display
+    search_fields = ('id', 'i_category', 'i_value', 'harmonized_trait__i_trait_name', )
 
 
 class SourceDatasetUniqueKeysAdmin(ReadOnlyAdmin):
@@ -222,9 +222,11 @@ class SourceDatasetUniqueKeysAdmin(ReadOnlyAdmin):
         if not field.is_relation    # Exclude foreign keys from the results.
     )))
     # Set fields to display, filter, and search on.
-    list_display = ('i_id', 'i_is_visit_column', )
-    list_filter = ('i_id', )
-    search_fields = ('i_id', )
+    list_display = ('i_id', 'source_dataset', 'source_trait', 'i_is_visit_column', ) + ReadOnlyAdmin.list_display
+    list_filter = ('source_dataset__source_study_version__study__i_accession',
+                   'source_dataset__source_study_version__study__global_study__i_name',
+                   'i_is_visit_column', )
+    search_fields = ('i_id', 'source_dataset__pht_version_string', 'source_trait__i_trait_name', )
 
 
 # Register models for showing them in the admin interface.

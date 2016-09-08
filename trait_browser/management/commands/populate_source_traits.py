@@ -261,7 +261,6 @@ class Command(BaseCommand):
         new_args = {
             'study': study,
             'i_id': row_dict['id'],
-            'i_accession': row_dict['accession'],
             'i_version': row_dict['version'],
             'i_participant_set': row_dict['participant_set'],
             'i_dbgap_date': row_dict['dbgap_date'],

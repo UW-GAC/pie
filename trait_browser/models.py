@@ -35,15 +35,15 @@ class GlobalStudy(TimeStampedModel):
         i_name
     """
 
-    i_id = models.PositiveIntegerField('imported id', primary_key=True, db_column='study_id')
-    i_name = models.CharField('imported name', max_length=200)
+    i_id = models.PositiveIntegerField('global study id', primary_key=True, db_column='study_id')
+    i_name = models.CharField('global study name', max_length=200)
 
     class Meta:
         verbose_name_plural = 'GlobalStudies'
 
     def __str__(self):
         """Pretty printing."""
-        return self.i_name
+        return '{}, id={}'.format(self.i_name, self.i_id)
 
 
 class Study(TimeStampedModel):
@@ -59,8 +59,8 @@ class Study(TimeStampedModel):
     
     global_study = models.ForeignKey(GlobalStudy)
     # Adds .global_study (object) and .global_study_id (pk).
-    i_accession = models.PositiveIntegerField('imported accession', primary_key=True, db_column='i_accession')
-    i_study_name = models.CharField('imported study name', max_length=200)
+    i_accession = models.PositiveIntegerField('study accession', primary_key=True, db_column='i_accession')
+    i_study_name = models.CharField('study name', max_length=200)
     phs = models.CharField(max_length=9)
     dbgap_latest_version_link = models.CharField(max_length=200)
 
@@ -70,7 +70,7 @@ class Study(TimeStampedModel):
 
     def __str__(self):
         """Pretty printing."""
-        return self.i_study_name
+        return '{}, {}'.format(self.phs, self.i_study_name)
     
     def save(self, *args, **kwargs):
         """Custom save method for default dbGaP latest version study link.
@@ -117,15 +117,18 @@ class SourceStudyVersion(TimeStampedModel):
     
     study = models.ForeignKey(Study)
     # Adds .study (object) and .study_id (pk).
-    i_id = models.PositiveIntegerField('imported id', primary_key=True, db_column='i_id')
-    i_accession = models.PositiveIntegerField('imported accession')
-    i_version = models.PositiveIntegerField('imported version')
-    i_participant_set = models.PositiveIntegerField('imported participant set')
-    i_dbgap_date = models.DateTimeField('imported dbGaP date')
-    i_is_prerelease = models.BooleanField('imported is prerelease')
-    i_is_deprecated = models.BooleanField('imported is deprecated')
+    i_id = models.PositiveIntegerField('source study version id', primary_key=True, db_column='i_id')
+    i_version = models.PositiveIntegerField('version')
+    i_participant_set = models.PositiveIntegerField('participant set')
+    i_dbgap_date = models.DateTimeField('dbGaP date')
+    i_is_prerelease = models.BooleanField('is prerelease?')
+    i_is_deprecated = models.BooleanField('is deprecated?')
     phs_version_string = models.CharField(max_length=20)
     
+    def __str__(self):
+        """Pretty printing."""
+        return 'study {} version {}, id='.format(self.study, self.i_version, self.i_id)
+        
     def save(self, *args, **kwargs):
         """Custom save method for setting default dbGaP accession strings.
         
@@ -151,8 +154,12 @@ class Subcohort(TimeStampedModel):
     
     study = models.ForeignKey(Study)
     # Adds .study (object) and .study_id (pk).
-    i_id = models.PositiveIntegerField('imported id', primary_key=True, db_column='i_id')
-    i_name = models.CharField('imported name', max_length=45)
+    i_id = models.PositiveIntegerField('id', primary_key=True, db_column='i_id')
+    i_name = models.CharField('name', max_length=45)
+
+    def __str__(self):
+        """Pretty printing."""
+        return '{} subcohort of study {}, id={}'.format(self.i_name, self.study, self.i_id)
 
 
 # Dataset related models.
@@ -176,18 +183,22 @@ class SourceDataset(TimeStampedModel):
     
     source_study_version = models.ForeignKey(SourceStudyVersion)
     # Adds .source_study_version (object) and .source_study_version_id (pk).
-    i_id = models.PositiveIntegerField(primary_key=True, db_column='i_id')
-    i_accession = models.PositiveIntegerField()
-    i_version = models.PositiveIntegerField()
-    i_visit_code = models.CharField(max_length=100)
-    i_visit_number = models.CharField(max_length=45)
-    i_is_subject_file = models.BooleanField()
-    i_study_subject_column = models.CharField(max_length=45)
-    i_is_medication_dataset = models.BooleanField()
+    i_id = models.PositiveIntegerField('dataset id', primary_key=True, db_column='i_id')
+    i_accession = models.PositiveIntegerField('dataset accession')
+    i_version = models.PositiveIntegerField('dataset version')
+    i_visit_code = models.CharField('visit code', max_length=100)
+    i_visit_number = models.CharField('visit number', max_length=45)
+    i_is_subject_file = models.BooleanField('is subject file?')
+    i_study_subject_column = models.CharField('is study subject column?', max_length=45)
+    i_is_medication_dataset = models.BooleanField('is medication dataset?')
     # These TextFields use longtext in MySQL rather than just text, like in snuffles.
-    i_dbgap_description = models.TextField() 
-    i_dcc_description = models.TextField()
+    i_dbgap_description = models.TextField('dbGaP description') 
+    i_dcc_description = models.TextField('DCC description')
     pht_version_string = models.CharField(max_length=20)
+
+    def __str__(self):
+        """Pretty printing."""
+        return 'dataset {} of study {}, id={}'.format(self.pht_version_string, self.source_study_version.study, self.i_id)
 
     def save(self, *args, **kwargs):
         """Custom save method for setting default dbGaP accession strings.
@@ -216,7 +227,14 @@ class SourceDatasetSubcohorts(TimeStampedModel):
     # Adds .source_dataset (object) and .source_dataset_id (pk).
     subcohort = models.ForeignKey(Subcohort)
     # Adds .subcohort (object) and .subcohort_id (pk).
-    i_id = models.PositiveIntegerField(primary_key=True, db_column='i_id')
+    i_id = models.PositiveIntegerField('source dataset subcohorts id', primary_key=True, db_column='i_id')
+
+    class Meta:
+        verbose_name_plural = 'Source dataset subcohorts'
+
+    def __str__(self):
+        """Pretty printing."""
+        return 'subcohort {} linked to dataset {}, id={}'.format(self.subcohort.i_name, self.source_dataset.pht_version_string, self.i_id)
 
 
 class HarmonizedTraitSet(TimeStampedModel):
@@ -230,11 +248,14 @@ class HarmonizedTraitSet(TimeStampedModel):
         i_description
     """
 
-    i_id = models.PositiveIntegerField(primary_key=True, db_column='i_id')
-    i_trait_set_name = models.CharField(max_length=45)
-    i_version = models.PositiveIntegerField()
-    i_description = models.CharField(max_length=1000)
-    
+    i_id = models.PositiveIntegerField('harmonized trait set id', primary_key=True, db_column='i_id')
+    i_trait_set_name = models.CharField('trait set name', max_length=45)
+    i_version = models.PositiveIntegerField('version')
+    i_description = models.CharField('description', max_length=1000)
+
+    def __str__(self):
+        """Pretty printing."""
+        return 'harmonized trait set {}, id={}'.format(self.i_trait_set_name, self.i_id)
 
 # Trait models.
 # ------------------------------------------------------------------------------
@@ -250,9 +271,9 @@ class Trait(TimeStampedModel):
         i_description
     """
     
-    i_trait_id = models.PositiveIntegerField(primary_key=True, db_column='i_trait_id')
-    i_trait_name = models.CharField(max_length=100, verbose_name='phenotype name')
-    i_description = models.TextField(verbose_name='phenotype description')
+    i_trait_id = models.PositiveIntegerField('phenotype id', primary_key=True, db_column='i_trait_id')
+    i_trait_name = models.CharField('phenotype name', max_length=100)
+    i_description = models.TextField('description')
 
     class Meta:
         abstract = True
@@ -283,15 +304,15 @@ class SourceTrait(Trait):
     
     source_dataset = models.ForeignKey(SourceDataset)
     # Adds .source_dataset (object) and .source_dataset_id (pk).
-    i_detected_type = models.CharField(max_length=100)
-    i_dbgap_type = models.CharField(max_length=100)
-    i_visit_number = models.CharField(max_length=45)
-    i_dbgap_variable_accession = models.PositiveIntegerField()
-    i_dbgap_variable_version = models.PositiveIntegerField()
-    i_dbgap_comment = models.TextField()
-    i_dbgap_unit = models.CharField(max_length=45)
-    i_n_records = models.PositiveIntegerField()
-    i_n_missing = models.PositiveIntegerField()
+    i_detected_type = models.CharField('detected type', max_length=100)
+    i_dbgap_type = models.CharField('dbGaP type', max_length=100)
+    i_visit_number = models.CharField('visit number', max_length=45)
+    i_dbgap_variable_accession = models.PositiveIntegerField('dbGaP variable accession')
+    i_dbgap_variable_version = models.PositiveIntegerField('dbGaP variable version')
+    i_dbgap_comment = models.TextField('dbGaP comment')
+    i_dbgap_unit = models.CharField('dbGaP unit', max_length=45)
+    i_n_records = models.PositiveIntegerField('n records')
+    i_n_missing = models.PositiveIntegerField('n missing')
     # dbGaP accession numbers
     study_accession = models.CharField(max_length=20)
     dataset_accession = models.CharField(max_length=20)
@@ -303,9 +324,7 @@ class SourceTrait(Trait):
     
     def __str__(self):
         """Pretty printing of SourceTrait objects."""
-        print_parms = ['i_trait_id', 'i_trait_name', 'i_detected_type', 'i_dbgap_unit', 'created']
-        print_list = ['{0} : {1}'.format(k, str(self.__dict__[k])) for k in print_parms]
-        return '\n'.join(print_list)
+        return 'source trait {}, study {}, id={}'.format(self.i_trait_name, self.source_dataset.source_study_version.study, self.i_trait_id)
     
     def save(self, *args, **kwargs):
         """Custom save method for default dbGaP accessions and links.
@@ -378,9 +397,13 @@ class HarmonizedTrait(Trait):
     
     harmonized_trait_set = models.ForeignKey(HarmonizedTraitSet)
     # Adds .harmonized_trait_set (object) and .harmonized_trait_set_id (pk).
-    i_data_type = models.CharField(max_length=45)
-    i_unit = models.CharField(max_length=100)
-    i_is_unique_key = models.BooleanField()
+    i_data_type = models.CharField('data type', max_length=45)
+    i_unit = models.CharField('unit', max_length=100)
+    i_is_unique_key = models.BooleanField('is unique key?')
+
+    def __str__(self):
+        """Pretty printing."""
+        return 'harmonized trait {}, id={}, from trait set {}'.format(self.i_trait_name, self.i_trait_id, self.harmonized_trait_set)
 
 
 # Encoded Value models.
@@ -397,8 +420,8 @@ class TraitEncodedValue(TimeStampedModel):
     """
     
     # Has auto-added id primary key field.
-    i_category = models.CharField(max_length=45)
-    i_value = models.CharField(max_length=1000)
+    i_category = models.CharField('category', max_length=45)
+    i_value = models.CharField('value', max_length=1000)
 
     class Meta:
         abstract = True
@@ -417,42 +440,9 @@ class SourceTraitEncodedValue(TraitEncodedValue):
     # Adds .source_trait (object) and .source_trait_id (pk)
     
     def __str__(self):
-        """Pretty printing of SourceTraitEncodedValue objects."""
-        to_print = (
-            ('SourceTrait id', self.source_trait.i_trait_id,),
-            ('SourceTrait name', self.source_trait.i_trait_name,),
-            ('category', self.i_category,),
-            ('value', self.i_value,),
-        )
-        print_list = ['{0} : {1}'.format(el[0], el[1]) for el in to_print]
-        return '\n'.join(print_list)
-    
-    def get_source_trait_name(self):
-        """Get the name of the linked SourceTrait object.
-        
-        This function is used to properly display the SourceTrait Name column
-        in the admin interface.
-        
-        Returns:
-            name of the linked SourceTrait object
-        """
-        return self.source_trait.i_trait_name
-    # Set this model attribute to the value of this function, for the admin interface.
-    get_source_trait_name.short_description = 'SourceTrait Name'
-    
-    def get_source_trait_study(self):
-        """Get the name of the linked Study object.
-        
-        This function is used to properly display the Study Name column in the
-        admin interface.
-        
-        Returns:
-            study_name of the linked SourceTrait object
-        """
-        return self.source_trait.source_dataset.source_study_version.study.global_study.i_name
-    # Set this model attribute to the value of this function, for the admin interface.
-    get_source_trait_study.short_description = 'Global Study Name'
-
+        """Pretty printing."""
+        return 'encoded value {} for {}\nvalue = '.format(self.i_value, self.source_trait, self.i_value)
+   
 
 class HarmonizedTraitEncodedValue(TraitEncodedValue):
     """Model for encoded values from DCC harmonized traits.
@@ -467,27 +457,7 @@ class HarmonizedTraitEncodedValue(TraitEncodedValue):
     
     def __str__(self):
         """Pretty printing of HarmonizedTraitEncodedValue objects."""
-        to_print = (
-            ('HarmonizedTrait id', self.harmonized_trait.i_trait_id,),
-            ('HarmonizedTrait name', self.harmonized_trait.i_trait_name,),
-            ('category', self.i_category,),
-            ('value', self.i_value,),
-        )
-        print_list = ['{0} : {1}'.format(el[0], el[1]) for el in to_print]
-        return '\n'.join(print_list)
-    
-    def get_harmonized_trait_name(self):
-        """Get the name of the linked HarmonizedTrait object.
-        
-        This function is used to properly display the HarmonizedTrait Name column
-        in the admin interface.
-        
-        Returns:
-            name of the linked HarmonizedTrait object
-        """
-        return self.harmonized_trait.i_trait_name
-    # Set this model attribute to the value of this function, for the admin interface.
-    get_harmonized_trait_name.short_description = 'HarmonizedTrait Name'
+        return 'encoded value {} for {}\nvalue = {}'.format(self.i_value, self.harmonized_trait, self.i_value)
 
 
 class SourceDatasetUniqueKeys(TimeStampedModel):
@@ -504,6 +474,13 @@ class SourceDatasetUniqueKeys(TimeStampedModel):
     # Adds .source_dataset (object) and .source_dataset_id (pk).
     source_trait = models.ForeignKey(SourceTrait)
     # Adds .source_trait (object) and .source_trait_id (pk).
-    i_id = models.PositiveIntegerField(primary_key=True, db_column='i_id')
-    i_is_visit_column = models.BooleanField()
+    i_id = models.PositiveIntegerField('id', primary_key=True, db_column='i_id')
+    i_is_visit_column = models.BooleanField('is visit column?')
+
+    class Meta:
+        verbose_name_plural = 'Source dataset unique keys'
+
+    def __str__(self):
+        """Pretty printing."""
+        return 'unique key {} of {}, id={}'.format(self.source_trait, self.source_dataset, self.i_id)
 
