@@ -499,6 +499,7 @@ class Command(BaseCommand):
         """
         study = Study.objects.get(i_accession=row_dict['study_accession'])
         new_args = {
+            'study': study,
             'i_id': row_dict['id'],
             'i_name': row_dict['name']
         }
@@ -548,6 +549,8 @@ class Command(BaseCommand):
         source_dataset = SourceDataset.objects.get(i_id=row_dict['dataset_id'])
         subcohort = Subcohort.objects.get(i_id=row_dict['subcohort_id'])
         new_args = {
+            'source_dataset': source_dataset,
+            'subcohort': subcohort,
             'i_id': row_dict['id'],
         }
         return new_args
@@ -579,7 +582,7 @@ class Command(BaseCommand):
             source_dataset_subcohorts_args = self._make_source_dataset_subcohorts_args(type_fixed_row)
             add_var = SourceDatasetSubcohorts(**source_dataset_subcohorts_args)    # temp Study to add
             add_var.save()
-            print(' '.join(('Added subcohort', str(subcohort_args['i_id']))))
+            print(('Added subcohort {}'.format(add_var.i_id)))
         cursor.close()
 
     def _make_source_trait_encoded_value_args(self, row_dict):
