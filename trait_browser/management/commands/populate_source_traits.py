@@ -168,7 +168,7 @@ class Command(BaseCommand):
         }
         return new_args
 
-    def _populate_global_studies(self, source_db, n_studies):
+    def _populate_global_studies(self, source_db, n_studies, verbosity=0):
         """Add global study data to the website db models.
         
         This function pulls GlobalStudy information from the source db, converts it
@@ -194,7 +194,7 @@ class Command(BaseCommand):
             global_study_args = self._make_global_study_args(type_fixed_row)
             add_var = GlobalStudy(**global_study_args)    # temp GlobalStudy to add
             add_var.save()
-            print(' '.join(('Added global_study', str(global_study_args['i_name']))))
+            if verbosity == 3: print('Added {}'.format(add_var))
         cursor.close()
 
     def _make_study_args(self, row_dict):
@@ -216,7 +216,7 @@ class Command(BaseCommand):
         }
         return new_args
     
-    def _populate_studies(self, source_db, n_studies):
+    def _populate_studies(self, source_db, n_studies, verbosity=0):
         """Add study data to the website db models.
         
         This function pulls study information from the source db, converts it
@@ -243,7 +243,7 @@ class Command(BaseCommand):
             study_args = self._make_study_args(type_fixed_row)
             add_var = Study(**study_args)    # temp Study to add
             add_var.save()
-            print(' '.join(('Added study', str(study_args['i_study_name']))))
+            if verbosity == 3: print('Added {}'.format(add_var))
         cursor.close()
 
     def _make_source_study_version_args(self, row_dict):
@@ -269,7 +269,7 @@ class Command(BaseCommand):
         }
         return new_args
     
-    def _populate_source_study_versions(self, source_db, n_studies):
+    def _populate_source_study_versions(self, source_db, n_studies, verbosity=0):
         """Add source study version data to the website db models.
         
         This function pulls source study version information from the source db,
@@ -296,7 +296,7 @@ class Command(BaseCommand):
             source_study_version_args = self._make_source_study_version_args(type_fixed_row)
             add_var = SourceStudyVersion(**source_study_version_args)    # temp Study to add
             add_var.save()
-            print(' '.join(('Added source_study_version', str(source_study_version_args['i_id']))))
+            if verbosity == 3: print('Added {}'.format(add_var))
         cursor.close()
 
     def _make_source_dataset_args(self, row_dict):
@@ -326,7 +326,7 @@ class Command(BaseCommand):
         }
         return new_args
     
-    def _populate_source_datasets(self, source_db, n_studies, ):
+    def _populate_source_datasets(self, source_db, n_studies, verbosity=0):
         """Add source study version data to the website db models.
         
         This function pulls source study version information from the source db,
@@ -353,7 +353,7 @@ class Command(BaseCommand):
             source_dataset_args = self._make_source_dataset_args(type_fixed_row)
             add_var = SourceDataset(**source_dataset_args)    # temp Study to add
             add_var.save()
-            print(' '.join(('Added source_dataset', str(source_dataset_args['i_id']))))
+            if verbosity == 3: print('Added {}'.format(add_var))
         cursor.close()
 
     def _make_source_trait_args(self, row_dict):
@@ -385,7 +385,7 @@ class Command(BaseCommand):
         }
         return new_args
 
-    def _populate_source_traits(self, source_db, max_traits, n_studies):
+    def _populate_source_traits(self, source_db, max_traits, n_studies, verbosity=0):
         """Add source trait data to the website db models.
         
         This function pulls source trait data from the source db, converts it
@@ -418,7 +418,7 @@ class Command(BaseCommand):
                     model_args = self._make_source_trait_args(type_fixed_row)
                     add_var = SourceTrait(**model_args)    # temp SourceTrait to add
                     add_var.save()
-                    print(' '.join(('Added source_trait', str(model_args['i_trait_id']))))
+                    if verbosity == 3: print('Added {}'.format(add_var))
         # Otherwise, you can pull out all studies at once.
         else:
             # If n_studies is set, filter the list of traits to those connected to already-loaded datasets.
@@ -431,7 +431,7 @@ class Command(BaseCommand):
                 model_args = self._make_source_trait_args(type_fixed_row)
                 add_var = SourceTrait(**model_args)    # temp SourceTrait to add
                 add_var.save()
-                print(' '.join(('Added source_trait', str(model_args['i_trait_id']))))
+                if verbosity == 3: print('Added {}'.format(add_var))
         cursor.close()
 
     def _make_source_dataset_unique_keys_args(self, row_dict):
@@ -455,7 +455,7 @@ class Command(BaseCommand):
         }
         return new_args
     
-    def _populate_source_dataset_unique_keys(self, source_db, max_traits, n_studies):
+    def _populate_source_dataset_unique_keys(self, source_db, max_traits, n_studies, verbosity=0):
         """Add source study version data to the website db models.
         
         This function pulls source study version information from the source db,
@@ -483,7 +483,7 @@ class Command(BaseCommand):
             source_dataset_unique_keys_args = self._make_source_dataset_unique_keys_args(type_fixed_row)
             add_var = SourceDatasetUniqueKeys(**source_dataset_unique_keys_args)    # temp SourceDatasetUniqueKeys to add
             add_var.save()
-            print(' '.join(('Added source_dataset_unique_keys', str(source_dataset_unique_keys_args['i_id']))))
+            if verbosity == 3: print('Added {}'.format(add_var))
         cursor.close()
 
     def _make_subcohort_args(self, row_dict):
@@ -505,7 +505,7 @@ class Command(BaseCommand):
         }
         return new_args
     
-    def _populate_subcohorts(self, source_db, n_studies):
+    def _populate_subcohorts(self, source_db, n_studies, verbosity=0):
         """Add source study version data to the website db models.
         
         This function pulls source study version information from the source db,
@@ -532,7 +532,7 @@ class Command(BaseCommand):
             subcohort_args = self._make_subcohort_args(type_fixed_row)
             add_var = Subcohort(**subcohort_args)    # temp Study to add
             add_var.save()
-            print(' '.join(('Added subcohort', str(subcohort_args['i_id']))))
+            if verbosity == 3: print('Added {}'.format(add_var))
         cursor.close()
 
     def _make_source_dataset_subcohorts_args(self, row_dict):
@@ -555,7 +555,7 @@ class Command(BaseCommand):
         }
         return new_args
     
-    def _populate_source_dataset_subcohorts(self, source_db, n_studies):
+    def _populate_source_dataset_subcohorts(self, source_db, n_studies, verbosity=0):
         """Add source study version data to the website db models.
         
         This function pulls source study version information from the source db,
@@ -582,7 +582,7 @@ class Command(BaseCommand):
             source_dataset_subcohorts_args = self._make_source_dataset_subcohorts_args(type_fixed_row)
             add_var = SourceDatasetSubcohorts(**source_dataset_subcohorts_args)    # temp Study to add
             add_var.save()
-            print(('Added subcohort {}'.format(add_var.i_id)))
+            if verbosity == 3: print('Added {}'.format(add_var))
         cursor.close()
 
     def _make_source_trait_encoded_value_args(self, row_dict):
@@ -604,7 +604,7 @@ class Command(BaseCommand):
         }
         return new_args
 
-    def _populate_source_trait_encoded_values(self, source_db, max_traits, n_studies):
+    def _populate_source_trait_encoded_values(self, source_db, max_traits, n_studies, verbosity=0):
         """Add encoded value data to the website db models.
         
         This function pulls study information from the source db, converts it
@@ -630,7 +630,7 @@ class Command(BaseCommand):
             model_args = self._make_source_trait_encoded_value_args(type_fixed_row)
             add_var = SourceTraitEncodedValue(**model_args)    # temp SourceTraitEncodedValue to add
             add_var.save()
-            print(' '.join(('Added encoded value for', str(add_var.id))))
+            if verbosity == 3: print('Added {}'.format(add_var))
         cursor.close()
 
     # Methods to actually do the management command.
@@ -661,23 +661,23 @@ class Command(BaseCommand):
         """
         source_db = self._get_source_db(which_db=options['which_db'])
         
-        self._populate_global_studies(source_db, options['n_studies'])
+        self._populate_global_studies(source_db, options['n_studies'], verbosity=options['verbosity'])
         print("Added global studies")
-        self._populate_studies(source_db, options['n_studies'])
+        self._populate_studies(source_db, options['n_studies'], verbosity=options['verbosity'])
         print("Added studies")
-        self._populate_source_study_versions(source_db, options['n_studies'])
+        self._populate_source_study_versions(source_db, options['n_studies'], verbosity=options['verbosity'])
         print("Added source study versions")
-        self._populate_source_datasets(source_db, options['n_studies'])
+        self._populate_source_datasets(source_db, options['n_studies'], verbosity=options['verbosity'])
         print("Added source datasets")
-        self._populate_source_traits(source_db, options['max_traits'], options['n_studies'])
+        self._populate_source_traits(source_db, options['max_traits'], options['n_studies'], verbosity=options['verbosity'])
         print("Added source traits")
-        self._populate_source_dataset_unique_keys(source_db, options['max_traits'], options['n_studies'])
+        self._populate_source_dataset_unique_keys(source_db, options['max_traits'], options['n_studies'], verbosity=options['verbosity'])
         print("Added source dataset unique keys")
-        self._populate_subcohorts(source_db, options['n_studies'])
+        self._populate_subcohorts(source_db, options['n_studies'], verbosity=options['verbosity'])
         print("Added subcohorts")
-        self._populate_source_dataset_subcohorts(source_db, options['n_studies'])
+        self._populate_source_dataset_subcohorts(source_db, options['n_studies'], verbosity=options['verbosity'])
         print("Added source dataset subcohorts")
-        self._populate_source_trait_encoded_values(source_db, options['max_traits'], options['n_studies'])
+        self._populate_source_trait_encoded_values(source_db, options['max_traits'], options['n_studies'], verbosity=options['verbosity'])
         print("Added source trait encoded values")
         
         source_db.close()

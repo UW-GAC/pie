@@ -441,7 +441,7 @@ class SourceTraitEncodedValue(TraitEncodedValue):
     
     def __str__(self):
         """Pretty printing."""
-        return 'encoded value {} for {}\nvalue = '.format(self.i_value, self.source_trait, self.i_value)
+        return 'encoded value {} for {}\nvalue = {}'.format(self.i_category, self.source_trait, self.i_value)
    
 
 class HarmonizedTraitEncodedValue(TraitEncodedValue):
@@ -457,7 +457,7 @@ class HarmonizedTraitEncodedValue(TraitEncodedValue):
     
     def __str__(self):
         """Pretty printing of HarmonizedTraitEncodedValue objects."""
-        return 'encoded value {} for {}\nvalue = {}'.format(self.i_value, self.harmonized_trait, self.i_value)
+        return 'encoded value {} for {}\nvalue = {}'.format(self.i_category, self.harmonized_trait, self.i_value)
 
 
 class SourceDatasetUniqueKeys(TimeStampedModel):
