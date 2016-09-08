@@ -18,6 +18,9 @@ class ReadOnlyAdmin(admin.ModelAdmin):
         return False
     def has_delete_permission(self, request, obj=None):
         return False
+    
+    # Make these available to add to each model's admin.
+    list_display = ('created', 'modified', )
 
 
 class GlobalStudyAdmin(ReadOnlyAdmin):
@@ -30,9 +33,21 @@ class GlobalStudyAdmin(ReadOnlyAdmin):
         if not field.is_relation    # Exclude foreign keys from the results.
     )))
     # Set fields to display, filter, and search on.
-    list_display = ('i_id', 'i_name', )
+    list_display = ('i_id', 'i_name', 'get_linked_studies', ) + ReadOnlyAdmin.list_display
     list_filter = ('i_id', 'i_name', )
     search_fields = ('i_id', 'i_name', )
+    
+    def get_linked_studies(self, global_study):
+        """Get the names of the Study objects linked to this GlobalStudy.
+        
+        This function is used to properly display the Studies column in the
+        admin interface.
+        
+        Returns:
+            csv list of names of the linked Study objects
+        """
+        return ','.join([study.i_study_name for study in global_study.study_set.all()])
+    get_linked_studies.short_description = 'Linked studies'
 
 
 class StudyAdmin(ReadOnlyAdmin):
@@ -45,9 +60,14 @@ class StudyAdmin(ReadOnlyAdmin):
         if not field.is_relation    # Exclude foreign keys from the results.
     )))
     # Set fields to display, filter, and search on.
-    list_display = ('i_accession', 'i_study_name', )
-    list_filter = ('i_accession', 'i_study_name', )
+    list_display = ('i_accession', 'i_study_name', 'get_global_study', ) + ReadOnlyAdmin.list_display
+    list_filter = ('i_accession', 'i_study_name', 'global_study__i_name', )
     search_fields = ('i_accession', 'i_study_name', )
+
+    def get_global_study(self, study):
+        """Get global study name."""
+        return study.global_study.i_name
+    get_global_study.short_description = 'Global study name'
 
 
 class SourceStudyVersionAdmin(ReadOnlyAdmin):
@@ -60,9 +80,9 @@ class SourceStudyVersionAdmin(ReadOnlyAdmin):
         if not field.is_relation    # Exclude foreign keys from the results.
     )))
     # Set fields to display, filter, and search on.
-    list_display = ('study_id', 'i_id', 'i_is_prerelease', 'i_is_deprecated', 'phs_version_string', )
-    list_filter = ('study_id', )
-    search_fields = ('study_id', 'phs_version_string', )
+    list_display = ('i_id', 'study', 'i_version', 'i_is_prerelease', 'i_is_deprecated', 'phs_version_string', ) + ReadOnlyAdmin.list_display
+    list_filter = ('study__i_accession', 'i_is_prerelease', 'i_is_deprecated', )
+    search_fields = ('study__i_study_name', 'phs_version_string', )
     
 
 class SubcohortAdmin(ReadOnlyAdmin):
@@ -75,9 +95,9 @@ class SubcohortAdmin(ReadOnlyAdmin):
         if not field.is_relation    # Exclude foreign keys from the results.
     )))
     # Set fields to display, filter, and search on.
-    list_display = ('i_id', 'study_id', 'i_name', )
-    list_filter = ('i_id', )
-    search_fields = ('i_id', 'study_id', 'i_name', )
+    list_display = ('i_id', 'i_name', 'study', ) + ReadOnlyAdmin.list_display
+    list_filter = ('i_id', 'study__i_study_name', 'study__i_accession', )
+    search_fields = ('i_id', 'i_name', 'study__i_accession', )
 
 
 class SourceDatasetAdmin(ReadOnlyAdmin):

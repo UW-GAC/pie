@@ -35,11 +35,15 @@ class GlobalStudy(TimeStampedModel):
         i_name
     """
 
-    i_id = models.PositiveIntegerField(primary_key=True, db_column='study_id')
-    i_name = models.CharField(max_length=200)
+    i_id = models.PositiveIntegerField('imported id', primary_key=True, db_column='study_id')
+    i_name = models.CharField('imported name', max_length=200)
 
     class Meta:
         verbose_name_plural = 'GlobalStudies'
+
+    def __str__(self):
+        """Pretty printing."""
+        return self.i_name
 
 
 class Study(TimeStampedModel):
@@ -55,8 +59,8 @@ class Study(TimeStampedModel):
     
     global_study = models.ForeignKey(GlobalStudy)
     # Adds .global_study (object) and .global_study_id (pk).
-    i_accession = models.PositiveIntegerField(primary_key=True, db_column='i_accession')
-    i_study_name = models.CharField(max_length=200)
+    i_accession = models.PositiveIntegerField('imported accession', primary_key=True, db_column='i_accession')
+    i_study_name = models.CharField('imported study name', max_length=200)
     phs = models.CharField(max_length=9)
     dbgap_latest_version_link = models.CharField(max_length=200)
 
@@ -65,7 +69,7 @@ class Study(TimeStampedModel):
         verbose_name_plural = 'Studies'
 
     def __str__(self):
-        """Pretty printing of Study objects."""
+        """Pretty printing."""
         return self.i_study_name
     
     def save(self, *args, **kwargs):
@@ -113,13 +117,13 @@ class SourceStudyVersion(TimeStampedModel):
     
     study = models.ForeignKey(Study)
     # Adds .study (object) and .study_id (pk).
-    i_id = models.PositiveIntegerField(primary_key=True, db_column='i_id')
-    i_accession = models.PositiveIntegerField()
-    i_version = models.PositiveIntegerField()
-    i_participant_set = models.PositiveIntegerField()
-    i_dbgap_date = models.DateTimeField()
-    i_is_prerelease = models.BooleanField()
-    i_is_deprecated = models.BooleanField()
+    i_id = models.PositiveIntegerField('imported id', primary_key=True, db_column='i_id')
+    i_accession = models.PositiveIntegerField('imported accession')
+    i_version = models.PositiveIntegerField('imported version')
+    i_participant_set = models.PositiveIntegerField('imported participant set')
+    i_dbgap_date = models.DateTimeField('imported dbGaP date')
+    i_is_prerelease = models.BooleanField('imported is prerelease')
+    i_is_deprecated = models.BooleanField('imported is deprecated')
     phs_version_string = models.CharField(max_length=20)
     
     def save(self, *args, **kwargs):
@@ -140,13 +144,15 @@ class Subcohort(TimeStampedModel):
     """Model for subcohorts.
     
     Fields:
-    
+        study
+        i_id
+        i_name
     """
     
     study = models.ForeignKey(Study)
     # Adds .study (object) and .study_id (pk).
-    i_id = models.PositiveIntegerField(primary_key=True, db_column='i_id')
-    i_name = models.CharField(max_length=45)
+    i_id = models.PositiveIntegerField('imported id', primary_key=True, db_column='i_id')
+    i_name = models.CharField('imported name', max_length=45)
 
 
 # Dataset related models.
@@ -443,7 +449,7 @@ class SourceTraitEncodedValue(TraitEncodedValue):
         Returns:
             study_name of the linked SourceTrait object
         """
-        return self.source_trait.source_dataset.source_study_version.study.global_study.name
+        return self.source_trait.source_dataset.source_study_version.study.global_study.i_name
     # Set this model attribute to the value of this function, for the admin interface.
     get_source_trait_study.short_description = 'Global Study Name'
 
