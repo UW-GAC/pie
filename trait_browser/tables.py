@@ -29,7 +29,7 @@ class SourceTraitTable(tables.Table):
         fields = ('i_trait_name', 'i_description', 'study_name', )
         attrs = {'class': 'table table-striped table-bordered table-hover table-condensed'}
         template = 'trait_browser/bootstrap_tables2.html'
-        order_by = ('i_trait_name', 'i_study_name', )
+        order_by = ('i_trait_name', 'study_name', )
 
 
 class StudyTable(tables.Table):

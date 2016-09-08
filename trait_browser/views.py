@@ -46,10 +46,10 @@ def source_study_detail(request, pk):
     This view uses Django-tables2 to display a pretty table of the SourceTraits
     in the database for browsing, within a single study.
     """
-    this_study = get_object_or_404(Study, study_id=pk)
-    table_title = 'Source phenotypes currently available in {}'.format(this_study.name)
+    this_study = get_object_or_404(Study, i_accession=pk)
+    table_title = 'Source phenotypes currently available in {}'.format(this_study.i_study_name)
     page_title = 'phs{:6} source phenotypes'.format(this_study.phs)
-    trait_table = SourceTraitTable(this_study.sourcetrait_set.all())
+    trait_table = SourceTraitTable(SourceTrait.objects.filter(source_dataset__source_study_version__study__i_accession=pk))
     # If you're going to change this later to some kind of filtered list (e.g. only the most
     # recent version of each trait), then you should wrap the SourceTrait.filter() in get_list_or_404
     # RequestConfig seems to be necessary for sorting to work.
