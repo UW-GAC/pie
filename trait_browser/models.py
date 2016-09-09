@@ -90,6 +90,7 @@ class Study(TimeStampedModel):
         """
         return 'phs{:06}'.format(self.i_accession)
 
+    STUDY_URL = 'http://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id={}'
     def set_dbgap_latest_version_link(self):
         """Automatically set dbgap_latest_version_link from the study's phs.
         
@@ -97,8 +98,7 @@ class Study(TimeStampedModel):
         Without a specified version number, the dbGaP link takes you to the
         latest version.
         """
-        STUDY_URL = 'http://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id={}'
-        return STUDY_URL.format(self.phs)
+        return self.STUDY_URL.format(self.phs)
 
 
 class SourceStudyVersion(TimeStampedModel):
