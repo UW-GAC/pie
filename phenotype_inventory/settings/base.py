@@ -149,11 +149,14 @@ INSTALLED_APPS = (
     # Our custom apps.
     'trait_browser',    # Handles table-based viewing and searching of trait data.
     'core',    # Handles data migrations for built-in apps (e.g. sites).
+    'user_accounts',
 )
 
 
 # URL SETTINGS
 ROOT_URLCONF = '%s.urls' % SITE_NAME
+LOGIN_URL = 'login'
+LOGIN_REDIRECT_URL = 'home'
 
 
 # APP-SPECIFIC SETTINGS
