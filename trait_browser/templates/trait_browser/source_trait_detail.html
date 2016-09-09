@@ -18,7 +18,7 @@
         <p><strong>Study name</strong> : {{ source_trait.study.i_study_name }}</p>
         <p><strong>Phenotype description</strong> : {{ source_trait.i_description }}</p>
         <p><strong>Data type</strong> : {{ source_trait.i_detected_type }}</p>
-        <p><strong>Unit</strong> : {{ source_trait.dbgap_unit }}</p>
+        <!--<p><strong>Unit</strong> : {{ source_trait.dbgap_unit }}</p>-->
 
         <hr>
        
@@ -29,7 +29,7 @@
                    <th>Category</th>
                    <th>Value</th>
                </tr>
-               {% for ev in source_trait.sourceencodedvalue_set.all %}
+               {% for ev in source_trait.sourcetraitencodedvalue_set.all %}
                    <tr>
                        <td>{{ ev.i_category }}</td>
                        <td>{{ ev.i_value }}</td>

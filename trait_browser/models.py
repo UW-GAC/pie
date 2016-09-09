@@ -321,6 +321,7 @@ class SourceTrait(Trait):
     # Since these are URLFields, they will be validated as well-formed URLs.
     dbgap_study_link = models.URLField(max_length=200)
     dbgap_variable_link = models.URLField(max_length=200)
+    dbgap_dataset_link = models.URLField(max_length=200)
     
     def __str__(self):
         """Pretty printing of SourceTrait objects."""
@@ -339,6 +340,7 @@ class SourceTrait(Trait):
         # Set values for dbGaP links.
         self.dbgap_study_link = self.set_dbgap_study_link()
         self.dbgap_variable_link = self.set_dbgap_variable_link()
+        self.dbgap_dataset_link = self.set_dbgap_dataset_link()
         # Call the "real" save method.
         super(SourceTrait, self).save(*args, **kwargs)
     
@@ -382,6 +384,14 @@ class SourceTrait(Trait):
         STUDY_URL = 'http://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id={}'
         return STUDY_URL.format(self.study_accession)
 
+    def set_dbgap_dataset_link(self):
+        """Automatically set dbgap_dataset_link from accession information.
+        
+        Construct a URL to the dbGaP dataset information page using a base URL and
+        some fields from this SourceTrait.
+        """
+        STUDY_URL = 'http://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/dataset.cgi?study_id={}&pht={}'
+        return STUDY_URL.format(self.study_accession, self.source_dataset.i_accession)
 
 class HarmonizedTrait(Trait):
     """Model for traits harmonized by the DCC.
