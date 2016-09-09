@@ -8,9 +8,8 @@ from django.utils import timezone
 import factory
 import factory.fuzzy
 
-from .models import (GlobalStudy, Study, SourceStudyVersion, Subcohort,
-                     SourceDataset, SourceDatasetSubcohorts, SourceDatasetUniqueKeys, HarmonizedTraitSet,
-                     SourceTrait, HarmonizedTrait, SourceTraitEncodedValue, HarmonizedTraitEncodedValue)
+from .models import GlobalStudy, HarmonizedTrait, HarmonizedTraitEncodedValue, HarmonizedTraitSet, SourceDataset, SourceDatasetSubcohorts, SourceDatasetUniqueKeys, SourceStudyVersion, SourceTrait, SourceTraitEncodedValue, Study, Subcohort
+
 
 # Use these later for SourceStudyVersion factories.
 VISIT_CHOICES = ('one_visit_per_file',
@@ -23,12 +22,11 @@ VISIT_CHOICES = ('one_visit_per_file',
                  '')
 VISIT_NUMBERS = tuple([str(el) for el in range(1, 20)]) + ('', )
 
-class GlobalStudyFactory(factor.DjangoModelFactory):
+class GlobalStudyFactory(factory.DjangoModelFactory):
     """Factory for GlobalStudy objects using Faker faked data."""
     
     i_id = factory.Sequence(lambda n: n)
     i_name = factory.Faker('company')
-    web_date_added = factory.fuzzy.FuzzyDateTime(start_dt=timezone.make_aware(datetime(2016, 1, 1)))
     
     class Meta:
         model = GlobalStudy
@@ -38,10 +36,9 @@ class GlobalStudyFactory(factor.DjangoModelFactory):
 class StudyFactory(factory.DjangoModelFactory):
     """Factory for Study objects using Faker faked data."""
         
-    global_study = factory.SubFactory(GlobalStudy)
+    global_study = factory.SubFactory(GlobalStudyFactory)
     i_accession = randint(1, 999999)
     i_study_name = factory.Faker('company')
-    web_date_added = factory.fuzzy.FuzzyDateTime(start_dt=timezone.make_aware(datetime(2016, 1, 1)))    
     
     class Meta:
         model = Study
@@ -51,14 +48,13 @@ class StudyFactory(factory.DjangoModelFactory):
 class SourceStudyVersionFactory(factory.DjangoModelFactory):
     """Factory for SourceStudyVersion objecsts using Faker faked data."""
     
-    study = factory.SubFactory(Study)
+    study = factory.SubFactory(StudyFactory)
     i_id = factory.Sequence(lambda n: n)
     i_version = randint(1, 10)
     i_participant_set = randint(1, 10)
-    i_dbgap_date = timezone.make_aware(factory.Faker('date_time_this_decade'))
+    i_dbgap_date = factory.fuzzy.FuzzyDateTime(start_dt=timezone.make_aware(datetime(1998, 1, 1), timezone.get_current_timezone()))
     i_is_prerelease = False
     i_is_deprecated = False
-    web_date_added = factory.fuzzy.FuzzyDateTime(start_dt=timezone.make_aware(datetime(2016, 1, 1)))    
     
     class Meta:
         model = SourceStudyVersion
@@ -68,10 +64,9 @@ class SourceStudyVersionFactory(factory.DjangoModelFactory):
 class SubcohortFactory(factory.DjangoModelFactory):
     """Factory for Subcohort objects using Faker faked data."""
     
-    study = factory.SubFactory(Study)
+    study = factory.SubFactory(StudyFactory)
     i_id = factory.Sequence(lambda n: n)
     i_name = factory.Faker('job')
-    web_date_added = factory.fuzzy.FuzzyDateTime(start_dt=timezone.make_aware(datetime(2016, 1, 1)))    
 
     class Meta:
         model = Subcohort
@@ -81,7 +76,7 @@ class SubcohortFactory(factory.DjangoModelFactory):
 class SourceDatasetFactory(factory.DjangoModelFactory):
     """Factory for SourceDataset objects using Faker faked data."""
     
-    source_study_version = factory.SubFactory(SourceStudyVersion)
+    source_study_version = factory.SubFactory(SourceStudyVersionFactory)
     i_id = factory.Sequence(lambda n: n)
     i_accession = randint(1, 999999)
     i_version = randint(1, 10)
@@ -90,7 +85,6 @@ class SourceDatasetFactory(factory.DjangoModelFactory):
     i_is_medication_dataset = factory.Faker('boolean')
     i_dbgap_description = factory.Faker('text')
     i_dcc_description = factory.Faker('text')
-    web_date_added = factory.fuzzy.FuzzyDateTime(start_dt=timezone.make_aware(datetime(2016, 1, 1)))    
 
     class Meta:
         model = SourceDataset
@@ -100,27 +94,12 @@ class SourceDatasetFactory(factory.DjangoModelFactory):
 class SourceDatasetSubcohortsFactory(factory.DjangoModelFactory):
     """Factory for SourceDatasetSubcohorts objects using Faker faked data."""
     
-    source_dataset = factory.SubFactory(SourceDataset)
-    subcohort = factory.SubFactory(Subcohort)
+    source_dataset = factory.SubFactory(SourceDatasetFactory)
+    subcohort = factory.SubFactory(SubcohortFactory)
     i_id = factory.Sequence(lambda n: n)
-    web_date_added = factory.fuzzy.FuzzyDateTime(start_dt=timezone.make_aware(datetime(2016, 1, 1)))
     
     class Meta:
         model = SourceDatasetSubcohorts
-        django_get_or_create = ('i_id', )
-
-
-class SourceDatasetUniqueKeysFactory(factory.DjangoModelFactory):
-    """Factory for SourceDatasetUniqueKeys objects using Faker faked data."""
-    
-    source_dataset = factory.SubFactory(SourceDataset)
-    source_trait = factory.SubFactory(SourceTrait)
-    i_id = factory.Sequence(lambda n: n)
-    i_is_visit_column = factory.Faker('boolean', chance_of_getting_true=10)
-    web_date_added = factory.fuzzy.FuzzyDateTime(start_dt=timezone.make_aware(datetime(2016, 1, 1)))
-    
-    class Meta:
-        model = SourceDatasetUniqueKeys
         django_get_or_create = ('i_id', )
 
 
@@ -131,7 +110,6 @@ class HarmonizedTraitSetFactory(factory.DjangoModelFactory):
     i_trait_set_name = factory.Faker('word')
     i_version = factory.Sequence(lambda n: n)
     i_description = factory.Faker('text')
-    web_date_added = factory.fuzzy.FuzzyDateTime(start_dt=timezone.make_aware(datetime(2016, 1, 1)))
     
     class Meta:
         model = HarmonizedTraitSet
@@ -144,9 +122,8 @@ class SourceTraitFactory(factory.DjangoModelFactory):
     i_trait_id = factory.Sequence(lambda n: n)
     i_trait_name = factory.Faker('word')
     i_description = factory.Faker('text')
-    web_date_added = factory.fuzzy.FuzzyDateTime(start_dt=timezone.make_aware(datetime(2016, 1, 1)))
     
-    source_dataset = factory.SubFactory(SourceDataset)
+    source_dataset = factory.SubFactory(SourceDatasetFactory)
     i_detected_type = factory.Faker('word')
     i_dbgap_type = factory.Faker('word')
     i_visit_number = choice(VISIT_NUMBERS)
@@ -168,9 +145,8 @@ class HarmonizedTraitFactory(factory.DjangoModelFactory):
     i_trait_id = factory.Sequence(lambda n: n)
     i_trait_name = factory.Faker('word')
     i_description = factory.Faker('text')
-    web_date_added = factory.fuzzy.FuzzyDateTime(start_dt=timezone.make_aware(datetime(2016, 1, 1)))
     
-    harmonized_trait_set = factory.SubFactory(HarmonizedTraitSet)
+    harmonized_trait_set = factory.SubFactory(HarmonizedTraitSetFactory)
     i_data_type = choice(('', 'encoded', 'character', 'double', 'integer', ))
     i_unit = factory.Faker('word')
     i_is_unique_key = factory.Faker('boolean', chance_of_getting_true=10)
@@ -185,7 +161,6 @@ class SourceTraitEncodedValueFactory(factory.DjangoModelFactory):
     
     i_category = factory.Faker('word')
     i_value = factory.Faker('text', max_nb_chars=50)
-    web_date_added = factory.fuzzy.FuzzyDateTime(start_dt=timezone.make_aware(datetime(2016, 1, 1)))
     
     source_trait = factory.SubFactory(SourceTraitFactory) 
        
@@ -198,9 +173,21 @@ class HarmonizedTraitEncodedValueFactory(factory.DjangoModelFactory):
     
     i_category = factory.Faker('word')
     i_value = factory.Faker('text', max_nb_chars=50)
-    web_date_added = factory.fuzzy.FuzzyDateTime(start_dt=timezone.make_aware(datetime(2016, 1, 1)))
     
     harmonized_trait = factory.SubFactory(HarmonizedTraitFactory) 
        
     class Meta:
         model = HarmonizedTraitEncodedValue
+
+
+class SourceDatasetUniqueKeysFactory(factory.DjangoModelFactory):
+    """Factory for SourceDatasetUniqueKeys objects using Faker faked data."""
+    
+    source_dataset = factory.SubFactory(SourceDatasetFactory)
+    source_trait = factory.SubFactory(SourceTraitFactory)
+    i_id = factory.Sequence(lambda n: n)
+    i_is_visit_column = factory.Faker('boolean', chance_of_getting_true=10)
+    
+    class Meta:
+        model = SourceDatasetUniqueKeys
+        django_get_or_create = ('i_id', )
