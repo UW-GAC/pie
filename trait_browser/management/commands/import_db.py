@@ -12,17 +12,14 @@ Requires the CNF_PATH setting from the specified settings module.
 # [Providing initial data for models | Django documentation | Django](https://docs.djangoproject.com/en/1.8/howto/initial-data/)
 
 from datetime import datetime
+import mysql.connector
 import socket
 
 from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone
 from django.conf import settings
 
-import mysql.connector
-
-from trait_browser.models import (GlobalStudy, Study, SourceStudyVersion, Subcohort,
-                     SourceDataset, SourceDatasetSubcohorts, SourceDatasetUniqueKeys, 
-                     SourceTrait, SourceTraitEncodedValue )
+from trait_browser.models import GlobalStudy, HarmonizedTrait, HarmonizedTraitEncodedValue, HarmonizedTraitSet, SourceDataset, SourceDatasetUniqueKeys, SourceStudyVersion, SourceTrait, SourceTraitEncodedValue, Study, Subcohort
 
 
 class Command(BaseCommand):
@@ -535,26 +532,6 @@ class Command(BaseCommand):
             if verbosity == 3: print('Added {}'.format(add_var))
         cursor.close()
 
-    def _make_source_dataset_subcohorts_args(self, row_dict):
-        """Get args for making a SourceDatasetSubcohorts object from a source db row.
-        
-        Converts a dictionary containing {colname: row value} pairs from a database
-        query into a dict with the necessary arguments for constructing a
-        SourceDatasetSubcohorts object. If there is a schema change in the source db,
-        this function may need to be modified.
-
-        Returns:
-            a dict of (required_SourceDatasetSubcohorts_attribute: attribute_value) pairs
-        """
-        source_dataset = SourceDataset.objects.get(i_id=row_dict['dataset_id'])
-        subcohort = Subcohort.objects.get(i_id=row_dict['subcohort_id'])
-        new_args = {
-            'source_dataset': source_dataset,
-            'subcohort': subcohort,
-            'i_id': row_dict['id'],
-        }
-        return new_args
-    
     def _populate_source_dataset_subcohorts(self, source_db, n_studies, verbosity=0):
         """Add source study version data to the website db models.
         
@@ -579,10 +556,12 @@ class Command(BaseCommand):
         cursor.execute(source_dataset_subcohorts_query)
         for row in cursor:
             type_fixed_row = self._fix_row(row)
-            source_dataset_subcohorts_args = self._make_source_dataset_subcohorts_args(type_fixed_row)
-            add_var = SourceDatasetSubcohorts(**source_dataset_subcohorts_args)    # temp Study to add
-            add_var.save()
-            if verbosity == 3: print('Added {}'.format(add_var))
+            # Get the SourceDataset and Subcohort objects to link.
+            source_dataset = SourceDataset.objects.get(i_id=type_fixed_row['dataset_id'])
+            subcohort = Subcohort.objects.get(i_id=type_fixed_row['subcohort_id'])
+            # Associate the Subcohort object with a SourceDataset object.
+            source_dataset.subcohorts.add(subcohort)
+            if verbosity == 3: print('Linked {} to {}'.format(subcohort, source_dataset))
         cursor.close()
 
     def _make_source_trait_encoded_value_args(self, row_dict):
