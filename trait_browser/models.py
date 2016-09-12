@@ -179,6 +179,7 @@ class SourceDataset(TimeStampedModel):
         i_is_medication_dataset
         i_dbgap_description
         i_dcc_description
+        subcohorts
     """
     
     source_study_version = models.ForeignKey(SourceStudyVersion)
@@ -195,6 +196,7 @@ class SourceDataset(TimeStampedModel):
     i_dbgap_description = models.TextField('dbGaP description') 
     i_dcc_description = models.TextField('DCC description')
     pht_version_string = models.CharField(max_length=20)
+    subcohorts = models.ManyToManyField(Subcohort)
 
     def __str__(self):
         """Pretty printing."""
@@ -212,29 +214,6 @@ class SourceDataset(TimeStampedModel):
     def set_pht_version_string(self):
         """Automatically set pht_version_string from the accession, version, and particpant set."""
         return 'pht{:06}.v{}.p{}'.format(self.i_accession, self.i_version, self.source_study_version.i_participant_set)
-
-
-class SourceDatasetSubcohorts(TimeStampedModel):
-    """Model for Subcohorts found within each dbGaP source dataset.
-    
-    Fields:
-        i_id 
-        source_dataset
-        subcohort
-    """
-    
-    source_dataset = models.ForeignKey(SourceDataset)
-    # Adds .source_dataset (object) and .source_dataset_id (pk).
-    subcohort = models.ForeignKey(Subcohort)
-    # Adds .subcohort (object) and .subcohort_id (pk).
-    i_id = models.PositiveIntegerField('source dataset subcohorts id', primary_key=True, db_column='i_id')
-
-    class Meta:
-        verbose_name_plural = 'Source dataset subcohorts'
-
-    def __str__(self):
-        """Pretty printing."""
-        return 'subcohort {} linked to dataset {}, id={}'.format(self.subcohort.i_name, self.source_dataset.pht_version_string, self.i_id)
 
 
 class HarmonizedTraitSet(TimeStampedModel):
