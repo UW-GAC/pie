@@ -5,8 +5,8 @@ from datetime import datetime
 from django.test import TestCase
 from django.core.validators import URLValidator
 
-from .factories import GlobalStudyFactory, HarmonizedTraitFactory, HarmonizedTraitEncodedValueFactory, HarmonizedTraitSetFactory, SourceDatasetFactory, SourceDatasetSubcohortsFactory, SourceDatasetUniqueKeysFactory, SourceStudyVersionFactory, SourceTraitFactory, SourceTraitEncodedValueFactory, StudyFactory, SubcohortFactory
-from .models import GlobalStudy, HarmonizedTrait, HarmonizedTraitEncodedValue, HarmonizedTraitSet, SourceDataset, SourceDatasetSubcohorts, SourceDatasetUniqueKeys, SourceStudyVersion, SourceTrait, SourceTraitEncodedValue, Study, Subcohort
+from .factories import GlobalStudyFactory, HarmonizedTraitFactory, HarmonizedTraitEncodedValueFactory, HarmonizedTraitSetFactory, SourceDatasetFactory, SourceDatasetUniqueKeysFactory, SourceStudyVersionFactory, SourceTraitFactory, SourceTraitEncodedValueFactory, StudyFactory, SubcohortFactory
+from .models import GlobalStudy, HarmonizedTrait, HarmonizedTraitEncodedValue, HarmonizedTraitSet, SourceDataset, SourceDatasetUniqueKeys, SourceStudyVersion, SourceTrait, SourceTraitEncodedValue, Study, Subcohort
 
 
 class GlobalStudyTestCase(TestCase):
@@ -94,25 +94,15 @@ class SourceDatasetTestCase(TestCase):
         source_dataset = SourceDatasetFactory.create()
         self.assertIsInstance(source_dataset.created, datetime)
         self.assertIsInstance(source_dataset.modified, datetime)
-
-
-class SourceDatasetSubcohortsTestCase(TestCase):
     
-    def test_model_saving(self):
-        """Test that you can save a SourceDatasetSubcohorts object."""
-        source_dataset_subcohorts = SourceDatasetSubcohortsFactory.create()
-        self.assertIsInstance(SourceDatasetSubcohorts.objects.get(pk=source_dataset_subcohorts.pk), SourceDatasetSubcohorts)
+    def test_adding_subcohorts(self):
+        """Test that adding associated subcohorts works."""
+        study = StudyFactory.create()
+        subcohorts = SubcohortFactory.create_batch(5, study=study)
+        source_dataset = SourceDatasetFactory.create(source_study_version__study=study, subcohorts=subcohorts)
+        self.assertEqual(len(source_dataset.subcohorts.all()), 5)
+        
 
-    def test_printing(self):
-        """Test the custom __str__ method."""
-        source_dataset_subcohorts = SourceDatasetSubcohortsFactory.build()
-        self.assertIsInstance(source_dataset_subcohorts.__str__(), str)
-
-    def test_timestamps_added(self):
-        """Test that timestamps are added."""
-        source_dataset_subcohorts = SourceDatasetSubcohortsFactory.create()
-        self.assertIsInstance(source_dataset_subcohorts.created, datetime)
-        self.assertIsInstance(source_study_version.modified, datetime)
 
 
 
