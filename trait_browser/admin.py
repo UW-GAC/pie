@@ -5,9 +5,7 @@ from itertools import chain
 from django.contrib import admin
 from django.contrib.sites.models import Site
 
-from .models import (GlobalStudy, Study, SourceStudyVersion, Subcohort,
-                     SourceDataset, SourceDatasetSubcohorts, SourceDatasetUniqueKeys, HarmonizedTraitSet,
-                     SourceTrait, HarmonizedTrait, SourceTraitEncodedValue, HarmonizedTraitEncodedValue)
+from .models import GlobalStudy, HarmonizedTrait, HarmonizedTraitEncodedValue, HarmonizedTraitSet, SourceDataset, SourceDatasetUniqueKeys, SourceStudyVersion, SourceTrait, SourceTraitEncodedValue, Study, Subcohort
 
 
 class ReadOnlyAdmin(admin.ModelAdmin):
@@ -118,22 +116,6 @@ class SourceDatasetAdmin(ReadOnlyAdmin):
     search_fields = ('i_id', 'i_accession', 'pht_version_string', )
 
 
-class SourceDatasetSubcohortsAdmin(ReadOnlyAdmin):
-    """Admin class for SourceDatasetSubcohorts objects."""
-    
-    # Make all fields read-only
-    readonly_fields = list(set(chain.from_iterable(
-        (field.name, field.attname) if hasattr(field, 'attname') else (field.name,)
-        for field in SourceDatasetSubcohorts._meta.get_fields()
-        if not field.is_relation    # Exclude foreign keys from the results.
-    )))
-    # Set fields to display, filter, and search on.
-    list_display = ('i_id', 'subcohort', 'source_dataset', ) + ReadOnlyAdmin.list_display
-    list_filter = ('subcohort__i_name', 'subcohort__study__i_accession',
-                   'subcohort__study__global_study__i_name', )
-    search_fields = ('subcohort__i_name', 'source_dataset__source_study_version__study__i_study_name', )
-
-
 class HarmonizedTraitSetAdmin(ReadOnlyAdmin):
     """Admin class for HarmonizedTraitSet objects."""
     
@@ -235,7 +217,6 @@ admin.site.register(Study, StudyAdmin)
 admin.site.register(SourceStudyVersion, SourceStudyVersionAdmin)
 admin.site.register(Subcohort, SubcohortAdmin)
 admin.site.register(SourceDataset, SourceDatasetAdmin)
-admin.site.register(SourceDatasetSubcohorts, SourceDatasetSubcohortsAdmin)
 admin.site.register(SourceDatasetUniqueKeys, SourceDatasetUniqueKeysAdmin)
 admin.site.register(HarmonizedTraitSet, HarmonizedTraitSetAdmin)
 admin.site.register(SourceTrait, SourceTraitAdmin)
