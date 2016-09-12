@@ -8,7 +8,7 @@ from django.utils import timezone
 import factory
 import factory.fuzzy
 
-from .models import GlobalStudy, HarmonizedTrait, HarmonizedTraitEncodedValue, HarmonizedTraitSet, SourceDataset, SourceDatasetSubcohorts, SourceDatasetUniqueKeys, SourceStudyVersion, SourceTrait, SourceTraitEncodedValue, Study, Subcohort
+from .models import GlobalStudy, HarmonizedTrait, HarmonizedTraitEncodedValue, HarmonizedTraitSet, SourceDataset, SourceDatasetUniqueKeys, SourceStudyVersion, SourceTrait, SourceTraitEncodedValue, Study, Subcohort
 
 
 # Use these later for SourceStudyVersion factories.
@@ -89,18 +89,16 @@ class SourceDatasetFactory(factory.DjangoModelFactory):
     class Meta:
         model = SourceDataset
         django_get_or_create = ('i_id', )
-
-
-class SourceDatasetSubcohortsFactory(factory.DjangoModelFactory):
-    """Factory for SourceDatasetSubcohorts objects using Faker faked data."""
-    
-    source_dataset = factory.SubFactory(SourceDatasetFactory)
-    subcohort = factory.SubFactory(SubcohortFactory)
-    i_id = factory.Sequence(lambda n: n)
-    
-    class Meta:
-        model = SourceDatasetSubcohorts
-        django_get_or_create = ('i_id', )
+        
+    @factory.post_generation
+    def subcohorts(self, create, extracted, **kwargs):
+        # Do not add any subcohorts for simple builds.
+        if not create:
+            return
+        # Add subcohorts from a list that was passed in.
+        if extracted:
+            for subcohort in extracted:
+                self.subcohorts.add(subcohort)
 
 
 class HarmonizedTraitSetFactory(factory.DjangoModelFactory):
