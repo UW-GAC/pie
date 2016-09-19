@@ -101,37 +101,116 @@ class SourceDatasetTestCase(TestCase):
         subcohorts = SubcohortFactory.create_batch(5, study=study)
         source_dataset = SourceDatasetFactory.create(source_study_version__study=study, subcohorts=subcohorts)
         self.assertEqual(len(source_dataset.subcohorts.all()), 5)
-        
 
+    def test_custom_save(self):
+        """Test that the custom save method works."""
+        source_dataset = SourceDatasetFactory.create()
+        self.assertRegex(source_dataset.pht_version_string, 'pht\d{6}\.v\d{1,5}.p\d{1,5}')
+       
 
+class HarmonizedTraitSetTestCase(TestCase):
+    
+    def test_model_saving(self):
+        """Test that you can save a HarmonizedTraitSet object."""
+        harmonized_trait_set = HarmonizedTraitSetFactory.create()
+        self.assertIsInstance(HarmonizedTraitSet.objects.get(pk=harmonized_trait_set.pk), HarmonizedTraitSet)
 
+    def test_printing(self):
+        """Test the custom __str__ method."""
+        harmonized_trait_set = HarmonizedTraitSetFactory.build()
+        self.assertIsInstance(harmonized_trait_set.__str__(), str)
 
-
-
+    def test_timestamps_added(self):
+        """Test that timestamps are added."""
+        harmonized_trait_set = HarmonizedTraitSetFactory.create()
+        self.assertIsInstance(harmonized_trait_set.created, datetime)
+        self.assertIsInstance(harmonized_trait_set.modified, datetime)
+    
+ 
 class SourceTraitTestCase(TestCase):
     
+    def test_model_saving(self):
+        """Test that you can save a SourceTrait object."""
+        source_trait = SourceTraitFactory.create()
+        self.assertIsInstance(SourceTrait.objects.get(pk=source_trait.pk), SourceTrait)
+
+    def test_printing(self):
+        """Test the custom __str__ method."""
+        source_trait = SourceTraitFactory.build()
+        self.assertIsInstance(source_trait.__str__(), str)
+
+    def test_timestamps_added(self):
+        """Test that timestamps are added."""
+        source_trait = SourceTraitFactory.create()
+        self.assertIsInstance(source_trait.created, datetime)
+        self.assertIsInstance(source_trait.modified, datetime)
+
     def test_is_latest_version(self):
         pass
+
+    def test_custom_save(self):
+        """Test that the custom save method works."""
+        source_trait = SourceTraitFactory.create()
+        self.assertEqual(source_trait.study_accession, source_trait.source_dataset.source_study_version.phs_version_string)
+        self.assertEqual(source_trait.dataset_accession, source_trait.source_dataset.pht_version_string)
+        self.assertRegex(source_trait.variable_accession, 'phv\d{8}.v\d{1,3}.p\d{1,3}')
+        self.assertEqual(source_trait.dbgap_study_link[:68], SourceTrait.STUDY_URL[:68])
+        self.assertEqual(source_trait.dbgap_variable_link[:71], SourceTrait.VARIABLE_URL[:71])
+        self.assertEqual(source_trait.dbgap_dataset_link[:70], SourceTrait.DATASET_URL[:70])
+
+
+class HarmonizedTraitTestCase(TestCase):
     
+    def test_model_saving(self):
+        """Test that you can save a HarmonizedTrait object."""
+        harmonized_trait = HarmonizedTraitFactory.create()
+        self.assertIsInstance(HarmonizedTrait.objects.get(pk=harmonized_trait.pk), HarmonizedTrait)
+
     def test_printing(self):
-        """Ensure that the __str__ function works for printing the object."""
-        trait = SourceTraitFactory.build()
-        self.assertIsInstance(trait.__str__(), str)
+        """Test the custom __str__ method."""
+        harmonized_trait = HarmonizedTraitFactory.build()
+        self.assertIsInstance(harmonized_trait.__str__(), str)
+
+    def test_timestamps_added(self):
+        """Test that timestamps are added."""
+        harmonized_trait = HarmonizedTraitFactory.create()
+        self.assertIsInstance(harmonized_trait.created, datetime)
+        self.assertIsInstance(harmonized_trait.modified, datetime)
         
 
 class SourceTraitEncodedValueTestCase(TestCase):
     
+    def test_model_saving(self):
+        """Test that you can save a SourceTraitEncodedValue object."""
+        source_trait_encoded_value = SourceTraitEncodedValueFactory.create()
+        self.assertIsInstance(SourceTraitEncodedValue.objects.get(pk=source_trait_encoded_value.pk), SourceTraitEncodedValue)
+
     def test_printing(self):
-        """Ensure that the custom printing method works."""
-        enc_value = SourceEncodedValueFactory.build()
-        self.assertIsInstance(enc_value.__str__(), str)
-        
-    def test_get_source_trait_name(self):
-        """Ensure that get_source_trait_name() works."""
-        enc_value = SourceEncodedValueFactory.build()
-        enc_value.get_source_trait_name()
-        
-    def test_get_source_trait_enc_value(self):
-        """Ensure that SourceEncodedValue.get_source_trait_enc_value() works."""
-        enc_value = SourceEncodedValueFactory.build()
-        enc_value.get_source_trait_study()
+        """Test the custom __str__ method."""
+        source_trait_encoded_value = SourceTraitEncodedValueFactory.build()
+        self.assertIsInstance(source_trait_encoded_value.__str__(), str)
+
+    def test_timestamps_added(self):
+        """Test that timestamps are added."""
+        source_trait_encoded_value = SourceTraitEncodedValueFactory.create()
+        self.assertIsInstance(source_trait_encoded_value.created, datetime)
+        self.assertIsInstance(source_trait_encoded_value.modified, datetime)
+
+
+class HarmonizedTraitEncodedValueTestCase(TestCase):
+    
+    def test_model_saving(self):
+        """Test that you can save a HarmonizedTraitEncodedValue object."""
+        harmonized_trait_encoded_value = HarmonizedTraitEncodedValueFactory.create()
+        self.assertIsInstance(HarmonizedTraitEncodedValue.objects.get(pk=harmonized_trait_encoded_value.pk), HarmonizedTraitEncodedValue)
+
+    def test_printing(self):
+        """Test the custom __str__ method."""
+        harmonized_trait_encoded_value = HarmonizedTraitEncodedValueFactory.build()
+        self.assertIsInstance(harmonized_trait_encoded_value.__str__(), str)
+
+    def test_timestamps_added(self):
+        """Test that timestamps are added."""
+        harmonized_trait_encoded_value = HarmonizedTraitEncodedValueFactory.create()
+        self.assertIsInstance(harmonized_trait_encoded_value.created, datetime)
+        self.assertIsInstance(harmonized_trait_encoded_value.modified, datetime)
