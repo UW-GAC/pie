@@ -302,6 +302,12 @@ class SourceTrait(Trait):
     dbgap_variable_link = models.URLField(max_length=200)
     dbgap_dataset_link = models.URLField(max_length=200)
     
+    # Constants for custom save methods.
+    VARIABLE_URL = 'http://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/variable.cgi?study_id={}&phv={:08}'
+    STUDY_URL = 'http://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id={}'
+    DATASET_URL = 'http://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/dataset.cgi?study_id={}&pht={}'
+
+    
     def __str__(self):
         """Pretty printing of SourceTrait objects."""
         return 'source trait {}, study {}, id={}'.format(self.i_trait_name, self.source_dataset.source_study_version.study, self.i_trait_id)
@@ -351,8 +357,7 @@ class SourceTrait(Trait):
         Construct a URL to the dbGaP variable information page using a base URL
         and some fields from this SourceTrait.
         """
-        VARIABLE_URL = 'http://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/variable.cgi?study_id={}&phv={:08}'
-        return VARIABLE_URL.format(self.study_accession, self.i_dbgap_variable_accession)
+        return self.VARIABLE_URL.format(self.study_accession, self.i_dbgap_variable_accession)
 
     def set_dbgap_study_link(self):
         """Automatically set dbgap_study_link from study_accession.
@@ -360,8 +365,7 @@ class SourceTrait(Trait):
         Construct a URL to the dbGaP study information page using a base URL
         and some fields from this SourceTrait.
         """
-        STUDY_URL = 'http://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id={}'
-        return STUDY_URL.format(self.study_accession)
+        return self.STUDY_URL.format(self.study_accession)
 
     def set_dbgap_dataset_link(self):
         """Automatically set dbgap_dataset_link from accession information.
@@ -369,8 +373,7 @@ class SourceTrait(Trait):
         Construct a URL to the dbGaP dataset information page using a base URL and
         some fields from this SourceTrait.
         """
-        STUDY_URL = 'http://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/dataset.cgi?study_id={}&pht={}'
-        return STUDY_URL.format(self.study_accession, self.source_dataset.i_accession)
+        return self.DATASET_URL.format(self.study_accession, self.source_dataset.i_accession)
 
 class HarmonizedTrait(Trait):
     """Model for traits harmonized by the DCC.
