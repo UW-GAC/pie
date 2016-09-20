@@ -1,10 +1,22 @@
 """Test the functionality of the admin interface for the entire phenotype_inventory project."""
 
+from django.contrib.auth.models import User
+from django.test import TestCase, Client
 from django.core.urlresolvers import reverse
-from trait_browser.test_views import ViewsAutoLoginTestCase
 
-class AdminTestCase(ViewsAutoLoginTestCase):
-    """Unit tests for the views about source traits."""
+
+class SuperuserAutoLoginTestCase(TestCase):
+
+    def setUp(self):
+        super(SuperuserAutoLoginTestCase, self).setUp()
+
+        self.client = Client()
+        self.user = User.objects.create_superuser('super', 'foo@bar.com', 'passwd')
+        self.client.login(username='super', password='passwd')
+
+
+class AdminTestCase(SuperuserAutoLoginTestCase):
+    """Unit tests for Trait Browser admin interface."""
     
     def test_admin_exists(self):
         """Tests that the admin site has a functioning URL."""
@@ -12,5 +24,3 @@ class AdminTestCase(ViewsAutoLoginTestCase):
         response = self.client.get(url)
         # Does the URL work?
         self.assertEqual(response.status_code, 200)
-        # This gives a 302 (redirect) rather than a 200 code, because it
-        # redirects you to the login page. I'll change this later.
