@@ -8,7 +8,7 @@ from django.utils import timezone
 import factory
 import factory.fuzzy
 
-from .models import GlobalStudy, HarmonizedTrait, HarmonizedTraitEncodedValue, HarmonizedTraitSet, SourceDataset, SourceDatasetUniqueKeys, SourceStudyVersion, SourceTrait, SourceTraitEncodedValue, Study, Subcohort
+from .models import GlobalStudy, HarmonizedTrait, HarmonizedTraitEncodedValue, HarmonizedTraitSet, SourceDataset, SourceStudyVersion, SourceTrait, SourceTraitEncodedValue, Study, Subcohort
 
 
 # Use these later for SourceStudyVersion factories.
@@ -82,9 +82,10 @@ class SourceDatasetFactory(factory.DjangoModelFactory):
     i_version = randint(1, 10)
     i_is_subject_file = False
     i_study_subject_column = factory.Faker('pystr', max_chars=45)
-    i_is_medication_dataset = factory.Faker('boolean')
-    i_dbgap_description = factory.Faker('text')
-    i_dcc_description = factory.Faker('text')
+    # Visit data is NULL by default.
+    # i_is_medication_dataset = factory.Faker('boolean')
+    # i_dbgap_description = factory.Faker('text')
+    # i_dcc_description = factory.Faker('text')
 
     class Meta:
         model = SourceDataset
@@ -124,13 +125,13 @@ class SourceTraitFactory(factory.DjangoModelFactory):
     source_dataset = factory.SubFactory(SourceDatasetFactory)
     i_detected_type = factory.Faker('word')
     i_dbgap_type = factory.Faker('word')
-    i_visit_number = choice(VISIT_NUMBERS)
     i_dbgap_variable_accession = randint(1, 99999999)
     i_dbgap_variable_version = randint(1, 15)
     i_dbgap_comment = factory.Faker('text')
     i_dbgap_unit = factory.Faker('word')
     i_n_records = randint(100, 5000)
     i_n_missing = randint(0, 100) # This will always be less than i_n_records.
+    # Visit data is NULL by default.
     
     class Meta:
         model = SourceTrait
@@ -176,16 +177,3 @@ class HarmonizedTraitEncodedValueFactory(factory.DjangoModelFactory):
        
     class Meta:
         model = HarmonizedTraitEncodedValue
-
-
-class SourceDatasetUniqueKeysFactory(factory.DjangoModelFactory):
-    """Factory for SourceDatasetUniqueKeys objects using Faker faked data."""
-    
-    source_dataset = factory.SubFactory(SourceDatasetFactory)
-    source_trait = factory.SubFactory(SourceTraitFactory)
-    i_id = factory.Sequence(lambda n: n)
-    i_is_visit_column = factory.Faker('boolean', chance_of_getting_true=10)
-    
-    class Meta:
-        model = SourceDatasetUniqueKeys
-        django_get_or_create = ('i_id', )
