@@ -30,7 +30,7 @@ class GlobalStudyFactory(factory.DjangoModelFactory):
     
     class Meta:
         model = GlobalStudy
-        django_get_or_create = ('i_id', 'i_name')
+        django_get_or_create = ('i_id', )
 
 
 class StudyFactory(factory.DjangoModelFactory):
@@ -42,7 +42,7 @@ class StudyFactory(factory.DjangoModelFactory):
     
     class Meta:
         model = Study
-        django_get_or_create = ('i_accession', 'i_study_name', )
+        django_get_or_create = ('i_accession', )
 
 
 class SourceStudyVersionFactory(factory.DjangoModelFactory):
