@@ -4,10 +4,7 @@ from django.contrib.auth.models import User
 from django.test import TestCase, Client
 from django.core.urlresolvers import reverse
 
-from .models import (GlobalStudy, HarmonizedTrait, HarmonizedTraitEncodedValue,
-                     HarmonizedTraitSet, SourceDataset, SourceDatasetSubcohorts,
-                     SourceDatasetUniqueKeys, SourceStudyVersion, SourceTrait,
-                     SourceTraitEncodedValue, Study, Subcohort)
+from .models import GlobalStudy, HarmonizedTrait, HarmonizedTraitEncodedValue, HarmonizedTraitSet, SourceDataset, SourceStudyVersion, SourceTrait, SourceTraitEncodedValue, Study, Subcohort
 from .factories import SourceEncodedValueFactory, SourceTraitFactory, StudyFactory
 from .tables import SourceTraitTable, StudyTable
 from .views import TABLE_PER_PAGE, search

@@ -19,7 +19,7 @@ from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone
 from django.conf import settings
 
-from trait_browser.models import GlobalStudy, HarmonizedTrait, HarmonizedTraitEncodedValue, HarmonizedTraitSet, SourceDataset, SourceDatasetUniqueKeys, SourceStudyVersion, SourceTrait, SourceTraitEncodedValue, Study, Subcohort
+from trait_browser.models import GlobalStudy, HarmonizedTrait, HarmonizedTraitEncodedValue, HarmonizedTraitSet, SourceDataset, SourceStudyVersion, SourceTrait, SourceTraitEncodedValue, Study, Subcohort
 
 
 class Command(BaseCommand):
@@ -431,58 +431,6 @@ class Command(BaseCommand):
                 if verbosity == 3: print('Added {}'.format(add_var))
         cursor.close()
 
-    def _make_source_dataset_unique_keys_args(self, row_dict):
-        """Get args for making a SourceDatasetUniqueKeys object from a source db row.
-        
-        Converts a dictionary containing {colname: row value} pairs from a database
-        query into a dict with the necessary arguments for constructing a
-        SourceDatasetUniqueKeys object. If there is a schema change in the source db,
-        this function may need to be modified.
-
-        Returns:
-            a dict of (required_SourceDatasetUniqueKeys_attribute: attribute_value) pairs
-        """
-        source_dataset = SourceDataset.objects.get(i_id=row_dict['dataset_id'])
-        source_trait = SourceTrait.objects.get(i_trait_id=row_dict['source_trait_id'])
-        new_args = {
-            'source_dataset': source_dataset,
-            'source_trait': source_trait,
-            'i_id': row_dict['id'],
-            'i_is_visit_column': row_dict['is_visit_column'],
-        }
-        return new_args
-    
-    def _populate_source_dataset_unique_keys(self, source_db, max_traits, n_studies, verbosity=0):
-        """Add source study version data to the website db models.
-        
-        This function pulls source study version information from the source db,
-        converts it where necessary, and populates entries in the SourceDatasetUniqueKeys
-        model of the trait_browser app. This will fill in the rows of the
-        trait_browser_sourcestudyversion table.
-        
-        If the n_studies argument is set at the command line, a maximum of
-        n_studies will be retrieved from the source database.
-        
-        Arguments:
-            source_db -- an open connection to the source database
-            max_traits -- maximum number of traits to retrieve for each study version
-            n_studies -- maximum number of studies to retrieve
-        """
-        cursor = source_db.cursor(buffered=True, dictionary=True)
-        # If n_studies OR max_studies is set, filter the list of unique_keys to import.
-        source_dataset_unique_keys_query = 'SELECT * FROM source_dataset_unique_keys'
-        if n_studies is not None or max_traits is not None:
-            loaded_source_traits = self._get_current_source_traits()
-            source_dataset_unique_keys_query += ' WHERE source_trait_id IN ({})'.format(','.join(loaded_source_traits))
-        cursor.execute(source_dataset_unique_keys_query)
-        for row in cursor:
-            type_fixed_row = self._fix_row(row)
-            source_dataset_unique_keys_args = self._make_source_dataset_unique_keys_args(type_fixed_row)
-            add_var = SourceDatasetUniqueKeys(**source_dataset_unique_keys_args)    # temp SourceDatasetUniqueKeys to add
-            add_var.save()
-            if verbosity == 3: print('Added {}'.format(add_var))
-        cursor.close()
-
     def _make_subcohort_args(self, row_dict):
         """Get args for making a Subcohort object from a source db row.
         
@@ -650,8 +598,6 @@ class Command(BaseCommand):
         print("Added source datasets")
         self._populate_source_traits(source_db, options['max_traits'], options['n_studies'], verbosity=options['verbosity'])
         print("Added source traits")
-        self._populate_source_dataset_unique_keys(source_db, options['max_traits'], options['n_studies'], verbosity=options['verbosity'])
-        print("Added source dataset unique keys")
         self._populate_subcohorts(source_db, options['n_studies'], verbosity=options['verbosity'])
         print("Added subcohorts")
         self._populate_source_dataset_subcohorts(source_db, options['n_studies'], verbosity=options['verbosity'])

@@ -5,7 +5,7 @@ from itertools import chain
 from django.contrib import admin
 from django.contrib.sites.models import Site
 
-from .models import GlobalStudy, HarmonizedTrait, HarmonizedTraitEncodedValue, HarmonizedTraitSet, SourceDataset, SourceDatasetUniqueKeys, SourceStudyVersion, SourceTrait, SourceTraitEncodedValue, Study, Subcohort
+from .models import GlobalStudy, HarmonizedTrait, HarmonizedTraitEncodedValue, HarmonizedTraitSet, SourceDataset, SourceStudyVersion, SourceTrait, SourceTraitEncodedValue, Study, Subcohort
 
 
 class ReadOnlyAdmin(admin.ModelAdmin):
@@ -141,9 +141,10 @@ class SourceTraitAdmin(ReadOnlyAdmin):
     )))
     # Set fields to display, filter, and search on.
     list_display = ('i_trait_id', 'i_trait_name', 'variable_accession', 'i_description',
-                    'i_visit_number', ) + ReadOnlyAdmin.list_display
+                    'i_visit_number', 'i_is_unique_key', 'i_is_visit_column') + ReadOnlyAdmin.list_display
     list_filter = ('source_dataset__source_study_version__study__i_accession',
-                   'source_dataset__source_study_version__study__global_study__i_name', )
+                   'source_dataset__source_study_version__study__global_study__i_name',
+                   'i_is_unique_key', 'i_is_visit_column', )
     search_fields = ('i_trait_id', 'i_trait_name', 'i_description', 'variable_accession', )
 
 
@@ -194,30 +195,12 @@ class HarmonizedTraitEncodedValueAdmin(ReadOnlyAdmin):
     search_fields = ('id', 'i_category', 'i_value', 'harmonized_trait__i_trait_name', )
 
 
-class SourceDatasetUniqueKeysAdmin(ReadOnlyAdmin):
-    """Admin class for SourceDatasetUniqueKeys objects."""
-    
-    # Make all fields read-only
-    readonly_fields = list(set(chain.from_iterable(
-        (field.name, field.attname) if hasattr(field, 'attname') else (field.name,)
-        for field in SourceDatasetUniqueKeys._meta.get_fields()
-        if not field.is_relation    # Exclude foreign keys from the results.
-    )))
-    # Set fields to display, filter, and search on.
-    list_display = ('i_id', 'source_dataset', 'source_trait', 'i_is_visit_column', ) + ReadOnlyAdmin.list_display
-    list_filter = ('source_dataset__source_study_version__study__i_accession',
-                   'source_dataset__source_study_version__study__global_study__i_name',
-                   'i_is_visit_column', )
-    search_fields = ('i_id', 'source_dataset__pht_version_string', 'source_trait__i_trait_name', )
-
-
 # Register models for showing them in the admin interface.
 admin.site.register(GlobalStudy, GlobalStudyAdmin)
 admin.site.register(Study, StudyAdmin)
 admin.site.register(SourceStudyVersion, SourceStudyVersionAdmin)
 admin.site.register(Subcohort, SubcohortAdmin)
 admin.site.register(SourceDataset, SourceDatasetAdmin)
-admin.site.register(SourceDatasetUniqueKeys, SourceDatasetUniqueKeysAdmin)
 admin.site.register(HarmonizedTraitSet, HarmonizedTraitSetAdmin)
 admin.site.register(SourceTrait, SourceTraitAdmin)
 admin.site.register(HarmonizedTrait, HarmonizedTraitAdmin)
