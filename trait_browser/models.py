@@ -187,14 +187,14 @@ class SourceDataset(TimeStampedModel):
     i_id = models.PositiveIntegerField('dataset id', primary_key=True, db_column='i_id')
     i_accession = models.PositiveIntegerField('dataset accession')
     i_version = models.PositiveIntegerField('dataset version')
-    i_visit_code = models.CharField('visit code', max_length=100)
-    i_visit_number = models.CharField('visit number', max_length=45)
+    i_visit_code = models.CharField('visit code', max_length=100, blank=True)
+    i_visit_number = models.CharField('visit number', max_length=45, blank=True)
     i_is_subject_file = models.BooleanField('is subject file?')
-    i_study_subject_column = models.CharField('is study subject column?', max_length=45)
-    i_is_medication_dataset = models.BooleanField('is medication dataset?')
+    i_study_subject_column = models.CharField('study subject column name', max_length=45, blank=True)
+    i_is_medication_dataset = models.NullBooleanField('is medication dataset?', blank=True)
     # These TextFields use longtext in MySQL rather than just text, like in snuffles.
-    i_dbgap_description = models.TextField('dbGaP description') 
-    i_dcc_description = models.TextField('DCC description')
+    i_dbgap_description = models.TextField('dbGaP description', blank=True) 
+    i_dcc_description = models.TextField('DCC description', blank=True)
     pht_version_string = models.CharField(max_length=20)
     subcohorts = models.ManyToManyField(Subcohort)
 
@@ -253,6 +253,8 @@ class Trait(TimeStampedModel):
     i_trait_id = models.PositiveIntegerField('phenotype id', primary_key=True, db_column='i_trait_id')
     i_trait_name = models.CharField('phenotype name', max_length=100)
     i_description = models.TextField('description')
+    # Had to put i_is_unique_key in Harmonized and Source subclasses separately
+    # because one can be NULL and the other can't.
 
     class Meta:
         abstract = True
@@ -283,15 +285,17 @@ class SourceTrait(Trait):
     
     source_dataset = models.ForeignKey(SourceDataset)
     # Adds .source_dataset (object) and .source_dataset_id (pk).
-    i_detected_type = models.CharField('detected type', max_length=100)
-    i_dbgap_type = models.CharField('dbGaP type', max_length=100)
-    i_visit_number = models.CharField('visit number', max_length=45)
+    i_detected_type = models.CharField('detected type', max_length=100, blank=True)
+    i_dbgap_type = models.CharField('dbGaP type', max_length=100, blank=True)
+    i_visit_number = models.CharField('visit number', max_length=45, blank=True)
     i_dbgap_variable_accession = models.PositiveIntegerField('dbGaP variable accession')
     i_dbgap_variable_version = models.PositiveIntegerField('dbGaP variable version')
-    i_dbgap_comment = models.TextField('dbGaP comment')
-    i_dbgap_unit = models.CharField('dbGaP unit', max_length=45)
-    i_n_records = models.PositiveIntegerField('n records')
-    i_n_missing = models.PositiveIntegerField('n missing')
+    i_dbgap_comment = models.TextField('dbGaP comment', blank=True)
+    i_dbgap_unit = models.CharField('dbGaP unit', max_length=45, blank=True)
+    i_n_records = models.PositiveIntegerField('n records', null=True, blank=True)
+    i_n_missing = models.PositiveIntegerField('n missing', null=True, blank=True)
+    i_is_visit_column = models.NullBooleanField('is visit column?', blank=True)
+    i_is_unique_key = models.NullBooleanField('is unique key?', blank=True)
     # dbGaP accession numbers
     study_accession = models.CharField(max_length=20)
     dataset_accession = models.CharField(max_length=20)
@@ -307,7 +311,6 @@ class SourceTrait(Trait):
     STUDY_URL = 'http://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id={}'
     DATASET_URL = 'http://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/dataset.cgi?study_id={}&pht={}'
 
-    
     def __str__(self):
         """Pretty printing of SourceTrait objects."""
         return 'source trait {}, study {}, id={}'.format(self.i_trait_name, self.source_dataset.source_study_version.study, self.i_trait_id)
@@ -375,6 +378,7 @@ class SourceTrait(Trait):
         """
         return self.DATASET_URL.format(self.study_accession, self.source_dataset.i_accession)
 
+
 class HarmonizedTrait(Trait):
     """Model for traits harmonized by the DCC.
     
@@ -390,8 +394,9 @@ class HarmonizedTrait(Trait):
     harmonized_trait_set = models.ForeignKey(HarmonizedTraitSet)
     # Adds .harmonized_trait_set (object) and .harmonized_trait_set_id (pk).
     i_data_type = models.CharField('data type', max_length=45)
-    i_unit = models.CharField('unit', max_length=100)
+    i_unit = models.CharField('unit', max_length=100, blank=True)
     i_is_unique_key = models.BooleanField('is unique key?')
+
 
     def __str__(self):
         """Pretty printing."""
@@ -450,29 +455,3 @@ class HarmonizedTraitEncodedValue(TraitEncodedValue):
     def __str__(self):
         """Pretty printing of HarmonizedTraitEncodedValue objects."""
         return 'encoded value {} for {}\nvalue = {}'.format(self.i_category, self.harmonized_trait, self.i_value)
-
-
-class SourceDatasetUniqueKeys(TimeStampedModel):
-    """Model for unique keys within each dbGaP source dataset.
-    
-    Fields:
-        i_id
-        source_dataset
-        source_trait
-        i_is_visit_column
-    """
-    
-    source_dataset = models.ForeignKey(SourceDataset)
-    # Adds .source_dataset (object) and .source_dataset_id (pk).
-    source_trait = models.ForeignKey(SourceTrait)
-    # Adds .source_trait (object) and .source_trait_id (pk).
-    i_id = models.PositiveIntegerField('id', primary_key=True, db_column='i_id')
-    i_is_visit_column = models.BooleanField('is visit column?')
-
-    class Meta:
-        verbose_name_plural = 'Source dataset unique keys'
-
-    def __str__(self):
-        """Pretty printing."""
-        return 'unique key {} of {}, id={}'.format(self.source_trait, self.source_dataset, self.i_id)
-
