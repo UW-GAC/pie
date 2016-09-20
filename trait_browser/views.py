@@ -7,7 +7,7 @@ from django.contrib.auth.decorators import login_required
 
 from django_tables2   import RequestConfig
 
-from .models import SourceTraitEncodedValue, SourceTrait, Study
+from .models import GlobalStudy, HarmonizedTrait, HarmonizedTraitEncodedValue, HarmonizedTraitSet, SourceDataset, SourceStudyVersion, SourceTrait, SourceTraitEncodedValue, Study, Subcohort
 from .tables import SourceTraitTable, StudyTable
 from .forms import SourceTraitCrispySearchForm
 
