@@ -5,7 +5,7 @@ from django.test import TestCase, Client
 from django.core.urlresolvers import reverse
 
 from .models import GlobalStudy, HarmonizedTrait, HarmonizedTraitEncodedValue, HarmonizedTraitSet, SourceDataset, SourceStudyVersion, SourceTrait, SourceTraitEncodedValue, Study, Subcohort
-from .factories import SourceEncodedValueFactory, SourceTraitFactory, StudyFactory
+from .factories import GlobalStudyFactory, HarmonizedTraitFactory, HarmonizedTraitEncodedValueFactory, HarmonizedTraitSetFactory, SourceDatasetFactory, SourceStudyVersionFactory, SourceTraitFactory, SourceTraitEncodedValueFactory, StudyFactory, SubcohortFactory 
 from .tables import SourceTraitTable, StudyTable
 from .views import TABLE_PER_PAGE, search
 
