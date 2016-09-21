@@ -29,8 +29,8 @@ class SearchTestCase(TestCase):
     
     def test_search_source_trait_name_exact(self):
         """Test that the search function finds an exact match in the SourceTrait name field, but doesn't find a non-match."""
-        st_match = SourceTraitFactory.create(name='foo_bar', dcc_trait_id=1)
-        st_nonmatch = SourceTraitFactory.create(name='sum_es', dcc_trait_id=2)
+        st_match = SourceTraitFactory.create(i_trait_name='foo_bar', i_trait_id=1)
+        st_nonmatch = SourceTraitFactory.create(i_trait_name='sum_es', i_trait_id=2)
         search1 = search('foo_bar', 'source')
         # Check that the matching trait is found, but the non-match is not.
         self.assertIn(st_match, search1)
@@ -38,26 +38,26 @@ class SearchTestCase(TestCase):
     
     def test_search_source_trait_name_substring(self):
         """Test that the search function finds a substring match in the SourceTrait name field, but doesn't find a non-match."""
-        st_match = SourceTraitFactory.create(name='foo_bar', dcc_trait_id=1)
-        st_nonmatch = SourceTraitFactory.create(name='sum_es', dcc_trait_id=2)
+        st_match = SourceTraitFactory.create(i_trait_name='foo_bar', i_trait_id=1)
+        st_nonmatch = SourceTraitFactory.create(i_trait_name='sum_es', i_trait_id=2)
         search1 = search('bar', 'source')
         # Check that the matching trait is found, but the non-match is not.
         self.assertIn(st_match, search1)
         self.assertNotIn(st_nonmatch, search1)
 
     def test_search_source_trait_description_exact(self):
-        """Test that the search function finds an exact match in the SourceTrait description field, but doesn't find a non-match."""
-        st_match = SourceTraitFactory.create(description='foo and bar', dcc_trait_id=1)
-        st_nonmatch = SourceTraitFactory.create(description='sum and es', dcc_trait_id=2)
+        """Test that the search function finds an exact match in the SourceTrait i_description field, but doesn't find a non-match."""
+        st_match = SourceTraitFactory.create(i_description='foo and bar', i_trait_id=1)
+        st_nonmatch = SourceTraitFactory.create(i_description='sum and es', i_trait_id=2)
         search1 = search('foo and bar', 'source')
         # Check that the matching trait is found, but the non-match is not.
         self.assertIn(st_match, search1)
         self.assertNotIn(st_nonmatch, search1)
     
     def test_search_source_trait_description_substring(self):
-        """Test that the search function finds a substring match in the SourceTrait description field, but doesn't find a non-match."""
-        st_match = SourceTraitFactory.create(description='foo and bar', dcc_trait_id=1)
-        st_nonmatch = SourceTraitFactory.create(description='sum and es', dcc_trait_id=2)
+        """Test that the search function finds a substring match in the SourceTrait i_description field, but doesn't find a non-match."""
+        st_match = SourceTraitFactory.create(i_description='foo and bar', i_trait_id=1)
+        st_nonmatch = SourceTraitFactory.create(i_description='sum and es', i_trait_id=2)
         search1 = search('bar', 'source')
         # Check that the matching trait is found, but the non-match is not.
         self.assertIn(st_match, search1)
@@ -65,21 +65,23 @@ class SearchTestCase(TestCase):
         
     def test_search_source_trait_name_in_study(self):
         """Test that the search function finds a matching name in one particular study, but doesn't find a match from a different study. """
-        study1 = StudyFactory.create()
-        study2 = StudyFactory.create()
+        study1 = StudyFactory.create(i_study_name="FHS")
+        study2 = StudyFactory.create(i_study_name="CFS")
+        source_dataset1 = SourceDatasetFactory.create(source_study_version__study=study1)
+        source_dataset2 = SourceDatasetFactory.create(source_study_version__study=study2)
         st_match = SourceTraitFactory.create(
-            name='foo_bar',
-            dcc_trait_id=1,
-            study=study1
+            i_trait_name='foo_bar',
+            i_trait_id=1,
+            source_dataset=source_dataset1
         )
         st_nonmatch = SourceTraitFactory.create(
-            name='foo_bar',
-            dcc_trait_id=2,
-            study=study2
+            i_trait_name='foo_bar',
+            i_trait_id=2,
+            source_dataset=source_dataset2
         )
         search1 = search(
             'bar', 'source',
-            studies=[(study1.study_id, study1.name)]
+            study_pk_name_pairs=[(study1.i_accession, study1.i_study_name)]
         )
         # Check that the matching trait is found, but the non-match is not.
         self.assertIn(st_match, search1)
