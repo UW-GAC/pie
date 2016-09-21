@@ -1,7 +1,6 @@
 """Factory classes for generating test data for each of the trait_browser models."""
 
 from datetime import datetime
-from random import choice, randint
 
 from django.utils import timezone
 
@@ -37,7 +36,7 @@ class StudyFactory(factory.DjangoModelFactory):
     """Factory for Study objects using Faker faked data."""
         
     global_study = factory.SubFactory(GlobalStudyFactory)
-    i_accession = randint(1, 999999)
+    i_accession = factory.Faker('random_int', min=1, max=999999)
     i_study_name = factory.Faker('company')
     
     class Meta:
@@ -50,8 +49,8 @@ class SourceStudyVersionFactory(factory.DjangoModelFactory):
     
     study = factory.SubFactory(StudyFactory)
     i_id = factory.Sequence(lambda n: n)
-    i_version = randint(1, 10)
-    i_participant_set = randint(1, 10)
+    i_version = factory.Faker('random_int', min=1, max=10)
+    i_participant_set = factory.Faker('random_int', min=1, max=10)
     i_dbgap_date = factory.fuzzy.FuzzyDateTime(start_dt=timezone.make_aware(datetime(1998, 1, 1), timezone.get_current_timezone()))
     i_is_prerelease = False
     i_is_deprecated = False
@@ -78,8 +77,8 @@ class SourceDatasetFactory(factory.DjangoModelFactory):
     
     source_study_version = factory.SubFactory(SourceStudyVersionFactory)
     i_id = factory.Sequence(lambda n: n)
-    i_accession = randint(1, 999999)
-    i_version = randint(1, 10)
+    i_accession = factory.Faker('random_int', min=1, max=999999)
+    i_version = factory.Faker('random_int', min=1, max=10)
     i_is_subject_file = False
     i_study_subject_column = factory.Faker('pystr', max_chars=45)
     # Visit data is NULL by default.
@@ -125,12 +124,12 @@ class SourceTraitFactory(factory.DjangoModelFactory):
     source_dataset = factory.SubFactory(SourceDatasetFactory)
     i_detected_type = factory.Faker('word')
     i_dbgap_type = factory.Faker('word')
-    i_dbgap_variable_accession = randint(1, 99999999)
-    i_dbgap_variable_version = randint(1, 15)
+    i_dbgap_variable_accession = factory.Faker('random_int', min=1, max=99999999)
+    i_dbgap_variable_version = factory.Faker('random_int', min=1, max=15)
     i_dbgap_comment = factory.Faker('text')
     i_dbgap_unit = factory.Faker('word')
-    i_n_records = randint(100, 5000)
-    i_n_missing = randint(0, 100) # This will always be less than i_n_records.
+    i_n_records = factory.Faker('random_int', min=100, max=5000)
+    i_n_missing = factory.Faker('random_int', min=0, max=100) # This will always be less than i_n_records.
     # Visit data is NULL by default.
     
     class Meta:
@@ -146,7 +145,7 @@ class HarmonizedTraitFactory(factory.DjangoModelFactory):
     i_description = factory.Faker('text')
     
     harmonized_trait_set = factory.SubFactory(HarmonizedTraitSetFactory)
-    i_data_type = choice(('', 'encoded', 'character', 'double', 'integer', ))
+    i_data_type = factory.Faker('random_element', elements=('', 'encoded', 'character', 'double', 'integer', ))
     i_unit = factory.Faker('word')
     i_is_unique_key = factory.Faker('boolean', chance_of_getting_true=10)
     
