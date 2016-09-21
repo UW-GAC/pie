@@ -16,10 +16,23 @@ import mysql.connector
 from django.test import TestCase
 from django.utils import timezone
 
-from trait_browser.management.commands.populate_source_traits import Command
+from trait_browser.management.commands.import_db import Command
 from trait_browser.management.commands.db_factory import fake_row_dict
-from trait_browser.models import Study, SourceTrait, SourceEncodedValue
-from trait_browser.factories import StudyFactory, SourceTraitFactory
+from trait_browser.factories import GlobalStudyFactory, HarmonizedTraitFactory, HarmonizedTraitEncodedValueFactory, HarmonizedTraitSetFactory, SourceDatasetFactory, SourceStudyVersionFactory, SourceTraitFactory, SourceTraitEncodedValueFactory, StudyFactory, SubcohortFactory
+from trait_browser.models import GlobalStudy, HarmonizedTrait, HarmonizedTraitEncodedValue, HarmonizedTraitSet, SourceDataset, SourceStudyVersion, SourceTrait, SourceTraitEncodedValue, Study, Subcohort
+
+
+class CommandTestCase(TestCase):
+    """Superclass to test things using the management command from import_db."""
+    
+    def setUp(self):
+        self.cmd = Command()
+        self.source_db = self.cmd._get_source_db(which_db='test')
+        self.cursor = self.source_db.cursor(buffered=True, dictionary=True)
+    
+    def tearDown(self):
+        self.cursor.close()
+        self.source_db.close()
 
 
 class PopulateSourceTraitsTestCase(TestCase):
@@ -27,22 +40,6 @@ class PopulateSourceTraitsTestCase(TestCase):
     def test_populate(self):
         self.assertTrue(True)
         
-
-class GetDbTestCase(TestCase):
-    
-    def test_get_snuffles_db_returns_connection_testdb(self):
-        """Ensure that _get_snuffles returns a connector.connection object from the test db."""
-        cmd = Command()
-        db = cmd._get_snuffles(which_db='test')
-        self.assertIsInstance(db, mysql.connector.MySQLConnection)
-    
-    def test_get_snuffles_db_returns_connection_productiondb(self):
-        """Ensure that _get_snuffles returns a connector.connection object from the production db."""
-        # TODO: make sure this works after Rober finished setting up the new topmed db on hippocras.
-        cmd = Command()
-        db = cmd._get_snuffles(which_db='production')
-        self.assertIsInstance(db, mysql.connector.MySQLConnection)
-    
 
 class DbFixersTestCase(TestCase):
 
@@ -193,87 +190,159 @@ class DbFixersTestCase(TestCase):
         self.assertDictEqual(fixed_row, row)
     
 
-class MakeArgsTestCase(TestCase):
+class GetDbTestCase(TestCase):
     
+    def test_get_source_db_db_returns_connection_testdb(self):
+        """Ensure that _get_source_db returns a connector.connection object from the test db."""
+        cmd = Command()
+        db = cmd._get_source_db(which_db='test')
+        self.assertIsInstance(db, mysql.connector.MySQLConnection)
+    
+    def test_get_source_db_db_returns_connection_productiondb(self):
+        """Ensure that _get_source_db returns a connector.connection object from the production db."""
+        # TODO: make sure this works after Rober finished setting up the new topmed db on hippocras.
+        cmd = Command()
+        db = cmd._get_source_db(which_db='production')
+        self.assertIsInstance(db, mysql.connector.MySQLConnection)
+    
+
+class MakeArgsTestCase(CommandTestCase):
+    
+    def test_make_global_study_args_one_row_make_global_study_obj(self):
+        """Get a single row of test data from the database and see if the results from _make_global_study_args can be used to successfully make and save a Global_study object."""
+        global_study_query = 'SELECT * FROM global_study;'
+        self.cursor.execute(global_study_query)
+        row_dict = self.cursor.fetchone()
+        global_study_args = self.cmd._make_global_study_args(self.cmd._fix_null(self.cmd._fix_bytearray(row_dict)))
+        global_study = GlobalStudy(**global_study_args)
+        global_study.save()
+        self.assertIsInstance(global_study, GlobalStudy)
+
     def test_make_study_args_one_row_make_study_obj(self):
         """Get a single row of test data from the database and see if the results from _make_study_args can be used to successfully make and save a Study object."""
-        cmd = Command()
-        source_db = cmd._get_snuffles(which_db='test')
-        cursor = source_db.cursor(buffered=True, dictionary=True)
         study_query = 'SELECT * FROM study;'
-        cursor.execute(study_query)
-        row_dict = cursor.fetchone()
-        study_args = cmd._make_study_args(cmd._fix_null(cmd._fix_bytearray(row_dict)))
+        self.cursor.execute(study_query)
+        row_dict = self.cursor.fetchone()
+        # Have to make a GlobalStudy first.
+        global_study = GlobalStudyFactory.create(i_id=row_dict['global_study_id'])
+        #
+        study_args = self.cmd._make_study_args(self.cmd._fix_null(self.cmd._fix_bytearray(row_dict)))
         study = Study(**study_args)
         study.save()
-        self.assertIn(study, Study.objects.all())
-        cursor.close()
-        source_db.close()
+        self.assertIsInstance(study, Study)
+
+    def test_make_source_study_version_args_one_row_make_source_study_version_obj(self):
+        """Get a single row of test data from the database and see if the results from _make_source_study_version_args can be used to successfully make and save a SourceStudyVersion object."""
+        source_study_version_query = 'SELECT * FROM source_study_version;'
+        self.cursor.execute(source_study_version_query)
+        row_dict = self.cursor.fetchone()
+        # Have to make global study and study first.
+        global_study = GlobalStudyFactory.create(i_id=1)
+        study = StudyFactory.create(i_accession=row_dict['accession'], global_study=global_study)
+        #
+        source_study_version_args = self.cmd._make_source_study_version_args(self.cmd._fix_null(self.cmd._fix_bytearray(row_dict)))
+        source_study_version = SourceStudyVersion(**source_study_version_args)
+        source_study_version.save()
+        self.assertIsInstance(source_study_version, SourceStudyVersion)
         
+    def test_make_source_dataset_args_one_row_make_source_dataset_obj(self):
+        """Get a single row of test data from the database and see if the results from _make_source_dataset_args can be used to successfully make and save a SourceDataset object."""
+        source_dataset_query = 'SELECT * FROM source_dataset;'
+        self.cursor.execute(source_dataset_query)
+        row_dict = self.cursor.fetchone()
+        # Have to make global study, study, and source_study_version first.
+        global_study = GlobalStudyFactory.create(i_id=1)
+        study = StudyFactory.create(i_accession=1, global_study=global_study)
+        source_study_version = SourceStudyVersionFactory.create(i_id=row_dict['study_version_id'], study=study)
+        source_dataset_args = self.cmd._make_source_dataset_args(self.cmd._fix_null(self.cmd._fix_bytearray(row_dict)))
+        # 
+        source_dataset = SourceDataset(**source_dataset_args)
+        source_dataset.save()
+        self.assertIsInstance(source_dataset, SourceDataset)
+
     def test_make_source_trait_args_one_row_make_source_trait_obj(self):
         """Get a single row of test data from the database and see if the results from _make_source_trait_args can be used to successfully make and save a SourceTrait object."""
-        cmd = Command()
-        source_db = cmd._get_snuffles(which_db='test')
-        cursor = source_db.cursor(buffered=True, dictionary=True)
-        trait_query = 'SELECT * FROM source_variable_metadata LIMIT 1;'
-        cursor.execute(trait_query)
-        row_dict = cursor.fetchone()
-        row_dict = cmd._fix_null(cmd._fix_bytearray(row_dict))
-        # Have to make a Study object first
-        study = Study(study_id=row_dict['study_id'], phs=1, name='Any Study')
-        study.save()
-        source_trait_args = cmd._make_source_trait_args(row_dict)
-        trait = SourceTrait(**source_trait_args)
-        trait.save()
-        self.assertIn(trait, SourceTrait.objects.all())
-        cursor.close()
-        source_db.close()
+        source_trait_query = 'SELECT * FROM source_trait;'
+        self.cursor.execute(source_trait_query)
+        row_dict = self.cursor.fetchone()
+        # Have to make global study, study, source_study_version, and source_dataset first.
+        global_study = GlobalStudyFactory.create(i_id=1)
+        study = StudyFactory.create(i_accession=1, global_study=global_study)
+        source_study_version = SourceStudyVersionFactory.create(i_id=1, study=study)
+        source_dataset = SourceDatasetFactory.create(i_id=row_dict['dataset_id'], source_study_version=source_study_version)
+        # 
+        source_trait_args = self.cmd._make_source_trait_args(self.cmd._fix_null(self.cmd._fix_bytearray(row_dict)))
+        source_trait = SourceTrait(**source_trait_args)
+        source_trait.save()
+        self.assertIsInstance(source_trait, SourceTrait)
 
-    def test_make_source_encoded_value_args_one_row_make_source_encoded_value_obj(self):
-        """Get a single row of test data from the database and see if the results from _make_source_encoded_value_args can be used to successfully make and save a SourceEncodedValue object."""
-        cmd = Command()
-        source_db = cmd._get_snuffles(which_db='test')
-        cursor = source_db.cursor(buffered=True, dictionary=True)
-        value_query = 'SELECT * FROM source_encoded_values LIMIT 1;'
-        cursor.execute(value_query)
-        row_dict = cursor.fetchone()
-        row_dict = cmd._fix_null(cmd._fix_bytearray(row_dict))
-        # Have to make Study and SourceTrait objects first
-        study = Study(study_id=1, phs=1, name='Any Study')
-        study.save()
-        trait = SourceTrait(
-            dcc_trait_id=row_dict['source_trait_id'], name='a_name',
-            description='some interesting trait', data_type='encoded',
-            unit='', study=study, phv=1, pht=1, study_version=1,
-            dataset_version=1, variable_version=1, participant_set=1
-        )
-        trait.save()
-        value_args = cmd._make_source_encoded_value_args(row_dict)
-        value = SourceEncodedValue(**value_args)
-        value.save()
-        self.assertIn(value, SourceEncodedValue.objects.all())
-        cursor.close()
-        source_db.close()
+    def test_make_subcohort_args_one_row_make_subcohort_obj(self):
+        """Get a single row of test data from the database and see if the results from _make_subcohort_args can be used to successfully make and save a Subcohort object."""
+        subcohort_query = 'SELECT * FROM subcohort;'
+        self.cursor.execute(subcohort_query)
+        row_dict = self.cursor.fetchone()
+        # Have to make global study and study first.
+        global_study = GlobalStudyFactory.create(i_id=1)
+        study = StudyFactory.create(i_accession=row_dict['study_accession'], global_study=global_study)
+        #
+        subcohort_args = self.cmd._make_subcohort_args(self.cmd._fix_null(self.cmd._fix_bytearray(row_dict)))
+        subcohort = Subcohort(**subcohort_args)
+        subcohort.save()
+        self.assertIsInstance(subcohort, Subcohort)
+        
+    def test_make_source_trait_encoded_value_args_one_row_make_source_trait_encoded_value_obj(self):
+        """Get a single row of test data from the database and see if the results from _make_source_trait_encoded_value_args can be used to successfully make and save a SourceTraitEncodedValue object."""
+        source_trait_encoded_value_query = 'SELECT * FROM source_trait_encoded_values;'
+        self.cursor.execute(source_trait_encoded_value_query)
+        row_dict = self.cursor.fetchone()
+        # Have to make global study, study, source_study_version, source_dataset, and source_trait first.
+        global_study = GlobalStudyFactory.create(i_id=1)
+        study = StudyFactory.create(i_accession=1, global_study=global_study)
+        source_study_version = SourceStudyVersionFactory.create(i_id=1, study=study)
+        source_dataset = SourceDatasetFactory.create(i_id=1, source_study_version=source_study_version)
+        source_trait = SourceTraitFactory.create(i_trait_id=row_dict['source_trait_id'], source_dataset=source_dataset)
+        # 
+        source_trait_encoded_value_args = self.cmd._make_source_trait_encoded_value_args(self.cmd._fix_null(self.cmd._fix_bytearray(row_dict)))
+        source_trait_encoded_value = SourceTraitEncodedValue(**source_trait_encoded_value_args)
+        source_trait_encoded_value.save()
+        self.assertIsInstance(source_trait_encoded_value, SourceTraitEncodedValue)
 
-class GetCurrentListsTest(TestCase):
+
+class GetCurrentListsTest(CommandTestCase):
+    n = 32
     
+    def test_get_current_global_studies(self):
+        """Test that Command._get_global_studies() returns the right number of global_study ids."""
+        GlobalStudyFactory.create_batch(self.n)
+        global_studies = self.cmd._get_current_global_studies()
+        self.assertEqual(len(global_studies), self.n)
+
     def test_get_current_studies(self):
         """Test that Command._get_current_studies() returns the right number of study ids."""
-        n = 32
-        StudyFactory.create_batch(n)
-        cmd = Command()
-        current_studies = cmd._get_current_studies()
-        self.assertEqual(len(current_studies), n)
-    
-    def test_get_current_traits(self):
-        """Test that Command._get_current_traits() returns the right number of trait ids."""
-        n = 32
-        SourceTraitFactory.create_batch(n)
-        cmd = Command()
-        current_traits = cmd._get_current_traits()
-        self.assertEqual(len(current_traits), n)
+        StudyFactory.create_batch(self.n)
+        current_studies = self.cmd._get_current_studies()
+        self.assertEqual(len(current_studies), self.n)
 
-class IntegrationTest(TestCase):
+    def test_get_current_source_study_versions(self):
+        """Test that Command._get_current_source_study_versions() returns the right number of trait ids."""
+        SourceStudyVersionFactory.create_batch(self.n)
+        current_source_study_versions = self.cmd._get_current_source_study_versions()
+        self.assertEqual(len(current_source_study_versions), self.n)
+
+    def test_get_current_source_datasets(self):
+        """Test that Command._get_current_source_datasets() returns the right number of trait ids."""
+        SourceTraitFactory.create_batch(self.n)
+        current_source_datasets = self.cmd._get_current_source_datasets()
+        self.assertEqual(len(current_source_datasets), self.n)
+    
+    def test_get_current_source_traits(self):
+        """Test that Command._get_current_source_traits() returns the right number of trait ids."""
+        SourceTraitFactory.create_batch(self.n)
+        current_source_traits = self.cmd._get_current_source_traits()
+        self.assertEqual(len(current_source_traits), self.n)
+
+
+class IntegrationTest(CommandTestCase):
     """Integration test of the whole management command.
     
     It's very difficult to test just one function at a time here, because of
@@ -282,67 +351,123 @@ class IntegrationTest(TestCase):
     nice unit tests.
     """
     
-    def test_everything(self):
+    def test_populate_methods(self):
+        return None
         """Ensure that the whole workflow of the management command works to add objects to the website databse, without limits."""
         # The test database should be a small size for this test to work well.
-        cmd = Command()
-        source_db = cmd._get_snuffles(which_db='test')
         # Test that adding studies works, and results in right number of studies.
-        cmd._populate_studies(source_db, None)
-        cursor = source_db.cursor()
-        study_query = 'SELECT COUNT(*) FROM study;'
-        cursor.execute(study_query)
-        study_count = cursor.fetchone()[0]
-        self.assertEqual(study_count, Study.objects.count())
-        # Test that adding SourceTraits works, and results in right number of traits.
-        cmd._populate_source_traits(source_db, None)
-        trait_query = 'SELECT COUNT(*) FROM source_variable_metadata'
-        cursor.execute(trait_query)
-        trait_count = cursor.fetchone()[0]
-        self.assertEqual(trait_count, SourceTrait.objects.count())
-        # Test that adding SourceEncodedValues works, and results in right number of encodedvalues.
-        cmd._populate_encoded_values(source_db)
-        value_query = 'SELECT COUNT(*) FROM source_encoded_values'
-        cursor.execute(value_query)
-        value_count = cursor.fetchone()[0]
-        self.assertEqual(value_count, SourceEncodedValue.objects.count())
-        source_db.close()
-    
+        self.cmd._populate_global_studies(self.source_db, n_studies=None)
+        global_studies_query = 'SELECT COUNT(*) FROM global_study;'
+        self.cursor.execute(global_studies_query)
+        global_studies_count = self.cursor.fetchone()['COUNT(*)']
+        self.assertEqual(global_studies_count, GlobalStudy.objects.count())
+
+        self.cmd._populate_studies(self.source_db, n_studies=None)
+        studies_query = 'SELECT COUNT(*) FROM study;'
+        self.cursor.execute(studies_query)
+        studies_count = self.cursor.fetchone()['COUNT(*)']
+        self.assertEqual(studies_count, Study.objects.count())
+
+        self.cmd._populate_source_study_versions(self.source_db, n_studies=None)
+        source_study_versions_query = 'SELECT COUNT(*) FROM source_study_version;'
+        self.cursor.execute(source_study_versions_query)
+        source_study_versions_count = self.cursor.fetchone()['COUNT(*)']
+        self.assertEqual(source_study_versions_count, SourceStudyVersion.objects.count())
+
+        self.cmd._populate_source_datasets(self.source_db, n_studies=None)
+        source_datasets_query = 'SELECT COUNT(*) FROM source_dataset;'
+        self.cursor.execute(source_datasets_query)
+        source_datasets_count = self.cursor.fetchone()['COUNT(*)']
+        self.assertEqual(source_datasets_count, SourceDataset.objects.count())
+
+        self.cmd._populate_source_traits(self.source_db, max_traits=None, n_studies=None)
+        source_traits_query = 'SELECT COUNT(*) FROM source_trait;'
+        self.cursor.execute(source_traits_query)
+        source_traits_count = self.cursor.fetchone()['COUNT(*)']
+        self.assertEqual(source_traits_count, SourceTrait.objects.count())
+
+        self.cmd._populate_subcohorts(self.source_db, n_studies=None)
+        subcohorts_query = 'SELECT COUNT(*) FROM subcohort;'
+        self.cursor.execute(subcohorts_query)
+        subcohorts_count = self.cursor.fetchone()['COUNT(*)']
+        self.assertEqual(subcohorts_count, Subcohort.objects.count())
+
+        self.cmd._populate_source_dataset_subcohorts(self.source_db, n_studies=None)
+        subcohorts_query = 'SELECT COUNT(*),dataset_id FROM source_dataset_subcohorts GROUP BY dataset_id;'
+        self.cursor.execute(subcohorts_query)
+        for row in self.cursor:
+            row = self.cmd._fix_row(row)
+            django_count = SourceDataset.objects.get(pk=row['dataset_id']).subcohorts.count()
+            self.assertEqual(row['COUNT(*)'], django_count)
+
+        self.cmd._populate_source_trait_encoded_values(self.source_db, max_traits=None, n_studies=None)
+        source_trait_encoded_values_query = 'SELECT COUNT(*) FROM source_trait_encoded_values;'
+        self.cursor.execute(source_trait_encoded_values_query)
+        source_trait_encoded_values_count = self.cursor.fetchone()['COUNT(*)']
+        self.assertEqual(source_trait_encoded_values_count, SourceTraitEncodedValue.objects.count())
+
     def test_limits(self):
         """Ensure that the management command workflow functions properly with n_studies and n_traits limits."""
-        cmd = Command()
-        source_db = cmd._get_snuffles(which_db='test')
-        # Test that adding studies works, and results in right number of studies.
-        n_studies = '2'
-        cmd._populate_studies(source_db, n_studies)
-        cursor = source_db.cursor()
-        study_query = 'SELECT COUNT(*) FROM study;'
-        cursor.execute(study_query)
-        study_count = cursor.fetchone()[0]
-        # Make sure the number of studies added is either n_studies or number of studies in the db.
-        n_studies = int(n_studies)
-        if study_count < n_studies:
-            self.assertEqual(study_count, Study.objects.count())
-        else:
-            self.assertEqual(n_studies, Study.objects.count())
-        # Test that adding SourceTraits works, and results in right number of traits.
-        n_traits = '25'
-        cmd._populate_source_traits(source_db, n_traits)
-        studies_in_db = cmd._get_current_studies()
-        trait_query = 'SELECT COUNT(*) FROM source_variable_metadata WHERE study_id IN ({})'.format(','.join(studies_in_db))
-        cursor.execute(trait_query)
-        trait_count = cursor.fetchone()[0]
-        n_traits = int(n_traits)
-        total_traits = n_studies * n_traits
-        if trait_count < total_traits:
-            self.assertEqual(trait_count, SourceTrait.objects.count())
-        else:
-            self.assertEqual(total_traits, SourceTrait.objects.count())
-        # Test that adding SourceEncodedValues works, and results in right number of encodedvalues.
-        cmd._populate_encoded_values(source_db)
-        traits_in_db = cmd._get_current_traits()
-        value_query = 'SELECT COUNT(*) FROM source_encoded_values WHERE source_trait_id IN ({})'.format(','.join(traits_in_db))
-        cursor.execute(value_query)
-        value_count = cursor.fetchone()[0]
-        self.assertEqual(value_count, SourceEncodedValue.objects.count())
-        source_db.close()
+        n_studies = 5
+        max_traits = 5
+        
+        self.cmd._populate_global_studies(self.source_db, n_studies=n_studies)
+        self.assertEqual(n_studies, GlobalStudy.objects.count())
+        global_study_pks = self.cmd._get_current_global_studies()
+
+        self.cmd._populate_studies(self.source_db, n_studies=n_studies)
+        studies_query = 'SELECT accession FROM study WHERE global_study_id IN ({});'.format(','.join(global_study_pks))
+        self.cursor.execute(studies_query)
+        expected_study_pks = list([str(row['accession']) for row in self.cursor])
+        study_pks = self.cmd._get_current_studies()
+        self.assertEqual(set(expected_study_pks), set(study_pks))
+
+        self.cmd._populate_source_study_versions(self.source_db, n_studies=n_studies)
+        source_study_versions_query = 'SELECT id FROM source_study_version WHERE accession IN ({});'.format(','.join(study_pks))
+        self.cursor.execute(source_study_versions_query)
+        expected_study_version_pks = list([str(row['id']) for row in self.cursor])
+        study_version_pks = self.cmd._get_current_source_study_versions()
+        self.assertEqual(set(expected_study_version_pks), set(study_version_pks))
+        
+        self.cmd._populate_source_datasets(self.source_db, n_studies=n_studies)
+        source_datasets_query = 'SELECT id FROM source_dataset WHERE study_version_id IN ({});'.format(','.join(study_version_pks))
+        self.cursor.execute(source_datasets_query)
+        expected_source_dataset_pks = list([str(row['id']) for row in self.cursor])
+        source_dataset_pks = self.cmd._get_current_source_datasets()
+        self.assertEqual(set(expected_source_dataset_pks), set(source_dataset_pks))
+        
+        self.cmd._populate_source_traits(self.source_db, n_studies=n_studies, max_traits=max_traits)
+        source_traits_query = 'SELECT source_trait_id FROM source_trait WHERE dataset_id IN ({}) LIMIT {};'.format(','.join(source_dataset_pks), max_traits)
+        self.cursor.execute(source_traits_query)
+        expected_source_trait_pks = list([str(row['source_trait_id']) for row in self.cursor])
+        source_trait_pks = self.cmd._get_current_source_traits()
+        print(expected_source_trait_pks)
+        print(source_trait_pks)
+        self.assertEqual(set(expected_source_trait_pks), set(source_trait_pks))
+
+
+        # self.cmd._populate_source_traits(self.source_db, max_traits=max_traits, n_studies=n_studies)
+        # source_traits_query = 'SELECT COUNT(*) FROM source_trait;'
+        # self.cursor.execute(source_traits_query)
+        # source_traits_count = self.cursor.fetchone()['COUNT(*)']
+        # self.assertEqual(source_traits_count, SourceTrait.objects.count())
+        # 
+        # self.cmd._populate_subcohorts(self.source_db, n_studies=n_studies)
+        # subcohorts_query = 'SELECT COUNT(*) FROM subcohort;'
+        # self.cursor.execute(subcohorts_query)
+        # subcohorts_count = self.cursor.fetchone()['COUNT(*)']
+        # self.assertEqual(subcohorts_count, Subcohort.objects.count())
+        # 
+        # self.cmd._populate_source_dataset_subcohorts(self.source_db, n_studies=n_studies)
+        # subcohorts_query = 'SELECT COUNT(*),dataset_id FROM source_dataset_subcohorts GROUP BY dataset_id;'
+        # self.cursor.execute(subcohorts_query)
+        # for row in self.cursor:
+        #     row = self.cmd._fix_row(row)
+        #     django_count = SourceDataset.objects.get(pk=row['dataset_id']).subcohorts.count()
+        #     self.assertEqual(row['COUNT(*)'], django_count)
+        # 
+        # self.cmd._populate_source_trait_encoded_values(self.source_db, max_traits=max_traits, n_studies=n_studies)
+        # source_trait_encoded_values_query = 'SELECT COUNT(*) FROM source_trait_encoded_values;'
+        # self.cursor.execute(source_trait_encoded_values_query)
+        # source_trait_encoded_values_count = self.cursor.fetchone()['COUNT(*)']
+        # self.assertEqual(source_trait_encoded_values_count, SourceTraitEncodedValue.objects.count())
