@@ -159,6 +159,7 @@ class Command(BaseCommand):
         Returns:
             a dict of (required_GlobalStudy_attribute: attribute_value) pairs
         """
+        row_dict = self._fix_row(row_dict)
         new_args = {
             'i_id': row_dict['id'],
             'i_name': row_dict['name']
@@ -187,8 +188,7 @@ class Command(BaseCommand):
             global_study_query += ' LIMIT {}'.format(n_studies)
         cursor.execute(global_study_query)
         for row in cursor:
-            type_fixed_row = self._fix_row(row)
-            global_study_args = self._make_global_study_args(type_fixed_row)
+            global_study_args = self._make_global_study_args(row)
             add_var = GlobalStudy(**global_study_args)    # temp GlobalStudy to add
             add_var.save()
             if verbosity == 3: print('Added {}'.format(add_var))
@@ -205,6 +205,7 @@ class Command(BaseCommand):
         Returns:
             a dict of (required_Study_attribute: attribute_value) pairs
         """
+        row_dict = self._fix_row(row_dict)
         global_study = GlobalStudy.objects.get(i_id=row_dict['global_study_id'])
         new_args = {
             'global_study': global_study,
@@ -236,8 +237,7 @@ class Command(BaseCommand):
             study_query += ' WHERE global_study_id IN ({})'.format(','.join(loaded_global_studies))
         cursor.execute(study_query)
         for row in cursor:
-            type_fixed_row = self._fix_row(row)
-            study_args = self._make_study_args(type_fixed_row)
+            study_args = self._make_study_args(row)
             add_var = Study(**study_args)    # temp Study to add
             add_var.save()
             if verbosity == 3: print('Added {}'.format(add_var))
@@ -254,6 +254,7 @@ class Command(BaseCommand):
         Returns:
             a dict of (required_SourceStudyVersion_attribute: attribute_value) pairs
         """
+        row_dict = self._fix_row(row_dict)
         study = Study.objects.get(i_accession=row_dict['accession'])
         new_args = {
             'study': study,
@@ -289,8 +290,7 @@ class Command(BaseCommand):
             source_study_version_query += ' WHERE accession IN ({})'.format(','.join(loaded_studies))
         cursor.execute(source_study_version_query)
         for row in cursor:
-            type_fixed_row = self._fix_row(row)
-            source_study_version_args = self._make_source_study_version_args(type_fixed_row)
+            source_study_version_args = self._make_source_study_version_args(row)
             add_var = SourceStudyVersion(**source_study_version_args)    # temp Study to add
             add_var.save()
             if verbosity == 3: print('Added {}'.format(add_var))
@@ -307,6 +307,7 @@ class Command(BaseCommand):
         Returns:
             a dict of (required_SourceDataset_attribute: attribute_value) pairs
         """
+        row_dict = self._fix_row(row_dict)
         source_study_version = SourceStudyVersion.objects.get(i_id=row_dict['study_version_id'])
         new_args = {
             'source_study_version': source_study_version,
@@ -346,8 +347,7 @@ class Command(BaseCommand):
             source_dataset_query += ' WHERE study_version_id IN ({})'.format(','.join(loaded_source_study_versions))
         cursor.execute(source_dataset_query)
         for row in cursor:
-            type_fixed_row = self._fix_row(row)
-            source_dataset_args = self._make_source_dataset_args(type_fixed_row)
+            source_dataset_args = self._make_source_dataset_args(row)
             add_var = SourceDataset(**source_dataset_args)    # temp Study to add
             add_var.save()
             if verbosity == 3: print('Added {}'.format(add_var))
@@ -363,8 +363,8 @@ class Command(BaseCommand):
         Returns:
             a dict of (required_SourceTrait_attribute: attribute_value) pairs
         """
+        row_dict = self._fix_row(row_dict)
         source_dataset = SourceDataset.objects.get(i_id=row_dict['dataset_id'])
-
         new_args = {
             'source_dataset': source_dataset,
             'i_trait_id': row_dict['source_trait_id'],
@@ -411,8 +411,7 @@ class Command(BaseCommand):
                 this_query = trait_query + ' WHERE dataset_id IN ({}) LIMIT {}'.format(','.join(datasets_in_version), max_traits)
                 cursor.execute(this_query)
                 for row in cursor:
-                    type_fixed_row = self._fix_row(row)
-                    model_args = self._make_source_trait_args(type_fixed_row)
+                    model_args = self._make_source_trait_args(row)
                     add_var = SourceTrait(**model_args)    # temp SourceTrait to add
                     add_var.save()
                     if verbosity == 3: print('Added {}'.format(add_var))
@@ -424,8 +423,7 @@ class Command(BaseCommand):
                 trait_query += ' WHERE dataset_id IN ({})'.format(','.join(loaded_source_datasets))
             cursor.execute(trait_query)
             for row in cursor:
-                type_fixed_row = self._fix_row(row)
-                model_args = self._make_source_trait_args(type_fixed_row)
+                model_args = self._make_source_trait_args(row)
                 add_var = SourceTrait(**model_args)    # temp SourceTrait to add
                 add_var.save()
                 if verbosity == 3: print('Added {}'.format(add_var))
@@ -442,6 +440,7 @@ class Command(BaseCommand):
         Returns:
             a dict of (required_Subcohort_attribute: attribute_value) pairs
         """
+        row_dict = self._fix_row(row_dict)
         study = Study.objects.get(i_accession=row_dict['study_accession'])
         new_args = {
             'study': study,
@@ -473,8 +472,7 @@ class Command(BaseCommand):
             subcohort_query += ' WHERE study_accession IN ({})'.format(','.join(loaded_studies))
         cursor.execute(subcohort_query)
         for row in cursor:
-            type_fixed_row = self._fix_row(row)
-            subcohort_args = self._make_subcohort_args(type_fixed_row)
+            subcohort_args = self._make_subcohort_args(row)
             add_var = Subcohort(**subcohort_args)    # temp Study to add
             add_var.save()
             if verbosity == 3: print('Added {}'.format(add_var))
@@ -523,6 +521,7 @@ class Command(BaseCommand):
         Arguments:
             source_db -- an open connection to the source database
         """
+        row_dict = self._fix_row(row_dict)
         source_trait = SourceTrait.objects.get(i_trait_id = row_dict['source_trait_id'])
         new_args = {
             'i_category': row_dict['category'],
@@ -553,8 +552,7 @@ class Command(BaseCommand):
         # NB: The IN clause of this SQL query might need to be changed later if the number of traits in the db gets too high.
         cursor.execute(source_trait_encoded_value_query)
         for row in cursor:
-            type_fixed_row = self._fix_row(row)
-            model_args = self._make_source_trait_encoded_value_args(type_fixed_row)
+            model_args = self._make_source_trait_encoded_value_args(row)
             add_var = SourceTraitEncodedValue(**model_args)    # temp SourceTraitEncodedValue to add
             add_var.save()
             if verbosity == 3: print('Added {}'.format(add_var))
