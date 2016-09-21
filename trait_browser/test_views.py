@@ -81,7 +81,7 @@ class SearchTestCase(TestCase):
         )
         search1 = search(
             'bar', 'source',
-            study_pk_name_pairs=[(study1.i_accession, study1.i_study_name)]
+            study_pks=[study1.i_accession]
         )
         # Check that the matching trait is found, but the non-match is not.
         self.assertIn(st_match, search1)

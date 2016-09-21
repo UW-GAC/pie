@@ -79,7 +79,7 @@ def source_study_list(request):
     )
 
 
-def search(text_query, trait_type, study_pk_name_pairs=[]):
+def search(text_query, trait_type, study_pks=[]):
     """Search either source or (eventually) harmonized traits for a given query.
     
     Function to search the trait name and trait description for the given query
@@ -89,19 +89,18 @@ def search(text_query, trait_type, study_pk_name_pairs=[]):
     Arguments:
         text_query -- string; text to search for within descriptions and names
         trait_type -- string; "source" or "harmonized"
-        study_pk_name_pairs -- list of (primary_key, study_name) tuples
+        study_pks -- list of (primary_key, study_name) tuples
     
     Returns:
         queryset of SourceTrait or HarmonizedTrait objects
     """
     # TODO: add try/except to catch invalid trait_type values.
     if trait_type == 'source':
-        if (len(study_pk_name_pairs) == 0):
+        if (len(study_pks) == 0):
             traits = SourceTrait.objects.all()
         # Filter by study.
         else:
-            study_names = [el[1] for el in study_pk_name_pairs]
-            traits = SourceTrait.objects.filter(source_dataset__source_study_version__study__i_study_name__in=study_names)
+            traits = SourceTrait.objects.filter(source_dataset__source_study_version__study__pk__in=study_pks)
         # Then search text.
         traits = traits.filter(Q(i_description__contains=text_query) | Q(i_trait_name__contains=text_query))
     elif trait_type == 'harmonized':
@@ -128,9 +127,9 @@ def source_search(request):
         if form.is_valid():
             # ...process form data.
             query = form.cleaned_data.get('text', None)
-            study_pk_name_pairs = form.cleaned_data.get('study', [])
+            study_pks = form.cleaned_data.get('study', [])
             # Search text.
-            traits = search(query, 'source', study_pk_name_pairs)
+            traits = search(query, 'source', study_pks)
             trait_table = SourceTraitTable(traits)
             RequestConfig(request, paginate={'per_page': TABLE_PER_PAGE}).configure(trait_table)
             # Show the search results.
