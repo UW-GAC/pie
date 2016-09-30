@@ -382,7 +382,7 @@ class Command(BaseCommand):
         }
         return new_args
 
-    def _populate_source_traits(self, source_db, max_traits, n_studies, verbosity=0):
+    def _populate_source_traits(self, source_db, n_traits, n_studies, verbosity=0):
         """Add source trait data to the website db models.
         
         This function pulls source trait data from the source db, converts it
@@ -398,29 +398,52 @@ class Command(BaseCommand):
         
         Arguments:
             source_db -- an open connection to the source database
-            max_traits -- maximum number of traits to retrieve for each study version
+            n_traits -- maximum number of traits to retrieve for each study version
             n_studies -- number of global studies to retrieve from the database
         """
         cursor = source_db.cursor(buffered=True, dictionary=True)
         trait_query = 'SELECT * FROM source_trait'
-        # If max_traits is set, loop through by study version.
-        if max_traits is not None:
+        # If n_traits is set, loop through by study version.
+        if n_traits is not None:
             loaded_source_study_versions = self._get_current_source_study_versions()    # list of string study version ids
+            loaded_source_datasets = self._get_current_source_datasets()
+            # Load the first trait from each dataset.
+            first_trait_query = 'SELECT * FROM (SELECT MIN(source_trait_id) as source_trait_id,dataset_id FROM source_trait WHERE dataset_id IN ({}) GROUP BY dataset_id) as x LEFT JOIN source_trait ON (x.source_trait_id=source_trait.source_trait_id)'.format(','.join(loaded_source_datasets))
+            cursor.execute(first_trait_query)
+            for row in cursor:
+                model_args = self._make_source_trait_args(row)
+                add_var = SourceTrait(**model_args)    # temp SourceTrait to add
+                add_var.save()
+                if verbosity == 3: print('Added {}'.format(add_var))
+            # If len(datasets_in_version) < n_traits, load more traits until n_traits is reached.
+            # This ensures that each dataset has at least one trait loaded and each
+            # source_study_version has at least n_traits loaded (if n_traits are available).
             for source_study_version_id in loaded_source_study_versions:    # Already filters if n_studies is set.
                 datasets_in_version = [str(dataset.i_id) for dataset in SourceDataset.objects.filter(source_study_version__i_id=source_study_version_id).order_by('i_id')]
-                this_query = trait_query + ' WHERE dataset_id IN ({}) LIMIT {}'.format(','.join(datasets_in_version), max_traits)
-                cursor.execute(this_query)
-                for row in cursor:
-                    model_args = self._make_source_trait_args(row)
-                    add_var = SourceTrait(**model_args)    # temp SourceTrait to add
-                    add_var.save()
-                    if verbosity == 3: print('Added {}'.format(add_var))
+                if len(datasets_in_version) < n_traits:
+                    loaded_trait_pks = self._get_current_source_traits()
+                    this_query = trait_query + ' WHERE dataset_id IN ({}) LIMIT {}'.format(','.join(datasets_in_version), n_traits + len(datasets_in_version))
+                    cursor.execute(this_query)
+                    added_traits = 0
+                    for row in cursor:
+                        model_args = self._make_source_trait_args(row)
+                        # Skip this trait if it has already been loaded.
+                        if str(model_args['i_trait_id']) in loaded_trait_pks:
+                            continue
+                        add_var = SourceTrait(**model_args)    # temp SourceTrait to add
+                        add_var.save()
+                        added_traits += 1
+                        if verbosity == 3: print('Added {}'.format(add_var))
+                        # Stop loading traits if you've reached n_traits for this study version.
+                        if added_traits >= (n_traits - len(datasets_in_version)):
+                            break
         # Otherwise, you can pull out all studies at once.
         else:
             # If n_studies is set, filter the list of traits to those connected to already-loaded datasets.
             if n_studies is not None:
                 loaded_source_datasets = self._get_current_source_datasets()    # list of string dataset ids
                 trait_query += ' WHERE dataset_id IN ({})'.format(','.join(loaded_source_datasets))
+            # Run the query, whether filtered for n_studies or not.
             cursor.execute(trait_query)
             for row in cursor:
                 model_args = self._make_source_trait_args(row)
@@ -530,7 +553,7 @@ class Command(BaseCommand):
         }
         return new_args
 
-    def _populate_source_trait_encoded_values(self, source_db, max_traits, n_studies, verbosity=0):
+    def _populate_source_trait_encoded_values(self, source_db, n_traits, n_studies, verbosity=0):
         """Add encoded value data to the website db models.
         
         This function pulls study information from the source db, converts it
@@ -541,12 +564,12 @@ class Command(BaseCommand):
         
         Arguments:
             source_db -- an open connection to the source database
-            max_traits -- maximum number of traits to retrieve for each study version
+            n_traits -- maximum number of traits to retrieve for each study version
             n_studies -- maximum number of studies to retrieve
         """
         cursor = source_db.cursor(buffered=True, dictionary=True)
         source_trait_encoded_value_query = 'SELECT * FROM source_trait_encoded_values'
-        if n_studies is not None or max_traits is not None:
+        if n_studies is not None or n_traits is not None:
             loaded_source_traits = self._get_current_source_traits()
             source_trait_encoded_value_query += ' WHERE source_trait_id IN ({})'.format(','.join(loaded_source_traits))
         # NB: The IN clause of this SQL query might need to be changed later if the number of traits in the db gets too high.
@@ -563,10 +586,8 @@ class Command(BaseCommand):
         """Add custom command line arguments to this management command."""
         parser.add_argument('--n_studies', action='store', type=int,
                             help='Number of global studies to import from source_db.')
-        parser.add_argument('--max_traits', action='store', type=int,
-                            help='Maximum number of traits to import FOR EACH STUDY VERSION.')
-        # parser.add_argument('--max_study_versions', action='store', type=int,
-        #                     help='Maximum number of versions to import for each study.')
+        parser.add_argument('--n_traits', action='store', type=int,
+                            help='Approximate number of traits to import FOR EACH STUDY VERSION. The number is approximate because at least one trait is loaded for every dataset in each loaded study version, and then a check is performed to make sure that at least n_traits more traits are loaded for each source_study version.')
         parser.add_argument('--which_db', action='store', type=str,
                             choices=['test', 'production'], default='test',
                             help='Which source database to connect to for retrieving source data.')
@@ -594,13 +615,13 @@ class Command(BaseCommand):
         print("Added source study versions")
         self._populate_source_datasets(source_db, options['n_studies'], verbosity=options['verbosity'])
         print("Added source datasets")
-        self._populate_source_traits(source_db, options['max_traits'], options['n_studies'], verbosity=options['verbosity'])
+        self._populate_source_traits(source_db, options['n_traits'], options['n_studies'], verbosity=options['verbosity'])
         print("Added source traits")
         self._populate_subcohorts(source_db, options['n_studies'], verbosity=options['verbosity'])
         print("Added subcohorts")
         self._populate_source_dataset_subcohorts(source_db, options['n_studies'], verbosity=options['verbosity'])
         print("Added source dataset subcohorts")
-        self._populate_source_trait_encoded_values(source_db, options['max_traits'], options['n_studies'], verbosity=options['verbosity'])
+        self._populate_source_trait_encoded_values(source_db, options['n_traits'], options['n_studies'], verbosity=options['verbosity'])
         print("Added source trait encoded values")
         
         source_db.close()
