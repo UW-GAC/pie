@@ -3,6 +3,7 @@
 from django.test import TestCase
 
 from .factories import GlobalStudyFactory, HarmonizedTraitFactory, HarmonizedTraitEncodedValueFactory, HarmonizedTraitSetFactory, SourceDatasetFactory, SourceStudyVersionFactory, SourceTraitFactory, SourceTraitEncodedValueFactory, StudyFactory, SubcohortFactory
+from .factories import build_test_db
 from .models import GlobalStudy, HarmonizedTrait, HarmonizedTraitEncodedValue, HarmonizedTraitSet, SourceDataset, SourceStudyVersion, SourceTrait, SourceTraitEncodedValue, Study, Subcohort
 
 
@@ -254,3 +255,47 @@ class HarmonizedTraitEncodedValueFactoryTestCase(TestCase):
         harmonized_trait_encoded_values = HarmonizedTraitEncodedValueFactory.create_batch(5)
         for one in harmonized_trait_encoded_values:
             self.assertIsInstance(one, HarmonizedTraitEncodedValue)
+
+
+class BuildTestDbTestCase(TestCase):
+    
+    def test_build_db_error(self):
+        """Test that calling build_test_db() with too small a value for n_global_studies raises ValueError."""
+        with self.assertRaises(ValueError):
+            build_test_db(1, (2,3), (3,9), (2,16), (2,9))    
+    
+    def test_build_db1(self):
+        """Test that building a db of fake data works. Run the same test several times with different values."""
+        build_test_db(3, (2,3), (3,9), (2,16), (2,9))
+        # Make sure there are saved objects for each of the models.
+        self.assertTrue(GlobalStudy.objects.count() > 0)
+        self.assertTrue(Study.objects.count() > 0)
+        self.assertTrue(Subcohort.objects.count() > 0)
+        self.assertTrue(SourceStudyVersion.objects.count() > 0)
+        self.assertTrue(SourceDataset.objects.count() > 0)
+        self.assertTrue(SourceTrait.objects.count() > 0)
+        self.assertTrue(SourceTraitEncodedValue.objects.count() > 0)
+
+    def test_build_db2(self):
+        """Test that building a db of fake data works. Run the same test several times with different values."""
+        build_test_db(10, (2,3), (3,9), (2,16), (2,9))
+        # Make sure there are saved objects for each of the models.
+        self.assertTrue(GlobalStudy.objects.count() > 0)
+        self.assertTrue(Study.objects.count() > 0)
+        self.assertTrue(Subcohort.objects.count() > 0)
+        self.assertTrue(SourceStudyVersion.objects.count() > 0)
+        self.assertTrue(SourceDataset.objects.count() > 0)
+        self.assertTrue(SourceTrait.objects.count() > 0)
+        self.assertTrue(SourceTraitEncodedValue.objects.count() > 0)
+
+    def test_build_db3(self):
+        """Test that building a db of fake data works. Run the same test several times with different values."""
+        build_test_db(3, (1,2), (1,2), (1,2), (1,2))
+        # Make sure there are saved objects for each of the models.
+        self.assertTrue(GlobalStudy.objects.count() > 0)
+        self.assertTrue(Study.objects.count() > 0)
+        self.assertTrue(Subcohort.objects.count() > 0)
+        self.assertTrue(SourceStudyVersion.objects.count() > 0)
+        self.assertTrue(SourceDataset.objects.count() > 0)
+        self.assertTrue(SourceTrait.objects.count() > 0)
+        self.assertTrue(SourceTraitEncodedValue.objects.count() > 0)

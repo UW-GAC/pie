@@ -1,6 +1,8 @@
 """Factory classes for generating test data for each of the trait_browser models."""
 
+from copy import copy
 from datetime import datetime
+from random import randrange, sample
 
 from django.utils import timezone
 
@@ -20,6 +22,7 @@ VISIT_CHOICES = ('one_visit_per_file',
                  'missing_visit_information',
                  '')
 VISIT_NUMBERS = tuple([str(el) for el in range(1, 20)]) + ('', )
+DETECTED_TYPES = ('encoded', 'character', 'double', 'integer')
 
 class GlobalStudyFactory(factory.DjangoModelFactory):
     """Factory for GlobalStudy objects using Faker faked data."""
@@ -122,7 +125,7 @@ class SourceTraitFactory(factory.DjangoModelFactory):
     i_description = factory.Faker('text')
     
     source_dataset = factory.SubFactory(SourceDatasetFactory)
-    i_detected_type = factory.Faker('word')
+    i_detected_type = factory.Faker('random_element', elements=DETECTED_TYPES)
     i_dbgap_type = factory.Faker('word')
     i_dbgap_variable_accession = factory.Faker('random_int', min=1, max=99999999)
     i_dbgap_variable_version = factory.Faker('random_int', min=1, max=15)
@@ -176,3 +179,107 @@ class HarmonizedTraitEncodedValueFactory(factory.DjangoModelFactory):
        
     class Meta:
         model = HarmonizedTraitEncodedValue
+
+
+def build_test_db(n_global_studies, n_subcohorts, n_datasets, n_traits, n_enc_values):
+    """Make a complete set of test data in the db, using the factory functions from above.
+    
+    n_subcohorts
+    n_global_studies
+    n_datasets
+    n_traits
+    n_enc_values
+    
+    """
+    if n_global_studies < 3:
+        raise ValueError('{} is too small for the n_global_studies argument. Try a value higher than 2.'.format(n_global_studies))
+
+    global_studies = GlobalStudyFactory.create_batch(n_global_studies)
+    # There will be global studies with 1, 2, or 3 linked studies.
+    for (i, gs) in enumerate(GlobalStudy.objects.all()):
+        if i == 1:
+            StudyFactory.create_batch(2, global_study=gs)
+        elif i == 2:
+            StudyFactory.create_batch(3, global_study=gs)
+        else:
+            StudyFactory.create(global_study=gs)
+    studies = Study.objects.all()
+    for st in studies:
+        SourceStudyVersionFactory.create(study=st)
+        SubcohortFactory.create_batch(randrange(n_subcohorts[0], n_subcohorts[1]), study=st)
+    source_study_versions = SourceStudyVersion.objects.all()
+    for ssv in source_study_versions:
+        SourceDatasetFactory.create_batch(randrange(n_datasets[0], n_datasets[1]), source_study_version=ssv)
+    source_datasets = SourceDataset.objects.all()
+    for sd in source_datasets:
+        # Make source traits.
+        SourceTraitFactory.create_batch(randrange(n_traits[0], n_traits[1]), source_dataset=sd)
+        # Choose random set of subcohorts to add to the dataset.
+        possible_subcohorts = list(Subcohort.objects.filter(study=sd.source_study_version.study).all())
+        if len(possible_subcohorts) > 0:
+            if len(possible_subcohorts) > 1:
+                add_subcohorts = sample(possible_subcohorts, randrange(1, len(possible_subcohorts) + 1))
+            else:
+                add_subcohorts = possible_subcohorts
+            for sc in add_subcohorts:
+                sd.subcohorts.add(sc)
+    source_traits = SourceTrait.objects.all()
+    for st in source_traits:
+        if st.i_detected_type == 'encoded':
+            SourceTraitEncodedValueFactory.create_batch(randrange(n_enc_values[0], n_enc_values[1]), source_trait=st)
+    # Add another source_study_version to one study. Use the same datasets, traits, 
+    # encoded values, etc. Maybe change or add a few traits and one dataset.
+    
+    # Duplicate a source study version.
+    ssv_study = studies[len(studies) - 1]
+    ssv_to_dup = ssv_study.sourcestudyversion_set.all()[0]
+    existing_ssv_ids = [ssv.i_id for ssv in SourceStudyVersion.objects.all()]
+    available_ssv_ids = list(set(range(1, 500)) - set(existing_ssv_ids))
+    dup_ssv = copy(ssv_to_dup)
+    dup_ssv.i_id = available_ssv_ids[0]
+    dup_ssv.i_version = dup_ssv.i_version + 1
+    dup_ssv.created = None
+    dup_ssv.modified = None
+    dup_ssv.save()
+    # Duplicate datasets.
+    datasets_to_dup = ssv_to_dup.sourcedataset_set.all()
+    existing_dataset_ids = [sd.i_id for sd in SourceDataset.objects.all()]
+    available_dataset_ids = iter(list(set(range(1, 10000)) - set(existing_dataset_ids)))
+    duped_datasets = []
+    for ds in datasets_to_dup:
+        new_ds = copy(ds)
+        new_ds.i_id = next(available_dataset_ids)
+        new_ds.source_study_version = dup_ssv
+        new_ds.created = None
+        new_ds.modified = None
+        new_ds.save()
+        new_ds.subcohorts.add(*ds.subcohorts.all())
+        duped_datasets.append(new_ds)
+    # Duplicate source traits.
+    existing_trait_ids = [tr.i_trait_id for tr in SourceTrait.objects.all()]
+    available_trait_ids = iter(list(set(range(1, 100000)) - set(existing_trait_ids)))
+    for (old_ds, new_ds) in zip(datasets_to_dup, duped_datasets):
+        traits_to_dup = old_ds.sourcetrait_set.all()
+        for tr in traits_to_dup:
+            encoded_values_to_dup = tr.sourcetraitencodedvalue_set.all()
+            new_tr = copy(tr)
+            new_tr.i_trait_id = next(available_trait_ids)
+            new_tr.source_dataset = new_ds
+            new_tr.created = None
+            new_tr.save()
+            # Duplicate encoded values.
+            if len(encoded_values_to_dup) > 0:
+                for val in encoded_values_to_dup:
+                    new_val = copy(val)
+                    new_val.id = None
+                    new_val.source_trait = tr
+                    new_val.created = None
+                    new_val.modified = None
+                    new_val.save()
+    # Add a completely new dataset to this study version.
+    new_dataset = SourceDatasetFactory.create(source_study_version=dup_ssv)
+    new_traits = SourceTraitFactory.create_batch(10, source_dataset=new_dataset)
+    for tr in new_traits:
+        if tr.i_detected_type == 'encoded':
+            SourceTraitEncodedValueFactory.create_batch(randrange(n_enc_values[0], n_enc_values[1]), source_trait=tr)
+    
