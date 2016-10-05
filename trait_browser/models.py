@@ -416,7 +416,7 @@ class TraitEncodedValue(TimeStampedModel):
         i_value
     """
     
-    # Has auto-added id primary key field.
+    i_id = models.PositiveIntegerField('id', primary_key=True, db_column='i_id')
     i_category = models.CharField('category', max_length=45)
     i_value = models.CharField('value', max_length=1000)
 

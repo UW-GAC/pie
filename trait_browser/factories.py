@@ -160,6 +160,7 @@ class HarmonizedTraitFactory(factory.DjangoModelFactory):
 class SourceTraitEncodedValueFactory(factory.DjangoModelFactory):
     """Factory for SourceTraitEncodedValue objects using Faker faked data."""
     
+    i_id = factory.Sequence(lambda n: n)
     i_category = factory.Faker('word')
     i_value = factory.Faker('text', max_nb_chars=50)
     
@@ -172,6 +173,7 @@ class SourceTraitEncodedValueFactory(factory.DjangoModelFactory):
 class HarmonizedTraitEncodedValueFactory(factory.DjangoModelFactory):
     """Factory for HarmonizedTraitEncodedValue objects using Faker faked data."""
     
+    i_id = factory.Sequence(lambda n: n)
     i_category = factory.Faker('word')
     i_value = factory.Faker('text', max_nb_chars=50)
     
@@ -258,6 +260,11 @@ def build_test_db(n_global_studies, n_subcohorts, n_datasets, n_traits, n_enc_va
     # Duplicate source traits.
     existing_trait_ids = [tr.i_trait_id for tr in SourceTrait.objects.all()]
     available_trait_ids = iter(list(set(range(1, 100000)) - set(existing_trait_ids)))
+    existing_source_trait_encoded_value_ids = [ev.i_id for ev in SourceTraitEncodedValue.objects.all()]
+    available_source_trait_encoded_value_ids = iter(list(set(range(1, 1000000)) - set(existing_source_trait_encoded_value_ids)))
+    # available_source_trait_encoded_value_ids = set(range(1, 1000000)) - set(existing_source_trait_encoded_value_ids)
+    # print(existing_source_trait_encoded_value_ids)
+    # print(available_source_trait_encoded_value_ids)
     for (old_ds, new_ds) in zip(datasets_to_dup, duped_datasets):
         traits_to_dup = old_ds.sourcetrait_set.all()
         for tr in traits_to_dup:
@@ -271,7 +278,7 @@ def build_test_db(n_global_studies, n_subcohorts, n_datasets, n_traits, n_enc_va
             if len(encoded_values_to_dup) > 0:
                 for val in encoded_values_to_dup:
                     new_val = copy(val)
-                    new_val.id = None
+                    new_val.i_id = next(available_source_trait_encoded_value_ids)
                     new_val.source_trait = tr
                     new_val.created = None
                     new_val.modified = None
@@ -281,5 +288,6 @@ def build_test_db(n_global_studies, n_subcohorts, n_datasets, n_traits, n_enc_va
     new_traits = SourceTraitFactory.create_batch(10, source_dataset=new_dataset)
     for tr in new_traits:
         if tr.i_detected_type == 'encoded':
-            SourceTraitEncodedValueFactory.create_batch(randrange(n_enc_values[0], n_enc_values[1]), source_trait=tr)
+            for n in range(randrange(n_enc_values[0], n_enc_values[1])):
+                SourceTraitEncodedValueFactory.create(i_id=next(available_source_trait_encoded_value_ids), source_trait=tr)
     

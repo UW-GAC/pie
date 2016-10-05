@@ -174,11 +174,11 @@ class SourceTraitEncodedValueAdmin(ReadOnlyAdmin):
         # if not field.is_relation    # Exclude foreign keys from the results.
     )))
     # Set fields to display, filter, and search on.
-    list_display = ('id', 'i_category', 'i_value', 'source_trait', ) + ReadOnlyAdmin.list_display
+    list_display = ('i_id', 'i_category', 'i_value', 'source_trait', ) + ReadOnlyAdmin.list_display
     # There are too many traits with encoded values to use trait as a filter.
     list_filter = ('source_trait__source_dataset__source_study_version__study__i_accession',
                    'source_trait__source_dataset__source_study_version__study__global_study__i_name', )
-    search_fields = ('id', 'i_category', 'i_value', 'source_trait__i_trait_name')
+    search_fields = ('i_id', 'i_category', 'i_value', 'source_trait__i_trait_name')
 
 
 class HarmonizedTraitEncodedValueAdmin(ReadOnlyAdmin):
@@ -191,8 +191,8 @@ class HarmonizedTraitEncodedValueAdmin(ReadOnlyAdmin):
         # if not field.is_relation    # Exclude foreign keys from the results.
     )))
     # Set fields to display, filter, and search on.
-    list_display = ('id', 'i_category', 'i_value', 'harmonized_trait', ) + ReadOnlyAdmin.list_display
-    search_fields = ('id', 'i_category', 'i_value', 'harmonized_trait__i_trait_name', )
+    list_display = ('i_id', 'i_category', 'i_value', 'harmonized_trait', ) + ReadOnlyAdmin.list_display
+    search_fields = ('i_id', 'i_category', 'i_value', 'harmonized_trait__i_trait_name', )
 
 
 # Register models for showing them in the admin interface.
