@@ -303,50 +303,62 @@ class MakeArgsTestCase(CommandTestCase):
         self.assertIsInstance(source_trait_encoded_value, SourceTraitEncodedValue)
 
 
+class HelperTestCase(CommandTestCase):
+    
+    def test_make_model_object_from_args(self):
+        """Test that """
+        self.cmd._make_model_object_from_args(args={'i_id':5, 'i_name':'global study name'},
+                                              model=GlobalStudy,
+                                              verbosity=0)
+        obj = GlobalStudy.objects.get(pk=5)
+        self.assertIsInstance(obj, GlobalStudy)
+        
+
+
 class GetCurrentListsTest(CommandTestCase):
     n = 32
     
     def test_get_current_global_studies(self):
         """Test that Command._get_global_studies() returns the right number of global_study ids."""
         GlobalStudyFactory.create_batch(self.n)
-        global_studies = self.cmd._get_current_global_studies()
-        self.assertEqual(len(global_studies), self.n)
+        pks = self.cmd._get_current_pks(GlobalStudy)
+        self.assertEqual(len(pks), self.n)
 
     def test_get_current_studies(self):
         """Test that Command._get_current_studies() returns the right number of study ids."""
         StudyFactory.create_batch(self.n)
-        current_studies = self.cmd._get_current_studies()
-        self.assertEqual(len(current_studies), self.n)
+        pks = self.cmd._get_current_pks(Study)
+        self.assertEqual(len(pks), self.n)
 
     def test_get_current_source_study_versions(self):
         """Test that Command._get_current_source_study_versions() returns the right number of trait ids."""
         SourceStudyVersionFactory.create_batch(self.n)
-        current_source_study_versions = self.cmd._get_current_source_study_versions()
-        self.assertEqual(len(current_source_study_versions), self.n)
+        pks = self.cmd._get_current_pks(SourceStudyVersion)
+        self.assertEqual(len(pks), self.n)
 
     def test_get_current_source_datasets(self):
         """Test that Command._get_current_source_datasets() returns the right number of trait ids."""
         SourceTraitFactory.create_batch(self.n)
-        current_source_datasets = self.cmd._get_current_source_datasets()
-        self.assertEqual(len(current_source_datasets), self.n)
+        pks = self.cmd._get_current_pks(SourceTrait)
+        self.assertEqual(len(pks), self.n)
     
     def test_get_current_source_traits(self):
         """Test that Command._get_current_source_traits() returns the right number of trait ids."""
         SourceTraitFactory.create_batch(self.n)
-        current_source_traits = self.cmd._get_current_source_traits()
-        self.assertEqual(len(current_source_traits), self.n)
+        pks = self.cmd._get_current_pks(SourceTrait)
+        self.assertEqual(len(pks), self.n)
 
     def test_get_current_subcohorts(self):
         """Test that Command._get_current_subcohorts() returns the right number of trait ids."""
         SubcohortFactory.create_batch(self.n)
-        current_subcohorts = self.cmd._get_current_subcohorts()
-        self.assertEqual(len(current_subcohorts), self.n)
+        pks = self.cmd._get_current_pks(Subcohort)
+        self.assertEqual(len(pks), self.n)
 
     def test_get_current_source_trait_encoded_values(self):
         """Test that Command._get_current_source_trait_encoded_values() returns the right number of trait ids."""
         SourceTraitEncodedValueFactory.create_batch(self.n)
-        current_source_trait_encoded_values = self.cmd._get_current_source_trait_encoded_values()
-        self.assertEqual(len(current_source_trait_encoded_values), self.n)
+        pks = self.cmd._get_current_pks(SourceTraitEncodedValue)
+        self.assertEqual(len(pks), self.n)
 
 
 class IntegrationTest(CommandTestCase):

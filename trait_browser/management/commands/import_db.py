@@ -71,7 +71,7 @@ class Command(BaseCommand):
         cursor = source_db.cursor(buffered=True, dictionary=True)
         cursor.execute(query)
         for row in cursor:
-            args = make_args_function(row)
+            args = make_args(self._fix_row(row))
             self._make_model_object_from_args(args, model, verbosity=verbosity)
         cursor.close()
     
@@ -92,7 +92,7 @@ class Command(BaseCommand):
             query += ' WHERE {} NOT IN ({})'.format(pk_name, ','.join(old_pks))
         return query
     
-    def _get_new_pks(self, old_pks, get_current_pks):
+    def _get_new_pks(self, model, old_pks):
         """Get the list of primary keys that have been added to the website db.
         
         Arguments:
@@ -102,10 +102,10 @@ class Command(BaseCommand):
         Returns:
             list of str primary key values for new entries added to the website db
         """
-        new_pks = list(set(get_current_pks()) - set(old_pks))
+        new_pks = list(set(self._get_current_pks(model)) - set(old_pks))
         return new_pks
     
-    def _import_new_data(self, source_db, table_name, pk_name, model, make_args, get_current_pks, verbosity):
+    def _import_new_data(self, source_db, table_name, pk_name, model, make_args, verbosity):
         """Import new data into the website db from the source db from a given table, into a given model.
         
         Arguments:
@@ -116,12 +116,40 @@ class Command(BaseCommand):
             make_args: function to convert a db query result row to args for making a model object
             get_current_pks: function that will return a str list of pks for this model/table
         """
-        old_pks = get_current_pks()
+        old_pks = self._get_current_pks(model)
         new_rows_query = self._make_query_for_new_rows(table_name, pk_name, old_pks, verbosity)
         self._make_model_object_per_query_row(source_db, new_rows_query, make_args, model, verbosity)
-        new_pks = self._get_new_pks(old_pks, get_current_pks)
+        new_pks = self._get_new_pks(model, old_pks)
         return new_pks
-
+    
+    def _make_args_mapping(self, row_dict, source_field_names, source_field_names_to_map=None, foreign_key_mapping=None):
+        """Make a dict that maps source db data to django model fields.
+        
+        Arguments:
+            row_dict: dict of source_db_field_name: source_db_field_value_in_one_row pairs
+            source_field_names: list of str field names from source db, which will have 'i_'
+                prepended to them to make Django model field names for args dict
+            source_field_names_to_map: dict of source_db_field_name: django_model_field_name
+                pairs for source db fields that require more complicated mapping than adding 'i_'
+            foreign_key_mapping: dict of source_db_foreign_key_field_name: django_foreign_key_model
+                pairs, used to Model.objects.get() the object to link in the args
+        
+        Returns:
+            dict of django_model_field_name: field_value pairs to be used in constructing
+            a model object instance; use in model(**kwargs) statement
+        """
+        args_mapping = {}
+        for source_name in source_field_names:
+            args_mapping['i_' + source_name] = row_dict[source_name]
+        if source_field_names_to_map is not None:
+            for name_to_map in source_field_names_to_map:
+                args_mapping[source_field_names_to_map[name_to_map]] = row_dict[name_to_map]
+        if foreign_key_mapping is not None:
+            for source_pk_name in foreign_key_mapping:
+                mod = foreign_key_mapping[source_pk_name]
+                args_mapping[mod._meta.verbose_name.replace(' ', '_')] = mod.objects.get(pk=row_dict[source_pk_name])
+        return args_mapping
+        
     # Helper methods for data munging.
     def _fix_bytearray(self, row_dict):
         """Convert byteArrays into decoded strings.
@@ -202,33 +230,9 @@ class Command(BaseCommand):
         return self._fix_timezone(self._fix_bytearray(self._fix_null(row_dict)))
 
     # Methods to find out which objects are already in the db.
-    def _get_current_global_studies(self):
-        """Get a str list of i_id for GlobalStudies currently in the django site db."""
-        return [str(gstudy.i_id) for gstudy in GlobalStudy.objects.all()]
-
-    def _get_current_studies(self):
-        """Get a str list of i_accession for Studies currently in the django site db."""
-        return [str(study.i_accession) for study in Study.objects.all()]
-    
-    def _get_current_source_study_versions(self):
-        """Get a str list of i_id for SourceStudyVersions currently in the django site db."""
-        return [str(study_version.i_id) for study_version in SourceStudyVersion.objects.all()]
-    
-    def _get_current_source_datasets(self):
-        """Get a str list of i_id for SourceDatasets currently in the django site db."""
-        return [str(dataset.i_id) for dataset in SourceDataset.objects.all()]
-        
-    def _get_current_source_traits(self):
-        """Get a str list of i_trait_id for SourceTraits currently in the django site db."""
-        return [str(trait.i_trait_id) for trait in SourceTrait.objects.all()]
-    
-    def _get_current_subcohorts(self):
-        """Get a str list of i_id for Subcohorts currently in the django site db."""
-        return [str(sc.i_id) for sc in Subcohort.objects.all()]
-
-    def _get_current_source_trait_encoded_values(self):
-        """Get a str list of i_id for source_trait_encoded_values currently in the django site db."""
-        return [str(ev.i_id) for ev in SourceTraitEncodedValue.objects.all()]
+    def _get_current_pks(self, model):
+        """Get a list of str pk values for the given model."""
+        return [str(obj.pk) for obj in model.objects.all()]
     
     # Methods to make object-instantiating args from a row of the source db data.
     def _make_global_study_args(self, row_dict):
@@ -242,12 +246,7 @@ class Command(BaseCommand):
         Returns:
             a dict of (required_GlobalStudy_attribute: attribute_value) pairs
         """
-        row_dict = self._fix_row(row_dict)
-        new_args = {
-            'i_id': row_dict['id'],
-            'i_name': row_dict['name']
-        }
-        return new_args
+        return self._make_args_mapping(row_dict, ['id', 'name'])
 
     def _make_study_args(self, row_dict):
         """Get args for making a Study object from a source db row.
@@ -260,14 +259,7 @@ class Command(BaseCommand):
         Returns:
             a dict of (required_Study_attribute: attribute_value) pairs
         """
-        row_dict = self._fix_row(row_dict)
-        global_study = GlobalStudy.objects.get(i_id=row_dict['global_study_id'])
-        new_args = {
-            'global_study': global_study,
-            'i_accession': row_dict['accession'],
-            'i_study_name': row_dict['study_name']
-        }
-        return new_args
+        return self._make_args_mapping(row_dict, ['accession', 'study_name'], foreign_key_mapping={'global_study_id': GlobalStudy})
     
     def _make_source_study_version_args(self, row_dict):
         """Get args for making a SourceStudyVersion object from a source db row.
@@ -280,18 +272,9 @@ class Command(BaseCommand):
         Returns:
             a dict of (required_SourceStudyVersion_attribute: attribute_value) pairs
         """
-        row_dict = self._fix_row(row_dict)
-        study = Study.objects.get(i_accession=row_dict['accession'])
-        new_args = {
-            'study': study,
-            'i_id': row_dict['id'],
-            'i_version': row_dict['version'],
-            'i_participant_set': row_dict['participant_set'],
-            'i_dbgap_date': row_dict['dbgap_date'],
-            'i_is_deprecated': row_dict['is_deprecated'],
-            'i_is_prerelease': row_dict['is_prerelease']
-        }
-        return new_args
+        return self._make_args_mapping(row_dict,
+                                       ['id', 'version', 'participant_set', 'dbgap_date', 'is_deprecated', 'is_prerelease'],
+                                       foreign_key_mapping={'accession':Study})
     
     def _make_source_dataset_args(self, row_dict):
         """Get args for making a SourceDataset object from a source db row.
@@ -304,22 +287,10 @@ class Command(BaseCommand):
         Returns:
             a dict of (required_SourceDataset_attribute: attribute_value) pairs
         """
-        row_dict = self._fix_row(row_dict)
-        source_study_version = SourceStudyVersion.objects.get(i_id=row_dict['study_version_id'])
-        new_args = {
-            'source_study_version': source_study_version,
-            'i_id': row_dict['id'],
-            'i_accession': row_dict['accession'],
-            'i_dbgap_description': row_dict['dbgap_description'],
-            'i_dcc_description': row_dict['dcc_description'],
-            'i_is_medication_dataset': row_dict['is_medication_dataset'],
-            'i_is_subject_file': row_dict['is_subject_file'],
-            'i_study_subject_column': row_dict['study_subject_column'],
-            'i_version': row_dict['version'],
-            'i_visit_code': row_dict['visit_code'],
-            'i_visit_number': row_dict['visit_number']
-        }
-        return new_args
+        return self._make_args_mapping(row_dict,
+                                       ['id', 'accession', 'dbgap_description', 'dcc_description', 'is_medication_dataset',
+                                        'is_subject_file','study_subject_column', 'version', 'visit_code', 'visit_number'],
+                                       foreign_key_mapping={'study_version_id':SourceStudyVersion})
     
     def _make_source_trait_args(self, row_dict):
         """Get args for making a SourceTrait object from a source db row.
@@ -331,24 +302,11 @@ class Command(BaseCommand):
         Returns:
             a dict of (required_SourceTrait_attribute: attribute_value) pairs
         """
-        row_dict = self._fix_row(row_dict)
-        source_dataset = SourceDataset.objects.get(i_id=row_dict['dataset_id'])
-        new_args = {
-            'source_dataset': source_dataset,
-            'i_trait_id': row_dict['source_trait_id'],
-            'i_trait_name': row_dict['trait_name'],
-            'i_description': row_dict['dcc_description'],
-            'i_detected_type': row_dict['detected_type'],
-            'i_dbgap_type': row_dict['dbgap_type'],
-            'i_visit_number': row_dict['visit_number'],
-            'i_dbgap_variable_accession': row_dict['dbgap_variable_accession'],
-            'i_dbgap_variable_version': row_dict['dbgap_variable_version'],
-            'i_dbgap_comment': row_dict['dbgap_comment'],
-            'i_dbgap_unit': row_dict['dbgap_unit'],
-            'i_n_records': row_dict['n_records'],
-            'i_n_missing': row_dict['n_missing']
-        }
-        return new_args
+        return self._make_args_mapping(row_dict,
+                                       ['trait_name', 'detected_type', 'dbgap_type', 'visit_number', 'dbgap_variable_accession',
+                                        'dbgap_variable_version', 'dbgap_comment', 'dbgap_unit', 'n_records', 'n_missing'],
+                                       source_field_names_to_map={'source_trait_id':'i_trait_id', 'dcc_description':'i_description'},
+                                       foreign_key_mapping={'dataset_id':SourceDataset})
 
     def _make_subcohort_args(self, row_dict):
         """Get args for making a Subcohort object from a source db row.
@@ -361,14 +319,7 @@ class Command(BaseCommand):
         Returns:
             a dict of (required_Subcohort_attribute: attribute_value) pairs
         """
-        row_dict = self._fix_row(row_dict)
-        study = Study.objects.get(i_accession=row_dict['study_accession'])
-        new_args = {
-            'study': study,
-            'i_id': row_dict['id'],
-            'i_name': row_dict['name']
-        }
-        return new_args
+        return self._make_args_mapping(row_dict, ['id', 'name'], foreign_key_mapping={'study_accession':Study})
     
     def _make_source_trait_encoded_value_args(self, row_dict):
         """Get args for making a SourceTraitEncodedValue object from a source db row.
@@ -381,15 +332,8 @@ class Command(BaseCommand):
         Arguments:
             source_db -- an open connection to the source database
         """
-        row_dict = self._fix_row(row_dict)
-        source_trait = SourceTrait.objects.get(i_trait_id = row_dict['source_trait_id'])
-        new_args = {
-            'i_id': row_dict['id'],
-            'i_category': row_dict['category'],
-            'i_value': row_dict['value'],
-            'source_trait': source_trait
-        }
-        return new_args
+        return self._make_args_mapping(row_dict, ['id', 'category', 'value'],
+                                       foreign_key_mapping={'source_trait_id':SourceTrait})
 
     # Methods to import new data from the source db into django.
     def _import_new_source_dataset_subcohorts(self, source_db, new_dataset_pks, verbosity):
@@ -449,7 +393,6 @@ class Command(BaseCommand):
                                                      pk_name='id',
                                                      model=GlobalStudy,
                                                      make_args=self._make_global_study_args,
-                                                     get_current_pks=self._get_current_global_studies,
                                                      verbosity=options['verbosity'])
         print("Added global studies")
         new_study_pks = self._import_new_data(source_db=source_db,
@@ -457,7 +400,6 @@ class Command(BaseCommand):
                                               pk_name='accession',
                                               model=Study,
                                               make_args=self._make_study_args,
-                                              get_current_pks=self._get_current_studies,
                                               verbosity=options['verbosity'])
         print("Added studies")
         new_source_study_version_pks = self._import_new_data(source_db=source_db,
@@ -465,7 +407,6 @@ class Command(BaseCommand):
                                                              pk_name='id',
                                                              model=SourceStudyVersion,
                                                              make_args=self._make_source_study_version_args,
-                                                             get_current_pks=self._get_current_source_study_versions,
                                                              verbosity=options['verbosity'])
         print("Added source study versions")
         new_source_dataset_pks = self._import_new_data(source_db=source_db,
@@ -473,7 +414,6 @@ class Command(BaseCommand):
                                                        pk_name='id',
                                                        model=SourceDataset,
                                                        make_args=self._make_source_dataset_args,
-                                                       get_current_pks=self._get_current_source_datasets,
                                                        verbosity=options['verbosity'])
         print("Added source datasets")
         new_source_trait_pks = self._import_new_data(source_db=source_db,
@@ -481,7 +421,6 @@ class Command(BaseCommand):
                                                      pk_name='source_trait_id',
                                                      model=SourceTrait,
                                                      make_args=self._make_source_trait_args,
-                                                     get_current_pks=self._get_current_source_traits,
                                                      verbosity=options['verbosity'])
         print("Added source traits")
         new_subcohort_pks = self._import_new_data(source_db=source_db,
@@ -489,7 +428,6 @@ class Command(BaseCommand):
                                                   pk_name='id',
                                                   model=Subcohort,
                                                   make_args=self._make_subcohort_args,
-                                                  get_current_pks=self._get_current_subcohorts,
                                                   verbosity=options['verbosity'])
         print("Added subcohorts")
         new_source_trait_encoded_value_pks = self._import_new_data(source_db=source_db,
@@ -497,7 +435,6 @@ class Command(BaseCommand):
                                                              pk_name='id',
                                                              model=SourceTraitEncodedValue,
                                                              make_args=self._make_source_trait_encoded_value_args,
-                                                             get_current_pks=self._get_current_source_trait_encoded_values,
                                                              verbosity=options['verbosity'])
         print("Added source trait encoded values")
 
