@@ -1,7 +1,7 @@
 """Management commands for the trait_browser app.
 
 management commands added:
-    populate_source_traits -- fills the SourceTrait, Study, and
+    import_new_source_traits -- fills the SourceTrait, Study, and
         SourceEncodedValue tables with data from the source database
 
 Requires the CNF_PATH setting from the specified settings module.
@@ -25,7 +25,7 @@ from trait_browser.models import GlobalStudy, HarmonizedTrait, HarmonizedTraitEn
 class Command(BaseCommand):
     """Management command to pull initial data from the source phenotype db."""
 
-    help ='Populate the db models with a query to the source db (snuffles).'
+    help ='Import_new the db models with a query to the source db (snuffles).'
 
     def _get_source_db(self, which_db, cnf_path=settings.CNF_PATH):
         """Get a connection to the source phenotype db.
@@ -146,8 +146,16 @@ class Command(BaseCommand):
     def _get_current_source_traits(self):
         """Get a str list of i_trait_id for SourceTraits currently in the django site db."""
         return [str(trait.i_trait_id) for trait in SourceTrait.objects.all()]
+    
+    def _get_current_subcohorts(self):
+        """Get a str list of i_id for Subcohorts currently in the django site db."""
+        return [str(sc.i_id) for sc in Subcohort.objects.all()]
 
-    # Methods to fill in django db objects from the source db.
+    def _get_current_source_trait_encoded_values(self):
+        """Get a str list of i_id for source_trait_encoded_values currently in the django site db."""
+        return [str(ev.i_id) for ev in SourceTraitEncodedValue.objects.all()]
+    
+    # Methods to make object-instantiating args from a row of the source db data.
     def _make_global_study_args(self, row_dict):
         """Get args for making a GlobalStudy object from a source db row.
         
@@ -165,34 +173,6 @@ class Command(BaseCommand):
             'i_name': row_dict['name']
         }
         return new_args
-
-    def _populate_global_studies(self, source_db, n_studies, verbosity=0):
-        """Add global study data to the website db models.
-        
-        This function pulls GlobalStudy information from the source db, converts it
-        where necessary, and populates entries in the GlobalStudy model of the
-        trait_browser app. This will fill in the rows of the
-        trait_browser_globalstudy table.
-        
-        If the n_studies argument is set at the command line, that is the maximum
-        number of global studies that will be retrieved from the source database.
-        
-        Arguments:
-            source_db -- an open connection to the source database
-            n_studies -- maximum number of global studies to retrieve
-        """
-        cursor = source_db.cursor(buffered=True, dictionary=True)
-        global_study_query = 'SELECT * FROM global_study'
-        # Add a limit statement if n_studies is set.
-        if n_studies is not None:
-            global_study_query += ' LIMIT {}'.format(n_studies)
-        cursor.execute(global_study_query)
-        for row in cursor:
-            global_study_args = self._make_global_study_args(row)
-            add_var = GlobalStudy(**global_study_args)    # temp GlobalStudy to add
-            add_var.save()
-            if verbosity == 3: print('Added {}'.format(add_var))
-        cursor.close()
 
     def _make_study_args(self, row_dict):
         """Get args for making a Study object from a source db row.
@@ -214,35 +194,6 @@ class Command(BaseCommand):
         }
         return new_args
     
-    def _populate_studies(self, source_db, n_studies, verbosity=0):
-        """Add study data to the website db models.
-        
-        This function pulls study information from the source db, converts it
-        where necessary, and populates entries in the Study model of the
-        trait_browser app. This will fill in the rows of the trait_browser_study
-        table.
-        
-        If the n_studies argument is set at the command line, a maximum of
-        n_studies will be retrieved from the source database.
-        
-        Arguments:
-            source_db -- an open connection to the source database
-            n_studies -- maximum number of studies to retrieve
-        """
-        cursor = source_db.cursor(buffered=True, dictionary=True)
-        # If n_studies is set, filter the list of studies to import.
-        study_query = 'SELECT * FROM study'
-        if n_studies is not None:
-            loaded_global_studies = self._get_current_global_studies()
-            study_query += ' WHERE global_study_id IN ({})'.format(','.join(loaded_global_studies))
-        cursor.execute(study_query)
-        for row in cursor:
-            study_args = self._make_study_args(row)
-            add_var = Study(**study_args)    # temp Study to add
-            add_var.save()
-            if verbosity == 3: print('Added {}'.format(add_var))
-        cursor.close()
-
     def _make_source_study_version_args(self, row_dict):
         """Get args for making a SourceStudyVersion object from a source db row.
         
@@ -267,35 +218,6 @@ class Command(BaseCommand):
         }
         return new_args
     
-    def _populate_source_study_versions(self, source_db, n_studies, verbosity=0):
-        """Add source study version data to the website db models.
-        
-        This function pulls source study version information from the source db,
-        converts it where necessary, and populates entries in the SourceStudyVersion
-        model of the trait_browser app. This will fill in the rows of the
-        trait_browser_sourcestudyversion table.
-        
-        If the n_studies argument is set at the command line, a maximum of
-        n_studies will be retrieved from the source database.
-        
-        Arguments:
-            source_db -- an open connection to the source database
-            n_studies -- maximum number of studies to retrieve
-        """
-        cursor = source_db.cursor(buffered=True, dictionary=True)
-        # If n_studies is set, filter the list of studies to import.
-        source_study_version_query = 'SELECT * FROM source_study_version'
-        if n_studies is not None:
-            loaded_studies = self._get_current_studies()
-            source_study_version_query += ' WHERE accession IN ({})'.format(','.join(loaded_studies))
-        cursor.execute(source_study_version_query)
-        for row in cursor:
-            source_study_version_args = self._make_source_study_version_args(row)
-            add_var = SourceStudyVersion(**source_study_version_args)    # temp Study to add
-            add_var.save()
-            if verbosity == 3: print('Added {}'.format(add_var))
-        cursor.close()
-
     def _make_source_dataset_args(self, row_dict):
         """Get args for making a SourceDataset object from a source db row.
         
@@ -324,35 +246,6 @@ class Command(BaseCommand):
         }
         return new_args
     
-    def _populate_source_datasets(self, source_db, n_studies, verbosity=0):
-        """Add source study version data to the website db models.
-        
-        This function pulls source study version information from the source db,
-        converts it where necessary, and populates entries in the SourceDataset
-        model of the trait_browser app. This will fill in the rows of the
-        trait_browser_sourcestudyversion table.
-        
-        If the n_studies argument is set at the command line, a maximum of
-        n_studies will be retrieved from the source database.
-        
-        Arguments:
-            source_db -- an open connection to the source database
-            n_studies -- maximum number of studies to retrieve
-        """
-        cursor = source_db.cursor(buffered=True, dictionary=True)
-        # If n_studies is set, filter the list of studies to import.
-        source_dataset_query = 'SELECT * FROM source_dataset'
-        if n_studies is not None:
-            loaded_source_study_versions = self._get_current_source_study_versions()
-            source_dataset_query += ' WHERE study_version_id IN ({})'.format(','.join(loaded_source_study_versions))
-        cursor.execute(source_dataset_query)
-        for row in cursor:
-            source_dataset_args = self._make_source_dataset_args(row)
-            add_var = SourceDataset(**source_dataset_args)    # temp Study to add
-            add_var.save()
-            if verbosity == 3: print('Added {}'.format(add_var))
-        cursor.close()
-
     def _make_source_trait_args(self, row_dict):
         """Get args for making a SourceTrait object from a source db row.
         
@@ -382,76 +275,6 @@ class Command(BaseCommand):
         }
         return new_args
 
-    def _populate_source_traits(self, source_db, n_traits, n_studies, verbosity=0):
-        """Add source trait data to the website db models.
-        
-        This function pulls source trait data from the source db, converts it
-        where necessary, and populates entries in the SourceTrait model of the
-        trait_browser app. This will fill in the rows of the trait_browser_sourcetrait
-        table.
-        
-        This function retrieves only those SourceTraits whose study_id foreign key
-        is already loaded into the django site db. If the n_traits argument is set
-        at the command line, a maximum of n_traits trait records will be retrieved
-        from the source db. This necessitates running a separate query for each
-        study id. In contrast, if n_traits is not set, only one query will be run.
-        
-        Arguments:
-            source_db -- an open connection to the source database
-            n_traits -- maximum number of traits to retrieve for each study version
-            n_studies -- number of global studies to retrieve from the database
-        """
-        cursor = source_db.cursor(buffered=True, dictionary=True)
-        trait_query = 'SELECT * FROM source_trait'
-        # If n_traits is set, loop through by study version.
-        if n_traits is not None:
-            loaded_source_study_versions = self._get_current_source_study_versions()    # list of string study version ids
-            loaded_source_datasets = self._get_current_source_datasets()
-            # Load the first trait from each dataset.
-            first_trait_query = 'SELECT * FROM (SELECT MIN(source_trait_id) as source_trait_id,dataset_id FROM source_trait WHERE dataset_id IN ({}) GROUP BY dataset_id) as x LEFT JOIN source_trait ON (x.source_trait_id=source_trait.source_trait_id)'.format(','.join(loaded_source_datasets))
-            cursor.execute(first_trait_query)
-            for row in cursor:
-                model_args = self._make_source_trait_args(row)
-                add_var = SourceTrait(**model_args)    # temp SourceTrait to add
-                add_var.save()
-                if verbosity == 3: print('Added {}'.format(add_var))
-            # If len(datasets_in_version) < n_traits, load more traits until n_traits is reached.
-            # This ensures that each dataset has at least one trait loaded and each
-            # source_study_version has at least n_traits loaded (if n_traits are available).
-            for source_study_version_id in loaded_source_study_versions:    # Already filters if n_studies is set.
-                datasets_in_version = [str(dataset.i_id) for dataset in SourceDataset.objects.filter(source_study_version__i_id=source_study_version_id).order_by('i_id')]
-                if len(datasets_in_version) < n_traits:
-                    loaded_trait_pks = self._get_current_source_traits()
-                    this_query = trait_query + ' WHERE dataset_id IN ({}) LIMIT {}'.format(','.join(datasets_in_version), n_traits + len(datasets_in_version))
-                    cursor.execute(this_query)
-                    added_traits = 0
-                    for row in cursor:
-                        model_args = self._make_source_trait_args(row)
-                        # Skip this trait if it has already been loaded.
-                        if str(model_args['i_trait_id']) in loaded_trait_pks:
-                            continue
-                        add_var = SourceTrait(**model_args)    # temp SourceTrait to add
-                        add_var.save()
-                        added_traits += 1
-                        if verbosity == 3: print('Added {}'.format(add_var))
-                        # Stop loading traits if you've reached n_traits for this study version.
-                        if added_traits >= (n_traits - len(datasets_in_version)):
-                            break
-        # Otherwise, you can pull out all studies at once.
-        else:
-            # If n_studies is set, filter the list of traits to those connected to already-loaded datasets.
-            if n_studies is not None:
-                loaded_source_datasets = self._get_current_source_datasets()    # list of string dataset ids
-                trait_query += ' WHERE dataset_id IN ({})'.format(','.join(loaded_source_datasets))
-            # Run the query, whether filtered for n_studies or not.
-            cursor.execute(trait_query)
-            for row in cursor:
-                model_args = self._make_source_trait_args(row)
-                add_var = SourceTrait(**model_args)    # temp SourceTrait to add
-                add_var.save()
-                if verbosity == 3: print('Added {}'.format(add_var))
-        cursor.close()
-
     def _make_subcohort_args(self, row_dict):
         """Get args for making a Subcohort object from a source db row.
         
@@ -472,67 +295,6 @@ class Command(BaseCommand):
         }
         return new_args
     
-    def _populate_subcohorts(self, source_db, n_studies, verbosity=0):
-        """Add source study version data to the website db models.
-        
-        This function pulls source study version information from the source db,
-        converts it where necessary, and populates entries in the Subcohort
-        model of the trait_browser app. This will fill in the rows of the
-        trait_browser_sourcestudyversion table.
-        
-        If the n_studies argument is set at the command line, a maximum of
-        n_studies will be retrieved from the source database.
-        
-        Arguments:
-            source_db -- an open connection to the source database
-            n_studies -- maximum number of studies to retrieve
-        """
-        cursor = source_db.cursor(buffered=True, dictionary=True)
-        # If n_studies is set, filter the list of studies to import.
-        subcohort_query = 'SELECT * FROM subcohort'
-        if n_studies is not None:
-            loaded_studies = self._get_current_studies()
-            subcohort_query += ' WHERE study_accession IN ({})'.format(','.join(loaded_studies))
-        cursor.execute(subcohort_query)
-        for row in cursor:
-            subcohort_args = self._make_subcohort_args(row)
-            add_var = Subcohort(**subcohort_args)    # temp Study to add
-            add_var.save()
-            if verbosity == 3: print('Added {}'.format(add_var))
-        cursor.close()
-
-    def _populate_source_dataset_subcohorts(self, source_db, n_studies, verbosity=0):
-        """Add source study version data to the website db models.
-        
-        This function pulls source study version information from the source db,
-        converts it where necessary, and populates entries in the SourceDatasetSubcohorts
-        model of the trait_browser app. This will fill in the rows of the
-        trait_browser_sourcestudyversion table.
-        
-        If the n_studies argument is set at the command line, a maximum of
-        n_studies will be retrieved from the source database.
-        
-        Arguments:
-            source_db -- an open connection to the source database
-            n_studies -- maximum number of studies to retrieve
-        """
-        cursor = source_db.cursor(buffered=True, dictionary=True)
-        # If n_studies is set, filter the list of studies to import.
-        source_dataset_subcohorts_query = 'SELECT * FROM source_dataset_subcohorts'
-        if n_studies is not None:
-            loaded_source_datasets = self._get_current_source_datasets()
-            source_dataset_subcohorts_query += ' WHERE dataset_id IN ({})'.format(','.join(loaded_source_datasets))
-        cursor.execute(source_dataset_subcohorts_query)
-        for row in cursor:
-            type_fixed_row = self._fix_row(row)
-            # Get the SourceDataset and Subcohort objects to link.
-            source_dataset = SourceDataset.objects.get(i_id=type_fixed_row['dataset_id'])
-            subcohort = Subcohort.objects.get(i_id=type_fixed_row['subcohort_id'])
-            # Associate the Subcohort object with a SourceDataset object.
-            source_dataset.subcohorts.add(subcohort)
-            if verbosity == 3: print('Linked {} to {}'.format(subcohort, source_dataset))
-        cursor.close()
-
     def _make_source_trait_encoded_value_args(self, row_dict):
         """Get args for making a SourceTraitEncodedValue object from a source db row.
         
@@ -547,58 +309,263 @@ class Command(BaseCommand):
         row_dict = self._fix_row(row_dict)
         source_trait = SourceTrait.objects.get(i_trait_id = row_dict['source_trait_id'])
         new_args = {
+            'i_id': row_dict['id'],
             'i_category': row_dict['category'],
             'i_value': row_dict['value'],
             'source_trait': source_trait
         }
         return new_args
 
-    def _populate_source_trait_encoded_values(self, source_db, n_traits, n_studies, verbosity=0):
-        """Add encoded value data to the website db models.
+    # Methods to import new data from the source db into django.
+    def _import_new_global_studies(self, source_db, verbosity=0):
+        """Add global study data to the website db models.
         
-        This function pulls study information from the source db, converts it
-        where necessary, and populates entries in the SourceTraitEncodedValue model of
-        the trait_browser app. This will fill in the trait_browser_sourceencodedvalue
-        table. Only encoded values for the traits already present in the django
-        site db are retrieved from the source db.
+        This function pulls new global studies from the source db, converts it
+        where necessary, and imports these new entries in the GlobalStudy model
+        of the trait_browser app. This will fill in the rows of the
+        trait_browser_globalstudy table.
         
         Arguments:
             source_db -- an open connection to the source database
-            n_traits -- maximum number of traits to retrieve for each study version
-            n_studies -- maximum number of studies to retrieve
+        
+        Returns:
+            list of pks for global studies imported to the website db
         """
         cursor = source_db.cursor(buffered=True, dictionary=True)
-        source_trait_encoded_value_query = 'SELECT * FROM source_trait_encoded_values'
-        if n_studies is not None or n_traits is not None:
-            loaded_source_traits = self._get_current_source_traits()
-            source_trait_encoded_value_query += ' WHERE source_trait_id IN ({})'.format(','.join(loaded_source_traits))
-        # NB: The IN clause of this SQL query might need to be changed later if the number of traits in the db gets too high.
-        cursor.execute(source_trait_encoded_value_query)
+        old_global_studies = self._get_current_global_studies()
+        global_study_query = 'SELECT * FROM global_study'
+        # Don't import global studies that are already imported.
+        if len(old_global_studies) > 0:
+            global_study_query += ' WHERE id NOT IN ({})'.format(','.join(old_global_studies))
+        cursor.execute(global_study_query)
         for row in cursor:
-            model_args = self._make_source_trait_encoded_value_args(row)
-            add_var = SourceTraitEncodedValue(**model_args)    # temp SourceTraitEncodedValue to add
+            global_study_args = self._make_global_study_args(row)
+            add_var = GlobalStudy(**global_study_args)    
             add_var.save()
             if verbosity == 3: print('Added {}'.format(add_var))
         cursor.close()
+        new_global_studies = list(set(self._get_current_global_studies()) - set(old_global_studies))
+        return new_global_studies
+
+    def _import_new_studies(self, source_db, verbosity=0):
+        """Add study data to the website db models.
+        
+        This function pulls new studies from the source db, converts the source data
+        where necessary, and imports new entries in the Study model of the
+        trait_browser app. This will fill in the rows of the trait_browser_study
+        table.
+        
+        Arguments:
+            source_db -- an open connection to the source database
+        
+        Returns:
+            list of pks for studies imported to the website db
+        """
+        cursor = source_db.cursor(buffered=True, dictionary=True)
+        old_studies = self._get_current_studies()
+        study_query = 'SELECT * FROM study'
+        if len(old_studies) > 0:
+            study_query += ' WHERE accession NOT IN ({})'.format(','.join(old_studies))
+        cursor.execute(study_query)
+        for row in cursor:
+            study_args = self._make_study_args(row)
+            add_var = Study(**study_args)    
+            add_var.save()
+            if verbosity == 3: print('Added {}'.format(add_var))
+        cursor.close()
+        new_studies = list(set(self._get_current_studies()) - set(old_studies))
+        return new_studies
+
+    def _import_new_source_study_versions(self, source_db, verbosity=0):
+        """Add source study version data to the website db models.
+        
+        This function pulls new source study version information from the source db,
+        converts it where necessary, and imports new entries in the SourceStudyVersion
+        model of the trait_browser app. This will fill in the rows of the
+        trait_browser_sourcestudyversion table.
+        
+        Arguments:
+            source_db -- an open connection to the source database
+            
+        Returns:
+            list of pks for source study versions imported to the website db
+        """
+        cursor = source_db.cursor(buffered=True, dictionary=True)
+        old_source_study_versions = self._get_current_source_study_versions()
+        source_study_version_query = 'SELECT * FROM source_study_version'
+        if len(old_source_study_versions) > 0:
+            source_study_version_query += ' WHERE id NOT IN ({})'.format(','.join(old_source_study_versions))
+        cursor.execute(source_study_version_query)
+        for row in cursor:
+            source_study_version_args = self._make_source_study_version_args(row)
+            add_var = SourceStudyVersion(**source_study_version_args)    
+            add_var.save()
+            if verbosity == 3: print('Added {}'.format(add_var))
+        cursor.close()
+        new_source_study_versions = list(set(self._get_current_source_study_versions()) - set(old_source_study_versions))
+        return new_source_study_versions
+
+    def _import_new_source_datasets(self, source_db, verbosity=0):
+        """Add source study version data to the website db models.
+        
+        This function pulls new source study version information from the source db,
+        converts it where necessary, and imports new entries in the SourceDataset
+        model of the trait_browser app. This will fill in the rows of the
+        trait_browser_sourcestudyversion table.
+        
+        Arguments:
+            source_db -- an open connection to the source database
+        
+        Returns:
+            list of pks for source datasets imported to the website db
+        """
+        cursor = source_db.cursor(buffered=True, dictionary=True)
+        old_source_datasets = self._get_current_source_datasets()
+        source_dataset_query = 'SELECT * FROM source_dataset'
+        if len(old_source_datasets) > 0:
+            source_dataset_query += ' WHERE id NOT IN ({})'.format(','.join(old_source_datasets))
+        cursor.execute(source_dataset_query)
+        for row in cursor:
+            source_dataset_args = self._make_source_dataset_args(row)
+            add_var = SourceDataset(**source_dataset_args)    # temp Study to add
+            add_var.save()
+            if verbosity == 3: print('Added {}'.format(add_var))
+        cursor.close()
+        new_source_datasets = list(set(self._get_current_source_datasets()) - set(old_source_datasets))
+        return new_source_datasets
+
+    def _import_new_source_traits(self, source_db, verbosity=0):
+        """Add source trait data to the website db models.
+        
+        This function pulls new source trait data from the source db, converts it
+        where necessary, and imports new entries in the SourceTrait model of the
+        trait_browser app. This will fill in the rows of the trait_browser_sourcetrait
+        table.
+        
+        Arguments:
+            source_db -- an open connection to the source database
+        
+        Returns:
+            list of pks for source traits imported to the website db
+        """
+        cursor = source_db.cursor(buffered=True, dictionary=True)
+        old_source_traits = self._get_current_source_traits()
+        trait_query = 'SELECT * FROM source_trait'
+        if len(old_source_traits) > 0:
+            trait_query += ' WHERE source_trait_id NOT IN ({})'.format(','.join(old_source_traits))
+        cursor.execute(trait_query)
+        for row in cursor:
+            model_args = self._make_source_trait_args(row)
+            add_var = SourceTrait(**model_args)    
+            add_var.save()
+            if verbosity == 3: print('Added {}'.format(add_var))
+        cursor.close()
+        new_source_traits = list(set(self._get_current_source_traits()) - set(old_source_traits))
+        return new_source_traits
+
+    def _import_new_subcohorts(self, source_db, verbosity=0):
+        """Add subcohort data to the website db models.
+        
+        This function pulls new subcohort information from the source db,
+        converts it where necessary, and imports new entries in the Subcohort
+        model of the trait_browser app. This will fill in the rows of the
+        trait_browser_subcohort table.
+        
+        Arguments:
+            source_db -- an open connection to the source database
+        
+        Returns:
+            list of pks for subcohorts imported to the website db
+        """
+        cursor = source_db.cursor(buffered=True, dictionary=True)
+        old_subcohorts = self._get_current_subcohorts()
+        subcohort_query = 'SELECT * FROM subcohort'
+        if len(old_subcohorts) > 0:
+            subcohort_query += ' WHERE id NOT IN ({})'.format(','.join(old_subcohorts))
+        cursor.execute(subcohort_query)
+        for row in cursor:
+            subcohort_args = self._make_subcohort_args(row)
+            add_var = Subcohort(**subcohort_args)    # temp Study to add
+            add_var.save()
+            if verbosity == 3: print('Added {}'.format(add_var))
+        cursor.close()
+        new_subcohorts = list(set(self._get_current_subcohorts()) - set(old_subcohorts))
+        return new_subcohorts
+
+    def _import_new_source_dataset_subcohorts(self, source_db, new_dataset_pks, verbosity=0):
+        """Add subcohort-source_dataset link data to the website db models.
+        
+        This function pulls information on subcohorts linked with new source_datasets
+        from the source db, converts it where necessary, and imports new subcohort links
+        in the subcohorts attribute of the SourceDatasets model of the trait_browser
+        app.         
+        
+        Arguments:
+            source_db -- an open connection to the source database
+            new_dataset_pks -- list of pks for source_datasets for which subcohort
+                links should be added
+        """
+        # Note that subcohort links added to datasets that are already in the db
+        # will be handled by the dataset update function, so here we only need to
+        # worry about subcohort links for new source_datasets.
+        cursor = source_db.cursor(buffered=True, dictionary=True)
+        source_dataset_subcohorts_query = 'SELECT * FROM source_dataset_subcohorts'
+        if len(new_dataset_pks) > 0:
+            source_dataset_subcohorts_query += ' WHERE dataset_id IN ({})'.format(','.join(new_dataset_pks))
+        cursor.execute(source_dataset_subcohorts_query)
+        for row in cursor:
+            type_fixed_row = self._fix_row(row)
+            # Get the SourceDataset and Subcohort objects to link.
+            source_dataset = SourceDataset.objects.get(i_id=type_fixed_row['dataset_id'])
+            subcohort = Subcohort.objects.get(i_id=type_fixed_row['subcohort_id'])
+            # Associate the Subcohort object with a SourceDataset object.
+            source_dataset.subcohorts.add(subcohort)
+            if verbosity == 3: print('Linked {} to {}'.format(subcohort, source_dataset))
+        cursor.close()
+
+    def _import_new_source_trait_encoded_values(self, source_db, verbosity=0):
+        """Add source trait encoded value data to the website db models.
+        
+        This function pulls new source trait encoded value information from the
+        source db, converts it where necessary, and imports new entries in the
+        SourceTraitEncodedValue model of the trait_browser app. This will fill
+        in the trait_browser_sourceencodedvalue table. 
+        
+        Arguments:
+            source_db -- an open connection to the source database
+        
+        Returns:
+            list of pks for source_trait_encoded_values that were imported to the website db
+        """
+        cursor = source_db.cursor(buffered=True, dictionary=True)
+        old_source_trait_encoded_values = self._get_current_source_trait_encoded_values()
+        source_trait_encoded_value_query = 'SELECT * FROM source_trait_encoded_values'
+        if len(old_source_trait_encoded_values) > 0:
+            source_trait_encoded_value_query += ' WHERE id NOT IN ({})'.format(','.join(old_source_trait_encoded_values))
+        cursor.execute(source_trait_encoded_value_query)
+        for row in cursor:
+            model_args = self._make_source_trait_encoded_value_args(row)
+            add_var = SourceTraitEncodedValue(**model_args)
+            add_var.save()
+            if verbosity == 3: print('Added {}'.format(add_var))
+        cursor.close()
+        new_source_trait_encoded_values = list(set(self._get_current_source_trait_encoded_values()) - set(old_source_trait_encoded_values))
+        return new_source_trait_encoded_values
 
     # Methods to actually do the management command.
     def add_arguments(self, parser):
         """Add custom command line arguments to this management command."""
-        parser.add_argument('--n_studies', action='store', type=int,
-                            help='Number of global studies to import from source_db.')
-        parser.add_argument('--n_traits', action='store', type=int,
-                            help='Approximate number of traits to import FOR EACH STUDY VERSION. The number is approximate because at least one trait is loaded for every dataset in each loaded study version, and then a check is performed to make sure that at least n_traits more traits are loaded for each source_study version.')
         parser.add_argument('--which_db', action='store', type=str,
                             choices=['test', 'production'], default='test',
                             help='Which source database to connect to for retrieving source data.')
-        parser.add_argument('--only_update_existing', action='store_true',
+        parser.add_argument('--update-only', action='store_true',
                             help='Only update the db records that are already in the db, and do not add new ones.')
 
     def handle(self, *args, **options):
         """Handle the main functions of this management command.
         
-        Get a connection to the source db, populate Study objects, populate
-        SourceTrait objects, and finally populate SourceEncodedValue objects.
+        Get a connection to the source db, import_new Study objects, import_new
+        SourceTrait objects, and finally import_new SourceEncodedValue objects.
         Then close the connection to the db.
         
         Arguments:
@@ -607,21 +574,21 @@ class Command(BaseCommand):
         """
         source_db = self._get_source_db(which_db=options['which_db'])
         
-        self._populate_global_studies(source_db, options['n_studies'], verbosity=options['verbosity'])
+        new_global_study_pks = self._import_new_global_studies(source_db, verbosity=options['verbosity'])
         print("Added global studies")
-        self._populate_studies(source_db, options['n_studies'], verbosity=options['verbosity'])
+        new_study_pks = self._import_new_studies(source_db, verbosity=options['verbosity'])
         print("Added studies")
-        self._populate_source_study_versions(source_db, options['n_studies'], verbosity=options['verbosity'])
+        new_source_study_version_pks = self._import_new_source_study_versions(source_db, verbosity=options['verbosity'])
         print("Added source study versions")
-        self._populate_source_datasets(source_db, options['n_studies'], verbosity=options['verbosity'])
+        new_source_dataset_pks = self._import_new_source_datasets(source_db, verbosity=options['verbosity'])
         print("Added source datasets")
-        self._populate_source_traits(source_db, options['n_traits'], options['n_studies'], verbosity=options['verbosity'])
+        new_source_trait_pks = self._import_new_source_traits(source_db, verbosity=options['verbosity'])
         print("Added source traits")
-        self._populate_subcohorts(source_db, options['n_studies'], verbosity=options['verbosity'])
+        new_subcohort_pks = self._import_new_subcohorts(source_db, verbosity=options['verbosity'])
         print("Added subcohorts")
-        self._populate_source_dataset_subcohorts(source_db, options['n_studies'], verbosity=options['verbosity'])
+        self._import_new_source_dataset_subcohorts(source_db, new_source_dataset_pks, verbosity=options['verbosity'])
         print("Added source dataset subcohorts")
-        self._populate_source_trait_encoded_values(source_db, options['n_traits'], options['n_studies'], verbosity=options['verbosity'])
+        new_source_trait_encoded_value_pks = self._import_new_source_trait_encoded_values(source_db, verbosity=options['verbosity'])
         print("Added source trait encoded values")
         
         source_db.close()

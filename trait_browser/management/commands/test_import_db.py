@@ -36,12 +36,6 @@ class CommandTestCase(TestCase):
         self.source_db.close()
 
 
-class PopulateSourceTraitsTestCase(TestCase):
-    
-    def test_populate(self):
-        self.assertTrue(True)
-        
-
 class DbFixersTestCase(TestCase):
 
     def test_fix_bytearray_no_bytearrays_left(self):
@@ -201,7 +195,7 @@ class GetDbTestCase(TestCase):
     
     def test_get_source_db_db_returns_connection_productiondb(self):
         """Ensure that _get_source_db returns a connector.connection object from the production db."""
-        # TODO: make sure this works after Rober finished setting up the new topmed db on hippocras.
+        # TODO: make sure this works after Robert finished setting up the new topmed db on hippocras.
         cmd = Command()
         db = cmd._get_source_db(which_db='production')
         self.assertIsInstance(db, mysql.connector.MySQLConnection)
@@ -342,6 +336,18 @@ class GetCurrentListsTest(CommandTestCase):
         current_source_traits = self.cmd._get_current_source_traits()
         self.assertEqual(len(current_source_traits), self.n)
 
+    def test_get_current_subcohorts(self):
+        """Test that Command._get_current_subcohorts() returns the right number of trait ids."""
+        SubcohortFactory.create_batch(self.n)
+        current_subcohorts = self.cmd._get_current_subcohorts()
+        self.assertEqual(len(current_subcohorts), self.n)
+
+    def test_get_current_source_trait_encoded_values(self):
+        """Test that Command._get_current_source_trait_encoded_values() returns the right number of trait ids."""
+        SourceTraitEncodedValueFactory.create_batch(self.n)
+        current_source_trait_encoded_values = self.cmd._get_current_source_trait_encoded_values()
+        self.assertEqual(len(current_source_trait_encoded_values), self.n)
+
 
 class IntegrationTest(CommandTestCase):
     """Integration test of the whole management command.
@@ -352,47 +358,50 @@ class IntegrationTest(CommandTestCase):
     nice unit tests.
     """
     
-    def test_populate_methods(self):
+    def test_import_new_methods(self):
         """Ensure that the whole workflow of the management command works to add objects to the website databse, without limits."""
+        verbosity = 0
         # The test database should be a small size for this test to work well.
+        
+        
         # Test that adding studies works, and results in right number of studies.
-        self.cmd._populate_global_studies(self.source_db, n_studies=None)
+        gs_pks = self.cmd._import_new_global_studies(self.source_db, verbosity)
         global_studies_query = 'SELECT COUNT(*) FROM global_study;'
         self.cursor.execute(global_studies_query)
         global_studies_count = self.cursor.fetchone()['COUNT(*)']
         self.assertEqual(global_studies_count, GlobalStudy.objects.count())
 
-        self.cmd._populate_studies(self.source_db, n_studies=None)
+        study_pks = self.cmd._import_new_studies(self.source_db, verbosity)
         studies_query = 'SELECT COUNT(*) FROM study;'
         self.cursor.execute(studies_query)
         studies_count = self.cursor.fetchone()['COUNT(*)']
         self.assertEqual(studies_count, Study.objects.count())
 
-        self.cmd._populate_source_study_versions(self.source_db, n_studies=None)
+        ssv_pks = self.cmd._import_new_source_study_versions(self.source_db, verbosity)
         source_study_versions_query = 'SELECT COUNT(*) FROM source_study_version;'
         self.cursor.execute(source_study_versions_query)
         source_study_versions_count = self.cursor.fetchone()['COUNT(*)']
         self.assertEqual(source_study_versions_count, SourceStudyVersion.objects.count())
 
-        self.cmd._populate_source_datasets(self.source_db, n_studies=None)
+        dataset_pks = self.cmd._import_new_source_datasets(self.source_db, verbosity)
         source_datasets_query = 'SELECT COUNT(*) FROM source_dataset;'
         self.cursor.execute(source_datasets_query)
         source_datasets_count = self.cursor.fetchone()['COUNT(*)']
-        self.assertEqual(source_datasets_count, SourceDataset.objects.count())
+        self.assertEqual(source_datasets_count, SourceDataset.objects.count(), verbosity)
 
-        self.cmd._populate_source_traits(self.source_db, n_traits=None, n_studies=None)
+        strait_pks = self.cmd._import_new_source_traits(self.source_db, verbosity)
         source_traits_query = 'SELECT COUNT(*) FROM source_trait;'
         self.cursor.execute(source_traits_query)
         source_traits_count = self.cursor.fetchone()['COUNT(*)']
-        self.assertEqual(source_traits_count, SourceTrait.objects.count())
+        self.assertEqual(source_traits_count, SourceTrait.objects.count(), verbosity)
 
-        self.cmd._populate_subcohorts(self.source_db, n_studies=None)
+        sc_pks = self.cmd._import_new_subcohorts(self.source_db, verbosity)
         subcohorts_query = 'SELECT COUNT(*) FROM subcohort;'
         self.cursor.execute(subcohorts_query)
         subcohorts_count = self.cursor.fetchone()['COUNT(*)']
         self.assertEqual(subcohorts_count, Subcohort.objects.count())
 
-        self.cmd._populate_source_dataset_subcohorts(self.source_db, n_studies=None)
+        self.cmd._import_new_source_dataset_subcohorts(self.source_db, dataset_pks, verbosity)
         subcohorts_query = 'SELECT COUNT(*),dataset_id FROM source_dataset_subcohorts GROUP BY dataset_id;'
         self.cursor.execute(subcohorts_query)
         for row in self.cursor:
@@ -400,13 +409,69 @@ class IntegrationTest(CommandTestCase):
             django_count = SourceDataset.objects.get(pk=row['dataset_id']).subcohorts.count()
             self.assertEqual(row['COUNT(*)'], django_count)
 
-        self.cmd._populate_source_trait_encoded_values(self.source_db, n_traits=None, n_studies=None)
+        stev_pks = self.cmd._import_new_source_trait_encoded_values(self.source_db, verbosity)
         source_trait_encoded_values_query = 'SELECT COUNT(*) FROM source_trait_encoded_values;'
         self.cursor.execute(source_trait_encoded_values_query)
         source_trait_encoded_values_count = self.cursor.fetchone()['COUNT(*)']
         self.assertEqual(source_trait_encoded_values_count, SourceTraitEncodedValue.objects.count())
 
-    def test_call_command(self):
+    def test_import_new_methods_after_partial_db_import(self):
+        """Ensure that the whole workflow of the management command works to add objects to the website databse, without limits."""
+        # Test that adding studies works, and results in right number of studies.
+        partial_global_studies_query = 'SELECT * FROM global_study LIMIT 2'
+        
+        
+        gs_pks = self.cmd._import_new_global_studies(self.source_db)
+        global_studies_query = 'SELECT COUNT(*) FROM global_study;'
+        self.cursor.execute(global_studies_query)
+        global_studies_count = self.cursor.fetchone()['COUNT(*)']
+        self.assertEqual(global_studies_count, GlobalStudy.objects.count())
+
+        study_pks = self.cmd._import_new_studies(self.source_db)
+        studies_query = 'SELECT COUNT(*) FROM study;'
+        self.cursor.execute(studies_query)
+        studies_count = self.cursor.fetchone()['COUNT(*)']
+        self.assertEqual(studies_count, Study.objects.count())
+
+        ssv_pks = self.cmd._import_new_source_study_versions(self.source_db)
+        source_study_versions_query = 'SELECT COUNT(*) FROM source_study_version;'
+        self.cursor.execute(source_study_versions_query)
+        source_study_versions_count = self.cursor.fetchone()['COUNT(*)']
+        self.assertEqual(source_study_versions_count, SourceStudyVersion.objects.count())
+
+        dataset_pks = self.cmd._import_new_source_datasets(self.source_db)
+        source_datasets_query = 'SELECT COUNT(*) FROM source_dataset;'
+        self.cursor.execute(source_datasets_query)
+        source_datasets_count = self.cursor.fetchone()['COUNT(*)']
+        self.assertEqual(source_datasets_count, SourceDataset.objects.count())
+
+        strait_pks = self.cmd._import_new_source_traits(self.source_db)
+        source_traits_query = 'SELECT COUNT(*) FROM source_trait;'
+        self.cursor.execute(source_traits_query)
+        source_traits_count = self.cursor.fetchone()['COUNT(*)']
+        self.assertEqual(source_traits_count, SourceTrait.objects.count())
+
+        sc_pks = self.cmd._import_new_subcohorts(self.source_db)
+        subcohorts_query = 'SELECT COUNT(*) FROM subcohort;'
+        self.cursor.execute(subcohorts_query)
+        subcohorts_count = self.cursor.fetchone()['COUNT(*)']
+        self.assertEqual(subcohorts_count, Subcohort.objects.count())
+
+        self.cmd._import_new_source_dataset_subcohorts(self.source_db, dataset_pks)
+        subcohorts_query = 'SELECT COUNT(*),dataset_id FROM source_dataset_subcohorts GROUP BY dataset_id;'
+        self.cursor.execute(subcohorts_query)
+        for row in self.cursor:
+            row = self.cmd._fix_row(row)
+            django_count = SourceDataset.objects.get(pk=row['dataset_id']).subcohorts.count()
+            self.assertEqual(row['COUNT(*)'], django_count)
+
+        stev_pks = self.cmd._import_new_source_trait_encoded_values(self.source_db)
+        source_trait_encoded_values_query = 'SELECT COUNT(*) FROM source_trait_encoded_values;'
+        self.cursor.execute(source_trait_encoded_values_query)
+        source_trait_encoded_values_count = self.cursor.fetchone()['COUNT(*)']
+        self.assertEqual(source_trait_encoded_values_count, SourceTraitEncodedValue.objects.count())
+
+    def test_call_command_to_import_whole_db(self):
         """Ensure that calling the command as you would from command line works properly."""
         management.call_command('import_db')
         global_studies_query = 'SELECT COUNT(*) FROM global_study;'
@@ -450,187 +515,3 @@ class IntegrationTest(CommandTestCase):
         self.cursor.execute(source_trait_encoded_values_query)
         source_trait_encoded_values_count = self.cursor.fetchone()['COUNT(*)']
         self.assertEqual(source_trait_encoded_values_count, SourceTraitEncodedValue.objects.count())
-
-    def test_n_studies_and_n_traits(self):
-        """Ensure that the management command workflow functions properly with n_studies and n_traits limits both set."""
-        n_studies=5
-        n_traits=5
-        management.call_command('import_db', '--n_studies={}'.format(n_studies), '--n_traits={}'.format(n_traits))
-
-        # Test that correct number of global studies is loaded.
-        self.assertEqual(n_studies, GlobalStudy.objects.count())
-        global_study_pks = self.cmd._get_current_global_studies()
-    
-        # Test that only studies connected to loaded global studies are loaded.
-        studies_query = 'SELECT accession FROM study WHERE global_study_id IN ({});'.format(','.join(global_study_pks))
-        self.cursor.execute(studies_query)
-        expected_study_pks = list([str(self.cmd._fix_row(row)['accession']) for row in self.cursor])
-        study_pks = self.cmd._get_current_studies()
-        self.assertEqual(set(expected_study_pks), set(study_pks))
-    
-        # Test that only source study versions from loaded studies are loaded. 
-        source_study_versions_query = 'SELECT id FROM source_study_version WHERE accession IN ({});'.format(','.join(study_pks))
-        self.cursor.execute(source_study_versions_query)
-        expected_study_version_pks = list([str(self.cmd._fix_row(row)['id']) for row in self.cursor])
-        study_version_pks = self.cmd._get_current_source_study_versions()
-        self.assertEqual(set(expected_study_version_pks), set(study_version_pks))
-    
-        # Test that only source_datasets from loaded source_study_versions are loaded.
-        source_datasets_query = 'SELECT id FROM source_dataset WHERE study_version_id IN ({});'.format(','.join(study_version_pks))
-        self.cursor.execute(source_datasets_query)
-        expected_source_dataset_pks = list([str(self.cmd._fix_row(row)['id']) for row in self.cursor])
-        source_dataset_pks = self.cmd._get_current_source_datasets()
-        self.assertEqual(set(expected_source_dataset_pks), set(source_dataset_pks))
-    
-        # Test that proper number of traits is loaded for each source_study_version. 
-        # For each source_study_version, number of loaded traits should be n_traits or something more complicated.
-        source_study_versions = SourceStudyVersion.objects.all()
-        for ssv in source_study_versions:
-            n_ssv_datasets = ssv.sourcedataset_set.count()
-            n_ssv_traits = SourceTrait.objects.filter(source_dataset__source_study_version__pk=ssv.pk).count()
-            if n_ssv_datasets > n_ssv_traits:
-                self.assertEqual(n_traits, n_ssv_datasets)
-            else:
-                # Number of loaded traits for this source_study_version should be between n_traits
-                # and n_traits + number of datasets. 
-                self.assertTrue(n_traits <= n_ssv_traits <= n_traits + n_ssv_datasets)
-    
-        # Test that only subcohorts from loaded studies are loaded.
-        subcohorts_query = 'SELECT id from subcohort WHERE study_accession IN ({});'.format(','.join(study_pks))
-        self.cursor.execute(subcohorts_query)
-        expected_subcohort_pks = list([self.cmd._fix_row(row)['id'] for row in self.cursor])
-        subcohort_pks = [sc.pk for sc in Subcohort.objects.all()]
-        self.assertEqual(expected_subcohort_pks, subcohort_pks)
-    
-        # Test that loaded subcohorts are added to the appropriate datasets.
-        subcohorts_query = 'SELECT COUNT(*),dataset_id FROM source_dataset_subcohorts WHERE dataset_id IN ({}) GROUP BY dataset_id;'.format(','.join(source_dataset_pks))
-        self.cursor.execute(subcohorts_query)
-        for row in self.cursor:
-            row = self.cmd._fix_row(row)
-            django_count = SourceDataset.objects.get(pk=row['dataset_id']).subcohorts.count()
-            self.assertEqual(row['COUNT(*)'], django_count)
-    
-        # Test that source_trait_encoded_values for the loaded source_traits are all there, but no more.
-        source_trait_pks = self.cmd._get_current_source_traits()
-        source_trait_encoded_values_query = 'SELECT * FROM source_trait_encoded_values WHERE source_trait_id IN ({})'.format(','.join(source_trait_pks))
-        self.cursor.execute(source_trait_encoded_values_query)
-        expected_source_trait_encoded_value_pairs = list([(self.cmd._fix_row(row)['source_trait_id'], self.cmd._fix_row(row)['category']) for row in self.cursor])
-        source_trait_encoded_value_pairs = [(stev.source_trait.i_trait_id, stev.i_category) for stev in SourceTraitEncodedValue.objects.all()]
-        self.assertEqual(expected_source_trait_encoded_value_pairs, source_trait_encoded_value_pairs)
-    
-    def test_n_studies_only(self):
-        """Ensure that the management command workflow functions properly with n_studies and n_traits limits both set."""
-        n_studies=5
-        management.call_command('import_db', '--n_studies={}'.format(n_studies))
-        
-        # Test that correct number of global studies is loaded.
-        self.assertEqual(n_studies, GlobalStudy.objects.count())
-        global_study_pks = self.cmd._get_current_global_studies()
-    
-        # Test that only studies connected to loaded global studies are loaded.
-        studies_query = 'SELECT accession FROM study WHERE global_study_id IN ({});'.format(','.join(global_study_pks))
-        self.cursor.execute(studies_query)
-        expected_study_pks = list([str(self.cmd._fix_row(row)['accession']) for row in self.cursor])
-        study_pks = self.cmd._get_current_studies()
-        self.assertEqual(set(expected_study_pks), set(study_pks))
-    
-        # Test that only source study versions from loaded studies are loaded. 
-        source_study_versions_query = 'SELECT id FROM source_study_version WHERE accession IN ({});'.format(','.join(study_pks))
-        self.cursor.execute(source_study_versions_query)
-        expected_study_version_pks = list([str(self.cmd._fix_row(row)['id']) for row in self.cursor])
-        study_version_pks = self.cmd._get_current_source_study_versions()
-        self.assertEqual(set(expected_study_version_pks), set(study_version_pks))
-    
-        # Test that only source_datasets from loaded source_study_versions are loaded.
-        source_datasets_query = 'SELECT id FROM source_dataset WHERE study_version_id IN ({});'.format(','.join(study_version_pks))
-        self.cursor.execute(source_datasets_query)
-        expected_source_dataset_pks = list([str(self.cmd._fix_row(row)['id']) for row in self.cursor])
-        source_dataset_pks = self.cmd._get_current_source_datasets()
-        self.assertEqual(set(expected_source_dataset_pks), set(source_dataset_pks))
-    
-        # Test that proper number of traits is loaded for each source_study_version. 
-        source_trait_query = 'SELECT source_trait_id FROM source_trait WHERE dataset_id IN ({});'.format(','.join(source_dataset_pks))
-        self.cursor.execute(source_trait_query)
-        expected_source_trait_pks = list([str(self.cmd._fix_row(row)['source_trait_id']) for row in self.cursor])
-        source_trait_pks = self.cmd._get_current_source_traits()
-        self.assertEqual(set(expected_source_trait_pks), set(source_trait_pks))
-        
-        # Test that only subcohorts from loaded studies are loaded.
-        subcohorts_query = 'SELECT id from subcohort WHERE study_accession IN ({});'.format(','.join(study_pks))
-        self.cursor.execute(subcohorts_query)
-        expected_subcohort_pks = list([self.cmd._fix_row(row)['id'] for row in self.cursor])
-        subcohort_pks = [sc.pk for sc in Subcohort.objects.all()]
-        self.assertEqual(expected_subcohort_pks, subcohort_pks)
-    
-        # Test that loaded subcohorts are added to the appropriate datasets.
-        subcohorts_query = 'SELECT COUNT(*),dataset_id FROM source_dataset_subcohorts WHERE dataset_id IN ({}) GROUP BY dataset_id;'.format(','.join(source_dataset_pks))
-        self.cursor.execute(subcohorts_query)
-        for row in self.cursor:
-            row = self.cmd._fix_row(row)
-            django_count = SourceDataset.objects.get(pk=row['dataset_id']).subcohorts.count()
-            self.assertEqual(row['COUNT(*)'], django_count)
-    
-        # Test that source_trait_encoded_values for the loaded source_traits are all there, but no more.
-        source_trait_encoded_values_query = 'SELECT * FROM source_trait_encoded_values WHERE source_trait_id IN ({})'.format(','.join(source_trait_pks))
-        self.cursor.execute(source_trait_encoded_values_query)
-        expected_source_trait_encoded_value_pairs = list([(self.cmd._fix_row(row)['source_trait_id'], self.cmd._fix_row(row)['category']) for row in self.cursor])
-        source_trait_encoded_value_pairs = [(stev.source_trait.i_trait_id, stev.i_category) for stev in SourceTraitEncodedValue.objects.all()]
-        self.assertEqual(expected_source_trait_encoded_value_pairs, source_trait_encoded_value_pairs)
-    
-    def test_n_traits_only(self):
-        """Ensure that the management command workflow functions properly with n_studies and n_traits limits both set."""
-        n_traits=5
-        management.call_command('import_db', '--n_traits={}'.format(n_traits))
-    
-        global_studies_query = 'SELECT COUNT(*) FROM global_study;'
-        self.cursor.execute(global_studies_query)
-        global_studies_count = self.cursor.fetchone()['COUNT(*)']
-        self.assertEqual(global_studies_count, GlobalStudy.objects.count())
-    
-        studies_query = 'SELECT COUNT(*) FROM study;'
-        self.cursor.execute(studies_query)
-        studies_count = self.cursor.fetchone()['COUNT(*)']
-        self.assertEqual(studies_count, Study.objects.count())
-    
-        source_study_versions_query = 'SELECT COUNT(*) FROM source_study_version;'
-        self.cursor.execute(source_study_versions_query)
-        source_study_versions_count = self.cursor.fetchone()['COUNT(*)']
-        self.assertEqual(source_study_versions_count, SourceStudyVersion.objects.count())
-    
-        source_datasets_query = 'SELECT COUNT(*) FROM source_dataset;'
-        self.cursor.execute(source_datasets_query)
-        source_datasets_count = self.cursor.fetchone()['COUNT(*)']
-        self.assertEqual(source_datasets_count, SourceDataset.objects.count())
-    
-        # Test that proper number of traits is loaded for each source_study_version. 
-        # For each source_study_version, number of loaded traits should be n_traits or something more complicated.
-        source_study_versions = SourceStudyVersion.objects.all()
-        for ssv in source_study_versions:
-            n_ssv_datasets = ssv.sourcedataset_set.count()
-            n_ssv_traits = SourceTrait.objects.filter(source_dataset__source_study_version__pk=ssv.pk).count()
-            if n_ssv_datasets > n_ssv_traits:
-                self.assertEqual(n_traits, n_ssv_datasets)
-            else:
-                # Number of loaded traits for this source_study_version should be between n_traits
-                # and n_traits + number of datasets. 
-                self.assertTrue(n_traits <= n_ssv_traits <= n_traits + n_ssv_datasets)
-    
-        subcohorts_query = 'SELECT COUNT(*) FROM subcohort;'
-        self.cursor.execute(subcohorts_query)
-        subcohorts_count = self.cursor.fetchone()['COUNT(*)']
-        self.assertEqual(subcohorts_count, Subcohort.objects.count())
-    
-        subcohorts_query = 'SELECT COUNT(*),dataset_id FROM source_dataset_subcohorts GROUP BY dataset_id;'
-        self.cursor.execute(subcohorts_query)
-        for row in self.cursor:
-            row = self.cmd._fix_row(row)
-            django_count = SourceDataset.objects.get(pk=row['dataset_id']).subcohorts.count()
-            self.assertEqual(row['COUNT(*)'], django_count)
-    
-        # Test that source_trait_encoded_values for the loaded source_traits are all there, but no more.
-        source_trait_pks = self.cmd._get_current_source_traits()
-        source_trait_encoded_values_query = 'SELECT * FROM source_trait_encoded_values WHERE source_trait_id IN ({})'.format(','.join(source_trait_pks))
-        self.cursor.execute(source_trait_encoded_values_query)
-        expected_source_trait_encoded_value_pairs = list([(self.cmd._fix_row(row)['source_trait_id'], self.cmd._fix_row(row)['category']) for row in self.cursor])
-        source_trait_encoded_value_pairs = [(stev.source_trait.i_trait_id, stev.i_category) for stev in SourceTraitEncodedValue.objects.all()]
-        self.assertEqual(expected_source_trait_encoded_value_pairs, source_trait_encoded_value_pairs)
