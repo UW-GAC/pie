@@ -48,14 +48,26 @@ class Command(BaseCommand):
         return cnx
     
     def _make_model_object_from_args(self, args, model, verbosity):
-        """ """
+        """Make an instance of a model object using arguments.
+        
+        Arguments:
+            args: dict of 'field_name': 'field_value' pairs, used to make a model object instance
+            model: the model class to use to make a model object instance
+        """
         obj = model(**args)
         obj.save()
         if verbosity == 3:
             print('Added {}'.format(obj))
     
-    def _make_model_object_per_query_row(self, source_db, query, make_args_function, model, verbosity):
-        """ """
+    def _make_model_object_per_query_row(self, source_db, query, make_args, model, verbosity):
+        """Make a model object instance from each row of a query's results.
+        
+        Arguments:
+            source_db: a mysql.connector open db connection 
+            query: str containing a query to send to the open db
+            make_args: function to convert a db query result row to args for making a model object
+            model: the model class to use to make a model object instance
+        """
         cursor = source_db.cursor(buffered=True, dictionary=True)
         cursor.execute(query)
         for row in cursor:
@@ -64,19 +76,46 @@ class Command(BaseCommand):
         cursor.close()
     
     def _make_query_for_new_rows(self, table_name, pk_name, old_pks, verbosity):
-        """ """
+        """Make a query for new rows from the given table.
+        
+        Arguments:
+            table_name: str name of the table in the source db
+            pk_name: str name of the primary key column in the source db
+            old_pks: list of str pk values that are already imported into the website db
+        
+        Returns:
+            str query that will yield new source db rows that haven't been imported
+            to the website db yet
+        """
         query = 'SELECT * FROM {}'.format(table_name)
         if len(old_pks) > 0:
             query += ' WHERE {} NOT IN ({})'.format(pk_name, ','.join(old_pks))
         return query
     
     def _get_new_pks(self, old_pks, get_current_pks):
-        """ """
+        """Get the list of primary keys that have been added to the website db.
+        
+        Arguments:
+            old_pks: list of str primary key values that were already added to the website db
+            get_current_pks: function that will return a str list of pks for this model/table
+        
+        Returns:
+            list of str primary key values for new entries added to the website db
+        """
         new_pks = list(set(get_current_pks()) - set(old_pks))
         return new_pks
     
     def _import_new_data(self, source_db, table_name, pk_name, model, make_args, get_current_pks, verbosity):
-        """ """
+        """Import new data into the website db from the source db from a given table, into a given model.
+        
+        Arguments:
+            source_db: a mysql.connector open db connection 
+            table_name: str name of the table in the source db
+            pk_name: str name of the primary key column in the source db
+            model: the model class to use to make a model object instance
+            make_args: function to convert a db query result row to args for making a model object
+            get_current_pks: function that will return a str list of pks for this model/table
+        """
         old_pks = get_current_pks()
         new_rows_query = self._make_query_for_new_rows(table_name, pk_name, old_pks, verbosity)
         self._make_model_object_per_query_row(source_db, new_rows_query, make_args, model, verbosity)
