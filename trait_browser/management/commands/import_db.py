@@ -47,6 +47,7 @@ class Command(BaseCommand):
         # TODO add a try/except block here in case the db connection fails.
         return cnx
     
+    # Helper methods for importing data from the source db.
     def _make_model_object_from_args(self, args, model, verbosity):
         """Make an instance of a model object using arguments.
         
@@ -335,7 +336,7 @@ class Command(BaseCommand):
         return self._make_args_mapping(row_dict, ['id', 'category', 'value'],
                                        foreign_key_mapping={'source_trait_id':SourceTrait})
 
-    # Methods to import new data from the source db into django.
+    # Methods for importing data for models that require special processing.
     def _import_new_source_dataset_subcohorts(self, source_db, new_dataset_pks, verbosity):
         """Add subcohort-source_dataset link data to the website db models.
         
