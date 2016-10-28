@@ -37,6 +37,8 @@ class SeleniumTestCase(StaticLiveServerTestCase):
         # cls.selenium = webdriver.Safari(quiet=True)
         
         # Use Chrome browser.
+        # Note that the current chromedriver is intended for Macs, and this should probably
+        # change to some other system where the chromedriver is not tracked, like the secrets.
         cls.selenium = webdriver.Chrome(executable_path='selenium_tests/chromedriver')
         
     def setUp(self):
