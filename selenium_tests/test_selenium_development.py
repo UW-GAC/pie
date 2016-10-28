@@ -250,7 +250,7 @@ class AdminTestCase(SeleniumTestCase):
 class SourceTraitSearchTestCase(UserAutoLoginSeleniumTestCase):
     
     def setUp(self):
-        super(SourceTraitSearchTest, self).setUp()
+        super(SourceTraitSearchTestCase, self).setUp()
         # Open the Search page.
         self.get_reverse('trait_browser:source_search')
         time.sleep(1)

@@ -165,7 +165,7 @@ class DbFixersTestCase(TestCase):
                 self.assertTrue(isinstance(fixed_row[k], datetime))
     
     def test_fix_timezone_empty_dict(self):
-        """Ensure that _fix_timezone works properly (doesn't alter) an empt dictionary input."""
+        """Ensure that _fix_timezone works properly on (doesn't alter) an empty dictionary input."""
         row = {}
         cmd = Command()
         fixed_row = cmd._fix_timezone(row)
@@ -235,7 +235,7 @@ class MakeArgsTestCase(CommandTestCase):
         global_study = GlobalStudyFactory.create(i_id=1)
         study = StudyFactory.create(i_accession=row_dict['accession'], global_study=global_study)
         #
-        source_study_version_args = self.cmd._make_source_study_version_args(self.cmd._fix_null(self.cmd._fix_bytearray(row_dict)))
+        source_study_version_args = self.cmd._make_source_study_version_args(self.cmd._fix_row(row_dict))
         source_study_version = SourceStudyVersion(**source_study_version_args)
         source_study_version.save()
         self.assertIsInstance(source_study_version, SourceStudyVersion)
@@ -313,7 +313,6 @@ class HelperTestCase(CommandTestCase):
         obj = GlobalStudy.objects.get(pk=5)
         self.assertIsInstance(obj, GlobalStudy)
         
-
 
 class GetCurrentListsTest(CommandTestCase):
     n = 32
