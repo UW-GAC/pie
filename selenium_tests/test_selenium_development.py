@@ -15,8 +15,9 @@ from django.contrib.staticfiles.testing import StaticLiveServerTestCase
 from django.core.urlresolvers import reverse
 from django.test import Client
 
-from trait_browser.factories import StudyFactory, SourceTraitFactory, SourceEncodedValueFactory
-from trait_browser.models import Study, SourceTrait, SourceEncodedValue
+from trait_browser.factories import GlobalStudyFactory, HarmonizedTraitFactory, HarmonizedTraitEncodedValueFactory, HarmonizedTraitSetFactory, SourceDatasetFactory, SourceStudyVersionFactory, SourceTraitFactory, SourceTraitEncodedValueFactory, StudyFactory, SubcohortFactory
+from trait_browser.factories import build_test_db
+from trait_browser.models import GlobalStudy, HarmonizedTrait, HarmonizedTraitEncodedValue, HarmonizedTraitSet, SourceDataset, SourceStudyVersion, SourceTrait, SourceTraitEncodedValue, Study, Subcohort
 from trait_browser.views import TABLE_PER_PAGE, search
 
 
@@ -36,6 +37,8 @@ class SeleniumTestCase(StaticLiveServerTestCase):
         # cls.selenium = webdriver.Safari(quiet=True)
         
         # Use Chrome browser.
+        # Note that the current chromedriver is intended for Macs, and this should probably
+        # change to some other system where the chromedriver is not tracked, like the secrets.
         cls.selenium = webdriver.Chrome(executable_path='selenium_tests/chromedriver')
         
     def setUp(self):
@@ -46,16 +49,9 @@ class SeleniumTestCase(StaticLiveServerTestCase):
         
         self.user_password = 'atomicnumber16'
         self.user = User.objects.create_user(username='sulfur', email='sulphur@bar.com', password=self.user_password)
-
         # Fill the test db with fake data.
-        studies = StudyFactory.create_batch(5) # Make 5 studies.
-        for study in studies:
-            # Make 40 source traits for each study, 10 each with 4 encoded values.
-            SourceTraitFactory.create_batch(30, study=study)
-            enc_val_traits = SourceTraitFactory.create_batch(10, study=study)
-            for trait in enc_val_traits:
-                SourceEncodedValueFactory.create_batch(4, source_trait=trait)
-
+        build_test_db(5, (1,6), (5, 11), (5,20), (2,10))
+        
     @classmethod
     def tearDownClass(cls):
         cls.selenium.quit()
@@ -150,6 +146,7 @@ class SeleniumTestCase(StaticLiveServerTestCase):
             # Test the number of expected rows.
             self.assertEqual(expected_rows, total_rows)
 
+
 class UserAutoLoginSeleniumTestCase(SeleniumTestCase):
 
     def setUp(self):
@@ -164,7 +161,7 @@ class UserAutoLoginSeleniumTestCase(SeleniumTestCase):
         time.sleep(1)
 
 
-class HomeTest(SeleniumTestCase):
+class HomeTestCase(SeleniumTestCase):
     
     def test_home(self):
         # Go to the home page.
@@ -194,7 +191,7 @@ class HomeTest(SeleniumTestCase):
         self.go_back()
 
 
-class AdminTest(SeleniumTestCase):
+class AdminTestCase(SeleniumTestCase):
 
     def test_admin(self):
         # Open web browser and navigate to admin page.
@@ -209,7 +206,31 @@ class AdminTest(SeleniumTestCase):
         self.selenium.find_element_by_class_name('submit-row').click()       
         time.sleep(1)
         # Navigate to each of the admin model interfaces in turn.
-        self.selenium.find_element_by_link_text('Source encoded values').click()
+        self.selenium.find_element_by_link_text('GlobalStudies').click()
+        time.sleep(1)
+        self.go_back()
+
+        self.selenium.find_element_by_link_text('Harmonized trait encoded values').click()
+        time.sleep(1)
+        self.go_back()
+        
+        self.selenium.find_element_by_link_text('Harmonized trait sets').click()
+        time.sleep(1)
+        self.go_back()
+
+        self.selenium.find_element_by_link_text('Harmonized traits').click()
+        time.sleep(1)
+        self.go_back()
+
+        self.selenium.find_element_by_link_text('Source datasets').click()
+        time.sleep(1)
+        self.go_back()
+
+        self.selenium.find_element_by_link_text('Source study versions').click()
+        time.sleep(1)
+        self.go_back()
+        
+        self.selenium.find_element_by_link_text('Source trait encoded values').click()
         time.sleep(1)
         self.go_back()
 
@@ -221,11 +242,15 @@ class AdminTest(SeleniumTestCase):
         time.sleep(1)
         self.go_back()
 
+        self.selenium.find_element_by_link_text('Subcohorts').click()
+        time.sleep(1)
+        self.go_back()
 
-class SourceTraitSearchTest(UserAutoLoginSeleniumTestCase):
+
+class SourceTraitSearchTestCase(UserAutoLoginSeleniumTestCase):
     
     def setUp(self):
-        super(SourceTraitSearchTest, self).setUp()
+        super(SourceTraitSearchTestCase, self).setUp()
         # Open the Search page.
         self.get_reverse('trait_browser:source_search')
         time.sleep(1)
@@ -236,7 +261,7 @@ class SourceTraitSearchTest(UserAutoLoginSeleniumTestCase):
         search_text.send_keys(search_string)
         time.sleep(1)
         if study_list is not None:
-            studies_with_ranks = [(study, i+1) for (i, study,) in enumerate(Study.objects.all().order_by('name')) if study in study_list]
+            studies_with_ranks = [(study, i+1) for (i, study,) in enumerate(Study.objects.all().order_by('i_study_name')) if study in study_list]
             for (study, rank) in studies_with_ranks:
                 self.selenium.find_element_by_id('id_study_{}'.format(rank)).click()
             time.sleep(1)
@@ -246,7 +271,7 @@ class SourceTraitSearchTest(UserAutoLoginSeleniumTestCase):
     def test_source_trait_search_all_studies_good_text(self):
         """Test the SourceTrait search page with a string you know is in one of the SourceTraits in the test db."""
         # Get the trait name for the first trait you can find.
-        good_text = SourceTrait.objects.all()[0].name
+        good_text = SourceTrait.objects.all()[0].i_trait_name
         self.run_search(good_text)
         result_count = len(search(good_text, 'source'))
         self.check_table_view(expected_rows=result_count)
@@ -263,8 +288,8 @@ class SourceTraitSearchTest(UserAutoLoginSeleniumTestCase):
     def test_source_trait_search_single_study_good_text(self):
         """Test the SourceTrait search page with a trait name that is in a given study, searching only within that study."""
         study = Study.objects.all()[0]
-        study_trait = study.sourcetrait_set.all()[0]
-        good_text = study_trait.name
+        study_trait = SourceTrait.objects.filter(source_dataset__source_study_version__study=study)[0]
+        good_text = study_trait.i_trait_name
         self.run_search(good_text, [study])
         # This will find many more results than you expect, because the list of words
         # that Faker uses is fairly small. The result is that a given fake trait name
@@ -274,8 +299,8 @@ class SourceTraitSearchTest(UserAutoLoginSeleniumTestCase):
         """Test the SourceTrait search page with a long phrase from a trait description that is in a given study, searching only within that study."""
         # This search string is more specific, so should only find one result
         study = Study.objects.all()[0]
-        study_trait = study.sourcetrait_set.all()[0]
-        good_text = study_trait.description
+        study_trait = SourceTrait.objects.filter(source_dataset__source_study_version__study=study)[0]
+        good_text = study_trait.i_description
         self.run_search(good_text, [study])
         
     def test_source_trait_search_specific_text_wrong_study(self):
@@ -283,8 +308,8 @@ class SourceTraitSearchTest(UserAutoLoginSeleniumTestCase):
         # This search string is more specific, so should only find one result
         studies = Study.objects.all()
         study = studies[0]
-        study_trait = study.sourcetrait_set.all()[0]
-        good_text = study_trait.description
+        study_trait = SourceTrait.objects.filter(source_dataset__source_study_version__study=study)[0]
+        good_text = study_trait.i_description
         self.run_search(good_text, [studies[1]])
 
 
@@ -296,7 +321,7 @@ class TablePageTestCase(UserAutoLoginSeleniumTestCase):
         self.get_reverse('trait_browser:source_all')
         self.check_table_view(expected_rows=total_source_traits)
         # Check the detail page for the first listed SourceTrait.
-        check_name = SourceTrait.objects.all().order_by('name')[0].name
+        check_name = SourceTrait.objects.all().order_by('i_trait_name')[0].i_trait_name
         detail_link = self.selenium.find_element_by_link_text(check_name)
         detail_link.click()
         self.go_back()
@@ -307,17 +332,16 @@ class TablePageTestCase(UserAutoLoginSeleniumTestCase):
         self.get_reverse('trait_browser:source_study_list')
         self.check_table_view(expected_rows=study_count)
         # Check the page for the first listed Study.
-        study_name = Study.objects.all().order_by('name')[0].name
+        study_name = Study.objects.all().order_by('i_study_name')[0].i_study_name
         study_link = self.selenium.find_element_by_link_text(study_name)
         study_link.click()
         self.check_table_presence()
         self.go_back()
         
-    # This test isn't working now as of commit 06ca10cdc
-    # def test_source_study_detail_table(self):
-    #     """Run check_table_view on the Study detail list page (from a link in the Browse by study table)."""
-    #     study = Study.objects.all()[0]
-    #     trait_count = study.sourcetrait_set.count()
-    #     self.get_reverse('trait_browser:source_study_detail', 1)
-    #     self.check_table_view(expected_rows=trait_count)
+    def test_source_study_detail_table(self):
+        """Run check_table_view on the Study detail list page (from a link in the Browse by study table)."""
+        study = Study.objects.all()[0]
+        trait_count = SourceTrait.objects.filter(source_dataset__source_study_version__study=study).all().count()
+        self.get_reverse('trait_browser:source_study_detail', study.pk)
+        self.check_table_view(expected_rows=trait_count)
         

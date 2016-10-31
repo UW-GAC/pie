@@ -4,8 +4,8 @@ from django.contrib.auth.models import User
 from django.test import TestCase, Client
 from django.core.urlresolvers import reverse
 
-from .models import SourceEncodedValue, SourceTrait, Study
-from .factories import SourceEncodedValueFactory, SourceTraitFactory, StudyFactory
+from .models import GlobalStudy, HarmonizedTrait, HarmonizedTraitEncodedValue, HarmonizedTraitSet, SourceDataset, SourceStudyVersion, SourceTrait, SourceTraitEncodedValue, Study, Subcohort
+from .factories import GlobalStudyFactory, HarmonizedTraitFactory, HarmonizedTraitEncodedValueFactory, HarmonizedTraitSetFactory, SourceDatasetFactory, SourceStudyVersionFactory, SourceTraitFactory, SourceTraitEncodedValueFactory, StudyFactory, SubcohortFactory 
 from .tables import SourceTraitTable, StudyTable
 from .views import TABLE_PER_PAGE, search
 
@@ -29,8 +29,8 @@ class SearchTestCase(TestCase):
     
     def test_search_source_trait_name_exact(self):
         """Test that the search function finds an exact match in the SourceTrait name field, but doesn't find a non-match."""
-        st_match = SourceTraitFactory.create(name='foo_bar', dcc_trait_id=1)
-        st_nonmatch = SourceTraitFactory.create(name='sum_es', dcc_trait_id=2)
+        st_match = SourceTraitFactory.create(i_trait_name='foo_bar', i_trait_id=1)
+        st_nonmatch = SourceTraitFactory.create(i_trait_name='sum_es', i_trait_id=2)
         search1 = search('foo_bar', 'source')
         # Check that the matching trait is found, but the non-match is not.
         self.assertIn(st_match, search1)
@@ -38,26 +38,26 @@ class SearchTestCase(TestCase):
     
     def test_search_source_trait_name_substring(self):
         """Test that the search function finds a substring match in the SourceTrait name field, but doesn't find a non-match."""
-        st_match = SourceTraitFactory.create(name='foo_bar', dcc_trait_id=1)
-        st_nonmatch = SourceTraitFactory.create(name='sum_es', dcc_trait_id=2)
+        st_match = SourceTraitFactory.create(i_trait_name='foo_bar', i_trait_id=1)
+        st_nonmatch = SourceTraitFactory.create(i_trait_name='sum_es', i_trait_id=2)
         search1 = search('bar', 'source')
         # Check that the matching trait is found, but the non-match is not.
         self.assertIn(st_match, search1)
         self.assertNotIn(st_nonmatch, search1)
 
     def test_search_source_trait_description_exact(self):
-        """Test that the search function finds an exact match in the SourceTrait description field, but doesn't find a non-match."""
-        st_match = SourceTraitFactory.create(description='foo and bar', dcc_trait_id=1)
-        st_nonmatch = SourceTraitFactory.create(description='sum and es', dcc_trait_id=2)
+        """Test that the search function finds an exact match in the SourceTrait i_description field, but doesn't find a non-match."""
+        st_match = SourceTraitFactory.create(i_description='foo and bar', i_trait_id=1)
+        st_nonmatch = SourceTraitFactory.create(i_description='sum and es', i_trait_id=2)
         search1 = search('foo and bar', 'source')
         # Check that the matching trait is found, but the non-match is not.
         self.assertIn(st_match, search1)
         self.assertNotIn(st_nonmatch, search1)
     
     def test_search_source_trait_description_substring(self):
-        """Test that the search function finds a substring match in the SourceTrait description field, but doesn't find a non-match."""
-        st_match = SourceTraitFactory.create(description='foo and bar', dcc_trait_id=1)
-        st_nonmatch = SourceTraitFactory.create(description='sum and es', dcc_trait_id=2)
+        """Test that the search function finds a substring match in the SourceTrait i_description field, but doesn't find a non-match."""
+        st_match = SourceTraitFactory.create(i_description='foo and bar', i_trait_id=1)
+        st_nonmatch = SourceTraitFactory.create(i_description='sum and es', i_trait_id=2)
         search1 = search('bar', 'source')
         # Check that the matching trait is found, but the non-match is not.
         self.assertIn(st_match, search1)
@@ -65,29 +65,31 @@ class SearchTestCase(TestCase):
         
     def test_search_source_trait_name_in_study(self):
         """Test that the search function finds a matching name in one particular study, but doesn't find a match from a different study. """
-        study1 = StudyFactory.create()
-        study2 = StudyFactory.create()
+        study1 = StudyFactory.create(i_study_name="FHS")
+        study2 = StudyFactory.create(i_study_name="CFS")
+        source_dataset1 = SourceDatasetFactory.create(source_study_version__study=study1)
+        source_dataset2 = SourceDatasetFactory.create(source_study_version__study=study2)
         st_match = SourceTraitFactory.create(
-            name='foo_bar',
-            dcc_trait_id=1,
-            study=study1
+            i_trait_name='foo_bar',
+            i_trait_id=1,
+            source_dataset=source_dataset1
         )
         st_nonmatch = SourceTraitFactory.create(
-            name='foo_bar',
-            dcc_trait_id=2,
-            study=study2
+            i_trait_name='foo_bar',
+            i_trait_id=2,
+            source_dataset=source_dataset2
         )
         search1 = search(
             'bar', 'source',
-            studies=[(study1.study_id, study1.name)]
+            study_pks=[study1.i_accession]
         )
         # Check that the matching trait is found, but the non-match is not.
         self.assertIn(st_match, search1)
         self.assertNotIn(st_nonmatch, search1)
 
 
-class SourceViewsTestCase(ViewsAutoLoginTestCase):
-    """Unit tests for the views about source traits."""
+class SourceTraitViewsTestCase(ViewsAutoLoginTestCase):
+    """Unit tests for the SourceTrait views."""
     
     def test_source_trait_table_empty(self):
         """Tests that the source_trait_table view works with an empty queryset and that the SourceTraitTable object has no rows."""
@@ -129,7 +131,7 @@ class SourceViewsTestCase(ViewsAutoLoginTestCase):
         """Tests that the SourceTrait detail page returns 200 with a valid pk."""
         trait = SourceTraitFactory.create()
         # Test that the page works with a valid pk.
-        url = reverse('trait_browser:source_detail', args=[trait.dcc_trait_id])
+        url = reverse('trait_browser:source_detail', args=[trait.i_trait_id])
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         
@@ -139,6 +141,10 @@ class SourceViewsTestCase(ViewsAutoLoginTestCase):
         url = reverse('trait_browser:source_detail', args=[10])
         response = self.client.get(url)
         self.assertEqual(response.status_code, 404)
+    
+
+class StudySourceTableViewsTestCase(ViewsAutoLoginTestCase):
+    """Unit tests for the SourceTrait by Study views."""
     
     def test_study_source_table_empty(self):
         """Tests that the study_source_table view works with an empty queryset and that the StudyTable object has no rows."""
@@ -186,7 +192,7 @@ class SourceViewsTestCase(ViewsAutoLoginTestCase):
         """Tests that the study_source_trait_table view works with an empty queryset and that the SourceTraitTable object has no rows."""
         # No valid SourceTraits exist here.
         this_study = StudyFactory.create()
-        url = reverse('trait_browser:source_study_detail', args=[this_study.study_id])
+        url = reverse('trait_browser:source_study_detail', args=[this_study.i_accession])
         response = self.client.get(url)
         # Does the URL work?
         self.assertEqual(response.status_code, 200)
@@ -199,8 +205,8 @@ class SourceViewsTestCase(ViewsAutoLoginTestCase):
         """Tests that the study_source_trait_table view works with one page of results and that the SourceTraitTable object the correct number of rows."""
         n_traits = TABLE_PER_PAGE - 2
         this_study = StudyFactory.create()
-        SourceTraitFactory.create_batch(n_traits, study=this_study)
-        url = reverse('trait_browser:source_study_detail', args=[this_study.study_id])
+        SourceTraitFactory.create_batch(n_traits, source_dataset__source_study_version__study=this_study)
+        url = reverse('trait_browser:source_study_detail', args=[this_study.i_accession])
         response = self.client.get(url)
         # Does the URL work?
         self.assertEqual(response.status_code, 200)
@@ -213,10 +219,10 @@ class SourceViewsTestCase(ViewsAutoLoginTestCase):
         """Tests that the study_source_trait_table view works with one page of results and that the SourceTraitTable object the correct number of rows, when there is a second study."""
         n_traits = TABLE_PER_PAGE - 2
         this_study = StudyFactory.create()
-        SourceTraitFactory.create_batch(n_traits, study=this_study)
+        SourceTraitFactory.create_batch(n_traits, source_dataset__source_study_version__study=this_study)
         other_study = StudyFactory.create()
-        SourceTraitFactory.create_batch(n_traits, study=other_study)
-        url = reverse('trait_browser:source_study_detail', args=[this_study.study_id])
+        SourceTraitFactory.create_batch(n_traits, source_dataset__source_study_version__study=other_study)
+        url = reverse('trait_browser:source_study_detail', args=[this_study.i_accession])
         response = self.client.get(url)
         # Does the URL work?
         self.assertEqual(response.status_code, 200)
@@ -229,8 +235,8 @@ class SourceViewsTestCase(ViewsAutoLoginTestCase):
         """Tests that the study_source_trait_table view works with two pages of results and that the SourceTraitTable object the correct number of rows."""
         n_traits = TABLE_PER_PAGE * 2
         this_study = StudyFactory.create()
-        SourceTraitFactory.create_batch(n_traits, study=this_study)
-        url = reverse('trait_browser:source_study_detail', args=[this_study.study_id])
+        SourceTraitFactory.create_batch(n_traits, source_dataset__source_study_version__study=this_study)
+        url = reverse('trait_browser:source_study_detail', args=[this_study.i_accession])
         response = self.client.get(url)
         # Does the URL work?
         self.assertEqual(response.status_code, 200)
@@ -247,7 +253,7 @@ class SourceTraitSearchViewTestCase(ViewsAutoLoginTestCase):
         # Make ten random SourceTraits.
         SourceTraitFactory.create_batch(10)
         # Make one SourceTrait that will match your (improbable) search term.
-        SourceTraitFactory.create(name='asdfghjkl')
+        SourceTraitFactory.create(i_trait_name='asdfghjkl')
         url = reverse('trait_browser:source_search')
         response = self.client.get(url, {'text': 'asdfghjkl'})
         self.assertEqual(response.status_code, 200)
@@ -278,10 +284,10 @@ class SourceTraitSearchViewTestCase(ViewsAutoLoginTestCase):
     def test_source_trait_search_with_valid_results_and_study_filter(self):
         """Tests that the source_trait_search view has a 200 reponse code and the number of results is accurate when search text and study filter is entered and there are search results to display."""
         SourceTraitFactory.create_batch(10)
-        good_trait = SourceTraitFactory.create(name='asdfghjkl')
+        good_trait = SourceTraitFactory.create(i_trait_name='asdfghjkl')
         url = reverse('trait_browser:source_search')
         response = self.client.get(url, {'text': 'asdfghjkl',
-                                         'study':[good_trait.study.study_id]})
+                                         'study':[good_trait.source_dataset.source_study_version.study.i_accession]})
         self.assertEqual(response.status_code, 200)    # The page displays something.
         self.assertTrue(response.context['results'])    # results is True.
         self.assertIsInstance(response.context['trait_table'], SourceTraitTable)    # trait_table is a table object.
@@ -290,10 +296,10 @@ class SourceTraitSearchViewTestCase(ViewsAutoLoginTestCase):
     def test_source_trait_search_with_no_results_and_study_filter(self):
         """Tests that the source_trait_search view has a 200 response code and the number of results is accurate when search text and study filter is entered and there are no valid search results to display."""
         traits = SourceTraitFactory.create_batch(10)
-        good_trait = SourceTraitFactory.create(name='asdfghjkl')
+        good_trait = SourceTraitFactory.create(i_trait_name='asdfghjkl')
         url = reverse('trait_browser:source_search')
         response = self.client.get(url, {'text': 'asdfghjkl',
-                                         'study':[traits[0].study.study_id]})
+                                         'study':[traits[0].source_dataset.source_study_version.study.i_accession]})
         self.assertEqual(response.status_code, 200)    # The page displays something.
         self.assertTrue(response.context['results'])    # results is True.
         self.assertIsInstance(response.context['trait_table'], SourceTraitTable)    # trait_table is a table object.

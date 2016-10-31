@@ -15,10 +15,10 @@ class SourceTraitTable(tables.Table):
     """
 
     # Set custom column values that need extra settings.
-    name = tables.LinkColumn('trait_browser:source_detail', args=[tables.utils.A('pk')], verbose_name='Phenotype name')
-    description = tables.Column('Phenotype description', orderable=False)
+    i_trait_name = tables.LinkColumn('trait_browser:source_detail', args=[tables.utils.A('pk')], verbose_name='Phenotype name')
+    i_description = tables.Column('Phenotype description', orderable=False)
     # Get the name from the Study linked to this trait.
-    study_name = tables.Column('Study name', accessor='study.name')
+    study_name = tables.Column('Study name', accessor='source_dataset.source_study_version.study.i_study_name')
     dbGaP_study = tables.TemplateColumn(orderable=False,
         template_code='<a target="_blank" href={{ record.dbgap_study_link }}>{{ record.study_accession }}</a>')
     dbGaP_variable = tables.TemplateColumn(orderable=False,
@@ -26,10 +26,10 @@ class SourceTraitTable(tables.Table):
     
     class Meta:
         model = SourceTrait
-        fields = ('name', 'description', 'study_name', )
+        fields = ('i_trait_name', 'i_description', 'study_name', )
         attrs = {'class': 'table table-striped table-bordered table-hover table-condensed'}
         template = 'trait_browser/bootstrap_tables2.html'
-        order_by = ('name', 'study_name', )
+        order_by = ('i_trait_name', 'study_name', )
 
 
 class StudyTable(tables.Table):
@@ -39,7 +39,7 @@ class StudyTable(tables.Table):
     objects. It is used for the Browse by Study page.
     """
     
-    name = tables.LinkColumn('trait_browser:source_study_detail', args=[tables.utils.A('pk')],
+    i_study_name = tables.LinkColumn('trait_browser:source_study_detail', args=[tables.utils.A('pk')],
                              verbose_name='Study name', orderable=False)
     dbGaP_accession = tables.TemplateColumn(orderable=False,
         template_code='<a target="_blank" href={{record.dbgap_latest_version_link}}>phs{{ record.dbgap_accession }}</a>'
@@ -48,7 +48,7 @@ class StudyTable(tables.Table):
     
     class Meta:
         model = Study
-        fields = ('name', )
+        fields = ('i_study_name', )
         attrs = {'class': 'table table-striped table-hover table-bordered', 'style': 'width: auto;'}
         template = 'trait_browser/bootstrap_tables2.html'
-        order_by = ('name', )
+        order_by = ('i_study_name', )

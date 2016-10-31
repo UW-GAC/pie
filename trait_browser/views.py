@@ -7,7 +7,7 @@ from django.contrib.auth.decorators import login_required
 
 from django_tables2   import RequestConfig
 
-from .models import SourceEncodedValue, SourceTrait, Study
+from .models import GlobalStudy, HarmonizedTrait, HarmonizedTraitEncodedValue, HarmonizedTraitSet, SourceDataset, SourceStudyVersion, SourceTrait, SourceTraitEncodedValue, Study, Subcohort
 from .tables import SourceTraitTable, StudyTable
 from .forms import SourceTraitCrispySearchForm
 
@@ -48,10 +48,10 @@ def source_study_detail(request, pk):
     This view uses Django-tables2 to display a pretty table of the SourceTraits
     in the database for browsing, within a single study.
     """
-    this_study = get_object_or_404(Study, study_id=pk)
-    table_title = 'Source phenotypes currently available in {}'.format(this_study.name)
+    this_study = get_object_or_404(Study, i_accession=pk)
+    table_title = 'Source phenotypes currently available in {}'.format(this_study.i_study_name)
     page_title = 'phs{:6} source phenotypes'.format(this_study.phs)
-    trait_table = SourceTraitTable(this_study.sourcetrait_set.all())
+    trait_table = SourceTraitTable(SourceTrait.objects.filter(source_dataset__source_study_version__study__i_accession=pk))
     # If you're going to change this later to some kind of filtered list (e.g. only the most
     # recent version of each trait), then you should wrap the SourceTrait.filter() in get_list_or_404
     # RequestConfig seems to be necessary for sorting to work.
@@ -79,7 +79,7 @@ def source_study_list(request):
     )
 
 
-def search(text_query, trait_type, studies=[]):
+def search(text_query, trait_type, study_pks=[]):
     """Search either source or (eventually) harmonized traits for a given query.
     
     Function to search the trait name and trait description for the given query
@@ -89,22 +89,23 @@ def search(text_query, trait_type, studies=[]):
     Arguments:
         text_query -- string; text to search for within descriptions and names
         trait_type -- string; "source" or "harmonized"
-        studies -- list of (primary_key, study_name) tuples
+        study_pks -- list of (primary_key, study_name) tuples
     
     Returns:
         queryset of SourceTrait or HarmonizedTrait objects
     """
     # TODO: add try/except to catch invalid trait_type values.
     if trait_type == 'source':
-        traits = SourceTrait.objects.all()
+        if (len(study_pks) == 0):
+            traits = SourceTrait.objects.all()
+        # Filter by study.
+        else:
+            traits = SourceTrait.objects.filter(source_dataset__source_study_version__study__pk__in=study_pks)
+        # Then search text.
+        traits = traits.filter(Q(i_description__contains=text_query) | Q(i_trait_name__contains=text_query))
     elif trait_type == 'harmonized':
         # TODO: search through harmonized trait model objects. 
         pass
-    # Filter by study first.
-    if (len(studies) > 0):
-        traits = traits.filter(study__in=studies)
-    # Then search text.
-    traits = traits.filter(Q(description__contains=text_query) | Q(name__contains=text_query))
     return(traits)
 
 
@@ -126,9 +127,9 @@ def source_search(request):
         if form.is_valid():
             # ...process form data.
             query = form.cleaned_data.get('text', None)
-            studies = form.cleaned_data.get('study', [])
+            study_pks = form.cleaned_data.get('study', [])
             # Search text.
-            traits = search(query, 'source', studies)
+            traits = search(query, 'source', study_pks)
             trait_table = SourceTraitTable(traits)
             RequestConfig(request, paginate={'per_page': TABLE_PER_PAGE}).configure(trait_table)
             # Show the search results.
