@@ -1,15 +1,26 @@
 {% extends 'base.html' %}
+{% load staticfiles %}
 
 {% block content %}
 
-<div class="jumbotron">
-  <div class="container">
-    <h1>NHLBI TOPMed Phenotype Inventory</h1>
-    <p>This inventory describes the phenotype data currently available to
-    the Data Coordinating Center. This is a centralized location for TOPMed investigators to
-    search and browse through the source phenotype data, search and browse harmonized data,
-    and submit requests for phenotype harmonization.</p>
+<div class="row">
+  
+  <div class="col-md-3 text-center">
+    <div class="jumbotron">
+      <img src="{% static "topmed_logo/topmed_logo_long_white_circle.svg" %}" alt="topmed_logo_white_circle"/>
+    </div>
   </div>
+  
+  <div class="col-md-9 text-center">
+    <div class="jumbotron">
+      <h1>NHLBI TOPMed Phenotype Inventory</h1>
+      <p>This inventory describes the phenotype data currently available to
+      the Data Coordinating Center. This is a centralized location for TOPMed investigators to
+      search and browse through the source phenotype data, search and browse harmonized data,
+      and submit requests for phenotype harmonization.</p>
+    </div>
+  </div>
+
 </div>
 <hr>
 <!-- Example row of columns -->
