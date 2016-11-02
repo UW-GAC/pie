@@ -154,3 +154,10 @@ body {
   transform: rotate(-45deg);
   -webkit-transform: rotate(-45deg);
 }
+
+/* This is a fix to keep the navbar from covering up body content */
+/* See this SO answer http://stackoverflow.com/a/11124805/2548371 */
+body { padding-top: 100px; }
+@media screen and (max-width: 768px) {
+    body { padding-top: 120px; }
+}
