@@ -42,7 +42,7 @@ class StudyTable(tables.Table):
     i_study_name = tables.LinkColumn('trait_browser:source_study_detail', args=[tables.utils.A('pk')],
                              verbose_name='Study name', orderable=False)
     dbGaP_accession = tables.TemplateColumn(orderable=False,
-        template_code='<a target="_blank" href={{record.dbgap_latest_version_link}}>phs{{ record.dbgap_accession }}</a>'
+        template_code='<a target="_blank" href={{record.dbgap_latest_version_link}}>{{ record.phs }}</a>'
     )
     
     
