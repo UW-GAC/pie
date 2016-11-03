@@ -42,7 +42,7 @@ class Command(BaseCommand):
         if which_db is None:
             raise ValueError('which_db as passed to _get_source_db MUST be set to a valid value ({} is not valid)'.format(which_db))
         # ALWAYS connect to the db as the read-only user
-        cnf_group = ['client', 'mysql_topmed_readonly' + test_string]
+        cnf_group = ['client', 'mysql_topmed_readonly' + '_{}'.format(which_db)]
         cnx = mysql.connector.connect(option_files=cnf_path, option_groups=cnf_group, charset='latin1', use_unicode=False)
         # TODO add a try/except block here in case the db connection fails.
         return cnx
