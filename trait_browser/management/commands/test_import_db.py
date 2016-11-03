@@ -28,6 +28,7 @@ class CommandTestCase(TestCase):
     
     def setUp(self):
         self.cmd = Command()
+        # TODO: This should use a specific source db test data file
         self.source_db = self.cmd._get_source_db(which_db='test')
         self.cursor = self.source_db.cursor(buffered=True, dictionary=True)
     
@@ -384,7 +385,8 @@ class IntegrationTest(CommandTestCase):
 
     def test_call_command_to_import_whole_db(self):
         """Ensure that calling the command as you would from command line works properly."""
-        management.call_command('import_db')
+        # TODO: Later this should be changed to use a specific source db test data file
+        management.call_command('import_db', '--which_db=test')
         global_studies_query = 'SELECT COUNT(*) FROM global_study;'
         self.cursor.execute(global_studies_query)
         global_studies_count = self.cursor.fetchone()['COUNT(*)']
