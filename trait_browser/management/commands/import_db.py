@@ -31,18 +31,18 @@ class Command(BaseCommand):
         """Get a connection to the source phenotype db.
         
         Arguments:
-            test -- boolean; whether to connect to a test db or not
+            which_db -- string; name of the type of db to connect to (production,
+                devel, or test)
             cnf_path -- string; path to the mySQL config file with db connection
                 settings
         
         Returns:
             a mysql.connector open db connection
         """
-        if which_db == 'test':
-            test_string = '_test'
-        elif which_db == 'production':
-            test_string = '_production'
-        cnf_group = ['client', 'mysql_topmed_readonly' + test_string]
+        if which_db is None:
+            raise ValueError('which_db as passed to _get_source_db MUST be set to a valid value ({} is not valid)'.format(which_db))
+        # ALWAYS connect to the db as the read-only user
+        cnf_group = ['client', 'mysql_topmed_readonly' + '_{}'.format(which_db)]
         cnx = mysql.connector.connect(option_files=cnf_path, option_groups=cnf_group, charset='latin1', use_unicode=False)
         # TODO add a try/except block here in case the db connection fails.
         return cnx
@@ -372,7 +372,7 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         """Add custom command line arguments to this management command."""
         parser.add_argument('--which_db', action='store', type=str,
-                            choices=['test', 'production'], default='test',
+                            choices=['test', 'devel', 'production'], default=None, required=True,
                             help='Which source database to connect to for retrieving source data.')
         parser.add_argument('--update-only', action='store_true',
                             help='Only update the db records that are already in the db, and do not add new ones.')

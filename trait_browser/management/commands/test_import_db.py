@@ -28,6 +28,7 @@ class CommandTestCase(TestCase):
     
     def setUp(self):
         self.cmd = Command()
+        # TODO: This should use a specific source db test data file
         self.source_db = self.cmd._get_source_db(which_db='test')
         self.cursor = self.source_db.cursor(buffered=True, dictionary=True)
     
@@ -187,19 +188,28 @@ class DbFixersTestCase(TestCase):
 
 class GetDbTestCase(TestCase):
     
-    def test_get_source_db_db_returns_connection_testdb(self):
+    def test_get_source_db_returns_connection_test(self):
         """Ensure that _get_source_db returns a connector.connection object from the test db."""
         cmd = Command()
         db = cmd._get_source_db(which_db='test')
         self.assertIsInstance(db, mysql.connector.MySQLConnection)
+        db.close()
     
-    def test_get_source_db_db_returns_connection_productiondb(self):
+    def test_get_source_db_returns_connection_production(self):
         """Ensure that _get_source_db returns a connector.connection object from the production db."""
         # TODO: make sure this works after Robert finished setting up the new topmed db on hippocras.
         cmd = Command()
         db = cmd._get_source_db(which_db='production')
         self.assertIsInstance(db, mysql.connector.MySQLConnection)
-    
+        db.close()
+
+    def test_get_source_db_returns_connection_devel(self):
+        """Ensure that _get_source_db returns a connector.connection object from the devel db."""
+        cmd = Command()
+        db = cmd._get_source_db(which_db='devel')
+        self.assertIsInstance(db, mysql.connector.MySQLConnection)
+        db.close()
+
 
 class MakeArgsTestCase(CommandTestCase):
     
@@ -375,7 +385,8 @@ class IntegrationTest(CommandTestCase):
 
     def test_call_command_to_import_whole_db(self):
         """Ensure that calling the command as you would from command line works properly."""
-        management.call_command('import_db')
+        # TODO: Later this should be changed to use a specific source db test data file
+        management.call_command('import_db', '--which_db=test')
         global_studies_query = 'SELECT COUNT(*) FROM global_study;'
         self.cursor.execute(global_studies_query)
         global_studies_count = self.cursor.fetchone()['COUNT(*)']
