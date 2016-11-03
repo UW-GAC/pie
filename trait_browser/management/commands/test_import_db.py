@@ -200,6 +200,12 @@ class GetDbTestCase(TestCase):
         db = cmd._get_source_db(which_db='production')
         self.assertIsInstance(db, mysql.connector.MySQLConnection)
 
+    def test_get_source_db_returns_connection_devel(self):
+        """Ensure that _get_source_db returns a connector.connection object from the devel db."""
+        cmd = Command()
+        db = cmd._get_source_db(which_db='devel')
+        self.assertIsInstance(db, mysql.connector.MySQLConnection)
+
 
 class MakeArgsTestCase(CommandTestCase):
     
