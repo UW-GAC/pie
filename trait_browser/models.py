@@ -396,6 +396,8 @@ class HarmonizedTrait(Trait):
     i_data_type = models.CharField('data type', max_length=45)
     i_unit = models.CharField('unit', max_length=100, blank=True)
     i_is_unique_key = models.BooleanField('is unique key?')
+    component_source_traits = models.ManyToManyField(SourceTrait)
+    component_harmonized_traits = models.ManyToManyField(HarmonizedTrait)
 
 
     def __str__(self):
