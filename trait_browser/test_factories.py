@@ -131,6 +131,12 @@ class SourceDatasetFactoryTestCase(TestCase):
         for one in source_datasets:
             self.assertIsInstance(one, SourceDataset)
 
+    def test_source_dataset_factory_create_with_subcohorts(self):
+        """Test that passing subcohorts to SourceDatasetFactory creates a SourceDataset with non-empty subcohorts"""
+        subcohorts = SubcohortFactory.create_batch(5, study__i_accession=5)
+        source_dataset = SourceDatasetFactory.create(subcohorts=subcohorts)
+        self.assertEqual(subcohorts, list(source_dataset.subcohorts.all()))
+
 
 class HarmonizedTraitSetFactoryTestCase(TestCase):
     
