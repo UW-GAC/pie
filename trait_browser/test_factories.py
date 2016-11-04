@@ -190,29 +190,29 @@ class SourceTraitFactoryTestCase(TestCase):
 
 class HarmonizedTraitFactoryTestCase(TestCase):
 
-    def test_harmonized_trait_factory_build(self):
+    def test_build(self):
         """Test that a HarmonizedTrait instance is returned by HarmonizedTraitFactory.build()"""
         harmonized_trait = HarmonizedTraitFactory.build()
         self.assertIsInstance(harmonized_trait, HarmonizedTrait)
         
-    def test_harmonized_trait_factory_create(self):
+    def test_create(self):
         """Test that a HarmonizedTrait instance is returned by HarmonizedTraitFactory.create()"""
         harmonized_trait = HarmonizedTraitFactory.create()
         self.assertIsInstance(harmonized_trait, HarmonizedTrait)
 
-    def test_harmonized_trait_factory_build_batch(self):
+    def test_build_batch(self):
         """Test that a HarmonizedTrait instance is returned by HarmonizedTraitFactory.build_batch(5)"""
         harmonized_traits = HarmonizedTraitFactory.build_batch(5)
         for one in harmonized_traits:
             self.assertIsInstance(one, HarmonizedTrait)
         
-    def test_harmonized_trait_factory_create_batch(self):
+    def test_create_batch(self):
         """Test that a HarmonizedTrait instance is returned by HarmonizedTraitFactory.create_batch(5)"""
         harmonized_traits = HarmonizedTraitFactory.create_batch(5)
         for one in harmonized_traits:
             self.assertIsInstance(one, HarmonizedTrait)
 
-    def test_harmonized_trait_factory_create_with_component_source_traits(self):
+    def test_create_with_component_source_traits(self):
         """Test that passing component_source_traits to HarmonizedTraitSetFactory creates a HarmonizedTraitSet with non-empty component_source_traits"""
         source_traits = SourceTraitFactory.create_batch(10)
         harmonized_trait = HarmonizedTraitFactory.create(component_source_traits=source_traits)
