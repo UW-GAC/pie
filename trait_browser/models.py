@@ -223,12 +223,14 @@ class HarmonizedTraitSet(TimeStampedModel):
     Fields:
         i_id
         i_trait_set_name
+        i_flavor
         i_version
         i_description
     """
 
     i_id = models.PositiveIntegerField('harmonized trait set id', primary_key=True, db_column='i_id')
     i_trait_set_name = models.CharField('trait set name', max_length=45)
+    i_flavor = models.PositiveIntegerField('flavor')
     i_version = models.PositiveIntegerField('version')
     i_description = models.CharField('description', max_length=1000)
 
