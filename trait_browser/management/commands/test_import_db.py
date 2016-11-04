@@ -231,7 +231,7 @@ class MakeArgsTestCase(CommandTestCase):
         # Have to make a GlobalStudy first.
         global_study = GlobalStudyFactory.create(i_id=row_dict['global_study_id'])
         #
-        study_args = self.cmd._make_study_args(self.cmd._fix_null(self.cmd._fix_bytearray(row_dict)))
+        study_args = self.cmd._make_study_args(self.cmd._fix_row(row_dict))
         study = Study(**study_args)
         study.save()
         self.assertIsInstance(study, Study)
@@ -259,7 +259,7 @@ class MakeArgsTestCase(CommandTestCase):
         global_study = GlobalStudyFactory.create(i_id=1)
         study = StudyFactory.create(i_accession=1, global_study=global_study)
         source_study_version = SourceStudyVersionFactory.create(i_id=row_dict['study_version_id'], study=study)
-        source_dataset_args = self.cmd._make_source_dataset_args(self.cmd._fix_null(self.cmd._fix_bytearray(row_dict)))
+        source_dataset_args = self.cmd._make_source_dataset_args(self.cmd._fix_row(row_dict))
         # 
         source_dataset = SourceDataset(**source_dataset_args)
         source_dataset.save()
@@ -276,7 +276,7 @@ class MakeArgsTestCase(CommandTestCase):
         source_study_version = SourceStudyVersionFactory.create(i_id=1, study=study)
         source_dataset = SourceDatasetFactory.create(i_id=row_dict['dataset_id'], source_study_version=source_study_version)
         # 
-        source_trait_args = self.cmd._make_source_trait_args(self.cmd._fix_null(self.cmd._fix_bytearray(row_dict)))
+        source_trait_args = self.cmd._make_source_trait_args(self.cmd._fix_row(row_dict))
         source_trait = SourceTrait(**source_trait_args)
         source_trait.save()
         self.assertIsInstance(source_trait, SourceTrait)
@@ -290,7 +290,7 @@ class MakeArgsTestCase(CommandTestCase):
         global_study = GlobalStudyFactory.create(i_id=1)
         study = StudyFactory.create(i_accession=row_dict['study_accession'], global_study=global_study)
         #
-        subcohort_args = self.cmd._make_subcohort_args(self.cmd._fix_null(self.cmd._fix_bytearray(row_dict)))
+        subcohort_args = self.cmd._make_subcohort_args(self.cmd._fix_row(row_dict))
         subcohort = Subcohort(**subcohort_args)
         subcohort.save()
         self.assertIsInstance(subcohort, Subcohort)
@@ -307,7 +307,7 @@ class MakeArgsTestCase(CommandTestCase):
         source_dataset = SourceDatasetFactory.create(i_id=1, source_study_version=source_study_version)
         source_trait = SourceTraitFactory.create(i_trait_id=row_dict['source_trait_id'], source_dataset=source_dataset)
         # 
-        source_trait_encoded_value_args = self.cmd._make_source_trait_encoded_value_args(self.cmd._fix_null(self.cmd._fix_bytearray(row_dict)))
+        source_trait_encoded_value_args = self.cmd._make_source_trait_encoded_value_args(self.cmd._fix_row(row_dict))
         source_trait_encoded_value = SourceTraitEncodedValue(**source_trait_encoded_value_args)
         source_trait_encoded_value.save()
         self.assertIsInstance(source_trait_encoded_value, SourceTraitEncodedValue)
