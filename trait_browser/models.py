@@ -391,6 +391,8 @@ class HarmonizedTrait(Trait):
         i_data_type
         i_unit
         i_is_unique_key
+        component_source_traits
+        component_harmonized_traits
     """
     
     harmonized_trait_set = models.ForeignKey(HarmonizedTraitSet)
@@ -399,7 +401,8 @@ class HarmonizedTrait(Trait):
     i_unit = models.CharField('unit', max_length=100, blank=True)
     i_is_unique_key = models.BooleanField('is unique key?')
     component_source_traits = models.ManyToManyField(SourceTrait)
-    component_harmonized_traits = models.ManyToManyField(HarmonizedTrait)
+    # This is a quoted string because the referenced model hasn't been defined yet.
+    component_harmonized_traits = models.ManyToManyField('HarmonizedTrait')
 
 
     def __str__(self):
