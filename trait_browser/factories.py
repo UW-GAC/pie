@@ -111,6 +111,7 @@ class HarmonizedTraitSetFactory(factory.DjangoModelFactory):
     i_trait_set_name = factory.Faker('word')
     i_version = factory.Sequence(lambda n: n)
     i_description = factory.Faker('text')
+    i_flavor = factory.Sequence(lambda n: n)
     
     class Meta:
         model = HarmonizedTraitSet
@@ -155,6 +156,26 @@ class HarmonizedTraitFactory(factory.DjangoModelFactory):
     class Meta:
         model = HarmonizedTrait
         django_get_or_create = ('i_trait_id', )
+
+    @factory.post_generation
+    def component_source_traits(self, create, extracted, **kwargs):
+        # Do not add any component_source_traits for simple builds.
+        if not create:
+            return
+        # Add component_source_traits from a list that was passed in.
+        if extracted:
+            for source_trait in extracted:
+                self.component_source_traits.add(source_trait)
+
+    @factory.post_generation
+    def component_harmonized_traits(self, create, extracted, **kwargs):
+        # Do not add any component_harmonized_traits for simple builds.
+        if not create:
+            return
+        # Add component_harmonized_traits from a list that was passed in.
+        if extracted:
+            for harmonized_trait in extracted:
+                self.component_harmonized_traits.add(harmonized_trait)
 
 
 class SourceTraitEncodedValueFactory(factory.DjangoModelFactory):
