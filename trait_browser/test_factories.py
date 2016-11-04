@@ -212,6 +212,12 @@ class HarmonizedTraitFactoryTestCase(TestCase):
         for one in harmonized_traits:
             self.assertIsInstance(one, HarmonizedTrait)
 
+    def test_harmonized_trait_factory_create_with_component_source_traits(self):
+        """Test that passing component_source_traits to HarmonizedTraitSetFactory creates a HarmonizedTraitSet with non-empty component_source_traits"""
+        source_traits = SourceTraitFactory.create_batch(10)
+        harmonized_trait = HarmonizedTraitFactory.create(component_source_traits=source_traits)
+        self.assertEqual(source_traits, list(harmonized_trait.component_source_traits.all()))
+
 
 class SourceTraitEncodedValueFactoryTestCase(TestCase):
 
