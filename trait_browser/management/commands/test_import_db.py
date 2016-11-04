@@ -281,6 +281,19 @@ class MakeArgsTestCase(CommandTestCase):
         source_trait.save()
         self.assertIsInstance(source_trait, SourceTrait)
 
+    def test_make_harmonized_trait_args_one_row_make_harmonized_trait_obj(self):
+        """Get a single row of test data from the database and see if the results from _make_harmonized_trait_args can be used to successfully make and save a SourceTrait object."""
+        harmonized_trait_query = 'SELECT * FROM harmonized_trait;'
+        self.cursor.execute(harmonized_trait_query)
+        row_dict = self.cursor.fetchone()
+        # Have to make harmonized_trait_set first.
+        harmonized_trait_set = HarmonizedTraitSetFactory.create(i_id=row_dict['harmonized_trait_set_id'])
+        # 
+        harmonized_trait_args = self.cmd._make_harmonized_trait_args(self.cmd._fix_row(row_dict))
+        harmonized_trait = HarmonizedTrait(**harmonized_trait_args)
+        harmonized_trait.save()
+        self.assertIsInstance(harmonized_trait, HarmonizedTrait)
+
     def test_make_subcohort_args_one_row_make_subcohort_obj(self):
         """Get a single row of test data from the database and see if the results from _make_subcohort_args can be used to successfully make and save a Subcohort object."""
         subcohort_query = 'SELECT * FROM subcohort;'
