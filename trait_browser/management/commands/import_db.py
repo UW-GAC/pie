@@ -292,6 +292,20 @@ class Command(BaseCommand):
                                        ['id', 'accession', 'dbgap_description', 'dcc_description', 'is_medication_dataset',
                                         'is_subject_file','study_subject_column', 'version', 'visit_code', 'visit_number'],
                                        foreign_key_mapping={'study_version_id':SourceStudyVersion})
+
+    def _make_harmonized_trait_set_args(self, row_dict):
+        """Get args for making a HarmonizedTraitSet object from a source db row.
+        
+        Converts a dictionary containing {colname: row value} pairs from a database
+        query into a dict with the necessary arguments for constructing a
+        HarmonizedTraitSet object. If there is a schema change in the source db,
+        this function may need to be modified.
+
+        Returns:
+            a dict of (required_HarmonizedTraitSet_attribute: attribute_value) pairs
+        """
+        return self._make_args_mapping(row_dict,
+                                       ['id', 'trait_set_name', 'version', 'flavor', 'description'])
     
     def _make_source_trait_args(self, row_dict):
         """Get args for making a SourceTrait object from a source db row.

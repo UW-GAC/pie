@@ -265,6 +265,17 @@ class MakeArgsTestCase(CommandTestCase):
         source_dataset.save()
         self.assertIsInstance(source_dataset, SourceDataset)
 
+    def test_make_harmonized_trait_set_args_one_row_make_harmonized_trait_set_obj(self):
+        """Get a single row of test data from the database and see if the results from _make_harmonized_trait_set_args can be used to successfully make and save a SourceDataset object."""
+        harmonized_trait_set_query = 'SELECT * FROM harmonized_trait_set;'
+        self.cursor.execute(harmonized_trait_set_query)
+        row_dict = self.cursor.fetchone()
+        harmonized_trait_set_args = self.cmd._make_harmonized_trait_set_args(self.cmd._fix_row(row_dict))
+        # 
+        harmonized_trait_set = HarmonizedTraitSet(**harmonized_trait_set_args)
+        harmonized_trait_set.save()
+        self.assertIsInstance(harmonized_trait_set, HarmonizedTraitSet)
+
     def test_make_source_trait_args_one_row_make_source_trait_obj(self):
         """Get a single row of test data from the database and see if the results from _make_source_trait_args can be used to successfully make and save a SourceTrait object."""
         source_trait_query = 'SELECT * FROM source_trait;'
