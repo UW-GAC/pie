@@ -365,8 +365,19 @@ class Command(BaseCommand):
         return self._make_args_mapping(row_dict, ['id', 'category', 'value'],
                                        foreign_key_mapping={'source_trait_id':SourceTrait})
 
-
-
+    def _make_harmonized_trait_encoded_value_args(self, row_dict):
+        """Get args for making a HarmonizedTraitEncodedValue object from a source db row.
+        
+        Converts a dictionary containing {colname: row value} pairs from a
+        database query into a dict with the necessary arguments for constructing
+        a Study object. If there is a schema change in the source db, this function
+        may need to be changed.
+        
+        Arguments:
+            source_db -- an open connection to the source database
+        """
+        return self._make_args_mapping(row_dict, ['id', 'category', 'value'],
+                                       foreign_key_mapping={'harmonized_trait_id':HarmonizedTrait})
 
     # Methods for importing data for models that require special processing.
     def _import_new_source_dataset_subcohorts(self, source_db, new_dataset_pks, verbosity):
