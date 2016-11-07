@@ -151,7 +151,7 @@ class HarmonizedTraitFactory(factory.DjangoModelFactory):
     harmonized_trait_set = factory.SubFactory(HarmonizedTraitSetFactory)
     i_data_type = factory.Faker('random_element', elements=('', 'encoded', 'character', 'double', 'integer', ))
     i_unit = factory.Faker('word')
-    i_is_unique_key = factory.Faker('boolean', chance_of_getting_true=10)
+    i_is_unique_key = False
     
     class Meta:
         model = HarmonizedTrait
