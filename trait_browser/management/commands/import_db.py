@@ -323,6 +323,21 @@ class Command(BaseCommand):
                                        source_field_names_to_map={'source_trait_id':'i_trait_id', 'dcc_description':'i_description'},
                                        foreign_key_mapping={'dataset_id': SourceDataset})
 
+    def _make_harmonized_trait_args(self, row_dict):
+        """Get args for making a HarmonizedTrait object from a source db row.
+        
+        Converts a dict containing (colname: row value) pairs into a dict with
+        the necessary arguments for constructing a HarmonizedTrait object. If there's
+        a schema change in the source db, this function may need to be modified.
+        
+        Returns:
+            a dict of (required_HarmonizedTrait_attribute: attribute_value) pairs
+        """
+        return self._make_args_mapping(row_dict,
+                                       ['description', 'data_type', 'unit', 'is_unique_key'],
+                                       source_field_names_to_map={'harmonized_trait_id':'i_trait_id'},
+                                       foreign_key_mapping={'harmonized_trait_set_id': HarmonizedTraitSet})
+
     def _make_subcohort_args(self, row_dict):
         """Get args for making a Subcohort object from a source db row.
         
@@ -349,21 +364,6 @@ class Command(BaseCommand):
         """
         return self._make_args_mapping(row_dict, ['id', 'category', 'value'],
                                        foreign_key_mapping={'source_trait_id':SourceTrait})
-
-    def _make_harmonized_trait_args(self, row_dict):
-        """Get args for making a HarmonizedTrait object from a source db row.
-        
-        Converts a dict containing (colname: row value) pairs into a dict with
-        the necessary arguments for constructing a HarmonizedTrait object. If there's
-        a schema change in the source db, this function may need to be modified.
-        
-        Returns:
-            a dict of (required_HarmonizedTrait_attribute: attribute_value) pairs
-        """
-        return self._make_args_mapping(row_dict,
-                                       ['description', 'data_type', 'unit', 'is_unique_key'],
-                                       source_field_names_to_map={'harmonized_trait_id':'i_trait_id'},
-                                       foreign_key_mapping={'harmonized_trait_set_id': HarmonizedTraitSet})
 
 
 

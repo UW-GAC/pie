@@ -335,6 +335,21 @@ class MakeArgsTestCase(CommandTestCase):
         source_trait_encoded_value = SourceTraitEncodedValue(**source_trait_encoded_value_args)
         source_trait_encoded_value.save()
         self.assertIsInstance(source_trait_encoded_value, SourceTraitEncodedValue)
+        
+    def test_make_harmonized_trait_encoded_value_args_one_row_make_harmonized_trait_encoded_value_obj(self):
+        """Get a single row of test data from the database and see if the results from _make_harmonized_trait_encoded_value_args can be used to successfully make and save a HarmonizedTraitEncodedValue object."""
+        # TODO: This won't pass while using a test db without any harmonized trait encoded values in it
+        harmonized_trait_encoded_value_query = 'SELECT * FROM harmonized_trait_encoded_values;'
+        self.cursor.execute(harmonized_trait_encoded_value_query)
+        row_dict = self.cursor.fetchone()
+        # Have to make a harmonized_trait_set and harmonized_trait first.
+        harmonized_trait_set = HarmonizedTraitSetFactory.create(i_id=row_dict['harmonized_trait_set_id'])
+        harmonized_trait = HarmonizedTraitFactory.create(i_trait_id=row_dict['harmonized_trait_id'], harmonized_trait_set=harmonized_trait_set)
+        # 
+        harmonized_trait_encoded_value_args = self.cmd._make_harmonized_trait_encoded_value_args(self.cmd._fix_row(row_dict))
+        harmonized_trait_encoded_value = HarmonizedTraitEncodedValue(**harmonized_trait_encoded_value_args)
+        harmonized_trait_encoded_value.save()
+        self.assertIsInstance(harmonized_trait_encoded_value, HarmonizedTraitEncodedValue)
 
 
 class HelperTestCase(CommandTestCase):
