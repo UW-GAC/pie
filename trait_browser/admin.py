@@ -126,7 +126,7 @@ class HarmonizedTraitSetAdmin(ReadOnlyAdmin):
         if not field.is_relation    # Exclude foreign keys from the results.
     )))
     # Set fields to display, filter, and search on.
-    list_display = ('i_id', 'i_trait_set_name', 'i_version', ) + ReadOnlyAdmin.list_display
+    list_display = ('i_id', 'i_trait_set_name', 'i_version', 'i_flavor' ) + ReadOnlyAdmin.list_display
     search_fields = ('i_id', 'i_trait_set_name', )
 
 

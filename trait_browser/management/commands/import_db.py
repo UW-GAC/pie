@@ -292,6 +292,20 @@ class Command(BaseCommand):
                                        ['id', 'accession', 'dbgap_description', 'dcc_description', 'is_medication_dataset',
                                         'is_subject_file','study_subject_column', 'version', 'visit_code', 'visit_number'],
                                        foreign_key_mapping={'study_version_id':SourceStudyVersion})
+
+    def _make_harmonized_trait_set_args(self, row_dict):
+        """Get args for making a HarmonizedTraitSet object from a source db row.
+        
+        Converts a dictionary containing {colname: row value} pairs from a database
+        query into a dict with the necessary arguments for constructing a
+        HarmonizedTraitSet object. If there is a schema change in the source db,
+        this function may need to be modified.
+
+        Returns:
+            a dict of (required_HarmonizedTraitSet_attribute: attribute_value) pairs
+        """
+        return self._make_args_mapping(row_dict,
+                                       ['id', 'trait_set_name', 'version', 'flavor', 'description'])
     
     def _make_source_trait_args(self, row_dict):
         """Get args for making a SourceTrait object from a source db row.
@@ -307,7 +321,22 @@ class Command(BaseCommand):
                                        ['trait_name', 'detected_type', 'dbgap_type', 'visit_number', 'dbgap_variable_accession',
                                         'dbgap_variable_version', 'dbgap_comment', 'dbgap_unit', 'n_records', 'n_missing'],
                                        source_field_names_to_map={'source_trait_id':'i_trait_id', 'dcc_description':'i_description'},
-                                       foreign_key_mapping={'dataset_id':SourceDataset})
+                                       foreign_key_mapping={'dataset_id': SourceDataset})
+
+    def _make_harmonized_trait_args(self, row_dict):
+        """Get args for making a HarmonizedTrait object from a source db row.
+        
+        Converts a dict containing (colname: row value) pairs into a dict with
+        the necessary arguments for constructing a HarmonizedTrait object. If there's
+        a schema change in the source db, this function may need to be modified.
+        
+        Returns:
+            a dict of (required_HarmonizedTrait_attribute: attribute_value) pairs
+        """
+        return self._make_args_mapping(row_dict,
+                                       ['description', 'data_type', 'unit', 'is_unique_key'],
+                                       source_field_names_to_map={'harmonized_trait_id':'i_trait_id'},
+                                       foreign_key_mapping={'harmonized_trait_set_id': HarmonizedTraitSet})
 
     def _make_subcohort_args(self, row_dict):
         """Get args for making a Subcohort object from a source db row.
@@ -335,6 +364,20 @@ class Command(BaseCommand):
         """
         return self._make_args_mapping(row_dict, ['id', 'category', 'value'],
                                        foreign_key_mapping={'source_trait_id':SourceTrait})
+
+    def _make_harmonized_trait_encoded_value_args(self, row_dict):
+        """Get args for making a HarmonizedTraitEncodedValue object from a source db row.
+        
+        Converts a dictionary containing {colname: row value} pairs from a
+        database query into a dict with the necessary arguments for constructing
+        a Study object. If there is a schema change in the source db, this function
+        may need to be changed.
+        
+        Arguments:
+            source_db -- an open connection to the source database
+        """
+        return self._make_args_mapping(row_dict, ['id', 'category', 'value'],
+                                       foreign_key_mapping={'harmonized_trait_id':HarmonizedTrait})
 
     # Methods for importing data for models that require special processing.
     def _import_new_source_dataset_subcohorts(self, source_db, new_dataset_pks, verbosity):

@@ -223,12 +223,14 @@ class HarmonizedTraitSet(TimeStampedModel):
     Fields:
         i_id
         i_trait_set_name
+        i_flavor
         i_version
         i_description
     """
 
     i_id = models.PositiveIntegerField('harmonized trait set id', primary_key=True, db_column='i_id')
     i_trait_set_name = models.CharField('trait set name', max_length=45)
+    i_flavor = models.PositiveIntegerField('flavor')
     i_version = models.PositiveIntegerField('version')
     i_description = models.CharField('description', max_length=1000)
 
@@ -389,6 +391,8 @@ class HarmonizedTrait(Trait):
         i_data_type
         i_unit
         i_is_unique_key
+        component_source_traits
+        component_harmonized_traits
     """
     
     harmonized_trait_set = models.ForeignKey(HarmonizedTraitSet)
@@ -396,6 +400,9 @@ class HarmonizedTrait(Trait):
     i_data_type = models.CharField('data type', max_length=45)
     i_unit = models.CharField('unit', max_length=100, blank=True)
     i_is_unique_key = models.BooleanField('is unique key?')
+    component_source_traits = models.ManyToManyField(SourceTrait)
+    # This is a quoted string because the referenced model hasn't been defined yet.
+    component_harmonized_traits = models.ManyToManyField('HarmonizedTrait')
 
 
     def __str__(self):

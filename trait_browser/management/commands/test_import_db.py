@@ -231,7 +231,7 @@ class MakeArgsTestCase(CommandTestCase):
         # Have to make a GlobalStudy first.
         global_study = GlobalStudyFactory.create(i_id=row_dict['global_study_id'])
         #
-        study_args = self.cmd._make_study_args(self.cmd._fix_null(self.cmd._fix_bytearray(row_dict)))
+        study_args = self.cmd._make_study_args(self.cmd._fix_row(row_dict))
         study = Study(**study_args)
         study.save()
         self.assertIsInstance(study, Study)
@@ -259,11 +259,22 @@ class MakeArgsTestCase(CommandTestCase):
         global_study = GlobalStudyFactory.create(i_id=1)
         study = StudyFactory.create(i_accession=1, global_study=global_study)
         source_study_version = SourceStudyVersionFactory.create(i_id=row_dict['study_version_id'], study=study)
-        source_dataset_args = self.cmd._make_source_dataset_args(self.cmd._fix_null(self.cmd._fix_bytearray(row_dict)))
+        source_dataset_args = self.cmd._make_source_dataset_args(self.cmd._fix_row(row_dict))
         # 
         source_dataset = SourceDataset(**source_dataset_args)
         source_dataset.save()
         self.assertIsInstance(source_dataset, SourceDataset)
+
+    def test_make_harmonized_trait_set_args_one_row_make_harmonized_trait_set_obj(self):
+        """Get a single row of test data from the database and see if the results from _make_harmonized_trait_set_args can be used to successfully make and save a SourceDataset object."""
+        harmonized_trait_set_query = 'SELECT * FROM harmonized_trait_set;'
+        self.cursor.execute(harmonized_trait_set_query)
+        row_dict = self.cursor.fetchone()
+        harmonized_trait_set_args = self.cmd._make_harmonized_trait_set_args(self.cmd._fix_row(row_dict))
+        # 
+        harmonized_trait_set = HarmonizedTraitSet(**harmonized_trait_set_args)
+        harmonized_trait_set.save()
+        self.assertIsInstance(harmonized_trait_set, HarmonizedTraitSet)
 
     def test_make_source_trait_args_one_row_make_source_trait_obj(self):
         """Get a single row of test data from the database and see if the results from _make_source_trait_args can be used to successfully make and save a SourceTrait object."""
@@ -276,10 +287,23 @@ class MakeArgsTestCase(CommandTestCase):
         source_study_version = SourceStudyVersionFactory.create(i_id=1, study=study)
         source_dataset = SourceDatasetFactory.create(i_id=row_dict['dataset_id'], source_study_version=source_study_version)
         # 
-        source_trait_args = self.cmd._make_source_trait_args(self.cmd._fix_null(self.cmd._fix_bytearray(row_dict)))
+        source_trait_args = self.cmd._make_source_trait_args(self.cmd._fix_row(row_dict))
         source_trait = SourceTrait(**source_trait_args)
         source_trait.save()
         self.assertIsInstance(source_trait, SourceTrait)
+
+    def test_make_harmonized_trait_args_one_row_make_harmonized_trait_obj(self):
+        """Get a single row of test data from the database and see if the results from _make_harmonized_trait_args can be used to successfully make and save a SourceTrait object."""
+        harmonized_trait_query = 'SELECT * FROM harmonized_trait;'
+        self.cursor.execute(harmonized_trait_query)
+        row_dict = self.cursor.fetchone()
+        # Have to make harmonized_trait_set first.
+        harmonized_trait_set = HarmonizedTraitSetFactory.create(i_id=row_dict['harmonized_trait_set_id'])
+        # 
+        harmonized_trait_args = self.cmd._make_harmonized_trait_args(self.cmd._fix_row(row_dict))
+        harmonized_trait = HarmonizedTrait(**harmonized_trait_args)
+        harmonized_trait.save()
+        self.assertIsInstance(harmonized_trait, HarmonizedTrait)
 
     def test_make_subcohort_args_one_row_make_subcohort_obj(self):
         """Get a single row of test data from the database and see if the results from _make_subcohort_args can be used to successfully make and save a Subcohort object."""
@@ -290,7 +314,7 @@ class MakeArgsTestCase(CommandTestCase):
         global_study = GlobalStudyFactory.create(i_id=1)
         study = StudyFactory.create(i_accession=row_dict['study_accession'], global_study=global_study)
         #
-        subcohort_args = self.cmd._make_subcohort_args(self.cmd._fix_null(self.cmd._fix_bytearray(row_dict)))
+        subcohort_args = self.cmd._make_subcohort_args(self.cmd._fix_row(row_dict))
         subcohort = Subcohort(**subcohort_args)
         subcohort.save()
         self.assertIsInstance(subcohort, Subcohort)
@@ -307,10 +331,25 @@ class MakeArgsTestCase(CommandTestCase):
         source_dataset = SourceDatasetFactory.create(i_id=1, source_study_version=source_study_version)
         source_trait = SourceTraitFactory.create(i_trait_id=row_dict['source_trait_id'], source_dataset=source_dataset)
         # 
-        source_trait_encoded_value_args = self.cmd._make_source_trait_encoded_value_args(self.cmd._fix_null(self.cmd._fix_bytearray(row_dict)))
+        source_trait_encoded_value_args = self.cmd._make_source_trait_encoded_value_args(self.cmd._fix_row(row_dict))
         source_trait_encoded_value = SourceTraitEncodedValue(**source_trait_encoded_value_args)
         source_trait_encoded_value.save()
         self.assertIsInstance(source_trait_encoded_value, SourceTraitEncodedValue)
+        
+    def test_make_harmonized_trait_encoded_value_args_one_row_make_harmonized_trait_encoded_value_obj(self):
+        """Get a single row of test data from the database and see if the results from _make_harmonized_trait_encoded_value_args can be used to successfully make and save a HarmonizedTraitEncodedValue object."""
+        # TODO: This won't pass while using a test db without any harmonized trait encoded values in it
+        harmonized_trait_encoded_value_query = 'SELECT * FROM harmonized_trait_encoded_values;'
+        self.cursor.execute(harmonized_trait_encoded_value_query)
+        row_dict = self.cursor.fetchone()
+        # Have to make a harmonized_trait_set and harmonized_trait first.
+        harmonized_trait_set = HarmonizedTraitSetFactory.create(i_id=row_dict['harmonized_trait_set_id'])
+        harmonized_trait = HarmonizedTraitFactory.create(i_trait_id=row_dict['harmonized_trait_id'], harmonized_trait_set=harmonized_trait_set)
+        # 
+        harmonized_trait_encoded_value_args = self.cmd._make_harmonized_trait_encoded_value_args(self.cmd._fix_row(row_dict))
+        harmonized_trait_encoded_value = HarmonizedTraitEncodedValue(**harmonized_trait_encoded_value_args)
+        harmonized_trait_encoded_value.save()
+        self.assertIsInstance(harmonized_trait_encoded_value, HarmonizedTraitEncodedValue)
 
 
 class HelperTestCase(CommandTestCase):
