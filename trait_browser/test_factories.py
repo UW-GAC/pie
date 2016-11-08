@@ -318,6 +318,9 @@ class BuildTestDbTestCase(TestCase):
         self.assertTrue(SourceDataset.objects.count() > 0)
         self.assertTrue(SourceTrait.objects.count() > 0)
         self.assertTrue(SourceTraitEncodedValue.objects.count() > 0)
+        self.assertTrue(HarmonizedTraitSet.objects.count() > 0)
+        self.assertTrue(HarmonizedTrait.objects.count() > 0)
+        self.assertTrue(HarmonizedTraitEncodedValue.objects.count() > 0)
 
     def test_build_db2(self):
         """Test that building a db of fake data works. Run the same test several times with different values."""
@@ -334,6 +337,9 @@ class BuildTestDbTestCase(TestCase):
         self.assertTrue(SourceDataset.objects.count() > 0)
         self.assertTrue(SourceTrait.objects.count() > 0)
         self.assertTrue(SourceTraitEncodedValue.objects.count() > 0)
+        self.assertTrue(HarmonizedTraitSet.objects.count() > 0)
+        self.assertTrue(HarmonizedTrait.objects.count() > 0)
+        self.assertTrue(HarmonizedTraitEncodedValue.objects.count() > 0)
 
     def test_build_db3(self):
         """Test that building a db of fake data works. Run the same test several times with different values."""
@@ -350,3 +356,6 @@ class BuildTestDbTestCase(TestCase):
         self.assertTrue(SourceDataset.objects.count() > 0)
         self.assertTrue(SourceTrait.objects.count() > 0)
         self.assertTrue(SourceTraitEncodedValue.objects.count() > 0)
+        self.assertTrue(HarmonizedTraitSet.objects.count() > 0)
+        self.assertTrue(HarmonizedTrait.objects.count() > 0)
+        self.assertTrue(HarmonizedTraitEncodedValue.objects.count() > 0)
