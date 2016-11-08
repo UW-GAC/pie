@@ -109,9 +109,9 @@ class HarmonizedTraitSetFactory(factory.DjangoModelFactory):
     
     i_id = factory.Sequence(lambda n: n)
     i_trait_set_name = factory.Faker('word')
-    i_version = factory.Sequence(lambda n: n)
+    i_version = factory.Faker('random_int', min=1, max=10)
     i_description = factory.Faker('text')
-    i_flavor = factory.Sequence(lambda n: n)
+    i_flavor = factory.Faker('random_int', min=1, max=10)
     
     class Meta:
         model = HarmonizedTraitSet
