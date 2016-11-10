@@ -13,6 +13,7 @@ This test module runs several unit tests and one integration test.
 from datetime import datetime
 
 import mysql.connector
+# Use the mysql-connector-python-rf package from pypi (advice via this SO post http://stackoverflow.com/q/34168651/2548371)
 from django.core import management
 from django.test import TestCase
 from django.utils import timezone
