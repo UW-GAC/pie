@@ -11,9 +11,12 @@ This test module runs several unit tests and one integration test.
 """
 
 from datetime import datetime
+from os.path import join
+from subprocess import call
 
 import mysql.connector
 # Use the mysql-connector-python-rf package from pypi (advice via this SO post http://stackoverflow.com/q/34168651/2548371)
+from django.conf import settings
 from django.core import management
 from django.test import TestCase
 from django.utils import timezone
@@ -25,16 +28,68 @@ from trait_browser.models import GlobalStudy, HarmonizedTrait, HarmonizedTraitEn
 
 CMD = Command()
 
+def get_devel_db(permissions='readonly'):
+    """Get a connection to the devel source db."""
+    return CMD._get_source_db(which_db='devel', permissions=permissions)
+
+def clean_devel_db():
+    """Remove all existing data from the devel source db."""
+    print('Getting source db connection ...')
+    source_db = get_devel_db(permissions='full')
+    cursor = source_db.cursor(buffered=True, dictionary=False)
+    print('Emptying current data from devel db ...')
+    cursor.execute('SHOW TABLES;')
+    tables = [el[0].decode('utf-8') for el in cursor.fetchall()]
+    tables.remove('schema_changes')
+    tables = [el for el in tables if not el.startswith('view_')]
+    # Turn off foreign key checks.
+    cursor.execute('SET FOREIGN_KEY_CHECKS = 0;')
+    # Remove data from each table. 
+    for t in tables:
+        cursor.execute('TRUNCATE {};'.format(t))
+    # Turn foreign key checks back on.
+    cursor.execute('SET FOREIGN_KEY_CHECKS = 1;')
+
+    cursor.close()
+    source_db.close()
+    
+TEST_DATA_DIR = 'trait_browser/source_db_test_data'
+def load_test_source_db_data(filename):
+    """
+    Load the data from a specific test data set into the devel source db.
+    
+    Args:
+        filename -- name of the .sql mysql dump file, found in trait_browser/source_db_test_data
+    """
+    print('Loading test data from ' + filename + ' ...')
+    filepath = join(TEST_DATA_DIR, filename)
+    mysql_load = ['mysql', '--defaults-file={}'.format(settings.CNF_PATH),
+                 '--defaults-group-suffix=_topmed_pheno_full_devel', '<', filepath]
+    return_code = call(' '.join(mysql_load), shell=True, cwd=settings.SITE_ROOT)
+    if return_code == 1:
+        raise ValueError('MySQL failed to load test data.')
+    print('Test data loaded ...')
+
+
 class CommandTestCase(TestCase):
     """Superclass to test things using the management command from import_db."""
     
+    @classmethod
+    def setUpClass(cls):
+        # Run the TestCase setUpClass method.
+        super(CommandTestCase, cls).setUpClass()
+        # Clean out the devel db and load the first test dataset.
+        # By default, all tests will use dataset 1.
+        clean_devel_db()
+        load_test_source_db_data('base.sql')
+    
     def setUp(self):
-        self.cmd = Command()
-        # TODO: This should use a specific source db test data file
-        self.source_db = self.cmd._get_source_db(which_db='test')
+        """ """
+        self.source_db = get_devel_db()
         self.cursor = self.source_db.cursor(buffered=True, dictionary=True)
     
     def tearDown(self):
+        """ """
         self.cursor.close()
         self.source_db.close()
 
@@ -406,8 +461,8 @@ class IntegrationTest(CommandTestCase):
 
     def test_call_command_to_import_whole_db(self):
         """Ensure that calling the command as you would from command line works properly."""
-        # TODO: Later this should be changed to use a specific source db test data file
-        management.call_command('import_db', '--which_db=test')
+        management.call_command('import_db', '--which_db=devel')
+        
         global_studies_query = 'SELECT COUNT(*) FROM global_study;'
         self.cursor.execute(global_studies_query)
         global_studies_count = self.cursor.fetchone()['COUNT(*)']
