@@ -42,6 +42,8 @@ class Command(BaseCommand):
         """
         if which_db is None:
             raise ValueError('which_db as passed to _get_source_db MUST be set to a valid value ({} is not valid)'.format(which_db))
+        if (which_db == 'test' or which_db == 'production') and (permissions == 'full'):
+            raise ValueError('Requested full permissions for {} source database. Not allowed!!!')
         # Default is to connect as readonly; only test functions connect as full user.
         cnf_group = ['client', 'mysql_topmed_pheno_{}_{}'.format(permissions, which_db)]
         cnx = mysql.connector.connect(option_files=cnf_path, option_groups=cnf_group, charset='latin1', use_unicode=False)
