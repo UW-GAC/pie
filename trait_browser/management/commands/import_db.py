@@ -27,7 +27,7 @@ class Command(BaseCommand):
 
     help ='Import the db models with a query to the source db (snuffles).'
 
-    def _get_source_db(self, which_db, cnf_path=settings.CNF_PATH):
+    def _get_source_db(self, which_db, cnf_path=settings.CNF_PATH, permissions='readonly'):
         """Get a connection to the source phenotype db.
         
         Arguments:
@@ -35,14 +35,15 @@ class Command(BaseCommand):
                 devel, or test)
             cnf_path -- string; path to the mySQL config file with db connection
                 settings
+            permissions -- string; 'readonly' or 'full'
         
         Returns:
             a mysql.connector open db connection
         """
         if which_db is None:
             raise ValueError('which_db as passed to _get_source_db MUST be set to a valid value ({} is not valid)'.format(which_db))
-        # ALWAYS connect to the db as the read-only user
-        cnf_group = ['client', 'mysql_topmed_pheno_readonly' + '_{}'.format(which_db)]
+        # Default is to connect as readonly; only test functions connect as full user.
+        cnf_group = ['client', 'mysql_topmed_pheno_{}_{}'.format(permissions, which_db)]
         cnx = mysql.connector.connect(option_files=cnf_path, option_groups=cnf_group, charset='latin1', use_unicode=False)
         # TODO add a try/except block here in case the db connection fails.
         return cnx
