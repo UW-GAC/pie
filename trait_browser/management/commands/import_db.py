@@ -487,5 +487,30 @@ class Command(BaseCommand):
 
         self._import_new_source_dataset_subcohorts(source_db, new_source_dataset_pks, verbosity=options['verbosity'])
         print("Added source dataset subcohorts")
+        
+        new_harmonized_trait_set_pks = self._import_new_data(source_db=source_db,
+                                                             table_name='harmonized_trait_set',
+                                                             pk_name='id',
+                                                             model=HarmonizedTraitSet,
+                                                             make_args=self._make_harmonized_trait_set_args,
+                                                             verbosity=options['verbosity'])
+        print("Added harmonized trait sets")
+
+        new_harmonized_trait_pks = self._import_new_data(source_db=source_db,
+                                                             table_name='harmonized_trait',
+                                                             pk_name='harmonized_trait_id',
+                                                             model=HarmonizedTrait,
+                                                             make_args=self._make_harmonized_trait_args,
+                                                             verbosity=options['verbosity'])
+        print("Added harmonized traits")
+
+        new_harmonized_trait_encoded_value_pks = self._import_new_data(source_db=source_db,
+                                                             table_name='harmonized_trait_encoded_values',
+                                                             pk_name='harmonized_trait_id',
+                                                             model=HarmonizedTraitEncodedValue,
+                                                             make_args=self._make_harmonized_trait_encoded_value_args,
+                                                             verbosity=options['verbosity'])
+        print("Added harmonized trait encoded values")
+        
 
         source_db.close()
