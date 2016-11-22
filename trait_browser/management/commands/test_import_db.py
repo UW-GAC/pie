@@ -49,7 +49,6 @@ def clean_devel_db():
         cursor.execute('TRUNCATE {};'.format(t))
     # Turn foreign key checks back on.
     cursor.execute('SET FOREIGN_KEY_CHECKS = 1;')
-
     cursor.close()
     source_db.close()
     
@@ -61,23 +60,24 @@ def load_test_source_db_data(filename):
     Args:
         filename -- name of the .sql mysql dump file, found in trait_browser/source_db_test_data
     """
-    print('Loading test data from ' + filename + ' ...')
     filepath = join(TEST_DATA_DIR, filename)
+    print('Loading test data from ' + filepath + ' ...')
     mysql_load = ['mysql', '--defaults-file={}'.format(settings.CNF_PATH),
                  '--defaults-group-suffix=_topmed_pheno_full_devel', '<', filepath]
     return_code = call(' '.join(mysql_load), shell=True, cwd=settings.SITE_ROOT)
     if return_code == 1:
         raise ValueError('MySQL failed to load test data.')
-    print('Test data loaded ...')
+    else:
+        print('Test data loaded ...')
 
 
-class CommandTestCase(TestCase):
-    """Superclass to test things using the management command from import_db."""
+class BaseTestDataTestCase(TestCase):
+    """Superclass to test importing commands on the base.sql test source db data."""
     
     @classmethod
     def setUpClass(cls):
         # Run the TestCase setUpClass method.
-        super(CommandTestCase, cls).setUpClass()
+        super(BaseTestDataTestCase, cls).setUpClass()
         # Clean out the devel db and load the first test dataset.
         # By default, all tests will use dataset 1.
         clean_devel_db()
@@ -92,6 +92,46 @@ class CommandTestCase(TestCase):
         """ """
         self.cursor.close()
         self.source_db.close()
+
+
+class VisitTestDataTestCase(TestCase):
+    """Tests that need visit data to already be added to the source db test data."""
+    
+    @classmethod
+    def setUpClass(cls):
+        # Run the TestCase setUpClass method.
+        super(VisitTestDataTestCase, cls).setUpClass()
+        # Clean out the devel db and load the first test dataset.
+        # By default, all tests will use dataset 1.
+        clean_devel_db()
+        load_test_source_db_data('base_plus_visit.sql')
+    
+    def setUp(self):
+        """ """
+        self.source_db = get_devel_db()
+        self.cursor = self.source_db.cursor(buffered=True, dictionary=True)
+    
+    def tearDown(self):
+        """ """
+        self.cursor.close()
+        self.source_db.close()
+
+
+class VisitTestCase(VisitTestDataTestCase):
+    
+    def test_make_subcohort_args_one_row_make_subcohort_obj(self):
+        """Get a single row of test data from the database and see if the results from _make_subcohort_args can be used to successfully make and save a Subcohort object."""
+        subcohort_query = 'SELECT * FROM subcohort;'
+        self.cursor.execute(subcohort_query)
+        row_dict = self.cursor.fetchone()
+        # Have to make global study and study first.
+        global_study = GlobalStudyFactory.create(i_id=1)
+        study = StudyFactory.create(i_accession=row_dict['study_accession'], global_study=global_study)
+        #
+        subcohort_args = CMD._make_subcohort_args(CMD._fix_row(row_dict))
+        subcohort = Subcohort(**subcohort_args)
+        subcohort.save()
+        self.assertIsInstance(subcohort, Subcohort)
 
 
 class DbFixersTestCase(TestCase):
@@ -248,7 +288,7 @@ class GetDbTestCase(TestCase):
         db.close()
 
 
-class MakeArgsTestCase(CommandTestCase):
+class MakeArgsTestCase(BaseTestDataTestCase):
     
     def test_make_global_study_args_one_row_make_global_study_obj(self):
         """Get a single row of test data from the database and see if the results from _make_global_study_args can be used to successfully make and save a Global_study object."""
@@ -342,20 +382,6 @@ class MakeArgsTestCase(CommandTestCase):
         harmonized_trait.save()
         self.assertIsInstance(harmonized_trait, HarmonizedTrait)
 
-    def test_make_subcohort_args_one_row_make_subcohort_obj(self):
-        """Get a single row of test data from the database and see if the results from _make_subcohort_args can be used to successfully make and save a Subcohort object."""
-        subcohort_query = 'SELECT * FROM subcohort;'
-        self.cursor.execute(subcohort_query)
-        row_dict = self.cursor.fetchone()
-        # Have to make global study and study first.
-        global_study = GlobalStudyFactory.create(i_id=1)
-        study = StudyFactory.create(i_accession=row_dict['study_accession'], global_study=global_study)
-        #
-        subcohort_args = CMD._make_subcohort_args(CMD._fix_row(row_dict))
-        subcohort = Subcohort(**subcohort_args)
-        subcohort.save()
-        self.assertIsInstance(subcohort, Subcohort)
-        
     def test_make_source_trait_encoded_value_args_one_row_make_source_trait_encoded_value_obj(self):
         """Get a single row of test data from the database and see if the results from _make_source_trait_encoded_value_args can be used to successfully make and save a SourceTraitEncodedValue object."""
         source_trait_encoded_value_query = 'SELECT * FROM source_trait_encoded_values;'
@@ -450,7 +476,7 @@ class GetCurrentListsTest(TestCase):
         self.assertEqual(len(pks), self.n)
 
 
-class IntegrationTest(CommandTestCase):
+class IntegrationTest(VisitTestDataTestCase):
     """Integration test of the whole management command.
     
     It's very difficult to test just one function at a time here, because of
@@ -458,6 +484,7 @@ class IntegrationTest(CommandTestCase):
     source database. So just run one big integration test here rather than
     nice unit tests.
     """
+    # TODO: have this run import, then add visit data, then 
     
     def test_import_new_methods_after_partial_db_import(self):
         """Ensure that the whole workflow of the management command works to add objects to the website databse, without limits."""
