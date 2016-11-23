@@ -49,4 +49,6 @@ DATABASES = {
 
 # STATIC FILE SETTINGS
 # TODO: change the path for the static files for deployment.
-STATIC_ROOT = '/var/django/topmed_pheno_site/static_collected/'
+STATIC_ROOT = '/var/django/phenotype_inventory_static'
+# URL prefix for static files.
+STATIC_URL = '/static/'
