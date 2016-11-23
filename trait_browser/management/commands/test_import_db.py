@@ -37,7 +37,7 @@ def clean_devel_db():
     print('Getting source db connection ...')
     source_db = get_devel_db(permissions='full')
     cursor = source_db.cursor(buffered=True, dictionary=False)
-    print('Emptying current data from devel db ...')
+    print('Emptying current data from devel source db ...')
     cursor.execute('SHOW TABLES;')
     tables = [el[0].decode('utf-8') for el in cursor.fetchall()]
     tables.remove('schema_changes')
@@ -375,14 +375,18 @@ class MakeArgsTestCase(CommandTestCase):
         
     def test_make_harmonized_trait_encoded_value_args_one_row_make_harmonized_trait_encoded_value_obj(self):
         """Get a single row of test data from the database and see if the results from _make_harmonized_trait_encoded_value_args can be used to successfully make and save a HarmonizedTraitEncodedValue object."""
-        # TODO: This won't pass while using a test db without any harmonized trait encoded values in it
+        # Get a single harmonized_trait_encoded_value from the source db
         harmonized_trait_encoded_value_query = 'SELECT * FROM harmonized_trait_encoded_values;'
         self.cursor.execute(harmonized_trait_encoded_value_query)
         row_dict = self.cursor.fetchone()
-        # Have to make a harmonized_trait_set and harmonized_trait first.
-        harmonized_trait_set = HarmonizedTraitSetFactory.create(i_id=row_dict['harmonized_trait_set_id'])
+        # Get information for the harmonized_trait the encoded value is connected to.
+        harmonized_trait_set_query = 'SELECT * FROM harmonized_trait WHERE harmonized_trait_id = {};'.format(row_dict['harmonized_trait_id'])
+        self.cursor.execute(harmonized_trait_set_query)
+        harmonized_trait_row_dict = self.cursor.fetchone()
+        # Make a harmonized_trait and harmonized_trait_set before trying to make the encoded value object.
+        harmonized_trait_set = HarmonizedTraitSetFactory.create(i_id=harmonized_trait_row_dict['harmonized_trait_set_id'])
         harmonized_trait = HarmonizedTraitFactory.create(i_trait_id=row_dict['harmonized_trait_id'], harmonized_trait_set=harmonized_trait_set)
-        # 
+        # Make the encoded value object.
         harmonized_trait_encoded_value_args = CMD._make_harmonized_trait_encoded_value_args(CMD._fix_row(row_dict))
         harmonized_trait_encoded_value = HarmonizedTraitEncodedValue(**harmonized_trait_encoded_value_args)
         harmonized_trait_encoded_value.save()
