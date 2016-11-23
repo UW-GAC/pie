@@ -27,7 +27,7 @@ class Command(BaseCommand):
 
     help ='Import the db models with a query to the source db (snuffles).'
 
-    def _get_source_db(self, which_db, cnf_path=settings.CNF_PATH):
+    def _get_source_db(self, which_db, cnf_path=settings.CNF_PATH, permissions='readonly'):
         """Get a connection to the source phenotype db.
         
         Arguments:
@@ -35,14 +35,17 @@ class Command(BaseCommand):
                 devel, or test)
             cnf_path -- string; path to the mySQL config file with db connection
                 settings
+            permissions -- string; 'readonly' or 'full'
         
         Returns:
             a mysql.connector open db connection
         """
         if which_db is None:
             raise ValueError('which_db as passed to _get_source_db MUST be set to a valid value ({} is not valid)'.format(which_db))
-        # ALWAYS connect to the db as the read-only user
-        cnf_group = ['client', 'mysql_topmed_pheno_readonly' + '_{}'.format(which_db)]
+        if (which_db == 'test' or which_db == 'production') and (permissions == 'full'):
+            raise ValueError('Requested full permissions for {} source database. Not allowed!!!')
+        # Default is to connect as readonly; only test functions connect as full user.
+        cnf_group = ['client', 'mysql_topmed_pheno_{}_{}'.format(permissions, which_db)]
         cnx = mysql.connector.connect(option_files=cnf_path, option_groups=cnf_group, charset='latin1', use_unicode=False)
         # TODO add a try/except block here in case the db connection fails.
         return cnx
@@ -484,5 +487,30 @@ class Command(BaseCommand):
 
         self._import_new_source_dataset_subcohorts(source_db, new_source_dataset_pks, verbosity=options['verbosity'])
         print("Added source dataset subcohorts")
+        
+        new_harmonized_trait_set_pks = self._import_new_data(source_db=source_db,
+                                                             table_name='harmonized_trait_set',
+                                                             pk_name='id',
+                                                             model=HarmonizedTraitSet,
+                                                             make_args=self._make_harmonized_trait_set_args,
+                                                             verbosity=options['verbosity'])
+        print("Added harmonized trait sets")
+
+        new_harmonized_trait_pks = self._import_new_data(source_db=source_db,
+                                                             table_name='harmonized_trait',
+                                                             pk_name='harmonized_trait_id',
+                                                             model=HarmonizedTrait,
+                                                             make_args=self._make_harmonized_trait_args,
+                                                             verbosity=options['verbosity'])
+        print("Added harmonized traits")
+
+        new_harmonized_trait_encoded_value_pks = self._import_new_data(source_db=source_db,
+                                                             table_name='harmonized_trait_encoded_values',
+                                                             pk_name='harmonized_trait_id',
+                                                             model=HarmonizedTraitEncodedValue,
+                                                             make_args=self._make_harmonized_trait_encoded_value_args,
+                                                             verbosity=options['verbosity'])
+        print("Added harmonized trait encoded values")
+        
 
         source_db.close()
