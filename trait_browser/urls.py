@@ -21,6 +21,6 @@ urlpatterns = [
     # Harmonized trait views
     # url(r'^harmonized/all/$', views.harmonized_trait_table, name='harmonized_all'),
     # url(r'^harmonized/study/(?P<pk>\d+)/$', views.study_harmonized_trait_table, name='study_detail'),
-    # url(r'^harmonized/detail/(?P<pk>\d+)/$', views.harmonizedTraitDetail.as_view(), name='harmonized_trait_detail'),
+    url(r'^harmonized/detail/(?P<pk>\d+)/$', views.HarmonizedTraitDetail.as_view(), name='harmonized_trait_detail'),
     # url(r'^harmonized/search/$', views.harmonized_trait_search, name='harmonized_trait_search'),
 ]

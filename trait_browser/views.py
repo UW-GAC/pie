@@ -22,6 +22,15 @@ class SourceTraitDetail(DetailView):
     context_object_name = 'source_trait'
     template_name = 'trait_browser/source_trait_detail.html'
 
+
+class HarmonizedTraitDetail(DetailView):
+    """Detail view class for HarmonizedTraits. Inherits from django.views.generic.DetailView."""    
+    
+    model = HarmonizedTrait
+    context_object_name = 'harmonized_trait'
+    template_name = 'trait_browser/harmonized_trait_detail.html'
+
+
 @login_required
 def source_all(request):
     """Table view for SourceTrait objects.

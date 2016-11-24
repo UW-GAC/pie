@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+
+{% block head_title %}
+     | {{ harmonized_trait.name }} details
+{% endblock %}
+
+{% block content %}
+<div class="alert alert-warning">
+  <strong>Warning!</strong> The URL for this page is likely to change during further site development.
+</div>
+
+    <div class="well">
+    
+        <h2>Harmonized phenotype details for {{ harmonized_trait.i_trait_name }}</h2>
+        
+    
+        <p><strong>Phenotype name</strong> : {{ harmonized_trait.i_trait_name }}</p>
+        <p><strong>Phenotype description</strong> : {{ harmonized_trait.i_description }}</p>
+        <p><strong>Data type</strong> : {{ harmonized_trait.i_data_type }}</p>
+        <p><strong>Unit</strong> : {{ harmonized_trait.i_unit }}</p>
+
+        <hr>
+       
+        {% if harmonized_trait.harmonizedtraitencodedvalue_set.all %}
+           <h4>Encoded Values</h4>
+           <table class="table table-nonfluid table-condensed table-sm table-striped table-bordered">
+               <tr>
+                   <th>Category</th>
+                   <th>Value</th>
+               </tr>
+               {% for ev in harmonized_trait.harmonizedtraitencodedvalue_set.all %}
+                   <tr>
+                       <td>{{ ev.i_category }}</td>
+                       <td>{{ ev.i_value }}</td>
+                   </tr>
+               {% endfor %}
+           </table>
+       {% endif %}
+
+        <div class="panel panel-default">
+            <div class="panel-heading"><h4>Documentation</h4></div>
+            <div class="panel-body">
+              <p>Coming soon!</p>
+            </div>
+        </div>
+ 
+    </div>
+    
+{% endblock %}
