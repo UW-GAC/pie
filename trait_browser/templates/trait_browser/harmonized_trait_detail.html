@@ -20,6 +20,9 @@
         <p><strong>Unit</strong> : {{ harmonized_trait.i_unit }}</p>
 
         <hr>
+        
+        
+<!--   If it is a uk, list the traits it's a uk for; if it is not a uk, get the trait set and find all of the linked uks and list them     -->
        
         {% if harmonized_trait.harmonizedtraitencodedvalue_set.all %}
            <h4>Encoded Values</h4>
