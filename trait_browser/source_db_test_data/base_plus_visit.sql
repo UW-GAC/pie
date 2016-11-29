@@ -797,7 +797,7 @@ SET character_set_client = @saved_cs_client;
 /*!50001 SET character_set_results     = utf8 */;
 /*!50001 SET collation_connection      = utf8_general_ci */;
 /*!50001 CREATE ALGORITHM=UNDEFINED */
-/*!50013 DEFINER=`topmed`@`10.208.179.%` SQL SECURITY DEFINER */
+/*!50013 DEFINER=CURRENT_USER SQL SECURITY DEFINER */
 /*!50001 VIEW `view_source_trait` AS select `s`.`study_name` AS `study_name`,`sv`.`accession` AS `study_accession`,`sv`.`version` AS `study_version`,`sv`.`id` AS `study_version_id`,`d`.`accession` AS `dataset_accession`,`d`.`version` AS `dataset_version`,`d`.`dcc_description` AS `dataset_description`,`d`.`id` AS `dataset_id`,`st`.`source_trait_id` AS `source_trait_id`,`st`.`trait_name` AS `trait_name`,`st`.`dcc_description` AS `trait_description`,`st`.`dbgap_variable_accession` AS `dbgap_trait_accession`,`st`.`dbgap_variable_version` AS `dbgap_trait_version` from (((`study` `s` join `source_study_version` `sv` on((`s`.`accession` = `sv`.`accession`))) join `source_dataset` `d` on((`d`.`study_version_id` = `sv`.`id`))) join `source_trait` `st` on((`st`.`dataset_id` = `d`.`id`))) where (`sv`.`is_deprecated` = 0) */;
 /*!50001 SET character_set_client      = @saved_cs_client */;
 /*!50001 SET character_set_results     = @saved_cs_results */;
@@ -815,7 +815,7 @@ SET character_set_client = @saved_cs_client;
 /*!50001 SET character_set_results     = utf8 */;
 /*!50001 SET collation_connection      = utf8_general_ci */;
 /*!50001 CREATE ALGORITHM=UNDEFINED */
-/*!50013 DEFINER=`topmed`@`10.208.179.%` SQL SECURITY DEFINER */
+/*!50013 DEFINER=CURRENT_USER SQL SECURITY DEFINER */
 /*!50001 VIEW `view_source_trait_all` AS select `s`.`study_name` AS `study_name`,`sv`.`accession` AS `study_accession`,`sv`.`version` AS `study_version`,`sv`.`id` AS `study_version_id`,`d`.`accession` AS `dataset_accession`,`d`.`version` AS `dataset_version`,`d`.`dcc_description` AS `dataset_description`,`d`.`id` AS `dataset_id`,`st`.`source_trait_id` AS `source_trait_id`,`st`.`trait_name` AS `trait_name`,`st`.`dcc_description` AS `trait_description`,`st`.`dbgap_variable_accession` AS `dbgap_trait_accession`,`st`.`dbgap_variable_version` AS `dbgap_trait_version` from (((`study` `s` join `source_study_version` `sv` on((`s`.`accession` = `sv`.`accession`))) join `source_dataset` `d` on((`d`.`study_version_id` = `sv`.`id`))) join `source_trait` `st` on((`st`.`dataset_id` = `d`.`id`))) */;
 /*!50001 SET character_set_client      = @saved_cs_client */;
 /*!50001 SET character_set_results     = @saved_cs_results */;
