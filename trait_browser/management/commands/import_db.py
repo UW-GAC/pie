@@ -337,7 +337,7 @@ class Command(BaseCommand):
             a dict of (required_HarmonizedTrait_attribute: attribute_value) pairs
         """
         return self._make_args_mapping(row_dict,
-                                       ['description', 'data_type', 'unit', 'is_unique_key'],
+                                       ['description', 'data_type', 'unit', 'is_unique_key', 'trait_name'],
                                        source_field_names_to_map={'harmonized_trait_id':'i_trait_id'},
                                        foreign_key_mapping={'harmonized_trait_set_id': HarmonizedTraitSet})
 
@@ -413,6 +413,39 @@ class Command(BaseCommand):
             source_dataset.subcohorts.add(subcohort)
             if verbosity == 3: print('Linked {} to {}'.format(subcohort, source_dataset))
         cursor.close()
+
+    def _import_new_component_source_traits(self, source_db, new_harmonized_trait_set_pks, verbosity):
+        """Add component_source_trait-harmonized_trait_set link data to the website db models.
+        
+        This function pulls information on component_source_traits linked with new
+        harmonized_trait_sets from the source db, converts it where necessary, and
+        imports new component_source_trait links in the component_source_traits
+        attribute of the HarmonizedTraitSet model of the trait_browser app.         
+        
+        Arguments:
+            source_db -- an open connection to the source database
+            new_harmonized_trait_set_pks -- list of pks for harmonized_trait_sets
+                for which component_source_trait links should be added
+        """
+        # Note that component_source_trait links added to harmonized_trait_sets
+        # that are already in the db will be handled by the harmonized_trait_set
+        # update function, so here we only need to worry about component_source_trait
+        # links for new harmonized_trait_sets.
+        cursor = source_db.cursor(buffered=True, dictionary=True)
+        component_source_traits_query = 'SELECT * FROM component_source_trait'
+        if len(new_harmonized_trait_set_pks) > 0:
+            component_source_traits_query += ' WHERE harmonized_trait_set_id IN ({})'.format(','.join(new_harmonized_trait_set_pks))
+        cursor.execute(component_source_traits_query)
+        for row in cursor:
+            type_fixed_row = self._fix_row(row)
+            # Get the HarmonizedTraitSet and SourceTrait objects to link.
+            harmonized_trait_set = HarmonizedTraitSet.objects.get(i_id=type_fixed_row['harmonized_trait_set_id'])
+            source_trait = SourceTrait.objects.get(i_trait_id=type_fixed_row['component_trait_id'])
+            # Associate the SourceTrait object with a HarmonizedTraitSet object.
+            harmonized_trait_set.component_source_traits.add(source_trait)
+            if verbosity == 3: print('Linked {} component source trait to {}'.format(source_trait, harmonized_trait_set))
+        cursor.close()
+
 
     # Methods to actually do the management command.
     def add_arguments(self, parser):
@@ -503,6 +536,10 @@ class Command(BaseCommand):
                                                              make_args=self._make_harmonized_trait_args,
                                                              verbosity=options['verbosity'])
         print("Added harmonized traits")
+
+        self._import_new_component_source_traits(source_db, new_harmonized_trait_set_pks, verbosity=options['verbosity'])
+        print("Added component source traits")
+
 
         new_harmonized_trait_encoded_value_pks = self._import_new_data(source_db=source_db,
                                                              table_name='harmonized_trait_encoded_values',
