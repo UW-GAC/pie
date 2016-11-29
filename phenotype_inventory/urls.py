@@ -20,7 +20,7 @@ from django.contrib import admin
 
 
 urlpatterns = [
-    url(r'^home/$', TemplateView.as_view(template_name="home.html"), name='home'),    # static home page
+    url(r'^$', TemplateView.as_view(template_name="home.html"), name='home'),    # static home page
     url(r'^about/$', TemplateView.as_view(template_name="about.html"), name='about'),    # static home page
     url(r'^contact/$', TemplateView.as_view(template_name="contact.html"), name='contact'),    # static home page
     url(r'^pages/', include('django.contrib.flatpages.urls')),    # Flat pages 
