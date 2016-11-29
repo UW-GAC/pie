@@ -39,22 +39,33 @@
            </table>
         {% endif %}
 
-        {% if harmonized_trait.harmonized_trait_set.component_source_traits.all %}
+        <h4>Component Source Phenotypes</h4>
+        <table class="table table-nonfluid table-condensed table-sm table-striped table-bordered">
+            <tr>
+               <th>Study</th>
+               <th>Source Phenotype</th>
+            </tr>
+            {% for trait in harmonized_trait.harmonized_trait_set.component_source_traits.all %}
+                <tr>
+                    <td>{{ trait.source_dataset.source_study_version.study.i_study_name }}</td>
+                    <td>{{ trait.i_trait_name }}</td>
+                </tr>
+            {% endfor %}
+        </table>
+
+        {% if harmonized_trait.harmonized_trait_set.component_harmonized_traits.all %}
            <h4>Component Source Phenotypes</h4>
            <table class="table table-nonfluid table-condensed table-sm table-striped table-bordered">
                <tr>
-                  <th>Study</th>
-                  <th>Source Phenotype</th>
+                  <th>Harmonized Phenotype</th>
                </tr>
-               {% for trait in harmonized_trait.harmonized_trait_set.component_source_traits.all %}
+               {% for trait in harmonized_trait.harmonized_trait_set.component_harmonized_traits.all %}
                    <tr>
-                       <td>{{ trait.source_dataset.source_study_version.study.i_study_name }}</td>
                        <td>{{ trait.i_trait_name }}</td>
                    </tr>
                {% endfor %}
            </table>
         {% endif %}
-
 
         <div class="panel panel-default">
             <div class="panel-heading"><h4>Documentation</h4></div>
