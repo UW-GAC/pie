@@ -30,7 +30,7 @@ from .staging import *
 
 # DEBUG SETTINGS
 DEBUG = False
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['topmedphenotypes.org']
 
 
 # DATABASE SETTINGS
