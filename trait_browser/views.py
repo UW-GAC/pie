@@ -4,6 +4,7 @@ from django.shortcuts import render, get_object_or_404, HttpResponse
 from django.db.models import Q    # Allows complex queries when searching.
 from django.views.generic import DetailView
 from django.contrib.auth.decorators import login_required
+from django.utils.decorators import method_decorator
 
 from django_tables2   import RequestConfig
 
@@ -22,6 +23,10 @@ class SourceTraitDetail(DetailView):
     context_object_name = 'source_trait'
     template_name = 'trait_browser/source_trait_detail.html'
 
+    @method_decorator(login_required)
+    def dispatch(self, *args, **kwargs):
+        return super(SourceTraitDetail, self).dispatch(*args, **kwargs)
+
 
 class HarmonizedTraitDetail(DetailView):
     """Detail view class for HarmonizedTraits. Inherits from django.views.generic.DetailView."""    
@@ -29,6 +34,10 @@ class HarmonizedTraitDetail(DetailView):
     model = HarmonizedTrait
     context_object_name = 'harmonized_trait'
     template_name = 'trait_browser/harmonized_trait_detail.html'
+
+    @method_decorator(login_required)
+    def dispatch(self, *args, **kwargs):
+        return super(HarmonizedTraitDetail, self).dispatch(*args, **kwargs)
 
 
 @login_required
