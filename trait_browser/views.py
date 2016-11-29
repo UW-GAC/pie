@@ -9,7 +9,7 @@ from django.utils.decorators import method_decorator
 from django_tables2   import RequestConfig
 
 from .models import GlobalStudy, HarmonizedTrait, HarmonizedTraitEncodedValue, HarmonizedTraitSet, SourceDataset, SourceStudyVersion, SourceTrait, SourceTraitEncodedValue, Study, Subcohort
-from .tables import SourceTraitTable, StudyTable
+from .tables import SourceTraitTable, HarmonizedTraitTable, StudyTable
 from .forms import SourceTraitCrispySearchForm
 
 
@@ -41,17 +41,23 @@ class HarmonizedTraitDetail(DetailView):
 
 
 @login_required
-def source_all(request):
-    """Table view for SourceTrait objects.
+def trait_table(request, trait_type):
+    """Table view for SourceTrait and HarmonizedTrait objects.
     
-    This view uses Django-tables2 to display a pretty table of the SourceTraits
+    This view uses Django-tables2 to display a pretty table of the traits
     in the database for browsing.
     """
-    table_title = 'Source phenotypes currently available'
-    page_title = 'Source phenotypes'
-    trait_table = SourceTraitTable(SourceTrait.objects.all())
+    if trait_type == 'harmonized':
+        table_title = 'DCC-harmonized phenotypes currently available'
+        page_title = 'Harmonized phenotypes'
+        trait_table = HarmonizedTraitTable(HarmonizedTrait.objects.all())
+    elif trait_type == 'source':
+        table_title = 'Source phenotypes currently available'
+        page_title = 'Source phenotypes'
+        trait_table = SourceTraitTable(SourceTrait.objects.all())
     # If you're going to change this later to some kind of filtered list (e.g. only the most
     # recent version of each trait), then you should wrap the SourceTrait.filter() in get_list_or_404
+    
     # RequestConfig seems to be necessary for sorting to work.
     RequestConfig(request, paginate={'per_page': TABLE_PER_PAGE}).configure(trait_table)
     return render(request, 'trait_browser/trait_table.html',

@@ -2,10 +2,9 @@
 
 import django_tables2 as tables
 
-from .models import SourceTrait, Study
+from .models import SourceTrait, HarmonizedTrait, Study
 
 
-# Define the table classes for displaying nice HTML tables with django-tables2
 class SourceTraitTable(tables.Table):
     """Class for tables2 handling of SourceTrait objects for nice table display.
     
@@ -30,6 +29,26 @@ class SourceTraitTable(tables.Table):
         attrs = {'class': 'table table-striped table-bordered table-hover table-condensed'}
         template = 'trait_browser/bootstrap_tables2.html'
         order_by = ('i_trait_name', 'study_name', )
+
+
+class HarmonizedTraitTable(tables.Table):
+    """Class for tables2 handling of HarmonizedTrait objects for nice table display.
+    
+    Django-tables2 enables pretty display of tables of data on django pages with
+    builtin sorting and table layout. This class extends the tables.Table class
+    for use with HarmonizedTrait objects.
+    """
+
+    # Set custom column values that need extra settings.
+    i_trait_name = tables.LinkColumn('trait_browser:harmonized_detail', args=[tables.utils.A('pk')], verbose_name='Phenotype name')
+    i_description = tables.Column('Phenotype description', orderable=False)
+    
+    class Meta:
+        model = HarmonizedTrait
+        fields = ('i_trait_name', 'i_description', )
+        attrs = {'class': 'table table-striped table-bordered table-hover table-condensed'}
+        template = 'trait_browser/bootstrap_tables2.html'
+        order_by = ('i_trait_name', )
 
 
 class StudyTable(tables.Table):
