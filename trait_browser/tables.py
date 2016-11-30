@@ -40,15 +40,15 @@ class HarmonizedTraitTable(tables.Table):
     """
 
     # Set custom column values that need extra settings.
-    i_trait_name = tables.LinkColumn('trait_browser:harmonized_detail', args=[tables.utils.A('pk')], verbose_name='Phenotype name')
+    trait_flavor_name = tables.LinkColumn('trait_browser:harmonized_detail', args=[tables.utils.A('pk')], verbose_name='Phenotype name')
     i_description = tables.Column('Phenotype description', orderable=False)
     
     class Meta:
         model = HarmonizedTrait
-        fields = ('i_trait_name', 'i_description', )
+        fields = ('trait_flavor_name', 'i_description', )
         attrs = {'class': 'table table-striped table-bordered table-hover table-condensed'}
         template = 'trait_browser/bootstrap_tables2.html'
-        order_by = ('i_trait_name', )
+        order_by = ('trait_flavor_name', )
 
 
 class StudyTable(tables.Table):

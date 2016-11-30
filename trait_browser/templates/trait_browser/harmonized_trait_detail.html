@@ -14,7 +14,7 @@
         <h2>Harmonized phenotype details for {{ harmonized_trait.i_trait_name }}</h2>
         
     
-        <p><strong>Phenotype name</strong> : {{ harmonized_trait.i_trait_name }}</p>
+        <p><strong>Phenotype name</strong> : {{ harmonized_trait.trait_flavor_name }}</p>
         <p><strong>Phenotype description</strong> : {{ harmonized_trait.i_description }}</p>
         <p><strong>Data type</strong> : {{ harmonized_trait.i_data_type }}</p>
         <p><strong>Unit</strong> : {{ harmonized_trait.i_unit }}</p>
@@ -61,7 +61,7 @@
                </tr>
                {% for trait in harmonized_trait.harmonized_trait_set.component_harmonized_traits.all %}
                    <tr>
-                       <td><a href="{% url 'trait_browser:harmonized_detail' pk=trait.pk %}">{{ trait.i_trait_name }}</a></td>
+                       <td><a href="{% url 'trait_browser:harmonized_detail' pk=trait.pk %}">{{ trait.trait_flavor_name }}</a></td>
                    </tr>
                {% endfor %}
            </table>
