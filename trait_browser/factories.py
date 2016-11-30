@@ -117,6 +117,26 @@ class HarmonizedTraitSetFactory(factory.DjangoModelFactory):
         model = HarmonizedTraitSet
         django_get_or_create = ('i_id', )
 
+    @factory.post_generation
+    def component_source_traits(self, create, extracted, **kwargs):
+        # Do not add any component_source_traits for simple builds.
+        if not create:
+            return
+        # Add component_source_traits from a list that was passed in.
+        if extracted:
+            for source_trait in extracted:
+                self.component_source_traits.add(source_trait)
+
+    @factory.post_generation
+    def component_harmonized_traits(self, create, extracted, **kwargs):
+        # Do not add any component_harmonized_traits for simple builds.
+        if not create:
+            return
+        # Add component_harmonized_traits from a list that was passed in.
+        if extracted:
+            for harmonized_trait in extracted:
+                self.component_harmonized_traits.add(harmonized_trait)
+
 
 class SourceTraitFactory(factory.DjangoModelFactory):
     """Factory for SourceTrait objects using Faker faked data."""
@@ -157,25 +177,25 @@ class HarmonizedTraitFactory(factory.DjangoModelFactory):
         model = HarmonizedTrait
         django_get_or_create = ('i_trait_id', )
 
-    @factory.post_generation
-    def component_source_traits(self, create, extracted, **kwargs):
-        # Do not add any component_source_traits for simple builds.
-        if not create:
-            return
-        # Add component_source_traits from a list that was passed in.
-        if extracted:
-            for source_trait in extracted:
-                self.component_source_traits.add(source_trait)
-
-    @factory.post_generation
-    def component_harmonized_traits(self, create, extracted, **kwargs):
-        # Do not add any component_harmonized_traits for simple builds.
-        if not create:
-            return
-        # Add component_harmonized_traits from a list that was passed in.
-        if extracted:
-            for harmonized_trait in extracted:
-                self.component_harmonized_traits.add(harmonized_trait)
+    # @factory.post_generation
+    # def component_source_traits(self, create, extracted, **kwargs):
+    #     # Do not add any component_source_traits for simple builds.
+    #     if not create:
+    #         return
+    #     # Add component_source_traits from a list that was passed in.
+    #     if extracted:
+    #         for source_trait in extracted:
+    #             self.component_source_traits.add(source_trait)
+    # 
+    # @factory.post_generation
+    # def component_harmonized_traits(self, create, extracted, **kwargs):
+    #     # Do not add any component_harmonized_traits for simple builds.
+    #     if not create:
+    #         return
+    #     # Add component_harmonized_traits from a list that was passed in.
+    #     if extracted:
+    #         for harmonized_trait in extracted:
+    #             self.component_harmonized_traits.add(harmonized_trait)
 
 
 class SourceTraitEncodedValueFactory(factory.DjangoModelFactory):
@@ -316,16 +336,17 @@ def build_test_db(n_global_studies, n_subcohort_range, n_dataset_range, n_trait_
     
     # Add simulated harmonized traits.
     for nh in range(randrange(n_trait_range[0], n_trait_range[1])):
-        component_source_traits = [sample(list(SourceTrait.objects.filter(source_dataset__source_study_version__study=study)), 1)[0] for study in Study.objects.all()]
-        HarmonizedTraitFactory.create(component_source_traits=component_source_traits)
-    # Add one harmonized trait that has component harmonized and component source traits.
-    component_source_traits = [sample(list(SourceTrait.objects.filter(source_dataset__source_study_version__study=study)), 1)[0] for study in Study.objects.all()]
-    component_harmonized_traits = sample(list(HarmonizedTrait.objects.all()), 2)
-    HarmonizedTraitFactory.create(component_source_traits=component_source_traits, component_harmonized_traits=component_harmonized_traits)
-    # Add one harmonized trait that only uses source traits from *some* of the studies.
-    component_source_traits = [sample(list(SourceTrait.objects.filter(source_dataset__source_study_version__study=study)), 1)[0] for study in Study.objects.all()]
-    component_source_traits = sample(component_source_traits, int(len(component_source_traits) * 0.8))
-    HarmonizedTraitFactory.create(component_source_traits=component_source_traits)
+        # component_source_traits = [sample(list(SourceTrait.objects.filter(source_dataset__source_study_version__study=study)), 1)[0] for study in Study.objects.all()]
+        # HarmonizedTraitFactory.create(component_source_traits=component_source_traits)
+        HarmonizedTraitFactory.create()
+    # # Add one harmonized trait that has component harmonized and component source traits.
+    # component_source_traits = [sample(list(SourceTrait.objects.filter(source_dataset__source_study_version__study=study)), 1)[0] for study in Study.objects.all()]
+    # component_harmonized_traits = sample(list(HarmonizedTrait.objects.all()), 2)
+    # HarmonizedTraitFactory.create(component_source_traits=component_source_traits, component_harmonized_traits=component_harmonized_traits)
+    # # Add one harmonized trait that only uses source traits from *some* of the studies.
+    # component_source_traits = [sample(list(SourceTrait.objects.filter(source_dataset__source_study_version__study=study)), 1)[0] for study in Study.objects.all()]
+    # component_source_traits = sample(component_source_traits, int(len(component_source_traits) * 0.8))
+    # HarmonizedTraitFactory.create(component_source_traits=component_source_traits)
     # Add a pair of harmonized traits in the same trait set.
     h_trait_set = HarmonizedTraitSetFactory.create()
     h_trait1 = HarmonizedTraitFactory.create(harmonized_trait_set=h_trait_set)
@@ -333,8 +354,9 @@ def build_test_db(n_global_studies, n_subcohort_range, n_dataset_range, n_trait_
     # Make sure there's at least one encoded value trait.
     encoded_harmonized_traits = HarmonizedTrait.objects.filter(i_data_type='encoded')
     if len(encoded_harmonized_traits) < 1:
-        component_source_traits = [sample(list(SourceTrait.objects.filter(source_dataset__source_study_version__study=study)), 1)[0] for study in Study.objects.all()]
-        HarmonizedTraitFactory.create(component_source_traits=component_source_traits, i_data_type='encoded')
+        # component_source_traits = [sample(list(SourceTrait.objects.filter(source_dataset__source_study_version__study=study)), 1)[0] for study in Study.objects.all()]
+        # HarmonizedTraitFactory.create(component_source_traits=component_source_traits, i_data_type='encoded')
+        HarmonizedTraitFactory.create(i_data_type='encoded')
     # Add encoded values to all of the encoded value traits.
     for htr in HarmonizedTrait.objects.filter(i_data_type='encoded'):
         for n in range(randrange(n_enc_value_range[0], n_enc_value_range[1])):

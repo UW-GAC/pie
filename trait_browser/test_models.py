@@ -177,6 +177,11 @@ class HarmonizedTraitTestCase(TestCase):
         self.assertIsInstance(harmonized_trait.created, datetime)
         self.assertIsInstance(harmonized_trait.modified, datetime)
         
+    def test_custom_save(self):
+        """Test that the custom save method works."""
+        harmonized_trait = HarmonizedTraitFactory.create()
+        self.assertEqual(harmonized_trait.trait_flavor_name, '{}_{}'.format(harmonized_trait.i_trait_name, harmonized_trait.harmonized_trait_set.i_flavor))
+
 
 class SourceTraitEncodedValueTestCase(TestCase):
     

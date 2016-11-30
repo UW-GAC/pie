@@ -7,7 +7,7 @@ from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Layout, Div, Submit, HTML, Button, Row, Field, Reset
 from crispy_forms.bootstrap import AppendedText, PrependedText, FormActions, InlineCheckboxes
 
-from . models import Study, SourceTrait
+from . models import Study, SourceTrait, HarmonizedTrait
 
 
 class SourceTraitCrispySearchForm(forms.Form):
@@ -37,6 +37,29 @@ class SourceTraitCrispySearchForm(forms.Form):
     helper.layout = Layout(
         Field('text'),
         InlineCheckboxes('study'),
+        FormActions(
+            Submit('submit', 'Search', css_class='btn-primary btn-disable'),
+        )
+    )
+
+
+class HarmonizedTraitCrispySearchForm(forms.Form):
+    """Form to handle searching within HarmonizedTrait objects.
+    
+    This form class is a Subclass of crispy_forms.Form. Crispy forms is a
+    Django app that improves upon the built in Django Form object.
+    """
+    
+    text = forms.CharField(label='search text', max_length=100,
+        help_text='Both phenotype names and descriptions will be searched.')
+
+    helper = FormHelper()
+    helper.form_class = 'form-horizontal'
+    helper.label_class = 'col-sm-2'
+    helper.field_class = 'col-sm-10'
+    helper.form_method = 'get'
+    helper.layout = Layout(
+        Field('text'),
         FormActions(
             Submit('submit', 'Search', css_class='btn-primary btn-disable'),
         )

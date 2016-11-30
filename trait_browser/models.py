@@ -233,6 +233,9 @@ class HarmonizedTraitSet(TimeStampedModel):
     i_flavor = models.PositiveIntegerField('flavor')
     i_version = models.PositiveIntegerField('version')
     i_description = models.CharField('description', max_length=1000)
+    # This is a quoted string because the referenced model hasn't been defined yet.
+    component_source_traits = models.ManyToManyField('SourceTrait')
+    component_harmonized_traits = models.ManyToManyField('HarmonizedTrait')
 
     def __str__(self):
         """Pretty printing."""
@@ -400,14 +403,31 @@ class HarmonizedTrait(Trait):
     i_data_type = models.CharField('data type', max_length=45)
     i_unit = models.CharField('unit', max_length=100, blank=True)
     i_is_unique_key = models.BooleanField('is unique key?')
-    component_source_traits = models.ManyToManyField(SourceTrait)
-    # This is a quoted string because the referenced model hasn't been defined yet.
-    component_harmonized_traits = models.ManyToManyField('HarmonizedTrait')
-
+    # component_source_traits = models.ManyToManyField(SourceTrait)
+    # # This is a quoted string because the referenced model hasn't been defined yet.
+    # component_harmonized_traits = models.ManyToManyField('HarmonizedTrait')
+    trait_flavor_name = models.CharField(max_length=150)
 
     def __str__(self):
         """Pretty printing."""
         return 'harmonized trait {}, id={}, from trait set {}'.format(self.i_trait_name, self.i_trait_id, self.harmonized_trait_set)
+
+    def save(self, *args, **kwargs):
+        """Custom save method for making the trait flavor name.
+        
+        Automatically sets the value for the harmonized trait's trait_flavor_name.
+        """
+        self.trait_flavor_name = self.set_trait_flavor_name()
+        # Call the "real" save method.
+        super(HarmonizedTrait, self).save(*args, **kwargs)
+    
+    def set_trait_flavor_name(self):
+        """Automatically set trait_flavor_name from the trait's i_trait_name and the trait set's flavor name.
+        
+        Properly format the trait_flavor_name for this harmonized trait so that it's
+        available for easy use later.
+        """
+        return '{}_{}'.format(self.i_trait_name, self.harmonized_trait_set.i_flavor)
 
 
 # Encoded Value models.
