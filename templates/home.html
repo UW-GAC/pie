@@ -19,7 +19,7 @@
 
 <div class="row">
   <div class="col-md-6 text-center">
-    <a href="{% url 'trait_browser:source_all' %}"><span class="glyphicon glyphicon-arrow-down glyphicon-home source-color" aria-hidden="true"></span></a>
+    <a href="{% url 'trait_browser:source_all' %}"><img src="{% static "icons/apple-1.svg" %}" alt="source_phenotype_apple" width=150/></a>
     <h2>Study source phenotypes</h2>
     <p>Source phenotypes for each study were downloaded from dbGaP.
     Source phenotypes available here can be used to generate harmonized phenotypes.</p>
@@ -27,7 +27,7 @@
   </div>
 
   <div class="col-md-6 text-center">
-    <a href="{% url 'trait_browser:harmonized_all' %}"><span class="glyphicon glyphicon-arrow-up glyphicon-home" aria-hidden="true"></span></a>
+    <a href="{% url 'trait_browser:harmonized_all' %}"><img src="{% static "icons/pie-2.svg" %}" alt="harmonized_phenotype_pie" width=150/></span></a>
     <h2>TOPMed harmonized phenotypes</h2>
     <p>Harmonized phenotypes are posted here as they become available.</p>
     <p><a class="btn btn-default" href="{% url 'trait_browser:harmonized_all' %}" role="button">Browse harmonized phenotypes &raquo;</a></p>
