@@ -3,11 +3,11 @@
 {% load render_table from django_tables2 %}
 
 {% block head_title %}
-     | Search {{trait_type}} traits
+     | Search {{ trait_type }} traits
 {% endblock %}
 
 {% block content %}
-    <h1>Search source phenotypes</h1>
+    <h1>Search {{ trait_type }} phenotypes</h1>
         {% crispy form %}
     
     <!-- Embed the New Search button inside of a form and some divs just like
@@ -18,8 +18,11 @@
                 
             </div>
             <div class="controls col-sm-10">
-                <a href="{% url 'trait_browser:source_search' %}" class="btn btn-default" role="button">
-                    New Search</a>
+                {% if trait_type == 'source' %}
+                    <a href="{% url 'trait_browser:source_search' %}" class="btn btn-default" role="button">New Search</a>
+                {% elif trait_type == 'harmonized' %}
+                    <a href="{% url 'trait_browser:harmonized_search' %}" class="btn btn-default" role="button">New Search</a>
+                {% endif %}
             </div>
         </div>
     </form>

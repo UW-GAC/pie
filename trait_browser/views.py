@@ -10,7 +10,7 @@ from django_tables2   import RequestConfig
 
 from .models import GlobalStudy, HarmonizedTrait, HarmonizedTraitEncodedValue, HarmonizedTraitSet, SourceDataset, SourceStudyVersion, SourceTrait, SourceTraitEncodedValue, Study, Subcohort
 from .tables import SourceTraitTable, HarmonizedTraitTable, StudyTable
-from .forms import SourceTraitCrispySearchForm
+from .forms import SourceTraitCrispySearchForm, HarmonizedTraitCrispySearchForm
 
 
 TABLE_PER_PAGE = 50    # Setting for per_page rows for all table views.  
@@ -128,58 +128,86 @@ def search(text_query, trait_type, study_pks=[]):
         # Then search text.
         traits = traits.filter(Q(i_description__contains=text_query) | Q(i_trait_name__contains=text_query))
     elif trait_type == 'harmonized':
-        # TODO: search through harmonized trait model objects. 
-        pass
+        traits = HarmonizedTrait.objects.filter(Q(i_description__contains=text_query) | Q(i_trait_name__contains=text_query))
     return(traits)
 
 
-# To make this eventually work for harmonized traits, we could add a trait_type
-# argument to the function definition plus some if statements to select proper
-# forms/models.
 @login_required
-def source_search(request):
-    """SourceTrait search form view.
+def trait_search(request, trait_type):
+    """Trait search form view.
     
-    Displays the SourceTraitCrispySearchForm and any search results as a
-    django-tables2 table view.
+    Displays the SourceTraitCrispySearchForm or HarmonizedTraitCrispySearchForm
+    and any search results as a django-tables2 table view.
     """
     # If search text has been entered into the form...
     if request.GET.get('text', None) is not None:
-        # ...create a form instance with data from the request.
-        form = SourceTraitCrispySearchForm(request.GET)
-        # If the form data is valid...
-        if form.is_valid():
-            # ...process form data.
-            query = form.cleaned_data.get('text', None)
-            study_pks = form.cleaned_data.get('study', [])
-            # Search text.
-            traits = search(query, 'source', study_pks)
-            trait_table = SourceTraitTable(traits)
-            RequestConfig(request, paginate={'per_page': TABLE_PER_PAGE}).configure(trait_table)
-            # Show the search results.
-            page_data = {
-                'trait_table': trait_table,
-                'query': query,
-                'form': form,
-                'results': True,
-                'trait_type': 'source'
-            }
-            return render(request, 'trait_browser/search.html', page_data)
-        # If the form data isn't valid, show the data to modify.
-        else:
-            page_data = {
-                'form': form,
-                'results': False,
-                'trait_type': 'source'
-            }
-            return render(request, 'trait_browser/search.html', page_data)
+        if trait_type == 'source': 
+            # ...create a form instance with data from the request.
+            form = SourceTraitCrispySearchForm(request.GET)
+            # If the form data is valid...
+            if form.is_valid():
+                # ...process form data.
+                query = form.cleaned_data.get('text', None)
+                study_pks = form.cleaned_data.get('study', [])
+                # Search text.
+                traits = search(query, 'source', study_pks)
+                trait_table = SourceTraitTable(traits)
+                RequestConfig(request, paginate={'per_page': TABLE_PER_PAGE}).configure(trait_table)
+                # Show the search results.
+                page_data = {
+                    'trait_table': trait_table,
+                    'query': query,
+                    'form': form,
+                    'results': True,
+                    'trait_type': 'source'
+                }
+                return render(request, 'trait_browser/search.html', page_data)
+            # If the form data isn't valid, show the data to modify.
+            else:
+                page_data = {
+                    'form': form,
+                    'results': False,
+                    'trait_type': 'source'
+                }
+                return render(request, 'trait_browser/search.html', page_data)
+        if trait_type == 'harmonized': 
+            # ...create a form instance with data from the request.
+            form = HarmonizedTraitCrispySearchForm(request.GET)
+            # If the form data is valid...
+            if form.is_valid():
+                # ...process form data.
+                query = form.cleaned_data.get('text', None)
+                # Search text.
+                traits = search(query, 'harmonized')
+                trait_table = HarmonizedTraitTable(traits)
+                RequestConfig(request, paginate={'per_page': TABLE_PER_PAGE}).configure(trait_table)
+                # Show the search results.
+                page_data = {
+                    'trait_table': trait_table,
+                    'query': query,
+                    'form': form,
+                    'results': True,
+                    'trait_type': 'harmonized'
+                }
+                return render(request, 'trait_browser/search.html', page_data)
+            # If the form data isn't valid, show the data to modify.
+            else:
+                page_data = {
+                    'form': form,
+                    'results': False,
+                    'trait_type': 'source'
+                }
+                return render(request, 'trait_browser/search.html', page_data)
     # If there was no data entered, show the empty form.
     else:
-        form = SourceTraitCrispySearchForm()
+        if trait_type == 'source':
+            form = SourceTraitCrispySearchForm()
+        elif trait_type == 'harmonized':
+            form = HarmonizedTraitCrispySearchForm()
 
         page_data = {
             'form': form,
             'results': False,
-            'trait_type': 'source'
+            'trait_type': trait_type
         }
         return render(request, 'trait_browser/search.html', page_data)

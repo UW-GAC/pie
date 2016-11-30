@@ -25,7 +25,7 @@ class ViewsAutoLoginTestCase(TestCase):
         self.client.login(username='unittest', password='passwd')
 
 
-class SearchTestCase(TestCase):
+class SourceSearchTestCase(TestCase):
     
     def test_search_source_trait_name_exact(self):
         """Test that the search function finds an exact match in the SourceTrait name field, but doesn't find a non-match."""
@@ -83,6 +83,45 @@ class SearchTestCase(TestCase):
             'bar', 'source',
             study_pks=[study1.i_accession]
         )
+        # Check that the matching trait is found, but the non-match is not.
+        self.assertIn(st_match, search1)
+        self.assertNotIn(st_nonmatch, search1)
+
+
+class HarmonizedSearchTestCase(TestCase):
+
+    def test_search_harmonized_trait_name_exact(self):
+        """Test that the search function finds an exact match in the HarmonizedTrait name field, but doesn't find a non-match."""
+        st_match = HarmonizedTraitFactory.create(i_trait_name='foo_bar', i_trait_id=1)
+        st_nonmatch = HarmonizedTraitFactory.create(i_trait_name='sum_es', i_trait_id=2)
+        search1 = search('foo_bar', 'harmonized')
+        # Check that the matching trait is found, but the non-match is not.
+        self.assertIn(st_match, search1)
+        self.assertNotIn(st_nonmatch, search1)
+    
+    def test_search_harmonized_trait_name_substring(self):
+        """Test that the search function finds a substring match in the HarmonizedTrait name field, but doesn't find a non-match."""
+        st_match = HarmonizedTraitFactory.create(i_trait_name='foo_bar', i_trait_id=1)
+        st_nonmatch = HarmonizedTraitFactory.create(i_trait_name='sum_es', i_trait_id=2)
+        search1 = search('bar', 'harmonized')
+        # Check that the matching trait is found, but the non-match is not.
+        self.assertIn(st_match, search1)
+        self.assertNotIn(st_nonmatch, search1)
+
+    def test_search_harmonized_trait_description_exact(self):
+        """Test that the search function finds an exact match in the HarmonizedTrait i_description field, but doesn't find a non-match."""
+        st_match = HarmonizedTraitFactory.create(i_description='foo and bar', i_trait_id=1)
+        st_nonmatch = HarmonizedTraitFactory.create(i_description='sum and es', i_trait_id=2)
+        search1 = search('foo and bar', 'harmonized')
+        # Check that the matching trait is found, but the non-match is not.
+        self.assertIn(st_match, search1)
+        self.assertNotIn(st_nonmatch, search1)
+    
+    def test_search_harmonized_trait_description_substring(self):
+        """Test that the search function finds a substring match in the HarmonizedTrait i_description field, but doesn't find a non-match."""
+        st_match = HarmonizedTraitFactory.create(i_description='foo and bar', i_trait_id=1)
+        st_nonmatch = HarmonizedTraitFactory.create(i_description='sum and es', i_trait_id=2)
+        search1 = search('bar', 'harmonized')
         # Check that the matching trait is found, but the non-match is not.
         self.assertIn(st_match, search1)
         self.assertNotIn(st_nonmatch, search1)
