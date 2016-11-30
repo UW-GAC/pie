@@ -6,7 +6,7 @@ from django.core.urlresolvers import reverse
 
 from .models import GlobalStudy, HarmonizedTrait, HarmonizedTraitEncodedValue, HarmonizedTraitSet, SourceDataset, SourceStudyVersion, SourceTrait, SourceTraitEncodedValue, Study, Subcohort
 from .factories import GlobalStudyFactory, HarmonizedTraitFactory, HarmonizedTraitEncodedValueFactory, HarmonizedTraitSetFactory, SourceDatasetFactory, SourceStudyVersionFactory, SourceTraitFactory, SourceTraitEncodedValueFactory, StudyFactory, SubcohortFactory 
-from .tables import SourceTraitTable, StudyTable
+from .tables import SourceTraitTable, HarmonizedTraitTable, StudyTable
 from .views import TABLE_PER_PAGE, search
 
 # NB: The database is reset for each test method within a class!
@@ -353,3 +353,94 @@ class SourceTraitSearchViewTestCase(ViewsAutoLoginTestCase):
         self.assertFalse(response.context['results'])    # results is False.
         self.assertNotIn('trait_table', response.context)    # The trait_table object exists.
         self.assertFalse(response.context['form'].is_bound)    # Form is not bound to data.
+
+
+class HarmonizedTraitViewsTestCase(ViewsAutoLoginTestCase):
+    """Unit tests for the HarmonizedTrait views."""
+    
+    def test_harmonized_trait_table_empty(self):
+        """Tests that the harmonized_trait_table view works with an empty queryset and that the HarmonizedTraitTable object has no rows."""
+        # No valid HarmonizedTraits exist here.
+        url = reverse('trait_browser:harmonized_all')
+        response = self.client.get(url)
+        # Does the URL work?
+        self.assertEqual(response.status_code, 200)
+        # Is trait_table a HarmonizedTraitTable object?
+        self.assertIsInstance(response.context['trait_table'], HarmonizedTraitTable)
+        # Does the harmonized trait table object have 0 rows?
+        self.assertEqual(len(response.context['trait_table'].rows), 0)
+    
+    def test_harmonized_trait_table_one_page(self):
+        """Tests that the harmonized_trait_table view works with fewer rows than will require a second page."""
+        # Make less than one page of HarmonizedTraits.
+        n_traits = TABLE_PER_PAGE - 2
+        HarmonizedTraitFactory.create_batch(n_traits)
+        url = reverse('trait_browser:harmonized_all')
+        response = self.client.get(url)
+        # Does the URL work?
+        self.assertEqual(response.status_code, 200)
+        # Does the harmonized trait table object have n_traits rows?
+        self.assertEqual(len(response.context['trait_table'].rows), n_traits)
+
+    def test_harmonized_trait_table_two_pages(self):
+        """Tests that the harmonized_trait_table view works with two pages' worth of rows."""
+        # Make less than one page of HarmonizedTraits.
+        n_traits = TABLE_PER_PAGE * 2
+        HarmonizedTraitFactory.create_batch(n_traits)
+        url = reverse('trait_browser:harmonized_all')
+        response = self.client.get(url)
+        # Does the URL work?
+        self.assertEqual(response.status_code, 200)
+        # Does the harmonized trait table object have n_traits rows?
+        self.assertEqual(len(response.context['trait_table'].rows), n_traits)
+
+    def test_harmonized_trait_detail_valid(self):
+        """Tests that the HarmonizedTrait detail page returns 200 with a valid pk."""
+        trait = HarmonizedTraitFactory.create()
+        # Test that the page works with a valid pk.
+        url = reverse('trait_browser:harmonized_detail', args=[trait.i_trait_id])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        
+    def test_harmonized_trait_detail_invalid(self):
+        """Tests that the HarmonizedTrait detail page returns 404 with an invalid pk."""
+        # No valid HarmonizedTraits exist here.
+        url = reverse('trait_browser:harmonized_detail', args=[10])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 404)
+    
+
+class HarmonizedTraitSearchViewTestCase(ViewsAutoLoginTestCase):
+
+    def test_harmonized_trait_search_with_valid_results(self):
+        """Tests that the harmonized_trait_search view has a 200 reponse code and the number of results is accurate when search text is entered and there are search results to display."""
+        # Make ten random HarmonizedTraits.
+        HarmonizedTraitFactory.create_batch(10)
+        # Make one HarmonizedTrait that will match your (improbable) search term.
+        HarmonizedTraitFactory.create(i_trait_name='asdfghjkl')
+        url = reverse('trait_browser:harmonized_search')
+        response = self.client.get(url, {'text': 'asdfghjkl'})
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.context['results'])    # results is True.
+        self.assertIsInstance(response.context['trait_table'], HarmonizedTraitTable)    # trait_table is a table object.
+        self.assertEqual(len(response.context['trait_table'].rows),1)    # There's 1 result row.
+    
+    def test_harmonized_trait_search_with_no_results(self):
+        """Tests that the harmonized_trait_search view has a 200 reponse code when search text is entered and there are no search results to display."""
+        HarmonizedTraitFactory.create_batch(10)
+        url = reverse('trait_browser:harmonized_search')
+        response = self.client.get(url, {'text': 'asdfghjkl'})
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.context['results'])    # results is True.
+        self.assertIsInstance(response.context['trait_table'], HarmonizedTraitTable)    # trait_table is a table object.
+        self.assertEqual(len(response.context['trait_table'].rows), 0) # There's 0 results rows.
+    
+    def test_harmonized_trait_search_with_no_search_text_entered(self):
+        """Test that there is no trait table displayed when no search text is entered and the form is not bound to data."""
+        HarmonizedTraitFactory.create_batch(10)
+        url = reverse('trait_browser:harmonized_search')
+        response = self.client.get(url, {'text': ''})
+        self.assertEqual(response.status_code, 200)    # The view will display something.
+        self.assertFalse(response.context['results'])    # results is False.
+        self.assertNotIn('trait_table', response.context)    # trait_table is found.
+        self.assertTrue(response.context['form'].is_bound)    # Form is bound to data
