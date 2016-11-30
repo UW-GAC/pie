@@ -54,7 +54,7 @@ def trait_table(request, trait_type):
     elif trait_type == 'source':
         table_title = 'Source phenotypes currently available'
         page_title = 'Source phenotypes'
-        trait_table = SourceTraitTable(SourceTrait.objects.all())
+        trait_table = SourceTraitTable(SourceTrait.objects.exclude(source_dataset__source_study_version__i_is_deprecated=True))
     # If you're going to change this later to some kind of filtered list (e.g. only the most
     # recent version of each trait), then you should wrap the SourceTrait.filter() in get_list_or_404
     
@@ -75,7 +75,7 @@ def source_study_detail(request, pk):
     this_study = get_object_or_404(Study, i_accession=pk)
     table_title = 'Source phenotypes currently available in {}'.format(this_study.i_study_name)
     page_title = 'phs{:6} source phenotypes'.format(this_study.phs)
-    trait_table = SourceTraitTable(SourceTrait.objects.filter(source_dataset__source_study_version__study__i_accession=pk))
+    trait_table = SourceTraitTable(SourceTrait.objects.exclude(source_dataset__source_study_version__i_is_deprecated=True).filter(source_dataset__source_study_version__study__i_accession=pk))
     # If you're going to change this later to some kind of filtered list (e.g. only the most
     # recent version of each trait), then you should wrap the SourceTrait.filter() in get_list_or_404
     # RequestConfig seems to be necessary for sorting to work.
@@ -125,8 +125,8 @@ def search(text_query, trait_type, study_pks=[]):
         # Filter by study.
         else:
             traits = SourceTrait.objects.filter(source_dataset__source_study_version__study__pk__in=study_pks)
-        # Then search text.
-        traits = traits.filter(Q(i_description__contains=text_query) | Q(i_trait_name__contains=text_query))
+        # Then exclude deprecated study versions and search text.
+        traits = traits.exclude(source_dataset__source_study_version__i_is_deprecated=True).filter(Q(i_description__contains=text_query) | Q(i_trait_name__contains=text_query))
     elif trait_type == 'harmonized':
         traits = HarmonizedTrait.objects.filter(Q(i_description__contains=text_query) | Q(i_trait_name__contains=text_query))
     return(traits)
