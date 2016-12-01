@@ -4,43 +4,46 @@
 {% block content %}
 
 <div class="jumbotron">
-  <h1>NHLBI TOPMed Phenotype Inventory</h1>
+
+  <!--<img src="{% static "topmed_logo/topmed_logo_long_white_circle.svg" %}" alt="topmed_logo_white_circle"/>-->
+
+  <!--<h2>NHLBI TOPMed</h2>-->
+  <h1>Phenotype Information Explorer</h1>
   <p>This inventory describes the phenotype data currently available to
   the Data Coordinating Center. This is a centralized location for TOPMed investigators to
   search and browse through the source phenotype data and combined phenotypes harmonized by the DCC.
   <!--and submit requests for phenotype harmonization.-->
   </p>
 
-  <img src="{% static "topmed_logo/topmed_logo_long_white_circle.svg" %}" alt="topmed_logo_white_circle"/>
 </div>
  
 </div>
 <hr>
 
 <div class="row">
-  <div class="col-md-6 text-center">
-    <a href="{% url 'trait_browser:source_all' %}"><img src="{% static "icons/ingredients.svg" %}" alt="source_phenotype_apple" width=200/></a>
-    <h2>Study source phenotypes</h2>
+  <div class="col-md-4 text-center">
+    <p><a class="btn btn-default" href="{% url 'trait_browser:source_all' %}" role="button">Browse source phenotypes &raquo;</a></p>
+    <h2>Source phenotypes</h2>
     <p>Source phenotypes for each study were downloaded from dbGaP.
     Source phenotypes available here can be used to generate harmonized phenotypes.</p>
-    <p><a class="btn btn-default" href="{% url 'trait_browser:source_all' %}" role="button">Browse source phenotypes &raquo;</a></p>
+    <a href="{% url 'trait_browser:source_all' %}"><img src="{% static "icons/ingredients.svg" %}" alt="source_phenotype_apple" width=200/></a>
   </div>
 
-  <div class="col-md-6 text-center">
-    <a href="{% url 'trait_browser:harmonized_all' %}"><img src="{% static "icons/pie.svg" %}" alt="harmonized_phenotype_pie" width=200/></span></a>
-    <h2>TOPMed harmonized phenotypes</h2>
-    <p>Harmonized phenotypes are posted here as they become available.</p>
+  <div class="col-md-4 text-center ribbon-parent">
+    <p><a class="btn btn-default" href="#" role="button">Submit a request &raquo;</a></p>
+    <h2>Harmonization request</h2>
+    <p>If you are an investigator associated with an approved manuscript proposal,
+    you will be able to submit a request for phenotype harmonization here.</p>
+    <a href="{% comment %}{% url 'trait_browser:harmonized_all' %}{% endcomment %}"><img src="{% static "icons/recipe.svg" %}" alt="harmonization_request_recipe" width=200/></span></a>
+  </div>
+
+  <div class="col-md-4 text-center">
     <p><a class="btn btn-default" href="{% url 'trait_browser:harmonized_all' %}" role="button">Browse harmonized phenotypes &raquo;</a></p>
+    <h2>Harmonized phenotypes</h2>
+    <p>Harmonized phenotypes are posted here as they become available.</p>
+    <a href="{% url 'trait_browser:harmonized_all' %}"><img src="{% static "icons/pie.svg" %}" alt="harmonized_phenotype_pie" width=200/></span></a>
   </div>
 
-  <!--<div class="col-md-4 text-center ribbon-parent">-->
-  <!--  <div class="ribbon">Coming soon!</div>-->
-  <!--  <span class="glyphicon glyphicon-edit glyphicon-home glyphicon-disabled" aria-hidden="true"></span>-->
-  <!--  <h2 class="text-disabled">Harmonization request</h2>-->
-  <!--  <p class="text-disabled">If you are an investigator associated with an approved manuscript proposal,-->
-  <!--  you will be able to submit a request for phenotype harmonization here.</p>-->
-  <!--  <p><a class="btn btn-default disabled" href="#" role="button">Submit a request &raquo;</a></p>-->
-  <!--</div>-->
 </div>
 
 <div class="alert alert-warning">
