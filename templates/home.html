@@ -4,47 +4,52 @@
 {% block content %}
 
 <div class="jumbotron">
-  <h1>NHLBI TOPMed Phenotype Inventory</h1>
-  <p>This inventory describes the phenotype data currently available to
-  the Data Coordinating Center. This is a centralized location for TOPMed investigators to
-  search and browse through the source phenotype data and combined phenotypes harmonized by the DCC.
-  <!--and submit requests for phenotype harmonization.-->
+
+  <!--<img src="{% static "topmed_logo/topmed_logo_long_white_circle.svg" %}" alt="topmed_logo_white_circle"/>-->
+
+  <h2>NHLBI TOPMed</h2>
+  <h1>Phenotype Inventory Explorer</h1>
+  <p> <strong>PIE</strong> allows TOPMed investigators to view and search through the phenotype data
+  currently available to the TOPMed Data Coordinating Center. The DCC is in the process
+  of combining source phenotypes across TOPMed projects to produce harmonized
+  phenotypes. TOPMed working groups can help the harmonization process by submitting
+  details for how to combine source phenotypes using the harmonization request form.
   </p>
 
-  <img src="{% static "topmed_logo/topmed_logo_long_white_circle.svg" %}" alt="topmed_logo_white_circle"/>
 </div>
- 
-</div>
-<hr>
+
 
 <div class="row">
-  <div class="col-md-6 text-center">
-    <a href="{% url 'trait_browser:source_all' %}"><img src="{% static "icons/apple-1.svg" %}" alt="source_phenotype_apple" width=150/></a>
-    <h2>Study source phenotypes</h2>
+  <div class="col-md-4 text-center action-home">
+    <a href="{% url 'trait_browser:source_all' %}">    
+    <h2>Browse source phenotypes</h2>
     <p>Source phenotypes for each study were downloaded from dbGaP.
     Source phenotypes available here can be used to generate harmonized phenotypes.</p>
-    <p><a class="btn btn-default" href="{% url 'trait_browser:source_all' %}" role="button">Browse source phenotypes &raquo;</a></p>
+    <img src="{% static "icons/ingredients.svg" %}" alt="source_phenotype_apple" width=150 style="margin:15px"/>
+    </a>
   </div>
 
-  <div class="col-md-6 text-center">
-    <a href="{% url 'trait_browser:harmonized_all' %}"><img src="{% static "icons/pie-2.svg" %}" alt="harmonized_phenotype_pie" width=150/></span></a>
-    <h2>TOPMed harmonized phenotypes</h2>
+  <div class="col-md-4 text-center ribbon-parent">
+    <!--<a href="{% comment %}{% url 'trait_browser:harmonized_all' %}{% endcomment %}">-->
+    <h2 class="text-disabled">Submit a harmonization request</h2>
+    <p class="bg-info text-info">Coming soon.</p>
+    <p class="text-disabled">Submit pre-approved harmonization requests here.</p>
+    <img src="{% static "icons/recipe.svg" %}" alt="harmonization_request_recipe" width=150 style="margin:15px; opacity:0.4;"/>
+    <!--</a>-->
+  </div>
+
+  <div class="col-md-4 text-center action-home">
+    <a href="{% url 'trait_browser:harmonized_all' %}">
+    <h2>Browse harmonized phenotypes</h2>
     <p>Harmonized phenotypes are posted here as they become available.</p>
-    <p><a class="btn btn-default" href="{% url 'trait_browser:harmonized_all' %}" role="button">Browse harmonized phenotypes &raquo;</a></p>
+    <img src="{% static "icons/pie.svg" %}" alt="harmonized_phenotype_pie" width=150 style="margin:15px"/>
+    </a>
   </div>
 
-  <!--<div class="col-md-4 text-center ribbon-parent">-->
-  <!--  <div class="ribbon">Coming soon!</div>-->
-  <!--  <span class="glyphicon glyphicon-edit glyphicon-home glyphicon-disabled" aria-hidden="true"></span>-->
-  <!--  <h2 class="text-disabled">Harmonization request</h2>-->
-  <!--  <p class="text-disabled">If you are an investigator associated with an approved manuscript proposal,-->
-  <!--  you will be able to submit a request for phenotype harmonization here.</p>-->
-  <!--  <p><a class="btn btn-default disabled" href="#" role="button">Submit a request &raquo;</a></p>-->
-  <!--</div>-->
 </div>
 
 <div class="alert alert-warning">
-  <strong>Warning!</strong> This site is still under active development. 
+  <strong>Construction zone!</strong> Please bear with us as the site changes during development. 
 </div>
 
 
