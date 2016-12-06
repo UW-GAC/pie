@@ -17,38 +17,39 @@
   </p>
 
 </div>
- 
-</div>
-<hr>
+
 
 <div class="row">
-  <div class="col-md-4 text-center">
-    <p><a class="btn btn-default" href="{% url 'trait_browser:source_all' %}" role="button">Browse source phenotypes &raquo;</a></p>
-    <h2>Source phenotypes</h2>
+  <div class="col-md-4 text-center action-home">
+    <a href="{% url 'trait_browser:source_all' %}">    
+    <h2>Browse source phenotypes</h2>
     <p>Source phenotypes for each study were downloaded from dbGaP.
     Source phenotypes available here can be used to generate harmonized phenotypes.</p>
-    <a href="{% url 'trait_browser:source_all' %}"><img src="{% static "icons/ingredients.svg" %}" alt="source_phenotype_apple" width=200 style="margin:15px"/></a>
+    <img src="{% static "icons/ingredients.svg" %}" alt="source_phenotype_apple" width=150 style="margin:15px"/>
+    </a>
   </div>
 
   <div class="col-md-4 text-center ribbon-parent">
-    <p><a class="btn btn-default" href="#" role="button">Submit a request &raquo;</a></p>
-    <h2>Harmonization request</h2>
-    <p>If you are an investigator associated with an approved manuscript proposal,
-    you will be able to submit a request for phenotype harmonization here.</p>
-    <a href="{% comment %}{% url 'trait_browser:harmonized_all' %}{% endcomment %}"><img src="{% static "icons/recipe.svg" %}" alt="harmonization_request_recipe" width=200 style="margin:15px"/></span></a>
+    <!--<a href="{% comment %}{% url 'trait_browser:harmonized_all' %}{% endcomment %}">-->
+    <h2 class="text-disabled">Submit a harmonization request</h2>
+    <p class="bg-info text-info">Coming soon.</p>
+    <p class="text-disabled">Submit pre-approved harmonization requests here.</p>
+    <img src="{% static "icons/recipe.svg" %}" alt="harmonization_request_recipe" width=150 style="margin:15px; opacity:0.4;"/>
+    <!--</a>-->
   </div>
 
-  <div class="col-md-4 text-center">
-    <p><a class="btn btn-default" href="{% url 'trait_browser:harmonized_all' %}" role="button">Browse harmonized phenotypes &raquo;</a></p>
-    <h2>Harmonized phenotypes</h2>
+  <div class="col-md-4 text-center action-home">
+    <a href="{% url 'trait_browser:harmonized_all' %}">
+    <h2>Browse harmonized phenotypes</h2>
     <p>Harmonized phenotypes are posted here as they become available.</p>
-    <a href="{% url 'trait_browser:harmonized_all' %}"><img src="{% static "icons/pie.svg" %}" alt="harmonized_phenotype_pie" width=200 style="margin:15px"/></span></a>
+    <img src="{% static "icons/pie.svg" %}" alt="harmonized_phenotype_pie" width=150 style="margin:15px"/>
+    </a>
   </div>
 
 </div>
 
 <div class="alert alert-warning">
-  <strong>Warning!</strong> This site is still under active development. 
+  <strong>Construction zone!</strong> Please bear with us as the site changes during development. 
 </div>
 
 

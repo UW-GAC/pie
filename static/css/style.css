@@ -19,18 +19,14 @@ body {
   color: #aaaaaa;
 }
 
-/* home page glyphicons */
-.glyphicon-home {
-    font-size: 150px;
-    opacity: 0.4;
+/* Homepage div hover/non-hover classes */
+.action-home {
+    opacity: 0.6;
 }
 
-.glyphicon-disabled {
-    color: gray;
-}
-
-.glyphicon-disabled:hover {
-    opacity: 0.4;
+.action-home a {
+    color: #000000;
+    text-decoration: none;
 }
 
 .jumbotron {
