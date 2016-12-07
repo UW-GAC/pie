@@ -537,6 +537,11 @@ class Command(BaseCommand):
 
         source_db.close()    
 
+    def _update_all(self, which_db, verbosity):
+        """
+        """
+        pass
+    
     # Methods to actually do the management command.
     def add_arguments(self, parser):
         """Add custom command line arguments to this management command."""
@@ -558,3 +563,4 @@ class Command(BaseCommand):
             argument dicts will pass on command line options
         """
         self._import_all(which_db=options['which_db'], verbosity=options['verbosity'])
+        self._update_all(which_db=options['which_db'], verbosity=options['verbosity'])
