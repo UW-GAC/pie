@@ -447,6 +447,96 @@ class Command(BaseCommand):
         cursor.close()
 
 
+    # Methods to run all of the updating or importing on all of the models.
+    
+    def _import_all(self, which_db, verbosity):
+        """
+
+        """
+        source_db = self._get_source_db(which_db=which_db)
+        new_global_study_pks = self._import_new_data(source_db=source_db,
+                                                     table_name='global_study',
+                                                     pk_name='id',
+                                                     model=GlobalStudy,
+                                                     make_args=self._make_global_study_args,
+                                                     verbosity=verbosity)
+        print("Added global studies")
+        new_study_pks = self._import_new_data(source_db=source_db,
+                                              table_name='study',
+                                              pk_name='accession',
+                                              model=Study,
+                                              make_args=self._make_study_args,
+                                              verbosity=verbosity)
+        print("Added studies")
+        new_source_study_version_pks = self._import_new_data(source_db=source_db,
+                                                             table_name='source_study_version',
+                                                             pk_name='id',
+                                                             model=SourceStudyVersion,
+                                                             make_args=self._make_source_study_version_args,
+                                                             verbosity=verbosity)
+        print("Added source study versions")
+        new_source_dataset_pks = self._import_new_data(source_db=source_db,
+                                                       table_name='source_dataset',
+                                                       pk_name='id',
+                                                       model=SourceDataset,
+                                                       make_args=self._make_source_dataset_args,
+                                                       verbosity=verbosity)
+        print("Added source datasets")
+        new_source_trait_pks = self._import_new_data(source_db=source_db,
+                                                     table_name='source_trait',
+                                                     pk_name='source_trait_id',
+                                                     model=SourceTrait,
+                                                     make_args=self._make_source_trait_args,
+                                                     verbosity=verbosity)
+        print("Added source traits")
+        new_subcohort_pks = self._import_new_data(source_db=source_db,
+                                                  table_name='subcohort',
+                                                  pk_name='id',
+                                                  model=Subcohort,
+                                                  make_args=self._make_subcohort_args,
+                                                  verbosity=verbosity)
+        print("Added subcohorts")
+        new_source_trait_encoded_value_pks = self._import_new_data(source_db=source_db,
+                                                             table_name='source_trait_encoded_values',
+                                                             pk_name='id',
+                                                             model=SourceTraitEncodedValue,
+                                                             make_args=self._make_source_trait_encoded_value_args,
+                                                             verbosity=verbosity)
+        print("Added source trait encoded values")
+
+        self._import_new_source_dataset_subcohorts(source_db, new_source_dataset_pks, verbosity=verbosity)
+        print("Added source dataset subcohorts")
+        
+        new_harmonized_trait_set_pks = self._import_new_data(source_db=source_db,
+                                                             table_name='harmonized_trait_set',
+                                                             pk_name='id',
+                                                             model=HarmonizedTraitSet,
+                                                             make_args=self._make_harmonized_trait_set_args,
+                                                             verbosity=verbosity)
+        print("Added harmonized trait sets")
+
+        new_harmonized_trait_pks = self._import_new_data(source_db=source_db,
+                                                             table_name='harmonized_trait',
+                                                             pk_name='harmonized_trait_id',
+                                                             model=HarmonizedTrait,
+                                                             make_args=self._make_harmonized_trait_args,
+                                                             verbosity=verbosity)
+        print("Added harmonized traits")
+
+        self._import_new_component_source_traits(source_db, new_harmonized_trait_set_pks, verbosity=verbosity)
+        print("Added component source traits")
+
+
+        new_harmonized_trait_encoded_value_pks = self._import_new_data(source_db=source_db,
+                                                             table_name='harmonized_trait_encoded_values',
+                                                             pk_name='harmonized_trait_id',
+                                                             model=HarmonizedTraitEncodedValue,
+                                                             make_args=self._make_harmonized_trait_encoded_value_args,
+                                                             verbosity=verbosity)
+        print("Added harmonized trait encoded values")
+
+        source_db.close()    
+
     # Methods to actually do the management command.
     def add_arguments(self, parser):
         """Add custom command line arguments to this management command."""
@@ -467,87 +557,4 @@ class Command(BaseCommand):
             **args and **options are handled as per the superclass handling; these
             argument dicts will pass on command line options
         """
-        source_db = self._get_source_db(which_db=options['which_db'])
-        new_global_study_pks = self._import_new_data(source_db=source_db,
-                                                     table_name='global_study',
-                                                     pk_name='id',
-                                                     model=GlobalStudy,
-                                                     make_args=self._make_global_study_args,
-                                                     verbosity=options['verbosity'])
-        print("Added global studies")
-        new_study_pks = self._import_new_data(source_db=source_db,
-                                              table_name='study',
-                                              pk_name='accession',
-                                              model=Study,
-                                              make_args=self._make_study_args,
-                                              verbosity=options['verbosity'])
-        print("Added studies")
-        new_source_study_version_pks = self._import_new_data(source_db=source_db,
-                                                             table_name='source_study_version',
-                                                             pk_name='id',
-                                                             model=SourceStudyVersion,
-                                                             make_args=self._make_source_study_version_args,
-                                                             verbosity=options['verbosity'])
-        print("Added source study versions")
-        new_source_dataset_pks = self._import_new_data(source_db=source_db,
-                                                       table_name='source_dataset',
-                                                       pk_name='id',
-                                                       model=SourceDataset,
-                                                       make_args=self._make_source_dataset_args,
-                                                       verbosity=options['verbosity'])
-        print("Added source datasets")
-        new_source_trait_pks = self._import_new_data(source_db=source_db,
-                                                     table_name='source_trait',
-                                                     pk_name='source_trait_id',
-                                                     model=SourceTrait,
-                                                     make_args=self._make_source_trait_args,
-                                                     verbosity=options['verbosity'])
-        print("Added source traits")
-        new_subcohort_pks = self._import_new_data(source_db=source_db,
-                                                  table_name='subcohort',
-                                                  pk_name='id',
-                                                  model=Subcohort,
-                                                  make_args=self._make_subcohort_args,
-                                                  verbosity=options['verbosity'])
-        print("Added subcohorts")
-        new_source_trait_encoded_value_pks = self._import_new_data(source_db=source_db,
-                                                             table_name='source_trait_encoded_values',
-                                                             pk_name='id',
-                                                             model=SourceTraitEncodedValue,
-                                                             make_args=self._make_source_trait_encoded_value_args,
-                                                             verbosity=options['verbosity'])
-        print("Added source trait encoded values")
-
-        self._import_new_source_dataset_subcohorts(source_db, new_source_dataset_pks, verbosity=options['verbosity'])
-        print("Added source dataset subcohorts")
-        
-        new_harmonized_trait_set_pks = self._import_new_data(source_db=source_db,
-                                                             table_name='harmonized_trait_set',
-                                                             pk_name='id',
-                                                             model=HarmonizedTraitSet,
-                                                             make_args=self._make_harmonized_trait_set_args,
-                                                             verbosity=options['verbosity'])
-        print("Added harmonized trait sets")
-
-        new_harmonized_trait_pks = self._import_new_data(source_db=source_db,
-                                                             table_name='harmonized_trait',
-                                                             pk_name='harmonized_trait_id',
-                                                             model=HarmonizedTrait,
-                                                             make_args=self._make_harmonized_trait_args,
-                                                             verbosity=options['verbosity'])
-        print("Added harmonized traits")
-
-        self._import_new_component_source_traits(source_db, new_harmonized_trait_set_pks, verbosity=options['verbosity'])
-        print("Added component source traits")
-
-
-        new_harmonized_trait_encoded_value_pks = self._import_new_data(source_db=source_db,
-                                                             table_name='harmonized_trait_encoded_values',
-                                                             pk_name='harmonized_trait_id',
-                                                             model=HarmonizedTraitEncodedValue,
-                                                             make_args=self._make_harmonized_trait_encoded_value_args,
-                                                             verbosity=options['verbosity'])
-        print("Added harmonized trait encoded values")
-        
-
-        source_db.close()
+        self._import_all(which_db=options['which_db'], verbosity=options['verbosity'])
