@@ -535,3 +535,13 @@ class IntegrationTest(VisitTestDataTestCase):
         self.cursor.execute(source_trait_encoded_values_query)
         source_trait_encoded_values_count = self.cursor.fetchone()['COUNT(*)']
         self.assertEqual(source_trait_encoded_values_count, SourceTraitEncodedValue.objects.count())
+
+
+# class UpdateIntegrationTest(BaseTestDataTestCase):
+# 
+#     def test_update_all(self):
+#         """Ensure that calling the command as you would from command line works properly."""
+#         management.call_command('import_db', '--which_db=devel')
+#         clean_devel_db()
+#         load_test_source_db_data('base_plus_visit.sql')
+#         management.call_command('import_db', '--which_db=devel', '--update_only', '--verbosity=3')
