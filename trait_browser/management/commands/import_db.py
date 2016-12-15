@@ -154,9 +154,8 @@ class Command(BaseCommand):
         new_pks = self._get_new_pks(model, old_pks)
         return new_pks
     
-
     # Helper methods for updating data that has been modified in the source db.
-    def _make_query_for_rows_to_update(self, table_name, model, verbosity):
+    def _make_query_for_rows_to_update(self, table_name, model, old_pks, pk_name, verbosity):
         """Make a query for old rows from the given table.
         
         Arguments:
@@ -169,7 +168,11 @@ class Command(BaseCommand):
         """
         latest_date = model.objects.latest('modified').modified
         latest_date = latest_date.strftime('%Y-%m-%d %H:%M:%S')
-        query = "SELECT * FROM {} WHERE (date_changed > date_added) AND (date_changed > '{}');".format(table_name, latest_date)
+        if len(old_pks) > 0:
+            pk_query = ' AND {} IN ({})'.format(pk_name, ','.join(old_pks))
+        else:
+            pk_query = ''
+        query = "SELECT * FROM {} WHERE (date_changed > date_added) AND (date_changed > '{}'{});".format(table_name, latest_date, pk_query)
         return query
 
     def _update_model_object_from_args(self, args, model, verbosity):
@@ -200,6 +203,34 @@ class Command(BaseCommand):
             make_args: function to convert a db query result row to args for making a model object
             model: the model class to use to make a model object instance
         """
+        # Print the results of the updated rows query (SQL table format).
+        # cursor = source_db.cursor(buffered=True, dictionary=False)
+        # cursor.execute(query)
+        # results = cursor.fetchall()
+        # widths = []
+        # columns = []
+        # sep_col = '|'
+        # sep_row = '+'
+        # 
+        # for cd in cursor.description:
+        #     if cd[2] is not None:
+        #         widths.append(max(cd[2], len(cd[0])))
+        #     else:
+        #         widths.append(len(cd[0]))
+        #     columns.append(cd[0])
+        # 
+        # for w in widths:
+        #     sep_col += " %-"+"%ss |" % (w, )
+        #     sep_row += '-'*w + '--+'
+        # 
+        # print(sep_row)
+        # print(sep_col % tuple(columns))
+        # print(sep_row)
+        # for row in results:
+        #     print(sep_col % row)
+        # print(sep_row)
+        # print('\n')
+        
         cursor = source_db.cursor(buffered=True, dictionary=True)
         cursor.execute(query)
         for row in cursor:
@@ -218,10 +249,16 @@ class Command(BaseCommand):
             model: the model class to use to make a model object instance
             make_args: function to convert a db query result row to args for making a model object
         """
-        update_rows_query = self._make_query_for_rows_to_update(table_name, model, verbosity=verbosity)
-        self._update_model_object_per_query_row(source_db, update_rows_query, make_args, model, verbosity=verbosity)
-    
-
+        old_pks = self._get_current_pks(model)
+        if len(old_pks) < 1:
+            if verbosity == 3:
+                print('No updated {}s to import.'.format(model))
+        else:
+            update_rows_query = self._make_query_for_rows_to_update(table_name, model, old_pks, pk_name, verbosity=verbosity)
+            # print(update_rows_query)
+            if verbosity == 3:
+                print('Updating entries for model {} ...'.format(model.__name__))
+            self._update_model_object_per_query_row(source_db, update_rows_query, make_args, model, verbosity=verbosity)
 
     # Helper methods for data munging.
     def _fix_bytearray(self, row_dict):
@@ -515,9 +552,7 @@ class Command(BaseCommand):
             if verbosity == 3: print('Linked {} component source trait to {}'.format(source_trait, harmonized_trait_set))
         cursor.close()
 
-
     # Methods to run all of the updating or importing on all of the models.
-    
     def _import_all(self, which_db, verbosity):
         """
 
@@ -529,52 +564,52 @@ class Command(BaseCommand):
                                                      model=GlobalStudy,
                                                      make_args=self._make_global_study_args,
                                                      verbosity=verbosity)
-        print("Added global studies")
+        print("Added {} global studies".format(len(new_global_study_pks)))
         new_study_pks = self._import_new_data(source_db=source_db,
                                               table_name='study',
                                               pk_name='accession',
                                               model=Study,
                                               make_args=self._make_study_args,
                                               verbosity=verbosity)
-        print("Added studies")
+        print("Added {} studies".format(len(new_study_pks)))
         new_source_study_version_pks = self._import_new_data(source_db=source_db,
                                                              table_name='source_study_version',
                                                              pk_name='id',
                                                              model=SourceStudyVersion,
                                                              make_args=self._make_source_study_version_args,
                                                              verbosity=verbosity)
-        print("Added source study versions")
+        print("Added {} source study versions".format(len(new_source_study_version_pks)))
         new_source_dataset_pks = self._import_new_data(source_db=source_db,
                                                        table_name='source_dataset',
                                                        pk_name='id',
                                                        model=SourceDataset,
                                                        make_args=self._make_source_dataset_args,
                                                        verbosity=verbosity)
-        print("Added source datasets")
+        print("Added {} source datasets".format(len(new_source_dataset_pks)))
         new_source_trait_pks = self._import_new_data(source_db=source_db,
                                                      table_name='source_trait',
                                                      pk_name='source_trait_id',
                                                      model=SourceTrait,
                                                      make_args=self._make_source_trait_args,
                                                      verbosity=verbosity)
-        print("Added source traits")
+        print("Added {} source traits".format(len(new_source_trait_pks)))
         new_subcohort_pks = self._import_new_data(source_db=source_db,
                                                   table_name='subcohort',
                                                   pk_name='id',
                                                   model=Subcohort,
                                                   make_args=self._make_subcohort_args,
                                                   verbosity=verbosity)
-        print("Added subcohorts")
+        print("Added {} subcohorts".format(len(new_subcohort_pks)))
         new_source_trait_encoded_value_pks = self._import_new_data(source_db=source_db,
                                                              table_name='source_trait_encoded_values',
                                                              pk_name='id',
                                                              model=SourceTraitEncodedValue,
                                                              make_args=self._make_source_trait_encoded_value_args,
                                                              verbosity=verbosity)
-        print("Added source trait encoded values")
+        print("Added {} source trait encoded values".format(len(new_source_trait_encoded_value_pks)))
 
         self._import_new_source_dataset_subcohorts(source_db, new_source_dataset_pks, verbosity=verbosity)
-        print("Added source dataset subcohorts")
+        print("Added some source dataset subcohorts")
         
         new_harmonized_trait_set_pks = self._import_new_data(source_db=source_db,
                                                              table_name='harmonized_trait_set',
@@ -582,7 +617,7 @@ class Command(BaseCommand):
                                                              model=HarmonizedTraitSet,
                                                              make_args=self._make_harmonized_trait_set_args,
                                                              verbosity=verbosity)
-        print("Added harmonized trait sets")
+        print("Added {} harmonized trait sets".format(len(new_harmonized_trait_set_pks)))
 
         new_harmonized_trait_pks = self._import_new_data(source_db=source_db,
                                                              table_name='harmonized_trait',
@@ -590,10 +625,10 @@ class Command(BaseCommand):
                                                              model=HarmonizedTrait,
                                                              make_args=self._make_harmonized_trait_args,
                                                              verbosity=verbosity)
-        print("Added harmonized traits")
+        print("Added {} harmonized traits".format(len(new_harmonized_trait_pks)))
 
         self._import_new_component_source_traits(source_db, new_harmonized_trait_set_pks, verbosity=verbosity)
-        print("Added component source traits")
+        print("Added some component source traits")
 
 
         new_harmonized_trait_encoded_value_pks = self._import_new_data(source_db=source_db,
@@ -602,7 +637,7 @@ class Command(BaseCommand):
                                                              model=HarmonizedTraitEncodedValue,
                                                              make_args=self._make_harmonized_trait_encoded_value_args,
                                                              verbosity=verbosity)
-        print("Added harmonized trait encoded values")
+        print("Added {} harmonized trait encoded values".format(len(new_harmonized_trait_encoded_value_pks)))
 
         source_db.close()    
 
@@ -617,14 +652,78 @@ class Command(BaseCommand):
                                    make_args=self._make_global_study_args,
                                    verbosity=verbosity)
 
-    
+        self._update_existing_data(source_db=source_db,
+                                    table_name='study',
+                                    pk_name='accession',
+                                    model=Study,
+                                    make_args=self._make_study_args,
+                                    verbosity=verbosity)
+        
+        self._update_existing_data(source_db=source_db,
+                                    table_name='source_study_version',
+                                    pk_name='id',
+                                    model=SourceStudyVersion,
+                                    make_args=self._make_source_study_version_args,
+                                    verbosity=verbosity)
+        
+        self._update_existing_data(source_db=source_db,
+                                    table_name='source_dataset',
+                                    pk_name='id',
+                                    model=SourceDataset,
+                                    make_args=self._make_source_dataset_args,
+                                    verbosity=verbosity)
+        
+        self._update_existing_data(source_db=source_db,
+                                    table_name='source_trait',
+                                    pk_name='source_trait_id',
+                                    model=SourceTrait,
+                                    make_args=self._make_source_trait_args,
+                                    verbosity=verbosity)
+        
+        self._update_existing_data(source_db=source_db,
+                                    table_name='subcohort',
+                                    pk_name='id',
+                                    model=Subcohort,
+                                    make_args=self._make_subcohort_args,
+                                    verbosity=verbosity)
+        
+        self._update_existing_data(source_db=source_db,
+                                    table_name='source_trait_encoded_values',
+                                    pk_name='id',
+                                    model=SourceTraitEncodedValue,
+                                    make_args=self._make_source_trait_encoded_value_args,
+                                    verbosity=verbosity)
+        
+        self._update_existing_data(source_db=source_db,
+                                    table_name='harmonized_trait_set',
+                                    pk_name='id',
+                                    model=HarmonizedTraitSet,
+                                    make_args=self._make_harmonized_trait_set_args,
+                                    verbosity=verbosity)
+        
+        self._update_existing_data(source_db=source_db,
+                                    table_name='harmonized_trait',
+                                    pk_name='harmonized_trait_id',
+                                    model=HarmonizedTrait,
+                                    make_args=self._make_harmonized_trait_args,
+                                    verbosity=verbosity)
+        
+        self._update_existing_data(source_db=source_db,
+                                    table_name='harmonized_trait_encoded_values',
+                                    pk_name='harmonized_trait_id',
+                                    model=HarmonizedTraitEncodedValue,
+                                    make_args=self._make_harmonized_trait_encoded_value_args,
+                                    verbosity=verbosity)
+
+        source_db.close()    
+
     # Methods to actually do the management command.
     def add_arguments(self, parser):
         """Add custom command line arguments to this management command."""
         parser.add_argument('--which_db', action='store', type=str,
                             choices=['test', 'devel', 'production'], default=None, required=True,
                             help='Which source database to connect to for retrieving source data.')
-        parser.add_argument('--update-only', action='store_true',
+        parser.add_argument('--update_only', action='store_true',
                             help='Only update the db records that are already in the db, and do not add new ones.')
 
     def handle(self, *args, **options):
@@ -638,5 +737,8 @@ class Command(BaseCommand):
             **args and **options are handled as per the superclass handling; these
             argument dicts will pass on command line options
         """
-        self._import_all(which_db=options['which_db'], verbosity=options['verbosity'])
+        # First update, then import new data.
         self._update_all(which_db=options['which_db'], verbosity=options['verbosity'])
+        if not options['update_only']:
+            self._import_all(which_db=options['which_db'], verbosity=options['verbosity'])
+        
