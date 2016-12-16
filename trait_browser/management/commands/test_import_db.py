@@ -79,6 +79,54 @@ def change_data_in_table(table_name, update_field, new_value, where_field, where
     cursor.close()
     source_db.close()
 
+
+class TestFunctionsTestCase(TestCase):
+    
+    def test_clean_devel_db(self):
+        """Test that clean_devel_db() leaves the devel db with 0 rows in each table."""
+        load_test_source_db_data('base.sql')
+        clean_devel_db()
+        source_db = get_devel_db(permissions='full')
+        cursor = source_db.cursor(buffered=True, dictionary=False)
+        cursor.execute('SHOW TABLES;')
+        tables = [el[0].decode('utf-8') for el in cursor.fetchall()]
+        tables.remove('schema_changes')
+        tables = [el for el in tables if not el.startswith('view_')]
+        for tab in tables:
+            row_count_query = 'SELECT COUNT(*) FROM {};'.format(tab)
+            cursor.execute(row_count_query)
+            row_count = cursor.fetchone()[0]
+            self.assertEqual(row_count, 0)
+        cursor.close()
+        source_db.close()
+    
+    def test_change_data_in_table(self):
+        clean_devel_db()
+        load_test_source_db_data('base.sql')
+        table = 'global_study'
+        update_field = 'name'
+        new_val = 'TEST'
+        where_field = 'id'
+        where_value = 1
+        change_data_in_table(table, update_field, new_val, where_field, where_value)
+        source_db = get_devel_db()
+        cursor = source_db.cursor(buffered=True, dictionary=True)
+        cursor.execute('SELECT * FROM {} WHERE {}={};'.format(table, where_field, where_value))
+        row = cursor.fetchone()
+        row = CMD._fix_row(row)
+        cursor.close()
+        source_db.close()
+        self.assertEqual(row[update_field], new_val)
+        clean_devel_db()
+    
+    def test_load_test_source_db_data(self):
+        """Test that loading a test data set works as expected."""
+        # TODO: clean the db, load the test data, do a mysqldump saving the
+        # output to a variable, read in the saved mysqldump, and make sure it
+        # matches the new mysqldump.
+        pass
+
+
 class BaseTestDataTestCase(TestCase):
     """Superclass to test importing commands on the base.sql test source db data."""
     
