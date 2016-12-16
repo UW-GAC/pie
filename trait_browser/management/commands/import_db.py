@@ -50,6 +50,7 @@ class Command(BaseCommand):
         # TODO add a try/except block here in case the db connection fails.
         return cnx
     
+
     # Helper methods for importing data from the source db.
     def _make_model_object_from_args(self, args, model, verbosity):
         """Make an instance of a model object using arguments.
@@ -260,6 +261,7 @@ class Command(BaseCommand):
                 print('Updating entries for model {} ...'.format(model.__name__))
             self._update_model_object_per_query_row(source_db, update_rows_query, make_args, model, verbosity=verbosity)
 
+
     # Helper methods for data munging.
     def _fix_bytearray(self, row_dict):
         """Convert byteArrays into decoded strings.
@@ -339,11 +341,13 @@ class Command(BaseCommand):
         """Helper function to run all of the fixers."""
         return self._fix_timezone(self._fix_bytearray(self._fix_null(row_dict)))
 
+
     # Methods to find out which objects are already in the db.
     def _get_current_pks(self, model):
         """Get a list of str pk values for the given model."""
         return [str(obj.pk) for obj in model.objects.all()]
     
+
     # Methods to make object-instantiating args from a row of the source db data.
     def _make_global_study_args(self, row_dict):
         """Get args for making a GlobalStudy object from a source db row.
@@ -488,6 +492,7 @@ class Command(BaseCommand):
         return self._make_args_mapping(row_dict, ['id', 'category', 'value'],
                                        foreign_key_mapping={'harmonized_trait_id':HarmonizedTrait})
 
+
     # Methods for importing data for models that require special processing.
     def _import_new_source_dataset_subcohorts(self, source_db, new_dataset_pks, verbosity):
         """Add subcohort-source_dataset link data to the website db models.
@@ -551,6 +556,7 @@ class Command(BaseCommand):
             harmonized_trait_set.component_source_traits.add(source_trait)
             if verbosity == 3: print('Linked {} component source trait to {}'.format(source_trait, harmonized_trait_set))
         cursor.close()
+
 
     # Methods to run all of the updating or importing on all of the models.
     def _import_all(self, which_db, verbosity):
@@ -716,6 +722,7 @@ class Command(BaseCommand):
                                     verbosity=verbosity)
 
         source_db.close()    
+
 
     # Methods to actually do the management command.
     def add_arguments(self, parser):
