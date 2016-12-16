@@ -484,13 +484,8 @@ class IntegrationTest(VisitTestDataTestCase):
     source database. So just run one big integration test here rather than
     nice unit tests.
     """
-    # TODO: have this run import, then add visit data, then 
-    
-    def test_import_new_methods_after_partial_db_import(self):
-        """Ensure that the whole workflow of the management command works to add objects to the website databse, without limits."""
-        pass
 
-    def test_call_command_to_import_whole_db(self):
+    def test_handle_with_visit_data(self):
         """Ensure that calling the command as you would from command line works properly."""
         management.call_command('import_db', '--which_db=devel')
         
@@ -536,12 +531,11 @@ class IntegrationTest(VisitTestDataTestCase):
         source_trait_encoded_values_count = self.cursor.fetchone()['COUNT(*)']
         self.assertEqual(source_trait_encoded_values_count, SourceTraitEncodedValue.objects.count())
 
+    def test_handle_with_updated_data(self):
+        """Ensure that calling the command as you would from command line works properly."""
+        pass
 
-# class UpdateIntegrationTest(BaseTestDataTestCase):
-# 
-#     def test_update_all(self):
-#         """Ensure that calling the command as you would from command line works properly."""
-#         management.call_command('import_db', '--which_db=devel')
-#         clean_devel_db()
-#         load_test_source_db_data('base_plus_visit.sql')
-#         management.call_command('import_db', '--which_db=devel', '--update_only', '--verbosity=3')
+    def test_handle_with_new_study_added(self):
+        """Ensure that the whole workflow of the management command works to add objects to the website databse, without limits."""
+        pass
+
