@@ -70,6 +70,14 @@ def load_test_source_db_data(filename, verbose=False):
     else:
         if verbose: print('Test data loaded ...')
 
+def change_data_in_table(table_name, update_field, new_value, where_field, where_value):
+    source_db = get_devel_db(permissions='full')
+    cursor = source_db.cursor(buffered=True)
+    update_cmd = "UPDATE {} SET {}='{}' WHERE {}={};".format(table_name, update_field, new_value, where_field, where_value)
+    cursor.execute(update_cmd)
+    source_db.commit()
+    cursor.close()
+    source_db.close()
 
 class BaseTestDataTestCase(TestCase):
     """Superclass to test importing commands on the base.sql test source db data."""
