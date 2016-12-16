@@ -32,12 +32,12 @@ def get_devel_db(permissions='readonly'):
     """Get a connection to the devel source db."""
     return CMD._get_source_db(which_db='devel', permissions=permissions)
 
-def clean_devel_db():
+def clean_devel_db(verbose=False):
     """Remove all existing data from the devel source db."""
-    print('Getting source db connection ...')
+    if verbose: print('Getting source db connection ...')
     source_db = get_devel_db(permissions='full')
     cursor = source_db.cursor(buffered=True, dictionary=False)
-    print('Emptying current data from devel source db ...')
+    if verbose: print('Emptying current data from devel source db ...')
     cursor.execute('SHOW TABLES;')
     tables = [el[0].decode('utf-8') for el in cursor.fetchall()]
     tables.remove('schema_changes')
@@ -53,22 +53,22 @@ def clean_devel_db():
     source_db.close()
     
 TEST_DATA_DIR = 'trait_browser/source_db_test_data'
-def load_test_source_db_data(filename):
+def load_test_source_db_data(filename, verbose=False):
     """
     Load the data from a specific test data set into the devel source db.
     
     Args:
-        filename -- name of the .sql mysql dump file, found in trait_browser/source_db_test_data
+        filename -- name of the .sql mysql dump file, found in TEST_DATA_DIR
     """
     filepath = join(TEST_DATA_DIR, filename)
-    print('Loading test data from ' + filepath + ' ...')
+    if verbose: print('Loading test data from ' + filepath + ' ...')
     mysql_load = ['mysql', '--defaults-file={}'.format(settings.CNF_PATH),
                  '--defaults-group-suffix=_topmed_pheno_full_devel', '<', filepath]
     return_code = call(' '.join(mysql_load), shell=True, cwd=settings.SITE_ROOT)
     if return_code == 1:
         raise ValueError('MySQL failed to load test data.')
     else:
-        print('Test data loaded ...')
+        if verbose: print('Test data loaded ...')
 
 
 class BaseTestDataTestCase(TestCase):
@@ -80,8 +80,8 @@ class BaseTestDataTestCase(TestCase):
         super(BaseTestDataTestCase, cls).setUpClass()
         # Clean out the devel db and load the first test dataset.
         # By default, all tests will use dataset 1.
-        clean_devel_db()
-        load_test_source_db_data('base.sql')
+        clean_devel_db(verbose=True)
+        load_test_source_db_data('base.sql', verbose=True)
     
     def setUp(self):
         """ """
@@ -103,8 +103,8 @@ class VisitTestDataTestCase(TestCase):
         super(VisitTestDataTestCase, cls).setUpClass()
         # Clean out the devel db and load the first test dataset.
         # By default, all tests will use dataset 1.
-        clean_devel_db()
-        load_test_source_db_data('base_plus_visit.sql')
+        clean_devel_db(verbose=True)
+        load_test_source_db_data('base_plus_visit.sql', verbose=True)
     
     def setUp(self):
         """ """
