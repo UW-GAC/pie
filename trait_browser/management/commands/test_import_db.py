@@ -542,7 +542,10 @@ class IntegrationTest(VisitTestDataTestCase):
     """
 
     def test_handle_with_visit_data(self):
-        """Ensure that calling the command as you would from command line works properly."""
+        """Test that calling the command works on the base+visit test data set.
+        
+        There should be no updates. 
+        """
         management.call_command('import_db', '--which_db=devel')
         
         global_studies_query = 'SELECT COUNT(*) FROM global_study;'
@@ -588,9 +591,22 @@ class IntegrationTest(VisitTestDataTestCase):
         self.assertEqual(source_trait_encoded_values_count, SourceTraitEncodedValue.objects.count())
 
     def test_handle_with_updated_data(self):
-        """Ensure that calling the command as you would from command line works properly."""
-        pass
-
+        """Test that calling the command on updated data works as expected."""
+        management.call_command('import_db', '--which_db=devel')
+        # Close the db connections because change_data_in_table() opens new connections.
+        # This does not affect the .cursor and .source_db attributes in other functions.
+        self.cursor.close()
+        self.source_db.close()
+        new_value = 'asdfghjkl'
+        field_to_update = 'name'
+        global_study = GlobalStudy.objects.all()[0]
+        change_data_in_table('global_study', field_to_update, new_value, global_study._meta.pk.name.replace('i_', ''), 1)
+        management.call_command('import_db', '--which_db=devel', '--update_only', '--verbosity=3')
+        global_study.refresh_from_db()
+        # Check that modified date > created date, and name is set to new value.
+        self.assertEqual(new_value, getattr(global_study, 'i_'+field_to_update))
+        self.assertTrue(global_study.modified > global_study.created)
+    
     def test_handle_with_new_study_added(self):
         """Ensure that the whole workflow of the management command works to add objects to the website databse, without limits."""
         pass
