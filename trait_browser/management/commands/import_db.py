@@ -169,11 +169,12 @@ class Command(BaseCommand):
         """
         latest_date = model.objects.latest('modified').modified
         latest_date = latest_date.strftime('%Y-%m-%d %H:%M:%S')
+        # print("Model {}, latest date {}".format(model._meta.object_name, latest_date))
         if len(old_pks) > 0:
-            pk_query = ' AND {} IN ({})'.format(pk_name, ','.join(old_pks))
+            pk_query = 'AND ({} IN ({}))'.format(pk_name, ','.join(old_pks))
         else:
             pk_query = ''
-        query = "SELECT * FROM {} WHERE (date_changed > date_added) AND (date_changed > '{}'{});".format(table_name, latest_date, pk_query)
+        query = "SELECT * FROM {} WHERE (date_changed > date_added) AND (date_changed > '{}') {};".format(table_name, latest_date, pk_query)
         return query
 
     def _update_model_object_from_args(self, args, model, verbosity):
@@ -205,6 +206,7 @@ class Command(BaseCommand):
             model: the model class to use to make a model object instance
         """
         # Print the results of the updated rows query (SQL table format).
+        # print(query)
         # cursor = source_db.cursor(buffered=True, dictionary=False)
         # cursor.execute(query)
         # results = cursor.fetchall()
@@ -231,7 +233,7 @@ class Command(BaseCommand):
         #     print(sep_col % row)
         # print(sep_row)
         # print('\n')
-        
+        # 
         cursor = source_db.cursor(buffered=True, dictionary=True)
         cursor.execute(query)
         for row in cursor:
@@ -748,4 +750,3 @@ class Command(BaseCommand):
         self._update_all(which_db=options['which_db'], verbosity=options['verbosity'])
         if not options['update_only']:
             self._import_all(which_db=options['which_db'], verbosity=options['verbosity'])
-        
