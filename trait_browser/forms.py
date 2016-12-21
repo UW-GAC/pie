@@ -7,7 +7,7 @@ from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Layout, Div, Submit, HTML, Button, Row, Field, Reset
 from crispy_forms.bootstrap import AppendedText, PrependedText, FormActions, InlineCheckboxes
 
-from . models import Study, SourceTrait, HarmonizedTrait
+from .models import Study, SourceTrait, HarmonizedTrait, UnitRecipe, HarmonizationRecipe
 
 
 class SourceTraitCrispySearchForm(forms.Form):
@@ -64,3 +64,15 @@ class HarmonizedTraitCrispySearchForm(forms.Form):
             Submit('submit', 'Search', css_class='btn-primary btn-disable'),
         )
     )
+    
+
+class UnitRecipeForm(forms.ModelForm):
+    
+    def __init__(self, *args, **kwargs):
+        super(UnitRecipeForm, self).__init__(*args, **kwargs)
+        self.helper = FormHelper(self)
+        self.helper.layout.append(Submit('save', 'save'))
+        
+    class Meta:
+        model = UnitRecipe
+        fields = ('name', 'age_variables', 'batch_variables', 'phenotype_variables', 'instructions', )

@@ -22,4 +22,6 @@ urlpatterns = [
     url(r'^harmonized/all/$', views.trait_table, {'trait_type': 'harmonized'}, name='harmonized_all'),
     url(r'^harmonized/detail/(?P<pk>\d+)/$', views.HarmonizedTraitDetail.as_view(), name='harmonized_detail'),
     url(r'^harmonized/search/$', views.trait_search, {'trait_type': 'harmonized'}, name='harmonized_search'),
+    # Request form views
+    url(r'^recipe/unit/new/$', views.new_unit_recipe, name='new_unit_recipe'),
 ]
