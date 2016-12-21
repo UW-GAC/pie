@@ -319,7 +319,7 @@ class SourceTrait(Trait):
 
     def __str__(self):
         """Pretty printing of SourceTrait objects."""
-        return 'source trait {}, study {}, id={}'.format(self.i_trait_name, self.source_dataset.source_study_version.study, self.i_trait_id)
+        return '{:04d}: {} from dataset {}, {}'.format(self.i_trait_id, self.variable_accession, self.dataset_accession, self.i_trait_name)
     
     def save(self, *args, **kwargs):
         """Custom save method for default dbGaP accessions and links.
@@ -505,7 +505,7 @@ class UnitRecipe(TimeStampedModel):
     
     def __str__(self):
         """Pretty printing."""
-        return 'Harmonization unit recipe {} by {}, v{}'.format(self.pk, self.creator.username, self.version)
+        return '{:04d}: {} by {}, v{}'.format(self.pk, self.name, self.creator.username, self.version)
 
 
 class HarmonizationRecipe(TimeStampedModel):
