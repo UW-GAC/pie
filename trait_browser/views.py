@@ -10,7 +10,7 @@ from django_tables2   import RequestConfig
 
 from .models import GlobalStudy, HarmonizedTrait, HarmonizedTraitEncodedValue, HarmonizedTraitSet, SourceDataset, SourceStudyVersion, SourceTrait, SourceTraitEncodedValue, Study, Subcohort
 from .tables import SourceTraitTable, HarmonizedTraitTable, StudyTable
-from .forms import SourceTraitCrispySearchForm, HarmonizedTraitCrispySearchForm, UnitRecipeForm
+from .forms import SourceTraitCrispySearchForm, HarmonizedTraitCrispySearchForm, UnitRecipeForm, HarmonizationRecipeForm
 
 
 TABLE_PER_PAGE = 50    # Setting for per_page rows for all table views.  
@@ -216,4 +216,9 @@ def trait_search(request, trait_type):
 def new_unit_recipe(request):
     """View for creating new UnitRecipe objects."""  
     form = UnitRecipeForm()
+    return render(request, 'trait_browser/new_recipe_form.html', {'form': form})
+
+def new_harmonization_recipe(request):
+    """View for creating new HarmonizationRecipe objects."""  
+    form = HarmonizationRecipeForm()
     return render(request, 'trait_browser/new_recipe_form.html', {'form': form})

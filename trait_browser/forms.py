@@ -80,3 +80,19 @@ class UnitRecipeForm(forms.ModelForm):
     def get_model_name(self):
         """ """
         return self.instance._meta.verbose_name
+
+
+class HarmonizationRecipeForm(forms.ModelForm):
+    
+    def __init__(self, *args, **kwargs):
+        super(HarmonizationRecipeForm, self).__init__(*args, **kwargs)
+        self.helper = FormHelper(self)
+        self.helper.layout.append(Submit('save', 'save'))
+        
+    class Meta:
+        model = HarmonizationRecipe
+        fields = ('name', 'target_name', 'target_description', 'units', 'category_description', )
+    
+    def get_model_name(self):
+        """ """
+        return self.instance._meta.verbose_name

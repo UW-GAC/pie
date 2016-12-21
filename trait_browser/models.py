@@ -494,10 +494,10 @@ class UnitRecipe(TimeStampedModel):
     age_variables = models.ManyToManyField(SourceTrait, related_name='units_as_age_trait')
     batch_variables = models.ManyToManyField(SourceTrait, related_name='units_as_batch_trait')
     phenotype_variables =  models.ManyToManyField(SourceTrait, related_name='units_as_phenotype_trait')
-    creator = models.ForeignKey(User, related_name='units_created_by')
-    last_modifier = models.ForeignKey(User, related_name='units_last_modified_by')
+    creator = models.ForeignKey(User, related_name='units_created_by', blank=True, default='')
+    last_modifier = models.ForeignKey(User, related_name='units_last_modified_by', blank=True, default='')
     instructions = models.TextField()
-    version = models.IntegerField()
+    version = models.IntegerField(default=1)
     name = models.CharField(max_length=1000)
 
     def __str__(self):
@@ -509,10 +509,11 @@ class HarmonizationRecipe(TimeStampedModel):
     """Model for harmonization recipes.
     """
     
+    name = models.CharField(max_length=1000)
     units = models.ManyToManyField(UnitRecipe)
-    creator = models.ForeignKey(User, related_name='harmonization_recipes_created_by')
-    last_modifier = models.ForeignKey(User, related_name='harmonization_recipes_last_modified_by')
-    version = models.IntegerField()
+    creator = models.ForeignKey(User, related_name='harmonization_recipes_created_by', blank=True, default='')
+    last_modifier = models.ForeignKey(User, related_name='harmonization_recipes_last_modified_by', blank=True, default='')
+    version = models.IntegerField(default=1)
     target_name = models.CharField(max_length=50)
     target_description = models.CharField(max_length=1000)
     category_description = models.TextField()
