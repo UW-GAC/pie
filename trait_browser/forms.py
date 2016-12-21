@@ -71,7 +71,7 @@ class UnitRecipeForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super(UnitRecipeForm, self).__init__(*args, **kwargs)
         self.helper = FormHelper(self)
-        self.helper.layout.append(Submit('save', 'save'))
+        self.helper.layout.append(Submit('Save', 'Save'))
         
     class Meta:
         model = UnitRecipe
@@ -87,7 +87,7 @@ class HarmonizationRecipeForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super(HarmonizationRecipeForm, self).__init__(*args, **kwargs)
         self.helper = FormHelper(self)
-        self.helper.layout.append(Submit('save', 'save'))
+        self.helper.layout.append(Submit('Save', 'Save'))
         
     class Meta:
         model = HarmonizationRecipe

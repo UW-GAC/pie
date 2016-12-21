@@ -496,10 +496,13 @@ class UnitRecipe(TimeStampedModel):
     phenotype_variables =  models.ManyToManyField(SourceTrait, related_name='units_as_phenotype_trait')
     creator = models.ForeignKey(User, related_name='units_created_by', blank=True, default='')
     last_modifier = models.ForeignKey(User, related_name='units_last_modified_by', blank=True, default='')
-    instructions = models.TextField()
+    instructions = models.TextField(verbose_name='harmonization instructions')
     version = models.IntegerField(default=1)
-    name = models.CharField(max_length=1000)
+    name = models.CharField(max_length=1000, verbose_name='harmonization unit name')
 
+    class Meta:
+        verbose_name = 'harmonization unit recipe'
+    
     def __str__(self):
         """Pretty printing."""
         return 'Harmonization unit recipe {} by {}, v{}'.format(self.pk, self.creator.username, self.version)
@@ -509,14 +512,14 @@ class HarmonizationRecipe(TimeStampedModel):
     """Model for harmonization recipes.
     """
     
-    name = models.CharField(max_length=1000)
-    units = models.ManyToManyField(UnitRecipe)
+    name = models.CharField(max_length=1000, verbose_name='harmonization recipe name')
+    units = models.ManyToManyField(UnitRecipe, verbose_name='harmonization units')
     creator = models.ForeignKey(User, related_name='harmonization_recipes_created_by', blank=True, default='')
     last_modifier = models.ForeignKey(User, related_name='harmonization_recipes_last_modified_by', blank=True, default='')
     version = models.IntegerField(default=1)
-    target_name = models.CharField(max_length=50)
-    target_description = models.CharField(max_length=1000)
-    category_description = models.TextField()
+    target_name = models.CharField(max_length=50, verbose_name='target phenotype variable name')
+    target_description = models.CharField(max_length=1000, verbose_name='target phenotype variable description')
+    category_description = models.TextField(verbose_name='definition of encoded values for target variable')
 
     def __str__(self):
         """Pretty printing."""
