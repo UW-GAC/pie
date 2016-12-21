@@ -5,7 +5,7 @@ from itertools import chain
 from django.contrib import admin
 from django.contrib.sites.models import Site
 
-from .models import GlobalStudy, HarmonizedTrait, HarmonizedTraitEncodedValue, HarmonizedTraitSet, SourceDataset, SourceStudyVersion, SourceTrait, SourceTraitEncodedValue, Study, Subcohort
+from .models import GlobalStudy, HarmonizedTrait, HarmonizedTraitEncodedValue, HarmonizedTraitSet, SourceDataset, SourceStudyVersion, SourceTrait, SourceTraitEncodedValue, Study, Subcohort, UnitRecipe, HarmonizationRecipe
 
 
 class ReadOnlyAdmin(admin.ModelAdmin):
@@ -195,6 +195,19 @@ class HarmonizedTraitEncodedValueAdmin(ReadOnlyAdmin):
     search_fields = ('i_id', 'i_category', 'i_value', 'harmonized_trait__i_trait_name', )
 
 
+class UnitRecipeAdmin(admin.ModelAdmin):
+    """Admin class for UnitRecipe objects."""
+    list_display = ()
+    list_filter = ()
+    search_fields = ()
+
+class HarmonizationRecipeAdmin(admin.ModelAdmin):
+    """Admin class for HarmonizationRecipe objects."""
+    list_display = ()
+    list_filter = ()
+    search_fields = ()
+    
+
 # Register models for showing them in the admin interface.
 admin.site.register(GlobalStudy, GlobalStudyAdmin)
 admin.site.register(Study, StudyAdmin)
@@ -206,4 +219,7 @@ admin.site.register(SourceTrait, SourceTraitAdmin)
 admin.site.register(HarmonizedTrait, HarmonizedTraitAdmin)
 admin.site.register(SourceTraitEncodedValue, SourceTraitEncodedValueAdmin)
 admin.site.register(HarmonizedTraitEncodedValue, HarmonizedTraitEncodedValueAdmin)
+admin.site.register(UnitRecipe, UnitRecipeAdmin)
+admin.site.register(HarmonizationRecipe, HarmonizationRecipeAdmin)
+
 admin.site.unregister(Site)
