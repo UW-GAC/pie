@@ -76,3 +76,7 @@ class UnitRecipeForm(forms.ModelForm):
     class Meta:
         model = UnitRecipe
         fields = ('name', 'age_variables', 'batch_variables', 'phenotype_variables', 'instructions', )
+
+    def get_model_name(self):
+        """ """
+        return self.instance._meta.verbose_name

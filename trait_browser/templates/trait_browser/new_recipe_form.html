@@ -3,9 +3,10 @@
 {% load staticfiles %}
 
 {% block head_title %}
-     | New Unit Recipe 
+     | New {{ form.get_model_name|title }}
 {% endblock %}
 
 {% block content %}
+    <h1>New {{ form.get_model_name|title }}</h1>
     {% crispy form %}
 {% endblock %}

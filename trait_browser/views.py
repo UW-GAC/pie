@@ -214,6 +214,6 @@ def trait_search(request, trait_type):
 
 
 def new_unit_recipe(request):
-    
+    """View for creating new UnitRecipe objects."""  
     form = UnitRecipeForm()
-    return render(request, 'trait_browser/new_unit_recipe.html', {'form': form})
+    return render(request, 'trait_browser/new_recipe_form.html', {'form': form})
