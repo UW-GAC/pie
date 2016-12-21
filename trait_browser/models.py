@@ -7,6 +7,7 @@
 # names in the backend db would have "_id" appended to them.
 
 from django.db import models
+from django.contrib.auth.models import User
 
 class TimeStampedModel(models.Model):
     """
@@ -482,3 +483,40 @@ class HarmonizedTraitEncodedValue(TraitEncodedValue):
     def __str__(self):
         """Pretty printing of HarmonizedTraitEncodedValue objects."""
         return 'encoded value {} for {}\nvalue = {}'.format(self.i_category, self.harmonized_trait, self.i_value)
+
+
+# Harmonization recipe models.
+# ------------------------------------------------------------------------------
+class UnitRecipe(TimeStampedModel):
+    """Model for harmonization recipe for one harmonization unit.
+    """
+    
+    age_variables = models.ManyToManyField(SourceTrait, related_name='units_as_age_trait')
+    batch_variables = models.ManyToManyField(SourceTrait, related_name='units_as_batch_trait')
+    phenotype_variables =  models.ManyToManyField(SourceTrait, related_name='units_as_phenotype_trait')
+    creator = models.ForeignKey(User, related_name='units_created_by')
+    last_modifier = models.ForeignKey(User, related_name='units_last_modified_by')
+    instructions = models.TextField()
+    version = models.IntegerField()
+    name = models.CharField(max_length=1000)
+
+    def __str__(self):
+        """Pretty printing."""
+        return 'Harmonization unit recipe {} by {}, v{}'.format(self.pk, self.creator.username, self.version)
+
+
+class HarmonizationRecipe(TimeStampedModel):
+    """Model for harmonization recipes.
+    """
+    
+    units = models.ManyToManyField(UnitRecipe)
+    creator = models.ForeignKey(User, related_name='harmonization_recipes_created_by')
+    last_modifier = models.ForeignKey(User, related_name='harmonization_recipes_last_modified_by')
+    version = models.IntegerField()
+    target_name = models.CharField(max_length=50)
+    target_description = models.CharField(max_length=1000)
+    category_description = models.TextField()
+
+    def __str__(self):
+        """Pretty printing."""
+        return 'Harmonization recipe {} by {}, v{}, with {} units.'.format(self.pk, self.creator.username, self.version, self.units.count())
