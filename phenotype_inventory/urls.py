@@ -20,6 +20,7 @@ from django.contrib import admin
 
 import trait_browser.views
 
+
 urlpatterns = [
     url(r'^$', TemplateView.as_view(template_name="home.html"), name='home'),    # static home page
     url(r'^about/$', TemplateView.as_view(template_name="about.html"), name='about'),    # static home page
@@ -30,8 +31,8 @@ urlpatterns = [
     url('^', include('django.contrib.auth.urls')), # authentication views
     url(r'^accounts/', include('user_accounts.urls', namespace='user_accounts')),    # relating to user accounts
     # Request form views
-    url(r'^recipe/unit/new/$', trait_browser.views.new_unit_recipe, name='new_unit_recipe'),
-    url(r'^recipe/harmonization/new/$', trait_browser.views.new_harmonization_recipe, name='new_harmonization_recipe'),]
+    url(r'^recipe/unit/new/$', trait_browser.views.new_recipe, {'recipe_type': 'unit'}, name='new_unit_recipe'),
+    url(r'^recipe/harmonization/new/$', trait_browser.views.new_recipe, {'recipe_type': 'harmonization'}, name='new_harmonization_recipe'),]
 
 # Set the name for the admin site.
 admin.site.site_header = 'NHLBI TOPMed Phenotype Inventory Administration'
