@@ -132,6 +132,9 @@ MIDDLEWARE_CLASSES = (
 
 # APP SETTINGS
 INSTALLED_APPS = (
+    # django-autocomplete-light, which must be loaded BEFORE django.contrib.admin
+    'dal',
+    'dal_select2',
     # Built-in apps.
     'django.contrib.admin',
     'django.contrib.auth',
