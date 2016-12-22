@@ -150,6 +150,7 @@ INSTALLED_APPS = (
     'trait_browser',    # Handles table-based viewing and searching of trait data.
     'core',    # Handles data migrations for built-in apps (e.g. sites).
     'user_accounts',
+    'recipes',
 )
 
 

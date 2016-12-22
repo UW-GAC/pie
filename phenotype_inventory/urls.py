@@ -30,9 +30,8 @@ urlpatterns = [
     url(r'^phenotypes/', include('trait_browser.urls', namespace='trait_browser')),    # Trait browser app
     url('^', include('django.contrib.auth.urls')), # authentication views
     url(r'^accounts/', include('user_accounts.urls', namespace='user_accounts')),    # relating to user accounts
-    # Request form views
-    url(r'^recipe/unit/new/$', trait_browser.views.new_recipe, {'recipe_type': 'unit'}, name='new_unit_recipe'),
-    url(r'^recipe/harmonization/new/$', trait_browser.views.new_recipe, {'recipe_type': 'harmonization'}, name='new_harmonization_recipe'),]
+    url(r'^recipe/', include('recipes.urls', namespace='recipes')),    # Recipes app
+]
 
 # Set the name for the admin site.
 admin.site.site_header = 'NHLBI TOPMed Phenotype Inventory Administration'
