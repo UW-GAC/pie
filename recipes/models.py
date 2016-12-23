@@ -43,6 +43,17 @@ class HarmonizationRecipe(TimeStampedModel):
     """Model for harmonization recipes.
     """
     
+    UNIT_RECODE = 'unit_recode'
+    CATEGORY_RECODE = 'category_recode'
+    FORMULA = 'formula'
+    OTHER = 'other'
+    TYPE_CHOICES = (
+        (UNIT_RECODE, 'recode variable for different units of measurement'),
+        (CATEGORY_RECODE, 'recode variable for new encoded value category definitions'),
+        (FORMULA, 'calculate variable from a formula'),
+        (OTHER, 'other'),
+    )
+
     name = models.CharField(max_length=1000, verbose_name='harmonization recipe name')
     units = models.ManyToManyField(UnitRecipe, verbose_name='harmonization units')
     creator = models.ForeignKey(User, related_name='harmonization_recipes_created_by')
@@ -51,7 +62,8 @@ class HarmonizationRecipe(TimeStampedModel):
     target_name = models.CharField(max_length=50, verbose_name='target phenotype variable name')
     target_description = models.CharField(max_length=1000, verbose_name='target phenotype variable description')
     encoded_values = models.TextField(verbose_name='definition of encoded values for target variable', blank=True)
-    
+    type = models.CharField(max_length=100, choices=TYPE_CHOICES, verbose_name='harmonization type')
+    measurement_unit = models.CharField(max_length=100, verbose_name='unit of measurement')
 
     def __str__(self):
         """Pretty printing."""
