@@ -11,6 +11,21 @@ from .forms import UnitRecipeForm, HarmonizationRecipeForm
 from .models import UnitRecipe, HarmonizationRecipe
 
 
+class LoginRequiredMixin(object):
+    """Mixin to make class-based views require login for viewing.
+    
+    To use in a class-based view, add LoginRequiredMixin to the superclass
+    definition in the class definition statement.
+    
+    example:
+    class MyView(LoginRequiredMixin, ...):
+    """
+    @classmethod
+    def as_view(cls, **initkwargs):
+        view = super(LoginRequiredMixin, cls).as_view(**initkwargs)
+        return login_required(view)
+
+
 @login_required
 def new_recipe(request, recipe_type):
     """View for creating new UnitRecipe or HarmonizationRecipe objects."""  
@@ -34,7 +49,7 @@ def new_recipe(request, recipe_type):
     return render(request, 'recipes/new_recipe_form.html', {'form': form})
 
 
-class UnitRecipeIDAutocomplete(autocomplete.Select2QuerySetView):
+class UnitRecipeIDAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
     """View for returning querysets that allow auto-completing UnitRecipe-based form fields.
     
     Used with django-autocomplete-light package.
@@ -47,30 +62,18 @@ class UnitRecipeIDAutocomplete(autocomplete.Select2QuerySetView):
             retrieved = retrieved.filter(id__regex=r'^{}'.format(self.q))
         return retrieved
 
-    @method_decorator(login_required)
-    def dispatch(self, *args, **kwargs):
-        return super(UnitRecipeIDAutocomplete, self).dispatch(*args, **kwargs)
 
-
-class HarmonizationRecipeDetail(DetailView):
+class HarmonizationRecipeDetail(LoginRequiredMixin, DetailView):
     """Detail view class for HarmonizationRecipe."""
     
     model = HarmonizationRecipe
     context_object_name = 'h_recipe'
     template_name = 'recipes/harmonization_recipe_detail.html'
     
-    @method_decorator(login_required)
-    def dispatch(self, *args, **kwargs):
-        return super(HarmonizationRecipeDetail, self).dispatch(*args, **kwargs)
 
-
-class UnitRecipeDetail(DetailView):
+class UnitRecipeDetail(LoginRequiredMixin, DetailView):
     """Detail view class for UnitRecipe."""
     
     model = UnitRecipe
     context_object_name = 'u_recipe'
     template_name = 'recipes/unit_recipe_detail.html'
-    
-    @method_decorator(login_required)
-    def dispatch(self, *args, **kwargs):
-        return super(UnitRecipeDetail, self).dispatch(*args, **kwargs)
