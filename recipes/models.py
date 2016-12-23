@@ -50,7 +50,8 @@ class HarmonizationRecipe(TimeStampedModel):
     version = models.IntegerField(default=1)
     target_name = models.CharField(max_length=50, verbose_name='target phenotype variable name')
     target_description = models.CharField(max_length=1000, verbose_name='target phenotype variable description')
-    category_description = models.TextField(verbose_name='definition of encoded values for target variable', blank=True)
+    encoded_values = models.TextField(verbose_name='definition of encoded values for target variable', blank=True)
+    
 
     def __str__(self):
         """Pretty printing."""
