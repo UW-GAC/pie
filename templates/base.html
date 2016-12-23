@@ -35,7 +35,6 @@
     
     {% include 'footer_navbar.html' %}
 
-    
     <!-- Bootstrap core JavaScript
     ================================================== -->
     <!-- Placed at the end of the document so the pages load faster -->
@@ -44,5 +43,9 @@
     <script src="{% static 'js/home.js' %}"></script>
 
     <!--<script src="{% static 'js/.js' %}"></script>-->
+
+    {% block footer %}
+    {% endblock %}
+
   </body>
 </html>

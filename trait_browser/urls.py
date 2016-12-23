@@ -22,5 +22,7 @@ urlpatterns = [
     url(r'^harmonized/all/$', views.trait_table, {'trait_type': 'harmonized'}, name='harmonized_all'),
     url(r'^harmonized/detail/(?P<pk>\d+)/$', views.HarmonizedTraitDetail.as_view(), name='harmonized_detail'),
     url(r'^harmonized/search/$', views.trait_search, {'trait_type': 'harmonized'}, name='harmonized_search'),
+    # Autocomplete views
+    url(r'^source/autocomplete/$', views.SourceTraitIDAutocomplete.as_view(), name='source_autocomplete'),
 
 ]

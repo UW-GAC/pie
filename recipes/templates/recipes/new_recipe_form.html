@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
 {% load crispy_forms_tags %}
 {% load staticfiles %}
+{% load static %}
 
 {% block head_title %}
      | New {{ form.get_model_name|title }}
@@ -8,5 +9,14 @@
 
 {% block content %}
     <h1>New {{ form.get_model_name|title }}</h1>
+    
     {% crispy form %}
+
+{% endblock %}
+
+{% block footer %}
+    <!-- script for django-autocomplete-light -->
+    <script type="text/javascript" src="{% static 'admin/js/vendor/jquery/jquery.js' %}"></script>
+    {{ form.media }}
+
 {% endblock %}
