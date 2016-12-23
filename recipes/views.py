@@ -5,25 +5,11 @@ from django.shortcuts import render, redirect
 from django.utils.decorators import method_decorator
 from django.views.generic import DetailView
 
+from braces.views import LoginRequiredMixin
 from dal import autocomplete
 
 from .forms import UnitRecipeForm, HarmonizationRecipeForm
 from .models import UnitRecipe, HarmonizationRecipe
-
-
-class LoginRequiredMixin(object):
-    """Mixin to make class-based views require login for viewing.
-    
-    To use in a class-based view, add LoginRequiredMixin to the superclass
-    definition in the class definition statement.
-    
-    example:
-    class MyView(LoginRequiredMixin, ...):
-    """
-    @classmethod
-    def as_view(cls, **initkwargs):
-        view = super(LoginRequiredMixin, cls).as_view(**initkwargs)
-        return login_required(view)
 
 
 @login_required
