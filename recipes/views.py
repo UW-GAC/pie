@@ -3,11 +3,12 @@
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 from django.utils.decorators import method_decorator
+from django.views.generic import DetailView
 
 from dal import autocomplete
 
 from .forms import UnitRecipeForm, HarmonizationRecipeForm
-from .models import UnitRecipe
+from .models import UnitRecipe, HarmonizationRecipe
 
 
 @login_required
@@ -46,3 +47,27 @@ class UnitRecipeIDAutocomplete(autocomplete.Select2QuerySetView):
     @method_decorator(login_required)
     def dispatch(self, *args, **kwargs):
         return super(UnitRecipeIDAutocomplete, self).dispatch(*args, **kwargs)
+
+
+class HarmonizationRecipeDetail(DetailView):
+    """Detail view class for HarmonizationRecipe."""
+    
+    model = HarmonizationRecipe
+    context_object_name = 'h_recipe'
+    template_name = 'recipes/harmonization_recipe_detail.html'
+    
+    @method_decorator(login_required)
+    def dispatch(self, *args, **kwargs):
+        return super(HarmonizationRecipeDetail, self).dispatch(*args, **kwargs)
+
+
+class UnitRecipeDetail(DetailView):
+    """Detail view class for UnitRecipe."""
+    
+    model = UnitRecipe
+    context_object_name = 'u_recipe'
+    template_name = 'recipes/unit_recipe_detail.html'
+    
+    @method_decorator(login_required)
+    def dispatch(self, *args, **kwargs):
+        return super(UnitRecipeDetail, self).dispatch(*args, **kwargs)
