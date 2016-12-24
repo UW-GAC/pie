@@ -7,7 +7,7 @@
 {% block content %}
     <div class="well">
     
-        <h2>Harmonization unit details</h2>
+        <h2>Harmonization unit {{ u_recipe.name }}</h2>
         
     
         <p><strong>Unit name</strong> : {{ u_recipe.name }}</p>
@@ -15,6 +15,7 @@
         
         <p>Created by {{ u_recipe.creator.username }} at {{ u_recipe.created }} </p>
         <p>Last modified by {{ u_recipe.last_modifier.username }} at {{ u_recipe.modified }} </p>
+        <p><a href="{% url 'recipes:edit_unit' pk=u_recipe.pk %}" class="btn btn-primary" role="button">Edit</a></p>
         
         <div class="well" style='background:white'>
             <h4>Source phenotype variables</h4>
