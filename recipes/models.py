@@ -1,5 +1,6 @@
 """Models for the recipes app."""
 
+from django.core.urlresolvers import reverse
 from django.db import models
 from django.contrib.auth.models import User
 
@@ -37,6 +38,10 @@ class UnitRecipe(TimeStampedModel):
     def __str__(self):
         """Pretty printing."""
         return '{:04d}: {} by {}, v{}'.format(self.pk, self.name, self.creator.username, self.version)
+    
+    def get_absolute_url(self):
+        """ """
+        return reverse('recipes:unit_detail', kwargs={'pk': self.pk})
 
 
 class HarmonizationRecipe(TimeStampedModel):
@@ -68,3 +73,7 @@ class HarmonizationRecipe(TimeStampedModel):
     def __str__(self):
         """Pretty printing."""
         return 'Harmonization recipe {} by {}, v{}, with {} units.'.format(self.pk, self.creator.username, self.version, self.units.count())
+    
+    def get_absolute_url(self):
+        """ """
+        return reverse('recipes:unit_detail', kwargs={'pk': self.pk})    

@@ -3,7 +3,7 @@
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect
 from django.utils.decorators import method_decorator
-from django.views.generic import DetailView
+from django.views.generic import DetailView, CreateView
 
 from braces.views import LoginRequiredMixin
 from dal import autocomplete
@@ -12,27 +12,28 @@ from .forms import UnitRecipeForm, HarmonizationRecipeForm
 from .models import UnitRecipe, HarmonizationRecipe
 
 
-@login_required
-def new_recipe(request, recipe_type):
-    """View for creating new UnitRecipe or HarmonizationRecipe objects."""  
-    if recipe_type == 'unit':
-        recipe_form = UnitRecipeForm
-        detail_url = 'recipes:unit_detail'
-    elif recipe_type == 'harmonization':
-        recipe_form = HarmonizationRecipeForm
-        detail_url = 'recipes:harmonization_detail'
-    if request.method == 'POST':
-        form = recipe_form(request.POST)
-        if form.is_valid():
-            instance = form.save(commit=False)
-            instance.creator = request.user
-            instance.last_modifier = request.user
-            instance.save()
-            form.save_m2m() # Have to save the m2m fields manually because of using commit=False above.
-            return redirect(detail_url, pk=instance.pk)
-    else:
-        form = recipe_form()
-    return render(request, 'recipes/new_recipe_form.html', {'form': form})
+class CreateUnitRecipe(LoginRequiredMixin, CreateView):
+    """ """
+    model = UnitRecipe
+    form_class = UnitRecipeForm
+    template_name = 'recipes/recipe_form.html'
+
+    def form_valid(self, form):
+        form.instance.creator = self.request.user
+        form.instance.last_modifier = self.request.user
+        return super(CreateUnitRecipe, self).form_valid(form)
+
+
+class CreateHarmonizationRecipe(LoginRequiredMixin, CreateView):
+    """ """
+    model = HarmonizationRecipe
+    form_class = HarmonizationRecipeForm
+    template_name = 'recipes/recipe_form.html'
+
+    def form_valid(self, form):
+        form.instance.creator = self.request.user
+        form.instance.last_modifier = self.request.user
+        return super(CreateHarmonizationRecipe, self).form_valid(form)
 
 
 class UnitRecipeIDAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
