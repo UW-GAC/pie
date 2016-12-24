@@ -76,4 +76,4 @@ class HarmonizationRecipe(TimeStampedModel):
     
     def get_absolute_url(self):
         """ """
-        return reverse('recipes:unit_detail', kwargs={'pk': self.pk})    
+        return reverse('recipes:harmonization_detail', kwargs={'pk': self.pk})    
