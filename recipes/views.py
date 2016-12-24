@@ -3,7 +3,7 @@
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect
 from django.utils.decorators import method_decorator
-from django.views.generic import DetailView, CreateView
+from django.views.generic import DetailView, CreateView, UpdateView
 
 from braces.views import LoginRequiredMixin
 from dal import autocomplete
@@ -34,6 +34,28 @@ class CreateHarmonizationRecipe(LoginRequiredMixin, CreateView):
         form.instance.creator = self.request.user
         form.instance.last_modifier = self.request.user
         return super(CreateHarmonizationRecipe, self).form_valid(form)
+
+
+class UpdateUnitRecipe(LoginRequiredMixin, UpdateView):
+    """ """
+    model = UnitRecipe
+    form_class = UnitRecipeForm
+    template_name = 'recipes/recipe_form.html'
+
+    def form_valid(self, form):
+        form.instance.last_modifier = self.request.user
+        return super(UpdateUnitRecipe, self).form_valid(form)
+
+
+class UpdateHarmonizationRecipe(LoginRequiredMixin, UpdateView):
+    """ """
+    model = HarmonizationRecipe
+    form_class = HarmonizationRecipeForm
+    template_name = 'recipes/recipe_form.html'
+
+    def form_valid(self, form):
+        form.instance.last_modifier = self.request.user
+        return super(UpdateHarmonizationRecipe, self).form_valid(form)
 
 
 class UnitRecipeIDAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
