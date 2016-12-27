@@ -37,7 +37,7 @@ class UnitRecipe(TimeStampedModel):
     
     def __str__(self):
         """Pretty printing."""
-        return '{:04d}: {} by {}, v{}'.format(self.pk, self.name, self.creator.username, self.version)
+        return '{} by {}, v{} (modified {})'.format(self.name, self.creator.username, self.version, self.modified.date())
     
     def get_absolute_url(self):
         """ """
@@ -72,7 +72,7 @@ class HarmonizationRecipe(TimeStampedModel):
 
     def __str__(self):
         """Pretty printing."""
-        return 'Harmonization recipe {} by {}, v{}, with {} units.'.format(self.pk, self.creator.username, self.version, self.units.count())
+        return 'Harmonization recipe {} by {}, v{}, with {} harmonization units (modified {})'.format(self.name, self.creator.username, self.version, self.units.count(), self.modified.date())
     
     def get_absolute_url(self):
         """ """
