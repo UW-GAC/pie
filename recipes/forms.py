@@ -41,7 +41,7 @@ class HarmonizationRecipeForm(forms.ModelForm):
     class Meta:
         model = HarmonizationRecipe
         fields = ('name', 'target_name', 'target_description', 'measurement_unit', 'type', 'units', 'encoded_values', )
-        widgets = {'units': autocomplete.ModelSelect2Multiple(url='recipes:unit_autocomplete'), }
+        # widgets = {'units': autocomplete.ModelSelect2Multiple(url='recipes:unit_autocomplete'), }
     
     def get_model_name(self):
         """ """
