@@ -15,7 +15,7 @@
         
         <p>Created by {{ u_recipe.creator.username }} at {{ u_recipe.created }} </p>
         <p>Last modified by {{ u_recipe.last_modifier.username }} at {{ u_recipe.modified }} </p>
-        <p><a href="{% url 'recipes:edit_unit' pk=u_recipe.pk %}" class="btn btn-primary" role="button">Edit</a></p>
+        <p><a href="{% url 'recipes:unit:edit' pk=u_recipe.pk %}" class="btn btn-primary" role="button">Edit</a></p>
         
         <div class="well" style='background:white'>
             <h4>Source phenotype variables</h4>

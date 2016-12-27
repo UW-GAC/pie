@@ -15,7 +15,7 @@
         
         <p>Created by {{ h_recipe.creator.username }} at {{ h_recipe.created }} </p>
         <p>Last modified by {{ h_recipe.last_modifier.username }} at {{ h_recipe.modified }} </p>
-        <p><a href="{% url 'recipes:edit_harmonization' pk=h_recipe.pk %}" class="btn btn-primary" role="button">Edit</a></p>
+        <p><a href="{% url 'recipes:harmonization:edit' pk=h_recipe.pk %}" class="btn btn-primary" role="button">Edit</a></p>
         
         <div class="panel panel-default">
             <div class="panel-heading"><h4>Target harmonized variable</h4></div>
@@ -53,7 +53,7 @@
                  </tr>
                  {% for unit in h_recipe.units.all %}
                      <tr>
-                         <td><a href='{% url 'recipes:unit_detail' unit.pk %}'>{{ unit.pk }}</a></td>
+                         <td><a href='{% url 'recipes:unit:detail' unit.pk %}'>{{ unit.pk }}</a></td>
                          <td>{{ unit.name }}</td>
                          <td>{{ unit.creator.username }}</td>
                      </tr>
