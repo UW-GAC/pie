@@ -1,10 +1,15 @@
 """Models for the recipes app."""
 
 from django.core.urlresolvers import reverse
+from django.core.validators import RegexValidator
 from django.db import models
 from django.contrib.auth.models import User
 
 from trait_browser.models import SourceTrait
+
+
+validate_alphanumeric_underscore = RegexValidator(regex=r'^[0-9a-zA-Z_]*$',
+                                                  message='Only letters, numbers, and underscores (_) are allowed.')
 
 class TimeStampedModel(models.Model):
     """
@@ -65,7 +70,7 @@ class HarmonizationRecipe(TimeStampedModel):
     creator = models.ForeignKey(User, related_name='harmonization_recipes_created_by')
     last_modifier = models.ForeignKey(User, related_name='harmonization_recipes_last_modified_by')
     version = models.IntegerField(default=1)
-    target_name = models.CharField(max_length=50, verbose_name='target phenotype variable name')
+    target_name = models.CharField(max_length=50, verbose_name='target phenotype variable name', validators=[validate_alphanumeric_underscore])
     target_description = models.CharField(max_length=1000, verbose_name='target phenotype variable description')
     encoded_values = models.TextField(verbose_name='definition of encoded values for target variable', blank=True)
     type = models.CharField(max_length=100, choices=TYPE_CHOICES, verbose_name='harmonization type')
