@@ -18,6 +18,8 @@ from django.conf.urls import include, url
 from django.views.generic import TemplateView # for static pages
 from django.contrib import admin
 
+import trait_browser.views
+
 
 urlpatterns = [
     url(r'^$', TemplateView.as_view(template_name="home.html"), name='home'),    # static home page
@@ -28,6 +30,7 @@ urlpatterns = [
     url(r'^phenotypes/', include('trait_browser.urls', namespace='trait_browser')),    # Trait browser app
     url('^', include('django.contrib.auth.urls')), # authentication views
     url(r'^accounts/', include('user_accounts.urls', namespace='user_accounts')),    # relating to user accounts
+    url(r'^recipe/', include('recipes.urls', namespace='recipes')),    # Recipes app
 ]
 
 # Set the name for the admin site.

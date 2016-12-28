@@ -206,4 +206,5 @@ admin.site.register(SourceTrait, SourceTraitAdmin)
 admin.site.register(HarmonizedTrait, HarmonizedTraitAdmin)
 admin.site.register(SourceTraitEncodedValue, SourceTraitEncodedValueAdmin)
 admin.site.register(HarmonizedTraitEncodedValue, HarmonizedTraitEncodedValueAdmin)
+
 admin.site.unregister(Site)

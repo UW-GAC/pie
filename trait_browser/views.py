@@ -6,7 +6,8 @@ from django.views.generic import DetailView
 from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
 
-from django_tables2   import RequestConfig
+from dal import autocomplete
+from django_tables2 import RequestConfig
 
 from .models import GlobalStudy, HarmonizedTrait, HarmonizedTraitEncodedValue, HarmonizedTraitSet, SourceDataset, SourceStudyVersion, SourceTrait, SourceTraitEncodedValue, Study, Subcohort
 from .tables import SourceTraitTable, HarmonizedTraitTable, StudyTable
@@ -211,3 +212,20 @@ def trait_search(request, trait_type):
             'trait_type': trait_type
         }
         return render(request, 'trait_browser/search.html', page_data)
+
+
+class SourceTraitIDAutocomplete(autocomplete.Select2QuerySetView):
+    """View for returning querysets that allow auto-completing SourceTrait-based form fields.
+    
+    Used with django-autocomplete-light package.
+    """    
+    
+    def get_queryset(self):
+        retrieved = SourceTrait.objects.all()
+        if self.q:
+            retrieved = retrieved.filter(i_trait_id__regex=r'^{}'.format(self.q))
+        return retrieved
+
+    @method_decorator(login_required)
+    def dispatch(self, *args, **kwargs):
+        return super(SourceTraitIDAutocomplete, self).dispatch(*args, **kwargs)

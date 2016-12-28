@@ -132,6 +132,9 @@ MIDDLEWARE_CLASSES = (
 
 # APP SETTINGS
 INSTALLED_APPS = (
+    # django-autocomplete-light, which must be loaded BEFORE django.contrib.admin
+    'dal',
+    'dal_select2',
     # Built-in apps.
     'django.contrib.admin',
     'django.contrib.auth',
@@ -150,6 +153,7 @@ INSTALLED_APPS = (
     'trait_browser',    # Handles table-based viewing and searching of trait data.
     'core',    # Handles data migrations for built-in apps (e.g. sites).
     'user_accounts',
+    'recipes',
 )
 
 

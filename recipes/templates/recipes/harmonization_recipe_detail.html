@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+
+{% block head_title %}
+     | {{ h_recipe.name }} details
+{% endblock %}
+
+{% block content %}
+    <div class="well">
+    
+        <h2>Harmonization recipe details</h2>
+        
+    
+        <p><strong>Recipe name</strong> : {{ h_recipe.name }}</p>
+        <p><strong>Version</strong> : {{ h_recipe.version }}</p>
+        
+        <p>Created by {{ h_recipe.creator.username }} at {{ h_recipe.created }} </p>
+        <p>Last modified by {{ h_recipe.last_modifier.username }} at {{ h_recipe.modified }} </p>
+        <p><a href="{% url 'recipes:harmonization:edit' pk=h_recipe.pk %}" class="btn btn-primary" role="button">Edit</a></p>
+        
+        <div class="panel panel-default">
+            <div class="panel-heading"><h4>Target harmonized variable</h4></div>
+            <div class="panel-body">
+                <p><strong>Name</strong> : {{ h_recipe.target_name }}</p>
+                <p><strong>Description</strong> : {{ h_recipe.target_description }}</p>
+                <p><strong>Unit of measurement</strong> : {{ h_recipe.measurement_unit }}</p>
+                <p><strong>Harmonization type</strong> : {{ h_recipe.type }}</p>
+                
+                {% if h_recipe.encoded_values %}
+                <p><strong>Encoded value definitions</strong>
+                <table class="table table-nonfluid table-condensed table-sm table-striped table-bordered">
+                     <tr>
+                         <th>Category</th>
+                         <th>Value</th>
+                     </tr>
+                     {% for ev in h_recipe.encoded_values %}
+                         <tr>
+                             <td>{{ ev }}</td>
+                             <td>{{ ev }}</td>
+                         </tr>
+                     {% endfor %}
+                 </table>
+                {% endif %}
+            </div>
+        </div> 
+        
+        <div class="well" style='background:white'>
+            <h4>Harmonization units included</h4>
+            <table class="table table-nonfluid table-condensed table-sm table-striped table-bordered">
+                 <tr>
+                     <th>Harmonization unit id</th>
+                     <th>Name</th>
+                     <th>Creator</th>
+                 </tr>
+                 {% for unit in h_recipe.units.all %}
+                     <tr>
+                         <td><a href='{% url 'recipes:unit:detail' unit.pk %}'>{{ unit.pk }}</a></td>
+                         <td>{{ unit.name }}</td>
+                         <td>{{ unit.creator.username }}</td>
+                     </tr>
+                 {% endfor %}
+             </table>
+        
+        </div>
+    
+    </div>
+    
+{% endblock %}

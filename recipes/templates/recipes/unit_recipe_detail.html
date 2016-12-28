@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+
+{% block head_title %}
+     | {{ u_recipe.name }} details
+{% endblock %}
+
+{% block content %}
+    <div class="well">
+    
+        <h2>Harmonization unit {{ u_recipe.name }}</h2>
+        
+    
+        <p><strong>Unit name</strong> : {{ u_recipe.name }}</p>
+        <p><strong>Version</strong> : {{ u_recipe.version }}</p>
+        
+        <p>Created by {{ u_recipe.creator.username }} at {{ u_recipe.created }} </p>
+        <p>Last modified by {{ u_recipe.last_modifier.username }} at {{ u_recipe.modified }} </p>
+        <p><a href="{% url 'recipes:unit:edit' pk=u_recipe.pk %}" class="btn btn-primary" role="button">Edit</a></p>
+        
+        <div class="well" style='background:white'>
+            <h4>Source phenotype variables</h4>
+            <table class="table table-nonfluid table-condensed table-sm table-striped table-bordered">
+                 <tr>
+                     <th>DCC phenotype id</th>
+                     <th>dbGaP variable accession</th>
+                     <th>Variable name</th>
+                 </tr>
+                 {% for bv in u_recipe.phenotype_variables.all %}
+                     <tr>
+                         <td><a href='{% url 'trait_browser:source_detail' bv.pk %}'>{{ bv.i_trait_id }}</a></td>
+                         <td>{{ bv.variable_accession }}</td>
+                         <td>{{ bv.i_trait_name }}</td>
+                     </tr>
+                 {% endfor %}
+             </table>
+        
+            <h4>Source age variables</h4>
+            <table class="table table-nonfluid table-condensed table-sm table-striped table-bordered">
+                 <tr>
+                     <th>DCC phenotype id</th>
+                     <th>dbGaP variable accession</th>
+                     <th>Variable name</th>
+                 </tr>
+                 {% for bv in u_recipe.age_variables.all %}
+                     <tr>
+                         <td><a href='{% url 'trait_browser:source_detail' bv.pk %}'>{{ bv.i_trait_id }}</a></td>
+                         <td>{{ bv.variable_accession }}</td>
+                         <td>{{ bv.i_trait_name }}</td>
+                     </tr>
+                 {% endfor %}
+             </table>
+
+            {% if u_recipe.batch_variables.all %}
+            <h4>Source batch variables</h4>
+            <table class="table table-nonfluid table-condensed table-sm table-striped table-bordered">
+                 <tr>
+                     <th>DCC phenotype id</th>
+                     <th>dbGaP variable accession</th>
+                     <th>Variable name</th>
+                 </tr>
+                 {% for bv in u_recipe.batch_variables.all %}
+                     <tr>
+                         <td><a href='{% url 'trait_browser:source_detail' bv.pk %}'>{{ bv.i_trait_id }}</a></td>
+                         <td>{{ bv.variable_accession }}</td>
+                         <td>{{ bv.i_trait_name }}</td>
+                     </tr>
+                 {% endfor %}
+             </table>
+           {% endif %}
+        </div>
+    
+        <div class="panel panel-default">
+            <div class="panel-heading"><h4>Harmonization instructions for this unit, using variables above:</h4></div>
+            <div class="panel-body">
+                <p>{{ u_recipe.instructions }}</p>
+            </div>
+        </div>
+
+    </div>
+    
+{% endblock %}

@@ -7,7 +7,7 @@ from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Layout, Div, Submit, HTML, Button, Row, Field, Reset
 from crispy_forms.bootstrap import AppendedText, PrependedText, FormActions, InlineCheckboxes
 
-from . models import Study, SourceTrait, HarmonizedTrait
+from .models import Study, SourceTrait, HarmonizedTrait
 
 
 class SourceTraitCrispySearchForm(forms.Form):
