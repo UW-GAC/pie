@@ -5,14 +5,14 @@ from django.shortcuts import render, redirect
 from django.utils.decorators import method_decorator
 from django.views.generic import DetailView, CreateView, UpdateView
 
-from braces.views import LoginRequiredMixin
+from braces.views import LoginRequiredMixin, UserFormKwargsMixin
 from dal import autocomplete
 
 from .forms import UnitRecipeForm, HarmonizationRecipeForm
 from .models import UnitRecipe, HarmonizationRecipe
 
 
-class CreateUnitRecipe(LoginRequiredMixin, CreateView):
+class CreateUnitRecipe(LoginRequiredMixin, UserFormKwargsMixin, CreateView):
     """ """
     model = UnitRecipe
     form_class = UnitRecipeForm
@@ -24,7 +24,7 @@ class CreateUnitRecipe(LoginRequiredMixin, CreateView):
         return super(CreateUnitRecipe, self).form_valid(form)
 
 
-class CreateHarmonizationRecipe(LoginRequiredMixin, CreateView):
+class CreateHarmonizationRecipe(LoginRequiredMixin, UserFormKwargsMixin, CreateView):
     """ """
     model = HarmonizationRecipe
     form_class = HarmonizationRecipeForm
@@ -36,7 +36,7 @@ class CreateHarmonizationRecipe(LoginRequiredMixin, CreateView):
         return super(CreateHarmonizationRecipe, self).form_valid(form)
 
 
-class UpdateUnitRecipe(LoginRequiredMixin, UpdateView):
+class UpdateUnitRecipe(LoginRequiredMixin, UserFormKwargsMixin, UpdateView):
     """ """
     model = UnitRecipe
     form_class = UnitRecipeForm
@@ -47,7 +47,7 @@ class UpdateUnitRecipe(LoginRequiredMixin, UpdateView):
         return super(UpdateUnitRecipe, self).form_valid(form)
 
 
-class UpdateHarmonizationRecipe(LoginRequiredMixin, UpdateView):
+class UpdateHarmonizationRecipe(LoginRequiredMixin, UserFormKwargsMixin, UpdateView):
     """ """
     model = HarmonizationRecipe
     form_class = HarmonizationRecipeForm

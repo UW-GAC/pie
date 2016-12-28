@@ -2,6 +2,7 @@
 
 from django import forms
 
+from braces.forms import UserKwargModelFormMixin
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Submit
 from dal import autocomplete
@@ -9,7 +10,7 @@ from dal import autocomplete
 from .models import UnitRecipe, HarmonizationRecipe
 
 
-class UnitRecipeForm(forms.ModelForm):
+class UnitRecipeForm(UserKwargModelFormMixin, forms.ModelForm):
     """Form to create/edit UnitRecipe model objects."""
     
     def __init__(self, *args, **kwargs):
@@ -31,12 +32,21 @@ class UnitRecipeForm(forms.ModelForm):
             'instructions': 'Describe how to use the age variables to derive age, how to use the batch variables to derive a harmonized batch, and how to use the phenotype variables to derive your target harmonized variable <strong>in this harmonization unit</strong>.',
         }
 
+    def clean(self):
+        cleaned_data = super(UnitRecipeForm, self).clean()
+        name = cleaned_data.get('name', '')
+        existing_names_for_user = [u.name for u in self.user.units_created_by.all()]
+        if name in existing_names_for_user:
+            del cleaned_data['name']
+            self.add_error('name', forms.ValidationError(u'A harmonization unit named {} already exists for user {}.'.format(name, self.user.username)))
+        return cleaned_data
+    
     def get_model_name(self):
         """ """
         return self.instance._meta.verbose_name
 
 
-class HarmonizationRecipeForm(forms.ModelForm):
+class HarmonizationRecipeForm(UserKwargModelFormMixin, forms.ModelForm):
     """Form to create/edit HarmonizationRecipe objects."""
     
     def __init__(self, *args, **kwargs):
@@ -57,7 +67,16 @@ class HarmonizationRecipeForm(forms.ModelForm):
             'units': 'The harmonization units to include in your target harmonized variable.',
             'encoded_values': 'Values and descriptions for encoded values for your target harmonized variable. Define one encoded value per line, separating the value from its description with a semicolon and a single space.<br>Example:<br>1: blue<br>2: red<br>3: green',
         }
-    
+        
+    def clean(self):
+        cleaned_data = super(HarmonizationRecipeForm, self).clean()
+        name = cleaned_data.get('name', '')
+        existing_names_for_user = [u.name for u in self.user.harmonization_recipes_created_by.all()]
+        if name in existing_names_for_user:
+            del cleaned_data['name']
+            self.add_error('name', forms.ValidationError(u'A harmonization unit named {} already exists for user {}.'.format(name, self.user.username)))
+        return cleaned_data
+
     def get_model_name(self):
         """ """
         return self.instance._meta.verbose_name

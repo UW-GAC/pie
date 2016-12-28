@@ -34,6 +34,7 @@ class UnitRecipe(TimeStampedModel):
 
     class Meta:
         verbose_name = 'harmonization unit recipe'
+        unique_together = (('creator', 'name'), )
     
     def __str__(self):
         """Pretty printing."""
@@ -69,6 +70,9 @@ class HarmonizationRecipe(TimeStampedModel):
     encoded_values = models.TextField(verbose_name='definition of encoded values for target variable', blank=True)
     type = models.CharField(max_length=100, choices=TYPE_CHOICES, verbose_name='harmonization type')
     measurement_unit = models.CharField(max_length=100, verbose_name='unit of measurement')
+    
+    class Meta:
+        unique_together = (('creator', 'name'), )
 
     def __str__(self):
         """Pretty printing."""
