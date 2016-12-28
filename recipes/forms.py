@@ -37,7 +37,6 @@ class UnitRecipeForm(UserKwargModelFormMixin, forms.ModelForm):
         name = cleaned_data.get('name', '')
         existing_names_for_user = [u.name for u in self.user.units_created_by.all()]
         if name in existing_names_for_user:
-            del cleaned_data['name']
             self.add_error('name', forms.ValidationError(u'A harmonization unit named {} already exists for user {}.'.format(name, self.user.username)))
         return cleaned_data
     
@@ -73,7 +72,6 @@ class HarmonizationRecipeForm(UserKwargModelFormMixin, forms.ModelForm):
         name = cleaned_data.get('name', '')
         existing_names_for_user = [u.name for u in self.user.harmonization_recipes_created_by.all()]
         if name in existing_names_for_user:
-            del cleaned_data['name']
             self.add_error('name', forms.ValidationError(u'A harmonization unit named {} already exists for user {}.'.format(name, self.user.username)))
         return cleaned_data
 
