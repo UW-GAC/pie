@@ -11,6 +11,9 @@ from trait_browser.models import SourceTrait
 validate_alphanumeric_underscore = RegexValidator(regex=r'^[0-9a-zA-Z_]*$',
                                                   message='Only letters, numbers, and underscores (_) are allowed.')
 
+validate_encoded_values = RegexValidator(regex=r'^(.*: .*\n)*(.*: .*)$',
+                                         message='Invalid format for encoded values definitions.')
+
 class TimeStampedModel(models.Model):
     """
     An abstract base class model that provides selfupdating
@@ -72,7 +75,7 @@ class HarmonizationRecipe(TimeStampedModel):
     version = models.IntegerField(default=1)
     target_name = models.CharField(max_length=50, verbose_name='target phenotype variable name', validators=[validate_alphanumeric_underscore])
     target_description = models.CharField(max_length=1000, verbose_name='target phenotype variable description')
-    encoded_values = models.TextField(verbose_name='definition of encoded values for target variable', blank=True)
+    encoded_values = models.TextField(verbose_name='definition of encoded values for target variable', blank=True, validators=[validate_encoded_values])
     type = models.CharField(max_length=100, choices=TYPE_CHOICES, verbose_name='harmonization type')
     measurement_unit = models.CharField(max_length=100, verbose_name='unit of measurement')
     
@@ -85,4 +88,9 @@ class HarmonizationRecipe(TimeStampedModel):
     
     def get_absolute_url(self):
         """ """
-        return reverse('recipes:harmonization:detail', kwargs={'pk': self.pk})    
+        return reverse('recipes:harmonization:detail', kwargs={'pk': self.pk})
+    
+    def get_encoded_values_dict(self):
+        """ """
+        return dict([line.split(': ') for line in self.encoded_values.split('\r\n')])
+        
