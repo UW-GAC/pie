@@ -17,6 +17,15 @@ harmonization_invalid_message = u'Something went wrong. {} was not saved.'.forma
 formattable_valid_message = u'{} {} {}d!'
 
 
+class OwnerQuerysetMixin(object):
+    """Mixin to restrict views to object instances the logged-in user is the creator of."""
+    
+    def get_queryset(self):
+        queryset = super(OwnerQuerysetMixin, self).get_queryset()
+        queryset = queryset.filter(creator=self.request.user)
+        return queryset
+
+
 class CreateUnitRecipe(LoginRequiredMixin, UserFormKwargsMixin, FormMessagesMixin, CreateView):
     """Create form view class for UnitRecipe creation, used with UnitRecipeModelForm."""
     model = UnitRecipe
@@ -59,7 +68,7 @@ class CreateHarmonizationRecipe(LoginRequiredMixin, UserFormKwargsMixin, FormMes
         return formattable_valid_message.format(HarmonizationRecipe._meta.verbose_name.title(), self.object.name, 'create')
 
 
-class UpdateUnitRecipe(LoginRequiredMixin, UserFormKwargsMixin, FormMessagesMixin, UpdateView):
+class UpdateUnitRecipe(LoginRequiredMixin, OwnerQuerysetMixin, UserFormKwargsMixin, FormMessagesMixin, UpdateView):
     """Update form view class for UnitRecipe editing, used with UnitRecipeModelForm."""
     model = UnitRecipe
     form_class = UnitRecipeForm
@@ -80,7 +89,7 @@ class UpdateUnitRecipe(LoginRequiredMixin, UserFormKwargsMixin, FormMessagesMixi
         return formattable_valid_message.format(UnitRecipe._meta.verbose_name.title(), self.object.name, 'save')
 
 
-class UpdateHarmonizationRecipe(LoginRequiredMixin, UserFormKwargsMixin, FormMessagesMixin, UpdateView):
+class UpdateHarmonizationRecipe(LoginRequiredMixin, OwnerQuerysetMixin, UserFormKwargsMixin, FormMessagesMixin, UpdateView):
     """Update form view class for HarmonizationRecipe editing, used with HarmonizationRecipeModelForm."""
     model = HarmonizationRecipe
     form_class = HarmonizationRecipeForm
