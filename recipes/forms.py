@@ -33,6 +33,7 @@ class UnitRecipeForm(UserKwargModelFormMixin, forms.ModelForm):
         }
 
     def clean(self):
+        """Custom form field validation for UnitRecipeForm."""
         cleaned_data = super(UnitRecipeForm, self).clean()
         # Check that a name is unique for this user, for creation only.
         if self.instance.pk is None:
@@ -75,7 +76,7 @@ class UnitRecipeForm(UserKwargModelFormMixin, forms.ModelForm):
         return cleaned_data
     
     def get_model_name(self):
-        """ """
+        """Get the model name from the ModelForm class. Used in templates."""
         return self.instance._meta.verbose_name
 
 
@@ -102,6 +103,7 @@ class HarmonizationRecipeForm(UserKwargModelFormMixin, forms.ModelForm):
         }
         
     def clean(self):
+        """Custom form field validation for HarmonizationRecipeForm."""
         cleaned_data = super(HarmonizationRecipeForm, self).clean()
         # Check that a name is unique for this user, for creation only.
         if self.instance.pk is None:
@@ -112,5 +114,5 @@ class HarmonizationRecipeForm(UserKwargModelFormMixin, forms.ModelForm):
         return cleaned_data
 
     def get_model_name(self):
-        """ """
+        """Get the model name from the ModelForm class. Used in templates."""
         return self.instance._meta.verbose_name
