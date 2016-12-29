@@ -49,12 +49,15 @@ class UnitRecipe(TimeStampedModel):
         return '{} by {}, v{} (modified {})'.format(self.name, self.creator.username, self.version, self.modified.date())
     
     def get_absolute_url(self):
-        """ """
+        """Gets the absolute URL of the detail page for a given UnitRecipe instance."""
         return reverse('recipes:unit:detail', kwargs={'pk': self.pk})
 
 
 class HarmonizationRecipe(TimeStampedModel):
     """Model for harmonization recipes.
+    
+    Harmonization recipes provide instructions for combining harmonization units
+    to create the target harmonized variable.
     """
     
     UNIT_RECODE = 'unit_recode'
@@ -87,10 +90,25 @@ class HarmonizationRecipe(TimeStampedModel):
         return 'Harmonization recipe {} by {}, v{}, with {} harmonization units (modified {})'.format(self.name, self.creator.username, self.version, self.units.count(), self.modified.date())
     
     def get_absolute_url(self):
-        """ """
+        """Gets the absolute URL of the detail page for a given HarmonizationRecipe instance."""
         return reverse('recipes:harmonization:detail', kwargs={'pk': self.pk})
     
     def get_encoded_values_dict(self):
-        """ """
-        return dict([line.split(': ') for line in self.encoded_values.split('\r\n')])
+        """Get a dict of category, value pairs by parsing the encoded_values field.
         
+        Process the encoded_values field, which was input by a user in a specific format,
+        into a more usable Python dictionary with category as the keys and value as the values.
+        
+        Returns:
+            dict of (category, value) pairs, both as strings
+        """
+        return dict([line.split(': ') for line in self.encoded_values.split('\r\n')])
+    
+    def get_config(self):
+        """Get a phenotype harmonization workflow config file from this HarmonizationRecipe.
+        
+        Produce a formatted xml config file for the DCC phenotype harmonization
+        workflow based on the information in the harmonization unit recipes for
+        this HarmonizationRecipe.
+        """
+        pass
