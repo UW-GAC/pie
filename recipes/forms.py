@@ -61,7 +61,16 @@ class UnitRecipeForm(UserKwargModelFormMixin, forms.ModelForm):
             age_phenotype_error = forms.ValidationError(u'Variable(s) {} repeated as an age variable and as a phenotype variable. This is not allowed.'.format(' and '.join([str(v.i_trait_id) for v in age_phenotype])))
             self.add_error('age_variables', age_phenotype_error)
             self.add_error('phenotype_variables', age_phenotype_error)
-
+        # Check that all variables used are from the same GlobalStudy.
+        global_studies = [trait.source_dataset.source_study_version.study.global_study for trait in list(age) + list(batch) + list(phenotype)]
+        if len(set(global_studies)) > 1:
+            study_error = forms.ValidationError(u'Variables selected are from more than one TOPMed study. This is not allowed.')
+            blank_error = forms.ValidationError(u'')
+            self.add_error('age_variables', blank_error)
+            if len(batch) > 0:
+                self.add_error('batch_variables', blank_error)
+            self.add_error('phenotype_variables', blank_error)
+            raise forms.ValidationError(study_error)
         return cleaned_data
     
     def get_model_name(self):

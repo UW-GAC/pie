@@ -29,7 +29,7 @@ class UnitRecipe(TimeStampedModel):
     """
     
     age_variables = models.ManyToManyField(SourceTrait, related_name='units_as_age_trait')
-    batch_variables = models.ManyToManyField(SourceTrait, related_name='units_as_batch_trait')
+    batch_variables = models.ManyToManyField(SourceTrait, related_name='units_as_batch_trait', blank=True)
     phenotype_variables =  models.ManyToManyField(SourceTrait, related_name='units_as_phenotype_trait')
     creator = models.ForeignKey(User, related_name='units_created_by')
     last_modifier = models.ForeignKey(User, related_name='units_last_modified_by')
