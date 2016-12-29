@@ -44,7 +44,7 @@
             {% for trait in harmonized_trait.harmonized_trait_set.component_source_traits.all %}
                 <tr>
                     <td>{{ trait.source_dataset.source_study_version.study.i_study_name }}</td>
-                    <td><a href="{% url 'trait_browser:source_detail' pk=trait.pk %}">{{ trait.i_trait_name }}</a></td>
+                    <td><a href="{% url 'trait_browser:source:detail' pk=trait.pk %}">{{ trait.i_trait_name }}</a></td>
                 </tr>
             {% endfor %}
         </table>
@@ -57,7 +57,7 @@
                </tr>
                {% for trait in harmonized_trait.harmonized_trait_set.component_harmonized_traits.all %}
                    <tr>
-                       <td><a href="{% url 'trait_browser:harmonized_detail' pk=trait.pk %}">{{ trait.trait_flavor_name }}</a></td>
+                       <td><a href="{% url 'trait_browser:harmonized:detail' pk=trait.pk %}">{{ trait.trait_flavor_name }}</a></td>
                    </tr>
                {% endfor %}
            </table>

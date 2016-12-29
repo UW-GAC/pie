@@ -21,9 +21,9 @@ class UnitRecipeForm(UserKwargModelFormMixin, forms.ModelForm):
     class Meta:
         model = UnitRecipe
         fields = ('name', 'age_variables', 'batch_variables', 'phenotype_variables', 'instructions', )
-        widgets = {'age_variables': autocomplete.ModelSelect2Multiple(url='trait_browser:source_autocomplete'),
-            'batch_variables': autocomplete.ModelSelect2Multiple(url='trait_browser:source_autocomplete'),
-            'phenotype_variables': autocomplete.ModelSelect2Multiple(url='trait_browser:source_autocomplete'),
+        widgets = {'age_variables': autocomplete.ModelSelect2Multiple(url='trait_browser:source:autocomplete'),
+            'batch_variables': autocomplete.ModelSelect2Multiple(url='trait_browser:source:autocomplete'),
+            'phenotype_variables': autocomplete.ModelSelect2Multiple(url='trait_browser:source:autocomplete'),
         }
         help_texts = {'name': 'A unique and informative name for the harmonization unit.',
             'age_variables': 'Enter the DCC id(s) of the variable(s) needed to derive age for your harmonized variable <strong>in this harmonization unit</strong>.',

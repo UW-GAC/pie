@@ -21,7 +21,7 @@
 
 <div class="row">
   <div class="col-md-4 text-center action-home">
-    <a href="{% url 'trait_browser:source_all' %}">    
+    <a href="{% url 'trait_browser:source:all' %}">    
     <h2>Browse source phenotypes</h2>
     <p>Source phenotypes for each study were downloaded from dbGaP.
     Source phenotypes available here can be used to generate harmonized phenotypes.</p>
@@ -30,7 +30,7 @@
   </div>
 
   <div class="col-md-4 text-center ribbon-parent">
-    <!--<a href="{% comment %}{% url 'trait_browser:harmonized_all' %}{% endcomment %}">-->
+    <!--<a href="{% comment %}{% url 'trait_browser:harmonized:all' %}{% endcomment %}">-->
     <h2 class="text-disabled">Submit a harmonization request</h2>
     <p class="bg-info text-info">Coming soon.</p>
     <p class="text-disabled">Submit pre-approved harmonization requests here.</p>
@@ -39,7 +39,7 @@
   </div>
 
   <div class="col-md-4 text-center action-home">
-    <a href="{% url 'trait_browser:harmonized_all' %}">
+    <a href="{% url 'trait_browser:harmonized:all' %}">
     <h2>Browse harmonized phenotypes</h2>
     <p>Harmonized phenotypes are posted here as they become available.</p>
     <!--<img src="{% static "icons/pie.svg" %}" alt="harmonized_phenotype_pie" width=150 style="margin:15px"/>-->
