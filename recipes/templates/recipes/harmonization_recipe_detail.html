@@ -9,6 +9,7 @@
     
         <h2>Harmonization recipe details</h2>
         
+        {% include '_messages.html' %}
     
         <p><strong>Recipe name</strong> : {{ h_recipe.name }}</p>
         <p><strong>Version</strong> : {{ h_recipe.version }}</p>
@@ -32,10 +33,10 @@
                          <th>Category</th>
                          <th>Value</th>
                      </tr>
-                     {% for ev in h_recipe.encoded_values %}
+                     {% for category, definition in h_recipe.get_encoded_values_dict.items %}
                          <tr>
-                             <td>{{ ev }}</td>
-                             <td>{{ ev }}</td>
+                             <td>{{ category }}</td>
+                             <td>{{ definition }}</td>
                          </tr>
                      {% endfor %}
                  </table>

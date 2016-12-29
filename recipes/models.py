@@ -1,10 +1,18 @@
 """Models for the recipes app."""
 
 from django.core.urlresolvers import reverse
+from django.core.validators import RegexValidator
 from django.db import models
 from django.contrib.auth.models import User
 
 from trait_browser.models import SourceTrait
+
+
+validate_alphanumeric_underscore = RegexValidator(regex=r'^[0-9a-zA-Z_]*$',
+                                                  message='Only letters, numbers, and underscores (_) are allowed.')
+
+validate_encoded_values = RegexValidator(regex=r'^(.*: .*\n)*(.*: .*)$',
+                                         message='Invalid format for encoded values definitions.')
 
 class TimeStampedModel(models.Model):
     """
@@ -24,7 +32,7 @@ class UnitRecipe(TimeStampedModel):
     """
     
     age_variables = models.ManyToManyField(SourceTrait, related_name='units_as_age_trait')
-    batch_variables = models.ManyToManyField(SourceTrait, related_name='units_as_batch_trait')
+    batch_variables = models.ManyToManyField(SourceTrait, related_name='units_as_batch_trait', blank=True)
     phenotype_variables =  models.ManyToManyField(SourceTrait, related_name='units_as_phenotype_trait')
     creator = models.ForeignKey(User, related_name='units_created_by')
     last_modifier = models.ForeignKey(User, related_name='units_last_modified_by')
@@ -34,18 +42,22 @@ class UnitRecipe(TimeStampedModel):
 
     class Meta:
         verbose_name = 'harmonization unit recipe'
+        unique_together = (('creator', 'name'), )
     
     def __str__(self):
         """Pretty printing."""
         return '{} by {}, v{} (modified {})'.format(self.name, self.creator.username, self.version, self.modified.date())
     
     def get_absolute_url(self):
-        """ """
+        """Gets the absolute URL of the detail page for a given UnitRecipe instance."""
         return reverse('recipes:unit:detail', kwargs={'pk': self.pk})
 
 
 class HarmonizationRecipe(TimeStampedModel):
     """Model for harmonization recipes.
+    
+    Harmonization recipes provide instructions for combining harmonization units
+    to create the target harmonized variable.
     """
     
     UNIT_RECODE = 'unit_recode'
@@ -64,16 +76,39 @@ class HarmonizationRecipe(TimeStampedModel):
     creator = models.ForeignKey(User, related_name='harmonization_recipes_created_by')
     last_modifier = models.ForeignKey(User, related_name='harmonization_recipes_last_modified_by')
     version = models.IntegerField(default=1)
-    target_name = models.CharField(max_length=50, verbose_name='target phenotype variable name')
-    target_description = models.CharField(max_length=1000, verbose_name='target phenotype variable description')
-    encoded_values = models.TextField(verbose_name='definition of encoded values for target variable', blank=True)
+    target_name = models.CharField(max_length=50, verbose_name='target phenotype variable name', validators=[validate_alphanumeric_underscore])
+    target_description = models.TextField(verbose_name='target phenotype variable description')
+    encoded_values = models.TextField(verbose_name='definition of encoded values for target variable', blank=True, validators=[validate_encoded_values])
     type = models.CharField(max_length=100, choices=TYPE_CHOICES, verbose_name='harmonization type')
     measurement_unit = models.CharField(max_length=100, verbose_name='unit of measurement')
+    
+    class Meta:
+        unique_together = (('creator', 'name'), )
 
     def __str__(self):
         """Pretty printing."""
         return 'Harmonization recipe {} by {}, v{}, with {} harmonization units (modified {})'.format(self.name, self.creator.username, self.version, self.units.count(), self.modified.date())
     
     def get_absolute_url(self):
-        """ """
-        return reverse('recipes:harmonization:detail', kwargs={'pk': self.pk})    
+        """Gets the absolute URL of the detail page for a given HarmonizationRecipe instance."""
+        return reverse('recipes:harmonization:detail', kwargs={'pk': self.pk})
+    
+    def get_encoded_values_dict(self):
+        """Get a dict of category, value pairs by parsing the encoded_values field.
+        
+        Process the encoded_values field, which was input by a user in a specific format,
+        into a more usable Python dictionary with category as the keys and value as the values.
+        
+        Returns:
+            dict of (category, value) pairs, both as strings
+        """
+        return dict([line.split(': ') for line in self.encoded_values.split('\r\n')])
+    
+    def get_config(self):
+        """Get a phenotype harmonization workflow config file from this HarmonizationRecipe.
+        
+        Produce a formatted xml config file for the DCC phenotype harmonization
+        workflow based on the information in the harmonization unit recipes for
+        this HarmonizationRecipe.
+        """
+        pass

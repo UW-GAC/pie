@@ -2,6 +2,7 @@
 
 from django import forms
 
+from braces.forms import UserKwargModelFormMixin
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Submit
 from dal import autocomplete
@@ -9,7 +10,7 @@ from dal import autocomplete
 from .models import UnitRecipe, HarmonizationRecipe
 
 
-class UnitRecipeForm(forms.ModelForm):
+class UnitRecipeForm(UserKwargModelFormMixin, forms.ModelForm):
     """Form to create/edit UnitRecipe model objects."""
     
     def __init__(self, *args, **kwargs):
@@ -31,12 +32,55 @@ class UnitRecipeForm(forms.ModelForm):
             'instructions': 'Describe how to use the age variables to derive age, how to use the batch variables to derive a harmonized batch, and how to use the phenotype variables to derive your target harmonized variable <strong>in this harmonization unit</strong>.',
         }
 
+    def clean(self):
+        """Custom form field validation for UnitRecipeForm."""
+        cleaned_data = super(UnitRecipeForm, self).clean()
+        # Check that a name is unique for this user, for creation only.
+        if self.instance.pk is None:
+            name = cleaned_data.get('name', '')
+            existing_names_for_user = [u.name for u in self.user.units_created_by.all()]
+            if name in existing_names_for_user:
+                self.add_error('name', forms.ValidationError(u'A harmonization unit named {} already exists for user {}.'.format(name, self.user.username)))
+        # Check that traits are not repeated in the several variable fields.
+        age = cleaned_data.get('age_variables', [])
+        batch = cleaned_data.get('batch_variables', [])
+        phenotype = cleaned_data.get('phenotype_variables', [])
+        # Check for overlap between age and batch variables.
+        age_batch = set(age) & set(batch)
+        if len(age_batch) > 0:
+            age_batch_error = forms.ValidationError(u'Variable(s) {} repeated as an age variable and as a batch variable. This is not allowed.'.format(' and '.join([str(v.i_trait_id) for v in age_batch])))
+            self.add_error('age_variables', age_batch_error)
+            self.add_error('batch_variables', age_batch_error)
+        # Check for overlap between phenotype and batch variables.
+        phenotype_batch = set(phenotype) & set(batch)
+        if len(phenotype_batch) > 0:
+            phenotype_batch_error = forms.ValidationError(u'Variable(s) {} repeated as a phenotype variable and as a batch variable. This is not allowed.'.format(' and '.join([str(v.i_trait_id) for v in phenotype_batch])))
+            self.add_error('phenotype_variables', phenotype_batch_error)
+            self.add_error('batch_variables', phenotype_batch_error)
+        # Check for overlap between age and phenotype variables.
+        age_phenotype = set(age) & set(phenotype)
+        if len(age_phenotype) > 0:
+            age_phenotype_error = forms.ValidationError(u'Variable(s) {} repeated as an age variable and as a phenotype variable. This is not allowed.'.format(' and '.join([str(v.i_trait_id) for v in age_phenotype])))
+            self.add_error('age_variables', age_phenotype_error)
+            self.add_error('phenotype_variables', age_phenotype_error)
+        # Check that all variables used are from the same GlobalStudy.
+        global_studies = [trait.source_dataset.source_study_version.study.global_study for trait in list(age) + list(batch) + list(phenotype)]
+        if len(set(global_studies)) > 1:
+            study_error = forms.ValidationError(u'Variables selected are from more than one TOPMed study. This is not allowed.')
+            blank_error = forms.ValidationError(u'')
+            self.add_error('age_variables', blank_error)
+            if len(batch) > 0:
+                self.add_error('batch_variables', blank_error)
+            self.add_error('phenotype_variables', blank_error)
+            raise forms.ValidationError(study_error)
+        return cleaned_data
+    
     def get_model_name(self):
-        """ """
+        """Get the model name from the ModelForm class. Used in templates."""
         return self.instance._meta.verbose_name
 
 
-class HarmonizationRecipeForm(forms.ModelForm):
+class HarmonizationRecipeForm(UserKwargModelFormMixin, forms.ModelForm):
     """Form to create/edit HarmonizationRecipe objects."""
     
     def __init__(self, *args, **kwargs):
@@ -57,7 +101,18 @@ class HarmonizationRecipeForm(forms.ModelForm):
             'units': 'The harmonization units to include in your target harmonized variable.',
             'encoded_values': 'Values and descriptions for encoded values for your target harmonized variable. Define one encoded value per line, separating the value from its description with a semicolon and a single space.<br>Example:<br>1: blue<br>2: red<br>3: green',
         }
-    
+        
+    def clean(self):
+        """Custom form field validation for HarmonizationRecipeForm."""
+        cleaned_data = super(HarmonizationRecipeForm, self).clean()
+        # Check that a name is unique for this user, for creation only.
+        if self.instance.pk is None:
+            name = cleaned_data.get('name', '')
+            existing_names_for_user = [u.name for u in self.user.harmonization_recipes_created_by.all()]
+            if name in existing_names_for_user:
+                self.add_error('name', forms.ValidationError(u'A harmonization unit named {} already exists for user {}.'.format(name, self.user.username)))
+        return cleaned_data
+
     def get_model_name(self):
-        """ """
+        """Get the model name from the ModelForm class. Used in templates."""
         return self.instance._meta.verbose_name
