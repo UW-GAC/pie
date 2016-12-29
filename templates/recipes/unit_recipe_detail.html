@@ -28,7 +28,7 @@
                  </tr>
                  {% for bv in u_recipe.phenotype_variables.all %}
                      <tr>
-                         <td><a href='{% url 'trait_browser:source_detail' bv.pk %}'>{{ bv.i_trait_id }}</a></td>
+                         <td><a href='{% url 'trait_browser:source:detail' bv.pk %}'>{{ bv.i_trait_id }}</a></td>
                          <td>{{ bv.variable_accession }}</td>
                          <td>{{ bv.i_trait_name }}</td>
                      </tr>
@@ -44,7 +44,7 @@
                  </tr>
                  {% for bv in u_recipe.age_variables.all %}
                      <tr>
-                         <td><a href='{% url 'trait_browser:source_detail' bv.pk %}'>{{ bv.i_trait_id }}</a></td>
+                         <td><a href='{% url 'trait_browser:source:detail' bv.pk %}'>{{ bv.i_trait_id }}</a></td>
                          <td>{{ bv.variable_accession }}</td>
                          <td>{{ bv.i_trait_name }}</td>
                      </tr>
@@ -61,7 +61,7 @@
                  </tr>
                  {% for bv in u_recipe.batch_variables.all %}
                      <tr>
-                         <td><a href='{% url 'trait_browser:source_detail' bv.pk %}'>{{ bv.i_trait_id }}</a></td>
+                         <td><a href='{% url 'trait_browser:source:detail' bv.pk %}'>{{ bv.i_trait_id }}</a></td>
                          <td>{{ bv.variable_accession }}</td>
                          <td>{{ bv.i_trait_name }}</td>
                      </tr>

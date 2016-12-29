@@ -14,7 +14,7 @@ class SourceTraitTable(tables.Table):
     """
 
     # Set custom column values that need extra settings.
-    i_trait_name = tables.LinkColumn('trait_browser:source_detail', args=[tables.utils.A('pk')], verbose_name='Phenotype name')
+    i_trait_name = tables.LinkColumn('trait_browser:source:detail', args=[tables.utils.A('pk')], verbose_name='Phenotype name')
     i_description = tables.Column('Phenotype description', orderable=False)
     # Get the name from the Study linked to this trait.
     study_name = tables.Column('Study name', accessor='source_dataset.source_study_version.study.i_study_name')
@@ -40,7 +40,7 @@ class HarmonizedTraitTable(tables.Table):
     """
 
     # Set custom column values that need extra settings.
-    trait_flavor_name = tables.LinkColumn('trait_browser:harmonized_detail', args=[tables.utils.A('pk')], verbose_name='Phenotype name')
+    trait_flavor_name = tables.LinkColumn('trait_browser:harmonized:detail', args=[tables.utils.A('pk')], verbose_name='Phenotype name')
     i_description = tables.Column('Phenotype description', orderable=False)
     
     class Meta:
@@ -58,7 +58,7 @@ class StudyTable(tables.Table):
     objects. It is used for the Browse by Study page.
     """
     
-    i_study_name = tables.LinkColumn('trait_browser:source_study_detail', args=[tables.utils.A('pk')],
+    i_study_name = tables.LinkColumn('trait_browser:source:study:detail', args=[tables.utils.A('pk')],
                              verbose_name='Study name', orderable=False)
     dbGaP_accession = tables.TemplateColumn(orderable=False,
         template_code='<a target="_blank" href={{record.dbgap_latest_version_link}}>{{ record.phs }}</a>'
