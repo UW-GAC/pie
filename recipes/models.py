@@ -74,7 +74,7 @@ class HarmonizationRecipe(TimeStampedModel):
     last_modifier = models.ForeignKey(User, related_name='harmonization_recipes_last_modified_by')
     version = models.IntegerField(default=1)
     target_name = models.CharField(max_length=50, verbose_name='target phenotype variable name', validators=[validate_alphanumeric_underscore])
-    target_description = models.CharField(max_length=1000, verbose_name='target phenotype variable description')
+    target_description = models.TextField(verbose_name='target phenotype variable description')
     encoded_values = models.TextField(verbose_name='definition of encoded values for target variable', blank=True, validators=[validate_encoded_values])
     type = models.CharField(max_length=100, choices=TYPE_CHOICES, verbose_name='harmonization type')
     measurement_unit = models.CharField(max_length=100, verbose_name='unit of measurement')
