@@ -29,8 +29,9 @@ urlpatterns = [
     url(r'^admin/', include(admin.site.urls)),    # Admin interface
     url(r'^phenotypes/', include('trait_browser.urls', namespace='trait_browser')),    # Trait browser app
     url('^', include('django.contrib.auth.urls')), # authentication views
-    url(r'^accounts/', include('user_accounts.urls', namespace='user_accounts')),    # relating to user accounts
+    # url(r'^accounts/', include('user_accounts.urls', namespace='user_accounts')),    # relating to user accounts
     url(r'^recipe/', include('recipes.urls', namespace='recipes')),    # Recipes app
+    url(r'^accounts/', include('authtools.urls')),
 ]
 
 # Set the name for the admin site.
