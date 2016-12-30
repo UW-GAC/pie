@@ -61,8 +61,30 @@
         {% if user.is_anonymous %}
           <li><a href="{% url 'login' %}"><span class="glyphicon glyphicon-log-in"></span> Login</a></li>
         {% else %}
-          <li><a href="{% url 'profiles:profile' %}"><span class="glyphicon glyphicon-user"></span> User: {{ user }}</a></li>
-          <li><a href="{% url 'logout' %}"><span class="glyphicon glyphicon-log-out"></span> Logout</a></li>
+          <!--    User dropdown    -->
+          <li class="dropdown">
+            <a href="#" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false"><span class="glyphicon glyphicon-user"></span> {{ user.name }} <span class="caret"></a>
+            <ul class="dropdown-menu">
+              <li>
+                <a href="{% url 'profiles:profile' %}"><span class="glyphicon glyphicon-user"></span> My Profile</a>
+              </li>
+              <li>
+                <a href="#"><span class="glyphicon glyphicon-minus"></span> My Saved Phenotypes</a>
+              </li>
+              <li>
+                <a href="#"><span class="glyphicon glyphicon-minus"></span> My Unit Recipes</a>
+              </li>
+              <li>
+                <a href="#"><span class="glyphicon glyphicon-minus"></span> My Harmonization Recipes</a>
+              </li>
+              <li>
+                <a href="{% url 'password_change' %}"><span class="glyphicon glyphicon-pencil"></span> Change Password</a>
+              </li>
+              <li>
+                <a href="{% url 'logout' %}"><span class="glyphicon glyphicon-log-out"></span> Logout</a>
+              </li>
+            </ul>
+          </li>
         {% endif %}
       </ul>
     </div>
