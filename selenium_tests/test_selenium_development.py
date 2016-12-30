@@ -252,7 +252,7 @@ class SourceTraitSearchTestCase(UserAutoLoginSeleniumTestCase):
     def setUp(self):
         super(SourceTraitSearchTestCase, self).setUp()
         # Open the Search page.
-        self.get_reverse('trait_browser:source_search')
+        self.get_reverse('trait_browser:source:search')
         time.sleep(1)
         
     def run_search(self, search_string, study_list=None):
@@ -318,7 +318,7 @@ class TablePageTestCase(UserAutoLoginSeleniumTestCase):
     def test_source_all_table(self):
         """Run check_table_view on the All source traits table page. Check the link for a source trait detail page."""
         total_source_traits = SourceTrait.objects.count()
-        self.get_reverse('trait_browser:source_all')
+        self.get_reverse('trait_browser:source:all')
         self.check_table_view(expected_rows=total_source_traits)
         # Check the detail page for the first listed SourceTrait.
         check_name = SourceTrait.objects.all().order_by('i_trait_name')[0].i_trait_name
@@ -329,7 +329,7 @@ class TablePageTestCase(UserAutoLoginSeleniumTestCase):
     def test_source_study_list_table(self):
         """Run check_table_view on the Browse by study table page. Follow the link for one study."""
         study_count = Study.objects.count()
-        self.get_reverse('trait_browser:source_study_list')
+        self.get_reverse('trait_browser:source:study:list')
         self.check_table_view(expected_rows=study_count)
         # Check the page for the first listed Study.
         study_name = Study.objects.all().order_by('i_study_name')[0].i_study_name
@@ -342,6 +342,6 @@ class TablePageTestCase(UserAutoLoginSeleniumTestCase):
         """Run check_table_view on the Study detail list page (from a link in the Browse by study table)."""
         study = Study.objects.all()[0]
         trait_count = SourceTrait.objects.filter(source_dataset__source_study_version__study=study).all().count()
-        self.get_reverse('trait_browser:source_study_detail', study.pk)
+        self.get_reverse('trait_browser:source:study:detail', study.pk)
         self.check_table_view(expected_rows=trait_count)
         
