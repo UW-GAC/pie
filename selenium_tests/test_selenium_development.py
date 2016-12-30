@@ -1,4 +1,4 @@
-"""Test the admin interface."""
+"""Automated testing of the entire site interactively."""
 
 from contextlib import contextmanager
 from os import environ
@@ -10,7 +10,7 @@ import re
 import time
 
 from django.contrib import admin
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from django.contrib.staticfiles.testing import StaticLiveServerTestCase
 from django.core.urlresolvers import reverse
 from django.test import Client
@@ -19,6 +19,9 @@ from trait_browser.factories import GlobalStudyFactory, HarmonizedTraitFactory, 
 from trait_browser.factories import build_test_db
 from trait_browser.models import GlobalStudy, HarmonizedTrait, HarmonizedTraitEncodedValue, HarmonizedTraitSet, SourceDataset, SourceStudyVersion, SourceTrait, SourceTraitEncodedValue, Study, Subcohort
 from trait_browser.views import TABLE_PER_PAGE, search
+
+
+User = get_user_model()
 
 
 class SeleniumTestCase(StaticLiveServerTestCase):
@@ -45,10 +48,10 @@ class SeleniumTestCase(StaticLiveServerTestCase):
         super(SeleniumTestCase, self).setUp()
         # Add a superuser to the db.
         self.superuser_password = 'atomicnumber34'
-        self.superuser = User.objects.create_superuser(username='selenium', email='foo@bar.com', password=self.superuser_password)
+        self.superuser = User.objects.create_superuser(email='selenium@test.com', password=self.superuser_password)
         
         self.user_password = 'atomicnumber16'
-        self.user = User.objects.create_user(username='sulfur', email='sulphur@bar.com', password=self.user_password)
+        self.user = User.objects.create_user(email='sulfur@test.com', password=self.user_password)
         # Fill the test db with fake data.
         build_test_db(5, (1,6), (5, 11), (5,20), (2,10))
         
@@ -155,7 +158,7 @@ class UserAutoLoginSeleniumTestCase(SeleniumTestCase):
         self.get_reverse('login')
         username = self.selenium.find_element_by_id('id_username')
         password = self.selenium.find_element_by_id('id_password')
-        username.send_keys(self.user.username)
+        username.send_keys(self.user.email)
         password.send_keys(self.user_password)
         self.selenium.find_element_by_id('submit-button').click()       
         time.sleep(1)
@@ -201,7 +204,7 @@ class AdminTestCase(SeleniumTestCase):
         # Log in to the admin interface.
         username = self.selenium.find_element_by_id('id_username')
         password = self.selenium.find_element_by_id('id_password')
-        username.send_keys(self.superuser.username)
+        username.send_keys(self.superuser.email)
         password.send_keys(self.superuser_password)
         self.selenium.find_element_by_class_name('submit-row').click()       
         time.sleep(1)
