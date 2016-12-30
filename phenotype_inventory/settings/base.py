@@ -160,8 +160,8 @@ INSTALLED_APPS = (
     'authtools',    # https://django-authtools.readthedocs.io/en/latest/index.html
     # Our custom apps.
     'trait_browser',    # Handles table-based viewing and searching of trait data.
-    'core',    # Handles data migrations for built-in apps (e.g. sites).
-    'user_accounts',
+    'core',    # Code used across the project, and data migrations for built-in apps (e.g. sites).
+    'profiles',    # Handles profile data for users interacting with the site.
     'recipes',
 )
 

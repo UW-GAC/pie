@@ -8,7 +8,7 @@ from django.contrib.auth.decorators import login_required
 def profile(request):
     # user is automatically passed in the request somehow
     page_title = 'profile'
-    return render(request, 'user_accounts/profile.html',
+    return render(request, 'profiles/profile.html',
         {'page_title': page_title}
     )
 
