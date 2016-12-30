@@ -5,7 +5,7 @@
 {% endblock %}
 
 {% block content %}
-<p>Username: {{ user.username }}</p>
-<p>email: {{ user.email }}</p>
-<p><a href="{% url 'password_reset' %}">reset password</a></p>
+    <p>Username (email): {{ user.email }}</p>
+    <p>Name: {{ user.name }}</p>
+    <p><a href="{% url 'password_reset' %}">Reset password</a></p>
 {% endblock %}
