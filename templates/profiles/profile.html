@@ -8,4 +8,9 @@
     <p>Username (email): {{ user.email }}</p>
     <p>Name: {{ user.name }}</p>
     <p><a href="{% url 'password_reset' %}">Reset password</a></p>
+
+    {% if request.user.is_staff %}
+    <a href="{% url 'admin:index' %}" class="btn btn-primary" role="button">PIE Administration</a>
+    {% endif %}
+
 {% endblock %}
