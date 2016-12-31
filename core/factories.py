@@ -4,6 +4,7 @@ from copy import copy
 from random import randrange, sample
 
 from django.contrib.auth import get_user_model
+from django.contrib.auth.hashers import make_password
 from django.utils import timezone
 
 import factory
@@ -14,6 +15,7 @@ from trait_browser.factories import GlobalStudyFactory, HarmonizedTraitFactory, 
 
 
 User = get_user_model()
+USER_FACTORY_PASSWORD = 'qwerty'
 
 
 class UserFactory(factory.DjangoModelFactory):
@@ -21,6 +23,7 @@ class UserFactory(factory.DjangoModelFactory):
     
     name = factory.Faker('name')
     email = factory.Faker('email')
+    password = make_password(USER_FACTORY_PASSWORD)
 
     class Meta:
         model = User
