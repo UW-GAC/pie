@@ -1,9 +1,69 @@
 """Test the factory functions, which are used for testing."""
 
+from django.contrib.auth import get_user_model
 from django.test import TestCase
 
-from .factories import build_test_db
+from .factories import UserFactory, SuperUserFactory, build_test_db
 from trait_browser.models import GlobalStudy, HarmonizedTrait, HarmonizedTraitEncodedValue, HarmonizedTraitSet, SourceDataset, SourceStudyVersion, SourceTrait, SourceTraitEncodedValue, Study, Subcohort
+
+
+User = get_user_model()
+
+
+class UserFactoryTestCase(TestCase):
+    
+    def test_user_factory_build(self):
+        """Test that a User instance is returned by UserFactory.build()"""
+        user = UserFactory.build()
+        self.assertIsInstance(user, User)
+        
+    def test_user_factory_create(self):
+        """Test that a User instance is returned by UserFactory.create()"""
+        user = UserFactory.create()
+        self.assertIsInstance(user, User)
+
+    def test_user_factory_build_batch(self):
+        """Test that a User instance is returned by UserFactory.build_batch(5)"""
+        users = UserFactory.build_batch(5)
+        for one in users:
+            self.assertIsInstance(one, User)
+        
+    def test_user_factory_create_batch(self):
+        """Test that a User instance is returned by UserFactory.create_batch(5)"""
+        users = UserFactory.create_batch(5)
+        for one in users:
+            self.assertIsInstance(one, User)
+
+
+class SuperUserFactoryTestCase(TestCase):
+    
+    def test_admin_user_factory_build(self):
+        """Test that a User instance is returned by SuperUserFactory.build()"""
+        user = SuperUserFactory.build()
+        self.assertIsInstance(user, User)
+        
+    def test_admin_user_factory_create(self):
+        """Test that a User instance is returned by SuperUserFactory.create()"""
+        user = SuperUserFactory.create()
+        self.assertIsInstance(user, User)
+
+    def test_admin_user_factory_build_batch(self):
+        """Test that a User instance is returned by SuperUserFactory.build_batch(5)"""
+        users = SuperUserFactory.build_batch(5)
+        for one in users:
+            self.assertIsInstance(one, User)
+        
+    def test_admin_user_factory_create_batch(self):
+        """Test that a User instance is returned by SuperUserFactory.create_batch(5)"""
+        users = SuperUserFactory.create_batch(5)
+        for one in users:
+            self.assertIsInstance(one, User)
+
+    def test_admin_user_factory_is_superuser(self):
+        """Test that a User instance is returned by SuperUserFactory.create()"""
+        user = SuperUserFactory.create()
+        self.assertTrue(user.is_superuser)
+        self.assertTrue(user.is_staff)
 
 
 class BuildTestDbTestCase(TestCase):

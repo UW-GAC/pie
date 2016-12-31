@@ -3,6 +3,7 @@
 from copy import copy
 from random import randrange, sample
 
+from django.contrib.auth import get_user_model
 from django.utils import timezone
 
 import factory
@@ -10,6 +11,26 @@ import factory.fuzzy
 
 from trait_browser.models import GlobalStudy, HarmonizedTrait, HarmonizedTraitEncodedValue, HarmonizedTraitSet, SourceDataset, SourceStudyVersion, SourceTrait, SourceTraitEncodedValue, Study, Subcohort
 from trait_browser.factories import GlobalStudyFactory, HarmonizedTraitFactory, HarmonizedTraitEncodedValueFactory, HarmonizedTraitSetFactory, SourceDatasetFactory, SourceStudyVersionFactory, SourceTraitFactory, SourceTraitEncodedValueFactory, StudyFactory, SubcohortFactory
+
+
+User = get_user_model()
+
+
+class UserFactory(factory.DjangoModelFactory):
+    """Uses Faker fake data to make a fake User object."""
+    
+    name = factory.Faker('name')
+    email = factory.Faker('email')
+
+    class Meta:
+        model = User
+        django_get_or_create = ('email',)
+
+
+class SuperUserFactory(UserFactory):
+    """Just like a UserFactory, but super."""
+    is_superuser = True
+    is_staff = True
 
 
 def build_test_db(n_global_studies, n_subcohort_range, n_dataset_range, n_trait_range, n_enc_value_range):
