@@ -7,6 +7,7 @@
 # names in the backend db would have "_id" appended to them.
 
 from django.db import models
+from django.core.urlresolvers import reverse
 
 
 class TimeStampedModel(models.Model):
@@ -101,6 +102,9 @@ class Study(TimeStampedModel):
         """
         return self.STUDY_URL.format(self.phs)
 
+    def get_absolute_url(self):
+        """Gets the absolute URL of the detail page for a given Study instance."""
+        return reverse('trait_browser:source:study:detail', kwargs={'pk': self.pk})
 
 class SourceStudyVersion(TimeStampedModel):
     """Model for versions of each dbGaP study accession.
@@ -384,6 +388,9 @@ class SourceTrait(Trait):
         """
         return self.DATASET_URL.format(self.study_accession, self.source_dataset.i_accession)
 
+    def get_absolute_url(self):
+        """Gets the absolute URL of the detail page for a given SourceTrait instance."""
+        return reverse('trait_browser:source:detail', kwargs={'pk': self.pk})
 
 class HarmonizedTrait(Trait):
     """Model for traits harmonized by the DCC.
@@ -430,6 +437,9 @@ class HarmonizedTrait(Trait):
         """
         return '{}_{}'.format(self.i_trait_name, self.harmonized_trait_set.i_flavor)
 
+    def get_absolute_url(self):
+        """Gets the absolute URL of the detail page for a given HarmonizedTrait instance."""
+        return reverse('trait_browser:harmonized:detail', kwargs={'pk': self.pk})
 
 # Encoded Value models.
 # ------------------------------------------------------------------------------
