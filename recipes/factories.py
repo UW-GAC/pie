@@ -3,51 +3,78 @@
 import factory
 import factory.fuzzy
 
+from core.factories import UserFactory
 from .models import HarmonizationRecipe, UnitRecipe
 
 
 class UnitRecipeFactory(factory.DjangoModelFactory):
     """Factory for UnitRecipe objects using Faker faked data."""
     
-    creator = models.ForeignKey(User, related_name='units_created_by')
-    last_modifier = models.ForeignKey(User, related_name='units_last_modified_by')
-    instructions = models.TextField(verbose_name='harmonization instructions')
-    version = models.IntegerField(default=1)
-    name = models.CharField(max_length=1000, verbose_name='harmonization unit name')
+    creator = factory.SubFactory(UserFactory)
+    instructions = factory.Faker('sentence')
+    version = factory.Faker('random_digit')
+    name = factory.Faker('sentence')
+    # Make last_modifier the same as creator.
+    last_modifier = factory.LazyAttribute(lambda obj: obj.creator)
     
     class Meta:
         model = UnitRecipe
         django_get_or_create = ()
 
     @factory.post_generation
-    def subcohorts(self, create, extracted, **kwargs):
-        # Do not add any subcohorts for simple builds.
+    def age_variables(self, create, extracted, **kwargs):
+        # Do not add any age variables for simple builds.
         if not create:
             return
-        # Add subcohorts from a list that was passed in.
+        # Add age variables from a list that was passed in.
         if extracted:
-            for subcohort in extracted:
-                self.subcohorts.add(subcohort)
+            for age_var in extracted:
+                self.age_variables.add(age_var)
 
     @factory.post_generation
-    def subcohorts(self, create, extracted, **kwargs):
-        # Do not add any subcohorts for simple builds.
+    def phenotype_variables(self, create, extracted, **kwargs):
+        # Do not add any phenotype variables for simple builds.
         if not create:
             return
-        # Add subcohorts from a list that was passed in.
+        # Add phenotype variables from a list that was passed in.
         if extracted:
-            for subcohort in extracted:
-                self.subcohorts.add(subcohort)
+            for phenotype_var in extracted:
+                self.phenotype_variables.add(phenotype_var)
 
     @factory.post_generation
-    def subcohorts(self, create, extracted, **kwargs):
-        # Do not add any subcohorts for simple builds.
+    def batch_variables(self, create, extracted, **kwargs):
+        # Do not add any batch variables for simple builds.
         if not create:
             return
-        # Add subcohorts from a list that was passed in.
+        # Add batch variables from a list that was passed in.
         if extracted:
-            for subcohort in extracted:
-                self.subcohorts.add(subcohort)
-    
+            for batch_var in extracted:
+                self.batch_variables.add(batch_var)
+
     
 class HarmonizationRecipeFactory(factory.DjangoModelFactory):
+    """Factory for HarmonizationRecipe objects using Faker faked data."""
+    
+    creator = factory.SubFactory(UserFactory)
+    # Make last_modifier the same as creator.
+    last_modifier = factory.LazyAttribute(lambda obj: obj.creator)
+    version = factory.Faker('random_digit')
+    name = factory.Faker('sentence')
+    target_name = factory.Faker('word')
+    target_description = factory.Faker('sentence')
+    type = factory.Faker('random_element', elements=[el[0] for el in HarmonizationRecipe.TYPE_CHOICES])
+    measurement_unit = factory.Faker('rgb_css_color')
+
+    class Meta:
+        model = HarmonizationRecipe
+        django_get_or_create = ()
+    
+    @factory.post_generation
+    def units(self, create, extracted, **kwargs):
+        # Do not add any unit recipes for simple builds.
+        if not create:
+            return
+        # Add unit recipes from a list that was passed in.
+        if extracted:
+            for unit in extracted:
+                self.units.add(unit)
