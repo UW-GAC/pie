@@ -21,10 +21,12 @@ class SourceTraitCrispySearchForm(forms.Form):
     # study field, which enables proper testing.
     def __init__(self, *args, **kwargs):
         super(SourceTraitCrispySearchForm, self).__init__(*args, **kwargs)
+        studyPk = kwargs['studyPk'] if 'studyPk' in kwargs else None
         self.STUDIES = [[x.pk, x.i_study_name] for x in Study.objects.all().order_by('i_study_name')]
         self.fields['study'] = forms.MultipleChoiceField(choices=self.STUDIES,
             widget=forms.CheckboxSelectMultiple(), required=False,
-            help_text='If no studies are selected, source phenotypes from all studies will be searched.')
+            help_text='If no studies are selected, source phenotypes from all studies will be searched.',
+            initial=studyPk)
     
     text = forms.CharField(label='search text', max_length=100,
         help_text='Both phenotype names and descriptions will be searched.')
