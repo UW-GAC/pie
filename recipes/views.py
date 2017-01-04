@@ -149,7 +149,7 @@ class UnitRecipeIDAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetV
         return retrieved
 
 
-class HarmonizationRecipeDetail(LoginRequiredMixin, DetailView):
+class HarmonizationRecipeDetail(LoginRequiredMixin, OwnerQuerysetMixin, DetailView):
     """Detail view class for HarmonizationRecipe.
 
     LoginRequiredMixin - requires user to be logged in to access this view
@@ -160,7 +160,7 @@ class HarmonizationRecipeDetail(LoginRequiredMixin, DetailView):
     template_name = 'recipes/harmonization_recipe_detail.html'
     
 
-class UnitRecipeDetail(LoginRequiredMixin, DetailView):
+class UnitRecipeDetail(LoginRequiredMixin, OwnerQuerysetMixin, DetailView):
     """Detail view class for UnitRecipe.
 
     LoginRequiredMixin - requires user to be logged in to access this view
