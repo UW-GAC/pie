@@ -50,7 +50,6 @@ class UnitRecipe(TimeStampedModel):
     
     def get_absolute_url(self):
         """Gets the absolute URL of the detail page for a given UnitRecipe instance."""
-        return 'thisisnotanurl'
         return reverse('recipes:unit:detail', kwargs={'pk': self.pk})
 
 
