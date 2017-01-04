@@ -27,7 +27,13 @@ class OwnerQuerysetMixin(object):
 
 
 class CreateUnitRecipe(LoginRequiredMixin, UserFormKwargsMixin, FormMessagesMixin, CreateView):
-    """Create form view class for UnitRecipe creation, used with UnitRecipeModelForm."""
+    """Create form view class for UnitRecipe creation, used with UnitRecipeModelForm.
+    
+    LoginRequiredMixin - requires user to be logged in to access this view
+    UserFormKwargsMixin - adds the logged in user as an arg in the form's kwargs, so the form can access it
+    FormMessagesMixin - adds messages (using the builtin messages app) when form is invalid or valid
+    """
+    
     model = UnitRecipe
     form_class = UnitRecipeForm
     template_name = 'recipes/recipe_form.html'
@@ -48,7 +54,12 @@ class CreateUnitRecipe(LoginRequiredMixin, UserFormKwargsMixin, FormMessagesMixi
 
 
 class CreateHarmonizationRecipe(LoginRequiredMixin, UserFormKwargsMixin, FormMessagesMixin, CreateView):
-    """Create form view class for HarmonizationRecipe creation, used with HarmonizationRecipeModelForm."""
+    """Create form view class for HarmonizationRecipe creation, used with HarmonizationRecipeModelForm.
+        
+    LoginRequiredMixin - requires user to be logged in to access this view
+    UserFormKwargsMixin - adds the logged in user as an arg in the form's kwargs, so the form can access it
+    FormMessagesMixin - adds messages (using the builtin messages app) when form is invalid or valid
+    """
     model = HarmonizationRecipe
     form_class = HarmonizationRecipeForm
     template_name = 'recipes/recipe_form.html'
@@ -69,7 +80,13 @@ class CreateHarmonizationRecipe(LoginRequiredMixin, UserFormKwargsMixin, FormMes
 
 
 class UpdateUnitRecipe(LoginRequiredMixin, OwnerQuerysetMixin, UserFormKwargsMixin, FormMessagesMixin, UpdateView):
-    """Update form view class for UnitRecipe editing, used with UnitRecipeModelForm."""
+    """Update form view class for UnitRecipe editing, used with UnitRecipeModelForm.
+    
+    LoginRequiredMixin - requires user to be logged in to access this view
+    OwnerQuerysetMixin - restricts the allowed objects to those the logged in user is an owner of (can only edit their own objects)
+    UserFormKwargsMixin - adds the logged in user as an arg in the form's kwargs, so the form can access it
+    FormMessagesMixin - adds messages (using the builtin messages app) when form is invalid or valid   
+    """
     model = UnitRecipe
     form_class = UnitRecipeForm
     template_name = 'recipes/recipe_form.html'
@@ -90,7 +107,13 @@ class UpdateUnitRecipe(LoginRequiredMixin, OwnerQuerysetMixin, UserFormKwargsMix
 
 
 class UpdateHarmonizationRecipe(LoginRequiredMixin, OwnerQuerysetMixin, UserFormKwargsMixin, FormMessagesMixin, UpdateView):
-    """Update form view class for HarmonizationRecipe editing, used with HarmonizationRecipeModelForm."""
+    """Update form view class for HarmonizationRecipe editing, used with HarmonizationRecipeModelForm.
+    
+    LoginRequiredMixin - requires user to be logged in to access this view
+    OwnerQuerysetMixin - restricts the allowed objects to those the logged in user is an owner of (can only edit their own objects)
+    UserFormKwargsMixin - adds the logged in user as an arg in the form's kwargs, so the form can access it
+    FormMessagesMixin - adds messages (using the builtin messages app) when form is invalid or valid   
+    """
     model = HarmonizationRecipe
     form_class = HarmonizationRecipeForm
     template_name = 'recipes/recipe_form.html'
@@ -114,6 +137,8 @@ class UnitRecipeIDAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetV
     """View for returning querysets that allow auto-completing UnitRecipe-based form fields.
     
     Used with django-autocomplete-light package.
+
+    LoginRequiredMixin - requires user to be logged in to access this view
     """    
     
     def get_queryset(self):
@@ -125,7 +150,10 @@ class UnitRecipeIDAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetV
 
 
 class HarmonizationRecipeDetail(LoginRequiredMixin, DetailView):
-    """Detail view class for HarmonizationRecipe."""
+    """Detail view class for HarmonizationRecipe.
+
+    LoginRequiredMixin - requires user to be logged in to access this view
+    """
     
     model = HarmonizationRecipe
     context_object_name = 'h_recipe'
@@ -133,7 +161,10 @@ class HarmonizationRecipeDetail(LoginRequiredMixin, DetailView):
     
 
 class UnitRecipeDetail(LoginRequiredMixin, DetailView):
-    """Detail view class for UnitRecipe."""
+    """Detail view class for UnitRecipe.
+
+    LoginRequiredMixin - requires user to be logged in to access this view
+    """
     
     model = UnitRecipe
     context_object_name = 'u_recipe'
