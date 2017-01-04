@@ -40,7 +40,7 @@ class UnitRecipeForm(UserKwargModelFormMixin, forms.ModelForm):
             name = cleaned_data.get('name', '')
             existing_names_for_user = [u.name for u in self.user.units_created_by.all()]
             if name in existing_names_for_user:
-                self.add_error('name', forms.ValidationError(u'A harmonization unit named {} already exists for user {}.'.format(name, self.user.username)))
+                self.add_error('name', forms.ValidationError(u'A harmonization unit named {} already exists for user {}.'.format(name, self.user.email)))
         # Check that traits are not repeated in the several variable fields.
         age = cleaned_data.get('age_variables', [])
         batch = cleaned_data.get('batch_variables', [])
@@ -110,7 +110,7 @@ class HarmonizationRecipeForm(UserKwargModelFormMixin, forms.ModelForm):
             name = cleaned_data.get('name', '')
             existing_names_for_user = [u.name for u in self.user.harmonization_recipes_created_by.all()]
             if name in existing_names_for_user:
-                self.add_error('name', forms.ValidationError(u'A harmonization unit named {} already exists for user {}.'.format(name, self.user.username)))
+                self.add_error('name', forms.ValidationError(u'A harmonization unit named {} already exists for user {}.'.format(name, self.user.email)))
         return cleaned_data
 
     def get_model_name(self):

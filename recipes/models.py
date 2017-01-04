@@ -46,7 +46,7 @@ class UnitRecipe(TimeStampedModel):
     
     def __str__(self):
         """Pretty printing."""
-        return '{} by {}, v{} (modified {})'.format(self.name, self.creator.username, self.version, self.modified.date())
+        return '{} by {}, v{} (modified {})'.format(self.name, self.creator.email, self.version, self.modified.date())
     
     def get_absolute_url(self):
         """Gets the absolute URL of the detail page for a given UnitRecipe instance."""
@@ -87,7 +87,7 @@ class HarmonizationRecipe(TimeStampedModel):
 
     def __str__(self):
         """Pretty printing."""
-        return 'Harmonization recipe {} by {}, v{}, with {} harmonization units (modified {})'.format(self.name, self.creator.username, self.version, self.units.count(), self.modified.date())
+        return 'Harmonization recipe {} by {}, v{}, with {} harmonization units (modified {})'.format(self.name, self.creator.email, self.version, self.units.count(), self.modified.date())
     
     def get_absolute_url(self):
         """Gets the absolute URL of the detail page for a given HarmonizationRecipe instance."""
