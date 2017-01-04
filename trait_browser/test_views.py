@@ -108,7 +108,7 @@ class HarmonizedSearchTestCase(TestCase):
         self.assertNotIn(st_nonmatch, search1)
     
     def test_search_harmonized_trait_description_substring(self):
-        """Test that the search function finds a substring match in the HarmonizedTrait i_description field, but doesn't find a non-match."""
+        """Test that the search function finds a substring match in the HarmonizedTrait i_description field, kbut doesn't find a non-match."""
         st_match = HarmonizedTraitFactory.create(i_description='foo and bar', i_trait_id=1)
         st_nonmatch = HarmonizedTraitFactory.create(i_description='sum and es', i_trait_id=2)
         search1 = search('bar', 'harmonized')
@@ -171,6 +171,12 @@ class SourceTraitViewsTestCase(ViewsAutoLoginTestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 404)
     
+    def test_source_trait_absolute_url(self):
+        """Tests the get_absolute_url() method of the SourceTrait object returns a 200 as a response."""
+        trait = SourceTraitFactory.create()
+        response = self.client.get(trait.get_absolute_url())
+        self.assertEqual(response.status_code, 200)
+
 
 class StudySourceTableViewsTestCase(ViewsAutoLoginTestCase):
     """Unit tests for the SourceTrait by Study views."""
@@ -274,6 +280,12 @@ class StudySourceTableViewsTestCase(ViewsAutoLoginTestCase):
         # Does the source trait table object have correct number of rows?
         self.assertEqual(len(response.context['trait_table'].rows), n_traits)
         
+    def test_study_source_trait_table_absolute_url(self):
+        """Tests the get_absolute_url() method of the Study object returns a 200 as a response."""
+        trait = StudyFactory.create()
+        response = self.client.get(trait.get_absolute_url())
+        self.assertEqual(response.status_code, 200)
+
 
 class SourceTraitSearchViewTestCase(ViewsAutoLoginTestCase):
 
@@ -399,6 +411,12 @@ class HarmonizedTraitViewsTestCase(ViewsAutoLoginTestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 404)
     
+    def test_harmonized_trait_absolute_url(self):
+        """Tests the get_absolute_url() method of the SourceTrait object returns a 200 as a response."""
+        trait = HarmonizedTraitFactory.create()
+        response = self.client.get(trait.get_absolute_url())
+        self.assertEqual(response.status_code, 200)
+
 
 class HarmonizedTraitSearchViewTestCase(ViewsAutoLoginTestCase):
 
