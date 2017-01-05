@@ -248,9 +248,8 @@ class HarmonizationRecipeFormTestCase(TestCase):
                  'type': HarmonizationRecipe.UNIT_RECODE,
                  'measurement_unit': 'kilograms',
                  }
-        form = HarmonizationRecipeForm(input)
         # Usually form.user is added by a mixin on the View, but have to add it manually here.
-        form.user = user
+        form = HarmonizationRecipeForm(input, user=user)
         self.assertTrue(form.is_valid())
     
     def test_form_with_valid_input_type_category_recode(self):
@@ -265,9 +264,8 @@ class HarmonizationRecipeFormTestCase(TestCase):
                  'type': HarmonizationRecipe.CATEGORY_RECODE,
                  'measurement_unit': 'kilograms',
                  }
-        form = HarmonizationRecipeForm(input)
         # Usually form.user is added by a mixin on the View, but have to add it manually here.
-        form.user = user
+        form = HarmonizationRecipeForm(input, user=user)
         self.assertTrue(form.is_valid())
     
     def test_form_with_valid_input_type_formula(self):
@@ -282,9 +280,8 @@ class HarmonizationRecipeFormTestCase(TestCase):
                  'type': HarmonizationRecipe.FORMULA,
                  'measurement_unit': 'kilograms',
                  }
-        form = HarmonizationRecipeForm(input)
         # Usually form.user is added by a mixin on the View, but have to add it manually here.
-        form.user = user
+        form = HarmonizationRecipeForm(input, user=user)
         self.assertTrue(form.is_valid())
 
     def test_form_with_valid_input_type_other(self):
@@ -299,9 +296,8 @@ class HarmonizationRecipeFormTestCase(TestCase):
                  'type': HarmonizationRecipe.OTHER,
                  'measurement_unit': 'kilograms',
                  }
-        form = HarmonizationRecipeForm(input)
         # Usually form.user is added by a mixin on the View, but have to add it manually here.
-        form.user = user
+        form = HarmonizationRecipeForm(input, user=user)
         self.assertTrue(form.is_valid())
     
     def test_form_with_no_input(self):
@@ -320,9 +316,8 @@ class HarmonizationRecipeFormTestCase(TestCase):
                  'type': HarmonizationRecipe.OTHER,
                  'measurement_unit': 'kilograms',
                  }
-        form = HarmonizationRecipeForm(input)
         # Usually form.user is added by a mixin on the View, but have to add it manually here.
-        form.user = user
+        form = HarmonizationRecipeForm(input, user=user)
         self.assertTrue(form.is_valid())
     
     def test_form_with_missing_name_is_invalid(self):
@@ -337,9 +332,8 @@ class HarmonizationRecipeFormTestCase(TestCase):
                  'type': HarmonizationRecipe.OTHER,
                  'measurement_unit': 'kilograms',
                  }
-        form = HarmonizationRecipeForm(input)
         # Usually form.user is added by a mixin on the View, but have to add it manually here.
-        form.user = user
+        form = HarmonizationRecipeForm(input, user=user)
         self.assertTrue(form.has_error('name'))
         self.assertFalse(form.is_valid())
     
@@ -353,9 +347,8 @@ class HarmonizationRecipeFormTestCase(TestCase):
                  'type': HarmonizationRecipe.OTHER,
                  'measurement_unit': 'kilograms',
                  }
-        form = HarmonizationRecipeForm(input)
         # Usually form.user is added by a mixin on the View, but have to add it manually here.
-        form.user = user
+        form = HarmonizationRecipeForm(input, user=user)
         self.assertTrue(form.has_error('units'))
         self.assertFalse(form.is_valid())
     
@@ -369,9 +362,8 @@ class HarmonizationRecipeFormTestCase(TestCase):
                  'type': HarmonizationRecipe.OTHER,
                  'measurement_unit': 'kilograms',
                  }
-        form = HarmonizationRecipeForm(input)
         # Usually form.user is added by a mixin on the View, but have to add it manually here.
-        form.user = user
+        form = HarmonizationRecipeForm(input, user=user)
         self.assertTrue(form.has_error('target_name'))
         self.assertFalse(form.is_valid())
     
@@ -385,9 +377,8 @@ class HarmonizationRecipeFormTestCase(TestCase):
                  'type': HarmonizationRecipe.OTHER,
                  'measurement_unit': 'kilograms',
                  }
-        form = HarmonizationRecipeForm(input)
         # Usually form.user is added by a mixin on the View, but have to add it manually here.
-        form.user = user
+        form = HarmonizationRecipeForm(input, user=user)
         self.assertTrue(form.has_error('target_description'))
         self.assertFalse(form.is_valid())
 
@@ -401,9 +392,8 @@ class HarmonizationRecipeFormTestCase(TestCase):
                  'target_description': 'This is a test variable.',
                  'measurement_unit': 'kilograms',
                  }
-        form = HarmonizationRecipeForm(input)
         # Usually form.user is added by a mixin on the View, but have to add it manually here.
-        form.user = user
+        form = HarmonizationRecipeForm(input, user=user)
         self.assertTrue(form.has_error('type'))
         self.assertFalse(form.is_valid())
     
@@ -417,9 +407,8 @@ class HarmonizationRecipeFormTestCase(TestCase):
                  'target_description': 'This is a test variable.',
                  'type': HarmonizationRecipe.OTHER,
                  }
-        form = HarmonizationRecipeForm(input)
         # Usually form.user is added by a mixin on the View, but have to add it manually here.
-        form.user = user
+        form = HarmonizationRecipeForm(input, user=user)
         self.assertTrue(form.has_error('measurement_unit'))
         self.assertFalse(form.is_valid())
 
@@ -436,9 +425,8 @@ class HarmonizationRecipeFormTestCase(TestCase):
                  'type': HarmonizationRecipe.OTHER,
                  'measurement_unit': 'kilograms',
                  }
-        form = HarmonizationRecipeForm(input)
         # Usually form.user is added by a mixin on the View, but have to add it manually here.
-        form.user = user
+        form = HarmonizationRecipeForm(input, user=user)
         self.assertTrue(form.has_error('name'))
         self.assertFalse(form.is_valid())
 
@@ -454,9 +442,8 @@ class HarmonizationRecipeFormTestCase(TestCase):
                  'type': HarmonizationRecipe.OTHER,
                  'measurement_unit': 'kilograms',
                  }
-        form = HarmonizationRecipeForm(input)
         # Usually form.user is added by a mixin on the View, but have to add it manually here.
-        form.user = user
+        form = HarmonizationRecipeForm(input, user=user)
         self.assertTrue(form.has_error('encoded_values'))
         self.assertFalse(form.is_valid())
 
@@ -472,9 +459,8 @@ class HarmonizationRecipeFormTestCase(TestCase):
                  'type': HarmonizationRecipe.OTHER,
                  'measurement_unit': 'kilograms',
                  }
-        form = HarmonizationRecipeForm(input)
         # Usually form.user is added by a mixin on the View, but have to add it manually here.
-        form.user = user
+        form = HarmonizationRecipeForm(input, user=user)
         self.assertTrue(form.is_valid())
 
     def test_form_with_bad_type_value_is_invalid(self):
@@ -489,9 +475,8 @@ class HarmonizationRecipeFormTestCase(TestCase):
                  'type': 'not_a_type',
                  'measurement_unit': 'kilograms',
                  }
-        form = HarmonizationRecipeForm(input)
         # Usually form.user is added by a mixin on the View, but have to add it manually here.
-        form.user = user
+        form = HarmonizationRecipeForm(input, user=user)
         self.assertTrue(form.has_error('type'))
         self.assertFalse(form.is_valid())
         
@@ -507,9 +492,8 @@ class HarmonizationRecipeFormTestCase(TestCase):
                  'type': HarmonizationRecipe.OTHER,
                  'measurement_unit': 'kilograms',
                  }
-        form = HarmonizationRecipeForm(input)
         # Usually form.user is added by a mixin on the View, but have to add it manually here.
-        form.user = user
+        form = HarmonizationRecipeForm(input, user=user)
         self.assertTrue(form.has_error('target_name'))
         self.assertFalse(form.is_valid())
 
@@ -525,8 +509,25 @@ class HarmonizationRecipeFormTestCase(TestCase):
                  'type': HarmonizationRecipe.OTHER,
                  'measurement_unit': 'kilograms',
                  }
-        form = HarmonizationRecipeForm(input)
         # Usually form.user is added by a mixin on the View, but have to add it manually here.
-        form.user = user
+        form = HarmonizationRecipeForm(input, user=user)
         self.assertTrue(form.has_error('target_name'))
         self.assertFalse(form.is_valid())
+
+    def test_form_with_units_from_other_user_is_invalid(self):
+        """Test that the HarmonizationRecipeForm is invalid if harmonization units from another user are selected."""
+        user = UserFactory.create()
+        user2 = UserFactory.create()
+        user_units = UnitRecipeFactory.create_batch(2, creator=user)
+        user2_units = UnitRecipeFactory.create_batch(2, creator=user2)
+        input = {'name': 'Harmonization of this specific trait here.',
+                 'target_name': 'test_variable_name',
+                 'target_description': 'This is a test variable.',
+                 'type': HarmonizationRecipe.OTHER,
+                 'measurement_unit': 'kilograms',
+                 'units': [str(u.pk) for u in user_units + user2_units],
+                 }
+        # Usually form.user is added by a mixin on the View, but have to add it manually here.
+        form = HarmonizationRecipeForm(input, user=user)
+        self.assertTrue(form.has_error('units'))
+        self.assertFalse(form.is_valid())        

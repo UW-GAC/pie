@@ -112,6 +112,11 @@ class HarmonizationRecipeForm(UserKwargModelFormMixin, forms.ModelForm):
             existing_names_for_user = [u.name for u in self.user.harmonization_recipes_created_by.all()]
             if name in existing_names_for_user:
                 self.add_error('name', forms.ValidationError(u'A harmonization unit named {} already exists for user {}.'.format(name, self.user.email)))
+        # Check that all of the units included belong to the logged in user.
+        units = cleaned_data.get('units', [])
+        unit_creators = [u.creator for u in units]
+        if len(set(unit_creators)) > 1:
+            self.add_error('units', forms.ValidationError(u'You can only select harmonization units that were created by you.'))
         return cleaned_data
 
     def get_model_name(self):
