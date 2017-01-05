@@ -7,8 +7,10 @@
 {% endblock %}
 
 {% block content %}
-    {% if trait_type == 'source' %}
-    <a href={% url 'trait_browser:source:search' %}>Search within {% if study_pk %} this study {% else %} all studies {% endif %}</a>
+    {% if trait_type == 'source' and study_pk %}
+    <a href={% url 'trait_browser:source:search-study' study_pk=study_pk %}>Search within this study</a>
+    {% elif trait_type == 'source' and not study_pk %}
+    <a href={% url 'trait_browser:source:search' %}>Search within all studies</a>
     {% endif %}
     <button data-toggle="collapse" data-target="#demo" type="button" class="btn btn-info">Help with tables</button>
         <div id="demo" class="collapse">
