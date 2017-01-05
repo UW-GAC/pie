@@ -4,18 +4,10 @@ from django.contrib.auth.models import User
 from django.test import TestCase, Client
 from django.core.urlresolvers import reverse
 
-
-class SuperuserAutoLoginTestCase(TestCase):
-
-    def setUp(self):
-        super(SuperuserAutoLoginTestCase, self).setUp()
-
-        self.client = Client()
-        self.user = User.objects.create_superuser('super', 'foo@bar.com', 'passwd')
-        self.client.login(username='super', password='passwd')
+from core.utils import ViewsSuperuserLoginTestCase
 
 
-class AdminTestCase(SuperuserAutoLoginTestCase):
+class AdminTestCase(ViewsSuperuserLoginTestCase):
     """Unit tests for Trait Browser admin interface."""
     
     def test_admin_exists(self):
