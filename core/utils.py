@@ -7,7 +7,7 @@ Two Scoops of Django 1.8.
 from django.contrib.auth import get_user_model
 from django.test import TestCase, Client
 
-from .factories import UserFactory, USER_FACTORY_PASSWORD
+from .factories import UserFactory, SuperUserFactory, USER_FACTORY_PASSWORD
 
 User = get_user_model()
 
@@ -25,4 +25,19 @@ class ViewsAutoLoginTestCase(TestCase):
         self.client = Client()
         self.user_password = USER_FACTORY_PASSWORD
         self.user = UserFactory.create()
+        self.client.login(username=self.user.email, password=self.user_password)
+
+
+class ViewsSuperuserLoginTestCase(TestCase):
+    """TestCase to use for accessing views that require Superuser login.
+    
+    Creates a superuser and logs them into the site.
+    """
+    
+    def setUp(self):
+        super(ViewsSuperuserLoginTestCase, self).setUp()
+
+        self.client = Client()
+        self.user_password = USER_FACTORY_PASSWORD
+        self.user = SuperUserFactory.create()
         self.client.login(username=self.user.email, password=self.user_password)
