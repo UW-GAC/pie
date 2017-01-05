@@ -87,6 +87,7 @@ class HarmonizationRecipeForm(UserKwargModelFormMixin, forms.ModelForm):
         super(HarmonizationRecipeForm, self).__init__(*args, **kwargs)
         self.helper = FormHelper(self)
         self.helper.layout.append(Submit('Save', 'Save'))
+        self.fields['units'].queryset = UnitRecipe.objects.filter(creator=self.user)
         
     class Meta:
         model = HarmonizationRecipe

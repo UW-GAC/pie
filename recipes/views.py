@@ -143,7 +143,7 @@ class UnitRecipeIDAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetV
     
     def get_queryset(self):
         """Return a queryset of UnitRecipes whose pk starts with the string from the GET request."""
-        retrieved = UnitRecipe.objects.all()
+        retrieved = UnitRecipe.objects.filter(creator=self.request.user)
         if self.q:
             retrieved = retrieved.filter(id__regex=r'^{}'.format(self.q))
         return retrieved
