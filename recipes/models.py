@@ -38,7 +38,7 @@ class UnitRecipe(TimeStampedModel):
     last_modifier = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='units_last_modified_by')
     instructions = models.TextField(verbose_name='harmonization instructions')
     version = models.IntegerField(default=1)
-    name = models.CharField(max_length=1000, verbose_name='harmonization unit name')
+    name = models.CharField(max_length=255, verbose_name='harmonization unit name')
 
     class Meta:
         verbose_name = 'harmonization unit recipe'
@@ -71,7 +71,7 @@ class HarmonizationRecipe(TimeStampedModel):
         (OTHER, 'other'),
     )
 
-    name = models.CharField(max_length=1000, verbose_name='harmonization recipe name')
+    name = models.CharField(max_length=255, verbose_name='harmonization recipe name')
     units = models.ManyToManyField(UnitRecipe, verbose_name='harmonization units')
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='harmonization_recipes_created_by')
     last_modifier = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='harmonization_recipes_last_modified_by')
