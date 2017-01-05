@@ -134,7 +134,7 @@ def search(text_query, trait_type, study_pks=[]):
 
 
 @login_required
-def trait_search(request, trait_type):
+def trait_search(request, trait_type, study_pk=None):
     """Trait search form view.
     
     Displays the SourceTraitCrispySearchForm or HarmonizedTraitCrispySearchForm
@@ -202,7 +202,7 @@ def trait_search(request, trait_type):
     # If there was no data entered, show the empty form.
     else:
         if trait_type == 'source':
-            form = SourceTraitCrispySearchForm()
+            form = SourceTraitCrispySearchForm(study_pk=study_pk)
         elif trait_type == 'harmonized':
             form = HarmonizedTraitCrispySearchForm()
 
