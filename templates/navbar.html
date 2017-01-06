@@ -80,6 +80,14 @@
               <li>
                 <a href="{% url 'password_change' %}"><span class="glyphicon glyphicon-pencil"></span> Change Password</a>
               </li>
+              <!-- Show link to admin interface for staff users. -->
+
+              {% if request.user.is_staff %}
+              <li>
+                <a href="{% url 'admin:index' %}"><span class="glyphicon glyphicon-dashboard"></span> PIE Administration</a>
+              </li>
+              {% endif %}
+
               <li>
                 <a href="{% url 'logout' %}"><span class="glyphicon glyphicon-log-out"></span> Logout</a>
               </li>
