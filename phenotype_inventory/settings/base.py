@@ -143,6 +143,7 @@ INSTALLED_APPS = (
     # django-autocomplete-light, which must be loaded BEFORE django.contrib.admin
     'dal',
     'dal_select2',
+    'django_admin_bootstrapped',
     # Built-in apps.
     'django.contrib.admin',
     'django.contrib.auth',

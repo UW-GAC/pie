@@ -1,15 +1,24 @@
 """Customization of the admin interface for the trait_browser app."""
 
 from django.contrib import admin
+from django.forms.models import ModelFormMetaclass
 
+from .forms import HarmonizationRecipeAdminForm, UnitRecipeAdminForm
 from .models import UnitRecipe, HarmonizationRecipe
 
 
 class UnitRecipeAdmin(admin.ModelAdmin):
     """Admin class for UnitRecipe objects."""
-    list_display = ('name', 'creator', 'version', 'get_age_variables', 'get_batch_variables', 'get_phenotype_variables', )
+    list_display = ('name', 'creator', 'version', 'get_age_variables', 'get_batch_variables', 'get_phenotype_variables', 'id', )
     list_filter = ('creator', 'last_modifier', )
     search_fields = ('name', )
+    form = UnitRecipeAdminForm
+    
+    def save_model(self, request, obj, form, change):
+        if obj.pk is None:
+            obj.creator = request.user
+        obj.last_modifier = request.user
+        obj.save()
 
     def get_age_variables(self, unit):
         """Get the names of the age variables linked to this harmonization unit.
@@ -50,9 +59,16 @@ class UnitRecipeAdmin(admin.ModelAdmin):
 
 class HarmonizationRecipeAdmin(admin.ModelAdmin):
     """Admin class for HarmonizationRecipe objects."""
-    list_display = ('name', 'creator', 'target_name', 'version', 'type', 'get_number_of_units', )
+    list_display = ('name', 'creator', 'target_name', 'version', 'type', 'get_number_of_units', 'id', )
     list_filter = ('creator', 'last_modifier', 'type', )
     search_fields = ('name', 'target_name', )
+    form = HarmonizationRecipeAdminForm
+    
+    def save_model(self, request, obj, form, change):
+        if obj.pk is None:
+            obj.creator = request.user
+        obj.last_modifier = request.user
+        obj.save()
     
     def get_number_of_units(self, recipe):
         """Get the number of harmonization units in a HarmonizationRecipe.

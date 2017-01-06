@@ -35,4 +35,4 @@ urlpatterns = [
 ]
 
 # Set the name for the admin site.
-admin.site.site_header = 'NHLBI TOPMed Phenotype Inventory Administration'
+admin.site.site_header = 'TOPMed PIE Administration'
