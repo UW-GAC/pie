@@ -206,7 +206,7 @@ class AdminTestCase(SeleniumTestCase):
         password = self.selenium.find_element_by_id('id_password')
         username.send_keys(self.superuser.email)
         password.send_keys(self.superuser_password)
-        self.selenium.find_element_by_class_name('submit-row').click()       
+        self.selenium.find_element_by_class_name('btn-primary').click()       
         time.sleep(1)
         # Navigate to each of the admin model interfaces in turn.
         self.selenium.find_element_by_link_text('GlobalStudies').click()
