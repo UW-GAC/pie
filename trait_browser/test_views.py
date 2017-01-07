@@ -1,7 +1,7 @@
 """Test the functions and classes for views.py"""
 
 from django.test import TestCase, Client
-from django.core.urlresolvers import reverse
+from django.core.urlresolvers import reverse, RegexURLResolver, RegexURLPattern
 
 from core.utils import ViewsAutoLoginTestCase
 
@@ -9,6 +9,8 @@ from .models import GlobalStudy, HarmonizedTrait, HarmonizedTraitEncodedValue, H
 from .factories import GlobalStudyFactory, HarmonizedTraitFactory, HarmonizedTraitEncodedValueFactory, HarmonizedTraitSetFactory, SourceDatasetFactory, SourceStudyVersionFactory, SourceTraitFactory, SourceTraitEncodedValueFactory, StudyFactory, SubcohortFactory 
 from .tables import SourceTraitTable, HarmonizedTraitTable, StudyTable
 from .views import TABLE_PER_PAGE, search
+
+from rstr import xeger
 
 # NB: The database is reset for each test method within a class!
 # NB: for test methods with multiple assertions, the first failed assert statement
@@ -434,3 +436,30 @@ class HarmonizedTraitSearchViewTestCase(ViewsAutoLoginTestCase):
         self.assertFalse(response.context['results'])    # results is False.
         self.assertNotIn('trait_table', response.context)    # trait_table is found.
         self.assertTrue(response.context['form'].is_bound)    # Form is bound to data
+
+
+class TraitBrowserLoginRequiredTest(TestCase):
+    """Tests all views in this app that they are using login_required"""
+    def collect_all_urls(self):
+        app = __import__('trait_browser.urls')
+        urlList = []
+        for rootpattern in app.urls.urlpatterns:
+            # first pattern is iterable, hence 1 element list
+            self.find_all_urls([rootpattern], [], urlList)
+        return urlList
+
+    def find_all_urls(self, rootpatterns, parents, urlList):
+        for pattern in rootpatterns:
+            if isinstance(pattern, RegexURLResolver):
+                parents.append(xeger(pattern.regex))
+                self.find_all_urls(pattern.url_patterns, parents, urlList) # call this function recursively
+            elif isinstance(pattern, RegexURLPattern):
+                urlList.append(''.join(parents) + xeger(pattern.regex))
+
+    def test_all_urls(self):
+        urlList = self.collect_all_urls()
+        for url in urlList:
+            fullurl = '/phenotypes/' + url
+            print(fullurl, url)
+            response = self.client.get(fullurl)
+            self.assertRedirects(response, reverse('login') + '?next=' + fullurl)
