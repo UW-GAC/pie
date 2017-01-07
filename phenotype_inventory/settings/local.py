@@ -48,10 +48,13 @@ CNF_PATH = os.path.join(os.path.expanduser('~'), '.mysql-topmed.cnf')
 # Requires DJANGO_SECRET_KEY environmental variable to be set
 SECRET_KEY = get_env_variable('DJANGO_SECRET_KEY')
 
-if DEBUG:
-    EMAIL_HOST = 'localhost'
-    EMAIL_PORT = 1025
-    EMAIL_HOST_USER = ''
-    EMAIL_HOST_PASSWORD = ''
-    EMAIL_USE_TLS = False
-    DEFAULT_FROM_EMAIL = 'testing@example.com'
+
+# EMAIL SETTINGS
+# To view sent emails in a shell, run this command:
+# python -m smtpd -n -c DebuggingServer localhost:1025
+EMAIL_HOST = 'localhost'
+EMAIL_PORT = 1025
+EMAIL_HOST_USER = ''
+EMAIL_HOST_PASSWORD = ''
+EMAIL_USE_TLS = False
+DEFAULT_FROM_EMAIL = 'development_testing@django.site'
