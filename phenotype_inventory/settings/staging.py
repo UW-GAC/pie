@@ -104,7 +104,7 @@ WSGI_APPLICATION = '%s.wsgi.application' % SITE_NAME
 
 
 # EMAIL SETTINGS
-EMAIL_USE_TLS = True
+EMAIL_USE_SSL = True
 EMAIL_HOST = get_secret('EMAIL_HOST')
 EMAIL_PORT =   get_secret('EMAIL_PORT')
 EMAIL_HOST_USER = get_secret('EMAIL_HOST_USER')
