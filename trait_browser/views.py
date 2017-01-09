@@ -82,7 +82,7 @@ def source_study_detail(request, pk):
     # RequestConfig seems to be necessary for sorting to work.
     RequestConfig(request, paginate={'per_page': TABLE_PER_PAGE}).configure(trait_table)
     return render( request, 'trait_browser/trait_table.html',
-        {'trait_table': trait_table, 'table_title': table_title, 'page_title': page_title, 'trait_type': 'source', 'search_url': this_study.get_search_url(), 'study_pk': pk}
+        {'trait_table': trait_table, 'table_title': table_title, 'page_title': page_title, 'trait_type': 'source', 'search_url': this_study.get_search_url()}
     )
 
 
