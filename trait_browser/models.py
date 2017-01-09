@@ -7,6 +7,7 @@
 # names in the backend db would have "_id" appended to them.
 
 from django.db import models
+from django.core.urlresolvers import reverse
 
 
 class TimeStampedModel(models.Model):
@@ -100,6 +101,9 @@ class Study(TimeStampedModel):
         latest version.
         """
         return self.STUDY_URL.format(self.phs)
+
+    def get_search_url(self):
+        return reverse('trait_browser:source:search') + '?study={}'.format(self.i_accession)
 
 
 class SourceStudyVersion(TimeStampedModel):
