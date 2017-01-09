@@ -62,7 +62,7 @@ def trait_table(request, trait_type):
     # RequestConfig seems to be necessary for sorting to work.
     RequestConfig(request, paginate={'per_page': TABLE_PER_PAGE}).configure(trait_table)
     return render(request, 'trait_browser/trait_table.html',
-        {'trait_table': trait_table, 'table_title': table_title, 'page_title': page_title}
+        {'trait_table': trait_table, 'table_title': table_title, 'page_title': page_title, 'trait_type': trait_type}
     )
 
 
@@ -82,7 +82,7 @@ def source_study_detail(request, pk):
     # RequestConfig seems to be necessary for sorting to work.
     RequestConfig(request, paginate={'per_page': TABLE_PER_PAGE}).configure(trait_table)
     return render( request, 'trait_browser/trait_table.html',
-        {'trait_table': trait_table, 'table_title': table_title, 'page_title': page_title}
+        {'trait_table': trait_table, 'table_title': table_title, 'page_title': page_title, 'trait_type': 'source', 'search_url': this_study.get_search_url(), 'study_pk': pk}
     )
 
 
@@ -202,7 +202,10 @@ def trait_search(request, trait_type):
     # If there was no data entered, show the empty form.
     else:
         if trait_type == 'source':
-            form = SourceTraitCrispySearchForm()
+            if request.GET.get('study', None) is not None:
+                form = SourceTraitCrispySearchForm(initial=request.GET)
+            else:
+                form = SourceTraitCrispySearchForm()
         elif trait_type == 'harmonized':
             form = HarmonizedTraitCrispySearchForm()
 
