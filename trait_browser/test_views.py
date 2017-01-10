@@ -181,6 +181,12 @@ class SourceTraitViewsTestCase(ViewsAutoLoginTestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 404)
     
+    def test_source_trait_no_search_url(self):
+        # search_url should not be in this view
+        with self.assertRaises(KeyError):
+            url = reverse('trait_browser:source:all')
+            response = self.client.get(url)
+            response.context['search_url']
 
 class StudySourceTableViewsTestCase(ViewsAutoLoginTestCase):
     """Unit tests for the SourceTrait by Study views."""
@@ -283,7 +289,16 @@ class StudySourceTableViewsTestCase(ViewsAutoLoginTestCase):
         self.assertIsInstance(response.context['trait_table'], SourceTraitTable)
         # Does the source trait table object have correct number of rows?
         self.assertEqual(len(response.context['trait_table'].rows), n_traits)
-        
+
+    def test_study_source_get_search_url_response(self):
+        this_study = StudyFactory.create()
+        url = this_study.get_search_url()
+        response = self.client.get(url)
+        # url should work
+        self.assertEqual(response.status_code, 200)
+        # url should be using correct i_accession value as checked box
+        self.assertEqual(response.context['form'].initial['study'], str(this_study.i_accession))
+
 
 class SourceTraitSearchViewTestCase(ViewsAutoLoginTestCase):
 
@@ -354,6 +369,10 @@ class SourceTraitSearchViewTestCase(ViewsAutoLoginTestCase):
         self.assertNotIn('trait_table', response.context)    # The trait_table object exists.
         self.assertFalse(response.context['form'].is_bound)    # Form is not bound to data.
 
+    def test_source_trait_search_has_no_initial_checkboxes(self):
+        url = reverse('trait_browser:source:search')
+        response = self.client.get(url)
+        self.assertEqual(len(response.context['form'].initial), 0)
 
 class HarmonizedTraitViewsTestCase(ViewsAutoLoginTestCase):
     """Unit tests for the HarmonizedTrait views."""
@@ -408,7 +427,14 @@ class HarmonizedTraitViewsTestCase(ViewsAutoLoginTestCase):
         url = reverse('trait_browser:harmonized:detail', args=[10])
         response = self.client.get(url)
         self.assertEqual(response.status_code, 404)
-    
+
+    def test_harmonized_trait_no_search_url(self):
+        # search_url should not be in this view
+        with self.assertRaises(KeyError):
+            url = reverse('trait_browser:harmonized:all')
+            response = self.client.get(url)
+            response.context['search_url']
+
 
 class HarmonizedTraitSearchViewTestCase(ViewsAutoLoginTestCase):
 
