@@ -22,6 +22,7 @@ Custom Constants:
 """
 
 import os
+from socket import gethostname
 
 # Normally you should not import ANYTHING from Django directly
 # into your settings, but ImproperlyConfigured is an exception
@@ -174,7 +175,7 @@ LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'home'
 
 
-# APP-SPECIFIC SETTINGS
+# THIRD PARTY APP SETTINGS
 # django.contrib.sites SETTINGS variables.
 SITE_ID = 1
 # crispy_forms SETTINGS variables.
@@ -183,3 +184,8 @@ CRISPY_TEMPLATE_PACK = 'bootstrap3'
 
 # USER AUTHENTICATION SETTINGS
 AUTH_USER_MODEL = 'authtools.User'
+
+
+# PROJECT SETTINGS
+GAC_WEBSERVERS = ['modu', 'gcc-pc-004', ]
+DEVELOPMENT = not (gethostname() in GAC_WEBSERVERS)
