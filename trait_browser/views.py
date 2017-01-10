@@ -134,7 +134,7 @@ def search(text_query, trait_type, study_pks=[]):
 
 
 @login_required
-def trait_search(request, trait_type):
+def trait_search(request, trait_type, study_pk=None):
     """Trait search form view.
     
     Displays the SourceTraitCrispySearchForm or HarmonizedTraitCrispySearchForm
