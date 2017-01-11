@@ -19,13 +19,12 @@ class SourceTraitCrispySearchForm(forms.Form):
     
     # Override the init method, to allow dynamic setting of the choices for the
     # study field, which enables proper testing.
-    def __init__(self, study_pk=None, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         super(SourceTraitCrispySearchForm, self).__init__(*args, **kwargs)
         self.STUDIES = [[x.pk, x.i_study_name] for x in Study.objects.all().order_by('i_study_name')]
         self.fields['study'] = forms.MultipleChoiceField(choices=self.STUDIES,
             widget=forms.CheckboxSelectMultiple(), required=False,
-            help_text='If no studies are selected, source phenotypes from all studies will be searched.',
-            initial=study_pk)
+            help_text='If no studies are selected, source phenotypes from all studies will be searched.')
     
     text = forms.CharField(label='search text', max_length=100,
         help_text='Both phenotype names and descriptions will be searched.')
