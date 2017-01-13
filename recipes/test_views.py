@@ -3,9 +3,11 @@
 from django.test import TestCase, Client
 from django.core.urlresolvers import reverse
 
-from core.utils import ViewsAutoLoginTestCase
+from core.utils import ViewsAutoLoginTestCase, LoginRequiredTestCase
 from core.factories import UserFactory, USER_FACTORY_PASSWORD
+from recipes.urls import urlpatterns
 from trait_browser.factories import SourceTraitFactory
+
 from .factories import HarmonizationRecipeFactory, UnitRecipeFactory
 from .models import HarmonizationRecipe, UnitRecipe
 from .views import CreateHarmonizationRecipe, UpdateHarmonizationRecipe, HarmonizationRecipeDetail
@@ -207,57 +209,9 @@ class HarmonizationRecipeViewsTestCase(ViewsAutoLoginTestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 404)
 
-login_url = reverse('login')
-class LoginRequiredTestCase(TestCase):
-    """TestCase for checking that each view requires the user to be logged in."""
+
+class RecipesLoginRequiredTestCase(LoginRequiredTestCase):
     
-    def setUp(self):
-        super(LoginRequiredTestCase, self).setUp()
-        self.client = Client()
-    
-    def test_create_unit_recipe_login_required(self):
-        """Test that CreateUnitRecipe view requires login."""
-        url = reverse('recipes:unit:create')
-        response = self.client.get(url)
-        expected_url = "{}?next={}".format(login_url, url)
-        self.assertRedirects(response, expected_url)
-        
-    def test_update_unit_recipe_login_required(self):
-        """Test that UpdateUnitRecipe view requires login."""
-        unit = UnitRecipeFactory.create()
-        url = reverse('recipes:unit:edit', kwargs={'pk': unit.pk})
-        response = self.client.get(url)
-        expected_url = "{}?next={}".format(login_url, url)
-        self.assertRedirects(response, expected_url)
-        
-    def test_unit_recipe_detail_login_required(self):
-        """Test that UnitRecipeDetail view requires login."""
-        unit = UnitRecipeFactory.create()
-        url = reverse('recipes:unit:detail', kwargs={'pk': unit.pk})
-        response = self.client.get(url)
-        expected_url = "{}?next={}".format(login_url, url)
-        self.assertRedirects(response, expected_url)
-        
-    def test_create_harmonization_recipe_login_required(self):
-        """Test that CreateHarmonizationRecipe view requires login."""
-        url = reverse('recipes:harmonization:create')
-        response = self.client.get(url)
-        expected_url = "{}?next={}".format(login_url, url)
-        self.assertRedirects(response, expected_url)
-        
-    def test_update_harmonization_recipe_login_required(self):
-        """Test that UpdateHarmonizationRecipe view requires login."""
-        harmonization = HarmonizationRecipeFactory.create()
-        url = reverse('recipes:harmonization:edit', kwargs={'pk': harmonization.pk})
-        response = self.client.get(url)
-        expected_url = "{}?next={}".format(login_url, url)
-        self.assertRedirects(response, expected_url)
-        
-    def test_harmonization_recipe_detail_login_required(self):
-        """Test that HarmonizationRecipeDetail view requires login."""
-        harmonization = HarmonizationRecipeFactory.create()
-        url = reverse('recipes:harmonization:detail', kwargs={'pk': harmonization.pk})
-        response = self.client.get(url)
-        expected_url = "{}?next={}".format(login_url, url)
-        self.assertRedirects(response, expected_url)
-                
+    def test_recipes_login_required(self):
+        """All recipes urls redirect to login page if no user is logged in."""
+        self.assert_redirect_all_urls(urlpatterns, 'recipe')

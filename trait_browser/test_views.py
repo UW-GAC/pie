@@ -1,13 +1,13 @@
 """Test the functions and classes for views.py"""
 
 from django.test import TestCase, Client
-from django.core.urlresolvers import reverse
+from django.core.urlresolvers import reverse, RegexURLResolver, RegexURLPattern
 
-from core.utils import ViewsAutoLoginTestCase
-
+from core.utils import ViewsAutoLoginTestCase, LoginRequiredTestCase
 from .models import GlobalStudy, HarmonizedTrait, HarmonizedTraitEncodedValue, HarmonizedTraitSet, SourceDataset, SourceStudyVersion, SourceTrait, SourceTraitEncodedValue, Study, Subcohort
 from .factories import GlobalStudyFactory, HarmonizedTraitFactory, HarmonizedTraitEncodedValueFactory, HarmonizedTraitSetFactory, SourceDatasetFactory, SourceStudyVersionFactory, SourceTraitFactory, SourceTraitEncodedValueFactory, StudyFactory, SubcohortFactory 
 from .tables import SourceTraitTable, HarmonizedTraitTable, StudyTable
+from .urls import urlpatterns
 from .views import TABLE_PER_PAGE, search
 
 # NB: The database is reset for each test method within a class!
@@ -452,3 +452,10 @@ class HarmonizedTraitSearchViewTestCase(ViewsAutoLoginTestCase):
         self.assertFalse(response.context['results'])    # results is False.
         self.assertNotIn('trait_table', response.context)    # trait_table is found.
         self.assertTrue(response.context['form'].is_bound)    # Form is bound to data
+
+
+class TraitBrowserLoginRequiredTestCase(LoginRequiredTestCase):
+    
+    def test_trait_browser_login_required(self):
+        """All trait_browser urls redirect to login page if no user is logged in."""
+        self.assert_redirect_all_urls(urlpatterns, 'phenotypes')
