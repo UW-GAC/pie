@@ -1,7 +1,8 @@
+import exrex
+
 from django.test import TestCase
 from django.core.urlresolvers import reverse, RegexURLResolver, RegexURLPattern
 
-import exrex
 
 class RecipesLoginRequiredTest(TestCase):
     """Tests all views in this app that they are using login_required"""
@@ -30,6 +31,6 @@ class RecipesLoginRequiredTest(TestCase):
         urlList = self.collect_all_urls()
         for url in urlList:
             fullurl = '/recipe/' + url
-            # print(fullurl)
+            print(fullurl)
             response = self.client.get(fullurl)
             self.assertRedirects(response, reverse('login') + '?next=' + fullurl)

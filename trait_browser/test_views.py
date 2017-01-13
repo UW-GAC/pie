@@ -1,16 +1,15 @@
 """Test the functions and classes for views.py"""
 
+import exrex
+
 from django.test import TestCase, Client
 from django.core.urlresolvers import reverse, RegexURLResolver, RegexURLPattern
 
 from core.utils import ViewsAutoLoginTestCase
-
 from .models import GlobalStudy, HarmonizedTrait, HarmonizedTraitEncodedValue, HarmonizedTraitSet, SourceDataset, SourceStudyVersion, SourceTrait, SourceTraitEncodedValue, Study, Subcohort
 from .factories import GlobalStudyFactory, HarmonizedTraitFactory, HarmonizedTraitEncodedValueFactory, HarmonizedTraitSetFactory, SourceDatasetFactory, SourceStudyVersionFactory, SourceTraitFactory, SourceTraitEncodedValueFactory, StudyFactory, SubcohortFactory 
 from .tables import SourceTraitTable, HarmonizedTraitTable, StudyTable
 from .views import TABLE_PER_PAGE, search
-
-import exrex
 
 # NB: The database is reset for each test method within a class!
 # NB: for test methods with multiple assertions, the first failed assert statement
