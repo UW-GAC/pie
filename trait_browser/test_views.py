@@ -183,9 +183,9 @@ class SourceTraitViewsTestCase(ViewsAutoLoginTestCase):
     
     def test_source_trait_no_search_url(self):
         # search_url should not be in this view
+        url = reverse('trait_browser:source:all')
+        response = self.client.get(url)
         with self.assertRaises(KeyError):
-            url = reverse('trait_browser:source:all')
-            response = self.client.get(url)
             response.context['search_url']
 
 
@@ -432,9 +432,9 @@ class HarmonizedTraitViewsTestCase(ViewsAutoLoginTestCase):
 
     def test_harmonized_trait_no_search_url(self):
         # search_url should not be in this view
+        url = reverse('trait_browser:harmonized:all')
+        response = self.client.get(url)
         with self.assertRaises(KeyError):
-            url = reverse('trait_browser:harmonized:all')
-            response = self.client.get(url)
             response.context['search_url']
 
 
