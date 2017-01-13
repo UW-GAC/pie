@@ -3,14 +3,15 @@ import exrex
 from django.test import TestCase
 from django.core.urlresolvers import reverse, RegexURLResolver, RegexURLPattern
 
+from recipes.urls import urlpatterns
+
 
 class RecipesLoginRequiredTest(TestCase):
     """Tests all views in this app that they are using login_required"""
     def collect_all_urls(self):
         """Returns sample urls for views in app"""
-        app = __import__('recipes.urls')
         urlList = []
-        for rootpattern in app.urls.urlpatterns:
+        for rootpattern in urlpatterns:
             # first pattern is iterable, hence 1 element list
             self.find_all_urls([rootpattern], [], urlList)
         return urlList

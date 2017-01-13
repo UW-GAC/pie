@@ -9,6 +9,7 @@ from core.utils import ViewsAutoLoginTestCase
 from .models import GlobalStudy, HarmonizedTrait, HarmonizedTraitEncodedValue, HarmonizedTraitSet, SourceDataset, SourceStudyVersion, SourceTrait, SourceTraitEncodedValue, Study, Subcohort
 from .factories import GlobalStudyFactory, HarmonizedTraitFactory, HarmonizedTraitEncodedValueFactory, HarmonizedTraitSetFactory, SourceDatasetFactory, SourceStudyVersionFactory, SourceTraitFactory, SourceTraitEncodedValueFactory, StudyFactory, SubcohortFactory 
 from .tables import SourceTraitTable, HarmonizedTraitTable, StudyTable
+from .urls import urlpatterns
 from .views import TABLE_PER_PAGE, search
 
 # NB: The database is reset for each test method within a class!
@@ -441,9 +442,8 @@ class TraitBrowserLoginRequiredTest(TestCase):
     """Tests all views in this app that they are using login_required"""
     def collect_all_urls(self):
         """Returns sample urls for views in app"""
-        app = __import__('trait_browser.urls')
         urlList = []
-        for rootpattern in app.urls.urlpatterns:
+        for rootpattern in urlpatterns:
             # first pattern is iterable, hence 1 element list
             self.find_all_urls([rootpattern], [], urlList)
         return urlList
