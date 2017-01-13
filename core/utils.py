@@ -12,22 +12,22 @@ User = get_user_model()
 
 def collect_all_urls(urlpatterns):
     """Returns sample urls for views in app"""
-    urlList = []
-    for rootpattern in urlpatterns:
+    url_list = []
+    for root_pattern in urlpatterns:
         # first pattern is iterable, hence 1 element list
-        find_all_urls([rootpattern], [], urlList)
-    return urlList
+        find_all_urls([root_pattern], [], url_list)
+    return url_list
 
-def find_all_urls(rootpatterns, parents, urlList):
+def find_all_urls(root_patterns, parents, url_list):
     """Produce a url based on a pattern"""
-    for url in rootpatterns:
+    for url in root_patterns:
         regex_string = url.regex.pattern
         if isinstance(url, RegexURLResolver):
             # print('Parent: ',regex_string)
             parents.append(next(exrex.generate(regex_string, limit=1)))
-            find_all_urls(url.url_patterns, parents, urlList) # call this function recursively
+            find_all_urls(url.url_patterns, parents, url_list) # call this function recursively
         elif isinstance(url, RegexURLPattern):
-            urlList.append(''.join(parents) + next(exrex.generate(regex_string, limit=1)))
+            url_list.append(''.join(parents) + next(exrex.generate(regex_string, limit=1)))
 
 
 class ViewsAutoLoginTestCase(TestCase):
@@ -47,10 +47,10 @@ class LoginRequiredTestCase(TestCase):
 
     def assert_redirect_all_urls(self, urlpatterns, pattern_root):
         """Use this in a subclass to ensure all urls from urlpatterns redirect to login."""
-        urlList = collect_all_urls(urlpatterns)
-        for url in urlList:
-            fullurl = '/' + pattern_root + '/' + url
-            print('URL: ', fullurl)
-            response = self.client.get(fullurl)
+        url_list = collect_all_urls(urlpatterns)
+        for url in url_list:
+            full_url = '/' + pattern_root + '/' + url
+            print('URL: ', full_url)
+            response = self.client.get(full_url)
             # print (response)
-            self.assertRedirects(response, reverse('login') + '?next=' + fullurl)
+            self.assertRedirects(response, reverse('login') + '?next=' + full_url)
