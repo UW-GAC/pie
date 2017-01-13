@@ -15,10 +15,8 @@ Including another URLconf
 '''
 
 from django.conf.urls import include, url
-from django.views.generic import TemplateView # for static pages
 from django.contrib import admin
-
-import trait_browser.views
+from django.views.generic import TemplateView # for static pages
 
 
 urlpatterns = [
@@ -34,5 +32,3 @@ urlpatterns = [
     url(r'^auth/', include('authtools.urls')),
 ]
 
-# Set the name for the admin site.
-admin.site.site_header = 'TOPMed PIE Administration'

@@ -66,7 +66,7 @@ class UserAdmin(NamedUserAdmin):
     )
 
     def save_model(self, request, obj, form, change):
-        if not change and not obj.has_usable_password():
+        if not change and (not form.cleaned_data['password1'] or not obj.has_usable_password()):
             # Django's PasswordResetForm won't let us reset an unusable
             # password. We set it above super() so we don't have to save twice.
             obj.set_password(get_random_string())
@@ -80,10 +80,11 @@ class UserAdmin(NamedUserAdmin):
             reset_form = PasswordResetForm({'email': obj.email})
             assert reset_form.is_valid()
             reset_form.save(
-                subject_template_name='registration/account_creation_subject.txt',
+                request=request,
+                use_https=request.is_secure(),
+                subject_template_name='registration/account_creation_email_subject.txt',
                 email_template_name='registration/account_creation_email.html',
             )
-
 
 admin.site.unregister(User)
 admin.site.register(User, UserAdmin)
