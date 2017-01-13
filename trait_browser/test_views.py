@@ -188,6 +188,7 @@ class SourceTraitViewsTestCase(ViewsAutoLoginTestCase):
             response = self.client.get(url)
             response.context['search_url']
 
+
 class StudySourceTableViewsTestCase(ViewsAutoLoginTestCase):
     """Unit tests for the SourceTrait by Study views."""
     
@@ -373,6 +374,7 @@ class SourceTraitSearchViewTestCase(ViewsAutoLoginTestCase):
         url = reverse('trait_browser:source:search')
         response = self.client.get(url)
         self.assertEqual(len(response.context['form'].initial), 0)
+
 
 class HarmonizedTraitViewsTestCase(ViewsAutoLoginTestCase):
     """Unit tests for the HarmonizedTrait views."""
