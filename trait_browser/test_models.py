@@ -54,6 +54,7 @@ class StudyTestCase(TestCase):
         self.assertEqual(study.dbgap_latest_version_link[:68], Study.STUDY_URL[:68])
 
     def test_get_search_url_creation(self):
+        """Tests that the get_search_url method returns an appropriately constructed url"""
         study = StudyFactory.create()
         url = ''.join([reverse('trait_browser:source:search'), '\?study=\d+'])
         self.assertRegex(study.get_search_url(),  url)
