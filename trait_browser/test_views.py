@@ -1,11 +1,9 @@
 """Test the functions and classes for views.py"""
 
-import exrex
-
 from django.test import TestCase, Client
 from django.core.urlresolvers import reverse, RegexURLResolver, RegexURLPattern
 
-from core.utils import ViewsAutoLoginTestCase
+from core.utils import ViewsAutoLoginTestCase, LoginRequiredTestCase
 from .models import GlobalStudy, HarmonizedTrait, HarmonizedTraitEncodedValue, HarmonizedTraitSet, SourceDataset, SourceStudyVersion, SourceTrait, SourceTraitEncodedValue, Study, Subcohort
 from .factories import GlobalStudyFactory, HarmonizedTraitFactory, HarmonizedTraitEncodedValueFactory, HarmonizedTraitSetFactory, SourceDatasetFactory, SourceStudyVersionFactory, SourceTraitFactory, SourceTraitEncodedValueFactory, StudyFactory, SubcohortFactory 
 from .tables import SourceTraitTable, HarmonizedTraitTable, StudyTable
@@ -438,33 +436,8 @@ class HarmonizedTraitSearchViewTestCase(ViewsAutoLoginTestCase):
         self.assertTrue(response.context['form'].is_bound)    # Form is bound to data
 
 
-class TraitBrowserLoginRequiredTest(TestCase):
-    """Tests all views in this app that they are using login_required"""
-    def collect_all_urls(self):
-        """Returns sample urls for views in app"""
-        urlList = []
-        for rootpattern in urlpatterns:
-            # first pattern is iterable, hence 1 element list
-            self.find_all_urls([rootpattern], [], urlList)
-        return urlList
-
-    def find_all_urls(self, rootpatterns, parents, urlList):
-        """Produce a url based on a pattern"""
-        for url in rootpatterns:
-            regex_string = url.regex.pattern
-            if isinstance(url, RegexURLResolver):
-                # print('Parent: ',regex_string)
-                parents.append(next(exrex.generate(regex_string, limit=1)))
-                self.find_all_urls(url.url_patterns, parents, urlList) # call this function recursively
-            elif isinstance(url, RegexURLPattern):
-                urlList.append(''.join(parents) + next(exrex.generate(regex_string, limit=1)))
-
-    def test_all_urls(self):
-        """Test to ensure all views redirect to login for this app"""
-        urlList = self.collect_all_urls()
-        for url in urlList:
-            fullurl = '/phenotypes/' + url
-            # print('URL: ', fullurl)
-            response = self.client.get(fullurl)
-            # print (response)
-            self.assertRedirects(response, reverse('login') + '?next=' + fullurl)
+class TraitBrowserLoginRequiredTestCase(LoginRequiredTestCase):
+    
+    def test_trait_browser_login_required(self):
+        """All trait_browser urls redirect to login page if no user is logged in."""
+        self.assert_redirect_all_urls(urlpatterns, 'phenotypes')
