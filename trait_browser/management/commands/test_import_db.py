@@ -756,6 +756,67 @@ class UpdateModelsTestCase(VisitTestDataTestCase):
         self.assertEqual(new_value, getattr(model_instance, 'i_'+field_to_update))
         self.assertTrue(model_instance.modified > model_instance.created)
 
+    def test_update_source_dataset_subcohorts(self):
+        """A new subcohort link to an existing source dataset ends up imported after an update."""
+        # Run the initial db import.
+        management.call_command('import_db', '--which_db=devel')
+        # Pick a subcohort to create a new link to in the source db.
+        subcohorts = Subcohort.objects.all()
+        sc = subcohorts[0]
+        # Find a dataset which this subcohort isn't linked to already
+        linked_datasets = sc.sourcedataset_set.all()
+        possible_datasets = SourceDataset.objects.filter(source_study_version__study = sc.study)
+        unlinked_datasets = set(possible_datasets) - set(linked_datasets)
+        if len(unlinked_datasets) < 1:
+            raise ValueError('The subcohort is already linked to all possible datasets.')
+        dataset_to_link = list(unlinked_datasets)[0]
+        # Create a new dataset-subcohort link in the source db.
+        self.cursor.close()
+        self.source_db.close()
+        self.source_db = get_devel_db(permissions='full')
+        self.cursor = self.source_db.cursor(buffered=True, dictionary=True)
+        add_subcohort_link_query = 'INSERT INTO source_dataset_subcohorts (dataset_id, subcohort_id) VALUES ({}, {});'.format(sc.i_id, dataset_to_link.i_id)
+        self.cursor.execute(add_subcohort_link_query)
+        self.source_db.commit()
+        self.cursor.close()
+        self.source_db.close()
+        # Now run the update commands.
+        management.call_command('import_db', '--which_db=devel', '--update_only')
+        # Check that the chosen subcohort is now linked to the dataset that was picked, in the Django db.
+        sc.refresh_from_db()
+        dataset_to_link.refresh_from_db()
+        self.assertTrue(dataset_to_link in sc.sourcedataset_set.all())
+
+    def test_update_component_source_traits(self):
+        """A new component source trait link to an existing harmonized trait ends up imported after an update."""
+        # Run the initial db import.
+        management.call_command('import_db', '--which_db=devel')
+        # Pick a source trait to create a new link to in the source db.
+        source_trait = SourceTrait.objects.get(pk=1)
+        # Find a harmonized_trait which this source trait isn't linked to already
+        for x in range(1, 100):
+            htrait_set = HarmonizedTraitSet.objects.get(pk=x)
+            if htrait_set not in source_trait.harmonizedtraitset_set.all():
+                break
+        # Add source_trait as a component trait of htrait_set in the source db.
+        self.cursor.close()
+        self.source_db.close()
+        self.source_db = get_devel_db(permissions='full')
+        self.cursor = self.source_db.cursor(buffered=True, dictionary=True)
+        # Have to add a harmonized function here first...
+        self.cursor.execute("INSERT INTO harmonized_function (function_definition) values ('return(dataset)');")
+        self.source_db.commit()
+        add_component_trait_query = 'INSERT INTO component_source_trait (harmonized_trait_set_id, harmonized_function_id, component_trait_id) VALUES ({}, 1, {});'.format(htrait_set.i_id, source_trait.i_trait_id)
+        self.cursor.execute(add_component_trait_query)
+        self.source_db.commit()
+        self.cursor.close()
+        self.source_db.close()
+        # Now run the update commands.
+        management.call_command('import_db', '--which_db=devel', '--update_only')
+        # Check that the chosen subcohort is now linked to the dataset that was picked, in the Django db.
+        source_trait.refresh_from_db()
+        htrait_set.refresh_from_db()
+        self.assertTrue(htrait_set in source_trait.harmonizedtraitset_set.all())
 
 
 class IntegrationTest(VisitTestDataTestCase):
