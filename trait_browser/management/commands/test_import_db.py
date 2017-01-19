@@ -354,7 +354,7 @@ class MakeArgsTestCase(BaseTestDataTestCase):
         global_study_query = 'SELECT * FROM global_study;'
         self.cursor.execute(global_study_query)
         row_dict = self.cursor.fetchone()
-        global_study_args = CMD._make_global_study_args(CMD._fix_null(CMD._fix_bytearray(row_dict)))
+        global_study_args = CMD._make_global_study_args(CMD._fix_row(row_dict))
         global_study = GlobalStudy(**global_study_args)
         global_study.save()
         self.assertIsInstance(global_study, GlobalStudy)
@@ -482,7 +482,7 @@ class HelperTestCase(TestCase):
     
     def test_make_model_object_from_args(self):
         """Test that """
-        CMD._make_model_object_from_args(args={'i_id':5, 'i_name':'global study name'},
+        CMD._make_model_object_from_args(args={'i_id':5, 'i_name':'global study name', 'i_date_added': timezone.now(), 'i_date_changed':timezone.now()},
                                               model=GlobalStudy,
                                               verbosity=0)
         obj = GlobalStudy.objects.get(pk=5)

@@ -362,7 +362,7 @@ class Command(BaseCommand):
         Returns:
             a dict of (required_GlobalStudy_attribute: attribute_value) pairs
         """
-        return self._make_args_mapping(row_dict, ['id', 'name'])
+        return self._make_args_mapping(row_dict, ['id', 'name', 'date_added', 'date_changed'])
 
     def _make_study_args(self, row_dict):
         """Get args for making a Study object from a source db row.
@@ -375,7 +375,9 @@ class Command(BaseCommand):
         Returns:
             a dict of (required_Study_attribute: attribute_value) pairs
         """
-        return self._make_args_mapping(row_dict, ['accession', 'study_name'], foreign_key_mapping={'global_study_id': GlobalStudy})
+        return self._make_args_mapping(row_dict,
+                                       ['accession', 'study_name', 'date_added', 'date_changed'],
+                                       foreign_key_mapping={'global_study_id': GlobalStudy})
     
     def _make_source_study_version_args(self, row_dict):
         """Get args for making a SourceStudyVersion object from a source db row.
@@ -389,7 +391,8 @@ class Command(BaseCommand):
             a dict of (required_SourceStudyVersion_attribute: attribute_value) pairs
         """
         return self._make_args_mapping(row_dict,
-                                       ['id', 'version', 'participant_set', 'dbgap_date', 'is_deprecated', 'is_prerelease'],
+                                       ['id', 'version', 'participant_set', 'dbgap_date', 'is_deprecated', 'is_prerelease',
+                                        'date_added', 'date_changed'],
                                        foreign_key_mapping={'accession':Study})
     
     def _make_source_dataset_args(self, row_dict):
@@ -405,7 +408,8 @@ class Command(BaseCommand):
         """
         return self._make_args_mapping(row_dict,
                                        ['id', 'accession', 'dbgap_description', 'dcc_description', 'is_medication_dataset',
-                                        'is_subject_file','study_subject_column', 'version', 'visit_code', 'visit_number'],
+                                        'is_subject_file','study_subject_column', 'version', 'visit_code', 'visit_number',
+                                        'date_added', 'date_changed'],
                                        foreign_key_mapping={'study_version_id':SourceStudyVersion})
 
     def _make_harmonized_trait_set_args(self, row_dict):
@@ -420,7 +424,7 @@ class Command(BaseCommand):
             a dict of (required_HarmonizedTraitSet_attribute: attribute_value) pairs
         """
         return self._make_args_mapping(row_dict,
-                                       ['id', 'trait_set_name', 'version', 'flavor', 'description'])
+                                       ['id', 'trait_set_name', 'version', 'flavor', 'description', 'date_added', 'date_changed'])
     
     def _make_source_trait_args(self, row_dict):
         """Get args for making a SourceTrait object from a source db row.
@@ -434,7 +438,8 @@ class Command(BaseCommand):
         """
         return self._make_args_mapping(row_dict,
                                        ['trait_name', 'detected_type', 'dbgap_type', 'visit_number', 'dbgap_variable_accession',
-                                        'dbgap_variable_version', 'dbgap_comment', 'dbgap_unit', 'n_records', 'n_missing'],
+                                        'dbgap_variable_version', 'dbgap_comment', 'dbgap_unit', 'n_records', 'n_missing',
+                                        'date_added', 'date_changed'],
                                        source_field_names_to_map={'source_trait_id':'i_trait_id', 'dcc_description':'i_description'},
                                        foreign_key_mapping={'dataset_id': SourceDataset})
 
@@ -449,7 +454,8 @@ class Command(BaseCommand):
             a dict of (required_HarmonizedTrait_attribute: attribute_value) pairs
         """
         return self._make_args_mapping(row_dict,
-                                       ['description', 'data_type', 'unit', 'is_unique_key', 'trait_name'],
+                                       ['description', 'data_type', 'unit', 'is_unique_key', 'trait_name',
+                                        'date_added', 'date_changed'],
                                        source_field_names_to_map={'harmonized_trait_id':'i_trait_id'},
                                        foreign_key_mapping={'harmonized_trait_set_id': HarmonizedTraitSet})
 
@@ -464,7 +470,9 @@ class Command(BaseCommand):
         Returns:
             a dict of (required_Subcohort_attribute: attribute_value) pairs
         """
-        return self._make_args_mapping(row_dict, ['id', 'name'], foreign_key_mapping={'study_accession':Study})
+        return self._make_args_mapping(row_dict,
+                                       ['id', 'name', 'date_added', 'date_changed'],
+                                       foreign_key_mapping={'study_accession':Study})
     
     def _make_source_trait_encoded_value_args(self, row_dict):
         """Get args for making a SourceTraitEncodedValue object from a source db row.
@@ -477,7 +485,8 @@ class Command(BaseCommand):
         Arguments:
             source_db -- an open connection to the source database
         """
-        return self._make_args_mapping(row_dict, ['id', 'category', 'value'],
+        return self._make_args_mapping(row_dict,
+                                       ['id', 'category', 'value', 'date_added', 'date_changed'],
                                        foreign_key_mapping={'source_trait_id':SourceTrait})
 
     def _make_harmonized_trait_encoded_value_args(self, row_dict):
@@ -491,7 +500,8 @@ class Command(BaseCommand):
         Arguments:
             source_db -- an open connection to the source database
         """
-        return self._make_args_mapping(row_dict, ['id', 'category', 'value'],
+        return self._make_args_mapping(row_dict,
+                                       ['id', 'category', 'value', 'date_added', 'date_changed'],
                                        foreign_key_mapping={'harmonized_trait_id':HarmonizedTrait})
 
 
