@@ -167,7 +167,7 @@ class Command(BaseCommand):
             str query that will yield old source db rows that haven't been imported
             to the website db yet
         """
-        latest_date = model.objects.latest('modified').modified
+        latest_date = model.objects.latest('i_date_changed').i_date_changed
         latest_date = latest_date.strftime('%Y-%m-%d %H:%M:%S')
         # print("Model {}, latest date {}".format(model._meta.object_name, latest_date))
         if len(old_pks) > 0:
