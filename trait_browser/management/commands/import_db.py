@@ -115,8 +115,10 @@ class Command(BaseCommand):
             to the website db yet
         """
         if len(old_pks) > 0:
+            # If some rows of this table are already imported, make a query that will only return the new ones.
             return self._make_table_query(table_name=table_name, filter_field=pk_name, filter_values=old_pks, filter_not=True)
         else:
+            # If none of the items from this table are already imported, make a query that will return the whole table.
             return self._make_table_query(table_name=table_name)
         
 
