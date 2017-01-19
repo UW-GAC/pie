@@ -52,6 +52,28 @@ class Command(BaseCommand):
     
 
     # Helper methods for importing data from the source db.
+    def _make_table_query(self, table_name, filter_field=None, filter_values=None, filter_not=None):
+        """
+        
+        Arguments:
+            in_filter: {'field_name': [list of values to include in IN statement]}
+            not_in_filter: {'field_name': [list of values to include in NOT IN statement]}
+        """
+        query = 'SELECT * FROM {}'.format(table_name)
+        # Check to make sure that if any filter field is set, all of them are set.
+        if (filter_field is not None) or (filter_values is not None) or (filter_not is not None):
+            if not ((filter_field is not None) and (filter_values is not None) and (filter_not is not None)):
+                raise ValueError('if any filter arguments are set, they must all be set')
+            else:
+                if filter_not:
+                    not_string = 'NOT'
+                else:
+                    not_string = ''
+                value_string = ','.join(filter_values)
+                filter_query = ' WHERE {} {} IN ({});'.format(filter_field, not_string, value_string)
+                query += filter_query
+        return query
+
     def _make_model_object_from_args(self, args, model, verbosity):
         """Make an instance of a model object using arguments.
         
@@ -92,10 +114,11 @@ class Command(BaseCommand):
             str query that will yield new source db rows that haven't been imported
             to the website db yet
         """
-        query = 'SELECT * FROM {}'.format(table_name)
         if len(old_pks) > 0:
-            query += ' WHERE {} NOT IN ({})'.format(pk_name, ','.join(old_pks))
-        return query
+            return self._make_table_query(table_name=table_name, filter_field=pk_name, filter_values=old_pks, filter_not=True)
+        else:
+            return self._make_table_query(table_name=table_name)
+        
 
     def _get_new_pks(self, model, old_pks):
         """Get the list of primary keys that have been added to the website db.
@@ -505,7 +528,10 @@ class Command(BaseCommand):
                                        foreign_key_mapping={'harmonized_trait_id':HarmonizedTrait})
 
 
-    # Methods for importing data for models that require special processing.
+    # Methods for importing data for ManyToMany fields.
+
+        
+    
     def _import_new_source_dataset_subcohorts(self, source_db, new_dataset_pks, verbosity):
         """Add subcohort-source_dataset link data to the website db models.
         
