@@ -13,7 +13,6 @@ This test module runs several unit tests and one integration test.
 from datetime import datetime
 from os.path import join
 from subprocess import call
-from time import sleep
 
 import mysql.connector
 # Use the mysql-connector-python-rf package from pypi (advice via this SO post http://stackoverflow.com/q/34168651/2548371)
@@ -72,7 +71,6 @@ def load_test_source_db_data(filename, verbose=False):
         if verbose: print('Test data loaded ...')
 
 def change_data_in_table(table_name, update_field, new_value, where_field, where_value):
-    sleep(2) # Wait, to make sure this change isn't too close to initial loading for updates to be detected.
     source_db = get_devel_db(permissions='full')
     cursor = source_db.cursor(buffered=True)
     update_cmd = "UPDATE {} SET {}='{}' WHERE {}={};".format(table_name, update_field, new_value, where_field, where_value)
