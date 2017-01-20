@@ -70,7 +70,7 @@ class Command(BaseCommand):
                 else:
                     not_string = ''
                 value_string = ','.join(filter_values)
-                filter_query = ' WHERE {} {} IN ({});'.format(filter_field, not_string, value_string)
+                filter_query = ' WHERE {} {} IN ({})'.format(filter_field, not_string, value_string)
                 query += filter_query
         return query
 
@@ -199,7 +199,7 @@ class Command(BaseCommand):
             pk_query = 'AND ({} IN ({}))'.format(pk_name, ','.join(old_pks))
         else:
             pk_query = ''
-        query = "SELECT * FROM {} WHERE (date_changed > date_added) AND (date_changed > '{}') {};".format(table_name, latest_date, pk_query)
+        query = "SELECT * FROM {} WHERE (date_changed > date_added) AND (date_changed > '{}') {}".format(table_name, latest_date, pk_query)
         return query
 
     def _update_model_object_from_args(self, args, model, verbosity):
