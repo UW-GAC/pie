@@ -120,7 +120,6 @@ class Command(BaseCommand):
         else:
             # If none of the items from this table are already imported, make a query that will return the whole table.
             return self._make_table_query(table_name=table_name)
-        
 
     def _get_new_pks(self, model, old_pks):
         """Get the list of primary keys that have been added to the website db.
@@ -534,8 +533,35 @@ class Command(BaseCommand):
 
 
     # Methods for importing data for ManyToMany fields.
-
-        
+    def _import_new_m2m_fields(self, source_db, source_table, parent_model, parent_pk_fieldname,
+                               child_model, child_pk_fieldname, import_parent_pks, verbosity):
+        """
+        """
+        new_m2m_query = self._make_table_query(table_name=source_table, filter_field=parent_pk_fieldname,
+                                               filter_values=import_parent_pks, filter_not=False)
+        cursor = source_db.cursor(buffered=True, dictionary=True)
+        cursor.execute(new_m2m_query)
+        for row in cursor:
+            type_fixed_row = self._fix_row(row)
+            child, parent = self._make_m2m_link(parent_model=parent_model,
+                                                parent_pk=type_fixed_row[parent_pk_fieldname],
+                                                child_model=child_model,
+                                                child_pk=type_fixed_row[child_pk_fieldname]
+                                                )
+        if verbosity == 3: print('Linked {} to {}'.format(child, parent))
+    
+    def _make_m2m_link(self, parent_model, parent_pk, child_model, child_pk):
+        """
+        """
+        parent = parent_model.objects.get(pk=parent_pk)
+        child = child_model.objects.get(pk=child_pk)
+        # This hideous list comprehension comes from the Django documentation on the Model._meta API.
+        # https://docs.djangoproject.com/en/1.8/ref/models/meta/#migrating-from-the-old-api
+        # See the example for "MyModel._meta.get_m2m_with_model()".
+        m2m_field = [f for f in parent._meta.get_fields() if f.many_to_many and f.related_model == child_model and not f.auto_created][0]
+        m2m_manager = getattr(parent, m2m_field.get_attname())
+        m2m_manager.add(child)
+        return (child, parent)
     
     def _import_new_source_dataset_subcohorts(self, source_db, new_dataset_pks, verbosity):
         """Add subcohort-source_dataset link data to the website db models.
@@ -657,7 +683,14 @@ class Command(BaseCommand):
                                                              verbosity=verbosity)
         print("Added {} source trait encoded values".format(len(new_source_trait_encoded_value_pks)))
 
-        self._import_new_source_dataset_subcohorts(source_db, new_source_dataset_pks, verbosity=verbosity)
+        self._import_new_m2m_fields(source_db=source_db,
+                                    source_table='source_dataset_subcohorts',
+                                    parent_model=SourceDataset,
+                                    parent_pk_fieldname='dataset_id',
+                                    child_model=Subcohort,
+                                    child_pk_fieldname='subcohort_id',
+                                    import_parent_pks=new_source_dataset_pks,
+                                    verbosity=verbosity)
         print("Added some source dataset subcohorts")
         
         new_harmonized_trait_set_pks = self._import_new_data(source_db=source_db,
@@ -676,9 +709,15 @@ class Command(BaseCommand):
                                                              verbosity=verbosity)
         print("Added {} harmonized traits".format(len(new_harmonized_trait_pks)))
 
-        self._import_new_component_source_traits(source_db, new_harmonized_trait_set_pks, verbosity=verbosity)
+        self._import_new_m2m_fields(source_db=source_db,
+                                    source_table='component_source_trait',
+                                    parent_model=HarmonizedTraitSet,
+                                    parent_pk_fieldname='harmonized_trait_set_id',
+                                    child_model=SourceTrait,
+                                    child_pk_fieldname='component_trait_id',
+                                    import_parent_pks=new_harmonized_trait_set_pks,
+                                    verbosity=verbosity)
         print("Added some component source traits")
-
 
         new_harmonized_trait_encoded_value_pks = self._import_new_data(source_db=source_db,
                                                              table_name='harmonized_trait_encoded_values',
