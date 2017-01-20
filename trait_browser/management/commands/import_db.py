@@ -192,14 +192,17 @@ class Command(BaseCommand):
             str query that will yield old source db rows that haven't been imported
             to the website db yet
         """
-        latest_date = model.objects.latest('i_date_changed').i_date_changed
-        latest_date = latest_date.strftime('%Y-%m-%d %H:%M:%S')
         # print("Model {}, latest date {}".format(model._meta.object_name, latest_date))
         if len(old_pks) > 0:
-            pk_query = 'AND ({} IN ({}))'.format(pk_name, ','.join(old_pks))
+            # Make a query for the rows that were already imported into Django.
+            query = self._make_table_query(table_name=table_name, filter_field=pk_name, filter_values=old_pks, filter_not=False)
+            # Add a where clause to find only those rows that have changed since the last import.
+            latest_date = model.objects.latest('i_date_changed').i_date_changed
+            latest_date = latest_date.strftime('%Y-%m-%d %H:%M:%S')
+            query += " AND (date_changed > date_added) AND (date_changed > '{}')".format(latest_date)
         else:
-            pk_query = ''
-        query = "SELECT * FROM {} WHERE (date_changed > date_added) AND (date_changed > '{}') {}".format(table_name, latest_date, pk_query)
+            # If none of the items from this table are already imported, make a query that will return an empty result set.
+            query = self._make_table_query(table_name=table_name, filter_field=pk_name, filter_values=["''"], filter_not=False)
         return query
 
     def _update_model_object_from_args(self, args, model, verbosity):
