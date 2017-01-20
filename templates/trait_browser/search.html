@@ -31,6 +31,7 @@
 
 
     {% if results %}
+        <a href="{% url 'home' %}" class="btn btn-default" role="button">Save Search</a>
         <div class="alert alert-info" role="alert">
             <strong><font size="4">{{ trait_table.rows|length }} phenotype{{ trait_table.rows|length|pluralize }} found</font></strong>
         </div>
