@@ -31,7 +31,10 @@
 
 
     {% if results %}
-        <a href="{% url 'home' %}" class="btn btn-default" role="button">Save Search</a>
+        <!-- <a href="{% url 'home' %}" class="btn btn-default" role="button">Save Search</a> -->
+        {% if trait_type == 'source' %}
+        <button id="save-search-btn" type="button" class="btn btn-info">Save Search</button>
+        {% endif %}
         <div class="alert alert-info" role="alert">
             <strong><font size="4">{{ trait_table.rows|length }} phenotype{{ trait_table.rows|length|pluralize }} found</font></strong>
         </div>
