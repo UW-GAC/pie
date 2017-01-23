@@ -103,7 +103,7 @@ class Study(TimeStampedModel):
         return self.STUDY_URL.format(self.phs)
 
     def get_search_url(self):
-        """Produce a url to initially populate checkboxes in the search page based on the study"""
+        """Produce a url to initially populate checkboxes in the search page based on the study."""
         return reverse('trait_browser:source:search') + '?study={}'.format(self.i_accession)
 
 

@@ -182,7 +182,7 @@ class SourceTraitViewsTestCase(ViewsAutoLoginTestCase):
         self.assertEqual(response.status_code, 404)
     
     def test_source_trait_no_search_url(self):
-        """Tests that the search_url is not in the response context"""
+        """Tests that the search_url is not in the response context."""
         # search_url should not be in this view
         url = reverse('trait_browser:source:all')
         response = self.client.get(url)
@@ -293,7 +293,7 @@ class StudySourceTableViewsTestCase(ViewsAutoLoginTestCase):
         self.assertEqual(len(response.context['trait_table'].rows), n_traits)
 
     def test_study_source_get_search_url_response(self):
-        """Tests that the get_search_url method returns a valid and correct url for a given study"""
+        """Tests that the get_search_url method returns a valid and correct url for a given study."""
         this_study = StudyFactory.create()
         url = this_study.get_search_url()
         response = self.client.get(url)
@@ -373,7 +373,7 @@ class SourceTraitSearchViewTestCase(ViewsAutoLoginTestCase):
         self.assertFalse(response.context['form'].is_bound)    # Form is not bound to data.
 
     def test_source_trait_search_has_no_initial_checkboxes(self):
-        """Tests that the base search url does not have an initial checkbox"""
+        """Tests that the base search url does not have an initial checkbox."""
         url = reverse('trait_browser:source:search')
         response = self.client.get(url)
         self.assertEqual(len(response.context['form'].initial), 0)
@@ -434,7 +434,7 @@ class HarmonizedTraitViewsTestCase(ViewsAutoLoginTestCase):
         self.assertEqual(response.status_code, 404)
 
     def test_harmonized_trait_no_search_url(self):
-        """Tests that the harmonized trait table view does not contain a search_url in the response context"""
+        """Tests that the harmonized trait table view does not contain a search_url in the response context."""
         # search_url should not be in this view
         url = reverse('trait_browser:harmonized:all')
         response = self.client.get(url)
