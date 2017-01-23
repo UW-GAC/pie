@@ -3,6 +3,7 @@
 from datetime import datetime
 
 from django.test import TestCase
+from django.core.urlresolvers import reverse
 
 from .factories import GlobalStudyFactory, HarmonizedTraitFactory, HarmonizedTraitEncodedValueFactory, HarmonizedTraitSetFactory, SourceDatasetFactory, SourceStudyVersionFactory, SourceTraitFactory, SourceTraitEncodedValueFactory, StudyFactory, SubcohortFactory
 from .models import GlobalStudy, HarmonizedTrait, HarmonizedTraitEncodedValue, HarmonizedTraitSet, SourceDataset, SourceStudyVersion, SourceTrait, SourceTraitEncodedValue, Study, Subcohort
@@ -51,6 +52,11 @@ class StudyTestCase(TestCase):
         self.assertRegex(study.phs, 'phs\d{6}')
         self.assertEqual(study.dbgap_latest_version_link[:68], Study.STUDY_URL[:68])
 
+    def test_get_search_url_creation(self):
+        """Tests that the get_search_url method returns an appropriately constructed url"""
+        study = StudyFactory.create()
+        url = ''.join([reverse('trait_browser:source:search'), '\?study=\d+'])
+        self.assertRegex(study.get_search_url(),  url)
 
 class SourceStudyVersionTestCase(TestCase):
     

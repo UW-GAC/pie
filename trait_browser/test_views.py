@@ -108,7 +108,7 @@ class HarmonizedSearchTestCase(TestCase):
         self.assertNotIn(st_nonmatch, search1)
     
     def test_search_harmonized_trait_description_substring(self):
-        """Test that the search function finds a substring match in the HarmonizedTrait i_description field, kbut doesn't find a non-match."""
+        """Test that the search function finds a substring match in the HarmonizedTrait i_description field, but doesn't find a non-match."""
         st_match = HarmonizedTraitFactory.create(i_description='foo and bar', i_trait_id=1)
         st_nonmatch = HarmonizedTraitFactory.create(i_description='sum and es', i_trait_id=2)
         search1 = search('bar', 'harmonized')
@@ -176,6 +176,14 @@ class SourceTraitViewsTestCase(ViewsAutoLoginTestCase):
         trait = SourceTraitFactory.create()
         response = self.client.get(trait.get_absolute_url())
         self.assertEqual(response.status_code, 200)
+
+    def test_source_trait_no_search_url(self):
+        """Tests that the search_url is not in the response context."""
+        # search_url should not be in this view
+        url = reverse('trait_browser:source:all')
+        response = self.client.get(url)
+        with self.assertRaises(KeyError):
+            response.context['search_url']
 
 
 class StudySourceTableViewsTestCase(ViewsAutoLoginTestCase):
@@ -286,6 +294,16 @@ class StudySourceTableViewsTestCase(ViewsAutoLoginTestCase):
         response = self.client.get(trait.get_absolute_url())
         self.assertEqual(response.status_code, 200)
 
+    def test_study_source_get_search_url_response(self):
+        """Tests that the get_search_url method returns a valid and correct url for a given study."""
+        this_study = StudyFactory.create()
+        url = this_study.get_search_url()
+        response = self.client.get(url)
+        # url should work
+        self.assertEqual(response.status_code, 200)
+        # url should be using correct i_accession value as checked box
+        self.assertEqual(response.context['form'].initial['study'], str(this_study.i_accession))
+
 
 class SourceTraitSearchViewTestCase(ViewsAutoLoginTestCase):
 
@@ -356,6 +374,12 @@ class SourceTraitSearchViewTestCase(ViewsAutoLoginTestCase):
         self.assertNotIn('trait_table', response.context)    # The trait_table object exists.
         self.assertFalse(response.context['form'].is_bound)    # Form is not bound to data.
 
+    def test_source_trait_search_has_no_initial_checkboxes(self):
+        """Tests that the base search url does not have an initial checkbox."""
+        url = reverse('trait_browser:source:search')
+        response = self.client.get(url)
+        self.assertEqual(len(response.context['form'].initial), 0)
+
 
 class HarmonizedTraitViewsTestCase(ViewsAutoLoginTestCase):
     """Unit tests for the HarmonizedTrait views."""
@@ -416,6 +440,14 @@ class HarmonizedTraitViewsTestCase(ViewsAutoLoginTestCase):
         trait = HarmonizedTraitFactory.create()
         response = self.client.get(trait.get_absolute_url())
         self.assertEqual(response.status_code, 200)
+
+    def test_harmonized_trait_no_search_url(self):
+        """Tests that the harmonized trait table view does not contain a search_url in the response context."""
+        # search_url should not be in this view
+        url = reverse('trait_browser:harmonized:all')
+        response = self.client.get(url)
+        with self.assertRaises(KeyError):
+            response.context['search_url']
 
 
 class HarmonizedTraitSearchViewTestCase(ViewsAutoLoginTestCase):

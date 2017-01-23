@@ -106,6 +106,11 @@ class Study(TimeStampedModel):
         """Gets the absolute URL of the detail page for a given Study instance."""
         return reverse('trait_browser:source:study:detail', kwargs={'pk': self.pk})
 
+    def get_search_url(self):
+        """Produce a url to initially populate checkboxes in the search page based on the study."""
+        return reverse('trait_browser:source:search') + '?study={}'.format(self.i_accession)
+
+
 class SourceStudyVersion(TimeStampedModel):
     """Model for versions of each dbGaP study accession.
     
