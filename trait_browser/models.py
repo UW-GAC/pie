@@ -496,4 +496,6 @@ class HarmonizedTraitEncodedValue(TraitEncodedValue):
 
 
 class SavedSearch(TimeStampedModel):
+    """Model for searches that anyone has ever saved"""
+
     search_string = models.CharField(max_length=100, db_index=True)
