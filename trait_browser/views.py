@@ -5,14 +5,16 @@ from django.db.models import Q    # Allows complex queries when searching.
 from django.views.generic import DetailView
 from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
+from django.core.exceptions import ObjectDoesNotExist
 
 from dal import autocomplete
 from django_tables2 import RequestConfig
 
-from .models import GlobalStudy, HarmonizedTrait, HarmonizedTraitEncodedValue, HarmonizedTraitSet, SourceDataset, SourceStudyVersion, SourceTrait, SourceTraitEncodedValue, Study, Subcohort
+from .models import GlobalStudy, HarmonizedTrait, HarmonizedTraitEncodedValue, HarmonizedTraitSet, SourceDataset, SourceStudyVersion, SourceTrait, SourceTraitEncodedValue, Study, Subcohort, SavedSearch
 from .tables import SourceTraitTable, HarmonizedTraitTable, StudyTable
 from .forms import SourceTraitCrispySearchForm, HarmonizedTraitCrispySearchForm
 
+from profiles.models import UserData
 
 TABLE_PER_PAGE = 50    # Setting for per_page rows for all table views.  
 
@@ -229,3 +231,40 @@ class SourceTraitIDAutocomplete(autocomplete.Select2QuerySetView):
     @method_decorator(login_required)
     def dispatch(self, *args, **kwargs):
         return super(SourceTraitIDAutocomplete, self).dispatch(*args, **kwargs)
+
+@login_required
+def saveSearchToProfile(request):
+    """Saves the user's search to their profile"""
+    # determine text of search
+    searchText = request.GET.get('text')
+
+    # check if search exists in table
+    try:
+        searchRecord = SavedSearch.objects.get(search_string=searchText)
+    except ObjectDoesNotExist:
+        # insert record
+        searchRecord = SavedSearch(search_string=searchText)
+        searchRecord.save()
+
+    # id value of search
+    searchId = searchRecord.id
+    # print('The searchId is: ', searchId)
+    try:
+        # get the record in the userdata table
+        userDataRecord = UserData.objects.get(user_id=request.user.id)
+        # get the searches of that user
+        searches = userDataRecord.saved_search_ids
+        # print(searches)
+        # if the serach id is not in the users's searches, add it
+        if searchId not in searches.split(','):
+            userDataRecord.saved_search_ids = ','.join([str(searches), str(searchId)])
+    except ObjectDoesNotExist:
+        # the user doesn't exist, so create the record in the table
+        userDataRecord = UserData(saved_search_ids=searchId, user_id=request.user.id)
+    finally:
+        # save the changes
+        userDataRecord.save()
+
+    # if id is not in saved profile, add it to the list and save  the user, otherwise skip
+
+    return HttpResponse()

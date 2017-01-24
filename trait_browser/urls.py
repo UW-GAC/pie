@@ -18,6 +18,7 @@ source_patterns = [
     url(r'^all/$', views.trait_table, {'trait_type': 'source'}, name='all'),
     url(r'^detail/(?P<pk>\d+)/$', views.SourceTraitDetail.as_view(), name='detail'),
     url(r'^search/$', views.trait_search, {'trait_type': 'source'}, name='search'),
+    url(r'^search/save/$', views.saveSearchToProfile, name='save_search'),
     url(r'^autocomplete/$', views.SourceTraitIDAutocomplete.as_view(), name='autocomplete'),
     url(r'^study/', include(study_patterns, namespace='study')),
 ]
