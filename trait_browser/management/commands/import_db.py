@@ -552,6 +552,26 @@ class Command(BaseCommand):
             links.append((type_fixed_row[parent_pk_fieldname], type_fixed_row[child_pk_fieldname]))
         if verbosity == 3: print('Linked {} to {}'.format(child, parent))
         return links
+
+    def _update_m2m_field(self, source_db, source_table, parent_model, parent_pk_fieldname,
+                          child_model, child_pk_fieldname, verbosity):
+        """
+        """
+        current_pks = self._get_current_pks(parent_model)
+        new_links_query = self._make_query_for_rows_to_update(table_name=source_table, model=parent_model, old_pks=current_pks, pk_name=parent_pk_fieldname, verbosity=verbosity)
+        cursor = source_db.cursor(buffered=True, dictionary=True)
+        cursor.execute(new_links_query)
+        links = []
+        for row in cursor:
+            type_fixed_row = self._fix_row(row)
+            child, parent = self._make_m2m_link(parent_model=parent_model,
+                                                parent_pk=type_fixed_row[parent_pk_fieldname],
+                                                child_model=child_model,
+                                                child_pk=type_fixed_row[child_pk_fieldname]
+                                                )
+            links.append((type_fixed_row[parent_pk_fieldname], type_fixed_row[child_pk_fieldname]))
+        if verbosity == 3: print('Linked {} to {}'.format(child, parent))
+        return links
     
     def _make_m2m_link(self, parent_model, parent_pk, child_model, child_pk):
         """
@@ -673,6 +693,25 @@ class Command(BaseCommand):
         """
         """
         source_db = self._get_source_db(which_db=which_db)
+
+        new_source_dataset_subcohort_links = self._update_m2m_field(source_db=source_db,
+                                                                    source_table='source_dataset_subcohorts',
+                                                                    parent_model=SourceDataset,
+                                                                    parent_pk_fieldname='dataset_id',
+                                                                    child_model=Subcohort,
+                                                                    child_pk_fieldname='subcohort_id',
+                                                                    verbosity=verbosity)
+        print("Added {} source dataset subcohorts".format(len(new_source_dataset_subcohort_links)))
+
+        new_component_source_trait_links = self._update_m2m_field(source_db=source_db,
+                                                                  source_table='component_source_trait',
+                                                                  parent_model=HarmonizedTraitSet,
+                                                                  parent_pk_fieldname='harmonized_trait_set_id',
+                                                                  child_model=SourceTrait,
+                                                                  child_pk_fieldname='component_trait_id',
+                                                                  verbosity=verbosity)
+        print("Added {} component source traits".format(new_component_source_trait_links))
+
         self._update_existing_data(source_db=source_db,
                                    table_name='global_study',
                                    pk_name='id',
