@@ -72,7 +72,7 @@ class LoginRequiredTestCase(TestCase):
         url_list = collect_all_urls(urlpatterns)
         for url in url_list:
             full_url = '/' + pattern_root + '/' + url
-            print('URL: ', full_url)
+            # print('URL: ', full_url)
             response = self.client.get(full_url)
             # print (response)
             self.assertRedirects(response, reverse('login') + '?next=' + full_url)
