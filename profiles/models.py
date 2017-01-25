@@ -1,7 +1,6 @@
 from django.conf import settings
 from django.db import models
 
-
 class TimeStampedModel(models.Model):
     """
     An abstract base class model that provides selfupdating
@@ -15,6 +14,11 @@ class TimeStampedModel(models.Model):
         abstract = True
 
 
-class UserData(TimeStampedModel):
+class UserSearches(TimeStampedModel):
     user = models.ForeignKey(settings.AUTH_USER_MODEL)
-    saved_search_ids = models.CommaSeparatedIntegerField(max_length=255)
+    # by default, Django uses the primary key of the foreign key related table
+    search = models.ForeignKey('trait_browser.Searches')
+    active = models.BooleanField(default=True)
+
+    class Meta:
+        unique_together = ('user', 'search')

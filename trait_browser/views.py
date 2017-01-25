@@ -10,11 +10,13 @@ from django.core.exceptions import ObjectDoesNotExist
 from dal import autocomplete
 from django_tables2 import RequestConfig
 
-from .models import GlobalStudy, HarmonizedTrait, HarmonizedTraitEncodedValue, HarmonizedTraitSet, SourceDataset, SourceStudyVersion, SourceTrait, SourceTraitEncodedValue, Study, Subcohort, SavedSearch
+from .models import GlobalStudy, HarmonizedTrait, HarmonizedTraitEncodedValue, HarmonizedTraitSet, SourceDataset, SourceStudyVersion, SourceTrait, SourceTraitEncodedValue, Study, Subcohort, Searches
 from .tables import SourceTraitTable, HarmonizedTraitTable, StudyTable
 from .forms import SourceTraitCrispySearchForm, HarmonizedTraitCrispySearchForm
 
-from profiles.models import UserData
+from profiles.models import UserSearches
+
+from urllib.parse import unquote, urlparse, parse_qs
 
 TABLE_PER_PAGE = 50    # Setting for per_page rows for all table views.  
 
@@ -164,6 +166,25 @@ def trait_search(request, trait_type):
                     'results': True,
                     'trait_type': 'source'
                 }
+
+                searchText = request.GET.get('text')
+                studyString = sorted(request.GET.get('study'), key=int) if 'study' in request.GET else None
+
+                # save a valid search
+                try:
+                    # check if search exists in table
+                    searchRecord = Searches.objects.get(
+                        search_string=searchText,selected_studies=studyString
+                    )
+                    searchRecord.times_saved += 1
+                except ObjectDoesNotExist:
+                    # insert record for new search
+                    searchRecord = Searches(
+                        search_string=searchText, selected_studies=studyString
+                    )
+                finally:
+                    searchRecord.save()
+
                 return render(request, 'trait_browser/search.html', page_data)
             # If the form data isn't valid, show the data to modify.
             else:
@@ -235,36 +256,24 @@ class SourceTraitIDAutocomplete(autocomplete.Select2QuerySetView):
 @login_required
 def saveSearchToProfile(request):
     """Saves the user's search to their profile"""
-    # determine text of search
-    searchText = request.GET.get('text')
 
-    # check if search exists in table
-    try:
-        searchRecord = SavedSearch.objects.get(search_string=searchText)
-    except ObjectDoesNotExist:
-        # insert record
-        searchRecord = SavedSearch(search_string=searchText)
-        searchRecord.save()
+    # parse search parameters from provided url
+    decodedUrl = unquote(request.GET.get('searchParams'))
+    params = parse_qs(urlparse(decodedUrl).query)
+
+    # should be list of one element
+    searchText = params['text'][0]
+    # studies from the requested search
+    # studies are stored as a list of strings, sort by applying int on each element
+    studyString = sorted(params['study'], key=int) if 'study' in params else None
 
     # id value of search
+    searchRecord = Searches.objects.get(search_string=searchText,selected_studies=studyString)
     searchId = searchRecord.id
-    # print('The searchId is: ', searchId)
-    try:
-        # get the record in the userdata table
-        userDataRecord = UserData.objects.get(user_id=request.user.id)
-        # get the searches of that user
-        searches = userDataRecord.saved_search_ids
-        # print(searches)
-        # if the serach id is not in the users's searches, add it
-        if searchId not in searches.split(','):
-            userDataRecord.saved_search_ids = ','.join([str(searches), str(searchId)])
-    except ObjectDoesNotExist:
-        # the user doesn't exist, so create the record in the table
-        userDataRecord = UserData(saved_search_ids=searchId, user_id=request.user.id)
-    finally:
-        # save the changes
-        userDataRecord.save()
 
-    # if id is not in saved profile, add it to the list and save  the user, otherwise skip
+    # save user search
+    # user_id can be the actual value, saved_search_id has to be the model instance for some reason
+    userSearchRecord = UserSearches(saved_search_id=searchRecord, user_id=request.user.id)
+    userSearchRecord.save()
 
     return HttpResponse()

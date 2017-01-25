@@ -495,7 +495,12 @@ class HarmonizedTraitEncodedValue(TraitEncodedValue):
         return 'encoded value {} for {}\nvalue = {}'.format(self.i_category, self.harmonized_trait, self.i_value)
 
 
-class SavedSearch(TimeStampedModel):
+class Searches(TimeStampedModel):
     """Model for searches that anyone has ever saved"""
 
-    search_string = models.CharField(max_length=100, db_index=True)
+    search_string = models.CharField(max_length=100, db_index=True, null=False)
+    selected_studies = models.CommaSeparatedIntegerField(max_length=255, null=True)
+    times_saved = models.IntegerField(default=1)
+
+    class Meta:
+        unique_together = ('search_string', 'selected_studies')
