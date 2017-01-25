@@ -533,7 +533,7 @@ class Command(BaseCommand):
 
 
     # Methods for importing data for ManyToMany fields.
-    def _import_new_m2m_fields(self, source_db, source_table, parent_model, parent_pk_fieldname,
+    def _import_new_m2m_field(self, source_db, source_table, parent_model, parent_pk_fieldname,
                                child_model, child_pk_fieldname, import_parent_pks, verbosity):
         """
         """
@@ -623,7 +623,7 @@ class Command(BaseCommand):
                                                              verbosity=verbosity)
         print("Added {} source trait encoded values".format(len(new_source_trait_encoded_value_pks)))
 
-        new_source_dataset_subcohort_links = self._import_new_m2m_fields(source_db=source_db,
+        new_source_dataset_subcohort_links = self._import_new_m2m_field(source_db=source_db,
                                                                         source_table='source_dataset_subcohorts',
                                                                         parent_model=SourceDataset,
                                                                         parent_pk_fieldname='dataset_id',
@@ -649,7 +649,7 @@ class Command(BaseCommand):
                                                              verbosity=verbosity)
         print("Added {} harmonized traits".format(len(new_harmonized_trait_pks)))
 
-        new_component_source_trait_links = self._import_new_m2m_fields(source_db=source_db,
+        new_component_source_trait_links = self._import_new_m2m_field(source_db=source_db,
                                                                         source_table='component_source_trait',
                                                                         parent_model=HarmonizedTraitSet,
                                                                         parent_pk_fieldname='harmonized_trait_set_id',
