@@ -168,7 +168,13 @@ def trait_search(request, trait_type):
                 }
 
                 searchText = request.GET.get('text')
-                studyString = sorted(request.GET.get('study'), key=int) if 'study' in request.GET else None
+                if 'study' in request.GET:
+                    # list must be sorted numerically
+                    studyString = sorted(request.GET.getlist('study'), key=int)
+                else:
+                    # use null value for absence of studies selected, otherwise you get an empty list
+                    studyString = None
+                print(searchText, studyString)
 
                 # save a valid search
                 try:
