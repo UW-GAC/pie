@@ -541,6 +541,7 @@ class Command(BaseCommand):
                                                filter_values=import_parent_pks, filter_not=False)
         cursor = source_db.cursor(buffered=True, dictionary=True)
         cursor.execute(new_m2m_query)
+        links = []
         for row in cursor:
             type_fixed_row = self._fix_row(row)
             child, parent = self._make_m2m_link(parent_model=parent_model,
@@ -548,7 +549,9 @@ class Command(BaseCommand):
                                                 child_model=child_model,
                                                 child_pk=type_fixed_row[child_pk_fieldname]
                                                 )
+            links.append((type_fixed_row[parent_pk_fieldname], type_fixed_row[child_pk_fieldname]))
         if verbosity == 3: print('Linked {} to {}'.format(child, parent))
+        return links
     
     def _make_m2m_link(self, parent_model, parent_pk, child_model, child_pk):
         """
@@ -683,15 +686,15 @@ class Command(BaseCommand):
                                                              verbosity=verbosity)
         print("Added {} source trait encoded values".format(len(new_source_trait_encoded_value_pks)))
 
-        self._import_new_m2m_fields(source_db=source_db,
-                                    source_table='source_dataset_subcohorts',
-                                    parent_model=SourceDataset,
-                                    parent_pk_fieldname='dataset_id',
-                                    child_model=Subcohort,
-                                    child_pk_fieldname='subcohort_id',
-                                    import_parent_pks=new_source_dataset_pks,
-                                    verbosity=verbosity)
-        print("Added some source dataset subcohorts")
+        new_source_dataset_subcohort_links = self._import_new_m2m_fields(source_db=source_db,
+                                                                        source_table='source_dataset_subcohorts',
+                                                                        parent_model=SourceDataset,
+                                                                        parent_pk_fieldname='dataset_id',
+                                                                        child_model=Subcohort,
+                                                                        child_pk_fieldname='subcohort_id',
+                                                                        import_parent_pks=new_source_dataset_pks,
+                                                                        verbosity=verbosity)
+        print("Added {} source dataset subcohorts".format(len(new_source_dataset_subcohort_links)))
         
         new_harmonized_trait_set_pks = self._import_new_data(source_db=source_db,
                                                              table_name='harmonized_trait_set',
@@ -709,15 +712,15 @@ class Command(BaseCommand):
                                                              verbosity=verbosity)
         print("Added {} harmonized traits".format(len(new_harmonized_trait_pks)))
 
-        self._import_new_m2m_fields(source_db=source_db,
-                                    source_table='component_source_trait',
-                                    parent_model=HarmonizedTraitSet,
-                                    parent_pk_fieldname='harmonized_trait_set_id',
-                                    child_model=SourceTrait,
-                                    child_pk_fieldname='component_trait_id',
-                                    import_parent_pks=new_harmonized_trait_set_pks,
-                                    verbosity=verbosity)
-        print("Added some component source traits")
+        new_component_source_trait_links = self._import_new_m2m_fields(source_db=source_db,
+                                                                        source_table='component_source_trait',
+                                                                        parent_model=HarmonizedTraitSet,
+                                                                        parent_pk_fieldname='harmonized_trait_set_id',
+                                                                        child_model=SourceTrait,
+                                                                        child_pk_fieldname='component_trait_id',
+                                                                        import_parent_pks=new_harmonized_trait_set_pks,
+                                                                        verbosity=verbosity)
+        print("Added {} component source traits".format(new_component_source_trait_links))
 
         new_harmonized_trait_encoded_value_pks = self._import_new_data(source_db=source_db,
                                                              table_name='harmonized_trait_encoded_values',
