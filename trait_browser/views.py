@@ -174,7 +174,6 @@ def trait_search(request, trait_type):
                 else:
                     # use null value for absence of studies selected, otherwise you get an empty list
                     studyString = None
-                print(searchText, studyString)
 
                 # save a valid search
                 try:
@@ -279,7 +278,7 @@ def saveSearchToProfile(request):
 
     # save user search
     # user_id can be the actual value, saved_search_id has to be the model instance for some reason
-    userSearchRecord = UserSearches(saved_search_id=searchRecord, user_id=request.user.id)
+    userSearchRecord = UserSearches(search=searchRecord, user=request.user)
     userSearchRecord.save()
 
     return HttpResponse()
