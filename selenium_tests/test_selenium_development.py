@@ -200,7 +200,7 @@ class AdminTestCase(SeleniumTestCase):
         # Open web browser and navigate to admin page.
         self.get_reverse('admin:index')
         body = self.selenium.find_element_by_tag_name('body')
-        self.assertIn('Administration', body.text)
+        self.assertIn('administration', body.text)
         # Log in to the admin interface.
         username = self.selenium.find_element_by_id('id_username')
         password = self.selenium.find_element_by_id('id_password')
