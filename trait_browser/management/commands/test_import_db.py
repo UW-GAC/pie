@@ -775,7 +775,7 @@ class UpdateModelsTestCase(VisitTestDataTestCase):
         self.source_db.close()
         self.source_db = get_devel_db(permissions='full')
         self.cursor = self.source_db.cursor(buffered=True, dictionary=True)
-        add_subcohort_link_query = 'INSERT INTO source_dataset_subcohorts (dataset_id, subcohort_id) VALUES ({}, {});'.format(sc.i_id, dataset_to_link.i_id)
+        add_subcohort_link_query = "INSERT INTO source_dataset_subcohorts (dataset_id, subcohort_id, date_added) VALUES ({}, {}, '{}');".format(sc.i_id, dataset_to_link.i_id, timezone.now().strftime('%Y-%m-%d %H:%M:%S'))
         self.cursor.execute(add_subcohort_link_query)
         self.source_db.commit()
         self.cursor.close()
@@ -806,7 +806,7 @@ class UpdateModelsTestCase(VisitTestDataTestCase):
         # Have to add a harmonized function here first...
         self.cursor.execute("INSERT INTO harmonized_function (function_definition) values ('return(dataset)');")
         self.source_db.commit()
-        add_component_trait_query = 'INSERT INTO component_source_trait (harmonized_trait_set_id, harmonized_function_id, component_trait_id) VALUES ({}, 1, {});'.format(htrait_set.i_id, source_trait.i_trait_id)
+        add_component_trait_query = "INSERT INTO component_source_trait (harmonized_trait_set_id, harmonized_function_id, component_trait_id, date_added) VALUES ({}, 1, {}, '{}');".format(htrait_set.i_id, source_trait.i_trait_id, timezone.now().strftime('%Y-%m-%d %H:%M:%S'))
         self.cursor.execute(add_component_trait_query)
         self.source_db.commit()
         self.cursor.close()

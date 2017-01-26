@@ -180,7 +180,7 @@ class Command(BaseCommand):
         return new_pks
     
     # Helper methods for updating data that has been modified in the source db.
-    def _make_query_for_rows_to_update(self, table_name, model, old_pks, pk_name, verbosity):
+    def _make_query_for_rows_to_update(self, table_name, model, old_pks, pk_name, changed_greater, verbosity):
         """Make a query for old rows from the given table.
         
         Arguments:
@@ -198,7 +198,9 @@ class Command(BaseCommand):
             # Add a where clause to find only those rows that have changed since the last import.
             latest_date = model.objects.latest('i_date_changed').i_date_changed
             latest_date = latest_date.strftime('%Y-%m-%d %H:%M:%S')
-            query += " AND (date_changed > date_added) AND (date_changed > '{}')".format(latest_date)
+            if changed_greater:
+                query += " AND (date_changed > date_added)"
+            query += " AND (date_changed > '{}')".format(latest_date)
         else:
             # If none of the items from this table are already imported, make a query that will return an empty result set.
             query = self._make_table_query(table_name=table_name, filter_field=pk_name, filter_values=["''"], filter_not=False)
@@ -284,7 +286,7 @@ class Command(BaseCommand):
             if verbosity == 3:
                 print('No updated {}s to import.'.format(model))
         else:
-            update_rows_query = self._make_query_for_rows_to_update(table_name, model, old_pks, pk_name, verbosity=verbosity)
+            update_rows_query = self._make_query_for_rows_to_update(table_name=table_name, model=model, old_pks=old_pks, pk_name=pk_name, changed_greater=True, verbosity=verbosity)
             # print(update_rows_query)
             if verbosity == 3:
                 print('Updating entries for model {} ...'.format(model.__name__))
@@ -558,7 +560,7 @@ class Command(BaseCommand):
         """
         """
         current_pks = self._get_current_pks(parent_model)
-        new_links_query = self._make_query_for_rows_to_update(table_name=source_table, model=parent_model, old_pks=current_pks, pk_name=parent_pk_fieldname, verbosity=verbosity)
+        new_links_query = self._make_query_for_rows_to_update(table_name=source_table, model=parent_model, old_pks=current_pks, pk_name=parent_pk_fieldname, changed_greater=False, verbosity=verbosity)
         cursor = source_db.cursor(buffered=True, dictionary=True)
         cursor.execute(new_links_query)
         links = []
