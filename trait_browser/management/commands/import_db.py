@@ -679,7 +679,7 @@ class Command(BaseCommand):
                                                                         child_pk_fieldname='component_trait_id',
                                                                         import_parent_pks=new_harmonized_trait_set_pks,
                                                                         verbosity=verbosity)
-        print("Added {} component source traits".format(new_component_source_trait_links))
+        print("Added {} component source traits".format(len(new_component_source_trait_links)))
 
         new_harmonized_trait_encoded_value_pks = self._import_new_data(source_db=source_db,
                                                              table_name='harmonized_trait_encoded_values',
@@ -712,7 +712,7 @@ class Command(BaseCommand):
                                                                   child_model=SourceTrait,
                                                                   child_pk_fieldname='component_trait_id',
                                                                   verbosity=verbosity)
-        print("Added {} component source traits".format(new_component_source_trait_links))
+        print("Added {} component source traits".format(len(new_component_source_trait_links)))
 
         self._update_existing_data(source_db=source_db,
                                    table_name='global_study',
