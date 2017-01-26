@@ -190,6 +190,15 @@ def trait_search(request, trait_type):
                 finally:
                     searchRecord.save()
 
+                # Check to see if user has this saved already
+                try:
+                    UserSearches.objects.get(user=request.user.id, search=searchRecord.id)
+                    savedSearchCheck = True
+                except ObjectDoesNotExist:
+                    savedSearchCheck = False
+                print('search check: ', savedSearchCheck)
+                page_data['alreadySaved'] = savedSearchCheck
+
                 return render(request, 'trait_browser/search.html', page_data)
             # If the form data isn't valid, show the data to modify.
             else:
