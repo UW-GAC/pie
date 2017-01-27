@@ -14,6 +14,7 @@ Requires the CNF_PATH setting from the specified settings module.
 from datetime import datetime
 import mysql.connector
 import socket
+import pytz
 
 from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone
@@ -362,9 +363,8 @@ class Command(BaseCommand):
             objects are now timezone aware
         """
         fixed_row = {
-            (k): (timezone.make_aware(row_dict[k], timezone.get_current_timezone())
-            if isinstance(row_dict[k], datetime)
-            else row_dict[k]) for k in row_dict
+            # Datetimes from the db are already set to UTC, due to our db settings.
+            (k): (timezone.make_aware(row_dict[k], pytz.utc) if isinstance(row_dict[k], datetime) else row_dict[k]) for k in row_dict
         }
         return fixed_row
     

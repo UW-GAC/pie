@@ -3,6 +3,7 @@
 from copy import copy
 from datetime import datetime, timedelta
 from random import randrange, sample
+import pytz
 
 from django.conf import settings
 from django.utils import timezone
@@ -13,8 +14,6 @@ fake = Factory.create()
 
 from .models import GlobalStudy, HarmonizedTrait, HarmonizedTraitEncodedValue, HarmonizedTraitSet, SourceDataset, SourceStudyVersion, SourceTrait, SourceTraitEncodedValue, Study, Subcohort
 
-
-tzinfo = timezone.get_current_timezone() if settings.USE_TZ else None
 
 # Use these later for SourceStudyVersion factories.
 VISIT_CHOICES = ('one_visit_per_file',
@@ -31,12 +30,12 @@ DETECTED_TYPES = ('encoded', 'character', 'double', 'integer')
 
 class SourceDBTimeStampMixin(factory.DjangoModelFactory):
     
-    i_date_added = factory.Faker('date_time_this_month', tzinfo=tzinfo)
+    i_date_added = factory.Faker('date_time_this_month', tzinfo=pytz.utc)
     
     @factory.lazy_attribute
     def i_date_changed(self):
         """Set i_date_changed based on the value of i_date_added."""
-        return fake.date_time_between_dates(datetime_start=self.i_date_added, datetime_end=timezone.now(), tzinfo=tzinfo)
+        return fake.date_time_between_dates(datetime_start=self.i_date_added, datetime_end=timezone.now(), tzinfo=pytz.utc)
     
 
 class GlobalStudyFactory(SourceDBTimeStampMixin, factory.DjangoModelFactory):
@@ -69,7 +68,7 @@ class SourceStudyVersionFactory(SourceDBTimeStampMixin, factory.DjangoModelFacto
     i_id = factory.Sequence(lambda n: n)
     i_version = factory.Faker('random_int', min=1, max=10)
     i_participant_set = factory.Faker('random_int', min=1, max=10)
-    i_dbgap_date = factory.Faker('date_time_this_century', tzinfo=timezone.get_current_timezone())
+    i_dbgap_date = factory.Faker('date_time_this_century', tzinfo=pytz.utc)
     i_is_prerelease = False
     i_is_deprecated = False
     
