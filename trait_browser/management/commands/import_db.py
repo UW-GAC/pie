@@ -572,7 +572,7 @@ class Command(BaseCommand):
                                                 child_pk=type_fixed_row[child_pk_fieldname]
                                                 )
             links.append((type_fixed_row[parent_pk_fieldname], type_fixed_row[child_pk_fieldname]))
-        if verbosity == 3: print('Linked {} to {}'.format(child, parent))
+            if verbosity == 3: print('Linked {} to {}'.format(child, parent))
         return links
     
     def _make_m2m_link(self, parent_model, parent_pk, child_model, child_pk):
