@@ -538,6 +538,7 @@ class UpdateModelsTestCase(VisitTestDataTestCase):
     def test_update_global_study(self):
         """ """
         management.call_command('import_db', '--which_db=devel')
+        t1 = timezone.now() # Save a time to compare to modified date.
         # Close the db connections because change_data_in_table() opens new connections.
         # This does not affect the .cursor and .source_db attributes in other functions.
         self.cursor.close()
@@ -555,11 +556,12 @@ class UpdateModelsTestCase(VisitTestDataTestCase):
         model_instance.refresh_from_db()
         # Check that modified date > created date, and name is set to new value.
         self.assertEqual(new_value, getattr(model_instance, 'i_'+field_to_update))
-        self.assertTrue(model_instance.modified > model_instance.created)
+        self.assertTrue(model_instance.modified > t1)
     
     def test_update_study(self):
         """ """
         management.call_command('import_db', '--which_db=devel')
+        t1 = timezone.now() # Save a time to compare to modified date.
         # Close the db connections because change_data_in_table() opens new connections.
         # This does not affect the .cursor and .source_db attributes in other functions.
         self.cursor.close()
@@ -577,11 +579,12 @@ class UpdateModelsTestCase(VisitTestDataTestCase):
         model_instance.refresh_from_db()
         # Check that modified date > created date, and name is set to new value.
         self.assertEqual(new_value, getattr(model_instance, 'i_'+field_to_update))
-        self.assertTrue(model_instance.modified > model_instance.created)
+        self.assertTrue(model_instance.modified > t1)
 
     def test_update_source_study_version(self):
         """ """
         management.call_command('import_db', '--which_db=devel')
+        t1 = timezone.now() # Save a time to compare to modified date.
         # Close the db connections because change_data_in_table() opens new connections.
         # This does not affect the .cursor and .source_db attributes in other functions.
         self.cursor.close()
@@ -600,11 +603,12 @@ class UpdateModelsTestCase(VisitTestDataTestCase):
         model_instance.refresh_from_db()
         # Check that modified date > created date, and name is set to new value.
         self.assertEqual(new_value, getattr(model_instance, 'i_'+field_to_update))
-        self.assertTrue(model_instance.modified > model_instance.created)
+        self.assertTrue(model_instance.modified > t1)
 
     def test_update_subcohort(self):
         """ """
         management.call_command('import_db', '--which_db=devel')
+        t1 = timezone.now() # Save a time to compare to modified date.
         # Close the db connections because change_data_in_table() opens new connections.
         # This does not affect the .cursor and .source_db attributes in other functions.
         self.cursor.close()
@@ -622,11 +626,12 @@ class UpdateModelsTestCase(VisitTestDataTestCase):
         model_instance.refresh_from_db()
         # Check that modified date > created date, and name is set to new value.
         self.assertEqual(new_value, getattr(model_instance, 'i_'+field_to_update))
-        self.assertTrue(model_instance.modified > model_instance.created)
+        self.assertTrue(model_instance.modified > t1)
 
     def test_update_source_dataset(self):
         """ """
         management.call_command('import_db', '--which_db=devel')
+        t1 = timezone.now() # Save a time to compare to modified date.
         # Close the db connections because change_data_in_table() opens new connections.
         # This does not affect the .cursor and .source_db attributes in other functions.
         self.cursor.close()
@@ -644,11 +649,12 @@ class UpdateModelsTestCase(VisitTestDataTestCase):
         model_instance.refresh_from_db()
         # Check that modified date > created date, and name is set to new value.
         self.assertEqual(new_value, getattr(model_instance, 'i_'+field_to_update))
-        self.assertTrue(model_instance.modified > model_instance.created)
+        self.assertTrue(model_instance.modified > t1)
 
     def test_update_harmonized_trait_set(self):
         """ """
         management.call_command('import_db', '--which_db=devel')
+        t1 = timezone.now() # Save a time to compare to modified date.
         # Close the db connections because change_data_in_table() opens new connections.
         # This does not affect the .cursor and .source_db attributes in other functions.
         self.cursor.close()
@@ -666,11 +672,12 @@ class UpdateModelsTestCase(VisitTestDataTestCase):
         model_instance.refresh_from_db()
         # Check that modified date > created date, and name is set to new value.
         self.assertEqual(new_value, getattr(model_instance, 'i_'+field_to_update))
-        self.assertTrue(model_instance.modified > model_instance.created)
+        self.assertTrue(model_instance.modified > t1)
 
     def test_update_source_trait(self):
         """ """
         management.call_command('import_db', '--which_db=devel')
+        t1 = timezone.now() # Save a time to compare to modified date.
         # Close the db connections because change_data_in_table() opens new connections.
         # This does not affect the .cursor and .source_db attributes in other functions.
         self.cursor.close()
@@ -688,11 +695,12 @@ class UpdateModelsTestCase(VisitTestDataTestCase):
         model_instance.refresh_from_db()
         # Check that modified date > created date, and name is set to new value.
         self.assertEqual(new_value, getattr(model_instance, 'i_description'))
-        self.assertTrue(model_instance.modified > model_instance.created)
+        self.assertTrue(model_instance.modified > t1)
 
     def test_update_harmonized_trait(self):
         """ """
         management.call_command('import_db', '--which_db=devel')
+        t1 = timezone.now() # Save a time to compare to modified date.
         # Close the db connections because change_data_in_table() opens new connections.
         # This does not affect the .cursor and .source_db attributes in other functions.
         self.cursor.close()
@@ -710,11 +718,12 @@ class UpdateModelsTestCase(VisitTestDataTestCase):
         model_instance.refresh_from_db()
         # Check that modified date > created date, and name is set to new value.
         self.assertEqual(new_value, getattr(model_instance, 'i_description'))
-        self.assertTrue(model_instance.modified > model_instance.created)
+        self.assertTrue(model_instance.modified > t1)
 
     def test_update_source_trait_encoded_value(self):
         """ """
         management.call_command('import_db', '--which_db=devel')
+        t1 = timezone.now() # Save a time to compare to modified date.
         # Close the db connections because change_data_in_table() opens new connections.
         # This does not affect the .cursor and .source_db attributes in other functions.
         self.cursor.close()
@@ -732,11 +741,12 @@ class UpdateModelsTestCase(VisitTestDataTestCase):
         model_instance.refresh_from_db()
         # Check that modified date > created date, and name is set to new value.
         self.assertEqual(new_value, getattr(model_instance, 'i_'+field_to_update))
-        self.assertTrue(model_instance.modified > model_instance.created)
+        self.assertTrue(model_instance.modified > t1)
 
     def test_update_harmonized_trait_encoded_value(self):
         """ """
         management.call_command('import_db', '--which_db=devel')
+        t1 = timezone.now() # Save a time to compare to modified date.
         # Close the db connections because change_data_in_table() opens new connections.
         # This does not affect the .cursor and .source_db attributes in other functions.
         self.cursor.close()
@@ -754,7 +764,7 @@ class UpdateModelsTestCase(VisitTestDataTestCase):
         model_instance.refresh_from_db()
         # Check that modified date > created date, and name is set to new value.
         self.assertEqual(new_value, getattr(model_instance, 'i_'+field_to_update))
-        self.assertTrue(model_instance.modified > model_instance.created)
+        self.assertTrue(model_instance.modified > t1)
 
     def test_update_source_dataset_subcohorts(self):
         """A new subcohort link to an existing source dataset ends up imported after an update."""
