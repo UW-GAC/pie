@@ -793,8 +793,11 @@ class Command(BaseCommand):
         parser.add_argument('--which_db', action='store', type=str,
                             choices=['test', 'devel', 'production'], default=None, required=True,
                             help='Which source database to connect to for retrieving source data.')
-        parser.add_argument('--update_only', action='store_true',
-                            help='Only update the db records that are already in the db, and do not add new ones.')
+        only_group = parser.add_mutually_exclusive_group()
+        only_group.add_argument('--update_only', action='store_true',
+                                help='Only update the db records that are already in the db, and do not add new ones.')
+        only_group.add_argument('--import_only', action='store_true',
+                                help='Only import new db records, and do not update records that are already imported.')
 
     def handle(self, *args, **options):
         """Handle the main functions of this management command.
@@ -808,6 +811,7 @@ class Command(BaseCommand):
             argument dicts will pass on command line options
         """
         # First update, then import new data.
-        self._update_all(which_db=options['which_db'], verbosity=options['verbosity'])
+        if not options['import_only']:
+            self._update_all(which_db=options['which_db'], verbosity=options['verbosity'])
         if not options['update_only']:
             self._import_all(which_db=options['which_db'], verbosity=options['verbosity'])
