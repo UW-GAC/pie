@@ -10,11 +10,11 @@ from django.core.exceptions import ObjectDoesNotExist
 from dal import autocomplete
 from django_tables2 import RequestConfig
 
-from .models import GlobalStudy, HarmonizedTrait, HarmonizedTraitEncodedValue, HarmonizedTraitSet, SourceDataset, SourceStudyVersion, SourceTrait, SourceTraitEncodedValue, Study, Subcohort, Searches
+from .models import GlobalStudy, HarmonizedTrait, HarmonizedTraitEncodedValue, HarmonizedTraitSet, SourceDataset, SourceStudyVersion, SourceTrait, SourceTraitEncodedValue, Study, Subcohort
 from .tables import SourceTraitTable, HarmonizedTraitTable, StudyTable
 from .forms import SourceTraitCrispySearchForm, HarmonizedTraitCrispySearchForm
 
-from profiles.models import UserSearches
+from profiles.models import UserData, Search
 
 from urllib.parse import unquote, urlparse, parse_qs
 
@@ -162,41 +162,33 @@ def trait_search(request, trait_type):
                 page_data = {
                     'trait_table': trait_table,
                     'query': query,
+                    'study_pks': study_pks,
                     'form': form,
                     'results': True,
                     'trait_type': 'source'
                 }
 
-                searchText = request.GET.get('text')
-                if 'study' in request.GET:
-                    # list must be sorted numerically
-                    studyString = sorted(request.GET.getlist('study'), key=int)
-                else:
-                    # use null value for absence of studies selected, otherwise you get an empty list
-                    studyString = None
+                # find search if available
+                search_record = check_search_existence(query, studies=study_pks)
 
-                # save a valid search
-                try:
-                    # check if search exists in table
-                    searchRecord = Searches.objects.get(
-                        search_string=searchText,selected_studies=studyString
-                    )
-                    searchRecord.times_saved += 1
-                except ObjectDoesNotExist:
-                    # insert record for new search
-                    searchRecord = Searches(
-                        search_string=searchText, selected_studies=studyString
-                    )
-                finally:
-                    searchRecord.save()
+                # update the count of the search, if it exists
+                if search_record:
+                    search_record.search_count += 1
+                    search_record.save()
+                # otherwise, create a record of the search
+                else:
+                    search_record = Search(param_text=query)
+                    # create the record before trying to add the many-to-many relationship
+                    search_record.save()
+                    for study in study_pks:
+                        search_record.param_studies.add(study)
 
                 # Check to see if user has this saved already
-                try:
-                    UserSearches.objects.get(user=request.user.id, search=searchRecord.id)
+                if UserData.objects.all().filter(user=request.user.id, saved_searches=search_record.id).exists():
                     savedSearchCheck = True
-                except ObjectDoesNotExist:
+                else:
                     savedSearchCheck = False
-                print('search check: ', savedSearchCheck)
+
                 page_data['alreadySaved'] = savedSearchCheck
 
                 return render(request, 'trait_browser/search.html', page_data)
@@ -268,26 +260,36 @@ class SourceTraitIDAutocomplete(autocomplete.Select2QuerySetView):
         return super(SourceTraitIDAutocomplete, self).dispatch(*args, **kwargs)
 
 @login_required
-def saveSearchToProfile(request):
+def save_search_to_profile(request):
     """Saves the user's search to their profile"""
 
     # parse search parameters from provided url
-    decodedUrl = unquote(request.GET.get('searchParams'))
-    params = parse_qs(urlparse(decodedUrl).query)
+    decoded_url = unquote(request.GET.get('searchParams'))
+    params = parse_qs(urlparse(decoded_url).query)
 
     # should be list of one element
-    searchText = params['text'][0]
+    text = params['text'][0]
     # studies from the requested search
     # studies are stored as a list of strings, sort by applying int on each element
-    studyString = sorted(params['study'], key=int) if 'study' in params else None
+    studies = params['study'] if 'study' in params else []
 
     # id value of search
-    searchRecord = Searches.objects.get(search_string=searchText,selected_studies=studyString)
-    searchId = searchRecord.id
+    search_record = check_search_existence(text, studies=studies)
 
     # save user search
     # user_id can be the actual value, saved_search_id has to be the model instance for some reason
-    userSearchRecord = UserSearches(search=searchRecord, user=request.user)
-    userSearchRecord.save()
+    user_data, new_user = UserData.objects.get_or_create(user_id=request.user.id)
+    user_data.saved_searches.add(search_record.id)
+    user_data.save()
 
     return HttpResponse()
+
+def check_search_existence(query, studies=[]):
+    """ Returns the search record otherwise None """
+    searches = Search.objects.all().select_related()
+    searches = searches.filter(param_text=query)
+    for study in studies:
+        searches = searches.filter(param_studies=study)
+
+    search = searches[0] if searches.exists() else None
+    return search
