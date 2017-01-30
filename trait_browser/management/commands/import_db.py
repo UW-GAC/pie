@@ -539,6 +539,8 @@ class Command(BaseCommand):
                                child_model, child_pk_fieldname, import_parent_pks, verbosity):
         """
         """
+        if len(import_parent_pks) < 1:
+            import_parent_pks = ["''"]
         new_m2m_query = self._make_table_query(table_name=source_table, filter_field=parent_pk_fieldname,
                                                filter_values=import_parent_pks, filter_not=False)
         cursor = source_db.cursor(buffered=True, dictionary=True)

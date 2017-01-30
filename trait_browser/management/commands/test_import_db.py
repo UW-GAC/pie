@@ -819,6 +819,301 @@ class UpdateModelsTestCase(VisitTestDataTestCase):
         self.assertTrue(htrait_set in source_trait.harmonizedtraitset_set.all())
 
 
+class ImportNoUpdateTestCase(VisitTestDataTestCase):
+    
+    def test_update_global_study(self):
+        """ """
+        management.call_command('import_db', '--which_db=devel')
+        t1 = timezone.now() # Save a time to compare to modified date.
+        # Close the db connections because change_data_in_table() opens new connections.
+        # This does not affect the .cursor and .source_db attributes in other functions.
+        self.cursor.close()
+        self.source_db.close()
+        
+        model = GlobalStudy
+        model_instance = model.objects.all()[0]
+        source_db_table_name = 'global_study'
+        field_to_update = 'name'
+        new_value = 'asdfghjkl'
+        source_db_pk_name = model_instance._meta.pk.name.replace('i_', '')
+        
+        change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
+        management.call_command('import_db', '--which_db=devel', '--import_only')
+        model_instance.refresh_from_db()
+        # Check that modified date > created date, and name is set to new value.
+        self.assertNotEqual(new_value, getattr(model_instance, 'i_'+field_to_update))
+        self.assertFalse(model_instance.modified > t1)
+    
+    def test_update_study(self):
+        """ """
+        management.call_command('import_db', '--which_db=devel')
+        t1 = timezone.now() # Save a time to compare to modified date.
+        # Close the db connections because change_data_in_table() opens new connections.
+        # This does not affect the .cursor and .source_db attributes in other functions.
+        self.cursor.close()
+        self.source_db.close()
+        
+        model = Study
+        model_instance = model.objects.all()[0]
+        source_db_table_name = 'study'
+        field_to_update = 'study_name'
+        new_value = 'asdfghjkl'
+        source_db_pk_name = model_instance._meta.pk.name.replace('i_', '')
+        
+        change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
+        management.call_command('import_db', '--which_db=devel', '--import_only')
+        model_instance.refresh_from_db()
+        # Check that modified date > created date, and name is set to new value.
+        self.assertNotEqual(new_value, getattr(model_instance, 'i_'+field_to_update))
+        self.assertFalse(model_instance.modified > t1)
+
+    def test_update_source_study_version(self):
+        """ """
+        management.call_command('import_db', '--which_db=devel')
+        t1 = timezone.now() # Save a time to compare to modified date.
+        # Close the db connections because change_data_in_table() opens new connections.
+        # This does not affect the .cursor and .source_db attributes in other functions.
+        self.cursor.close()
+        self.source_db.close()
+        
+        model = SourceStudyVersion
+        model_instance = model.objects.all()[0]
+        source_db_table_name = 'source_study_version'
+        field_to_update = 'is_deprecated'
+        new_value = not getattr(model_instance, 'i_'+field_to_update)
+        source_db_pk_name = model_instance._meta.pk.name.replace('i_', '')
+        
+        change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
+        management.call_command('import_db', '--which_db=devel', '--import_only')
+        model_instance.refresh_from_db()
+        # Check that modified date > created date, and name is set to new value.
+        self.assertNotEqual(new_value, getattr(model_instance, 'i_'+field_to_update))
+        self.assertFalse(model_instance.modified > t1)
+
+    def test_update_subcohort(self):
+        """ """
+        management.call_command('import_db', '--which_db=devel')
+        t1 = timezone.now() # Save a time to compare to modified date.
+        # Close the db connections because change_data_in_table() opens new connections.
+        # This does not affect the .cursor and .source_db attributes in other functions.
+        self.cursor.close()
+        self.source_db.close()
+        
+        model = Subcohort
+        model_instance = model.objects.all()[0]
+        source_db_table_name = 'subcohort'
+        field_to_update = 'name'
+        new_value = 'asdfghjkl'
+        source_db_pk_name = model_instance._meta.pk.name.replace('i_', '')
+        
+        change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
+        management.call_command('import_db', '--which_db=devel', '--import_only')
+        model_instance.refresh_from_db()
+        # Check that modified date > created date, and name is set to new value.
+        self.assertNotEqual(new_value, getattr(model_instance, 'i_'+field_to_update))
+        self.assertFalse(model_instance.modified > t1)
+
+    def test_update_source_dataset(self):
+        """ """
+        management.call_command('import_db', '--which_db=devel')
+        t1 = timezone.now() # Save a time to compare to modified date.
+        # Close the db connections because change_data_in_table() opens new connections.
+        # This does not affect the .cursor and .source_db attributes in other functions.
+        self.cursor.close()
+        self.source_db.close()
+        
+        model = SourceDataset
+        model_instance = model.objects.all()[0]
+        source_db_table_name = 'source_dataset'
+        field_to_update = 'visit_code'
+        new_value = 'one_visit_per_file'
+        source_db_pk_name = model_instance._meta.pk.name.replace('i_', '')
+        
+        change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
+        management.call_command('import_db', '--which_db=devel', '--import_only')
+        model_instance.refresh_from_db()
+        # Check that modified date > created date, and name is set to new value.
+        self.assertNotEqual(new_value, getattr(model_instance, 'i_'+field_to_update))
+        self.assertFalse(model_instance.modified > t1)
+
+    def test_update_harmonized_trait_set(self):
+        """ """
+        management.call_command('import_db', '--which_db=devel')
+        t1 = timezone.now() # Save a time to compare to modified date.
+        # Close the db connections because change_data_in_table() opens new connections.
+        # This does not affect the .cursor and .source_db attributes in other functions.
+        self.cursor.close()
+        self.source_db.close()
+        
+        model = HarmonizedTraitSet
+        model_instance = model.objects.all()[0]
+        source_db_table_name = 'harmonized_trait_set'
+        field_to_update = 'description'
+        new_value = 'asdfghjkl'
+        source_db_pk_name = model_instance._meta.pk.name.replace('i_', '')
+        
+        change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
+        management.call_command('import_db', '--which_db=devel', '--import_only')
+        model_instance.refresh_from_db()
+        # Check that modified date > created date, and name is set to new value.
+        self.assertNotEqual(new_value, getattr(model_instance, 'i_'+field_to_update))
+        self.assertFalse(model_instance.modified > t1)
+
+    def test_update_source_trait(self):
+        """ """
+        management.call_command('import_db', '--which_db=devel')
+        t1 = timezone.now() # Save a time to compare to modified date.
+        # Close the db connections because change_data_in_table() opens new connections.
+        # This does not affect the .cursor and .source_db attributes in other functions.
+        self.cursor.close()
+        self.source_db.close()
+        
+        model = SourceTrait
+        model_instance = model.objects.all()[0]
+        source_db_table_name = 'source_trait'
+        field_to_update = 'dcc_description'
+        new_value = 'asdfghjkl'
+        source_db_pk_name = 'source_trait_id'
+        
+        change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
+        management.call_command('import_db', '--which_db=devel', '--import_only')
+        model_instance.refresh_from_db()
+        # Check that modified date > created date, and name is set to new value.
+        self.assertNotEqual(new_value, getattr(model_instance, 'i_description'))
+        self.assertFalse(model_instance.modified > t1)
+
+    def test_update_harmonized_trait(self):
+        """ """
+        management.call_command('import_db', '--which_db=devel')
+        t1 = timezone.now() # Save a time to compare to modified date.
+        # Close the db connections because change_data_in_table() opens new connections.
+        # This does not affect the .cursor and .source_db attributes in other functions.
+        self.cursor.close()
+        self.source_db.close()
+        
+        model = HarmonizedTrait
+        model_instance = model.objects.all()[0]
+        source_db_table_name = 'harmonized_trait'
+        field_to_update = 'description'
+        new_value = 'asdfghjkl'
+        source_db_pk_name = 'harmonized_trait_id'
+        
+        change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
+        management.call_command('import_db', '--which_db=devel', '--import_only')
+        model_instance.refresh_from_db()
+        # Check that modified date > created date, and name is set to new value.
+        self.assertNotEqual(new_value, getattr(model_instance, 'i_description'))
+        self.assertFalse(model_instance.modified > t1)
+
+    def test_update_source_trait_encoded_value(self):
+        """ """
+        management.call_command('import_db', '--which_db=devel')
+        t1 = timezone.now() # Save a time to compare to modified date.
+        # Close the db connections because change_data_in_table() opens new connections.
+        # This does not affect the .cursor and .source_db attributes in other functions.
+        self.cursor.close()
+        self.source_db.close()
+        
+        model = SourceTraitEncodedValue
+        model_instance = model.objects.all()[0]
+        source_db_table_name = 'source_trait_encoded_values'
+        field_to_update = 'value'
+        new_value = 'asdfghjkl'
+        source_db_pk_name = model_instance._meta.pk.name.replace('i_', '')
+        
+        change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
+        management.call_command('import_db', '--which_db=devel', '--import_only')
+        model_instance.refresh_from_db()
+        # Check that modified date > created date, and name is set to new value.
+        self.assertNotEqual(new_value, getattr(model_instance, 'i_'+field_to_update))
+        self.assertFalse(model_instance.modified > t1)
+
+    def test_update_harmonized_trait_encoded_value(self):
+        """ """
+        management.call_command('import_db', '--which_db=devel')
+        t1 = timezone.now() # Save a time to compare to modified date.
+        # Close the db connections because change_data_in_table() opens new connections.
+        # This does not affect the .cursor and .source_db attributes in other functions.
+        self.cursor.close()
+        self.source_db.close()
+        
+        model = HarmonizedTraitEncodedValue
+        model_instance = model.objects.all()[0]
+        source_db_table_name = 'harmonized_trait_encoded_values'
+        field_to_update = 'value'
+        new_value = 'asdfghjkl'
+        source_db_pk_name = model_instance._meta.pk.name.replace('i_', '')
+        
+        change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
+        management.call_command('import_db', '--which_db=devel', '--import_only')
+        model_instance.refresh_from_db()
+        # Check that modified date > created date, and name is set to new value.
+        self.assertNotEqual(new_value, getattr(model_instance, 'i_'+field_to_update))
+        self.assertFalse(model_instance.modified > t1)
+
+    def test_update_source_dataset_subcohorts(self):
+        """A new subcohort link to an existing source dataset ends up imported after an update."""
+        # Run the initial db import.
+        management.call_command('import_db', '--which_db=devel')
+        # Pick a subcohort to create a new link to in the source db.
+        subcohorts = Subcohort.objects.all()
+        sc = subcohorts[0]
+        # Find a dataset which this subcohort isn't linked to already
+        linked_datasets = sc.sourcedataset_set.all()
+        possible_datasets = SourceDataset.objects.filter(source_study_version__study = sc.study)
+        unlinked_datasets = set(possible_datasets) - set(linked_datasets)
+        if len(unlinked_datasets) < 1:
+            raise ValueError('The subcohort is already linked to all possible datasets.')
+        dataset_to_link = list(unlinked_datasets)[0]
+        # Create a new dataset-subcohort link in the source db.
+        self.cursor.close()
+        self.source_db.close()
+        self.source_db = get_devel_db(permissions='full')
+        self.cursor = self.source_db.cursor(buffered=True, dictionary=True)
+        add_subcohort_link_query = "INSERT INTO source_dataset_subcohorts (dataset_id, subcohort_id, date_added) VALUES ({}, {}, '{}');".format(sc.i_id, dataset_to_link.i_id, timezone.now().strftime('%Y-%m-%d %H:%M:%S'))
+        self.cursor.execute(add_subcohort_link_query)
+        self.source_db.commit()
+        self.cursor.close()
+        self.source_db.close()
+        # Now run the update commands.
+        management.call_command('import_db', '--which_db=devel', '--import_only')
+        # Check that the chosen subcohort is now linked to the dataset that was picked, in the Django db.
+        sc.refresh_from_db()
+        dataset_to_link.refresh_from_db()
+        self.assertFalse(dataset_to_link in sc.sourcedataset_set.all())
+
+    def test_update_component_source_traits(self):
+        """A new component source trait link to an existing harmonized trait ends up imported after an update."""
+        # Run the initial db import.
+        management.call_command('import_db', '--which_db=devel')
+        # Pick a source trait to create a new link to in the source db.
+        source_trait = SourceTrait.objects.get(pk=1)
+        # Find a harmonized_trait which this source trait isn't linked to already
+        for x in range(1, 100):
+            htrait_set = HarmonizedTraitSet.objects.get(pk=x)
+            if htrait_set not in source_trait.harmonizedtraitset_set.all():
+                break
+        # Add source_trait as a component trait of htrait_set in the source db.
+        self.cursor.close()
+        self.source_db.close()
+        self.source_db = get_devel_db(permissions='full')
+        self.cursor = self.source_db.cursor(buffered=True, dictionary=True)
+        # Have to add a harmonized function here first...
+        self.cursor.execute("INSERT INTO harmonized_function (function_definition) values ('return(dataset)');")
+        self.source_db.commit()
+        add_component_trait_query = "INSERT INTO component_source_trait (harmonized_trait_set_id, harmonized_function_id, component_trait_id, date_added) VALUES ({}, 1, {}, '{}');".format(htrait_set.i_id, source_trait.i_trait_id, timezone.now().strftime('%Y-%m-%d %H:%M:%S'))
+        self.cursor.execute(add_component_trait_query)
+        self.source_db.commit()
+        self.cursor.close()
+        self.source_db.close()
+        # Now run the update commands.
+        management.call_command('import_db', '--which_db=devel', '--import_only')
+        # Check that the chosen subcohort is now linked to the dataset that was picked, in the Django db.
+        source_trait.refresh_from_db()
+        htrait_set.refresh_from_db()
+        self.assertFalse(htrait_set in source_trait.harmonizedtraitset_set.all())
+
+
 class IntegrationTest(VisitTestDataTestCase):
     """Integration test of the whole management command.
     
