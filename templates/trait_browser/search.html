@@ -32,12 +32,10 @@
 
 
     {% if results %}
-        {% if trait_type == 'source' %}
-            {% if alreadySaved %}
-            <button id="save-search-btn" type="button" class="btn btn-info" disabled="True">Previously Saved</button>
-            {% else %}
-            <button id="save-search-btn" type="button" class="btn btn-info" data-traittype="{{ trait_type }}">Save Search</button>
-            {% endif %}
+        {% if alreadySaved %}
+        <button id="save-search-btn" type="button" class="btn btn-info" disabled="True">Previously Saved</button>
+        {% else %}
+        <button id="save-search-btn" type="button" class="btn btn-info" data-traittype="{{ trait_type }}">Save Search</button>
         {% endif %}
         <div class="alert alert-info" role="alert">
             <strong><font size="4">{{ trait_table.rows|length }} phenotype{{ trait_table.rows|length|pluralize }} found</font></strong>
