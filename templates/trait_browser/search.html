@@ -36,7 +36,7 @@
             {% if alreadySaved %}
             <button id="save-search-btn" type="button" class="btn btn-info" disabled="True">Previously Saved</button>
             {% else %}
-            <button id="save-search-btn" type="button" class="btn btn-info">Save Search</button>
+            <button id="save-search-btn" type="button" class="btn btn-info" data-traittype="{{ trait_type }}">Save Search</button>
             {% endif %}
         {% endif %}
         <div class="alert alert-info" role="alert">

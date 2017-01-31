@@ -144,103 +144,70 @@ def trait_search(request, trait_type):
     Displays the SourceTraitCrispySearchForm or HarmonizedTraitCrispySearchForm
     and any search results as a django-tables2 table view.
     """
-    # If search text has been entered into the form...
-    if request.GET.get('text', None) is not None:
-        if trait_type == 'source': 
-            # ...create a form instance with data from the request.
-            form = SourceTraitCrispySearchForm(request.GET)
-            # If the form data is valid...
-            if form.is_valid():
-                # ...process form data.
-                query = form.cleaned_data.get('text', None)
-                study_pks = form.cleaned_data.get('study', [])
-                # Search text.
-                traits = search(query, 'source', study_pks)
-                trait_table = SourceTraitTable(traits)
-                RequestConfig(request, paginate={'per_page': TABLE_PER_PAGE}).configure(trait_table)
-                # Show the search results.
-                page_data = {
-                    'trait_table': trait_table,
-                    'query': query,
-                    'study_pks': study_pks,
-                    'form': form,
-                    'results': True,
-                    'trait_type': 'source'
-                }
+    # ...create a form instance with data from the request.
+    FormClass = SourceTraitCrispySearchForm if trait_type == 'source' else HarmonizedTraitCrispySearchForm
+    form = FormClass(request.GET)
 
-                # find search if available
-                search_record = check_search_existence(query, studies=study_pks)
+    page_data = {
+        'form': form,
+        'trait_type': trait_type,
+    }
 
-                # update the count of the search, if it exists
-                if search_record:
-                    search_record.search_count += 1
-                    search_record.save()
-                # otherwise, create a record of the search
-                else:
-                    search_record = Search(param_text=query)
-                    # create the record before trying to add the many-to-many relationship
-                    search_record.save()
-                    for study in study_pks:
-                        search_record.param_studies.add(study)
-
-                # Check to see if user has this saved already
-                if UserData.objects.all().filter(user=request.user.id, saved_searches=search_record.id).exists():
-                    savedSearchCheck = True
-                else:
-                    savedSearchCheck = False
-
-                page_data['alreadySaved'] = savedSearchCheck
-
-                return render(request, 'trait_browser/search.html', page_data)
-            # If the form data isn't valid, show the data to modify.
-            else:
-                page_data = {
-                    'form': form,
-                    'results': False,
-                    'trait_type': 'source'
-                }
-                return render(request, 'trait_browser/search.html', page_data)
-        if trait_type == 'harmonized': 
-            # ...create a form instance with data from the request.
-            form = HarmonizedTraitCrispySearchForm(request.GET)
-            # If the form data is valid...
-            if form.is_valid():
-                # ...process form data.
-                query = form.cleaned_data.get('text', None)
-                # Search text.
-                traits = search(query, 'harmonized')
-                trait_table = HarmonizedTraitTable(traits)
-                RequestConfig(request, paginate={'per_page': TABLE_PER_PAGE}).configure(trait_table)
-                # Show the search results.
-                page_data = {
-                    'trait_table': trait_table,
-                    'query': query,
-                    'form': form,
-                    'results': True,
-                    'trait_type': 'harmonized'
-                }
-                return render(request, 'trait_browser/search.html', page_data)
-            # If the form data isn't valid, show the data to modify.
-            else:
-                page_data = {
-                    'form': form,
-                    'results': False,
-                    'trait_type': 'source'
-                }
-                return render(request, 'trait_browser/search.html', page_data)
     # If there was no data entered, show the empty form.
-    else:
+    if request.GET.get('text', None) is None:
+        form = FormClass()
         if trait_type == 'source':
-            form = SourceTraitCrispySearchForm()
-        elif trait_type == 'harmonized':
-            form = HarmonizedTraitCrispySearchForm()
+            if request.GET.get('study', None) is not None:
+                form = FormClass(initial=request.GET)
 
-        page_data = {
-            'form': form,
-            'results': False,
-            'trait_type': trait_type
-        }
+        page_data['form'] = FormClass()
+        page_data['results'] = False
+
         return render(request, 'trait_browser/search.html', page_data)
+
+    # If the form data is valid...
+    if form.is_valid():
+        # ...process form data.
+        query = form.cleaned_data.get('text', None)
+        study_pks = form.cleaned_data.get('study', []) if 'study' in form.cleaned_data else []
+        # Search text.
+        traits = search(query, trait_type, study_pks)
+        TraitTableClass = SourceTraitTable if trait_type == 'source' else HarmonizedTraitTable
+        trait_table = TraitTableClass(traits)
+        RequestConfig(request, paginate={'per_page': TABLE_PER_PAGE}).configure(trait_table)
+        # Show the search results.
+        page_data['trait_table'] = trait_table
+        page_data['query'] = query
+        page_data['study_pks'] = study_pks
+        page_data['results'] = True
+
+        # find search if available
+        search_record = check_search_existence(query, trait_type, studies=study_pks)
+
+        # update the count of the search, if it exists
+        if search_record:
+            search_record.search_count += 1
+            search_record.save()
+        # otherwise, create a record of the search
+        else:
+            search_record = Search(param_text=query, search_type=trait_type)
+            # create the record before trying to add the many-to-many relationship
+            search_record.save()
+            for study in study_pks:
+                search_record.param_studies.add(study)
+
+        # Check to see if user has this saved already
+        if UserData.objects.all().filter(user=request.user.id, saved_searches=search_record.id).exists():
+            savedSearchCheck = True
+        else:
+            savedSearchCheck = False
+
+        page_data['alreadySaved'] = savedSearchCheck
+    # If the form data isn't valid, show the data to modify.
+    else:
+        page_data['results'] = False
+
+    return render(request, 'trait_browser/search.html', page_data)
 
 
 class SourceTraitIDAutocomplete(autocomplete.Select2QuerySetView):
@@ -264,8 +231,9 @@ def save_search_to_profile(request):
     """Saves the user's search to their profile"""
 
     # parse search parameters from provided url
-    decoded_url = unquote(request.GET.get('searchParams'))
-    params = parse_qs(urlparse(decoded_url).query)
+    trait_type = request.GET.get('trait_type')
+    search_parameters = unquote(request.GET.get('search_params'))
+    params = parse_qs(urlparse(search_parameters).query)
 
     # should be list of one element
     text = params['text'][0]
@@ -274,7 +242,7 @@ def save_search_to_profile(request):
     studies = params['study'] if 'study' in params else []
 
     # id value of search
-    search_record = check_search_existence(text, studies=studies)
+    search_record = check_search_existence(text, trait_type, studies=studies)
 
     # save user search
     # user_id can be the actual value, saved_search_id has to be the model instance for some reason
@@ -284,10 +252,10 @@ def save_search_to_profile(request):
 
     return HttpResponse()
 
-def check_search_existence(query, studies=[]):
+def check_search_existence(query, search_type, studies=[]):
     """ Returns the search record otherwise None """
     searches = Search.objects.all().select_related()
-    searches = searches.filter(param_text=query)
+    searches = searches.filter(param_text=query, search_type=search_type)
     for study in studies:
         searches = searches.filter(param_studies=study)
 
