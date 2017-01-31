@@ -50,7 +50,92 @@ class Command(BaseCommand):
         cnx = mysql.connector.connect(option_files=cnf_path, option_groups=cnf_group, charset='latin1', use_unicode=False)
         # TODO add a try/except block here in case the db connection fails.
         return cnx
+
+
+    # Helper methods for data munging.
+    def _fix_bytearray(self, row_dict):
+        """Convert byteArrays into decoded strings.
+            
+        mysql.connector returns all character data from a database as a
+        bytearray python type. This is because of the different ways that python2
+        and python3 handle strings and they didn't want to have to maintain
+        separate code for the different python versions. This function takes a
+        row of data from a database connection and converts all of the bytearray
+        objects into strings by decoding the bytearrays with utf-8.
+        
+        Reference: https://dev.mysql.com/doc/relnotes/connector-python/en/news-2-0-0.html
+        
+        Arguments:
+            row_dict -- a dictionary for one row of data, obtained from
+                cursor.fetchone or iterating over cursor.fetchall (where the
+                connection for the cursor has dictionary=True)
+
+        Returns:
+            a dictionary with identical values to row_dict, where all bytearrays
+            are now string type
+        """
+        fixed_row = {
+            (k): (row_dict[k].decode('utf-8')
+            if isinstance(row_dict[k], bytearray)
+            else row_dict[k]) for k in row_dict
+        }
+        return fixed_row
     
+    def _fix_null(self, row_dict):
+        """Convert None values (NULL in the db) to empty strings.
+        
+        mysql.connector returns all NULL values from a database as None. However,
+        Django stores NULL values as empty strings. This function converts results
+        from a database call containing None to have empty strings instead.
+        
+        Arguments:
+            row_dict -- a dictionary for one row of data, obtained from
+                cursor.fetchone or iterating over cursor.fetchall (where the
+                connection for the cursor has dictionary=True)
+        
+        Returns:
+            a dictionary with identical values to row_dict, where all Nones have
+            been replaced with empty strings
+        """
+        fixed_row = {
+            (k): ('' if row_dict[k] is None
+            else row_dict[k]) for k in row_dict
+        }
+        return fixed_row
+    
+    def _fix_timezone(self, row_dict):
+        """Add timezone awareness to datetime objects.
+        
+        mysql.connector appropriately returns date and time type values from a
+        database as datetime type. However, these datetime objects are not
+        connected to the current timezone setting of the Django site. This function
+        adds timezone settings to each datetime object in a row of data
+        retrieved from a database.
+        
+        Arguments:
+            row_dict -- a dictionary for one row of data, obtained from
+                cursor.fetchone or iterating over cursor.fetchall (where the
+                connection for the cursor has dictionary=True)
+        Returns:
+            a dictionary with identical values to row_dict, where all datetime
+            objects are now timezone aware
+        """
+        fixed_row = {
+            # Datetimes from the db are already set to UTC, due to our db settings.
+            (k): (timezone.make_aware(row_dict[k], pytz.utc) if isinstance(row_dict[k], datetime) else row_dict[k]) for k in row_dict
+        }
+        return fixed_row
+    
+    def _fix_row(self, row_dict):
+        """Helper function to run all of the fixers."""
+        return self._fix_timezone(self._fix_bytearray(self._fix_null(row_dict)))
+
+
+    # Methods to find out which objects are already in the db.
+    def _get_current_pks(self, model):
+        """Get a list of str pk values for the given model."""
+        return [str(obj.pk) for obj in model.objects.all()]
+
 
     # Helper methods for importing data from the source db.
     def _make_table_query(self, table_name, filter_field=None, filter_values=None, filter_not=None):
@@ -292,91 +377,6 @@ class Command(BaseCommand):
             if verbosity == 3:
                 print('Updating entries for model {} ...'.format(model.__name__))
             self._update_model_object_per_query_row(source_db, update_rows_query, make_args, model, verbosity=verbosity)
-
-
-    # Helper methods for data munging.
-    def _fix_bytearray(self, row_dict):
-        """Convert byteArrays into decoded strings.
-            
-        mysql.connector returns all character data from a database as a
-        bytearray python type. This is because of the different ways that python2
-        and python3 handle strings and they didn't want to have to maintain
-        separate code for the different python versions. This function takes a
-        row of data from a database connection and converts all of the bytearray
-        objects into strings by decoding the bytearrays with utf-8.
-        
-        Reference: https://dev.mysql.com/doc/relnotes/connector-python/en/news-2-0-0.html
-        
-        Arguments:
-            row_dict -- a dictionary for one row of data, obtained from
-                cursor.fetchone or iterating over cursor.fetchall (where the
-                connection for the cursor has dictionary=True)
-
-        Returns:
-            a dictionary with identical values to row_dict, where all bytearrays
-            are now string type
-        """
-        fixed_row = {
-            (k): (row_dict[k].decode('utf-8')
-            if isinstance(row_dict[k], bytearray)
-            else row_dict[k]) for k in row_dict
-        }
-        return fixed_row
-    
-    def _fix_null(self, row_dict):
-        """Convert None values (NULL in the db) to empty strings.
-        
-        mysql.connector returns all NULL values from a database as None. However,
-        Django stores NULL values as empty strings. This function converts results
-        from a database call containing None to have empty strings instead.
-        
-        Arguments:
-            row_dict -- a dictionary for one row of data, obtained from
-                cursor.fetchone or iterating over cursor.fetchall (where the
-                connection for the cursor has dictionary=True)
-        
-        Returns:
-            a dictionary with identical values to row_dict, where all Nones have
-            been replaced with empty strings
-        """
-        fixed_row = {
-            (k): ('' if row_dict[k] is None
-            else row_dict[k]) for k in row_dict
-        }
-        return fixed_row
-    
-    def _fix_timezone(self, row_dict):
-        """Add timezone awareness to datetime objects.
-        
-        mysql.connector appropriately returns date and time type values from a
-        database as datetime type. However, these datetime objects are not
-        connected to the current timezone setting of the Django site. This function
-        adds timezone settings to each datetime object in a row of data
-        retrieved from a database.
-        
-        Arguments:
-            row_dict -- a dictionary for one row of data, obtained from
-                cursor.fetchone or iterating over cursor.fetchall (where the
-                connection for the cursor has dictionary=True)
-        Returns:
-            a dictionary with identical values to row_dict, where all datetime
-            objects are now timezone aware
-        """
-        fixed_row = {
-            # Datetimes from the db are already set to UTC, due to our db settings.
-            (k): (timezone.make_aware(row_dict[k], pytz.utc) if isinstance(row_dict[k], datetime) else row_dict[k]) for k in row_dict
-        }
-        return fixed_row
-    
-    def _fix_row(self, row_dict):
-        """Helper function to run all of the fixers."""
-        return self._fix_timezone(self._fix_bytearray(self._fix_null(row_dict)))
-
-
-    # Methods to find out which objects are already in the db.
-    def _get_current_pks(self, model):
-        """Get a list of str pk values for the given model."""
-        return [str(obj.pk) for obj in model.objects.all()]
     
 
     # Methods to make object-instantiating args from a row of the source db data.
