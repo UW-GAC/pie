@@ -265,6 +265,7 @@ class Command(BaseCommand):
         new_pks = self._get_new_pks(model, old_pks)
         return new_pks
     
+
     # Helper methods for updating data that has been modified in the source db.
     def _make_query_for_rows_to_update(self, table_name, model, old_pks, pk_name, changed_greater, verbosity):
         """Make a query for old rows from the given table.
