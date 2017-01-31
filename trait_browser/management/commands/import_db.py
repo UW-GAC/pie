@@ -47,7 +47,7 @@ class Command(BaseCommand):
             raise ValueError('Requested full permissions for {} source database. Not allowed!!!')
         # Default is to connect as readonly; only test functions connect as full user.
         cnf_group = ['client', 'mysql_topmed_pheno_{}_{}'.format(permissions, which_db)]
-        cnx = mysql.connector.connect(option_files=cnf_path, option_groups=cnf_group, charset='latin1', use_unicode=False)
+        cnx = mysql.connector.connect(option_files=cnf_path, option_groups=cnf_group, charset='latin1', use_unicode=False, time_zone='+00:00')
         # TODO add a try/except block here in case the db connection fails.
         return cnx
 

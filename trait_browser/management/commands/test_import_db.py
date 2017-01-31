@@ -10,7 +10,7 @@ Usage:
 This test module runs several unit tests and one integration test.
 """
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from os.path import join
 from os import remove
 from subprocess import call
@@ -379,6 +379,14 @@ class GetDbTestCase(TestCase):
         db = CMD._get_source_db(which_db='devel')
         self.assertIsInstance(db, mysql.connector.MySQLConnection)
         db.close()
+        
+    def test_source_db_timezone_is_utc(self):
+        """The timezone of the source_db MySQL connection is UTC."""
+        db = CMD._get_source_db(which_db='devel')
+        cursor = db.cursor()
+        cursor.execute("SELECT TIMEDIFF(NOW(), CONVERT_TZ(NOW(), @@session.time_zone, '+00:00'))")
+        timezone_offset = cursor.fetchone()[0]
+        self.assertEqual(timedelta(0), timezone_offset)
 
 
 class MakeArgsTestCase(BaseTestDataTestCase):
