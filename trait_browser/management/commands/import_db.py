@@ -24,9 +24,9 @@ from trait_browser.models import GlobalStudy, HarmonizedTrait, HarmonizedTraitEn
 
 
 class Command(BaseCommand):
-    """Management command to pull initial data from the source phenotype db."""
+    """Management command to pull data from the source phenotype db."""
 
-    help ='Import the db models with a query to the source db (snuffles).'
+    help ='Import/update data from the source db (topmed_pheno) into the Django models.'
 
     def _get_source_db(self, which_db, cnf_path=settings.CNF_PATH, permissions='readonly'):
         """Get a connection to the source phenotype db.
@@ -66,7 +66,7 @@ class Command(BaseCommand):
         Reference: https://dev.mysql.com/doc/relnotes/connector-python/en/news-2-0-0.html
         
         Arguments:
-            row_dict -- a dictionary for one row of data, obtained from
+            row_dict (dict): a dictionary for one row of data, obtained from
                 cursor.fetchone or iterating over cursor.fetchall (where the
                 connection for the cursor has dictionary=True)
 
@@ -89,7 +89,7 @@ class Command(BaseCommand):
         from a database call containing None to have empty strings instead.
         
         Arguments:
-            row_dict -- a dictionary for one row of data, obtained from
+            row_dict (dict): a dictionary for one row of data, obtained from
                 cursor.fetchone or iterating over cursor.fetchall (where the
                 connection for the cursor has dictionary=True)
         
@@ -113,7 +113,7 @@ class Command(BaseCommand):
         retrieved from a database.
         
         Arguments:
-            row_dict -- a dictionary for one row of data, obtained from
+            row_dict (dict): a dictionary for one row of data, obtained from
                 cursor.fetchone or iterating over cursor.fetchall (where the
                 connection for the cursor has dictionary=True)
         Returns:
@@ -133,19 +133,48 @@ class Command(BaseCommand):
 
     # Methods to find out which objects are already in the db.
     def _get_current_pks(self, model):
-        """Get a list of str pk values for the given model."""
-        return [str(obj.pk) for obj in model.objects.all()]
-
-
-    # Helper methods for importing data from the source db.
-    def _make_table_query(self, table_name, filter_field=None, filter_values=None, filter_not=None):
-        """
+        """Get a list of str pk values for the given model.
         
         Arguments:
-            in_filter: {'field_name': [list of values to include in IN statement]}
-            not_in_filter: {'field_name': [list of values to include in NOT IN statement]}
+            model (class obj): The Django model to get a list of current pks for
+        
+        Returns:
+            list of str: list of string primary key values
         """
-        query = 'SELECT * FROM {}'.format(table_name)
+        return [str(obj.pk) for obj in model.objects.all()]
+
+    def _get_new_pks(self, model, old_pks):
+        """Get the list of primary keys that have been added to the website db.
+        
+        Arguments:
+            old_pks (list of str): list of str primary key values that were already added to the website db
+            model (class obj): the model class to get a pk list from
+        
+        Returns:
+            list of str primary key values for new entries added to the website db
+        """
+        new_pks = list(set(self._get_current_pks(model)) - set(old_pks))
+        return new_pks
+    
+
+    # Helper methods for importing data from the source db.
+    def _make_table_query(self, source_table, filter_field=None, filter_values=None, filter_not=None):
+        """Make a query string for data from a source db table, with optional filters.
+        
+        Using the table name, make a string query for rows from the source db.
+        Optionally allow IN and NOT IN filters based on the filter_field. This
+        is a generalized query building method that is used by other, more specific
+        query building methods.
+        
+        Arguments:
+            in_filter (dict): {'field_name': [list of values to include in IN statement]}
+            not_in_filter (dict): {'field_name': [list of values to include in NOT IN statement]}
+            filter_field (str): name of the field to filter on
+        
+        Returns:
+            str: query for rows from source_table with appropriate filters
+        """
+        query = 'SELECT * FROM {}'.format(source_table)
         # Check to make sure that if any filter field is set, all of them are set.
         if (filter_field is not None) or (filter_values is not None) or (filter_not is not None):
             if not ((filter_field is not None) and (filter_values is not None) and (filter_not is not None)):
@@ -164,8 +193,8 @@ class Command(BaseCommand):
         """Make an instance of a model object using arguments.
         
         Arguments:
-            args: dict of 'field_name': 'field_value' pairs, used to make a model object instance
-            model: the model class to use to make a model object instance
+            args (dict): dict of 'field_name': 'field_value' pairs, used to make a model object instance
+            model (class obj): the model class to use to make a model object instance
         """
         obj = model(**args)
         obj.save()
@@ -176,10 +205,10 @@ class Command(BaseCommand):
         """Make a model object instance from each row of a query's results.
         
         Arguments:
-            source_db: a mysql.connector open db connection 
-            query: str containing a query to send to the open db
-            make_args: function to convert a db query result row to args for making a model object
-            model: the model class to use to make a model object instance
+            source_db (MySQLConnection): a mysql.connector open db connection 
+            query (str): a query to send to the open db
+            make_args (function): function to convert a db query result row to args for making a model object
+            model (class obj): the model class to use to make a model object instance
         """
         cursor = source_db.cursor(buffered=True, dictionary=True)
         cursor.execute(query)
@@ -188,13 +217,13 @@ class Command(BaseCommand):
             self._make_model_object_from_args(args, model, verbosity=verbosity)
         cursor.close()
     
-    def _make_query_for_new_rows(self, table_name, pk_name, old_pks, verbosity):
+    def _make_query_for_new_rows(self, source_table, source_pk, old_pks, verbosity):
         """Make a query for new rows from the given table.
         
         Arguments:
-            table_name: str name of the table in the source db
-            pk_name: str name of the primary key column in the source db
-            old_pks: list of str pk values that are already imported into the website db
+            source_table (str): name of the table in the source db
+            source_pk (str): name of the primary key column in the source db
+            old_pks (list of str): pk values that are already imported into the website db
         
         Returns:
             str query that will yield new source db rows that haven't been imported
@@ -202,35 +231,22 @@ class Command(BaseCommand):
         """
         if len(old_pks) > 0:
             # If some rows of this table are already imported, make a query that will only return the new ones.
-            return self._make_table_query(table_name=table_name, filter_field=pk_name, filter_values=old_pks, filter_not=True)
+            return self._make_table_query(source_table=source_table, filter_field=source_pk, filter_values=old_pks, filter_not=True)
         else:
             # If none of the items from this table are already imported, make a query that will return the whole table.
-            return self._make_table_query(table_name=table_name)
+            return self._make_table_query(source_table=source_table)
 
-    def _get_new_pks(self, model, old_pks):
-        """Get the list of primary keys that have been added to the website db.
-        
-        Arguments:
-            old_pks: list of str primary key values that were already added to the website db
-            get_current_pks: function that will return a str list of pks for this model/table
-        
-        Returns:
-            list of str primary key values for new entries added to the website db
-        """
-        new_pks = list(set(self._get_current_pks(model)) - set(old_pks))
-        return new_pks
-    
     def _make_args_mapping(self, row_dict, source_field_names, source_field_names_to_map=None, foreign_key_mapping=None):
         """Make a dict that maps source db data to django model fields.
         
         Arguments:
-            row_dict: dict of source_db_field_name: source_db_field_value_in_one_row pairs
-            source_field_names: list of str field names from source db, which will have 'i_'
+            row_dict (dict): source_db_field_name: source_db_field_value_in_one_row pairs
+            source_field_names (list of str): field names from source db, which will have 'i_'
                 prepended to them to make Django model field names for args dict
-            source_field_names_to_map: dict of source_db_field_name: django_model_field_name
+            source_field_names_to_map (dict): source_db_field_name: django_model_field_name
                 pairs for source db fields that require more complicated mapping than adding 'i_'
-            foreign_key_mapping: dict of source_db_foreign_key_field_name: django_foreign_key_model
-                pairs, used to Model.objects.get() the object to link in the args
+            foreign_key_mapping (dict): source_db_foreign_key_field_name: django_foreign_key_model
+                pairs, used with Model.objects.get() to get the object to link in the args
         
         Returns:
             dict of django_model_field_name: field_value pairs to be used in constructing
@@ -248,31 +264,44 @@ class Command(BaseCommand):
                 args_mapping[mod._meta.verbose_name.replace(' ', '_')] = mod.objects.get(pk=row_dict[source_pk_name])
         return args_mapping
 
-    def _import_new_data(self, source_db, table_name, pk_name, model, make_args, verbosity):
+    def _import_new_data(self, source_db, source_table, source_pk, model, make_args, verbosity):
         """Import new data into the website db from the source db from a given table, into a given model.
         
+        Query for the data that is already in the Django db. Then query the source db
+        for data that has not yet been imported. Use helper functions to make Django
+        model objects from the data retrieved by the query.
+        
         Arguments:
-            source_db: a mysql.connector open db connection 
-            table_name: str name of the table in the source db
-            pk_name: str name of the primary key column in the source db
-            model: the model class to use to make a model object instance
-            make_args: function to convert a db query result row to args for making a model object
-            get_current_pks: function that will return a str list of pks for this model/table
+            source_db (MySQLConnection): a mysql.connector open db connection 
+            source_table (str): name of the table in the source db
+            source_pk (str): name of the primary key column in the source db
+            model (class obj): the model class to use to make a model object instance
+            make_args (function): function to convert a db query result row to args for making a model object
+
+        Returns:
+            list of str pk values that were imported to the Django db
         """
         old_pks = self._get_current_pks(model)
-        new_rows_query = self._make_query_for_new_rows(table_name, pk_name, old_pks, verbosity)
+        new_rows_query = self._make_query_for_new_rows(source_table, source_pk, old_pks, verbosity)
         self._make_model_object_per_query_row(source_db, new_rows_query, make_args, model, verbosity)
         new_pks = self._get_new_pks(model, old_pks)
         return new_pks
     
 
     # Helper methods for updating data that has been modified in the source db.
-    def _make_query_for_rows_to_update(self, table_name, model, old_pks, pk_name, changed_greater, verbosity):
-        """Make a query for old rows from the given table.
+    def _make_query_for_rows_to_update(self, source_table, model, old_pks, source_pk, changed_greater, verbosity):
+        """Make a query for data that has been changed since the last update.
+        
+        Used by the _update methods to retrieve source db data that needs to be
+        updated in the Django db. Also used by _update_m2m_field to retrieve
+        source db data for new m2m links to create.
         
         Arguments:
-            table_name: str name of the table in the source db
-            pk_name: str name of the primary key column in the source db
+            source_table (str): name of the table in the source db
+            old_pks (list of str): pk values that are already imported into the website db
+            source_pk (str): name of the primary key column in the source db
+            changed_greater (bool): whether or not to include the (date_changed > date_added)
+                condition; allows use of this method for m2m table queries as well
         
         Returns:
             str query that will yield old source db rows that haven't been imported
@@ -281,7 +310,7 @@ class Command(BaseCommand):
         # print("Model {}, latest date {}".format(model._meta.object_name, latest_date))
         if len(old_pks) > 0:
             # Make a query for the rows that were already imported into Django.
-            query = self._make_table_query(table_name=table_name, filter_field=pk_name, filter_values=old_pks, filter_not=False)
+            query = self._make_table_query(source_table=source_table, filter_field=source_pk, filter_values=old_pks, filter_not=False)
             # Add a where clause to find only those rows that have changed since the last import.
             latest_date = model.objects.latest('i_date_changed').i_date_changed
             latest_date = latest_date.strftime('%Y-%m-%d %H:%M:%S')
@@ -289,16 +318,19 @@ class Command(BaseCommand):
                 query += " AND (date_changed > date_added)"
             query += " AND (date_changed > '{}')".format(latest_date)
         else:
-            # If none of the items from this table are already imported, make a query that will return an empty result set.
-            query = self._make_table_query(table_name=table_name, filter_field=pk_name, filter_values=["''"], filter_not=False)
+            # If none of the items from this table can be updated, make a query that will return an empty result set.
+            query = self._make_table_query(source_table=source_table, filter_field=source_pk, filter_values=["''"], filter_not=False)
         return query
 
     def _update_model_object_from_args(self, args, model, verbosity):
         """Update an existing model object using arguments.
         
+        Given a dict of updated arguments for the model, if an argument does not
+        match the value in the Django db, save the new value to the Django db.
+        
         Arguments:
-            args: dict of 'field_name': 'field_value' pairs, used to make a model object instance
-            model: the model class to use to make a model object instance
+            args (dict): 'field_name': 'field_value' pairs, used to update the model object instance
+            model (class obj): the model class to use to make a model object instance
         """
         model_pk_name = model._meta.pk.name
         obj = model.objects.get(pk=args[model_pk_name])
@@ -315,11 +347,17 @@ class Command(BaseCommand):
     def _update_model_object_per_query_row(self, source_db, query, make_args, model, verbosity):
         """Update an existing model object from each row of a query's results.
         
+        Run a query on the source db and use its results to update any changed values
+        in the Django db models. 
+        
         Arguments:
-            source_db: a mysql.connector open db connection 
-            query: str containing a query to send to the open db
-            make_args: function to convert a db query result row to args for making a model object
-            model: the model class to use to make a model object instance
+            source_db (MySQLConnection): a mysql.connector open db connection 
+            query (str): query to send to the open db
+            make_args (function): function to convert a db query result row to args for making a model object
+            model (class obj): the model class to use to make a model object instance
+        
+        Returns:
+            None
         """
         # Print the results of the updated rows query (SQL table format).
         # print(query)
@@ -357,23 +395,29 @@ class Command(BaseCommand):
             self._update_model_object_from_args(args, model, verbosity=verbosity)
         cursor.close()
 
-    def _update_existing_data(self, source_db, table_name, pk_name, model, make_args, verbosity):
-        """Update field values that have been modified in the source db since the
-        last time an update was run.
+    def _update_existing_data(self, source_db, source_table, source_pk, model, make_args, verbosity):
+        """Update field values that have been modified in the source db since the last update.
+        
+        Find the pks for model that have already been imported into Django. Then
+        query the source db for rows that have been modified since their import into
+        Django. Use the results of that query to update the data in the Django db.
         
         Arguments:
-            source_db: a mysql.connector open db connection 
-            table_name: str name of the table in the source db
-            pk_name: str name of the primary key column in the source db
-            model: the model class to use to make a model object instance
-            make_args: function to convert a db query result row to args for making a model object
+            source_db (MySQLConnection): a mysql.connector open db connection 
+            source_table (str): name of the table in the source db
+            source_pk (str): name of the primary key column in the source db
+            model (class obj): the model class to use to make a model object instance
+            make_args (function): function to convert a db query result row to args for making a model object
+        
+        Returns:
+            None
         """
         old_pks = self._get_current_pks(model)
         if len(old_pks) < 1:
             if verbosity == 3:
                 print('No updated {}s to import.'.format(model))
         else:
-            update_rows_query = self._make_query_for_rows_to_update(table_name=table_name, model=model, old_pks=old_pks, pk_name=pk_name, changed_greater=True, verbosity=verbosity)
+            update_rows_query = self._make_query_for_rows_to_update(source_table=source_table, model=model, old_pks=old_pks, source_pk=source_pk, changed_greater=True, verbosity=verbosity)
             # print(update_rows_query)
             if verbosity == 3:
                 print('Updating entries for model {} ...'.format(model.__name__))
@@ -388,6 +432,9 @@ class Command(BaseCommand):
         query into a dict with the necessary arguments for constructing a GlobalStudy
         object. If there is a schema change in the source db, this function may
         need to be modified.
+        
+        Arguments:
+            row_dict (dict): (column_name, row_value) pairs retrieved from the source db
 
         Returns:
             a dict of (required_GlobalStudy_attribute: attribute_value) pairs
@@ -401,6 +448,9 @@ class Command(BaseCommand):
         query into a dict with the necessary arguments for constructing a Study
         object. If there is a schema change in the source db, this function may
         need to be modified.
+
+        Arguments:
+            row_dict (dict): (column_name, row_value) pairs retrieved from the source db
 
         Returns:
             a dict of (required_Study_attribute: attribute_value) pairs
@@ -417,6 +467,9 @@ class Command(BaseCommand):
         SourceStudyVersion object. If there is a schema change in the source db,
         this function may need to be modified.
 
+        Arguments:
+            row_dict (dict): (column_name, row_value) pairs retrieved from the source db
+
         Returns:
             a dict of (required_SourceStudyVersion_attribute: attribute_value) pairs
         """
@@ -432,6 +485,9 @@ class Command(BaseCommand):
         query into a dict with the necessary arguments for constructing a
         SourceDataset object. If there is a schema change in the source db,
         this function may need to be modified.
+
+        Arguments:
+            row_dict (dict): (column_name, row_value) pairs retrieved from the source db
 
         Returns:
             a dict of (required_SourceDataset_attribute: attribute_value) pairs
@@ -450,6 +506,9 @@ class Command(BaseCommand):
         HarmonizedTraitSet object. If there is a schema change in the source db,
         this function may need to be modified.
 
+        Arguments:
+            row_dict (dict): (column_name, row_value) pairs retrieved from the source db
+
         Returns:
             a dict of (required_HarmonizedTraitSet_attribute: attribute_value) pairs
         """
@@ -462,6 +521,9 @@ class Command(BaseCommand):
         Converts a dict containing (colname: row value) pairs into a dict with
         the necessary arguments for constructing a SourceTrait object. If there's
         a schema change in the source db, this function may need to be modified.
+
+        Arguments:
+            row_dict (dict): (column_name, row_value) pairs retrieved from the source db
         
         Returns:
             a dict of (required_SourceTrait_attribute: attribute_value) pairs
@@ -479,6 +541,9 @@ class Command(BaseCommand):
         Converts a dict containing (colname: row value) pairs into a dict with
         the necessary arguments for constructing a HarmonizedTrait object. If there's
         a schema change in the source db, this function may need to be modified.
+
+        Arguments:
+            row_dict (dict): (column_name, row_value) pairs retrieved from the source db
         
         Returns:
             a dict of (required_HarmonizedTrait_attribute: attribute_value) pairs
@@ -497,6 +562,9 @@ class Command(BaseCommand):
         Subcohort object. If there is a schema change in the source db,
         this function may need to be modified.
 
+        Arguments:
+            row_dict (dict): (column_name, row_value) pairs retrieved from the source db
+
         Returns:
             a dict of (required_Subcohort_attribute: attribute_value) pairs
         """
@@ -511,6 +579,9 @@ class Command(BaseCommand):
         database query into a dict with the necessary arguments for constructing
         a Study object. If there is a schema change in the source db, this function
         may need to be changed.
+
+        Arguments:
+            row_dict (dict): (column_name, row_value) pairs retrieved from the source db
         
         Arguments:
             source_db -- an open connection to the source database
@@ -526,6 +597,9 @@ class Command(BaseCommand):
         database query into a dict with the necessary arguments for constructing
         a Study object. If there is a schema change in the source db, this function
         may need to be changed.
+
+        Arguments:
+            row_dict (dict): (column_name, row_value) pairs retrieved from the source db
         
         Arguments:
             source_db -- an open connection to the source database
@@ -536,13 +610,32 @@ class Command(BaseCommand):
 
 
     # Methods for importing data for ManyToMany fields.
-    def _import_new_m2m_field(self, source_db, source_table, parent_model, parent_pk_fieldname,
-                               child_model, child_pk_fieldname, import_parent_pks, verbosity):
-        """
+    def _import_new_m2m_field(self, source_db, source_table, parent_model, parent_source_pk,
+                               child_model, child_source_pk, import_parent_pks, verbosity):
+        """Import ManyToMany field links from an m2m source table for a set of pks for the newly imported parent model.
+        
+        parent_model must have a field that is a ManyToManyField to child_model.
+        Query the source db for entries in the m2m table (source_table) that link
+        child_source_pk values to parent_source_pk values, for parent_source_pk values
+        that are in the import_parent_pks list. Then use the results of that query
+        to link child_model instances to parent_model instances, using
+        parent_model_obj.children.add(child_model_obj)
+        
+        Arguments:
+            source_db (MySQLConnection): a mysql.connector open db connection 
+            source_table (str): name of the table in the source db
+            parent_model (class obj): the model class of the parent model for the m2m field
+            parent_source_pk (str): name of the parent model's primary key column in the source db
+            child_model (class obj): the model class of the child model for the m2m field
+            child_source_pk (str): name of the child model's primary key column in the source db
+            import_parent_pks (list of str): parent pk values for which to import m2m field links
+        
+        Returns:
+            list of str pk values for (parent_pk, child_pk) pairs that have now been linked
         """
         if len(import_parent_pks) < 1:
             import_parent_pks = ["''"]
-        new_m2m_query = self._make_table_query(table_name=source_table, filter_field=parent_pk_fieldname,
+        new_m2m_query = self._make_table_query(source_table=source_table, filter_field=parent_source_pk,
                                                filter_values=import_parent_pks, filter_not=False)
         cursor = source_db.cursor(buffered=True, dictionary=True)
         cursor.execute(new_m2m_query)
@@ -550,37 +643,72 @@ class Command(BaseCommand):
         for row in cursor:
             type_fixed_row = self._fix_row(row)
             child, parent = self._make_m2m_link(parent_model=parent_model,
-                                                parent_pk=type_fixed_row[parent_pk_fieldname],
+                                                parent_pk=type_fixed_row[parent_source_pk],
                                                 child_model=child_model,
-                                                child_pk=type_fixed_row[child_pk_fieldname]
+                                                child_pk=type_fixed_row[child_source_pk]
                                                 )
-            links.append((type_fixed_row[parent_pk_fieldname], type_fixed_row[child_pk_fieldname]))
+            links.append((type_fixed_row[parent_source_pk], type_fixed_row[child_source_pk]))
         if verbosity == 3: print('Linked {} to {}'.format(child, parent))
         return links
 
-    def _update_m2m_field(self, source_db, source_table, parent_model, parent_pk_fieldname,
-                          child_model, child_pk_fieldname, verbosity):
-        """
+    def _update_m2m_field(self, source_db, source_table, parent_model, parent_source_pk,
+                          child_model, child_source_pk, verbosity):
+        """Update ManyToMany field links from an m2m source table for parent models already imported.
+        
+        parent_model must have a field that is a ManyToManyField to child_model.
+        Query the source db for entries in the m2m table (source_table) that link
+        child_source_pk values to parent_source_pk values, for parent_source_pk values
+        that are already imported into the Django models. Then use the results of that
+        query to link child_model instances to parent_model instances, using
+        parent_model_obj.children.add(child_model_obj)
+        
+        Arguments:
+            source_db (MySQLConnection): a mysql.connector open db connection 
+            source_table (str): name of the table in the source db
+            parent_model (class obj): the model class of the parent model for the m2m field
+            parent_source_pk (str): name of the parent model's primary key column in the source db
+            child_model (class obj): the model class of the child model for the m2m field
+            child_source_pk (str): name of the child model's primary key column in the source db
+        
+        Returns:
+            list of str pk values for (parent_pk, child_pk) pairs that have now been linked
         """
         current_pks = self._get_current_pks(parent_model)
-        new_links_query = self._make_query_for_rows_to_update(table_name=source_table, model=parent_model, old_pks=current_pks, pk_name=parent_pk_fieldname, changed_greater=False, verbosity=verbosity)
+        new_links_query = self._make_query_for_rows_to_update(source_table=source_table, model=parent_model, old_pks=current_pks, source_pk=parent_source_pk, changed_greater=False, verbosity=verbosity)
         cursor = source_db.cursor(buffered=True, dictionary=True)
         cursor.execute(new_links_query)
         links = []
         for row in cursor:
             type_fixed_row = self._fix_row(row)
-            child, parent = self._make_m2m_link(parent_model=parent_model,
-                                                parent_pk=type_fixed_row[parent_pk_fieldname],
+            parent, child = self._make_m2m_link(parent_model=parent_model,
+                                                parent_pk=type_fixed_row[parent_source_pk],
                                                 child_model=child_model,
-                                                child_pk=type_fixed_row[child_pk_fieldname]
+                                                child_pk=type_fixed_row[child_source_pk]
                                                 )
-            links.append((type_fixed_row[parent_pk_fieldname], type_fixed_row[child_pk_fieldname]))
+            links.append((type_fixed_row[parent_source_pk], type_fixed_row[child_source_pk]))
             if verbosity == 3: print('Linked {} to {}'.format(child, parent))
         return links
     
     def _make_m2m_link(self, parent_model, parent_pk, child_model, child_pk):
+        """Add a child model object instance to the M2M field of a parent model object instance.
+        
+        parent_model must have a field that is a ManyToManyField to child_model.
+        Get model object instances for the parent and child models, given the pk
+        values. Find the parent's M2M field that matches the child model. Then use
+        the M2M field manager to add the child model object instance to parent
+        model object instance's M2M field. 
+        
+        Arguments:
+            parent_model (class obj): the model class of the parent model for the m2m field
+            parent_pk (str): pk value of the parent model instance to link the child model to
+            child_model (class obj): the model class of the child model for the m2m field
+            child_pk (str): pk value of the child model instance to link to the parent model
+        
+        Returns:
+            (parent model object instance, child model object instance)
         """
-        """
+        # TODO: This will need to be changed when there are multiple m2m fields to
+        # the same child model.
         parent = parent_model.objects.get(pk=parent_pk)
         child = child_model.objects.get(pk=child_pk)
         # This hideous list comprehension comes from the Django documentation on the Model._meta API.
@@ -589,59 +717,74 @@ class Command(BaseCommand):
         m2m_field = [f for f in parent._meta.get_fields() if f.many_to_many and f.related_model == child_model and not f.auto_created][0]
         m2m_manager = getattr(parent, m2m_field.get_attname())
         m2m_manager.add(child)
-        return (child, parent)
+        return (parent, child)
     
 
     # Methods to run all of the updating or importing on all of the models.
     def _import_source_tables(self, which_db, verbosity):
-        """ """
+        """Import all source trait-related data from the source db into the Django models.
+        
+        Connect to the specified source db and run helper methods to import new data
+        for SourceTrait and its related models. For regular models, use the
+        _import_new_data() function with appropriate arguments. For ManyToMany fields,
+        use the _import_new_m2m_field() function with appropriate arguments. Close
+        the source db connection when finished.
+        
+        Arguments:
+            which_db (str): the type of source db to connect to (should be one
+                of 'devel', 'test', 'production'); passed on from the command
+                line argument
+        
+        Returns:
+            None
+        """
         source_db = self._get_source_db(which_db=which_db)
 
         new_global_study_pks = self._import_new_data(source_db=source_db,
-                                                     table_name='global_study',
-                                                     pk_name='id',
+                                                     source_table='global_study',
+                                                     source_pk='id',
                                                      model=GlobalStudy,
                                                      make_args=self._make_global_study_args,
                                                      verbosity=verbosity)
         print("Added {} global studies".format(len(new_global_study_pks)))
         new_study_pks = self._import_new_data(source_db=source_db,
-                                              table_name='study',
-                                              pk_name='accession',
+                                              source_table='study',
+                                              source_pk='accession',
                                               model=Study,
                                               make_args=self._make_study_args,
                                               verbosity=verbosity)
         print("Added {} studies".format(len(new_study_pks)))
         new_source_study_version_pks = self._import_new_data(source_db=source_db,
-                                                             table_name='source_study_version',
-                                                             pk_name='id',
+                                                             source_table='source_study_version',
+                                                             source_pk='id',
                                                              model=SourceStudyVersion,
                                                              make_args=self._make_source_study_version_args,
                                                              verbosity=verbosity)
         print("Added {} source study versions".format(len(new_source_study_version_pks)))
         new_source_dataset_pks = self._import_new_data(source_db=source_db,
-                                                       table_name='source_dataset',
-                                                       pk_name='id',
+                                                       source_table='source_dataset',
+                                                       source_pk='id',
                                                        model=SourceDataset,
                                                        make_args=self._make_source_dataset_args,
                                                        verbosity=verbosity)
         print("Added {} source datasets".format(len(new_source_dataset_pks)))
         new_source_trait_pks = self._import_new_data(source_db=source_db,
-                                                     table_name='source_trait',
-                                                     pk_name='source_trait_id',
+                                                     source_table='source_trait',
+                                                     source_pk='source_trait_id',
                                                      model=SourceTrait,
                                                      make_args=self._make_source_trait_args,
                                                      verbosity=verbosity)
         print("Added {} source traits".format(len(new_source_trait_pks)))
         new_subcohort_pks = self._import_new_data(source_db=source_db,
-                                                  table_name='subcohort',
-                                                  pk_name='id',
+                                                  source_table='subcohort',
+                                                  source_pk='id',
                                                   model=Subcohort,
                                                   make_args=self._make_subcohort_args,
                                                   verbosity=verbosity)
         print("Added {} subcohorts".format(len(new_subcohort_pks)))
         new_source_trait_encoded_value_pks = self._import_new_data(source_db=source_db,
-                                                             table_name='source_trait_encoded_values',
-                                                             pk_name='id',
+                                                             source_table='source_trait_encoded_values',
+                                                             source_pk='id',
                                                              model=SourceTraitEncodedValue,
                                                              make_args=self._make_source_trait_encoded_value_args,
                                                              verbosity=verbosity)
@@ -650,9 +793,9 @@ class Command(BaseCommand):
         new_source_dataset_subcohort_links = self._import_new_m2m_field(source_db=source_db,
                                                                         source_table='source_dataset_subcohorts',
                                                                         parent_model=SourceDataset,
-                                                                        parent_pk_fieldname='dataset_id',
+                                                                        parent_source_pk='dataset_id',
                                                                         child_model=Subcohort,
-                                                                        child_pk_fieldname='subcohort_id',
+                                                                        child_source_pk='subcohort_id',
                                                                         import_parent_pks=new_source_dataset_pks,
                                                                         verbosity=verbosity)
         print("Added {} source dataset subcohorts".format(len(new_source_dataset_subcohort_links)))
@@ -660,20 +803,35 @@ class Command(BaseCommand):
         source_db.close()    
 
     def _import_harmonized_tables(self, which_db, verbosity):
-        """ """
+        """Import all harmonized trait-related data from the source db into the Django models.
+        
+        Connect to the specified source db and run helper methods to import new data
+        for HarmonizedTrait and its related models. For regular models, use the
+        _import_new_data() function with appropriate arguments. For ManyToMany fields,
+        use the _import_new_m2m_field() function with appropriate arguments. Close
+        the source db connection when finished.
+        
+        Arguments:
+            which_db (str): the type of source db to connect to (should be one
+                of 'devel', 'test', 'production'); passed on from the command
+                line argument
+        
+        Returns:
+            None
+        """
         source_db = self._get_source_db(which_db=which_db)
         
         new_harmonized_trait_set_pks = self._import_new_data(source_db=source_db,
-                                                             table_name='harmonized_trait_set',
-                                                             pk_name='id',
+                                                             source_table='harmonized_trait_set',
+                                                             source_pk='id',
                                                              model=HarmonizedTraitSet,
                                                              make_args=self._make_harmonized_trait_set_args,
                                                              verbosity=verbosity)
         print("Added {} harmonized trait sets".format(len(new_harmonized_trait_set_pks)))
 
         new_harmonized_trait_pks = self._import_new_data(source_db=source_db,
-                                                             table_name='harmonized_trait',
-                                                             pk_name='harmonized_trait_id',
+                                                             source_table='harmonized_trait',
+                                                             source_pk='harmonized_trait_id',
                                                              model=HarmonizedTrait,
                                                              make_args=self._make_harmonized_trait_args,
                                                              verbosity=verbosity)
@@ -682,16 +840,16 @@ class Command(BaseCommand):
         new_component_source_trait_links = self._import_new_m2m_field(source_db=source_db,
                                                                         source_table='component_source_trait',
                                                                         parent_model=HarmonizedTraitSet,
-                                                                        parent_pk_fieldname='harmonized_trait_set_id',
+                                                                        parent_source_pk='harmonized_trait_set_id',
                                                                         child_model=SourceTrait,
-                                                                        child_pk_fieldname='component_trait_id',
+                                                                        child_source_pk='component_trait_id',
                                                                         import_parent_pks=new_harmonized_trait_set_pks,
                                                                         verbosity=verbosity)
         print("Added {} component source traits".format(len(new_component_source_trait_links)))
 
         new_harmonized_trait_encoded_value_pks = self._import_new_data(source_db=source_db,
-                                                             table_name='harmonized_trait_encoded_values',
-                                                             pk_name='harmonized_trait_id',
+                                                             source_table='harmonized_trait_encoded_values',
+                                                             source_pk='harmonized_trait_id',
                                                              model=HarmonizedTraitEncodedValue,
                                                              make_args=self._make_harmonized_trait_encoded_value_args,
                                                              verbosity=verbosity)
@@ -700,64 +858,80 @@ class Command(BaseCommand):
         source_db.close()    
 
     def _update_source_tables(self, which_db, verbosity):
-        """
+        """Update source trait-related Django models from modified data in the source db.
+        
+        Connect to the specified source db and run helper methods to detect modifications
+        for SourceTrait and its related models. Look for data in the source db that
+        has been changed since after the latest modified date in the related Django
+        model. For regular models, use the _update_existing_data() function with
+        appropriate arguments. For ManyToMany fields, use the _update_m2m_field()
+        function with appropriate arguments. Close the source db connection when
+        finished.
+        
+        Arguments:
+            which_db (str): the type of source db to connect to (should be one
+                of 'devel', 'test', 'production'); passed on from the command
+                line argument
+        
+        Returns:
+            None
         """
         source_db = self._get_source_db(which_db=which_db)
 
         new_source_dataset_subcohort_links = self._update_m2m_field(source_db=source_db,
                                                                     source_table='source_dataset_subcohorts',
                                                                     parent_model=SourceDataset,
-                                                                    parent_pk_fieldname='dataset_id',
+                                                                    parent_source_pk='dataset_id',
                                                                     child_model=Subcohort,
-                                                                    child_pk_fieldname='subcohort_id',
+                                                                    child_source_pk='subcohort_id',
                                                                     verbosity=verbosity)
         print("Added {} source dataset subcohorts".format(len(new_source_dataset_subcohort_links)))
 
         self._update_existing_data(source_db=source_db,
-                                   table_name='global_study',
-                                   pk_name='id',
+                                   source_table='global_study',
+                                   source_pk='id',
                                    model=GlobalStudy,
                                    make_args=self._make_global_study_args,
                                    verbosity=verbosity)
 
         self._update_existing_data(source_db=source_db,
-                                    table_name='study',
-                                    pk_name='accession',
+                                    source_table='study',
+                                    source_pk='accession',
                                     model=Study,
                                     make_args=self._make_study_args,
                                     verbosity=verbosity)
         
         self._update_existing_data(source_db=source_db,
-                                    table_name='source_study_version',
-                                    pk_name='id',
+                                    source_table='source_study_version',
+                                    source_pk='id',
                                     model=SourceStudyVersion,
                                     make_args=self._make_source_study_version_args,
                                     verbosity=verbosity)
         
         self._update_existing_data(source_db=source_db,
-                                    table_name='source_dataset',
-                                    pk_name='id',
+                                    source_table='source_dataset',
+                                    source_pk='id',
                                     model=SourceDataset,
                                     make_args=self._make_source_dataset_args,
                                     verbosity=verbosity)
         
         self._update_existing_data(source_db=source_db,
-                                    table_name='source_trait',
-                                    pk_name='source_trait_id',
+                                    source_table='source_trait',
+                                    source_pk='source_trait_id',
                                     model=SourceTrait,
                                     make_args=self._make_source_trait_args,
                                     verbosity=verbosity)
         
         self._update_existing_data(source_db=source_db,
-                                    table_name='subcohort',
-                                    pk_name='id',
+                                    source_table='subcohort',
+                                    source_pk='id',
                                     model=Subcohort,
                                     make_args=self._make_subcohort_args,
                                     verbosity=verbosity)
         
         self._update_existing_data(source_db=source_db,
-                                    table_name='source_trait_encoded_values',
-                                    pk_name='id',
+                                    source_table='source_trait_encoded_values',
+                                    source_pk='id',
                                     model=SourceTraitEncodedValue,
                                     make_args=self._make_source_trait_encoded_value_args,
                                     verbosity=verbosity)
@@ -765,36 +939,52 @@ class Command(BaseCommand):
         source_db.close()    
 
     def _update_harmonized_tables(self, which_db, verbosity):
-        """
+        """Update harmonized trait-related Django models from modified data in the source db.
+        
+        Connect to the specified source db and run helper methods to detect modifications
+        for HarmonizedTrait and its related models. Look for data in the source db that
+        has been changed since after the latest modified date in the related Django
+        model. For regular models, use the _update_existing_data() function with
+        appropriate arguments. For ManyToMany fields, use the _update_m2m_field()
+        function with appropriate arguments. Close the source db connection when
+        finished.
+        
+        Arguments:
+            which_db (str): the type of source db to connect to (should be one
+                of 'devel', 'test', 'production'); passed on from the command
+                line argument
+        
+        Returns:
+            None
         """
         source_db = self._get_source_db(which_db=which_db)
 
         new_component_source_trait_links = self._update_m2m_field(source_db=source_db,
                                                                   source_table='component_source_trait',
                                                                   parent_model=HarmonizedTraitSet,
-                                                                  parent_pk_fieldname='harmonized_trait_set_id',
+                                                                  parent_source_pk='harmonized_trait_set_id',
                                                                   child_model=SourceTrait,
-                                                                  child_pk_fieldname='component_trait_id',
+                                                                  child_source_pk='component_trait_id',
                                                                   verbosity=verbosity)
         print("Added {} component source traits".format(len(new_component_source_trait_links)))
 
         self._update_existing_data(source_db=source_db,
-                                    table_name='harmonized_trait_set',
-                                    pk_name='id',
+                                    source_table='harmonized_trait_set',
+                                    source_pk='id',
                                     model=HarmonizedTraitSet,
                                     make_args=self._make_harmonized_trait_set_args,
                                     verbosity=verbosity)
         
         self._update_existing_data(source_db=source_db,
-                                    table_name='harmonized_trait',
-                                    pk_name='harmonized_trait_id',
+                                    source_table='harmonized_trait',
+                                    source_pk='harmonized_trait_id',
                                     model=HarmonizedTrait,
                                     make_args=self._make_harmonized_trait_args,
                                     verbosity=verbosity)
         
         self._update_existing_data(source_db=source_db,
-                                    table_name='harmonized_trait_encoded_values',
-                                    pk_name='harmonized_trait_id',
+                                    source_table='harmonized_trait_encoded_values',
+                                    source_pk='harmonized_trait_id',
                                     model=HarmonizedTraitEncodedValue,
                                     make_args=self._make_harmonized_trait_encoded_value_args,
                                     verbosity=verbosity)
@@ -817,9 +1007,11 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         """Handle the main functions of this management command.
         
-        Get a connection to the source db, import_new Study objects, import_new
-        SourceTrait objects, and finally import_new SourceEncodedValue objects.
-        Then close the connection to the db.
+        Get a connection to the source db, update the source trait models, update
+        the harmonized trait models, import new data from the source trait models,
+        and finally import new data from the harmonized trait models. Then close
+        the connection to the db. Import and update functions can be run separately
+        using the --update_only and --import_only command line flags.
         
         Arguments:
             **args and **options are handled as per the superclass handling; these
