@@ -592,11 +592,10 @@ class Command(BaseCommand):
     
 
     # Methods to run all of the updating or importing on all of the models.
-    def _import_all(self, which_db, verbosity):
-        """
-
-        """
+    def _import_source_tables(self, which_db, verbosity):
+        """ """
         source_db = self._get_source_db(which_db=which_db)
+
         new_global_study_pks = self._import_new_data(source_db=source_db,
                                                      table_name='global_study',
                                                      pk_name='id',
@@ -656,6 +655,12 @@ class Command(BaseCommand):
                                                                         import_parent_pks=new_source_dataset_pks,
                                                                         verbosity=verbosity)
         print("Added {} source dataset subcohorts".format(len(new_source_dataset_subcohort_links)))
+
+        source_db.close()    
+
+    def _import_harmonized_tables(self, which_db, verbosity):
+        """ """
+        source_db = self._get_source_db(which_db=which_db)
         
         new_harmonized_trait_set_pks = self._import_new_data(source_db=source_db,
                                                              table_name='harmonized_trait_set',
@@ -690,10 +695,10 @@ class Command(BaseCommand):
                                                              make_args=self._make_harmonized_trait_encoded_value_args,
                                                              verbosity=verbosity)
         print("Added {} harmonized trait encoded values".format(len(new_harmonized_trait_encoded_value_pks)))
-
+        
         source_db.close()    
 
-    def _update_all(self, which_db, verbosity):
+    def _update_source_tables(self, which_db, verbosity):
         """
         """
         source_db = self._get_source_db(which_db=which_db)
@@ -706,15 +711,6 @@ class Command(BaseCommand):
                                                                     child_pk_fieldname='subcohort_id',
                                                                     verbosity=verbosity)
         print("Added {} source dataset subcohorts".format(len(new_source_dataset_subcohort_links)))
-
-        new_component_source_trait_links = self._update_m2m_field(source_db=source_db,
-                                                                  source_table='component_source_trait',
-                                                                  parent_model=HarmonizedTraitSet,
-                                                                  parent_pk_fieldname='harmonized_trait_set_id',
-                                                                  child_model=SourceTrait,
-                                                                  child_pk_fieldname='component_trait_id',
-                                                                  verbosity=verbosity)
-        print("Added {} component source traits".format(len(new_component_source_trait_links)))
 
         self._update_existing_data(source_db=source_db,
                                    table_name='global_study',
@@ -765,6 +761,22 @@ class Command(BaseCommand):
                                     make_args=self._make_source_trait_encoded_value_args,
                                     verbosity=verbosity)
         
+        source_db.close()    
+
+    def _update_harmonized_tables(self, which_db, verbosity):
+        """
+        """
+        source_db = self._get_source_db(which_db=which_db)
+
+        new_component_source_trait_links = self._update_m2m_field(source_db=source_db,
+                                                                  source_table='component_source_trait',
+                                                                  parent_model=HarmonizedTraitSet,
+                                                                  parent_pk_fieldname='harmonized_trait_set_id',
+                                                                  child_model=SourceTrait,
+                                                                  child_pk_fieldname='component_trait_id',
+                                                                  verbosity=verbosity)
+        print("Added {} component source traits".format(len(new_component_source_trait_links)))
+
         self._update_existing_data(source_db=source_db,
                                     table_name='harmonized_trait_set',
                                     pk_name='id',
@@ -814,6 +826,8 @@ class Command(BaseCommand):
         """
         # First update, then import new data.
         if not options['import_only']:
-            self._update_all(which_db=options['which_db'], verbosity=options['verbosity'])
+            self._update_source_tables(which_db=options['which_db'], verbosity=options['verbosity'])
+            self._update_harmonized_tables(which_db=options['which_db'], verbosity=options['verbosity'])
         if not options['update_only']:
-            self._import_all(which_db=options['which_db'], verbosity=options['verbosity'])
+            self._import_source_tables(which_db=options['which_db'], verbosity=options['verbosity'])
+            self._import_harmonized_tables(which_db=options['which_db'], verbosity=options['verbosity'])
