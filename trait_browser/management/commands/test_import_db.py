@@ -12,6 +12,7 @@ This test module runs several unit tests and one integration test.
 
 from datetime import datetime
 from os.path import join
+from os import remove
 from subprocess import call
 
 import mysql.connector
@@ -102,6 +103,7 @@ class TestFunctionsTestCase(TestCase):
         source_db.close()
     
     def test_change_data_in_table(self):
+        """change_data_in_table successfully makes a change in the devel source db."""
         clean_devel_db()
         load_test_source_db_data('base.sql')
         table = 'global_study'
@@ -121,11 +123,45 @@ class TestFunctionsTestCase(TestCase):
         clean_devel_db()
     
     def test_load_test_source_db_data(self):
-        """Test that loading a test data set works as expected."""
-        # TODO: clean the db, load the test data, do a mysqldump saving the
-        # output to a variable, read in the saved mysqldump, and make sure it
-        # matches the new mysqldump.
-        pass
+        """Loading a test data set works as expected."""
+        # clean the db, load the test data, do a mysqldump to a file, then read in
+        # the two dump files, make some adjustments, and then compare the file contents.
+        clean_devel_db()
+        file_name = 'base.sql'
+        test_file = join(TEST_DATA_DIR, file_name)
+        load_test_source_db_data(file_name)
+        # Parse the name of the devel db out of the mysql conf file.
+        with open(settings.CNF_PATH) as f:
+            cnf = f.readlines()
+        statement_lines = [i for (i, line) in enumerate(cnf) if line.startswith('[')]
+        devel_line = [i for (i, line) in enumerate(cnf) if line.startswith('[mysql_topmed_pheno_full_devel]')][0]
+        next_statement_line = [i for i in statement_lines if i > devel_line][0]
+        devel_lines = [x for x in range(len(cnf)) if (x >= devel_line) and (x < next_statement_line)]
+        devel_db_line = [x for x in cnf[min(devel_lines):max(devel_lines)] if x.startswith('database = ')][0]
+        devel_db_name = devel_db_line.replace('database = ', '').strip('\n')
+        # Make the mysqldump command.
+        tmp_file = 'tmp.sql'
+        tmp_file_path = join(settings.SITE_ROOT, TEST_DATA_DIR, tmp_file)
+        # Now do a mysqldump to the same file.
+        mysqldump = ['mysqldump', '--defaults-file={}'.format(settings.CNF_PATH),
+                     '--defaults-group-suffix=_topmed_pheno_full_devel', '--opt',
+                     devel_db_name, '>', tmp_file]
+        return_code = call(' '.join(mysqldump), shell=True, cwd=join(settings.SITE_ROOT, TEST_DATA_DIR))
+        if return_code != 0:
+            raise ValueError('Something went wrong with the mysqldump command.')
+        # Get the file contents to compare.
+        with open(test_file, 'r') as f:
+            test_file_contents = f.readlines()
+        with open(tmp_file_path, 'r') as f:
+            tmp_file_contents = f.readlines()
+        # Delete lines that are expected to differ between the dump files.
+        bad_words = ['DEFINER', 'Distrib', 'Host', 'Dump completed on', 'SET FOREIGN_KEY_CHECKS =']
+        for word in bad_words:
+            test_file_contents = [l for l in test_file_contents if word not in l]
+            tmp_file_contents = [l for l in tmp_file_contents if word not in l]
+        # Compare the files and delete the tmp file.
+        self.assertEqual(tmp_file_contents, test_file_contents)
+        remove(tmp_file_path) 
 
 
 class BaseTestDataTestCase(TestCase):
