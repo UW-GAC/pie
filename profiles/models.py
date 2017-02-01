@@ -22,6 +22,10 @@ class Search(TimeStampedModel):
     param_text = models.CharField(max_length=100, db_index=True, null=False)
     param_studies = models.ManyToManyField(Study)
     search_count = models.IntegerField(default=1)
+    search_type = models.CharField(max_length=25, null=False)
+
+    class Meta:
+        verbose_name_plural = 'searches'
 
 
 class UserData(TimeStampedModel):
