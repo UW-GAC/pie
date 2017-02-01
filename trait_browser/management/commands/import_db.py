@@ -12,8 +12,10 @@ Requires the CNF_PATH setting from the specified settings module.
 # [Providing initial data for models | Django documentation | Django](https://docs.djangoproject.com/en/1.8/howto/initial-data/)
 
 from datetime import datetime
+import logging
 import mysql.connector
 import socket
+from sys import stdout
 import pytz
 
 from django.core.management.base import BaseCommand, CommandError
@@ -22,6 +24,13 @@ from django.conf import settings
 
 from trait_browser.models import GlobalStudy, HarmonizedTrait, HarmonizedTraitEncodedValue, HarmonizedTraitSet, SourceDataset, SourceStudyVersion, SourceTrait, SourceTraitEncodedValue, Study, Subcohort
 
+
+# Set up a logger to handle messages based on verbosity setting.
+logger = logging.getLogger(__name__)
+console_handler = logging.StreamHandler(stdout)
+detail_formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+console_handler.setFormatter(detail_formatter)
+logger.addHandler(console_handler)
 
 class Command(BaseCommand):
     """Management command to pull data from the source phenotype db."""
@@ -738,6 +747,7 @@ class Command(BaseCommand):
         Returns:
             None
         """
+        logger.info('Importing new source traits...')
         source_db = self._get_source_db(which_db=which_db)
 
         new_global_study_pks = self._import_new_data(source_db=source_db,
@@ -746,49 +756,49 @@ class Command(BaseCommand):
                                                      model=GlobalStudy,
                                                      make_args=self._make_global_study_args,
                                                      verbosity=verbosity)
-        print("Added {} global studies".format(len(new_global_study_pks)))
+        logger.info("Added {} global studies".format(len(new_global_study_pks)))
         new_study_pks = self._import_new_data(source_db=source_db,
                                               source_table='study',
                                               source_pk='accession',
                                               model=Study,
                                               make_args=self._make_study_args,
                                               verbosity=verbosity)
-        print("Added {} studies".format(len(new_study_pks)))
+        logger.info("Added {} studies".format(len(new_study_pks)))
         new_source_study_version_pks = self._import_new_data(source_db=source_db,
                                                              source_table='source_study_version',
                                                              source_pk='id',
                                                              model=SourceStudyVersion,
                                                              make_args=self._make_source_study_version_args,
                                                              verbosity=verbosity)
-        print("Added {} source study versions".format(len(new_source_study_version_pks)))
+        logger.info("Added {} source study versions".format(len(new_source_study_version_pks)))
         new_source_dataset_pks = self._import_new_data(source_db=source_db,
                                                        source_table='source_dataset',
                                                        source_pk='id',
                                                        model=SourceDataset,
                                                        make_args=self._make_source_dataset_args,
                                                        verbosity=verbosity)
-        print("Added {} source datasets".format(len(new_source_dataset_pks)))
+        logger.info("Added {} source datasets".format(len(new_source_dataset_pks)))
         new_source_trait_pks = self._import_new_data(source_db=source_db,
                                                      source_table='source_trait',
                                                      source_pk='source_trait_id',
                                                      model=SourceTrait,
                                                      make_args=self._make_source_trait_args,
                                                      verbosity=verbosity)
-        print("Added {} source traits".format(len(new_source_trait_pks)))
+        logger.info("Added {} source traits".format(len(new_source_trait_pks)))
         new_subcohort_pks = self._import_new_data(source_db=source_db,
                                                   source_table='subcohort',
                                                   source_pk='id',
                                                   model=Subcohort,
                                                   make_args=self._make_subcohort_args,
                                                   verbosity=verbosity)
-        print("Added {} subcohorts".format(len(new_subcohort_pks)))
+        logger.info("Added {} subcohorts".format(len(new_subcohort_pks)))
         new_source_trait_encoded_value_pks = self._import_new_data(source_db=source_db,
                                                              source_table='source_trait_encoded_values',
                                                              source_pk='id',
                                                              model=SourceTraitEncodedValue,
                                                              make_args=self._make_source_trait_encoded_value_args,
                                                              verbosity=verbosity)
-        print("Added {} source trait encoded values".format(len(new_source_trait_encoded_value_pks)))
+        logger.info("Added {} source trait encoded values".format(len(new_source_trait_encoded_value_pks)))
 
         new_source_dataset_subcohort_links = self._import_new_m2m_field(source_db=source_db,
                                                                         source_table='source_dataset_subcohorts',
@@ -798,7 +808,7 @@ class Command(BaseCommand):
                                                                         child_source_pk='subcohort_id',
                                                                         import_parent_pks=new_source_dataset_pks,
                                                                         verbosity=verbosity)
-        print("Added {} source dataset subcohorts".format(len(new_source_dataset_subcohort_links)))
+        logger.info("Added {} source dataset subcohorts".format(len(new_source_dataset_subcohort_links)))
 
         source_db.close()    
 
@@ -819,6 +829,7 @@ class Command(BaseCommand):
         Returns:
             None
         """
+        logger.info('Importing new harmonized traits...')
         source_db = self._get_source_db(which_db=which_db)
         
         new_harmonized_trait_set_pks = self._import_new_data(source_db=source_db,
@@ -827,7 +838,7 @@ class Command(BaseCommand):
                                                              model=HarmonizedTraitSet,
                                                              make_args=self._make_harmonized_trait_set_args,
                                                              verbosity=verbosity)
-        print("Added {} harmonized trait sets".format(len(new_harmonized_trait_set_pks)))
+        logger.info("Added {} harmonized trait sets".format(len(new_harmonized_trait_set_pks)))
 
         new_harmonized_trait_pks = self._import_new_data(source_db=source_db,
                                                              source_table='harmonized_trait',
@@ -835,7 +846,7 @@ class Command(BaseCommand):
                                                              model=HarmonizedTrait,
                                                              make_args=self._make_harmonized_trait_args,
                                                              verbosity=verbosity)
-        print("Added {} harmonized traits".format(len(new_harmonized_trait_pks)))
+        logger.info("Added {} harmonized traits".format(len(new_harmonized_trait_pks)))
 
         new_component_source_trait_links = self._import_new_m2m_field(source_db=source_db,
                                                                         source_table='component_source_trait',
@@ -845,7 +856,7 @@ class Command(BaseCommand):
                                                                         child_source_pk='component_trait_id',
                                                                         import_parent_pks=new_harmonized_trait_set_pks,
                                                                         verbosity=verbosity)
-        print("Added {} component source traits".format(len(new_component_source_trait_links)))
+        logger.info("Added {} component source traits".format(len(new_component_source_trait_links)))
 
         new_harmonized_trait_encoded_value_pks = self._import_new_data(source_db=source_db,
                                                              source_table='harmonized_trait_encoded_values',
@@ -853,7 +864,7 @@ class Command(BaseCommand):
                                                              model=HarmonizedTraitEncodedValue,
                                                              make_args=self._make_harmonized_trait_encoded_value_args,
                                                              verbosity=verbosity)
-        print("Added {} harmonized trait encoded values".format(len(new_harmonized_trait_encoded_value_pks)))
+        logger.info("Added {} harmonized trait encoded values".format(len(new_harmonized_trait_encoded_value_pks)))
         
         source_db.close()    
 
@@ -876,6 +887,7 @@ class Command(BaseCommand):
         Returns:
             None
         """
+        logger.info('Updating source traits...')
         source_db = self._get_source_db(which_db=which_db)
 
         new_source_dataset_subcohort_links = self._update_m2m_field(source_db=source_db,
@@ -885,7 +897,7 @@ class Command(BaseCommand):
                                                                     child_model=Subcohort,
                                                                     child_source_pk='subcohort_id',
                                                                     verbosity=verbosity)
-        print("Added {} source dataset subcohorts".format(len(new_source_dataset_subcohort_links)))
+        logger.info("Added {} source dataset subcohorts".format(len(new_source_dataset_subcohort_links)))
 
         self._update_existing_data(source_db=source_db,
                                    source_table='global_study',
@@ -957,6 +969,7 @@ class Command(BaseCommand):
         Returns:
             None
         """
+        logger.info('Updating harmonized traits...')
         source_db = self._get_source_db(which_db=which_db)
 
         new_component_source_trait_links = self._update_m2m_field(source_db=source_db,
@@ -966,7 +979,7 @@ class Command(BaseCommand):
                                                                   child_model=SourceTrait,
                                                                   child_source_pk='component_trait_id',
                                                                   verbosity=verbosity)
-        print("Added {} component source traits".format(len(new_component_source_trait_links)))
+        logger.info("Added {} component source traits".format(len(new_component_source_trait_links)))
 
         self._update_existing_data(source_db=source_db,
                                     source_table='harmonized_trait_set',
@@ -1017,6 +1030,17 @@ class Command(BaseCommand):
             **args and **options are handled as per the superclass handling; these
             argument dicts will pass on command line options
         """
+        # Set the logger level based on verbosity setting.
+        verbosity = options.get('verbosity') 
+        if verbosity == 0:
+            logger.setLevel(logging.CRITICAL)
+        elif verbosity == 1:
+            logger.setLevel(logging.ERROR)
+        elif verbosity == 2:
+            logger.setLevel(logging.INFO)
+        elif verbosity == 3:
+            logger.setLevel(logging.DEBUG)
+        
         # First update, then import new data.
         if not options['import_only']:
             self._update_source_tables(which_db=options['which_db'], verbosity=options['verbosity'])
