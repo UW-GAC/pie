@@ -11,7 +11,7 @@ class SourceSearchTable(tables.Table):
     search_text = tables.TemplateColumn(
         template_code='<a target="_blank" href={{ record.search_url }}>{{ record.search_text }}</a>'
     )
-    search_studies = tables.TemplateColumn(
+    filtered_studies = tables.TemplateColumn(
         template_code='<div data-toggle="tooltip" data-placement="bottom" title="{{ record.study_name_string }}">{{ record.search_studies }}</div>'
     )
 
