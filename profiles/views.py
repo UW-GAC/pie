@@ -32,7 +32,10 @@ def build_usersearches(user_id, search_type):
             'search_id': x.id,
             'search_text': x.param_text,
             # only used in SourceSearchTable
-            'search_studies': len([y['i_study_name'] for y in x.param_studies.values()])
+            'search_studies': len([y['i_study_name'] for y in x.param_studies.values()]),
+            'search_url': Search.build_search_url(
+                search_type, x.param_text, [s[0] for s in x.param_studies.values_list('i_accession')]
+            )
         }
         for x in searches
     ]
