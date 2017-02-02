@@ -33,12 +33,26 @@
         </ul>
 
         <!-- Tab panes -->
-        <div class="tab-content">
-          <div role="tabpanel" class="tab-pane fade in active" id="phenotypes">Saved phenotypes</div>
-          <div role="tabpanel" class="tab-pane fade" id="save-harm-drop">Harmonized searches {% render_table savedharmonized %}</div>
-          <div role="tabpanel" class="tab-pane fade" id="save-source-drop">Source searches {% render_table savedsource %}</div>
-          <div role="tabpanel" class="tab-pane fade" id="unitrecipes">Unit recipes</div>
-          <div role="tabpanel" class="tab-pane fade" id="harmonizationrecipes">Harmonization recipes</div>
+        <div class="container">
+          <div class="tab-content">
+            <div role="tabpanel" class="tab-pane fade in active" id="phenotypes">Saved phenotypes</div>
+            <div role="tabpanel" class="tab-pane fade" id="save-harm-drop">
+              <div class="row">
+                <div class="col-md-4">Harmonized searches</div>
+                <div class="col-md-4 col-md-offset-4"><button>Remove selected searches</button></div>
+                {% render_table savedharmonized %}
+              </div>
+            </div>
+            <div role="tabpanel" class="tab-pane fade" id="save-source-drop">
+              <div class= "row">
+                <div class="col-md-4">Source searches</div>
+                <div class="col-md-4 col-md-offset-4"><button>Remove selected searches</button></div>
+                {% render_table savedsource %}
+              </div>
+            </div>
+            <div role="tabpanel" class="tab-pane fade" id="unitrecipes">Unit recipes</div>
+            <div role="tabpanel" class="tab-pane fade" id="harmonizationrecipes">Harmonization recipes</div>
+          </div>
         </div>
       </div>
 
