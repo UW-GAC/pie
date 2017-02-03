@@ -525,8 +525,7 @@ class HelperTestCase(TestCase):
     def test_make_model_object_from_args(self):
         """Test that """
         CMD._make_model_object_from_args(args={'i_id':5, 'i_name':'global study name', 'i_date_added': timezone.now(), 'i_date_changed':timezone.now()},
-                                              model=GlobalStudy,
-                                              verbosity=0)
+                                              model=GlobalStudy)
         obj = GlobalStudy.objects.get(pk=5)
         self.assertIsInstance(obj, GlobalStudy)
         
@@ -1237,7 +1236,7 @@ class IntegrationTest(VisitTestDataTestCase):
         field_to_update = 'name'
         global_study = GlobalStudy.objects.all()[0]
         change_data_in_table('global_study', field_to_update, new_value, global_study._meta.pk.name.replace('i_', ''), 1)
-        management.call_command('import_db', '--which_db=devel', '--update_only', '--verbosity=3')
+        management.call_command('import_db', '--which_db=devel', '--update_only')
         global_study.refresh_from_db()
         # Check that modified date > created date, and name is set to new value.
         self.assertEqual(new_value, getattr(global_study, 'i_'+field_to_update))
