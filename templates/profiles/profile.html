@@ -12,7 +12,7 @@
     <p><a href="{% url 'password_reset' %}">Reset password</a></p>
 
     <div class="container">
-      <div class="row">
+      <div class="row form-group">
         {% if request.user.is_staff %}
         <a href="{% url 'admin:index' %}" class="btn btn-primary" role="button">PIE Administration</a>
         {% endif %}
@@ -34,26 +34,32 @@
         </ul>
 
         <!-- Tab panes -->
-        <div class="container">
-          <div class="tab-content">
-            <div role="tabpanel" class="tab-pane fade in active" id="phenotypes">Saved phenotypes</div>
-            <div role="tabpanel" class="tab-pane fade" id="save-harm-drop">
-              <div class="row">
-                <div class="col-md-4">Harmonized searches</div>
-                <div class="col-md-4 col-md-offset-4"><button>Remove selected searches</button></div>
+        <!-- Add space between tabs and content -->
+        <br>
+        <div class="tab-content">
+          <div role="tabpanel" class="tab-pane fade in active" id="phenotypes">Saved phenotypes</div>
+          <div role="tabpanel" class="tab-pane fade" id="save-harm-drop">
+            <div class="container">
+              <div class="row form-group">
+                <div class="btn btn-primary">Remove selected searches</div>
+              </div>
+              <div class="row form-group">
                 {% render_table savedharmonized %}
               </div>
             </div>
-            <div role="tabpanel" class="tab-pane fade" id="save-source-drop">
-              <div class= "row">
-                <div class="col-md-4">Source searches</div>
-                <div class="col-md-4 col-md-offset-4"><button>Remove selected searches</button></div>
+          </div>
+          <div role="tabpanel" class="tab-pane fade" id="save-source-drop">
+            <div class="container">
+              <div class="row form-group">
+                <div class="btn btn-primary">Remove selected searches</div>
+              </div>
+              <div class="row form-group">
                 {% render_table savedsource %}
               </div>
             </div>
-            <div role="tabpanel" class="tab-pane fade" id="unitrecipes">Unit recipes</div>
-            <div role="tabpanel" class="tab-pane fade" id="harmonizationrecipes">Harmonization recipes</div>
           </div>
+          <div role="tabpanel" class="tab-pane fade" id="unitrecipes">Unit recipes</div>
+          <div role="tabpanel" class="tab-pane fade" id="harmonizationrecipes">Harmonization recipes</div>
         </div>
       </div>
 
