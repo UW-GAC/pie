@@ -5,13 +5,15 @@ from .models import Search
 class SourceSearchTable(tables.Table):
 
     remove_search = tables.TemplateColumn(
-        template_code='<input type="checkbox" value="{{ record.search_id }}"></td>',
-        orderable=False
+        orderable=False,
+        template_code='<input type="checkbox" value="{{ record.search_id }}"></td>'
     )
-    search_text = tables.TemplateColumn(
+    source_search_text = tables.TemplateColumn(
+        orderable=False,
         template_code='<a target="_blank" href={{ record.search_url }}>{{ record.search_text }}</a>'
     )
     filtered_studies = tables.TemplateColumn(
+        orderable=False,
         template_code='<div data-toggle="tooltip" data-placement="bottom" title="{{ record.study_name_string }}">{{ record.search_studies }}</div>'
     )
 
@@ -21,10 +23,11 @@ class SourceSearchTable(tables.Table):
 class HarmonizedSearchTable(tables.Table):
 
     remove_search = tables.TemplateColumn(
-        template_code='<input type="checkbox" value="{{ record.search_id }}"></td>',
-        orderable=False
+        orderable=False,
+        template_code='<input type="checkbox" value="{{ record.search_id }}"></td>'
     )
-    search_text = tables.TemplateColumn(
+    harmonized_search_text = tables.TemplateColumn(
+        orderable=False,
         template_code='<a target="_blank" href={{ record.search_url }}>{{ record.search_text }}</a>'
     )
 
