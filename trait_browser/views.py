@@ -14,7 +14,7 @@ from .models import GlobalStudy, HarmonizedTrait, HarmonizedTraitEncodedValue, H
 from .tables import SourceTraitTable, HarmonizedTraitTable, StudyTable
 from .forms import SourceTraitCrispySearchForm, HarmonizedTraitCrispySearchForm
 
-from profiles.models import UserData, Search
+from profiles.models import UserData, Search, SavedSearchMeta
 
 from urllib.parse import unquote, urlparse, parse_qs
 
@@ -246,8 +246,10 @@ def save_search_to_profile(request):
 
     # save user search
     # user_id can be the actual value, saved_search_id has to be the model instance for some reason
-    user_data, new_user = UserData.objects.get_or_create(user_id=request.user.id)
-    user_data.saved_searches.add(search_record.id)
+    user_data, new_record = SavedSearchMeta.objects.get_or_create(
+        userdata_id=request.user.id,
+        search_id=search_record.id
+    )
     user_data.save()
 
     return HttpResponse()

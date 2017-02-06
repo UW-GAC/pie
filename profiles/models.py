@@ -52,4 +52,10 @@ class Search(TimeStampedModel):
 class UserData(TimeStampedModel):
     user = models.ForeignKey(settings.AUTH_USER_MODEL)
     # by default, Django uses the primary key of the foreign key related table
-    saved_searches = models.ManyToManyField(Search)
+    saved_searches = models.ManyToManyField(Search, through="SavedSearchMeta")
+
+
+class SavedSearchMeta(TimeStampedModel):
+    search = models.ForeignKey(Search)
+    userdata = models.ForeignKey(UserData)
+    active = models.BooleanField(default=True)
