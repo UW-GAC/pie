@@ -4,12 +4,12 @@ from django.utils.http import urlencode
 from django.core.urlresolvers import reverse
 
 from trait_browser.models import Study
-import urllib.parse as up
 
 
 class TimeStampedModel(models.Model):
     """
     An abstract base class model that provides selfupdating
+
     ``created`` and ``modified`` fields.
     """
 
@@ -29,11 +29,12 @@ class Search(TimeStampedModel):
     search_type = models.CharField(max_length=25, null=False)
 
     def build_search_url(search_type, text, study_list):
-        """ This builds the appropriate url with query string.
+        """
+        This builds the appropriate url with query string.
 
-            Django does not have built-in functionality to build a url with a query string,
-            as such we need to build our own urls with query strings here.
-            https://code.djangoproject.com/ticket/25582
+        Django does not have built-in functionality to build a url with a query string,
+        as such we need to build our own urls with query strings here.
+        https://code.djangoproject.com/ticket/25582
         """
         search_url = reverse(':'.join(['trait_browser', search_type, 'search']))
         query_string_dict = {
