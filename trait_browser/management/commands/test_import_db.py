@@ -1230,21 +1230,133 @@ class IntegrationTest(VisitTestDataTestCase):
         self.assertEqual(source_trait_encoded_values_count, SourceTraitEncodedValue.objects.count())
 
     def test_handle_with_updated_data(self):
-        """Test that calling the command on updated data works as expected."""
+        """Calling the update command applies all updates, when every possible kind of update is made."""
+        # This test is largely just all of the methods from UpdateModelsTestCase all put together.
+        # Initial call of the import command.
         management.call_command('import_db', '--which_db=devel')
+        t1 = timezone.now() # Save a time to compare to modified date.
+        new_value = 'asdfghjkl' # Use this value to reset things in multiple models.
         # Close the db connections because change_data_in_table() opens new connections.
         # This does not affect the .cursor and .source_db attributes in other functions.
         self.cursor.close()
         self.source_db.close()
-        new_value = 'asdfghjkl'
-        field_to_update = 'name'
+        # Update the global study table.
         global_study = GlobalStudy.objects.all()[0]
-        change_data_in_table('global_study', field_to_update, new_value, global_study._meta.pk.name.replace('i_', ''), 1)
+        change_data_in_table('global_study', 'name', new_value, global_study._meta.pk.name.replace('i_', ''), global_study.pk)
+        # Update the study table.
+        study = Study.objects.all()[0]
+        change_data_in_table('study', 'study_name', new_value, study._meta.pk.name.replace('i_', ''), study.pk)
+        # Update the source study version table.
+        source_study_version = SourceStudyVersion.objects.all()[0]
+        new_is_deprecated = not source_study_version.i_is_deprecated
+        change_data_in_table('source_study_version', 'is_deprecated', new_is_deprecated, source_study_version._meta.pk.name.replace('i_', ''), source_study_version.pk)
+        # Update source dataset table.
+        source_dataset = SourceDataset.objects.all()[0]
+        new_visit_code = 'one_visit_per_file'
+        change_data_in_table('source_dataset', 'visit_code', new_visit_code, source_dataset._meta.pk.name.replace('i_', ''), source_dataset.pk)
+        # Update source trait table.
+        source_trait = SourceTrait.objects.all()[0]
+        change_data_in_table('source_trait', 'dcc_description', new_value, 'source_trait_id', source_trait.pk)
+        # Update the subcohort table.
+        subcohort = Subcohort.objects.all()[0]
+        change_data_in_table('subcohort', 'name', new_value, subcohort._meta.pk.name.replace('i_', ''), subcohort.pk)
+        # Update source trait encoded values table.
+        sev = SourceTraitEncodedValue.objects.all()[0]
+        change_data_in_table('source_trait_encoded_values', 'value', new_value, sev._meta.pk.name.replace('i_', ''), sev.pk)
+        # Update harmonized trait set table.
+        harmonized_trait_set = HarmonizedTraitSet.objects.all()[0]
+        change_data_in_table('harmonized_trait_set', 'description', new_value, harmonized_trait_set._meta.pk.name.replace('i_', ''), harmonized_trait_set.pk)
+        # Update harmonized trait table.
+        harmonized_trait = HarmonizedTrait.objects.all()[0]
+        change_data_in_table('harmonized_trait', 'description', new_value, 'harmonized_trait_id', harmonized_trait.pk)
+        # Update harmonized trait encoded values table.
+        hev = HarmonizedTraitEncodedValue.objects.all()[0]
+        change_data_in_table('harmonized_trait_encoded_values', 'value', new_value, hev._meta.pk.name.replace('i_', ''), hev.pk)
+        
+        # Prep for doing updates for m2m tables.
+        self.source_db = get_devel_db(permissions='full')
+        self.cursor = self.source_db.cursor(buffered=True, dictionary=True)
+        # Find a dataset which this subcohort isn't linked to already
+        linked_datasets = subcohort.sourcedataset_set.all()
+        possible_datasets = SourceDataset.objects.filter(source_study_version__study = subcohort.study)
+        unlinked_datasets = set(possible_datasets) - set(linked_datasets)
+        if len(unlinked_datasets) < 1:
+            raise ValueError('The subcohort is already linked to all possible datasets.')
+        dataset_to_link = list(unlinked_datasets)[0]
+        # Create a new dataset-subcohort link in the source db.
+        add_subcohort_link_query = "INSERT INTO source_dataset_subcohorts (dataset_id, subcohort_id, date_added) VALUES ({}, {}, '{}');".format(subcohort.i_id, dataset_to_link.i_id, timezone.now().strftime('%Y-%m-%d %H:%M:%S'))
+        self.cursor.execute(add_subcohort_link_query)
+        self.source_db.commit()
+        # Find a harmonized_trait_set which the source trait isn't linked to already
+        for x in range(1, 100):
+            htrait_set = HarmonizedTraitSet.objects.get(pk=x)
+            if htrait_set not in source_trait.harmonizedtraitset_set.all():
+                break
+        # Add source_trait as a component trait of htrait_set in the source db.
+        # Have to add a harmonized function here first...
+        self.cursor.execute("INSERT INTO harmonized_function (function_definition) values ('return(dataset)');")
+        self.source_db.commit()
+        add_component_trait_query = "INSERT INTO component_source_trait (harmonized_trait_set_id, harmonized_function_id, component_trait_id, date_added) VALUES ({}, 1, {}, '{}');".format(htrait_set.i_id, source_trait.i_trait_id, timezone.now().strftime('%Y-%m-%d %H:%M:%S'))
+        self.cursor.execute(add_component_trait_query)
+        self.source_db.commit()
+        
+        self.cursor.close()
+        self.source_db.close()
+
+        # Run the update command.
         management.call_command('import_db', '--which_db=devel', '--update_only')
+
+        # Refresh models from the db. 
         global_study.refresh_from_db()
+        study.refresh_from_db()
+        source_study_version.refresh_from_db()
+        source_dataset.refresh_from_db()
+        source_trait.refresh_from_db()
+        subcohort.refresh_from_db()
+        sev.refresh_from_db()
+        harmonized_trait_set.refresh_from_db()
+        harmonized_trait.refresh_from_db()
+        hev.refresh_from_db()
+        
+        dataset_to_link.refresh_from_db()
+        htrait_set.refresh_from_db()
+        
+        
         # Check that modified date > created date, and name is set to new value.
-        self.assertEqual(new_value, getattr(global_study, 'i_'+field_to_update))
-        self.assertTrue(global_study.modified > global_study.created)
+        self.assertEqual(new_value, global_study.i_name)
+        self.assertTrue(global_study.modified > t1)
+    
+        self.assertEqual(new_value, study.i_study_name)
+        self.assertTrue(study.modified > t1)
+
+        self.assertEqual(new_is_deprecated, source_study_version.i_is_deprecated)
+        self.assertTrue(source_study_version.modified > t1)
+
+        self.assertEqual(new_visit_code, source_dataset.i_visit_code)
+        self.assertTrue(source_dataset.modified > t1)
+
+        self.assertEqual(new_value, source_trait.i_description)
+        self.assertTrue(source_trait.modified > t1)
+
+        self.assertEqual(new_value, subcohort.i_name)
+        self.assertTrue(subcohort.modified > t1)
+
+        self.assertEqual(new_value, sev.i_value)
+        self.assertTrue(sev.modified > t1)
+
+        self.assertEqual(new_value, harmonized_trait_set.i_description)
+        self.assertTrue(harmonized_trait_set.modified > t1)
+
+        self.assertEqual(new_value, harmonized_trait.i_description)
+        self.assertTrue(harmonized_trait.modified > t1)
+
+        self.assertEqual(new_value, hev.i_value)
+        self.assertTrue(hev.modified > t1)
+        
+        self.assertTrue(dataset_to_link in subcohort.sourcedataset_set.all())
+
+        self.assertTrue(htrait_set in source_trait.harmonizedtraitset_set.all())
+
     
     def test_handle_with_new_study_added(self):
         """Ensure that the whole workflow of the management command works to add objects to the website databse, without limits."""
