@@ -835,6 +835,14 @@ class Command(BaseCommand):
                                                              make_args=self._make_harmonized_trait_args)
         logger.info("Added {} harmonized traits".format(len(new_harmonized_trait_pks)))
 
+        new_harmonized_trait_encoded_value_pks = self._import_new_data(source_db=source_db,
+                                                             source_table='harmonized_trait_encoded_values',
+                                                             source_pk='harmonized_trait_id',
+                                                             model=HarmonizedTraitEncodedValue,
+                                                             make_args=self._make_harmonized_trait_encoded_value_args)
+        logger.info("Added {} harmonized trait encoded values".format(len(new_harmonized_trait_encoded_value_pks)))
+        
+
         new_component_source_trait_links = self._import_new_m2m_field(source_db=source_db,
                                                                         source_table='component_source_trait',
                                                                         parent_model=HarmonizedTraitSet,
@@ -843,15 +851,6 @@ class Command(BaseCommand):
                                                                         child_source_pk='component_trait_id',
                                                                         import_parent_pks=new_harmonized_trait_set_pks)
         logger.info("Added {} component source traits".format(len(new_component_source_trait_links)))
-
-        new_harmonized_trait_encoded_value_pks = self._import_new_data(source_db=source_db,
-                                                             source_table='harmonized_trait_encoded_values',
-                                                             source_pk='harmonized_trait_id',
-                                                             model=HarmonizedTraitEncodedValue,
-                                                             make_args=self._make_harmonized_trait_encoded_value_args)
-        logger.info("Added {} harmonized trait encoded values".format(len(new_harmonized_trait_encoded_value_pks)))
-        
-        source_db.close()    
 
         source_db.close()
 
