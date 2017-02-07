@@ -332,7 +332,7 @@ class Command(BaseCommand):
             query = self._make_table_query(source_table=source_table, filter_field=source_pk, filter_values=["''"], filter_not=False)
         return query
 
-    def _update_model_object_from_args(self, args, model):
+    def _update_model_object_from_args(self, args, model, expected):
         """Update an existing model object using arguments.
         
         Given a dict of updated arguments for the model, if an argument does not
@@ -341,6 +341,8 @@ class Command(BaseCommand):
         Arguments:
             args (dict): 'field_name': 'field_value' pairs, used to update the model object instance
             model (class obj): the model class to use to make a model object instance
+            expected (bool): whether or not updates are expected to happen in this 
+                model; triggers warning printing
         """
         model_pk_name = model._meta.pk.name
         obj = model.objects.get(pk=args[model_pk_name])
@@ -348,12 +350,18 @@ class Command(BaseCommand):
         ## but that's probably redundant based on the query in make_query_for_rows_to_update
         # Update any fields that are different
         for field_name in args:
-            if getattr(obj, field_name) != args[field_name]:
-                setattr(obj, field_name, args[field_name])
-                logger.debug('Updated field {} of object {}'.format(field_name, obj))
-        obj.save()
+            old_val = getattr(obj, field_name)
+            new_val = args[field_name]
+            if old_val != new_val:
+                setattr(obj, field_name, new_val)
+                obj.save()
+                update_message = '{} {} field changed from {} to {}'.format(obj, field_name, old_val, new_val)
+                if not expected:
+                    logger.warning('Unexpected update: ' + update_message)
+                else:
+                    logger.debug('Update:' + update_message)
 
-    def _update_model_object_per_query_row(self, source_db, query, make_args, model):
+    def _update_model_object_per_query_row(self, source_db, query, make_args, model, **kwargs):
         """Update an existing model object from each row of a query's results.
         
         Run a query on the source db and use its results to update any changed values
@@ -401,10 +409,10 @@ class Command(BaseCommand):
         cursor.execute(query)
         for row in cursor:
             args = make_args(self._fix_row(row))
-            self._update_model_object_from_args(args, model)
+            self._update_model_object_from_args(args, model, **kwargs)
         cursor.close()
 
-    def _update_existing_data(self, source_db, source_table, source_pk, model, make_args):
+    def _update_existing_data(self, source_db, source_table, source_pk, model, make_args, **kwargs):
         """Update field values that have been modified in the source db since the last update.
         
         Find the pks for model that have already been imported into Django. Then
@@ -423,12 +431,12 @@ class Command(BaseCommand):
         """
         old_pks = self._get_current_pks(model)
         if len(old_pks) < 1:
-                logger.debug('No updated {}s to import.'.format(model))
+                logger.debug('Model {} has no imported objects to check for updates.'.format(model._meta.object_name))
         else:
             update_rows_query = self._make_query_for_rows_to_update(source_table=source_table, model=model, old_pks=old_pks, source_pk=source_pk, changed_greater=True)
             logger.debug(update_rows_query)
-            logger.debug('Updating entries for model {} ...'.format(model.__name__))
-            self._update_model_object_per_query_row(source_db, update_rows_query, make_args, model)
+            self._update_model_object_per_query_row(source_db, update_rows_query, make_args, model, **kwargs)
+            logger.debug('Updating entries for model {} ...'.format(model._meta.object_name))
 
 
     # Methods to make object-instantiating args from a row of the source db data.
@@ -888,43 +896,50 @@ class Command(BaseCommand):
                                    source_table='global_study',
                                    source_pk='id',
                                    model=GlobalStudy,
-                                   make_args=self._make_global_study_args)
+                                   make_args=self._make_global_study_args,
+                                   expected=False)
 
         self._update_existing_data(source_db=source_db,
                                     source_table='study',
                                     source_pk='accession',
                                     model=Study,
-                                    make_args=self._make_study_args)
+                                    make_args=self._make_study_args,
+                                    expected=False)
 
         self._update_existing_data(source_db=source_db,
                                     source_table='source_study_version',
                                     source_pk='id',
                                     model=SourceStudyVersion,
-                                    make_args=self._make_source_study_version_args)
+                                    make_args=self._make_source_study_version_args,
+                                    expected=True)
 
         self._update_existing_data(source_db=source_db,
                                     source_table='source_dataset',
                                     source_pk='id',
                                     model=SourceDataset,
-                                    make_args=self._make_source_dataset_args)
+                                    make_args=self._make_source_dataset_args,
+                                    expected=True)
 
         self._update_existing_data(source_db=source_db,
                                     source_table='source_trait',
                                     source_pk='source_trait_id',
                                     model=SourceTrait,
-                                    make_args=self._make_source_trait_args)
+                                    make_args=self._make_source_trait_args,
+                                    expected=True)
 
         self._update_existing_data(source_db=source_db,
                                     source_table='subcohort',
                                     source_pk='id',
                                     model=Subcohort,
-                                    make_args=self._make_subcohort_args)
+                                    make_args=self._make_subcohort_args,
+                                    expected=True)
 
         self._update_existing_data(source_db=source_db,
                                     source_table='source_trait_encoded_values',
                                     source_pk='id',
                                     model=SourceTraitEncodedValue,
-                                    make_args=self._make_source_trait_encoded_value_args)
+                                    make_args=self._make_source_trait_encoded_value_args,
+                                    expected=False)
 
         source_db.close()
 
@@ -962,19 +977,22 @@ class Command(BaseCommand):
                                     source_table='harmonized_trait_set',
                                     source_pk='id',
                                     model=HarmonizedTraitSet,
-                                    make_args=self._make_harmonized_trait_set_args)
+                                    make_args=self._make_harmonized_trait_set_args,
+                                    expected=False)
 
         self._update_existing_data(source_db=source_db,
                                     source_table='harmonized_trait',
                                     source_pk='harmonized_trait_id',
                                     model=HarmonizedTrait,
-                                    make_args=self._make_harmonized_trait_args)
+                                    make_args=self._make_harmonized_trait_args,
+                                    expected=False)
 
         self._update_existing_data(source_db=source_db,
                                     source_table='harmonized_trait_encoded_values',
                                     source_pk='harmonized_trait_id',
                                     model=HarmonizedTraitEncodedValue,
-                                    make_args=self._make_harmonized_trait_encoded_value_args)
+                                    make_args=self._make_harmonized_trait_encoded_value_args,
+                                    expected=False)
 
         source_db.close()    
 
