@@ -82,6 +82,23 @@ def change_data_in_table(table_name, update_field, new_value, where_field, where
     source_db.close()
 
 
+class OpenCloseDBMixin(object):
+    """Mixin to add setUp and tearDown methods to TestCases.
+    
+    setUp opens a new db connection and tearDown closes the connection.
+    """
+
+    def setUp(self):
+        """Get a new source db connection for each test."""
+        self.source_db = get_devel_db()
+        self.cursor = self.source_db.cursor(buffered=True, dictionary=True)
+    
+    def tearDown(self):
+        """Close the source db connection at the end of each test."""
+        self.cursor.close()
+        self.source_db.close()
+
+
 class TestFunctionsTestCase(TestCase):
     
     def test_clean_devel_db(self):
@@ -164,7 +181,7 @@ class TestFunctionsTestCase(TestCase):
         remove(tmp_file_path) 
 
 
-class BaseTestDataTestCase(TestCase):
+class BaseTestDataTestCase(OpenCloseDBMixin, TestCase):
     """Superclass to test importing commands on the base.sql test source db data."""
     
     @classmethod
@@ -175,19 +192,9 @@ class BaseTestDataTestCase(TestCase):
         # By default, all tests will use dataset 1.
         clean_devel_db()
         load_test_source_db_data('base.sql')
-    
-    def setUp(self):
-        """ """
-        self.source_db = get_devel_db()
-        self.cursor = self.source_db.cursor(buffered=True, dictionary=True)
-    
-    def tearDown(self):
-        """ """
-        self.cursor.close()
-        self.source_db.close()
 
 
-class VisitTestDataTestCase(TestCase):
+class VisitTestDataTestCase(OpenCloseDBMixin, TestCase):
     """Tests that need visit data to already be added to the source db test data."""
     
     @classmethod
@@ -198,16 +205,6 @@ class VisitTestDataTestCase(TestCase):
         # By default, all tests will use dataset 1.
         clean_devel_db()
         load_test_source_db_data('base_plus_visit.sql')
-    
-    def setUp(self):
-        """ """
-        self.source_db = get_devel_db()
-        self.cursor = self.source_db.cursor(buffered=True, dictionary=True)
-    
-    def tearDown(self):
-        """ """
-        self.cursor.close()
-        self.source_db.close()
 
 
 class VisitTestCase(VisitTestDataTestCase):
