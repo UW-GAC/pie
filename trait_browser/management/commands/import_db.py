@@ -343,16 +343,21 @@ class Command(BaseCommand):
             model (class obj): the model class to use to make a model object instance
             expected (bool): whether or not updates are expected to happen in this 
                 model; triggers warning printing
+        
+        Returns:
+            bool; True if any fields were updated, False if not
         """
         model_pk_name = model._meta.pk.name
         obj = model.objects.get(pk=args[model_pk_name])
         ## Originally intended to have a check here that date_changed (source db) > modified (web db)
         ## but that's probably redundant based on the query in make_query_for_rows_to_update
         # Update any fields that are different
+        updates = 0
         for field_name in args:
             old_val = getattr(obj, field_name)
             new_val = args[field_name]
             if old_val != new_val:
+                updates += 0
                 setattr(obj, field_name, new_val)
                 obj.save()
                 update_message = '{} {} field changed from {} to {}'.format(obj, field_name, old_val, new_val)
@@ -360,6 +365,10 @@ class Command(BaseCommand):
                     logger.warning('Unexpected update: ' + update_message)
                 else:
                     logger.debug('Update:' + update_message)
+        if updates > 0:
+            return True
+        else:
+            return False
 
     def _update_model_object_per_query_row(self, source_db, query, make_args, model, **kwargs):
         """Update an existing model object from each row of a query's results.
@@ -374,7 +383,7 @@ class Command(BaseCommand):
             model (class obj): the model class to use to make a model object instance
         
         Returns:
-            None
+            int; number of updated rows that were detected in the source db
         """
         # Print the results of the updated rows query (SQL table format).
         # print(query)
@@ -407,9 +416,11 @@ class Command(BaseCommand):
         # 
         cursor = source_db.cursor(buffered=True, dictionary=True)
         cursor.execute(query)
+        updated = 0
         for row in cursor:
             args = make_args(self._fix_row(row))
-            self._update_model_object_from_args(args, model, **kwargs)
+            if self._update_model_object_from_args(args, model, **kwargs):
+                updated += 1
         cursor.close()
 
     def _update_existing_data(self, source_db, source_table, source_pk, model, make_args, **kwargs):
@@ -427,16 +438,18 @@ class Command(BaseCommand):
             make_args (function): function to convert a db query result row to args for making a model object
         
         Returns:
-            None
+            int; the number of updated rows detected in the source db
         """
         old_pks = self._get_current_pks(model)
         if len(old_pks) < 1:
-                logger.debug('Model {} has no imported objects to check for updates.'.format(model._meta.object_name))
+            logger.debug('Model {} has no imported objects to check for updates.'.format(model._meta.object_name))
+            n_updated = 0
         else:
             update_rows_query = self._make_query_for_rows_to_update(source_table=source_table, model=model, old_pks=old_pks, source_pk=source_pk, changed_greater=True)
             logger.debug(update_rows_query)
-            self._update_model_object_per_query_row(source_db, update_rows_query, make_args, model, **kwargs)
             logger.debug('Updating entries for model {} ...'.format(model._meta.object_name))
+            n_updated = self._update_model_object_per_query_row(source_db=source_db, query=update_rows_query, make_args=make_args, model=model, **kwargs)
+        return n_updated
 
 
     # Methods to make object-instantiating args from a row of the source db data.
@@ -890,56 +903,63 @@ class Command(BaseCommand):
                                                                     parent_source_pk='dataset_id',
                                                                     child_model=Subcohort,
                                                                     child_source_pk='subcohort_id')
-        logger.info("Added {} source dataset subcohorts".format(len(new_source_dataset_subcohort_links)))
+        logger.info("Update: added {} source dataset subcohorts".format(len(new_source_dataset_subcohort_links)))
 
-        self._update_existing_data(source_db=source_db,
+        global_study_update_count = self._update_existing_data(source_db=source_db,
                                    source_table='global_study',
                                    source_pk='id',
                                    model=GlobalStudy,
                                    make_args=self._make_global_study_args,
                                    expected=False)
+        logger.info('{} global studies updated'.format(global_study_update_count))
 
-        self._update_existing_data(source_db=source_db,
+        study_update_count = self._update_existing_data(source_db=source_db,
                                     source_table='study',
                                     source_pk='accession',
                                     model=Study,
                                     make_args=self._make_study_args,
                                     expected=False)
+        logger.info('{} studies updated'.format(study_update_count))
 
-        self._update_existing_data(source_db=source_db,
+        source_study_version_update_count = self._update_existing_data(source_db=source_db,
                                     source_table='source_study_version',
                                     source_pk='id',
                                     model=SourceStudyVersion,
                                     make_args=self._make_source_study_version_args,
                                     expected=True)
+        logger.info('{} source study versions updated'.format(source_study_version_update_count))
 
-        self._update_existing_data(source_db=source_db,
+        source_dataset_update_count = self._update_existing_data(source_db=source_db,
                                     source_table='source_dataset',
                                     source_pk='id',
                                     model=SourceDataset,
                                     make_args=self._make_source_dataset_args,
                                     expected=True)
+        logger.info('{} source datasets updated'.format(source_dataset_update_count))
 
-        self._update_existing_data(source_db=source_db,
+        source_trait_update_count = self._update_existing_data(source_db=source_db,
                                     source_table='source_trait',
                                     source_pk='source_trait_id',
                                     model=SourceTrait,
                                     make_args=self._make_source_trait_args,
                                     expected=True)
+        logger.info('{} source traits updated'.format(source_trait_update_count))
 
-        self._update_existing_data(source_db=source_db,
+        subcohort_update_count = self._update_existing_data(source_db=source_db,
                                     source_table='subcohort',
                                     source_pk='id',
                                     model=Subcohort,
                                     make_args=self._make_subcohort_args,
                                     expected=True)
+        logger.info('{} subcohorts updated'.format(subcohort_update_count))
 
-        self._update_existing_data(source_db=source_db,
+        source_trait_ev_update_count = self._update_existing_data(source_db=source_db,
                                     source_table='source_trait_encoded_values',
                                     source_pk='id',
                                     model=SourceTraitEncodedValue,
                                     make_args=self._make_source_trait_encoded_value_args,
                                     expected=False)
+        logger.info('{} source trait encoded values updated'.format(source_trait_ev_update_count))
 
         source_db.close()
 
@@ -971,28 +991,31 @@ class Command(BaseCommand):
                                                                   parent_source_pk='harmonized_trait_set_id',
                                                                   child_model=SourceTrait,
                                                                   child_source_pk='component_trait_id')
-        logger.info("Added {} component source traits".format(len(new_component_source_trait_links)))
+        logger.info("Update: added {} component source traits".format(len(new_component_source_trait_links)))
 
-        self._update_existing_data(source_db=source_db,
+        htrait_set_update_count = self._update_existing_data(source_db=source_db,
                                     source_table='harmonized_trait_set',
                                     source_pk='id',
                                     model=HarmonizedTraitSet,
                                     make_args=self._make_harmonized_trait_set_args,
                                     expected=False)
+        logger.info('{} harmonized trait sets updated'.format(htrait_set_update_count))
 
-        self._update_existing_data(source_db=source_db,
+        harmonized_trait_update_count = self._update_existing_data(source_db=source_db,
                                     source_table='harmonized_trait',
                                     source_pk='harmonized_trait_id',
                                     model=HarmonizedTrait,
                                     make_args=self._make_harmonized_trait_args,
                                     expected=False)
+        logger.info('{} harmonized traits updated'.format(harmonized_trait_update_count))
 
-        self._update_existing_data(source_db=source_db,
+        htrait_ev_update_count = self._update_existing_data(source_db=source_db,
                                     source_table='harmonized_trait_encoded_values',
                                     source_pk='harmonized_trait_id',
                                     model=HarmonizedTraitEncodedValue,
                                     make_args=self._make_harmonized_trait_encoded_value_args,
                                     expected=False)
+        logger.info('{} harmonized trait encoded values updated'.format(htrait_ev_update_count))
 
         source_db.close()    
 
