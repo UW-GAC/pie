@@ -681,9 +681,9 @@ class Command(BaseCommand):
             links.append((type_fixed_row[parent_source_pk], type_fixed_row[child_source_pk]))
         return links
 
-    def _update_m2m_field(self, source_db, source_table, parent_model, parent_source_pk,
-                          child_model, child_source_pk):
-        """Update ManyToMany field links from an m2m source table for parent models already imported.
+    def _make_new_m2m_links(self, source_db, source_table, parent_model, parent_source_pk,
+                          child_model, child_source_pk, **kwargs):
+        """Get new m2m field links from an m2m source table for already-imported parent models.
         
         parent_model must have a field that is a ManyToManyField to child_model.
         Query the source db for entries in the m2m table (source_table) that link
@@ -713,10 +713,70 @@ class Command(BaseCommand):
             parent, child = self._make_m2m_link(parent_model=parent_model,
                                                 parent_pk=type_fixed_row[parent_source_pk],
                                                 child_model=child_model,
-                                                child_pk=type_fixed_row[child_source_pk]
-                                                )
+                                                child_pk=type_fixed_row[child_source_pk])
             links.append((type_fixed_row[parent_source_pk], type_fixed_row[child_source_pk]))
         return links
+    
+    def _remove_missing_m2m_links(self, source_db, source_table, parent_model, parent_source_pk,
+                          child_model, child_source_pk, child_related_name, **kwargs):
+        """Remove m2m links that have been removed from the source db (for already-imported parent models).
+        
+        For each parent model that has been imported, get a list of the linked children
+        and check the source db to see if the link between parent and child is still
+        present there. If it is no longer linked in the source db, remove the child
+        from the m2m field. 
+        
+        Arguments:
+            source_db (MySQLConnection): a mysql.connector open db connection 
+            source_table (str): name of the table in the source db
+            parent_model (class obj): the model class of the parent model for the m2m field
+            parent_source_pk (str): name of the parent model's primary key column in the source db
+            child_model (class obj): the model class of the child model for the m2m field
+            child_source_pk (str): name of the child model's primary key column in the source db
+            child_related_name (str): name of the parent model's field which is related to child_model
+        
+        Returns:
+            list of str pk values for (parent_pk, child_pk) pairs that have now been linked
+        """
+        links = []
+        cursor = source_db.cursor(buffered=True, dictionary=True)
+        current_parents = parent_model.objects.all()
+        for parent in current_parents:
+            logger.debug(parent)
+            linked_pks = [str(el.pk) for el in getattr(parent, child_related_name).all()]
+            logger.debug(','.join(linked_pks))
+            if len(linked_pks) > 0:
+                linked_pks_query = self._make_table_query(source_table=source_table, filter_field=parent_source_pk, filter_values=[str(parent.pk)], filter_not=False)
+                # logger.debug(linked_pks_query)
+                cursor.execute(linked_pks_query)
+                remaining_links = [str(self._fix_row(row)[child_source_pk]) for row in cursor.fetchall()]
+                removed_pks = set(linked_pks) - set(remaining_links)
+                # logger.debug('still linked: {}'.format(','.join(remaining_links)))
+                # logger.debug('pks to remove: {}'.format(','.join(removed_pks)))
+                for pk_to_remove in removed_pks:
+                    child = child_model.objects.get(pk=pk_to_remove)
+                    getattr(parent, child_related_name).remove(child)
+                    parent.save()
+                    links.append((parent.pk, pk_to_remove))
+                    logger.debug('Unlinked {} from {}.'.format(child, parent))
+        return links
+
+    def _update_m2m_field(self, **kwargs):
+        """Update ManyToMany field links from an m2m source table for parent models already imported.
+        
+        parent_model must have a field that is a ManyToManyField to child_model.
+        Query the source db for entries in the m2m table (source_table) that link
+        child_source_pk values to parent_source_pk values, for parent_source_pk values
+        that are already imported into the Django models. Then use the results of that
+        query to link child_model instances to parent_model instances, using
+        parent_model_obj.children.add(child_model_obj)
+        
+        Returns:
+            
+        """
+        new_links = self._make_new_m2m_links(**kwargs)
+        removed_links = self._remove_missing_m2m_links(**kwargs)
+        return {'new': new_links, 'removed': removed_links}
     
     def _make_m2m_link(self, parent_model, parent_pk, child_model, child_pk):
         """Add a child model object instance to the M2M field of a parent model object instance.
@@ -900,13 +960,15 @@ class Command(BaseCommand):
         logger.info('Updating source traits...')
         source_db = self._get_source_db(which_db=which_db)
 
-        new_source_dataset_subcohort_links = self._update_m2m_field(source_db=source_db,
+        updated_source_dataset_subcohort_links = self._update_m2m_field(source_db=source_db,
                                                                     source_table='source_dataset_subcohorts',
                                                                     parent_model=SourceDataset,
                                                                     parent_source_pk='dataset_id',
                                                                     child_model=Subcohort,
-                                                                    child_source_pk='subcohort_id')
-        logger.info("Update: added {} source dataset subcohorts".format(len(new_source_dataset_subcohort_links)))
+                                                                    child_source_pk='subcohort_id',
+                                                                    child_related_name='subcohorts')
+        logger.info("Update: added {} source dataset subcohorts".format(len(updated_source_dataset_subcohort_links['new'])))
+        logger.info("Update: removed {} source dataset subcohorts".format(len(updated_source_dataset_subcohort_links['removed'])))
 
         global_study_update_count = self._update_existing_data(source_db=source_db,
                                    source_table='global_study',
@@ -988,13 +1050,15 @@ class Command(BaseCommand):
         logger.info('Updating harmonized traits...')
         source_db = self._get_source_db(which_db=which_db)
 
-        new_component_source_trait_links = self._update_m2m_field(source_db=source_db,
+        updated_component_source_trait_links = self._update_m2m_field(source_db=source_db,
                                                                   source_table='component_source_trait',
                                                                   parent_model=HarmonizedTraitSet,
                                                                   parent_source_pk='harmonized_trait_set_id',
                                                                   child_model=SourceTrait,
-                                                                  child_source_pk='component_trait_id')
-        logger.info("Update: added {} component source traits".format(len(new_component_source_trait_links)))
+                                                                  child_source_pk='component_trait_id',
+                                                                  child_related_name='component_source_traits')
+        logger.info("Update: added {} component source traits".format(len(updated_component_source_trait_links['new'])))
+        logger.info("Update: removed {} component source traits".format(len(updated_component_source_trait_links['removed'])))
 
         htrait_set_update_count = self._update_existing_data(source_db=source_db,
                                     source_table='harmonized_trait_set',
