@@ -194,7 +194,10 @@ class Command(BaseCommand):
                     not_string = 'NOT'
                 else:
                     not_string = ''
-                value_string = ','.join(filter_values)
+                if len(filter_values) == 0:
+                    value_string = "''"
+                else:
+                    value_string = ','.join(filter_values)
                 filter_query = ' WHERE {} {} IN ({})'.format(filter_field, not_string, value_string)
                 query += filter_query
         return query
