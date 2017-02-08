@@ -30,11 +30,22 @@ from trait_browser.models import GlobalStudy, HarmonizedTrait, HarmonizedTraitEn
 CMD = Command()
 
 def get_devel_db(permissions='readonly'):
-    """Get a connection to the devel source db."""
+    """Get a connection to the devel source db.
+    
+    Arguments:
+        permissions (str): 'readonly' or 'full'
+    
+    Returns:
+        connection to the MySQL devel db
+    """
     return CMD._get_source_db(which_db='devel', permissions=permissions)
 
 def clean_devel_db():
-    """Remove all existing data from the devel source db."""
+    """Remove all existing data from the devel source db.
+    
+    For each table in a 'show tables' query, remove all of the data in the table
+    by using the truncate command.
+    """
     # if verbose: print('Getting source db connection ...')
     source_db = get_devel_db(permissions='full')
     cursor = source_db.cursor(buffered=True, dictionary=False)
@@ -55,11 +66,10 @@ def clean_devel_db():
     
 TEST_DATA_DIR = 'trait_browser/source_db_test_data'
 def load_test_source_db_data(filename):
-    """
-    Load the data from a specific test data set into the devel source db.
+    """Load the data from a specific test data set into the devel source db.
     
-    Args:
-        filename -- name of the .sql mysql dump file, found in TEST_DATA_DIR
+    Arguments:
+        filename (str): name of the .sql mysql dump file, found in TEST_DATA_DIR
     """
     filepath = join(TEST_DATA_DIR, filename)
     # if verbose: print('Loading test data from ' + filepath + ' ...')
@@ -72,6 +82,16 @@ def load_test_source_db_data(filename):
     #     if verbose: print('Test data loaded ...')
 
 def change_data_in_table(table_name, update_field, new_value, where_field, where_value):
+    """Run an UPDATE command in the devel db using arguments about what to change.
+    
+    Arguments:
+        table_name (str): name of the source db table to UPDATE
+        update_field (str): name of the source db field to SET
+        new_value (str): new value to set the update_field field to
+        where_field (str): field name to use in the WHERE clause of the UPDATE
+            command; probably should be the pk field name
+        where_value (str): the value of the where_field to set new values for
+    """
     source_db = get_devel_db(permissions='full')
     cursor = source_db.cursor(buffered=True)
     update_cmd = "UPDATE {} SET {}='{}' WHERE {}={};".format(table_name, update_field, new_value, where_field, where_value)
@@ -100,6 +120,7 @@ class OpenCloseDBMixin(object):
 
 
 class TestFunctionsTestCase(TestCase):
+    """Tests of the helper functions used by this test script."""
     
     def test_clean_devel_db(self):
         """Test that clean_devel_db() leaves the devel db with 0 rows in each table."""
@@ -186,6 +207,7 @@ class BaseTestDataTestCase(OpenCloseDBMixin, TestCase):
     
     @classmethod
     def setUpClass(cls):
+        """Load the base test data, once for all tests."""
         # Run the TestCase setUpClass method.
         super(BaseTestDataTestCase, cls).setUpClass()
         # Clean out the devel db and load the first test dataset.
@@ -199,6 +221,7 @@ class VisitTestDataTestCase(OpenCloseDBMixin, TestCase):
     
     @classmethod
     def setUpClass(cls):
+        """Load the base+visit test data once for all of the tests."""
         # Run the TestCase setUpClass method.
         super(VisitTestDataTestCase, cls).setUpClass()
         # Clean out the devel db and load the first test dataset.
@@ -208,6 +231,7 @@ class VisitTestDataTestCase(OpenCloseDBMixin, TestCase):
 
 
 class VisitTestCase(VisitTestDataTestCase):
+    """Tests that require visit data from the get-go."""
     
     def test_make_subcohort_args_one_row_make_subcohort_obj(self):
         """Get a single row of test data from the database and see if the results from _make_subcohort_args can be used to successfully make and save a Subcohort object."""
@@ -225,16 +249,17 @@ class VisitTestCase(VisitTestDataTestCase):
 
 
 class DbFixersTestCase(TestCase):
+    """Tests of the _fix_[something] methods."""
 
     def test_fix_bytearray_no_bytearrays_left(self):
-        """Test that bytearrays from the row_dict are converted to strings."""
+        """Bytearrays from the row_dict are converted to strings."""
         row = fake_row_dict()
         fixed_row = CMD._fix_bytearray(row)
         for k in fixed_row:
             self.assertNotIsInstance(fixed_row[k], bytearray)
     
     def test_fix_bytearray_only_bytearrays_altered(self):
-        """Ensure that the non-bytearray values from the row_dict are not altered by _fix_bytearray."""
+        """The non-bytearray values from the row_dict are not altered by _fix_bytearray."""
         row = fake_row_dict()
         fixed_row = CMD._fix_bytearray(row)
         bytearray_keys = [k for k in row.keys() if isinstance(row[k], bytearray)]
@@ -243,7 +268,7 @@ class DbFixersTestCase(TestCase):
             self.assertEqual(row[k], fixed_row[k])
 
     def test_fix_bytearray_to_string(self):
-        """Ensure that the bytearray values from the row_dict are converted to string type."""
+        """The bytearray values from the row_dict are converted to string type."""
         row = fake_row_dict()
         fixed_row = CMD._fix_bytearray(row)
         bytearray_keys = [k for k in row.keys() if isinstance(row[k], bytearray)]
@@ -252,38 +277,38 @@ class DbFixersTestCase(TestCase):
             self.assertIsInstance(fixed_row[k], str)
         
     def test_fix_bytearray_empty_bytearray(self):
-        """Ensure that the _fix_bytearray function works on an empty bytearray."""
+        """The _fix_bytearray function works on an empty bytearray."""
         row = {'empty_bytearray': bytearray('', 'utf-8')}
         fixed_row = CMD._fix_bytearray(row)
         self.assertEqual(fixed_row['empty_bytearray'], '')
     
     def test_fix_bytearray_non_utf8(self):
-        """Ensure that _fix_bytearray works on a bytearray with a different encoding that utf-8."""
+        """_fix_bytearray works on a bytearray with a different encoding that utf-8."""
         row = {'ascii_bytearray': bytearray('foobar', 'ascii')}
         fixed_row = CMD._fix_bytearray(row)
         self.assertEqual(fixed_row['ascii_bytearray'], 'foobar')
     
     def test_fix_bytearray_empty_dict(self):
-        """Ensure that _fix_bytearray works on an empty dictionary."""
+        """_fix_bytearray works on an empty dictionary."""
         row = {}
         fixed_row = CMD._fix_bytearray(row)
         self.assertDictEqual(fixed_row, {})
     
     def test_fix_bytearray_no_bytearrays(self):
-        """Ensure that the row_dict is unchanged when _fix_bytearray is given a dict with no bytearrays in it."""
+        """The row_dict is unchanged when _fix_bytearray is given a dict with no bytearrays in it."""
         row = {'a':1, 'b':'foobar', 'c':1.56, 'd': datetime(2000, 1, 1)}
         fixed_row = CMD._fix_bytearray(row)
         self.assertDictEqual(row, fixed_row)
     
     def test_fix_null_no_none_left(self):
-        """Ensure that None is completely removed by _fix_null."""
+        """None is completely removed by _fix_null."""
         row = fake_row_dict()
         fixed_row = CMD._fix_null(row)
         for k in fixed_row:
             self.assertIsNotNone(fixed_row[k])
     
     def test_fix_null_only_none_altered(self):
-        """Ensure that only dict values of None are altered."""
+        """Only dict values of None are altered."""
         row = fake_row_dict()
         fixed_row = CMD._fix_null(row)
         none_keys = [k for k in row.keys() if row[k] is None]
@@ -292,7 +317,7 @@ class DbFixersTestCase(TestCase):
             self.assertEqual(row[k], fixed_row[k])
     
     def test_fix_null_to_empty_string(self):
-        """Ensure that the dict values of None are changed to empty strings."""
+        """Dict values of None are changed to empty strings."""
         row = fake_row_dict()
         fixed_row = CMD._fix_null(row)
         none_keys = [k for k in row.keys() if row[k] is None]
@@ -301,19 +326,19 @@ class DbFixersTestCase(TestCase):
             self.assertEqual(fixed_row[k], '')
     
     def test_fix_null_no_nones(self):
-        """Ensure that a dict containing no Nones is unchanged by _fix_null."""
+        """A dict containing no Nones is unchanged by _fix_null."""
         row = {'a':1, 'b':'foobar', 'c':1.56, 'd': datetime(2000, 1, 1)}
         fixed_row = CMD._fix_null(row)
         self.assertDictEqual(row, fixed_row)
     
     def test_fix_null_empty_dict(self):
-        """Ensure that an empty dict is unchanged by _fix_null."""
+        """An empty dict is unchanged by _fix_null."""
         row = {}
         fixed_row = CMD._fix_null(row)
         self.assertDictEqual(row, fixed_row)
     
     def test_fix_timezone_result_is_aware(self):
-        """Ensure that the resulting datetimes from _fix_timezone are in fact timezone aware."""
+        """The resulting datetimes from _fix_timezone are in fact timezone aware."""
         row = fake_row_dict()
         fixed_row = CMD._fix_timezone(row)
         for k in row:
@@ -322,7 +347,7 @@ class DbFixersTestCase(TestCase):
                                 fixed_row[k].tzinfo.utcoffset(fixed_row[k]) is not None)
     
     def test_fix_timezone_only_datetimes_altered(self):
-        """Ensure that non-datetime objects in the dict are not altered by _fix_timezone."""
+        """Non-datetime objects in the dict are not altered by _fix_timezone."""
         row = fake_row_dict()
         fixed_row = CMD._fix_timezone(row)
         for k in row:
@@ -330,7 +355,7 @@ class DbFixersTestCase(TestCase):
                 self.assertEqual(row[k], fixed_row[k])
     
     def test_fix_timezone_still_datetime(self):
-        """Ensure that datetime objects in the dict are still of datetime type after conversion by _fix_timezone."""
+        """Datetime objects in the dict are still of datetime type after conversion by _fix_timezone."""
         row = fake_row_dict()
         fixed_row = CMD._fix_timezone(row)
         for k in row:
@@ -338,13 +363,13 @@ class DbFixersTestCase(TestCase):
                 self.assertTrue(isinstance(fixed_row[k], datetime))
     
     def test_fix_timezone_empty_dict(self):
-        """Ensure that _fix_timezone works properly on (doesn't alter) an empty dictionary input."""
+        """_fix_timezone works properly on (doesn't alter) an empty dictionary input."""
         row = {}
         fixed_row = CMD._fix_timezone(row)
         self.assertDictEqual(fixed_row, row)
     
     def test_fix_timezone_no_datetimes(self):
-        """Ensure that a dict containing no datetime objects is unaltered by _fix_timezone."""
+        """A dict containing no datetime objects is unaltered by _fix_timezone."""
         row = {
             'a':1,
             'b':'foobar',
@@ -357,6 +382,7 @@ class DbFixersTestCase(TestCase):
     
 
 class GetDbTestCase(TestCase):
+    """Tests of the _get_db() utility function."""
     
     def test_get_source_db_returns_connection_test(self):
         """Ensure that _get_source_db returns a connector.connection object from the test db."""
@@ -387,6 +413,7 @@ class GetDbTestCase(TestCase):
 
 
 class MakeArgsTestCase(BaseTestDataTestCase):
+    """Tests of the _make_[model]_args functions."""
     
     def test_make_global_study_args_one_row_make_global_study_obj(self):
         """Get a single row of test data from the database and see if the results from _make_global_study_args can be used to successfully make and save a Global_study object."""
@@ -517,17 +544,78 @@ class MakeArgsTestCase(BaseTestDataTestCase):
         self.assertIsInstance(harmonized_trait_encoded_value, HarmonizedTraitEncodedValue)
 
 
-class HelperTestCase(TestCase):
+class ImportHelperTestCase(TestCase):
+    """Tests of the helper functions from import_db.Command()."""
     
-    def test_make_model_object_from_args(self):
-        """Test that """
+    def test_make_global_study_from_args(self):
+        """_make_model_object_from_args works to make a global study."""
         CMD._make_model_object_from_args(args={'i_id':5, 'i_name':'global study name', 'i_date_added': timezone.now(), 'i_date_changed':timezone.now()},
                                               model=GlobalStudy)
         obj = GlobalStudy.objects.get(pk=5)
         self.assertIsInstance(obj, GlobalStudy)
         
+    def test_make_table_query(self):
+        pass
+    
+    def test_make_model_object_per_query_row(self):
+        pass
+    
+    def test_make_query_for_new_rows(self):
+        pass
+        
+    def test_make_args_mapping(self):
+        pass
+    
+    def test_import_new_data(self):
+        pass
+    
+    def test_make_query_for_rows_to_update(self):
+        pass
+    
+    def test_update_model_object_from_args(self):
+        pass
+    
+    def test_update_model_object_per_query_row(self):
+        pass
+    
+    def test_update_existing_data(self):
+        pass
+    
+
+class M2MHelperTestCase(TestCase):
+    """Tests of the helper functions for importing and updating m2m tables."""
+    
+    def test_import_new_m2m_field(self):
+        pass
+    
+    def test_update_m2m_field(self):
+        pass
+    
+    def test_make_m2m_link(self):
+        pass
+
+class ImportHelperTestCase(TestCase):
+    """Tests of the _import_[source|harmonized]_tables helper methods."""
+    
+    def test_import_source_tables(self):
+        pass
+    
+    def test_import_harmonized_tables(self):
+        pass
+
+
+class UpdateHelperTestCase(TestCase):
+    """Tests of the _update_[source|harmonized]_tables helper methods."""
+    
+    def test_update_source_tables(self):
+        pass
+    
+    def test_update_harmonized_tables(self):
+        pass
+
 
 class GetCurrentListsTest(TestCase):
+    """Tests of _get_current_pks with each possible model."""
     n = 32
     
     def test_get_current_global_studies(self):
@@ -548,36 +636,46 @@ class GetCurrentListsTest(TestCase):
         pks = CMD._get_current_pks(SourceStudyVersion)
         self.assertEqual(len(pks), self.n)
 
-    def test_get_current_source_datasets(self):
-        """Test that Command._get_current_source_datasets() returns the right number of trait ids."""
-        SourceTraitFactory.create_batch(self.n)
-        pks = CMD._get_current_pks(SourceTrait)
-        self.assertEqual(len(pks), self.n)
-    
-    def test_get_current_source_traits(self):
-        """Test that Command._get_current_source_traits() returns the right number of trait ids."""
-        SourceTraitFactory.create_batch(self.n)
-        pks = CMD._get_current_pks(SourceTrait)
-        self.assertEqual(len(pks), self.n)
-
     def test_get_current_subcohorts(self):
         """Test that Command._get_current_subcohorts() returns the right number of trait ids."""
         SubcohortFactory.create_batch(self.n)
         pks = CMD._get_current_pks(Subcohort)
         self.assertEqual(len(pks), self.n)
 
+    def test_get_current_source_datasets(self):
+        """Test that Command._get_current_source_datasets() returns the right number of trait ids."""
+        SourceTraitFactory.create_batch(self.n)
+        pks = CMD._get_current_pks(SourceTrait)
+        self.assertEqual(len(pks), self.n)
+    
+    def test_get_current_harmonized_trait_set(self):
+        pass
+    
+    def test_get_current_source_traits(self):
+        """Test that Command._get_current_source_traits() returns the right number of trait ids."""
+        SourceTraitFactory.create_batch(self.n)
+        pks = CMD._get_current_pks(SourceTrait)
+        self.assertEqual(len(pks), self.n)
+    
+    def test_get_current_harmonized_trait(self):
+        pass
+    
     def test_get_current_source_trait_encoded_values(self):
         """Test that Command._get_current_source_trait_encoded_values() returns the right number of trait ids."""
         SourceTraitEncodedValueFactory.create_batch(self.n)
         pks = CMD._get_current_pks(SourceTraitEncodedValue)
         self.assertEqual(len(pks), self.n)
+    
+    def test_get_current_harmonized_trait_encoded_values(self):
+        pass
 
 
 class UpdateModelsTestCase(VisitTestDataTestCase):
+    """Tests of the update functions with updates to each possible source_db table."""
     
     # Source trait updates.
     def test_update_global_study(self):
-        """ """
+        """Updates in global_study are imported."""
         management.call_command('import_db', '--which_db=devel')
         t1 = timezone.now() # Save a time to compare to modified date.
         # Close the db connections because change_data_in_table() opens new connections.
@@ -600,7 +698,7 @@ class UpdateModelsTestCase(VisitTestDataTestCase):
         self.assertTrue(model_instance.modified > t1)
     
     def test_update_study(self):
-        """ """
+        """Updates in study are imported."""
         management.call_command('import_db', '--which_db=devel')
         t1 = timezone.now() # Save a time to compare to modified date.
         # Close the db connections because change_data_in_table() opens new connections.
@@ -623,7 +721,7 @@ class UpdateModelsTestCase(VisitTestDataTestCase):
         self.assertTrue(model_instance.modified > t1)
 
     def test_update_source_study_version(self):
-        """ """
+        """Updates in source_study_version are imported."""
         management.call_command('import_db', '--which_db=devel')
         t1 = timezone.now() # Save a time to compare to modified date.
         # Close the db connections because change_data_in_table() opens new connections.
@@ -638,7 +736,6 @@ class UpdateModelsTestCase(VisitTestDataTestCase):
         new_value = not getattr(model_instance, 'i_'+field_to_update)
         source_db_pk_name = model_instance._meta.pk.name.replace('i_', '')
         
-        
         change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
         management.call_command('import_db', '--which_db=devel', '--update_only')
         model_instance.refresh_from_db()
@@ -647,7 +744,7 @@ class UpdateModelsTestCase(VisitTestDataTestCase):
         self.assertTrue(model_instance.modified > t1)
 
     def test_update_source_dataset(self):
-        """ """
+        """Updates in source_dataset table are imported."""
         management.call_command('import_db', '--which_db=devel')
         t1 = timezone.now() # Save a time to compare to modified date.
         # Close the db connections because change_data_in_table() opens new connections.
@@ -670,7 +767,7 @@ class UpdateModelsTestCase(VisitTestDataTestCase):
         self.assertTrue(model_instance.modified > t1)
 
     def test_update_source_trait(self):
-        """ """
+        """Updates in source_trait table are imported."""
         management.call_command('import_db', '--which_db=devel')
         t1 = timezone.now() # Save a time to compare to modified date.
         # Close the db connections because change_data_in_table() opens new connections.
@@ -693,7 +790,7 @@ class UpdateModelsTestCase(VisitTestDataTestCase):
         self.assertTrue(model_instance.modified > t1)
 
     def test_update_subcohort(self):
-        """ """
+        """Updates in subcohort are imported."""
         management.call_command('import_db', '--which_db=devel')
         t1 = timezone.now() # Save a time to compare to modified date.
         # Close the db connections because change_data_in_table() opens new connections.
@@ -716,7 +813,7 @@ class UpdateModelsTestCase(VisitTestDataTestCase):
         self.assertTrue(model_instance.modified > t1)
 
     def test_update_source_trait_encoded_value(self):
-        """ """
+        """Updates in source_trait_encoded_values are imported."""
         management.call_command('import_db', '--which_db=devel')
         t1 = timezone.now() # Save a time to compare to modified date.
         # Close the db connections because change_data_in_table() opens new connections.
@@ -739,7 +836,7 @@ class UpdateModelsTestCase(VisitTestDataTestCase):
         self.assertTrue(model_instance.modified > t1)
 
     def test_update_source_dataset_subcohorts(self):
-        """A new subcohort link to an existing source dataset ends up imported after an update."""
+        """A new subcohort link to an existing source dataset is imported after an update."""
         # Run the initial db import.
         management.call_command('import_db', '--which_db=devel')
         # Pick a subcohort to create a new link to in the source db.
@@ -771,7 +868,7 @@ class UpdateModelsTestCase(VisitTestDataTestCase):
 
     # Harmonized trait updates.
     def test_update_harmonized_trait_set(self):
-        """ """
+        """Updates to harmonized_trait_set are imported."""
         management.call_command('import_db', '--which_db=devel')
         t1 = timezone.now() # Save a time to compare to modified date.
         # Close the db connections because change_data_in_table() opens new connections.
@@ -794,7 +891,7 @@ class UpdateModelsTestCase(VisitTestDataTestCase):
         self.assertTrue(model_instance.modified > t1)
 
     def test_update_harmonized_trait(self):
-        """ """
+        """Updates to harmonized_trait are imported."""
         management.call_command('import_db', '--which_db=devel')
         t1 = timezone.now() # Save a time to compare to modified date.
         # Close the db connections because change_data_in_table() opens new connections.
@@ -817,7 +914,7 @@ class UpdateModelsTestCase(VisitTestDataTestCase):
         self.assertTrue(model_instance.modified > t1)
 
     def test_update_harmonized_trait_encoded_value(self):
-        """ """
+        """Updates to harmonized_trait_encoded_values are imported."""
         management.call_command('import_db', '--which_db=devel')
         t1 = timezone.now() # Save a time to compare to modified date.
         # Close the db connections because change_data_in_table() opens new connections.
@@ -840,7 +937,7 @@ class UpdateModelsTestCase(VisitTestDataTestCase):
         self.assertTrue(model_instance.modified > t1)
 
     def test_update_component_source_traits(self):
-        """A new component source trait link to an existing harmonized trait ends up imported after an update."""
+        """A new component source trait link to an existing harmonized trait is imported."""
         # Run the initial db import.
         management.call_command('import_db', '--which_db=devel')
         # Pick a source trait to create a new link to in the source db.
@@ -872,10 +969,11 @@ class UpdateModelsTestCase(VisitTestDataTestCase):
 
 
 class ImportNoUpdateTestCase(VisitTestDataTestCase):
+    """Tests that updated source data is NOT imported when the --import_only flag is used."""
     
     # Source trait updates.
-    def test_update_global_study(self):
-        """ """
+    def test_no_update_on_import_global_study(self):
+        """Updates in global_study are not imported with --import_only."""
         management.call_command('import_db', '--which_db=devel')
         t1 = timezone.now() # Save a time to compare to modified date.
         # Close the db connections because change_data_in_table() opens new connections.
@@ -897,8 +995,8 @@ class ImportNoUpdateTestCase(VisitTestDataTestCase):
         self.assertNotEqual(new_value, getattr(model_instance, 'i_'+field_to_update))
         self.assertFalse(model_instance.modified > t1)
     
-    def test_update_study(self):
-        """ """
+    def test_no_update_on_import_study(self):
+        """Updates in study are not imported with --import_only."""
         management.call_command('import_db', '--which_db=devel')
         t1 = timezone.now() # Save a time to compare to modified date.
         # Close the db connections because change_data_in_table() opens new connections.
@@ -920,8 +1018,8 @@ class ImportNoUpdateTestCase(VisitTestDataTestCase):
         self.assertNotEqual(new_value, getattr(model_instance, 'i_'+field_to_update))
         self.assertFalse(model_instance.modified > t1)
 
-    def test_update_source_study_version(self):
-        """ """
+    def test_no_update_on_import_source_study_version(self):
+        """Updates in source_study_version are not imported with --import_only."""
         management.call_command('import_db', '--which_db=devel')
         t1 = timezone.now() # Save a time to compare to modified date.
         # Close the db connections because change_data_in_table() opens new connections.
@@ -943,8 +1041,8 @@ class ImportNoUpdateTestCase(VisitTestDataTestCase):
         self.assertNotEqual(new_value, getattr(model_instance, 'i_'+field_to_update))
         self.assertFalse(model_instance.modified > t1)
 
-    def test_update_source_dataset(self):
-        """ """
+    def test_no_update_on_import_source_dataset(self):
+        """Updates in source_dataset are not imported with --import_only."""
         management.call_command('import_db', '--which_db=devel')
         t1 = timezone.now() # Save a time to compare to modified date.
         # Close the db connections because change_data_in_table() opens new connections.
@@ -966,8 +1064,8 @@ class ImportNoUpdateTestCase(VisitTestDataTestCase):
         self.assertNotEqual(new_value, getattr(model_instance, 'i_'+field_to_update))
         self.assertFalse(model_instance.modified > t1)
 
-    def test_update_source_trait(self):
-        """ """
+    def test_no_update_on_import_source_trait(self):
+        """Updates in source_trait are not imported with --import_only."""
         management.call_command('import_db', '--which_db=devel')
         t1 = timezone.now() # Save a time to compare to modified date.
         # Close the db connections because change_data_in_table() opens new connections.
@@ -989,8 +1087,8 @@ class ImportNoUpdateTestCase(VisitTestDataTestCase):
         self.assertNotEqual(new_value, getattr(model_instance, 'i_description'))
         self.assertFalse(model_instance.modified > t1)
 
-    def test_update_subcohort(self):
-        """ """
+    def test_no_update_on_import_subcohort(self):
+        """Updates in subcohort are not imported with --import_only."""
         management.call_command('import_db', '--which_db=devel')
         t1 = timezone.now() # Save a time to compare to modified date.
         # Close the db connections because change_data_in_table() opens new connections.
@@ -1012,8 +1110,8 @@ class ImportNoUpdateTestCase(VisitTestDataTestCase):
         self.assertNotEqual(new_value, getattr(model_instance, 'i_'+field_to_update))
         self.assertFalse(model_instance.modified > t1)
 
-    def test_update_source_trait_encoded_value(self):
-        """ """
+    def test_no_update_on_import_source_trait_encoded_value(self):
+        """Updates in source_trait_encoded_values are not imported with --import_only."""
         management.call_command('import_db', '--which_db=devel')
         t1 = timezone.now() # Save a time to compare to modified date.
         # Close the db connections because change_data_in_table() opens new connections.
@@ -1035,8 +1133,8 @@ class ImportNoUpdateTestCase(VisitTestDataTestCase):
         self.assertNotEqual(new_value, getattr(model_instance, 'i_'+field_to_update))
         self.assertFalse(model_instance.modified > t1)
 
-    def test_update_source_dataset_subcohorts(self):
-        """A new subcohort link to an existing source dataset ends up imported after an update."""
+    def test_no_update_on_import_source_dataset_subcohorts(self):
+        """Updates in source_dataset_subcohorts are not imported with --import_only."""
         # Run the initial db import.
         management.call_command('import_db', '--which_db=devel')
         # Pick a subcohort to create a new link to in the source db.
@@ -1067,8 +1165,8 @@ class ImportNoUpdateTestCase(VisitTestDataTestCase):
         self.assertFalse(dataset_to_link in sc.sourcedataset_set.all())
 
     # Harmonized trait updates.
-    def test_update_harmonized_trait_set(self):
-        """ """
+    def test_no_update_on_import_harmonized_trait_set(self):
+        """Updates in harmonized_trait_set are not imported with --import_only."""
         management.call_command('import_db', '--which_db=devel')
         t1 = timezone.now() # Save a time to compare to modified date.
         # Close the db connections because change_data_in_table() opens new connections.
@@ -1090,8 +1188,8 @@ class ImportNoUpdateTestCase(VisitTestDataTestCase):
         self.assertNotEqual(new_value, getattr(model_instance, 'i_'+field_to_update))
         self.assertFalse(model_instance.modified > t1)
 
-    def test_update_harmonized_trait(self):
-        """ """
+    def test_no_update_on_import_harmonized_trait(self):
+        """Updates in harmonized_trait are not imported with --import_only."""
         management.call_command('import_db', '--which_db=devel')
         t1 = timezone.now() # Save a time to compare to modified date.
         # Close the db connections because change_data_in_table() opens new connections.
@@ -1113,8 +1211,8 @@ class ImportNoUpdateTestCase(VisitTestDataTestCase):
         self.assertNotEqual(new_value, getattr(model_instance, 'i_description'))
         self.assertFalse(model_instance.modified > t1)
 
-    def test_update_harmonized_trait_encoded_value(self):
-        """ """
+    def test_no_update_on_import_harmonized_trait_encoded_value(self):
+        """Updates in harmonized_trait_encoded_values are not imported with --import_only."""
         management.call_command('import_db', '--which_db=devel')
         t1 = timezone.now() # Save a time to compare to modified date.
         # Close the db connections because change_data_in_table() opens new connections.
@@ -1136,8 +1234,8 @@ class ImportNoUpdateTestCase(VisitTestDataTestCase):
         self.assertNotEqual(new_value, getattr(model_instance, 'i_'+field_to_update))
         self.assertFalse(model_instance.modified > t1)
 
-    def test_update_component_source_traits(self):
-        """A new component source trait link to an existing harmonized trait ends up imported after an update."""
+    def test_no_update_on_import_component_source_traits(self):
+        """Updates in component_source_trait are not imported with --import_only."""
         # Run the initial db import.
         management.call_command('import_db', '--which_db=devel')
         # Pick a source trait to create a new link to in the source db.
@@ -1178,56 +1276,54 @@ class IntegrationTest(VisitTestDataTestCase):
     """
 
     def test_handle_with_visit_data(self):
-        """Test that calling the command works on the base+visit test data set.
-        
-        There should be no updates. 
-        """
+        """Calling import_db imports the correct number of each model type."""
         management.call_command('import_db', '--which_db=devel')
-        
+        # GlobalStudy
         global_studies_query = 'SELECT COUNT(*) FROM global_study;'
         self.cursor.execute(global_studies_query)
         global_studies_count = self.cursor.fetchone()['COUNT(*)']
         self.assertEqual(global_studies_count, GlobalStudy.objects.count())
-
+        # Study
         studies_query = 'SELECT COUNT(*) FROM study;'
         self.cursor.execute(studies_query)
         studies_count = self.cursor.fetchone()['COUNT(*)']
         self.assertEqual(studies_count, Study.objects.count())
-
+        # SourceStudyVersion
         source_study_versions_query = 'SELECT COUNT(*) FROM source_study_version;'
         self.cursor.execute(source_study_versions_query)
         source_study_versions_count = self.cursor.fetchone()['COUNT(*)']
         self.assertEqual(source_study_versions_count, SourceStudyVersion.objects.count())
-
+        # SourceDataset
         source_datasets_query = 'SELECT COUNT(*) FROM source_dataset;'
         self.cursor.execute(source_datasets_query)
         source_datasets_count = self.cursor.fetchone()['COUNT(*)']
         self.assertEqual(source_datasets_count, SourceDataset.objects.count())
-
+        # SourceTrait
         source_traits_query = 'SELECT COUNT(*) FROM source_trait;'
         self.cursor.execute(source_traits_query)
         source_traits_count = self.cursor.fetchone()['COUNT(*)']
         self.assertEqual(source_traits_count, SourceTrait.objects.count())
-
+        #Subcohort
         subcohorts_query = 'SELECT COUNT(*) FROM subcohort;'
         self.cursor.execute(subcohorts_query)
         subcohorts_count = self.cursor.fetchone()['COUNT(*)']
         self.assertEqual(subcohorts_count, Subcohort.objects.count())
-
-        subcohorts_query = 'SELECT COUNT(*),dataset_id FROM source_dataset_subcohorts GROUP BY dataset_id;'
-        self.cursor.execute(subcohorts_query)
+        # SourceDataset.subcohorts
+        subcohorts_m2m_query = 'SELECT COUNT(*),dataset_id FROM source_dataset_subcohorts GROUP BY dataset_id;'
+        self.cursor.execute(subcohorts_m2m_query)
         for row in self.cursor:
             row = CMD._fix_row(row)
             django_count = SourceDataset.objects.get(pk=row['dataset_id']).subcohorts.count()
             self.assertEqual(row['COUNT(*)'], django_count)
-
+        # SourceTraitEncodedValue
         source_trait_encoded_values_query = 'SELECT COUNT(*) FROM source_trait_encoded_values;'
         self.cursor.execute(source_trait_encoded_values_query)
         source_trait_encoded_values_count = self.cursor.fetchone()['COUNT(*)']
         self.assertEqual(source_trait_encoded_values_count, SourceTraitEncodedValue.objects.count())
+        # TODO: Add tests for harmonized tables, especially m2m tables.
 
     def test_handle_with_updated_data(self):
-        """Calling the update command applies all updates, when every possible kind of update is made."""
+        """Every kind of update is detected and imported by import_db."""
         # This test is largely just all of the methods from UpdateModelsTestCase all put together.
         # Initial call of the import command.
         management.call_command('import_db', '--which_db=devel')
@@ -1296,7 +1392,7 @@ class IntegrationTest(VisitTestDataTestCase):
         add_component_trait_query = "INSERT INTO component_source_trait (harmonized_trait_set_id, harmonized_function_id, component_trait_id, date_added) VALUES ({}, 1, {}, '{}');".format(htrait_set.i_id, source_trait.i_trait_id, timezone.now().strftime('%Y-%m-%d %H:%M:%S'))
         self.cursor.execute(add_component_trait_query)
         self.source_db.commit()
-        
+        # Close the db connection.
         self.cursor.close()
         self.source_db.close()
 
@@ -1314,12 +1410,10 @@ class IntegrationTest(VisitTestDataTestCase):
         harmonized_trait_set.refresh_from_db()
         harmonized_trait.refresh_from_db()
         hev.refresh_from_db()
-        
         dataset_to_link.refresh_from_db()
         htrait_set.refresh_from_db()
         
-        
-        # Check that modified date > created date, and name is set to new value.
+        # Check that modified date > created date, values are updated, for each model.
         self.assertEqual(new_value, global_study.i_name)
         self.assertTrue(global_study.modified > t1)
     
@@ -1351,11 +1445,9 @@ class IntegrationTest(VisitTestDataTestCase):
         self.assertTrue(hev.modified > t1)
         
         self.assertTrue(dataset_to_link in subcohort.sourcedataset_set.all())
-
         self.assertTrue(htrait_set in source_trait.harmonizedtraitset_set.all())
 
-    
     def test_handle_with_new_study_added(self):
-        """Ensure that the whole workflow of the management command works to add objects to the website databse, without limits."""
+        """New data and updates are properly imported after a new study is added."""
         pass
 
