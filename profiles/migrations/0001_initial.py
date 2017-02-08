@@ -14,9 +14,21 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
+            name='SavedSearchMeta',
+            fields=[
+                ('id', models.AutoField(auto_created=True, primary_key=True, verbose_name='ID', serialize=False)),
+                ('created', models.DateTimeField(auto_now_add=True)),
+                ('modified', models.DateTimeField(auto_now=True)),
+                ('active', models.BooleanField(default=True)),
+            ],
+            options={
+                'abstract': False,
+            },
+        ),
+        migrations.CreateModel(
             name='Search',
             fields=[
-                ('id', models.AutoField(verbose_name='ID', serialize=False, primary_key=True, auto_created=True)),
+                ('id', models.AutoField(auto_created=True, primary_key=True, verbose_name='ID', serialize=False)),
                 ('created', models.DateTimeField(auto_now_add=True)),
                 ('modified', models.DateTimeField(auto_now=True)),
                 ('param_text', models.CharField(db_index=True, max_length=100)),
@@ -25,20 +37,30 @@ class Migration(migrations.Migration):
                 ('param_studies', models.ManyToManyField(to='trait_browser.Study')),
             ],
             options={
-                'abstract': False,
+                'verbose_name_plural': 'searches',
             },
         ),
         migrations.CreateModel(
             name='UserData',
             fields=[
-                ('id', models.AutoField(verbose_name='ID', serialize=False, primary_key=True, auto_created=True)),
+                ('id', models.AutoField(auto_created=True, primary_key=True, verbose_name='ID', serialize=False)),
                 ('created', models.DateTimeField(auto_now_add=True)),
                 ('modified', models.DateTimeField(auto_now=True)),
-                ('saved_searches', models.ManyToManyField(to='profiles.Search')),
+                ('saved_searches', models.ManyToManyField(through='profiles.SavedSearchMeta', to='profiles.Search')),
                 ('user', models.ForeignKey(to=settings.AUTH_USER_MODEL)),
             ],
             options={
                 'abstract': False,
             },
+        ),
+        migrations.AddField(
+            model_name='savedsearchmeta',
+            name='search',
+            field=models.ForeignKey(to='profiles.Search'),
+        ),
+        migrations.AddField(
+            model_name='savedsearchmeta',
+            name='userdata',
+            field=models.ForeignKey(to='profiles.UserData'),
         ),
     ]
