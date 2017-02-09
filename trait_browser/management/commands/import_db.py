@@ -168,7 +168,7 @@ class Command(BaseCommand):
     
 
     # Helper methods for importing data from the source db.
-    def _make_table_query(self, source_table, filter_field=None, filter_values=None, filter_not=None):
+    def _make_table_query(self, source_table, filter_field=None, filter_values=None, filter_not=None, **kwargs):
         """Make a query string for data from a source db table, with optional filters.
         
         Using the table name, make a string query for rows from the source db.
@@ -202,18 +202,18 @@ class Command(BaseCommand):
                 query += filter_query
         return query
 
-    def _make_model_object_from_args(self, args, model):
+    def _make_model_object_from_args(self, model_args, model, **kwargs):
         """Make an instance of a model object using arguments.
         
         Arguments:
-            args (dict): dict of 'field_name': 'field_value' pairs, used to make a model object instance
+            model_args (dict): dict of 'field_name': 'field_value' pairs, used to make a model object instance
             model (class obj): the model class to use to make a model object instance
         """
-        obj = model(**args)
+        obj = model(**model_args)
         obj.save()
         logger.debug('Created {}'.format(obj))
 
-    def _make_model_object_per_query_row(self, source_db, query, make_args, model):
+    def _make_model_object_per_query_row(self, source_db, query, make_args, **kwargs):
         """Make a model object instance from each row of a query's results.
         
         Arguments:
@@ -225,11 +225,11 @@ class Command(BaseCommand):
         cursor = source_db.cursor(buffered=True, dictionary=True)
         cursor.execute(query)
         for row in cursor:
-            args = make_args(self._fix_row(row))
-            self._make_model_object_from_args(args, model)
+            model_args = make_args(self._fix_row(row))
+            self._make_model_object_from_args(model_args=model_args, **kwargs)
         cursor.close()
     
-    def _make_query_for_new_rows(self, source_table, source_pk, old_pks):
+    def _make_query_for_new_rows(self, source_table, source_pk, old_pks, **kwargs):
         """Make a query for new rows from the given table.
         
         Arguments:
@@ -276,7 +276,7 @@ class Command(BaseCommand):
                 args_mapping[mod._meta.verbose_name.replace(' ', '_')] = mod.objects.get(pk=row_dict[source_pk_name])
         return args_mapping
 
-    def _import_new_data(self, source_db, source_table, source_pk, model, make_args):
+    def _import_new_data(self, **kwargs):
         """Import new data into the website db from the source db from a given table, into a given model.
         
         Query for the data that is already in the Django db. Then query the source db
@@ -293,16 +293,17 @@ class Command(BaseCommand):
         Returns:
             list of str pk values that were imported to the Django db
         """
+        model=kwargs['model']
         old_pks = self._get_current_pks(model)
-        new_rows_query = self._make_query_for_new_rows(source_table, source_pk, old_pks)
+        new_rows_query = self._make_query_for_new_rows(old_pks=old_pks, **kwargs)
         logger.debug(new_rows_query)
-        self._make_model_object_per_query_row(source_db, new_rows_query, make_args, model)
-        new_pks = self._get_new_pks(model, old_pks)
+        self._make_model_object_per_query_row(query=new_rows_query, **kwargs)
+        new_pks = self._get_new_pks(model=model, old_pks=old_pks)
         return new_pks
     
 
     # Helper methods for updating data that has been modified in the source db.
-    def _make_query_for_rows_to_update(self, source_table, model, old_pks, source_pk, changed_greater):
+    def _make_query_for_rows_to_update(self, source_table, model, old_pks, source_pk, changed_greater, **kwargs):
         """Make a query for data that has been changed since the last update.
         
         Used by the _update methods to retrieve source db data that needs to be
@@ -335,14 +336,14 @@ class Command(BaseCommand):
             query = self._make_table_query(source_table=source_table, filter_field=source_pk, filter_values=["''"], filter_not=False)
         return query
 
-    def _update_model_object_from_args(self, args, model, expected):
+    def _update_model_object_from_args(self, model_args, model, expected, **kwargs):
         """Update an existing model object using arguments.
         
         Given a dict of updated arguments for the model, if an argument does not
         match the value in the Django db, save the new value to the Django db.
         
         Arguments:
-            args (dict): 'field_name': 'field_value' pairs, used to update the model object instance
+            model_args (dict): 'field_name': 'field_value' pairs, used to update the model object instance
             model (class obj): the model class to use to make a model object instance
             expected (bool): whether or not updates are expected to happen in this 
                 model; triggers warning printing
@@ -351,14 +352,14 @@ class Command(BaseCommand):
             bool; True if any fields were updated, False if not
         """
         model_pk_name = model._meta.pk.name
-        obj = model.objects.get(pk=args[model_pk_name])
+        obj = model.objects.get(pk=model_args[model_pk_name])
         ## Originally intended to have a check here that date_changed (source db) > modified (web db)
         ## but that's probably redundant based on the query in make_query_for_rows_to_update
         # Update any fields that are different
         updates = 0
-        for field_name in args:
+        for field_name in model_args:
             old_val = getattr(obj, field_name)
-            new_val = args[field_name]
+            new_val = model_args[field_name]
             if old_val != new_val:
                 updates += 0
                 setattr(obj, field_name, new_val)
@@ -373,7 +374,7 @@ class Command(BaseCommand):
         else:
             return False
 
-    def _update_model_object_per_query_row(self, source_db, query, make_args, model, **kwargs):
+    def _update_model_object_per_query_row(self, source_db, query, make_args, **kwargs):
         """Update an existing model object from each row of a query's results.
         
         Run a query on the source db and use its results to update any changed values
@@ -422,11 +423,11 @@ class Command(BaseCommand):
         updated = 0
         for row in cursor:
             args = make_args(self._fix_row(row))
-            if self._update_model_object_from_args(args, model, **kwargs):
+            if self._update_model_object_from_args(model_args=args, **kwargs):
                 updated += 1
         cursor.close()
 
-    def _update_existing_data(self, source_db, source_table, source_pk, model, make_args, **kwargs):
+    def _update_existing_data(self, **kwargs):
         """Update field values that have been modified in the source db since the last update.
         
         Find the pks for model that have already been imported into Django. Then
@@ -443,15 +444,16 @@ class Command(BaseCommand):
         Returns:
             int; the number of updated rows detected in the source db
         """
+        model = kwargs['model']
         old_pks = self._get_current_pks(model)
         if len(old_pks) < 1:
             logger.debug('Model {} has no imported objects to check for updates.'.format(model._meta.object_name))
             n_updated = 0
         else:
-            update_rows_query = self._make_query_for_rows_to_update(source_table=source_table, model=model, old_pks=old_pks, source_pk=source_pk, changed_greater=True)
+            update_rows_query = self._make_query_for_rows_to_update(old_pks=old_pks, changed_greater=True, **kwargs)
             logger.debug(update_rows_query)
             logger.debug('Updating entries for model {} ...'.format(model._meta.object_name))
-            n_updated = self._update_model_object_per_query_row(source_db=source_db, query=update_rows_query, make_args=make_args, model=model, **kwargs)
+            n_updated = self._update_model_object_per_query_row(query=update_rows_query, **kwargs)
         return n_updated
 
 
@@ -641,125 +643,7 @@ class Command(BaseCommand):
 
 
     # Methods for importing data for ManyToMany fields.
-    def _import_new_m2m_field(self, source_db, source_table, parent_model, parent_source_pk,
-                               child_model, child_source_pk, child_related_name, import_parent_pks):
-        """Import ManyToMany field links from an m2m source table for a set of pks for the newly imported parent model.
-        
-        parent_model must have a field that is a ManyToManyField to child_model.
-        Query the source db for entries in the m2m table (source_table) that link
-        child_source_pk values to parent_source_pk values, for parent_source_pk values
-        that are in the import_parent_pks list. Then use the results of that query
-        to link child_model instances to parent_model instances, using
-        parent_model_obj.children.add(child_model_obj)
-        
-        Arguments:
-            source_db (MySQLConnection): a mysql.connector open db connection 
-            source_table (str): name of the table in the source db
-            parent_model (class obj): the model class of the parent model for the m2m field
-            parent_source_pk (str): name of the parent model's primary key column in the source db
-            child_model (class obj): the model class of the child model for the m2m field
-            child_source_pk (str): name of the child model's primary key column in the source db
-            import_parent_pks (list of str): parent pk values for which to import m2m field links
-        
-        Returns:
-            list of str pk values for (parent_pk, child_pk) pairs that have now been linked
-        """
-        if len(import_parent_pks) < 1:
-            import_parent_pks = ["''"]
-        new_m2m_query = self._make_table_query(source_table=source_table, filter_field=parent_source_pk,
-                                               filter_values=import_parent_pks, filter_not=False)
-        cursor = source_db.cursor(buffered=True, dictionary=True)
-        cursor.execute(new_m2m_query)
-        links = []
-        for row in cursor:
-            type_fixed_row = self._fix_row(row)
-            child, parent = self._make_m2m_link(parent_model=parent_model,
-                                                parent_pk=type_fixed_row[parent_source_pk],
-                                                child_model=child_model,
-                                                child_pk=type_fixed_row[child_source_pk],
-                                                child_related_name=child_related_name)
-            links.append((type_fixed_row[parent_source_pk], type_fixed_row[child_source_pk]))
-        return links
-
-    def _make_new_m2m_links(self, source_db, source_table, parent_model, parent_source_pk,
-                          child_model, child_source_pk, child_related_name, **kwargs):
-        """Get new m2m field links from an m2m source table for already-imported parent models.
-        
-        parent_model must have a field that is a ManyToManyField to child_model.
-        Query the source db for entries in the m2m table (source_table) that link
-        child_source_pk values to parent_source_pk values, for parent_source_pk values
-        that are already imported into the Django models. Then use the results of that
-        query to link child_model instances to parent_model instances, using
-        parent_model_obj.children.add(child_model_obj)
-        
-        Arguments:
-            source_db (MySQLConnection): a mysql.connector open db connection 
-            source_table (str): name of the table in the source db
-            parent_model (class obj): the model class of the parent model for the m2m field
-            parent_source_pk (str): name of the parent model's primary key column in the source db
-            child_model (class obj): the model class of the child model for the m2m field
-            child_source_pk (str): name of the child model's primary key column in the source db
-        
-        Returns:
-            list of str pk values for (parent_pk, child_pk) pairs that have now been linked
-        """
-        current_pks = self._get_current_pks(parent_model)
-        new_links_query = self._make_query_for_rows_to_update(source_table=source_table, model=parent_model, old_pks=current_pks, source_pk=parent_source_pk, changed_greater=False)
-        cursor = source_db.cursor(buffered=True, dictionary=True)
-        cursor.execute(new_links_query)
-        links = []
-        for row in cursor:
-            type_fixed_row = self._fix_row(row)
-            parent, child = self._make_m2m_link(parent_model=parent_model,
-                                                parent_pk=type_fixed_row[parent_source_pk],
-                                                child_model=child_model,
-                                                child_pk=type_fixed_row[child_source_pk],
-                                                child_related_name=child_related_name)
-            links.append((parent.pk, child.pk))
-        return links
-    
-    def _remove_missing_m2m_links(self, source_db, source_table, parent_model, parent_source_pk,
-                          child_model, child_source_pk, child_related_name, **kwargs):
-        """Remove m2m links that have been removed from the source db (for already-imported parent models).
-        
-        For each parent model that has been imported, get a list of the linked children
-        and check the source db to see if the link between parent and child is still
-        present there. If it is no longer linked in the source db, remove the child
-        from the m2m field. 
-        
-        Arguments:
-            source_db (MySQLConnection): a mysql.connector open db connection 
-            source_table (str): name of the table in the source db
-            parent_model (class obj): the model class of the parent model for the m2m field
-            parent_source_pk (str): name of the parent model's primary key column in the source db
-            child_model (class obj): the model class of the child model for the m2m field
-            child_source_pk (str): name of the child model's primary key column in the source db
-            child_related_name (str): name of the parent model's field which is related to child_model
-        
-        Returns:
-            list of str pk values for (parent_pk, child_pk) pairs that have now been linked
-        """
-        links = []
-        cursor = source_db.cursor(buffered=True, dictionary=True)
-        current_parents = parent_model.objects.all()
-        for parent in current_parents:
-            logger.debug(parent)
-            linked_pks = [str(el.pk) for el in getattr(parent, child_related_name).all()]
-            logger.debug(','.join(linked_pks))
-            if len(linked_pks) > 0:
-                linked_pks_query = self._make_table_query(source_table=source_table, filter_field=parent_source_pk, filter_values=[str(parent.pk)], filter_not=False)
-                # logger.debug(linked_pks_query)
-                cursor.execute(linked_pks_query)
-                remaining_links = [str(self._fix_row(row)[child_source_pk]) for row in cursor.fetchall()]
-                removed_pks = set(linked_pks) - set(remaining_links)
-                # logger.debug('still linked: {}'.format(','.join(remaining_links)))
-                # logger.debug('pks to remove: {}'.format(','.join(removed_pks)))
-                for pk_to_remove in removed_pks:
-                    saved_parent, child = self._break_m2m_link(parent_model, parent.pk, child_model, pk_to_remove, child_related_name)
-                    links.append((saved_parent.pk, child.pk))
-        return links
-        
-    def _break_m2m_link(self, parent_model, parent_pk, child_model, child_pk, child_related_name):
+    def _break_m2m_link(self, parent_model, parent_pk, child_model, child_pk, child_related_name, **kwargs):
         """Remove a child model object instance from the M2M field of a parent model object instance.
         
         Get model object instances for the parent and child models, given the pk values.
@@ -784,7 +668,7 @@ class Command(BaseCommand):
         logger.debug('Unlinked {} from {}'.format(child, parent))
         return (parent, child)
 
-    def _make_m2m_link(self, parent_model, parent_pk, child_model, child_pk, child_related_name):
+    def _make_m2m_link(self, parent_model, parent_pk, child_model, child_pk, child_related_name, **kwargs):
         """Add a child model object instance to the M2M field of a parent model object instance.
         
         parent_model must have a field that is a ManyToManyField to child_model.
@@ -809,6 +693,116 @@ class Command(BaseCommand):
         logger.debug('Linked {} to {}'.format(child, parent))
         return (parent, child)
     
+    def _import_new_m2m_field(self, source_db, **kwargs):
+        """Import ManyToMany field links from an m2m source table for a set of pks for the newly imported parent model.
+        
+        parent_model must have a field that is a ManyToManyField to child_model.
+        Query the source db for entries in the m2m table (source_table) that link
+        child_source_pk values to parent_source_pk values, for parent_source_pk values
+        that are in the import_parent_pks list. Then use the results of that query
+        to link child_model instances to parent_model instances, using
+        parent_model_obj.children.add(child_model_obj)
+        
+        Arguments:
+            source_db (MySQLConnection): a mysql.connector open db connection 
+            source_table (str): name of the table in the source db
+            parent_model (class obj): the model class of the parent model for the m2m field
+            parent_source_pk (str): name of the parent model's primary key column in the source db
+            child_model (class obj): the model class of the child model for the m2m field
+            child_source_pk (str): name of the child model's primary key column in the source db
+            import_parent_pks (list of str): parent pk values for which to import m2m field links
+        
+        Returns:
+            list of str pk values for (parent_pk, child_pk) pairs that have now been linked
+        """
+        new_m2m_query = self._make_table_query(filter_field=kwargs['parent_source_pk'],
+                                               filter_values=kwargs['import_parent_pks'], 
+                                               filter_not=False, **kwargs)
+        cursor = source_db.cursor(buffered=True, dictionary=True)
+        cursor.execute(new_m2m_query)
+        links = []
+        for row in cursor:
+            type_fixed_row = self._fix_row(row)
+            child, parent = self._make_m2m_link(parent_pk=type_fixed_row[kwargs['parent_source_pk']],
+                                                child_pk=type_fixed_row[kwargs['child_source_pk']],
+                                                **kwargs)
+            links.append((parent.pk, child.pk))
+        return links
+
+    def _make_new_m2m_links(self, source_db, **kwargs):
+        """Get new m2m field links from an m2m source table for already-imported parent models.
+        
+        parent_model must have a field that is a ManyToManyField to child_model.
+        Query the source db for entries in the m2m table (source_table) that link
+        child_source_pk values to parent_source_pk values, for parent_source_pk values
+        that are already imported into the Django models. Then use the results of that
+        query to link child_model instances to parent_model instances, using
+        parent_model_obj.children.add(child_model_obj)
+        
+        Arguments:
+            source_db (MySQLConnection): a mysql.connector open db connection 
+            source_table (str): name of the table in the source db
+            parent_model (class obj): the model class of the parent model for the m2m field
+            parent_source_pk (str): name of the parent model's primary key column in the source db
+            child_model (class obj): the model class of the child model for the m2m field
+            child_source_pk (str): name of the child model's primary key column in the source db
+        
+        Returns:
+            list of str pk values for (parent_pk, child_pk) pairs that have now been linked
+        """
+        current_pks = self._get_current_pks(kwargs['parent_model'])
+        new_links_query = self._make_query_for_rows_to_update(model=kwargs['parent_model'], old_pks=current_pks, source_pk=kwargs['parent_source_pk'], changed_greater=False, **kwargs)
+        cursor = source_db.cursor(buffered=True, dictionary=True)
+        cursor.execute(new_links_query)
+        links = []
+        for row in cursor:
+            type_fixed_row = self._fix_row(row)
+            parent, child = self._make_m2m_link(parent_pk=type_fixed_row[kwargs['parent_source_pk']],
+                                                child_pk=type_fixed_row[kwargs['child_source_pk']], 
+                                                **kwargs)
+            links.append((parent.pk, child.pk))
+        return links
+    
+    def _remove_missing_m2m_links(self, source_db, **kwargs):
+        """Remove m2m links that have been removed from the source db (for already-imported parent models).
+        
+        For each parent model that has been imported, get a list of the linked children
+        and check the source db to see if the link between parent and child is still
+        present there. If it is no longer linked in the source db, remove the child
+        from the m2m field. 
+        
+        Arguments:
+            source_db (MySQLConnection): a mysql.connector open db connection 
+            source_table (str): name of the table in the source db
+            parent_model (class obj): the model class of the parent model for the m2m field
+            parent_source_pk (str): name of the parent model's primary key column in the source db
+            child_model (class obj): the model class of the child model for the m2m field
+            child_source_pk (str): name of the child model's primary key column in the source db
+            child_related_name (str): name of the parent model's field which is related to child_model
+        
+        Returns:
+            list of str pk values for (parent_pk, child_pk) pairs that have now been linked
+        """
+        links = []
+        cursor = source_db.cursor(buffered=True, dictionary=True)
+        current_parents = kwargs['parent_model'].objects.all()
+        for parent in current_parents:
+            logger.debug(parent)
+            linked_pks = [str(el.pk) for el in getattr(parent, kwargs['child_related_name']).all()]
+            logger.debug(','.join(linked_pks))
+            if len(linked_pks) > 0:
+                linked_pks_query = self._make_table_query(filter_field=kwargs['parent_source_pk'], filter_values=[str(parent.pk)], filter_not=False, **kwargs)
+                # logger.debug(linked_pks_query)
+                cursor.execute(linked_pks_query)
+                remaining_links = [str(self._fix_row(row)[kwargs['child_source_pk']]) for row in cursor.fetchall()]
+                removed_pks = set(linked_pks) - set(remaining_links)
+                # logger.debug('still linked: {}'.format(','.join(remaining_links)))
+                # logger.debug('pks to remove: {}'.format(','.join(removed_pks)))
+                for pk_to_remove in removed_pks:
+                    saved_parent, child = self._break_m2m_link(parent_pk=parent.pk, child_pk=pk_to_remove, **kwargs)
+                    links.append((saved_parent.pk, child.pk))
+        return links
+        
     def _update_m2m_field(self, **kwargs):
         """Update ManyToMany field links from an m2m source table for parent models already imported.
         
@@ -820,7 +814,8 @@ class Command(BaseCommand):
         parent_model_obj.children.add(child_model_obj)
         
         Returns:
-            
+            (dict) 'new': key to list of pks for newly linked pairs
+            'removed': key to list of pks for removed pairs
         """
         new_links = self._make_new_m2m_links(**kwargs)
         removed_links = self._remove_missing_m2m_links(**kwargs)
