@@ -840,8 +840,7 @@ class UpdateModelsTestCase(VisitTestDataTestCase):
         # Run the initial db import.
         management.call_command('import_db', '--which_db=devel')
         # Pick a subcohort to create a new link to in the source db.
-        subcohorts = Subcohort.objects.all()
-        sc = subcohorts[0]
+        sc = Subcohort.objects.get(pk=1)
         # Find a dataset which this subcohort isn't linked to already.
         linked_datasets = sc.sourcedataset_set.all()
         possible_datasets = SourceDataset.objects.filter(source_study_version__study = sc.study)
@@ -871,8 +870,7 @@ class UpdateModelsTestCase(VisitTestDataTestCase):
         # Run the initial db import.
         management.call_command('import_db', '--which_db=devel')
         # Pick a subcohort to remove the link to in the source db.
-        subcohorts = Subcohort.objects.all()
-        sc = subcohorts[0]
+        sc = Subcohort.objects.get(pk=1)
         # Find a dataset which this subcohort is already linked to.
         linked_datasets = sc.sourcedataset_set.all()
         possible_datasets = SourceDataset.objects.filter(source_study_version__study = sc.study)
@@ -1381,7 +1379,7 @@ class IntegrationTest(VisitTestDataTestCase):
         source_trait = SourceTrait.objects.all()[0]
         change_data_in_table('source_trait', 'dcc_description', new_value, 'source_trait_id', source_trait.pk)
         # Update the subcohort table.
-        subcohort = Subcohort.objects.all()[0]
+        subcohort = Subcohort.objects.get(pk=1)
         change_data_in_table('subcohort', 'name', new_value, subcohort._meta.pk.name.replace('i_', ''), subcohort.pk)
         # Update source trait encoded values table.
         sev = SourceTraitEncodedValue.objects.all()[0]
@@ -1409,6 +1407,17 @@ class IntegrationTest(VisitTestDataTestCase):
         # Create a new dataset-subcohort link in the source db.
         add_subcohort_link_query = "INSERT INTO source_dataset_subcohorts (dataset_id, subcohort_id, date_added) VALUES ({}, {}, '{}');".format(subcohort.i_id, dataset_to_link.i_id, timezone.now().strftime('%Y-%m-%d %H:%M:%S'))
         self.cursor.execute(add_subcohort_link_query)
+        self.source_db.commit()
+        # Remove a dataset-subcohort link in the source db.
+        subcohort2 = Subcohort.objects.get(pk=2)
+        # Find a dataset which this subcohort is already linked to.
+        linked_datasets = subcohort2.sourcedataset_set.all()
+        if len(linked_datasets) < 1:
+            raise ValueError('The subcohort is not linked to any datasets.')
+        dataset_to_unlink = linked_datasets[0]
+        # Remove the dataset-subcohort link in the source db.
+        remove_subcohort_link_query = "DELETE FROM source_dataset_subcohorts WHERE dataset_id={} AND subcohort_id={}".format(dataset_to_unlink.pk, subcohort2.pk)
+        self.cursor.execute(remove_subcohort_link_query)
         self.source_db.commit()
         # Find a harmonized_trait_set which the source trait isn't linked to already
         for x in range(1, 100):
@@ -1441,6 +1450,8 @@ class IntegrationTest(VisitTestDataTestCase):
         harmonized_trait.refresh_from_db()
         hev.refresh_from_db()
         dataset_to_link.refresh_from_db()
+        subcohort2.refresh_from_db()
+        dataset_to_unlink.refresh_from_db()
         htrait_set.refresh_from_db()
         
         # Check that modified date > created date, values are updated, for each model.
@@ -1475,6 +1486,7 @@ class IntegrationTest(VisitTestDataTestCase):
         self.assertTrue(hev.modified > t1)
         
         self.assertTrue(dataset_to_link in subcohort.sourcedataset_set.all())
+        self.assertFalse(dataset_to_unlink in subcohort2.sourcedataset_set.all())
         self.assertTrue(htrait_set in source_trait.harmonizedtraitset_set.all())
 
     def test_handle_with_new_study_added(self):
