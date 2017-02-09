@@ -714,7 +714,7 @@ class Command(BaseCommand):
                                                 parent_pk=type_fixed_row[parent_source_pk],
                                                 child_model=child_model,
                                                 child_pk=type_fixed_row[child_source_pk])
-            links.append((type_fixed_row[parent_source_pk], type_fixed_row[child_source_pk]))
+            links.append((parent.pk, child.pk))
         return links
     
     def _remove_missing_m2m_links(self, source_db, source_table, parent_model, parent_source_pk,
@@ -754,12 +754,34 @@ class Command(BaseCommand):
                 # logger.debug('still linked: {}'.format(','.join(remaining_links)))
                 # logger.debug('pks to remove: {}'.format(','.join(removed_pks)))
                 for pk_to_remove in removed_pks:
-                    child = child_model.objects.get(pk=pk_to_remove)
-                    getattr(parent, child_related_name).remove(child)
-                    parent.save()
-                    links.append((parent.pk, pk_to_remove))
-                    logger.debug('Unlinked {} from {}.'.format(child, parent))
+                    saved_parent, child = self._break_m2m_link(parent_model, parent.pk, child_model, pk_to_remove, child_related_name)
+                    links.append((saved_parent.pk, child.pk))
         return links
+        
+    def _break_m2m_link(self, parent_model, parent_pk, child_model, child_pk, child_related_name):
+        """Remove a child model object instance from the M2M field of a parent model object instance.
+        
+        Get model object instances for the parent and child models, given the pk values.
+        Use getattr to get the M2M related field. Then use the M2M related object
+        manager to remove the child model object instance from the parent model
+        object instance's M2M field.
+        
+        Arguments:
+            parent_model (class obj): the model class of the parent model for the m2m field
+            parent_pk (str): pk value of the parent model instance to link the child model to
+            child_model (class obj): the model class of the child model for the m2m field
+            child_pk (str): pk value of the child model instance to link to the parent model
+            child_related_name (str): name of the parent model's field which is related to child_model
+        
+        Returns:
+            (parent model object instance, child model object instance)
+        """
+        parent = parent_model.objects.get(pk=parent_pk)
+        child = child_model.objects.get(pk=child_pk)
+        m2m_manager = getattr(parent, child_related_name)
+        m2m_manager.remove(child)
+        logger.debug('Unlinked {} from {}'.format(child, parent))
+        return (parent, child)
 
     def _update_m2m_field(self, **kwargs):
         """Update ManyToMany field links from an m2m source table for parent models already imported.
