@@ -642,7 +642,7 @@ class Command(BaseCommand):
 
     # Methods for importing data for ManyToMany fields.
     def _import_new_m2m_field(self, source_db, source_table, parent_model, parent_source_pk,
-                               child_model, child_source_pk, import_parent_pks):
+                               child_model, child_source_pk, child_related_name, import_parent_pks):
         """Import ManyToMany field links from an m2m source table for a set of pks for the newly imported parent model.
         
         parent_model must have a field that is a ManyToManyField to child_model.
@@ -676,13 +676,13 @@ class Command(BaseCommand):
             child, parent = self._make_m2m_link(parent_model=parent_model,
                                                 parent_pk=type_fixed_row[parent_source_pk],
                                                 child_model=child_model,
-                                                child_pk=type_fixed_row[child_source_pk]
-                                                )
+                                                child_pk=type_fixed_row[child_source_pk],
+                                                child_related_name=child_related_name)
             links.append((type_fixed_row[parent_source_pk], type_fixed_row[child_source_pk]))
         return links
 
     def _make_new_m2m_links(self, source_db, source_table, parent_model, parent_source_pk,
-                          child_model, child_source_pk, **kwargs):
+                          child_model, child_source_pk, child_related_name, **kwargs):
         """Get new m2m field links from an m2m source table for already-imported parent models.
         
         parent_model must have a field that is a ManyToManyField to child_model.
@@ -713,7 +713,8 @@ class Command(BaseCommand):
             parent, child = self._make_m2m_link(parent_model=parent_model,
                                                 parent_pk=type_fixed_row[parent_source_pk],
                                                 child_model=child_model,
-                                                child_pk=type_fixed_row[child_source_pk])
+                                                child_pk=type_fixed_row[child_source_pk],
+                                                child_related_name=child_related_name)
             links.append((parent.pk, child.pk))
         return links
     
@@ -783,24 +784,7 @@ class Command(BaseCommand):
         logger.debug('Unlinked {} from {}'.format(child, parent))
         return (parent, child)
 
-    def _update_m2m_field(self, **kwargs):
-        """Update ManyToMany field links from an m2m source table for parent models already imported.
-        
-        parent_model must have a field that is a ManyToManyField to child_model.
-        Query the source db for entries in the m2m table (source_table) that link
-        child_source_pk values to parent_source_pk values, for parent_source_pk values
-        that are already imported into the Django models. Then use the results of that
-        query to link child_model instances to parent_model instances, using
-        parent_model_obj.children.add(child_model_obj)
-        
-        Returns:
-            
-        """
-        new_links = self._make_new_m2m_links(**kwargs)
-        removed_links = self._remove_missing_m2m_links(**kwargs)
-        return {'new': new_links, 'removed': removed_links}
-    
-    def _make_m2m_link(self, parent_model, parent_pk, child_model, child_pk):
+    def _make_m2m_link(self, parent_model, parent_pk, child_model, child_pk, child_related_name):
         """Add a child model object instance to the M2M field of a parent model object instance.
         
         parent_model must have a field that is a ManyToManyField to child_model.
@@ -818,18 +802,29 @@ class Command(BaseCommand):
         Returns:
             (parent model object instance, child model object instance)
         """
-        # TODO: This will need to be changed when there are multiple m2m fields to
-        # the same child model.
         parent = parent_model.objects.get(pk=parent_pk)
         child = child_model.objects.get(pk=child_pk)
-        # This hideous list comprehension comes from the Django documentation on the Model._meta API.
-        # https://docs.djangoproject.com/en/1.8/ref/models/meta/#migrating-from-the-old-api
-        # See the example for "MyModel._meta.get_m2m_with_model()".
-        m2m_field = [f for f in parent._meta.get_fields() if f.many_to_many and f.related_model == child_model and not f.auto_created][0]
-        m2m_manager = getattr(parent, m2m_field.get_attname())
+        m2m_manager = getattr(parent, child_related_name)
         m2m_manager.add(child)
         logger.debug('Linked {} to {}'.format(child, parent))
         return (parent, child)
+    
+    def _update_m2m_field(self, **kwargs):
+        """Update ManyToMany field links from an m2m source table for parent models already imported.
+        
+        parent_model must have a field that is a ManyToManyField to child_model.
+        Query the source db for entries in the m2m table (source_table) that link
+        child_source_pk values to parent_source_pk values, for parent_source_pk values
+        that are already imported into the Django models. Then use the results of that
+        query to link child_model instances to parent_model instances, using
+        parent_model_obj.children.add(child_model_obj)
+        
+        Returns:
+            
+        """
+        new_links = self._make_new_m2m_links(**kwargs)
+        removed_links = self._remove_missing_m2m_links(**kwargs)
+        return {'new': new_links, 'removed': removed_links}
     
 
     # Methods to run all of the updating or importing on all of the models.
@@ -902,6 +897,7 @@ class Command(BaseCommand):
                                                                         parent_source_pk='dataset_id',
                                                                         child_model=Subcohort,
                                                                         child_source_pk='subcohort_id',
+                                                                        child_related_name='subcohorts',
                                                                         import_parent_pks=new_source_dataset_pks)
         logger.info("Added {} source dataset subcohorts".format(len(new_source_dataset_subcohort_links)))
 
@@ -955,6 +951,7 @@ class Command(BaseCommand):
                                                                         parent_source_pk='harmonized_trait_set_id',
                                                                         child_model=SourceTrait,
                                                                         child_source_pk='component_trait_id',
+                                                                        child_related_name='component_source_traits',
                                                                         import_parent_pks=new_harmonized_trait_set_pks)
         logger.info("Added {} component source traits".format(len(new_component_source_trait_links)))
 
