@@ -1129,9 +1129,9 @@ class Command(BaseCommand):
         # Set the logger level based on verbosity setting.
         verbosity = options.get('verbosity') 
         if verbosity == 0:
-            logger.setLevel(logging.CRITICAL)
-        elif verbosity == 1:
             logger.setLevel(logging.ERROR)
+        elif verbosity == 1:
+            logger.setLevel(logging.WARNING)
         elif verbosity == 2:
             logger.setLevel(logging.INFO)
         elif verbosity == 3:
