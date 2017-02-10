@@ -1161,14 +1161,13 @@ class ImportNoUpdateTestCase(VisitTestDataTestCase):
         self.assertNotEqual(new_value, getattr(model_instance, 'i_'+field_to_update))
         self.assertFalse(model_instance.modified > t1)
 
-    def test_no_update_on_import_source_dataset_subcohorts(self):
-        """Updates in source_dataset_subcohorts are not imported with --import_only."""
+    def test_no_update_on_import_added_source_dataset_subcohorts(self):
+        """A new subcohort link to an existing source dataset is imported after an update."""
         # Run the initial db import.
         management.call_command('import_db', '--which_db=devel')
         # Pick a subcohort to create a new link to in the source db.
-        subcohorts = Subcohort.objects.all()
-        sc = subcohorts[0]
-        # Find a dataset which this subcohort isn't linked to already
+        sc = Subcohort.objects.get(pk=1)
+        # Find a dataset which this subcohort isn't linked to already.
         linked_datasets = sc.sourcedataset_set.all()
         possible_datasets = SourceDataset.objects.filter(source_study_version__study = sc.study)
         unlinked_datasets = set(possible_datasets) - set(linked_datasets)
@@ -1191,6 +1190,35 @@ class ImportNoUpdateTestCase(VisitTestDataTestCase):
         sc.refresh_from_db()
         dataset_to_link.refresh_from_db()
         self.assertFalse(dataset_to_link in sc.sourcedataset_set.all())
+
+    def test_no_update_on_import_removed_source_dataset_subcohorts(self):
+        """A source_dataset - subcohort link that is no longer in the source db is removed after an update."""
+        # Run the initial db import.
+        management.call_command('import_db', '--which_db=devel')
+        # Pick a subcohort to remove the link to in the source db.
+        sc = Subcohort.objects.get(pk=1)
+        # Find a dataset which this subcohort is already linked to.
+        linked_datasets = sc.sourcedataset_set.all()
+        possible_datasets = SourceDataset.objects.filter(source_study_version__study = sc.study)
+        if len(linked_datasets) < 1:
+            raise ValueError('The subcohort is not linked to any datasets.')
+        dataset_to_unlink = linked_datasets[0]
+        # Remove the dataset-subcohort link in the source db.
+        self.cursor.close()
+        self.source_db.close()
+        self.source_db = get_devel_db(permissions='full')
+        self.cursor = self.source_db.cursor(buffered=True, dictionary=True)
+        remove_subcohort_link_query = "DELETE FROM source_dataset_subcohorts WHERE dataset_id={} AND subcohort_id={}".format(dataset_to_unlink.pk, sc.pk)
+        self.cursor.execute(remove_subcohort_link_query)
+        self.source_db.commit()
+        self.cursor.close()
+        self.source_db.close()
+        # Now run the update commands.
+        management.call_command('import_db', '--which_db=devel', '--import_only')
+        # Check that the chosen subcohort is now linked to the dataset that was picked, in the Django db.
+        sc.refresh_from_db()
+        dataset_to_unlink.refresh_from_db()
+        self.assertTrue(dataset_to_unlink in sc.sourcedataset_set.all())
 
     # Harmonized trait updates.
     def test_no_update_on_import_harmonized_trait_set(self):
