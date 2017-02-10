@@ -585,14 +585,24 @@ class ImportHelperTestCase(TestCase):
 class M2MHelperTestCase(TestCase):
     """Tests of the helper functions for importing and updating m2m tables."""
     
+    def test_break_m2m_link(self):
+        pass
+        
+    def test_make_m2m_link(self):
+        pass
+        
     def test_import_new_m2m_field(self):
+        pass
+    
+    def test_make_new_m2m_links(self):
+        pass
+    
+    def test_remove_missing_m2m_links(self):
         pass
     
     def test_update_m2m_field(self):
         pass
-    
-    def test_make_m2m_link(self):
-        pass
+
 
 class ImportHelperTestCase(TestCase):
     """Tests of the _import_[source|harmonized]_tables helper methods."""
