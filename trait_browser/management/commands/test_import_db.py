@@ -544,139 +544,178 @@ class MakeArgsTestCase(BaseTestDataTestCase):
         self.assertIsInstance(harmonized_trait_encoded_value, HarmonizedTraitEncodedValue)
 
 
-class ImportHelperTestCase(TestCase):
+class HelperTestCase(BaseTestDataTestCase):
     """Tests of the helper functions from import_db.Command()."""
     
+    def test_make_table_query(self):
+        """Makes a valid query."""
+        query = CMD._make_table_query(source_table='study')
+        self.cursor.execute(query)
+        self.assertIsNotNone(self.cursor.fetchone())
+    
+    def test_make_table_query_with_filter(self):
+        """Makes a valid query."""
+        query = CMD._make_table_query(source_table='study', filter_field='accession', filter_values=['286'], filter_not=False)
+        self.cursor.execute(query)
+        self.assertIsNotNone(self.cursor.fetchone())
+
+    def test_make_table_query_with_not_filter(self):
+        """Makes a valid query."""
+        query = CMD._make_table_query(source_table='study', filter_field='accession', filter_values=['286'], filter_not=True)
+        self.cursor.execute(query)
+        self.assertIsNotNone(self.cursor.fetchone())
+    
+    def test_make_table_query_filter_values_empty(self):
+        """Makes a valid query when filter_values is empty."""
+        query = CMD._make_table_query(source_table='study', filter_field='accession', filter_values=[], filter_not=False)
+        self.cursor.execute(query)
+        self.assertIsNone(self.cursor.fetchone())
+
     def test_make_global_study_from_args(self):
         """_make_model_object_from_args works to make a global study."""
-        CMD._make_model_object_from_args(args={'i_id':5, 'i_name':'global study name', 'i_date_added': timezone.now(), 'i_date_changed':timezone.now()},
-                                              model=GlobalStudy)
+        CMD._make_model_object_from_args(model_args={'i_id':5, 'i_name':'global study name', 'i_date_added': timezone.now(), 'i_date_changed':timezone.now()}, model=GlobalStudy)
         obj = GlobalStudy.objects.get(pk=5)
         self.assertIsInstance(obj, GlobalStudy)
         
-    def test_make_table_query(self):
-        pass
-    
-    def test_make_model_object_per_query_row(self):
-        pass
+    def test_make_model_object_per_query_row_global_study(self):
+        """Makes a study object for every row in a query result."""
+        # Test with global_study because it is not dependent on any other models.
+        query = 'SELECT * FROM global_study'
+        CMD._make_model_object_per_query_row(source_db=self.source_db, query=query, make_args=CMD._make_global_study_args, **{'model':GlobalStudy})
+        self.cursor.execute(query)
+        ids = [row['id'] for row in self.cursor.fetchall()]
+        imported_ids = [gs.i_id for gs in GlobalStudy.objects.all()]
+        self.assertEqual(sorted(ids), sorted(imported_ids))
     
     def test_make_query_for_new_rows(self):
-        pass
+        """Makes a query that properly returns new rows of data from the study table."""
+        self.cursor.execute('SELECT * FROM study')
+        all_accessions = [row['accession'] for row in self.cursor.fetchall()]
+        old_pks = all_accessions[0:1]
+        query = CMD._make_query_for_new_rows('study', 'accession', [str(el) for el in old_pks])
+        self.cursor.execute(query)
+        retrieved_accessions = [row['accession'] for row in self.cursor.fetchall()]
+        for phs in all_accessions:
+            if phs in old_pks:
+                self.assertNotIn(phs, retrieved_accessions)
+            else:
+                self.assertIn(phs, retrieved_accessions)
         
-    def test_make_args_mapping(self):
-        pass
+    # def test_make_args_mapping(self):
+        # Testing this function generically is not worth it, since it's already
+        # tested specifically multiple times in the MakeArgsTestCase
     
-    def test_import_new_data(self):
-        pass
+    def test_import_new_data_global_study(self):
+        """Imports data from the global_study correctly into the GlobalStudy model."""
+        new_global_study_pks = CMD._import_new_data(source_db=self.source_db,
+                                                    source_table='global_study',
+                                                    source_pk='id',
+                                                    model=GlobalStudy,
+                                                    make_args=CMD._make_global_study_args)
+        self.cursor.execute('SELECT * FROM global_study')
+        pks_in_db = [row['id'] for row in self.cursor.fetchall()]
+        imported_pks = [gs.pk for gs in GlobalStudy.objects.all()]
+        self.assertEqual(pks_in_db, imported_pks)
     
-    def test_make_query_for_rows_to_update(self):
-        pass
+    def test_make_query_for_rows_to_update_global_study(self):
+        """Returns a query that contains only the updated rows."""
+        management.call_command('import_db', '--which_db=devel')
+        t1 = timezone.now() # Save a time to compare to modified date.
+        # Close the db connections because change_data_in_table() opens new connections.
+        # This does not affect the .cursor and .source_db attributes in other functions.
+        self.cursor.close()
+        self.source_db.close()
+        # Data about how to make the update in the source db.
+        model = GlobalStudy
+        model_instance = model.objects.all()[0]
+        source_db_table_name = 'global_study'
+        field_to_update = 'name'
+        new_value = 'asdfghjkl'
+        source_db_pk_name = model_instance._meta.pk.name.replace('i_', '')
+        # Make the update in the source db.
+        old_pks = CMD._get_current_pks(GlobalStudy)
+        change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
+        # Make the query.
+        self.source_db = get_devel_db()
+        self.cursor = self.source_db.cursor(buffered=True, dictionary=True)
+        updated_query = CMD._make_query_for_rows_to_update(source_db_table_name, model, old_pks, source_db_pk_name, changed_greater=True)
+        self.cursor.execute(updated_query)
+        updates = self.cursor.fetchall()
+        self.assertTrue(len(updates) == 1)
+        updated_row = CMD._fix_row(updates[0])
+        self.assertEqual(updated_row[field_to_update], new_value)
+        self.assertEqual(updated_row[source_db_pk_name], model_instance.pk)
     
-    def test_update_model_object_from_args(self):
-        pass
+    def test_update_model_object_from_args_global_study(self):
+        """Makes updates to a global study from model_args dict."""
+        global_study = GlobalStudyFactory.create()
+        old_name = global_study.i_name
+        new_name = global_study.i_name + '_modified'
+        model_args = {'i_id': global_study.pk, 'i_name': new_name}
+        CMD._update_model_object_from_args(model_args, GlobalStudy, expected=True)
+        global_study.refresh_from_db()
+        self.assertEqual(global_study.i_name, new_name)
     
-    def test_update_model_object_per_query_row(self):
-        pass
+    # def test_update_model_object_per_query_row(self):
+        # A test of this function would be almost exactly like the tests in the
+        # UpdateModelsTestCase, so I'm not writing another one here...
     
-    def test_update_existing_data(self):
-        pass
-    
+    def test_update_existing_data_global_study(self):
+        """Updates in global_study are imported."""
+        # Have to clean and reload the db because of updates in previous tests.
+        clean_devel_db()
+        load_test_source_db_data('base_plus_visit.sql')
+        management.call_command('import_db', '--which_db=devel')
+        t1 = timezone.now() # Save a time to compare to modified date.
+        # Close the db connections because change_data_in_table() opens new connections.
+        # This does not affect the .cursor and .source_db attributes in other functions.
+        self.cursor.close()
+        self.source_db.close()
+        # Change the data in the source db.
+        model = GlobalStudy
+        model_instance = model.objects.all()[0]
+        source_db_table_name = 'global_study'
+        field_to_update = 'name'
+        new_value = 'asdfghjkl'
+        source_db_pk_name = model_instance._meta.pk.name.replace('i_', '')
+        change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
+        # Need to open the db and cursor again...
+        self.source_db = get_devel_db()
+        self.cursor = self.source_db.cursor(buffered=True, dictionary=True)
+        global_study_update_count = CMD._update_existing_data(source_db=self.source_db,
+                                                              source_table='global_study',
+                                                              source_pk='id',
+                                                              model=GlobalStudy,
+                                                              make_args=CMD._make_global_study_args,
+                                                              expected=True) # Not technically expected, but get rid of the warning.
+        # Check that modified date > created date, and name is set to new value.
+        model_instance.refresh_from_db()
+        self.assertEqual(new_value, getattr(model_instance, 'i_'+field_to_update))
+        self.assertTrue(model_instance.modified > t1)
+
 
 class M2MHelperTestCase(TestCase):
     """Tests of the helper functions for importing and updating m2m tables."""
     
     def test_break_m2m_link(self):
-        pass
+        """Removes a child model from its parent M2M field."""
+        sd = SourceDatasetFactory.create()
+        sc = SubcohortFactory.create(study=sd.source_study_version.study)
+        sd.subcohorts.add(sc)
+        CMD._break_m2m_link(SourceDataset, sd.pk, Subcohort, sc.pk, 'subcohorts')
+        self.assertNotIn(sc, sd.subcohorts.all())
         
     def test_make_m2m_link(self):
-        pass
+        """Adds a child model to its parent M2M field."""
+        sd = SourceDatasetFactory.create()
+        sc = SubcohortFactory.create(study=sd.source_study_version.study)
+        CMD._make_m2m_link(SourceDataset, sd.pk, Subcohort, sc.pk, 'subcohorts')
+        self.assertIn(sc, sd.subcohorts.all())
         
     def test_import_new_m2m_field(self):
         pass
     
-    def test_make_new_m2m_links(self):
-        pass
-    
-    def test_remove_missing_m2m_links(self):
-        pass
-    
     def test_update_m2m_field(self):
-        pass
-
-
-class ImportHelperTestCase(TestCase):
-    """Tests of the _import_[source|harmonized]_tables helper methods."""
-    
-    def test_import_source_tables(self):
-        pass
-    
-    def test_import_harmonized_tables(self):
-        pass
-
-
-class UpdateHelperTestCase(TestCase):
-    """Tests of the _update_[source|harmonized]_tables helper methods."""
-    
-    def test_update_source_tables(self):
-        pass
-    
-    def test_update_harmonized_tables(self):
-        pass
-
-
-class GetCurrentListsTest(TestCase):
-    """Tests of _get_current_pks with each possible model."""
-    n = 32
-    
-    def test_get_current_global_studies(self):
-        """Test that Command._get_global_studies() returns the right number of global_study ids."""
-        GlobalStudyFactory.create_batch(self.n)
-        pks = CMD._get_current_pks(GlobalStudy)
-        self.assertEqual(len(pks), self.n)
-
-    def test_get_current_studies(self):
-        """Test that Command._get_current_studies() returns the right number of study ids."""
-        StudyFactory.create_batch(self.n)
-        pks = CMD._get_current_pks(Study)
-        self.assertEqual(len(pks), self.n)
-
-    def test_get_current_source_study_versions(self):
-        """Test that Command._get_current_source_study_versions() returns the right number of trait ids."""
-        SourceStudyVersionFactory.create_batch(self.n)
-        pks = CMD._get_current_pks(SourceStudyVersion)
-        self.assertEqual(len(pks), self.n)
-
-    def test_get_current_subcohorts(self):
-        """Test that Command._get_current_subcohorts() returns the right number of trait ids."""
-        SubcohortFactory.create_batch(self.n)
-        pks = CMD._get_current_pks(Subcohort)
-        self.assertEqual(len(pks), self.n)
-
-    def test_get_current_source_datasets(self):
-        """Test that Command._get_current_source_datasets() returns the right number of trait ids."""
-        SourceTraitFactory.create_batch(self.n)
-        pks = CMD._get_current_pks(SourceTrait)
-        self.assertEqual(len(pks), self.n)
-    
-    def test_get_current_harmonized_trait_set(self):
-        pass
-    
-    def test_get_current_source_traits(self):
-        """Test that Command._get_current_source_traits() returns the right number of trait ids."""
-        SourceTraitFactory.create_batch(self.n)
-        pks = CMD._get_current_pks(SourceTrait)
-        self.assertEqual(len(pks), self.n)
-    
-    def test_get_current_harmonized_trait(self):
-        pass
-    
-    def test_get_current_source_trait_encoded_values(self):
-        """Test that Command._get_current_source_trait_encoded_values() returns the right number of trait ids."""
-        SourceTraitEncodedValueFactory.create_batch(self.n)
-        pks = CMD._get_current_pks(SourceTraitEncodedValue)
-        self.assertEqual(len(pks), self.n)
-    
-    def test_get_current_harmonized_trait_encoded_values(self):
         pass
 
 
@@ -701,7 +740,7 @@ class UpdateModelsTestCase(VisitTestDataTestCase):
         source_db_pk_name = model_instance._meta.pk.name.replace('i_', '')
         
         change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
-        management.call_command('import_db', '--which_db=devel', '--update_only')
+        management.call_command('import_db', '--which_db=devel', '--update_only', '--verbosity=0')
         model_instance.refresh_from_db()
         # Check that modified date > created date, and name is set to new value.
         self.assertEqual(new_value, getattr(model_instance, 'i_'+field_to_update))
@@ -724,7 +763,7 @@ class UpdateModelsTestCase(VisitTestDataTestCase):
         source_db_pk_name = model_instance._meta.pk.name.replace('i_', '')
         
         change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
-        management.call_command('import_db', '--which_db=devel', '--update_only')
+        management.call_command('import_db', '--which_db=devel', '--update_only', '--verbosity=0')
         model_instance.refresh_from_db()
         # Check that modified date > created date, and name is set to new value.
         self.assertEqual(new_value, getattr(model_instance, 'i_'+field_to_update))
@@ -747,7 +786,7 @@ class UpdateModelsTestCase(VisitTestDataTestCase):
         source_db_pk_name = model_instance._meta.pk.name.replace('i_', '')
         
         change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
-        management.call_command('import_db', '--which_db=devel', '--update_only')
+        management.call_command('import_db', '--which_db=devel', '--update_only', '--verbosity=0')
         model_instance.refresh_from_db()
         # Check that modified date > created date, and name is set to new value.
         self.assertEqual(new_value, getattr(model_instance, 'i_'+field_to_update))
@@ -770,7 +809,7 @@ class UpdateModelsTestCase(VisitTestDataTestCase):
         source_db_pk_name = model_instance._meta.pk.name.replace('i_', '')
         
         change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
-        management.call_command('import_db', '--which_db=devel', '--update_only')
+        management.call_command('import_db', '--which_db=devel', '--update_only', '--verbosity=0')
         model_instance.refresh_from_db()
         # Check that modified date > created date, and name is set to new value.
         self.assertEqual(new_value, getattr(model_instance, 'i_'+field_to_update))
@@ -793,7 +832,7 @@ class UpdateModelsTestCase(VisitTestDataTestCase):
         source_db_pk_name = 'source_trait_id'
         
         change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
-        management.call_command('import_db', '--which_db=devel', '--update_only')
+        management.call_command('import_db', '--which_db=devel', '--update_only', '--verbosity=0')
         model_instance.refresh_from_db()
         # Check that modified date > created date, and name is set to new value.
         self.assertEqual(new_value, getattr(model_instance, 'i_description'))
@@ -816,7 +855,7 @@ class UpdateModelsTestCase(VisitTestDataTestCase):
         source_db_pk_name = model_instance._meta.pk.name.replace('i_', '')
         
         change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
-        management.call_command('import_db', '--which_db=devel', '--update_only')
+        management.call_command('import_db', '--which_db=devel', '--update_only', '--verbosity=0')
         model_instance.refresh_from_db()
         # Check that modified date > created date, and name is set to new value.
         self.assertEqual(new_value, getattr(model_instance, 'i_'+field_to_update))
@@ -839,7 +878,7 @@ class UpdateModelsTestCase(VisitTestDataTestCase):
         source_db_pk_name = model_instance._meta.pk.name.replace('i_', '')
         
         change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
-        management.call_command('import_db', '--which_db=devel', '--update_only')
+        management.call_command('import_db', '--which_db=devel', '--update_only', '--verbosity=0')
         model_instance.refresh_from_db()
         # Check that modified date > created date, and name is set to new value.
         self.assertEqual(new_value, getattr(model_instance, 'i_'+field_to_update))
@@ -869,7 +908,7 @@ class UpdateModelsTestCase(VisitTestDataTestCase):
         self.cursor.close()
         self.source_db.close()
         # Now run the update commands.
-        management.call_command('import_db', '--which_db=devel', '--update_only')
+        management.call_command('import_db', '--which_db=devel', '--update_only', '--verbosity=0')
         # Check that the chosen subcohort is now linked to the dataset that was picked, in the Django db.
         sc.refresh_from_db()
         dataset_to_link.refresh_from_db()
@@ -898,7 +937,7 @@ class UpdateModelsTestCase(VisitTestDataTestCase):
         self.cursor.close()
         self.source_db.close()
         # Now run the update commands.
-        management.call_command('import_db', '--which_db=devel', '--update_only')
+        management.call_command('import_db', '--which_db=devel', '--update_only', '--verbosity=0')
         # Check that the chosen subcohort is now linked to the dataset that was picked, in the Django db.
         sc.refresh_from_db()
         dataset_to_unlink.refresh_from_db()
@@ -922,7 +961,7 @@ class UpdateModelsTestCase(VisitTestDataTestCase):
         source_db_pk_name = model_instance._meta.pk.name.replace('i_', '')
         
         change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
-        management.call_command('import_db', '--which_db=devel', '--update_only')
+        management.call_command('import_db', '--which_db=devel', '--update_only', '--verbosity=0')
         model_instance.refresh_from_db()
         # Check that modified date > created date, and name is set to new value.
         self.assertEqual(new_value, getattr(model_instance, 'i_'+field_to_update))
@@ -945,7 +984,7 @@ class UpdateModelsTestCase(VisitTestDataTestCase):
         source_db_pk_name = 'harmonized_trait_id'
         
         change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
-        management.call_command('import_db', '--which_db=devel', '--update_only')
+        management.call_command('import_db', '--which_db=devel', '--update_only', '--verbosity=0')
         model_instance.refresh_from_db()
         # Check that modified date > created date, and name is set to new value.
         self.assertEqual(new_value, getattr(model_instance, 'i_description'))
@@ -968,7 +1007,7 @@ class UpdateModelsTestCase(VisitTestDataTestCase):
         source_db_pk_name = model_instance._meta.pk.name.replace('i_', '')
         
         change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
-        management.call_command('import_db', '--which_db=devel', '--update_only')
+        management.call_command('import_db', '--which_db=devel', '--update_only', '--verbosity=0')
         model_instance.refresh_from_db()
         # Check that modified date > created date, and name is set to new value.
         self.assertEqual(new_value, getattr(model_instance, 'i_'+field_to_update))
@@ -999,11 +1038,96 @@ class UpdateModelsTestCase(VisitTestDataTestCase):
         self.cursor.close()
         self.source_db.close()
         # Now run the update commands.
-        management.call_command('import_db', '--which_db=devel', '--update_only')
+        management.call_command('import_db', '--which_db=devel', '--update_only', '--verbosity=0')
         # Check that the chosen subcohort is now linked to the dataset that was picked, in the Django db.
         source_trait.refresh_from_db()
         htrait_set.refresh_from_db()
         self.assertTrue(htrait_set in source_trait.harmonizedtraitset_set.all())
+
+
+class ImportHelperTestCase(TestCase):
+    """Tests of the _import_[source|harmonized]_tables helper methods."""
+    
+    def test_import_source_tables(self):
+        pass
+    
+    def test_import_harmonized_tables(self):
+        pass
+
+
+class UpdateHelperTestCase(TestCase):
+    """Tests of the _update_[source|harmonized]_tables helper methods."""
+    
+    def test_update_source_tables(self):
+        pass
+    
+    def test_update_harmonized_tables(self):
+        pass
+
+
+class GetCurrentListsTestCase(TestCase):
+    """Tests of _get_current_pks with each possible model."""
+    n = 32
+    
+    def test_get_current_global_studies(self):
+        """Returns the right number of global_study ids."""
+        GlobalStudyFactory.create_batch(self.n)
+        pks = CMD._get_current_pks(GlobalStudy)
+        self.assertEqual(len(pks), self.n)
+
+    def test_get_current_studies(self):
+        """Returns the right number of study ids."""
+        StudyFactory.create_batch(self.n)
+        pks = CMD._get_current_pks(Study)
+        self.assertEqual(len(pks), self.n)
+
+    def test_get_current_source_study_versions(self):
+        """Returns the right number of source study version ids."""
+        SourceStudyVersionFactory.create_batch(self.n)
+        pks = CMD._get_current_pks(SourceStudyVersion)
+        self.assertEqual(len(pks), self.n)
+
+    def test_get_current_subcohorts(self):
+        """Returns the right number of subcohort ids."""
+        SubcohortFactory.create_batch(self.n)
+        pks = CMD._get_current_pks(Subcohort)
+        self.assertEqual(len(pks), self.n)
+
+    def test_get_current_source_datasets(self):
+        """Returns the right number of source dataset ids."""
+        SourceTraitFactory.create_batch(self.n)
+        pks = CMD._get_current_pks(SourceTrait)
+        self.assertEqual(len(pks), self.n)
+    
+    def test_get_current_harmonized_trait_set(self):
+        """Returns the right number of harmonized trait sets."""
+        HarmonizedTraitSetFactory.create_batch(self.n)
+        pks = CMD._get_current_pks(HarmonizedTraitSet)
+        self.assertEqual(len(pks), self.n)
+    
+    def test_get_current_source_traits(self):
+        """Returns the right number of source trait ids."""
+        SourceTraitFactory.create_batch(self.n)
+        pks = CMD._get_current_pks(SourceTrait)
+        self.assertEqual(len(pks), self.n)
+    
+    def test_get_current_harmonized_trait(self):
+        """Returns the right number of harmonized trait ids."""
+        HarmonizedTraitFactory.create_batch(self.n)
+        pks = CMD._get_current_pks(HarmonizedTrait)
+        self.assertEqual(len(pks), self.n)
+    
+    def test_get_current_source_trait_encoded_values(self):
+        """Returns the right number of source trait encoded value ids."""
+        SourceTraitEncodedValueFactory.create_batch(self.n)
+        pks = CMD._get_current_pks(SourceTraitEncodedValue)
+        self.assertEqual(len(pks), self.n)
+    
+    def test_get_current_harmonized_trait_encoded_values(self):
+        """Returns the right number of harmonized trait encoded value ids."""
+        HarmonizedTraitEncodedValueFactory.create_batch(self.n)
+        pks = CMD._get_current_pks(HarmonizedTraitEncodedValue)
+        self.assertEqual(len(pks), self.n)
 
 
 class ImportNoUpdateTestCase(VisitTestDataTestCase):
@@ -1474,7 +1598,7 @@ class IntegrationTest(VisitTestDataTestCase):
         self.source_db.close()
 
         # Run the update command.
-        management.call_command('import_db', '--which_db=devel', '--update_only')
+        management.call_command('import_db', '--which_db=devel', '--update_only', '--verbosity=0')
 
         # Refresh models from the db. 
         global_study.refresh_from_db()
