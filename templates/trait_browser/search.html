@@ -32,20 +32,22 @@
 
 
     {% if results %}
+    <form method="post" action="{% url 'trait_browser:save_search' %}">
+        {% csrf_token %}
         {% if alreadySaved %}
-        <button id="save-search-btn" type="button" class="btn btn-info" disabled="True">Previously Saved</button>
+        <button id="save-search-btn" type="button" class="btn btn-info" disabled="True">Saved to profile</button>
         {% else %}
-        <button id="save-search-btn" type="button" class="btn btn-info" data-traittype="{{ trait_type }}">Save Search</button>
+        <input type="hidden" name="search_params" value="{{ request.GET.urlencode }}">
+        <input type="hidden" name="trait_type" value="{{ trait_type }}">
+        <!-- type="submit" must appear first, apparently -->
+        <button type="submit" id="save-search-btn" type="button" class="btn btn-info">Save Search</button>
         {% endif %}
-        <div class="alert alert-info" role="alert">
-            <strong><font size="4">{{ trait_table.rows|length }} phenotype{{ trait_table.rows|length|pluralize }} found</font></strong>
-        </div>
+    </form>
+    <div class="alert alert-info" role="alert">
+        <strong><font size="4">{{ trait_table.rows|length }} phenotype{{ trait_table.rows|length|pluralize }} found</font></strong>
+    </div>
         
         {% render_table trait_table %}
     {% endif %}
 
-{% endblock %}
-
-{% block custom_javascript %}
-<script src="{% static 'js/search_form.js' %}"></script>
 {% endblock %}

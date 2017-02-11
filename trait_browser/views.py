@@ -1,6 +1,7 @@
 """View functions and classes for the trait_browser app."""
 
-from django.shortcuts import render, get_object_or_404, HttpResponse
+from django.shortcuts import render, get_object_or_404, HttpResponse, redirect
+from django.core.urlresolvers import reverse
 from django.db.models import Q    # Allows complex queries when searching.
 from django.views.generic import DetailView
 from django.contrib.auth.decorators import login_required
@@ -230,32 +231,38 @@ class SourceTraitIDAutocomplete(autocomplete.Select2QuerySetView):
 def save_search_to_profile(request):
     """Saves the user's search to their profile"""
 
-    # parse search parameters from provided url
-    trait_type = request.GET.get('trait_type')
-    search_parameters = unquote(request.GET.get('search_params'))
-    params = parse_qs(urlparse(search_parameters).query)
+    if request.method == "POST":
+        # parse search parameters from provided url
+        trait_type = request.POST.get('trait_type')
+        query_string = request.POST.get('search_params')
+        params = parse_qs(query_string)
+        # should be list of one element
+        text = params['text'][0]
+        # studies from the requested search
+        # studies are stored as a list of strings, sort by applying int on each element
+        studies = params['study'] if 'study' in params else []
 
-    # should be list of one element
-    text = params['text'][0]
-    # studies from the requested search
-    # studies are stored as a list of strings, sort by applying int on each element
-    studies = params['study'] if 'study' in params else []
+        # id value of search
+        search_record = check_search_existence(text, trait_type, studies=studies)
 
-    # id value of search
-    search_record = check_search_existence(text, trait_type, studies=studies)
+        user_data_record, new_record = UserData.objects.get_or_create(user_id=request.user.id)
 
-    user_data_record, new_record = UserData.objects.get_or_create(user_id=request.user.id)
+        # save user search
+        # user_id can be the actual value, saved_search_id has to be the model instance for some reason
 
-    # save user search
-    # user_id can be the actual value, saved_search_id has to be the model instance for some reason
+        user_data, new_record = SavedSearchMeta.objects.get_or_create(
+            userdata_id=user_data_record.id,
+            search_id=search_record.id
+        )
+        user_data.save()
 
-    user_data, new_record = SavedSearchMeta.objects.get_or_create(
-        userdata_id=user_data_record.id,
-        search_id=search_record.id
-    )
-    user_data.save()
-
-    return HttpResponse()
+        search_url = '?'.join([
+            reverse(
+                ':'.join(['trait_browser', trait_type, 'search'])
+                ),
+            query_string
+        ])
+        return redirect(search_url)
 
 def check_search_existence(query, search_type, studies=[]):
     """ Returns the search record otherwise None """
