@@ -177,9 +177,10 @@ class Command(BaseCommand):
         query building methods.
         
         Arguments:
-            in_filter (dict): {'field_name': [list of values to include in IN statement]}
-            not_in_filter (dict): {'field_name': [list of values to include in NOT IN statement]}
-            filter_field (str): name of the field to filter on
+            source_table (str): name of the source db table to make a query for
+            filter_field (str): name of the source db field to filter on
+            filter_values (list of str): values to have in the filter clause
+            filter_not (bool): should the filter be WHERE NOT IN? (if False, then WHERE IN)
         
         Returns:
             str: query for rows from source_table with appropriate filters
@@ -220,7 +221,6 @@ class Command(BaseCommand):
             source_db (MySQLConnection): a mysql.connector open db connection 
             query (str): a query to send to the open db
             make_args (function): function to convert a db query result row to args for making a model object
-            model (class obj): the model class to use to make a model object instance
         """
         cursor = source_db.cursor(buffered=True, dictionary=True)
         cursor.execute(query)
@@ -283,13 +283,6 @@ class Command(BaseCommand):
         for data that has not yet been imported. Use helper functions to make Django
         model objects from the data retrieved by the query.
         
-        Arguments:
-            source_db (MySQLConnection): a mysql.connector open db connection 
-            source_table (str): name of the table in the source db
-            source_pk (str): name of the primary key column in the source db
-            model (class obj): the model class to use to make a model object instance
-            make_args (function): function to convert a db query result row to args for making a model object
-
         Returns:
             list of str pk values that were imported to the Django db
         """
@@ -312,6 +305,7 @@ class Command(BaseCommand):
         
         Arguments:
             source_table (str): name of the table in the source db
+            model (): 
             old_pks (list of str): pk values that are already imported into the website db
             source_pk (str): name of the primary key column in the source db
             changed_greater (bool): whether or not to include the (date_changed > date_added)
@@ -433,13 +427,6 @@ class Command(BaseCommand):
         Find the pks for model that have already been imported into Django. Then
         query the source db for rows that have been modified since their import into
         Django. Use the results of that query to update the data in the Django db.
-        
-        Arguments:
-            source_db (MySQLConnection): a mysql.connector open db connection 
-            source_table (str): name of the table in the source db
-            source_pk (str): name of the primary key column in the source db
-            model (class obj): the model class to use to make a model object instance
-            make_args (function): function to convert a db query result row to args for making a model object
         
         Returns:
             int; the number of updated rows detected in the source db
@@ -682,6 +669,7 @@ class Command(BaseCommand):
             parent_pk (str): pk value of the parent model instance to link the child model to
             child_model (class obj): the model class of the child model for the m2m field
             child_pk (str): pk value of the child model instance to link to the parent model
+            child_related_name (str): name of the parent model's field which is related to child_model
         
         Returns:
             (parent model object instance, child model object instance)
@@ -705,12 +693,6 @@ class Command(BaseCommand):
         
         Arguments:
             source_db (MySQLConnection): a mysql.connector open db connection 
-            source_table (str): name of the table in the source db
-            parent_model (class obj): the model class of the parent model for the m2m field
-            parent_source_pk (str): name of the parent model's primary key column in the source db
-            child_model (class obj): the model class of the child model for the m2m field
-            child_source_pk (str): name of the child model's primary key column in the source db
-            import_parent_pks (list of str): parent pk values for which to import m2m field links
         
         Returns:
             list of str pk values for (parent_pk, child_pk) pairs that have now been linked
