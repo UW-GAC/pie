@@ -1,11 +1,13 @@
 """Factory classes for generating test data for each of the trait_browser models."""
 
-from datetime import datetime
+from datetime import datetime, timedelta
+import factory
+from faker import Factory
+fake = Factory.create()
+import pytz
 
 from django.utils import timezone
 
-import factory
-import factory.fuzzy
 
 from .models import GlobalStudy, HarmonizedTrait, HarmonizedTraitEncodedValue, HarmonizedTraitSet, SourceDataset, SourceStudyVersion, SourceTrait, SourceTraitEncodedValue, Study, Subcohort
 
@@ -22,7 +24,18 @@ VISIT_CHOICES = ('one_visit_per_file',
 VISIT_NUMBERS = tuple([str(el) for el in range(1, 20)]) + ('', )
 DETECTED_TYPES = ('encoded', 'character', 'double', 'integer')
 
-class GlobalStudyFactory(factory.DjangoModelFactory):
+
+class SourceDBTimeStampMixin(factory.DjangoModelFactory):
+    
+    i_date_added = factory.Faker('date_time_this_month', tzinfo=pytz.utc)
+    
+    @factory.lazy_attribute
+    def i_date_changed(self):
+        """Set i_date_changed based on the value of i_date_added."""
+        return fake.date_time_between_dates(datetime_start=self.i_date_added, datetime_end=timezone.now(), tzinfo=pytz.utc)
+    
+
+class GlobalStudyFactory(SourceDBTimeStampMixin, factory.DjangoModelFactory):
     """Factory for GlobalStudy objects using Faker faked data."""
     
     i_id = factory.Sequence(lambda n: n)
@@ -33,7 +46,7 @@ class GlobalStudyFactory(factory.DjangoModelFactory):
         django_get_or_create = ('i_id', )
 
 
-class StudyFactory(factory.DjangoModelFactory):
+class StudyFactory(SourceDBTimeStampMixin, factory.DjangoModelFactory):
     """Factory for Study objects using Faker faked data."""
         
     global_study = factory.SubFactory(GlobalStudyFactory)
@@ -45,14 +58,14 @@ class StudyFactory(factory.DjangoModelFactory):
         django_get_or_create = ('i_accession', )
 
 
-class SourceStudyVersionFactory(factory.DjangoModelFactory):
+class SourceStudyVersionFactory(SourceDBTimeStampMixin, factory.DjangoModelFactory):
     """Factory for SourceStudyVersion objecsts using Faker faked data."""
     
     study = factory.SubFactory(StudyFactory)
     i_id = factory.Sequence(lambda n: n)
     i_version = factory.Faker('random_int', min=1, max=10)
     i_participant_set = factory.Faker('random_int', min=1, max=10)
-    i_dbgap_date = factory.fuzzy.FuzzyDateTime(start_dt=timezone.make_aware(datetime(1998, 1, 1), timezone.get_current_timezone()))
+    i_dbgap_date = factory.Faker('date_time_this_century', tzinfo=pytz.utc)
     i_is_prerelease = False
     i_is_deprecated = False
     
@@ -61,7 +74,7 @@ class SourceStudyVersionFactory(factory.DjangoModelFactory):
         django_get_or_create = ('i_id', )
 
 
-class SubcohortFactory(factory.DjangoModelFactory):
+class SubcohortFactory(SourceDBTimeStampMixin, factory.DjangoModelFactory):
     """Factory for Subcohort objects using Faker faked data."""
     
     study = factory.SubFactory(StudyFactory)
@@ -73,7 +86,7 @@ class SubcohortFactory(factory.DjangoModelFactory):
         django_get_or_create = ('i_id', )
 
 
-class SourceDatasetFactory(factory.DjangoModelFactory):
+class SourceDatasetFactory(SourceDBTimeStampMixin, factory.DjangoModelFactory):
     """Factory for SourceDataset objects using Faker faked data."""
     
     source_study_version = factory.SubFactory(SourceStudyVersionFactory)
@@ -102,7 +115,7 @@ class SourceDatasetFactory(factory.DjangoModelFactory):
                 self.subcohorts.add(subcohort)
 
 
-class HarmonizedTraitSetFactory(factory.DjangoModelFactory):
+class HarmonizedTraitSetFactory(SourceDBTimeStampMixin, factory.DjangoModelFactory):
     """Factory for HarmonizedTraitSet model using Faker faked data."""
     
     i_id = factory.Sequence(lambda n: n)
@@ -136,7 +149,7 @@ class HarmonizedTraitSetFactory(factory.DjangoModelFactory):
                 self.component_harmonized_traits.add(harmonized_trait)
 
 
-class SourceTraitFactory(factory.DjangoModelFactory):
+class SourceTraitFactory(SourceDBTimeStampMixin, factory.DjangoModelFactory):
     """Factory for SourceTrait objects using Faker faked data."""
     
     i_trait_id = factory.Sequence(lambda n: n)
@@ -159,7 +172,7 @@ class SourceTraitFactory(factory.DjangoModelFactory):
         django_get_or_create = ('i_trait_id', )
 
 
-class HarmonizedTraitFactory(factory.DjangoModelFactory):
+class HarmonizedTraitFactory(SourceDBTimeStampMixin, factory.DjangoModelFactory):
     """Factory for HarmonizedTrait objects using Faker faked data."""
     
     i_trait_id = factory.Sequence(lambda n: n)
@@ -196,7 +209,7 @@ class HarmonizedTraitFactory(factory.DjangoModelFactory):
     #             self.component_harmonized_traits.add(harmonized_trait)
 
 
-class SourceTraitEncodedValueFactory(factory.DjangoModelFactory):
+class SourceTraitEncodedValueFactory(SourceDBTimeStampMixin, factory.DjangoModelFactory):
     """Factory for SourceTraitEncodedValue objects using Faker faked data."""
     
     i_id = factory.Sequence(lambda n: n)
@@ -209,7 +222,7 @@ class SourceTraitEncodedValueFactory(factory.DjangoModelFactory):
         model = SourceTraitEncodedValue
 
 
-class HarmonizedTraitEncodedValueFactory(factory.DjangoModelFactory):
+class HarmonizedTraitEncodedValueFactory(SourceDBTimeStampMixin, factory.DjangoModelFactory):
     """Factory for HarmonizedTraitEncodedValue objects using Faker faked data."""
     
     i_id = factory.Sequence(lambda n: n)

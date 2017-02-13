@@ -10,14 +10,15 @@ from django.db import models
 from django.core.urlresolvers import reverse
 
 
-class TimeStampedModel(models.Model):
-    """
-    An abstract base class model that provides selfupdating
-    ``created`` and ``modified`` fields.
-    """
+from core.models import TimeStampedModel
 
-    created = models.DateTimeField(auto_now_add=True)
-    modified = models.DateTimeField(auto_now=True)
+
+class SourceDBTimeStampedModel(TimeStampedModel):
+    """Superclass for models pulled from the source db, with i_date_added and i_date_changed fields.
+    """
+    
+    i_date_added = models.DateTimeField()
+    i_date_changed = models.DateTimeField()
 
     class Meta:
         abstract = True
@@ -25,7 +26,7 @@ class TimeStampedModel(models.Model):
 
 # Study models.
 # ------------------------------------------------------------------------------
-class GlobalStudy(TimeStampedModel):
+class GlobalStudy(SourceDBTimeStampedModel):
     """Model for "global study", which links studies between parent & child accessions.
     
     Global study connects data that are from the same parent study, but may be spread across
@@ -48,7 +49,7 @@ class GlobalStudy(TimeStampedModel):
         return '{}, id={}'.format(self.i_name, self.i_id)
 
 
-class Study(TimeStampedModel):
+class Study(SourceDBTimeStampedModel):
     """Model for dbGaP study accessions.
     
     Fields:
@@ -111,7 +112,7 @@ class Study(TimeStampedModel):
         return reverse('trait_browser:source:search') + '?study={}'.format(self.i_accession)
 
 
-class SourceStudyVersion(TimeStampedModel):
+class SourceStudyVersion(SourceDBTimeStampedModel):
     """Model for versions of each dbGaP study accession.
     
     Fields:
@@ -153,7 +154,7 @@ class SourceStudyVersion(TimeStampedModel):
         return '{}.v{}.p{}'.format(self.study.phs, self.i_version, self.i_participant_set)
     
 
-class Subcohort(TimeStampedModel):
+class Subcohort(SourceDBTimeStampedModel):
     """Model for subcohorts.
     
     Fields:
@@ -174,7 +175,7 @@ class Subcohort(TimeStampedModel):
 
 # Dataset related models.
 # ------------------------------------------------------------------------------
-class SourceDataset(TimeStampedModel):
+class SourceDataset(SourceDBTimeStampedModel):
     """Model for dbGaP datasets from which SourceTraits are obtained.
     
     Fields:
@@ -226,7 +227,7 @@ class SourceDataset(TimeStampedModel):
         return 'pht{:06}.v{}.p{}'.format(self.i_accession, self.i_version, self.source_study_version.i_participant_set)
 
 
-class HarmonizedTraitSet(TimeStampedModel):
+class HarmonizedTraitSet(SourceDBTimeStampedModel):
     """Model for harmonized trait set from snuffles. Analagous to the SourceDataset
     for source traits.
     
@@ -253,7 +254,7 @@ class HarmonizedTraitSet(TimeStampedModel):
 
 # Trait models.
 # ------------------------------------------------------------------------------
-class Trait(TimeStampedModel):
+class Trait(SourceDBTimeStampedModel):
     """Abstract superclass model for SourceTrait and HarmonizedTrait.
     
     SourceTrait and HarmonizedTrait Models inherit from this Model, but the Trait
@@ -448,7 +449,7 @@ class HarmonizedTrait(Trait):
 
 # Encoded Value models.
 # ------------------------------------------------------------------------------
-class TraitEncodedValue(TimeStampedModel):
+class TraitEncodedValue(SourceDBTimeStampedModel):
     """Abstract superclass model for SourceEncodedValue and HarmonizedEncodedValue.
     
     SourceEncodedValue and HarmonizedEncodedValue models inherit from this Model,
