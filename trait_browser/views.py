@@ -196,7 +196,7 @@ def trait_search(request, trait_type, study_pk=None):
                 page_data = {
                     'form': form,
                     'results': False,
-                    'trait_type': 'source'
+                    'trait_type': 'harmonized'
                 }
                 return render(request, 'trait_browser/search.html', page_data)
     # If there was no data entered, show the empty form.

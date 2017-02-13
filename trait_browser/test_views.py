@@ -6,6 +6,7 @@ from django.core.urlresolvers import reverse, RegexURLResolver, RegexURLPattern
 from core.utils import ViewsAutoLoginTestCase, LoginRequiredTestCase
 from .models import GlobalStudy, HarmonizedTrait, HarmonizedTraitEncodedValue, HarmonizedTraitSet, SourceDataset, SourceStudyVersion, SourceTrait, SourceTraitEncodedValue, Study, Subcohort
 from .factories import GlobalStudyFactory, HarmonizedTraitFactory, HarmonizedTraitEncodedValueFactory, HarmonizedTraitSetFactory, SourceDatasetFactory, SourceStudyVersionFactory, SourceTraitFactory, SourceTraitEncodedValueFactory, StudyFactory, SubcohortFactory 
+from .forms import SourceTraitCrispySearchForm, HarmonizedTraitCrispySearchForm
 from .tables import SourceTraitTable, HarmonizedTraitTable, StudyTable
 from .urls import urlpatterns
 from .views import TABLE_PER_PAGE, search
@@ -339,6 +340,9 @@ class SourceTraitSearchViewTestCase(ViewsAutoLoginTestCase):
         self.assertFalse(response.context['results'])    # results is False.
         self.assertNotIn('trait_table', response.context)    # trait_table is found.
         self.assertTrue(response.context['form'].is_bound)    # Form is bound to data
+        self.assertEqual(response.context['trait_type'], 'source')    # trait type is still correct
+        self.assertIsInstance(response.context['form'], SourceTraitCrispySearchForm)    # Form is of the correct type
+
         
     def test_source_trait_search_with_valid_results_and_study_filter(self):
         """Tests that the source_trait_search view has a 200 reponse code and the number of results is accurate when search text and study filter is entered and there are search results to display."""
@@ -484,6 +488,8 @@ class HarmonizedTraitSearchViewTestCase(ViewsAutoLoginTestCase):
         self.assertFalse(response.context['results'])    # results is False.
         self.assertNotIn('trait_table', response.context)    # trait_table is found.
         self.assertTrue(response.context['form'].is_bound)    # Form is bound to data
+        self.assertEqual(response.context['trait_type'], 'harmonized')    # trait type is still correct
+        self.assertIsInstance(response.context['form'], HarmonizedTraitCrispySearchForm)    # Form is of the correct type
 
 
 class TraitBrowserLoginRequiredTestCase(LoginRequiredTestCase):
