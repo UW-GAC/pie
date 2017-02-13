@@ -14,7 +14,7 @@ class SourceSearchTable(tables.Table):
     )
     filtered_studies = tables.TemplateColumn(
         orderable=False,
-        template_code='<div data-toggle="tooltip" data-placement="bottom" title="{{ record.study_name_string }}">{{ record.search_studies }}</div>'
+        template_code='<div data-toggle="popover" data-trigger="hover" data-html="true" data-content="{{ record.study_name_string }}">{{ record.search_studies }}</div>'
     )
     date_saved = tables.DateTimeColumn(orderable=False)
 
