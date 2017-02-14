@@ -45,6 +45,17 @@ class Search(TimeStampedModel):
         # otherwise we would build a list of tuples
         return '?'.join([search_url, urlencode(query_string_dict, doseq=1)])
 
+    def __str__(self):
+        """Pretty printing."""
+        msg = '\n'.join([
+            'Search configuration',
+            'param_text: {}'.format(self.param_text),
+            'param_studies: {}'.format(self.param_studies.all()),
+            'search_count: {}'.format(self.search_count),
+            'search_type: {}'.format(self.search_type)
+        ])
+        return msg
+
     class Meta:
         verbose_name_plural = 'searches'
 
@@ -57,5 +68,5 @@ class UserData(TimeStampedModel):
 
 class SavedSearchMeta(TimeStampedModel):
     search = models.ForeignKey(Search)
-    userdata = models.ForeignKey(UserData)
+    user_data = models.ForeignKey(UserData)
     active = models.BooleanField(default=True)
