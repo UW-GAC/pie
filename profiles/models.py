@@ -28,7 +28,7 @@ class Search(TimeStampedModel):
     search_count = models.IntegerField(default=1)
     search_type = models.CharField(max_length=25, null=False)
 
-    def build_search_url(search_type, text, study_list):
+    def build_search_url(self):
         """
         This builds the appropriate url with query string.
 
@@ -36,10 +36,10 @@ class Search(TimeStampedModel):
         as such we need to build our own urls with query strings here.
         https://code.djangoproject.com/ticket/25582
         """
-        search_url = reverse(':'.join(['trait_browser', search_type, 'search']))
+        search_url = reverse(':'.join(['trait_browser', self.search_type, 'search']))
         query_string_dict = {
-            'text': text,
-            'study': study_list
+            'text': self.param_text,
+            'study': [x[0] for x in self.param_studies.values_list('i_accession')]
         }
         # doseq seems to allow for handling of lists as values
         # otherwise we would build a list of tuples
