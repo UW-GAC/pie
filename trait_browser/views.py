@@ -251,7 +251,7 @@ def save_search_to_profile(request):
         # user_id can be the actual value, saved_search_id has to be the model instance for some reason
 
         user_data, new_record = SavedSearchMeta.objects.get_or_create(
-            userdata_id=user_data_record.id,
+            user_data_id=user_data_record.id,
             search_id=search_record.id
         )
         user_data.save()

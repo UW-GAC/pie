@@ -8,15 +8,15 @@ from django.conf import settings
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('trait_browser', '0001_initial'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
+        ('trait_browser', '0001_initial'),
     ]
 
     operations = [
         migrations.CreateModel(
             name='SavedSearchMeta',
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, verbose_name='ID', serialize=False)),
+                ('id', models.AutoField(auto_created=True, serialize=False, verbose_name='ID', primary_key=True)),
                 ('created', models.DateTimeField(auto_now_add=True)),
                 ('modified', models.DateTimeField(auto_now=True)),
                 ('active', models.BooleanField(default=True)),
@@ -28,7 +28,7 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='Search',
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, verbose_name='ID', serialize=False)),
+                ('id', models.AutoField(auto_created=True, serialize=False, verbose_name='ID', primary_key=True)),
                 ('created', models.DateTimeField(auto_now_add=True)),
                 ('modified', models.DateTimeField(auto_now=True)),
                 ('param_text', models.CharField(db_index=True, max_length=100)),
@@ -43,7 +43,7 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='UserData',
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, verbose_name='ID', serialize=False)),
+                ('id', models.AutoField(auto_created=True, serialize=False, verbose_name='ID', primary_key=True)),
                 ('created', models.DateTimeField(auto_now_add=True)),
                 ('modified', models.DateTimeField(auto_now=True)),
                 ('saved_searches', models.ManyToManyField(through='profiles.SavedSearchMeta', to='profiles.Search')),
@@ -60,7 +60,7 @@ class Migration(migrations.Migration):
         ),
         migrations.AddField(
             model_name='savedsearchmeta',
-            name='userdata',
+            name='user_data',
             field=models.ForeignKey(to='profiles.UserData'),
         ),
     ]
