@@ -47,13 +47,10 @@ class Search(TimeStampedModel):
 
     def __str__(self):
         """Pretty printing."""
-        msg = '\n'.join([
-            'Search configuration',
-            'param_text: {}'.format(self.param_text),
-            'param_studies: {}'.format(self.param_studies.all()),
-            'search_count: {}'.format(self.search_count),
-            'search_type: {}'.format(self.search_type)
-        ])
+        msg = 'Search id: {}, search text: {}'.format(
+            self.id,
+            self.param_text
+        )
         return msg
 
     class Meta:
