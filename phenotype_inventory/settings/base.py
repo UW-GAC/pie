@@ -161,6 +161,7 @@ INSTALLED_APPS = (
     'crispy_forms',    # https://github.com/maraujop/django-crispy-forms
     'django_extensions',    # https://github.com/django-extensions/django-extensions
     'authtools',    # https://django-authtools.readthedocs.io/en/latest/index.html
+    'dbbackup',    # https://github.com/django-dbbackup/django-dbbackup
     # Our custom apps.
     'trait_browser',    # Handles table-based viewing and searching of trait data.
     'core',    # Code used across the project, and data migrations for built-in apps (e.g. sites).
@@ -180,6 +181,9 @@ LOGIN_REDIRECT_URL = 'home'
 SITE_ID = 1
 # crispy_forms SETTINGS variables.
 CRISPY_TEMPLATE_PACK = 'bootstrap3'
+# dbbackup
+DBBACKUP_STORAGE = 'django.core.files.storage.FileSystemStorage'
+DBBACKUP_STORAGE_OPTIONS = {'location': SITE_ROOT + '/../phenotype_inventory_db_backups'}
 
 
 # USER AUTHENTICATION SETTINGS
