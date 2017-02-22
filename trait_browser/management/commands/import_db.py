@@ -19,6 +19,7 @@ from sys import stdout
 import pytz
 
 from django.core.management.base import BaseCommand, CommandError
+from django.core import management
 from django.utils import timezone
 from django.conf import settings
 
@@ -1034,6 +1035,8 @@ class Command(BaseCommand):
         parser.add_argument('--which_db', action='store', type=str,
                             choices=['test', 'devel', 'production'], default=None, required=True,
                             help='Which source database to connect to for retrieving source data.')
+        parser.add_argument('--no_backup', action='store_true',
+                            help='Do not backup the Django db before running update and import functions. This should only be used for testing purposes.')
         only_group = parser.add_mutually_exclusive_group()
         only_group.add_argument('--update_only', action='store_true',
                                 help='Only update the db records that are already in the db, and do not add new ones.')
@@ -1064,6 +1067,12 @@ class Command(BaseCommand):
         elif verbosity == 3:
             logger.setLevel(logging.DEBUG)
         
+        # First, backup the db before anything is changed.
+        if not options.get('no_backup'):
+            management.call_command('dbbackup', compress=True)
+            logger.info('Django db backup completed.')
+        else:
+            logger.info('No backup of Django db, due to no_backup option.')
         # First update, then import new data.
         if not options['import_only']:
             self._update_source_tables(which_db=options['which_db'])

@@ -13,7 +13,9 @@ This test module runs several unit tests and one integration test.
 from datetime import datetime, timedelta
 from os.path import join
 from os import remove
+from shutil import rmtree
 from subprocess import call
+from tempfile import mkdtemp
 
 import mysql.connector
 # Use the mysql-connector-python-rf package from pypi (advice via this SO post http://stackoverflow.com/q/34168651/2548371)
@@ -27,7 +29,9 @@ from trait_browser.management.commands.db_factory import fake_row_dict
 from trait_browser.factories import GlobalStudyFactory, HarmonizedTraitFactory, HarmonizedTraitEncodedValueFactory, HarmonizedTraitSetFactory, SourceDatasetFactory, SourceStudyVersionFactory, SourceTraitFactory, SourceTraitEncodedValueFactory, StudyFactory, SubcohortFactory
 from trait_browser.models import GlobalStudy, HarmonizedTrait, HarmonizedTraitEncodedValue, HarmonizedTraitSet, SourceDataset, SourceStudyVersion, SourceTrait, SourceTraitEncodedValue, Study, Subcohort
 
+
 CMD = Command()
+ORIGINAL_BACKUP_DIR = settings.DBBACKUP_STORAGE_OPTIONS['location']
 
 def get_devel_db(permissions='readonly'):
     """Get a connection to the devel source db.
@@ -100,6 +104,17 @@ def change_data_in_table(table_name, update_field, new_value, where_field, where
     source_db.commit()
     cursor.close()
     source_db.close()
+
+def set_backup_dir():
+    """Create a new temp dir and change the dbbackup setting to use it."""
+    backup_dir = mkdtemp()
+    settings.DBBACKUP_STORAGE_OPTIONS['location'] = backup_dir
+    return backup_dir
+
+def cleanup_backup_dir():
+    """Remove the temp dir that was created to hold backups and revert the setting."""
+    rmtree(settings.DBBACKUP_STORAGE_OPTIONS['location'])
+    settings.DBBACKUP_STORAGE_OPTIONS['location'] = ORIGINAL_BACKUP_DIR
 
 
 class OpenCloseDBMixin(object):
@@ -619,7 +634,7 @@ class HelperTestCase(BaseTestDataTestCase):
     
     def test_make_query_for_rows_to_update_global_study(self):
         """Returns a query that contains only the updated rows."""
-        management.call_command('import_db', '--which_db=devel')
+        management.call_command('import_db', '--which_db=devel', '--no_backup')
         t1 = timezone.now() # Save a time to compare to modified date.
         # Close the db connections because change_data_in_table() opens new connections.
         # This does not affect the .cursor and .source_db attributes in other functions.
@@ -665,7 +680,7 @@ class HelperTestCase(BaseTestDataTestCase):
         # Have to clean and reload the db because of updates in previous tests.
         clean_devel_db()
         load_test_source_db_data('base_plus_visit.sql')
-        management.call_command('import_db', '--which_db=devel')
+        management.call_command('import_db', '--which_db=devel', '--no_backup')
         t1 = timezone.now() # Save a time to compare to modified date.
         # Close the db connections because change_data_in_table() opens new connections.
         # This does not affect the .cursor and .source_db attributes in other functions.
@@ -725,7 +740,7 @@ class UpdateModelsTestCase(VisitTestDataTestCase):
     # Source trait updates.
     def test_update_global_study(self):
         """Updates in global_study are imported."""
-        management.call_command('import_db', '--which_db=devel')
+        management.call_command('import_db', '--which_db=devel', '--no_backup')
         t1 = timezone.now() # Save a time to compare to modified date.
         # Close the db connections because change_data_in_table() opens new connections.
         # This does not affect the .cursor and .source_db attributes in other functions.
@@ -740,7 +755,7 @@ class UpdateModelsTestCase(VisitTestDataTestCase):
         source_db_pk_name = model_instance._meta.pk.name.replace('i_', '')
         
         change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
-        management.call_command('import_db', '--which_db=devel', '--update_only', '--verbosity=0')
+        management.call_command('import_db', '--which_db=devel', '--update_only', '--verbosity=0', '--no_backup')
         model_instance.refresh_from_db()
         # Check that modified date > created date, and name is set to new value.
         self.assertEqual(new_value, getattr(model_instance, 'i_'+field_to_update))
@@ -748,7 +763,7 @@ class UpdateModelsTestCase(VisitTestDataTestCase):
     
     def test_update_study(self):
         """Updates in study are imported."""
-        management.call_command('import_db', '--which_db=devel')
+        management.call_command('import_db', '--which_db=devel', '--no_backup')
         t1 = timezone.now() # Save a time to compare to modified date.
         # Close the db connections because change_data_in_table() opens new connections.
         # This does not affect the .cursor and .source_db attributes in other functions.
@@ -763,7 +778,7 @@ class UpdateModelsTestCase(VisitTestDataTestCase):
         source_db_pk_name = model_instance._meta.pk.name.replace('i_', '')
         
         change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
-        management.call_command('import_db', '--which_db=devel', '--update_only', '--verbosity=0')
+        management.call_command('import_db', '--which_db=devel', '--update_only', '--verbosity=0', '--no_backup')
         model_instance.refresh_from_db()
         # Check that modified date > created date, and name is set to new value.
         self.assertEqual(new_value, getattr(model_instance, 'i_'+field_to_update))
@@ -771,7 +786,7 @@ class UpdateModelsTestCase(VisitTestDataTestCase):
 
     def test_update_source_study_version(self):
         """Updates in source_study_version are imported."""
-        management.call_command('import_db', '--which_db=devel')
+        management.call_command('import_db', '--which_db=devel', '--no_backup')
         t1 = timezone.now() # Save a time to compare to modified date.
         # Close the db connections because change_data_in_table() opens new connections.
         # This does not affect the .cursor and .source_db attributes in other functions.
@@ -786,7 +801,7 @@ class UpdateModelsTestCase(VisitTestDataTestCase):
         source_db_pk_name = model_instance._meta.pk.name.replace('i_', '')
         
         change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
-        management.call_command('import_db', '--which_db=devel', '--update_only', '--verbosity=0')
+        management.call_command('import_db', '--which_db=devel', '--update_only', '--verbosity=0', '--no_backup')
         model_instance.refresh_from_db()
         # Check that modified date > created date, and name is set to new value.
         self.assertEqual(new_value, getattr(model_instance, 'i_'+field_to_update))
@@ -794,7 +809,7 @@ class UpdateModelsTestCase(VisitTestDataTestCase):
 
     def test_update_source_dataset(self):
         """Updates in source_dataset table are imported."""
-        management.call_command('import_db', '--which_db=devel')
+        management.call_command('import_db', '--which_db=devel', '--no_backup')
         t1 = timezone.now() # Save a time to compare to modified date.
         # Close the db connections because change_data_in_table() opens new connections.
         # This does not affect the .cursor and .source_db attributes in other functions.
@@ -809,7 +824,7 @@ class UpdateModelsTestCase(VisitTestDataTestCase):
         source_db_pk_name = model_instance._meta.pk.name.replace('i_', '')
         
         change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
-        management.call_command('import_db', '--which_db=devel', '--update_only', '--verbosity=0')
+        management.call_command('import_db', '--which_db=devel', '--update_only', '--verbosity=0', '--no_backup')
         model_instance.refresh_from_db()
         # Check that modified date > created date, and name is set to new value.
         self.assertEqual(new_value, getattr(model_instance, 'i_'+field_to_update))
@@ -817,7 +832,7 @@ class UpdateModelsTestCase(VisitTestDataTestCase):
 
     def test_update_source_trait(self):
         """Updates in source_trait table are imported."""
-        management.call_command('import_db', '--which_db=devel')
+        management.call_command('import_db', '--which_db=devel', '--no_backup')
         t1 = timezone.now() # Save a time to compare to modified date.
         # Close the db connections because change_data_in_table() opens new connections.
         # This does not affect the .cursor and .source_db attributes in other functions.
@@ -832,7 +847,7 @@ class UpdateModelsTestCase(VisitTestDataTestCase):
         source_db_pk_name = 'source_trait_id'
         
         change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
-        management.call_command('import_db', '--which_db=devel', '--update_only', '--verbosity=0')
+        management.call_command('import_db', '--which_db=devel', '--update_only', '--verbosity=0', '--no_backup')
         model_instance.refresh_from_db()
         # Check that modified date > created date, and name is set to new value.
         self.assertEqual(new_value, getattr(model_instance, 'i_description'))
@@ -840,7 +855,7 @@ class UpdateModelsTestCase(VisitTestDataTestCase):
 
     def test_update_subcohort(self):
         """Updates in subcohort are imported."""
-        management.call_command('import_db', '--which_db=devel')
+        management.call_command('import_db', '--which_db=devel', '--no_backup')
         t1 = timezone.now() # Save a time to compare to modified date.
         # Close the db connections because change_data_in_table() opens new connections.
         # This does not affect the .cursor and .source_db attributes in other functions.
@@ -855,7 +870,7 @@ class UpdateModelsTestCase(VisitTestDataTestCase):
         source_db_pk_name = model_instance._meta.pk.name.replace('i_', '')
         
         change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
-        management.call_command('import_db', '--which_db=devel', '--update_only', '--verbosity=0')
+        management.call_command('import_db', '--which_db=devel', '--update_only', '--verbosity=0', '--no_backup')
         model_instance.refresh_from_db()
         # Check that modified date > created date, and name is set to new value.
         self.assertEqual(new_value, getattr(model_instance, 'i_'+field_to_update))
@@ -863,7 +878,7 @@ class UpdateModelsTestCase(VisitTestDataTestCase):
 
     def test_update_source_trait_encoded_value(self):
         """Updates in source_trait_encoded_values are imported."""
-        management.call_command('import_db', '--which_db=devel')
+        management.call_command('import_db', '--which_db=devel', '--no_backup')
         t1 = timezone.now() # Save a time to compare to modified date.
         # Close the db connections because change_data_in_table() opens new connections.
         # This does not affect the .cursor and .source_db attributes in other functions.
@@ -878,7 +893,7 @@ class UpdateModelsTestCase(VisitTestDataTestCase):
         source_db_pk_name = model_instance._meta.pk.name.replace('i_', '')
         
         change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
-        management.call_command('import_db', '--which_db=devel', '--update_only', '--verbosity=0')
+        management.call_command('import_db', '--which_db=devel', '--update_only', '--verbosity=0', '--no_backup')
         model_instance.refresh_from_db()
         # Check that modified date > created date, and name is set to new value.
         self.assertEqual(new_value, getattr(model_instance, 'i_'+field_to_update))
@@ -887,7 +902,7 @@ class UpdateModelsTestCase(VisitTestDataTestCase):
     def test_update_added_source_dataset_subcohorts(self):
         """A new subcohort link to an existing source dataset is imported after an update."""
         # Run the initial db import.
-        management.call_command('import_db', '--which_db=devel')
+        management.call_command('import_db', '--which_db=devel', '--no_backup')
         # Pick a subcohort to create a new link to in the source db.
         sc = Subcohort.objects.get(pk=1)
         # Find a dataset which this subcohort isn't linked to already.
@@ -908,7 +923,7 @@ class UpdateModelsTestCase(VisitTestDataTestCase):
         self.cursor.close()
         self.source_db.close()
         # Now run the update commands.
-        management.call_command('import_db', '--which_db=devel', '--update_only', '--verbosity=0')
+        management.call_command('import_db', '--which_db=devel', '--update_only', '--verbosity=0', '--no_backup')
         # Check that the chosen subcohort is now linked to the dataset that was picked, in the Django db.
         sc.refresh_from_db()
         dataset_to_link.refresh_from_db()
@@ -917,7 +932,7 @@ class UpdateModelsTestCase(VisitTestDataTestCase):
     def test_update_removed_source_dataset_subcohorts(self):
         """A source_dataset - subcohort link that is no longer in the source db is removed after an update."""
         # Run the initial db import.
-        management.call_command('import_db', '--which_db=devel')
+        management.call_command('import_db', '--which_db=devel', '--no_backup')
         # Pick a subcohort to remove the link to in the source db.
         sc = Subcohort.objects.get(pk=1)
         # Find a dataset which this subcohort is already linked to.
@@ -937,7 +952,7 @@ class UpdateModelsTestCase(VisitTestDataTestCase):
         self.cursor.close()
         self.source_db.close()
         # Now run the update commands.
-        management.call_command('import_db', '--which_db=devel', '--update_only', '--verbosity=0')
+        management.call_command('import_db', '--which_db=devel', '--update_only', '--verbosity=0', '--no_backup')
         # Check that the chosen subcohort is now linked to the dataset that was picked, in the Django db.
         sc.refresh_from_db()
         dataset_to_unlink.refresh_from_db()
@@ -946,7 +961,7 @@ class UpdateModelsTestCase(VisitTestDataTestCase):
     # Harmonized trait updates.
     def test_update_harmonized_trait_set(self):
         """Updates to harmonized_trait_set are imported."""
-        management.call_command('import_db', '--which_db=devel')
+        management.call_command('import_db', '--which_db=devel', '--no_backup')
         t1 = timezone.now() # Save a time to compare to modified date.
         # Close the db connections because change_data_in_table() opens new connections.
         # This does not affect the .cursor and .source_db attributes in other functions.
@@ -961,7 +976,7 @@ class UpdateModelsTestCase(VisitTestDataTestCase):
         source_db_pk_name = model_instance._meta.pk.name.replace('i_', '')
         
         change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
-        management.call_command('import_db', '--which_db=devel', '--update_only', '--verbosity=0')
+        management.call_command('import_db', '--which_db=devel', '--update_only', '--verbosity=0', '--no_backup')
         model_instance.refresh_from_db()
         # Check that modified date > created date, and name is set to new value.
         self.assertEqual(new_value, getattr(model_instance, 'i_'+field_to_update))
@@ -969,7 +984,7 @@ class UpdateModelsTestCase(VisitTestDataTestCase):
 
     def test_update_harmonized_trait(self):
         """Updates to harmonized_trait are imported."""
-        management.call_command('import_db', '--which_db=devel')
+        management.call_command('import_db', '--which_db=devel', '--no_backup')
         t1 = timezone.now() # Save a time to compare to modified date.
         # Close the db connections because change_data_in_table() opens new connections.
         # This does not affect the .cursor and .source_db attributes in other functions.
@@ -984,7 +999,7 @@ class UpdateModelsTestCase(VisitTestDataTestCase):
         source_db_pk_name = 'harmonized_trait_id'
         
         change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
-        management.call_command('import_db', '--which_db=devel', '--update_only', '--verbosity=0')
+        management.call_command('import_db', '--which_db=devel', '--update_only', '--verbosity=0', '--no_backup')
         model_instance.refresh_from_db()
         # Check that modified date > created date, and name is set to new value.
         self.assertEqual(new_value, getattr(model_instance, 'i_description'))
@@ -992,7 +1007,7 @@ class UpdateModelsTestCase(VisitTestDataTestCase):
 
     def test_update_harmonized_trait_encoded_value(self):
         """Updates to harmonized_trait_encoded_values are imported."""
-        management.call_command('import_db', '--which_db=devel')
+        management.call_command('import_db', '--which_db=devel', '--no_backup')
         t1 = timezone.now() # Save a time to compare to modified date.
         # Close the db connections because change_data_in_table() opens new connections.
         # This does not affect the .cursor and .source_db attributes in other functions.
@@ -1007,7 +1022,7 @@ class UpdateModelsTestCase(VisitTestDataTestCase):
         source_db_pk_name = model_instance._meta.pk.name.replace('i_', '')
         
         change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
-        management.call_command('import_db', '--which_db=devel', '--update_only', '--verbosity=0')
+        management.call_command('import_db', '--which_db=devel', '--update_only', '--verbosity=0', '--no_backup')
         model_instance.refresh_from_db()
         # Check that modified date > created date, and name is set to new value.
         self.assertEqual(new_value, getattr(model_instance, 'i_'+field_to_update))
@@ -1016,7 +1031,7 @@ class UpdateModelsTestCase(VisitTestDataTestCase):
     def test_update_component_source_traits(self):
         """A new component source trait link to an existing harmonized trait is imported."""
         # Run the initial db import.
-        management.call_command('import_db', '--which_db=devel')
+        management.call_command('import_db', '--which_db=devel', '--no_backup')
         # Pick a source trait to create a new link to in the source db.
         source_trait = SourceTrait.objects.get(pk=1)
         # Find a harmonized_trait which this source trait isn't linked to already
@@ -1038,7 +1053,7 @@ class UpdateModelsTestCase(VisitTestDataTestCase):
         self.cursor.close()
         self.source_db.close()
         # Now run the update commands.
-        management.call_command('import_db', '--which_db=devel', '--update_only', '--verbosity=0')
+        management.call_command('import_db', '--which_db=devel', '--update_only', '--verbosity=0', '--no_backup')
         # Check that the chosen subcohort is now linked to the dataset that was picked, in the Django db.
         source_trait.refresh_from_db()
         htrait_set.refresh_from_db()
@@ -1136,7 +1151,7 @@ class ImportNoUpdateTestCase(VisitTestDataTestCase):
     # Source trait updates.
     def test_no_update_on_import_global_study(self):
         """Updates in global_study are not imported with --import_only."""
-        management.call_command('import_db', '--which_db=devel')
+        management.call_command('import_db', '--which_db=devel', '--no_backup')
         t1 = timezone.now() # Save a time to compare to modified date.
         # Close the db connections because change_data_in_table() opens new connections.
         # This does not affect the .cursor and .source_db attributes in other functions.
@@ -1151,7 +1166,7 @@ class ImportNoUpdateTestCase(VisitTestDataTestCase):
         source_db_pk_name = model_instance._meta.pk.name.replace('i_', '')
         
         change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
-        management.call_command('import_db', '--which_db=devel', '--import_only')
+        management.call_command('import_db', '--which_db=devel', '--import_only', '--no_backup')
         model_instance.refresh_from_db()
         # Check that modified date > created date, and name is set to new value.
         self.assertNotEqual(new_value, getattr(model_instance, 'i_'+field_to_update))
@@ -1159,7 +1174,7 @@ class ImportNoUpdateTestCase(VisitTestDataTestCase):
     
     def test_no_update_on_import_study(self):
         """Updates in study are not imported with --import_only."""
-        management.call_command('import_db', '--which_db=devel')
+        management.call_command('import_db', '--which_db=devel', '--no_backup')
         t1 = timezone.now() # Save a time to compare to modified date.
         # Close the db connections because change_data_in_table() opens new connections.
         # This does not affect the .cursor and .source_db attributes in other functions.
@@ -1174,7 +1189,7 @@ class ImportNoUpdateTestCase(VisitTestDataTestCase):
         source_db_pk_name = model_instance._meta.pk.name.replace('i_', '')
         
         change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
-        management.call_command('import_db', '--which_db=devel', '--import_only')
+        management.call_command('import_db', '--which_db=devel', '--import_only', '--no_backup')
         model_instance.refresh_from_db()
         # Check that modified date > created date, and name is set to new value.
         self.assertNotEqual(new_value, getattr(model_instance, 'i_'+field_to_update))
@@ -1182,7 +1197,7 @@ class ImportNoUpdateTestCase(VisitTestDataTestCase):
 
     def test_no_update_on_import_source_study_version(self):
         """Updates in source_study_version are not imported with --import_only."""
-        management.call_command('import_db', '--which_db=devel')
+        management.call_command('import_db', '--which_db=devel', '--no_backup')
         t1 = timezone.now() # Save a time to compare to modified date.
         # Close the db connections because change_data_in_table() opens new connections.
         # This does not affect the .cursor and .source_db attributes in other functions.
@@ -1197,7 +1212,7 @@ class ImportNoUpdateTestCase(VisitTestDataTestCase):
         source_db_pk_name = model_instance._meta.pk.name.replace('i_', '')
         
         change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
-        management.call_command('import_db', '--which_db=devel', '--import_only')
+        management.call_command('import_db', '--which_db=devel', '--import_only', '--no_backup')
         model_instance.refresh_from_db()
         # Check that modified date > created date, and name is set to new value.
         self.assertNotEqual(new_value, getattr(model_instance, 'i_'+field_to_update))
@@ -1205,7 +1220,7 @@ class ImportNoUpdateTestCase(VisitTestDataTestCase):
 
     def test_no_update_on_import_source_dataset(self):
         """Updates in source_dataset are not imported with --import_only."""
-        management.call_command('import_db', '--which_db=devel')
+        management.call_command('import_db', '--which_db=devel', '--no_backup')
         t1 = timezone.now() # Save a time to compare to modified date.
         # Close the db connections because change_data_in_table() opens new connections.
         # This does not affect the .cursor and .source_db attributes in other functions.
@@ -1220,7 +1235,7 @@ class ImportNoUpdateTestCase(VisitTestDataTestCase):
         source_db_pk_name = model_instance._meta.pk.name.replace('i_', '')
         
         change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
-        management.call_command('import_db', '--which_db=devel', '--import_only')
+        management.call_command('import_db', '--which_db=devel', '--import_only', '--no_backup')
         model_instance.refresh_from_db()
         # Check that modified date > created date, and name is set to new value.
         self.assertNotEqual(new_value, getattr(model_instance, 'i_'+field_to_update))
@@ -1228,7 +1243,7 @@ class ImportNoUpdateTestCase(VisitTestDataTestCase):
 
     def test_no_update_on_import_source_trait(self):
         """Updates in source_trait are not imported with --import_only."""
-        management.call_command('import_db', '--which_db=devel')
+        management.call_command('import_db', '--which_db=devel', '--no_backup')
         t1 = timezone.now() # Save a time to compare to modified date.
         # Close the db connections because change_data_in_table() opens new connections.
         # This does not affect the .cursor and .source_db attributes in other functions.
@@ -1243,7 +1258,7 @@ class ImportNoUpdateTestCase(VisitTestDataTestCase):
         source_db_pk_name = 'source_trait_id'
         
         change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
-        management.call_command('import_db', '--which_db=devel', '--import_only')
+        management.call_command('import_db', '--which_db=devel', '--import_only', '--no_backup')
         model_instance.refresh_from_db()
         # Check that modified date > created date, and name is set to new value.
         self.assertNotEqual(new_value, getattr(model_instance, 'i_description'))
@@ -1251,7 +1266,7 @@ class ImportNoUpdateTestCase(VisitTestDataTestCase):
 
     def test_no_update_on_import_subcohort(self):
         """Updates in subcohort are not imported with --import_only."""
-        management.call_command('import_db', '--which_db=devel')
+        management.call_command('import_db', '--which_db=devel', '--no_backup')
         t1 = timezone.now() # Save a time to compare to modified date.
         # Close the db connections because change_data_in_table() opens new connections.
         # This does not affect the .cursor and .source_db attributes in other functions.
@@ -1266,7 +1281,7 @@ class ImportNoUpdateTestCase(VisitTestDataTestCase):
         source_db_pk_name = model_instance._meta.pk.name.replace('i_', '')
         
         change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
-        management.call_command('import_db', '--which_db=devel', '--import_only')
+        management.call_command('import_db', '--which_db=devel', '--import_only', '--no_backup')
         model_instance.refresh_from_db()
         # Check that modified date > created date, and name is set to new value.
         self.assertNotEqual(new_value, getattr(model_instance, 'i_'+field_to_update))
@@ -1274,7 +1289,7 @@ class ImportNoUpdateTestCase(VisitTestDataTestCase):
 
     def test_no_update_on_import_source_trait_encoded_value(self):
         """Updates in source_trait_encoded_values are not imported with --import_only."""
-        management.call_command('import_db', '--which_db=devel')
+        management.call_command('import_db', '--which_db=devel', '--no_backup')
         t1 = timezone.now() # Save a time to compare to modified date.
         # Close the db connections because change_data_in_table() opens new connections.
         # This does not affect the .cursor and .source_db attributes in other functions.
@@ -1289,7 +1304,7 @@ class ImportNoUpdateTestCase(VisitTestDataTestCase):
         source_db_pk_name = model_instance._meta.pk.name.replace('i_', '')
         
         change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
-        management.call_command('import_db', '--which_db=devel', '--import_only')
+        management.call_command('import_db', '--which_db=devel', '--import_only', '--no_backup')
         model_instance.refresh_from_db()
         # Check that modified date > created date, and name is set to new value.
         self.assertNotEqual(new_value, getattr(model_instance, 'i_'+field_to_update))
@@ -1298,7 +1313,7 @@ class ImportNoUpdateTestCase(VisitTestDataTestCase):
     def test_no_update_on_import_added_source_dataset_subcohorts(self):
         """A new subcohort link to an existing source dataset is imported after an update."""
         # Run the initial db import.
-        management.call_command('import_db', '--which_db=devel')
+        management.call_command('import_db', '--which_db=devel', '--no_backup')
         # Pick a subcohort to create a new link to in the source db.
         sc = Subcohort.objects.get(pk=1)
         # Find a dataset which this subcohort isn't linked to already.
@@ -1319,7 +1334,7 @@ class ImportNoUpdateTestCase(VisitTestDataTestCase):
         self.cursor.close()
         self.source_db.close()
         # Now run the update commands.
-        management.call_command('import_db', '--which_db=devel', '--import_only')
+        management.call_command('import_db', '--which_db=devel', '--import_only', '--no_backup')
         # Check that the chosen subcohort is now linked to the dataset that was picked, in the Django db.
         sc.refresh_from_db()
         dataset_to_link.refresh_from_db()
@@ -1328,7 +1343,7 @@ class ImportNoUpdateTestCase(VisitTestDataTestCase):
     def test_no_update_on_import_removed_source_dataset_subcohorts(self):
         """A source_dataset - subcohort link that is no longer in the source db is removed after an update."""
         # Run the initial db import.
-        management.call_command('import_db', '--which_db=devel')
+        management.call_command('import_db', '--which_db=devel', '--no_backup')
         # Pick a subcohort to remove the link to in the source db.
         sc = Subcohort.objects.get(pk=1)
         # Find a dataset which this subcohort is already linked to.
@@ -1348,7 +1363,7 @@ class ImportNoUpdateTestCase(VisitTestDataTestCase):
         self.cursor.close()
         self.source_db.close()
         # Now run the update commands.
-        management.call_command('import_db', '--which_db=devel', '--import_only')
+        management.call_command('import_db', '--which_db=devel', '--import_only', '--no_backup')
         # Check that the chosen subcohort is now linked to the dataset that was picked, in the Django db.
         sc.refresh_from_db()
         dataset_to_unlink.refresh_from_db()
@@ -1357,7 +1372,7 @@ class ImportNoUpdateTestCase(VisitTestDataTestCase):
     # Harmonized trait updates.
     def test_no_update_on_import_harmonized_trait_set(self):
         """Updates in harmonized_trait_set are not imported with --import_only."""
-        management.call_command('import_db', '--which_db=devel')
+        management.call_command('import_db', '--which_db=devel', '--no_backup')
         t1 = timezone.now() # Save a time to compare to modified date.
         # Close the db connections because change_data_in_table() opens new connections.
         # This does not affect the .cursor and .source_db attributes in other functions.
@@ -1372,7 +1387,7 @@ class ImportNoUpdateTestCase(VisitTestDataTestCase):
         source_db_pk_name = model_instance._meta.pk.name.replace('i_', '')
         
         change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
-        management.call_command('import_db', '--which_db=devel', '--import_only')
+        management.call_command('import_db', '--which_db=devel', '--import_only', '--no_backup')
         model_instance.refresh_from_db()
         # Check that modified date > created date, and name is set to new value.
         self.assertNotEqual(new_value, getattr(model_instance, 'i_'+field_to_update))
@@ -1380,7 +1395,7 @@ class ImportNoUpdateTestCase(VisitTestDataTestCase):
 
     def test_no_update_on_import_harmonized_trait(self):
         """Updates in harmonized_trait are not imported with --import_only."""
-        management.call_command('import_db', '--which_db=devel')
+        management.call_command('import_db', '--which_db=devel', '--no_backup')
         t1 = timezone.now() # Save a time to compare to modified date.
         # Close the db connections because change_data_in_table() opens new connections.
         # This does not affect the .cursor and .source_db attributes in other functions.
@@ -1395,7 +1410,7 @@ class ImportNoUpdateTestCase(VisitTestDataTestCase):
         source_db_pk_name = 'harmonized_trait_id'
         
         change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
-        management.call_command('import_db', '--which_db=devel', '--import_only')
+        management.call_command('import_db', '--which_db=devel', '--import_only', '--no_backup')
         model_instance.refresh_from_db()
         # Check that modified date > created date, and name is set to new value.
         self.assertNotEqual(new_value, getattr(model_instance, 'i_description'))
@@ -1403,7 +1418,7 @@ class ImportNoUpdateTestCase(VisitTestDataTestCase):
 
     def test_no_update_on_import_harmonized_trait_encoded_value(self):
         """Updates in harmonized_trait_encoded_values are not imported with --import_only."""
-        management.call_command('import_db', '--which_db=devel')
+        management.call_command('import_db', '--which_db=devel', '--no_backup')
         t1 = timezone.now() # Save a time to compare to modified date.
         # Close the db connections because change_data_in_table() opens new connections.
         # This does not affect the .cursor and .source_db attributes in other functions.
@@ -1418,7 +1433,7 @@ class ImportNoUpdateTestCase(VisitTestDataTestCase):
         source_db_pk_name = model_instance._meta.pk.name.replace('i_', '')
         
         change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
-        management.call_command('import_db', '--which_db=devel', '--import_only')
+        management.call_command('import_db', '--which_db=devel', '--import_only', '--no_backup')
         model_instance.refresh_from_db()
         # Check that modified date > created date, and name is set to new value.
         self.assertNotEqual(new_value, getattr(model_instance, 'i_'+field_to_update))
@@ -1427,7 +1442,7 @@ class ImportNoUpdateTestCase(VisitTestDataTestCase):
     def test_no_update_on_import_component_source_traits(self):
         """Updates in component_source_trait are not imported with --import_only."""
         # Run the initial db import.
-        management.call_command('import_db', '--which_db=devel')
+        management.call_command('import_db', '--which_db=devel', '--no_backup')
         # Pick a source trait to create a new link to in the source db.
         source_trait = SourceTrait.objects.get(pk=1)
         # Find a harmonized_trait which this source trait isn't linked to already
@@ -1449,7 +1464,7 @@ class ImportNoUpdateTestCase(VisitTestDataTestCase):
         self.cursor.close()
         self.source_db.close()
         # Now run the update commands.
-        management.call_command('import_db', '--which_db=devel', '--import_only')
+        management.call_command('import_db', '--which_db=devel', '--import_only', '--no_backup')
         # Check that the chosen subcohort is now linked to the dataset that was picked, in the Django db.
         source_trait.refresh_from_db()
         htrait_set.refresh_from_db()
@@ -1467,7 +1482,7 @@ class IntegrationTest(VisitTestDataTestCase):
 
     def test_handle_with_visit_data(self):
         """Calling import_db imports the correct number of each model type."""
-        management.call_command('import_db', '--which_db=devel')
+        management.call_command('import_db', '--which_db=devel', '--no_backup')
         # GlobalStudy
         global_studies_query = 'SELECT COUNT(*) FROM global_study;'
         self.cursor.execute(global_studies_query)
@@ -1516,7 +1531,7 @@ class IntegrationTest(VisitTestDataTestCase):
         """Every kind of update is detected and imported by import_db."""
         # This test is largely just all of the methods from UpdateModelsTestCase all put together.
         # Initial call of the import command.
-        management.call_command('import_db', '--which_db=devel')
+        management.call_command('import_db', '--which_db=devel', '--no_backup')
         t1 = timezone.now() # Save a time to compare to modified date.
         new_value = 'asdfghjkl' # Use this value to reset things in multiple models.
         # Close the db connections because change_data_in_table() opens new connections.
@@ -1598,7 +1613,7 @@ class IntegrationTest(VisitTestDataTestCase):
         self.source_db.close()
 
         # Run the update command.
-        management.call_command('import_db', '--which_db=devel', '--update_only', '--verbosity=0')
+        management.call_command('import_db', '--which_db=devel', '--update_only', '--verbosity=0', '--no_backup')
 
         # Refresh models from the db. 
         global_study.refresh_from_db()
