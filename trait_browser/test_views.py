@@ -1,15 +1,18 @@
 """Test the functions and classes for views.py"""
 
 from django.test import TestCase, Client
+from django.http import QueryDict
 from django.core.urlresolvers import reverse, RegexURLResolver, RegexURLPattern
 
 from core.utils import ViewsAutoLoginTestCase, LoginRequiredTestCase
+from profiles.models import Search, UserData
 from .models import GlobalStudy, HarmonizedTrait, HarmonizedTraitEncodedValue, HarmonizedTraitSet, SourceDataset, SourceStudyVersion, SourceTrait, SourceTraitEncodedValue, Study, Subcohort
 from .factories import GlobalStudyFactory, HarmonizedTraitFactory, HarmonizedTraitEncodedValueFactory, HarmonizedTraitSetFactory, SourceDatasetFactory, SourceStudyVersionFactory, SourceTraitFactory, SourceTraitEncodedValueFactory, StudyFactory, SubcohortFactory 
 from .forms import SourceTraitCrispySearchForm, HarmonizedTraitCrispySearchForm
 from .tables import SourceTraitTable, HarmonizedTraitTable, StudyTable
 from .urls import urlpatterns
 from .views import TABLE_PER_PAGE, search
+
 
 # NB: The database is reset for each test method within a class!
 # NB: for test methods with multiple assertions, the first failed assert statement
@@ -384,6 +387,53 @@ class SourceTraitSearchViewTestCase(ViewsAutoLoginTestCase):
         response = self.client.get(url)
         self.assertEqual(len(response.context['form'].initial), 0)
 
+    def test_source_search_is_saved(self):
+        """ Test that a source search is saved """
+        search_type = 'source'
+        url = reverse('trait_browser:{}:search'.format(search_type))
+        text = 'text'
+        response = self.client.get(url, {'text': text})
+        self.assertEqual(response.status_code, 200)
+        # search exists and has the default search count of 1
+        self.assertIsInstance(Search.objects.get(param_text=text, search_count=1, search_type=search_type), Search)
+
+    def test_source_search_with_study_is_saved(self):
+        """ Test that a source search with a study is saved """
+        search_type = 'source'
+        url = reverse('trait_browser:{}:search'.format(search_type))
+        text = 'text'
+        study = StudyFactory.create()
+        response = self.client.get(url, {'text': text, 'study': study.pk})
+        self.assertEqual(response.status_code, 200)
+        # search exists with appropriate text and study and has the default search count
+        search_with_study = Search.objects.get(
+            param_text=text,
+            search_count=1,
+            param_studies=study.pk,
+            search_type=search_type
+        )
+        self.assertIsInstance(search_with_study, Search)
+
+    def test_save_search_to_profile(self):
+        """ Test that a source search with a study is saved and can be saved to a profile """
+
+        # create a search
+        search_type = 'source'
+        get_url = reverse('trait_browser:{}:search'.format(search_type))
+        text = 'text'
+        study = StudyFactory.create()
+        response = self.client.get(get_url, {'text': text, 'study': study.pk})
+        self.assertEqual(response.status_code, 200)
+        # save the search
+        post_url = reverse('trait_browser:save_search')
+        search_string = 'text={}&study={}'.format(text, study.pk)
+        response = self.client.post(post_url, {'trait_type': search_type, 'search_params': search_string})
+        self.assertEqual(response.status_code, 302)
+        # ensure saved search exists for the user
+        user_searches = UserData.objects.get(user_id=self.user.id).saved_searches.all()
+        search = Search.objects.get(param_text=text, search_type='source')
+        self.assertIn(search, user_searches)
+
 
 class HarmonizedTraitViewsTestCase(ViewsAutoLoginTestCase):
     """Unit tests for the HarmonizedTrait views."""
@@ -490,6 +540,15 @@ class HarmonizedTraitSearchViewTestCase(ViewsAutoLoginTestCase):
         self.assertTrue(response.context['form'].is_bound)    # Form is bound to data
         self.assertEqual(response.context['trait_type'], 'harmonized')    # trait type is still correct
         self.assertIsInstance(response.context['form'], HarmonizedTraitCrispySearchForm)    # Form is of the correct type
+
+    def test_harmonized_search_is_saved(self):
+        search_type = 'harmonized'
+        url = reverse('trait_browser:{}:search'.format(search_type))
+        text = 'text'
+        response = self.client.get(url, {'text': text})
+        self.assertEqual(response.status_code, 200)
+        # search exists and has the default search count of 1
+        self.assertIsInstance(Search.objects.get(param_text=text, search_count=1, search_type=search_type), Search)
 
 
 class TraitBrowserLoginRequiredTestCase(LoginRequiredTestCase):

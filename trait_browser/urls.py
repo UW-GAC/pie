@@ -31,4 +31,5 @@ harmonized_patterns = [
 urlpatterns = [
     url(r'^source/', include(source_patterns, namespace='source')),
     url(r'^harmonized/', include(harmonized_patterns, namespace='harmonized')),
+    url(r'^search/save/$', views.save_search_to_profile, name='save_search'),
 ]
