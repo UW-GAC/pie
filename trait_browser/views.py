@@ -160,7 +160,7 @@ def trait_search(request, trait_type):
             if request.GET.get('study', None) is not None:
                 form = FormClass(initial=request.GET)
 
-        page_data['form'] = FormClass()
+        page_data['form'] = form
         page_data['results'] = False
 
         return render(request, 'trait_browser/search.html', page_data)
