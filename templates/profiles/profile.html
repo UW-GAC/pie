@@ -1,16 +1,76 @@
 {% extends 'base.html' %}
+{% load staticfiles %}
+{% load render_table from django_tables2 %}
 
 {% block head_title %}
      | {{ page_title }}
 {% endblock %}
 
 {% block content %}
-    <p>Username (email): {{ user.email }}</p>
-    <p>Name: {{ user.name }}</p>
-    <p><a href="{% url 'password_reset' %}">Reset password</a></p>
+    <p><b>Email:</b> {{ user.email }}</p>
+    <p><b>Name:</b> {{ user.name }}</p>
+    <a href="{% url 'password_reset' %}" class="btn btn-primary" role="button">Reset password</a></p>
 
-    {% if request.user.is_staff %}
-    <a href="{% url 'admin:index' %}" class="btn btn-primary" role="button">PIE Administration</a>
-    {% endif %}
+    <div class="container">
+      <div class="row form-group">
+        {% if request.user.is_staff %}
+        <a href="{% url 'admin:index' %}" class="btn btn-primary" role="button">PIE Administration</a>
+        {% endif %}
+      </div>
 
+      <div class="row">
+        <!-- Nav tabs -->
+        <ul class="nav nav-tabs" role="tablist">
+          <li role="presentation" class="active"><a href="#phenotypes" role="tab" data-toggle="tab">Saved Phenotypes</a></li>
+          <li role="presentation" class="dropdown">
+            <a href="#" class="dropdown-toggle" id="myTabDrop1" data-toggle="dropdown" aria-controls="myTabDrop1-contents" aria-expanded="false">Saved Searches <span class="caret"></span></a>
+            <ul class="dropdown-menu" aria-labelledby="myTabDrop1" id="myTabDrop1-contents">
+              <li><a href="#save-harm-drop" role="tab" id="saved-harmonized" data-toggle="tab" aria-controls="dropdown1">Harmonized</a></li>
+              <li><a href="#save-source-drop" role="tab" id="saved-source" data-toggle="tab" aria-controls="dropdown2">Source</a></li>
+            </ul>
+          </li>
+          <li role="presentation"><a href="#unitrecipes" role="tab" data-toggle="tab">Unit Recipes</a></li>
+          <li role="presentation"><a href="#harmonizationrecipes" role="tab" data-toggle="tab">Harmonization Recipes</a></li>
+        </ul>
+
+        <!-- Tab panes -->
+        <!-- Add space between tabs and content -->
+        <br>
+        <div class="tab-content">
+          <div role="tabpanel" class="tab-pane fade in active" id="phenotypes">Saved phenotypes</div>
+          <div role="tabpanel" class="tab-pane fade" id="save-harm-drop">
+            <div class="container">
+              <div class="row form-group">
+                <form method="post">
+                  {% csrf_token %}
+                  {% render_table savedharmonized %}
+                  <input type="hidden" name="search_type" value="harmonized">
+                  <button type='submit' class='btn btn-primary'>Remove Selected</button>
+                </form>
+              </div>
+            </div>
+          </div>
+          <div role="tabpanel" class="tab-pane fade" id="save-source-drop">
+            <div class="container">
+              <div class="row form-group">
+                <form method="post">
+                  {% csrf_token %}
+                  {% render_table savedsource %}
+                  <input type="hidden" name="search_type" value="source">
+                  <button type="submit" class="btn btn-primary">Remove Selected</button>
+                </form>
+              </div>
+            </div>
+          </div>
+          <div role="tabpanel" class="tab-pane fade" id="unitrecipes">Unit recipes</div>
+          <div role="tabpanel" class="tab-pane fade" id="harmonizationrecipes">Harmonization recipes</div>
+        </div>
+      </div>
+
+    </div>
 {% endblock %}
+
+{% block custom_javascript %}
+<script src="{% static 'js/profile.js' %}"></script>
+{% endblock %}
+

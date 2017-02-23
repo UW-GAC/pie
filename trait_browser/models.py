@@ -499,3 +499,4 @@ class HarmonizedTraitEncodedValue(TraitEncodedValue):
     def __str__(self):
         """Pretty printing of HarmonizedTraitEncodedValue objects."""
         return 'encoded value {} for {}\nvalue = {}'.format(self.i_category, self.harmonized_trait, self.i_value)
+
