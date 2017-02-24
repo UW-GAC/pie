@@ -1069,7 +1069,7 @@ class Command(BaseCommand):
         
         # First, backup the db before anything is changed.
         if not options.get('no_backup'):
-            management.call_command('dbbackup', compress=True)
+            management.call_command('dbbackup', compress=True, clean=True)
             logger.info('Django db backup completed.')
         else:
             logger.info('No backup of Django db, due to no_backup option.')

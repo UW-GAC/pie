@@ -184,7 +184,7 @@ CRISPY_TEMPLATE_PACK = 'bootstrap3'
 # dbbackup
 DBBACKUP_STORAGE = 'django.core.files.storage.FileSystemStorage'
 DBBACKUP_STORAGE_OPTIONS = {'location': SITE_ROOT + '/../phenotype_inventory_db_backups'}
-
+DBBACKUP_CLEANUP_KEEP = 10
 
 # USER AUTHENTICATION SETTINGS
 AUTH_USER_MODEL = 'authtools.User'
