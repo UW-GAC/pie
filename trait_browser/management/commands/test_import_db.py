@@ -11,8 +11,8 @@ This test module runs several unit tests and one integration test.
 """
 
 from datetime import datetime, timedelta
-from os.path import join
-from os import remove
+from os.path import exists, isfile, join
+from os import listdir, remove, stat
 from shutil import rmtree
 from subprocess import call
 from tempfile import mkdtemp
@@ -24,6 +24,7 @@ from django.core import management
 from django.test import TestCase
 from django.utils import timezone
 
+from core.factories import build_test_db
 from trait_browser.management.commands.import_db import Command
 from trait_browser.management.commands.db_factory import fake_row_dict
 from trait_browser.factories import GlobalStudyFactory, HarmonizedTraitFactory, HarmonizedTraitEncodedValueFactory, HarmonizedTraitSetFactory, SourceDatasetFactory, SourceStudyVersionFactory, SourceTraitFactory, SourceTraitEncodedValueFactory, StudyFactory, SubcohortFactory
@@ -1469,6 +1470,53 @@ class ImportNoUpdateTestCase(VisitTestDataTestCase):
         source_trait.refresh_from_db()
         htrait_set.refresh_from_db()
         self.assertFalse(htrait_set in source_trait.harmonizedtraitset_set.all())
+
+
+class BackupTestCase(VisitTestDataTestCase):
+    """Tests to make sure backing up the Django db in handle() is working right."""
+    
+    def test_backup_is_created(self):
+        """Backup dump file is created in the expected directory."""
+        set_backup_dir()
+        # Create some fake data in the Django db first.
+        build_test_db(n_global_studies=3,
+                      n_subcohort_range=(2,3),
+                      n_dataset_range=(3,9),
+                      n_trait_range=(2,16),
+                      n_enc_value_range=(2,9))
+        # Import data from the source db.
+        management.call_command('import_db', '--which_db=devel')
+        # Does the backup dir exist?
+        self.assertTrue(exists(settings.DBBACKUP_STORAGE_OPTIONS['location']))
+        # Is there a single compressed dump file in there?
+        backup_files = listdir(settings.DBBACKUP_STORAGE_OPTIONS['location'])
+        self.assertTrue(len(backup_files) == 1)
+        self.assertTrue(backup_files[0].endswith('.dump.gz'))
+        # Is a reasonable size that would indicate it's not empty?
+        file_size = stat(join(settings.DBBACKUP_STORAGE_OPTIONS['location'], backup_files[0])).st_size
+        self.assertTrue(1000000000 > file_size > 100)
+        cleanup_backup_dir()
+
+    def test_backup_can_be_restored(self):
+        """A saved backup can be used to restore the db to it's previous state."""
+        # TODO: Couldn't get the dbrestore command to work, so leaving this for later.
+        return None
+        set_backup_dir()
+        # Create some fake data in the Django db first.
+        build_test_db(n_global_studies=3,
+                      n_subcohort_range=(2,3),
+                      n_dataset_range=(3,9),
+                      n_trait_range=(2,16),
+                      n_enc_value_range=(2,9))
+        # Import data from the source db.
+        management.call_command('import_db', '--which_db=devel')
+        # Restore from the backup file.
+        
+        # Make a new backup file after the restore.
+        
+        # Is the contents of the new backup the same as the old?
+
+        cleanup_backup_dir()
 
 
 class IntegrationTest(VisitTestDataTestCase):
