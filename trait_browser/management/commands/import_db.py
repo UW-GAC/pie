@@ -62,6 +62,24 @@ class Command(BaseCommand):
         # TODO add a try/except block here in case the db connection fails.
         return source_db
 
+    def _lock_source_db(self, source_db):
+        """Read-lock all tables in source_db (prevents others writing to the db)."""
+        cursor = source_db.cursor(buffered=True, dictionary=False)
+        cursor.execute('SHOW TABLES;')
+        tables = [el[0].decode('utf-8') for el in cursor.fetchall()]
+        tables.remove('schema_changes')
+        tables = [el for el in tables if not el.startswith('view_')]
+        lock_query = 'LOCK TABLES {}'.format(', '.join(['{} READ'.format(el) for el in tables]))
+        cursor.execute(lock_query)
+        cursor.close()
+    
+    def _unlock_source_db(self, source_db):
+        """Undo a read-lock placed on tables in the source db."""
+        cursor = source_db.cursor(buffered=True, dictionary=False)
+        cursor.execute('UNLOCK TABLES')
+        cursor.close()
+    
+
     # Helper methods for data munging.
     def _fix_bytearray(self, row_dict):
         """Convert byteArrays into decoded strings.
@@ -1055,6 +1073,11 @@ class Command(BaseCommand):
             logger.info('No backup of Django db, due to no_backup option.')
         # Get a read-only connection to the db, which will be used in helper functions.
         ro_source_db = self._get_source_db(which_db=options.get('which_db'))
+        # Get a full-privileges db connection, so that you can lock the tables 
+        # to prevent anyone from writing new data to the db during the update/import.
+        full_source_db = self._get_source_db(which_db=options.get('which_db'), permissions='full')
+        self._lock_source_db(full_source_db)
+        logger.info('Locked source db against writes from others.')
         # First update, then import new data.
         if not options['import_only']:
             self._update_source_tables(source_db=ro_source_db)
@@ -1062,5 +1085,9 @@ class Command(BaseCommand):
         if not options['update_only']:
             self._import_source_tables(source_db=ro_source_db)
             self._import_harmonized_tables(source_db=ro_source_db)
+        # Unlock the full permissions db connection.
+        self._unlock_source_db(full_source_db)
+        logger.info('Unlocked source db.')
         # Close all db connections.
         ro_source_db.close()
+        full_source_db.close()
