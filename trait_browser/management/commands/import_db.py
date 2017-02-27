@@ -751,7 +751,7 @@ class Command(BaseCommand):
 
 
     # Methods to run all of the updating or importing on all of the models.
-    def _import_source_tables(self, which_db):
+    def _import_source_tables(self, source_db):
         """Import all source trait-related data from the source db into the Django models.
         
         Connect to the specified source db and run helper methods to import new data
@@ -761,15 +761,12 @@ class Command(BaseCommand):
         the source db connection when finished.
         
         Arguments:
-            which_db (str): the type of source db to connect to (should be one
-                of 'devel', 'test', 'production'); passed on from the command
-                line argument
+            source_db (MySQLConnection): a mysql.connector open db connection 
         
         Returns:
             None
         """
         logger.info('Importing new source traits...')
-        source_db = self._get_source_db(which_db=which_db)
 
         new_global_study_pks = self._import_new_data(source_db=source_db,
                                                      source_table='global_study',
@@ -824,9 +821,7 @@ class Command(BaseCommand):
                                                                         import_parent_pks=new_source_dataset_pks)
         logger.info("Added {} source dataset subcohorts".format(len(new_source_dataset_subcohort_links)))
 
-        source_db.close()    
-
-    def _import_harmonized_tables(self, which_db):
+    def _import_harmonized_tables(self, source_db):
         """Import all harmonized trait-related data from the source db into the Django models.
         
         Connect to the specified source db and run helper methods to import new data
@@ -836,15 +831,12 @@ class Command(BaseCommand):
         the source db connection when finished.
         
         Arguments:
-            which_db (str): the type of source db to connect to (should be one
-                of 'devel', 'test', 'production'); passed on from the command
-                line argument
+            source_db (MySQLConnection): a mysql.connector open db connection 
         
         Returns:
             None
         """
         logger.info('Importing new harmonized traits...')
-        source_db = self._get_source_db(which_db=which_db)
         
         new_harmonized_trait_set_pks = self._import_new_data(source_db=source_db,
                                                              source_table='harmonized_trait_set',
@@ -878,9 +870,7 @@ class Command(BaseCommand):
                                                                         import_parent_pks=new_harmonized_trait_set_pks)
         logger.info("Added {} component source traits".format(len(new_component_source_trait_links)))
 
-        source_db.close()
-
-    def _update_source_tables(self, which_db):
+    def _update_source_tables(self, source_db):
         """Update source trait-related Django models from modified data in the source db.
         
         Connect to the specified source db and run helper methods to detect modifications
@@ -892,15 +882,12 @@ class Command(BaseCommand):
         finished.
         
         Arguments:
-            which_db (str): the type of source db to connect to (should be one
-                of 'devel', 'test', 'production'); passed on from the command
-                line argument
+            source_db (MySQLConnection): a mysql.connector open db connection 
         
         Returns:
             None
         """
         logger.info('Updating source traits...')
-        source_db = self._get_source_db(which_db=which_db)
 
         updated_source_dataset_subcohort_links = self._update_m2m_field(source_db=source_db,
                                                                     source_table='source_dataset_subcohorts',
@@ -968,9 +955,7 @@ class Command(BaseCommand):
                                     expected=False)
         logger.info('{} source trait encoded values updated'.format(source_trait_ev_update_count))
 
-        source_db.close()
-
-    def _update_harmonized_tables(self, which_db):
+    def _update_harmonized_tables(self, source_db):
         """Update harmonized trait-related Django models from modified data in the source db.
         
         Connect to the specified source db and run helper methods to detect modifications
@@ -982,15 +967,12 @@ class Command(BaseCommand):
         finished.
         
         Arguments:
-            which_db (str): the type of source db to connect to (should be one
-                of 'devel', 'test', 'production'); passed on from the command
-                line argument
+            source_db (MySQLConnection): a mysql.connector open db connection 
         
         Returns:
             None
         """
         logger.info('Updating harmonized traits...')
-        source_db = self._get_source_db(which_db=which_db)
 
         updated_component_source_trait_links = self._update_m2m_field(source_db=source_db,
                                                                   source_table='component_source_trait',
@@ -1025,8 +1007,6 @@ class Command(BaseCommand):
                                     make_args=self._make_harmonized_trait_encoded_value_args,
                                     expected=False)
         logger.info('{} harmonized trait encoded values updated'.format(htrait_ev_update_count))
-
-        source_db.close()    
 
 
     # Methods to actually do the management command.
@@ -1066,17 +1046,20 @@ class Command(BaseCommand):
             logger.setLevel(logging.INFO)
         elif verbosity == 3:
             logger.setLevel(logging.DEBUG)
-        
         # First, backup the db before anything is changed.
         if not options.get('no_backup'):
             management.call_command('dbbackup', compress=True, clean=True)
             logger.info('Django db backup completed.')
         else:
             logger.info('No backup of Django db, due to no_backup option.')
+        # Get a read-only connection to the db, which will be used in helper functions.
+        ro_source_db = self._get_source_db(which_db=options.get('which_db'))
         # First update, then import new data.
         if not options['import_only']:
-            self._update_source_tables(which_db=options['which_db'])
-            self._update_harmonized_tables(which_db=options['which_db'])
+            self._update_source_tables(source_db=ro_source_db)
+            self._update_harmonized_tables(source_db=ro_source_db)
         if not options['update_only']:
-            self._import_source_tables(which_db=options['which_db'])
-            self._import_harmonized_tables(which_db=options['which_db'])
+            self._import_source_tables(source_db=ro_source_db)
+            self._import_harmonized_tables(source_db=ro_source_db)
+        # Close all db connections.
+        ro_source_db.close()
