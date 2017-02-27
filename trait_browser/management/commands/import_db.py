@@ -710,6 +710,7 @@ class Command(BaseCommand):
                                                 child_pk=type_fixed_row[kwargs['child_source_pk']],
                                                 **kwargs)
             links.append((parent.pk, child.pk))
+        cursor.close()
         return links
 
     def _update_m2m_field(self, source_db, **kwargs):
@@ -747,6 +748,7 @@ class Command(BaseCommand):
             for pk in to_remove:
                 remove_parent, remove_child = self._break_m2m_link(parent_pk=parent.pk, child_pk=pk, **kwargs)
                 links['removed'].append((remove_parent, remove_child))
+        cursor.close()
         return links
 
 
