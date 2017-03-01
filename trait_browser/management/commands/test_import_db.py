@@ -428,6 +428,23 @@ class GetDbTestCase(TestCase):
         self.assertEqual(timedelta(0), timezone_offset)
 
 
+class DbLockingTestCase(TestCase):
+    """Tests of the functions to lock the source db."""
+    
+    def test_lock_source_db_does_not_fail(self):
+        source_db = CMD._get_source_db(which_db='devel', permissions='full')
+        CMD._lock_source_db(source_db)
+    
+    def test_unlock_source_db_does_not_fail(self):
+        source_db = CMD._get_source_db(which_db='devel', permissions='full')
+        CMD._lock_source_db(source_db)
+        CMD._unlock_source_db(source_db)
+    
+    # TODO: write tests that ensure the lock works
+    # Could use this decorator from pytest-timeout package
+    # @pytest.mark.timeout(180)
+    
+
 class MakeArgsTestCase(BaseTestDataTestCase):
     """Tests of the _make_[model]_args functions."""
     
