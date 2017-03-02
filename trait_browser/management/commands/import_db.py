@@ -15,7 +15,8 @@ from datetime import datetime
 import logging
 import mysql.connector
 import socket
-from sys import stdout
+from re import search
+from sys import argv, stdout
 import pytz
 
 from django.core.management.base import BaseCommand, CommandError
@@ -32,6 +33,10 @@ console_handler = logging.StreamHandler(stdout)
 detail_formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 console_handler.setFormatter(detail_formatter)
 logger.addHandler(console_handler)
+
+# Detect whether we're in the test environment or not.
+TEST = len(argv) >= 2 and search(r'manage.py$', argv[0]) and argv[1] == 'test'
+
 
 class Command(BaseCommand):
     """Management command to pull data from the source phenotype db."""
@@ -1065,6 +1070,9 @@ class Command(BaseCommand):
             logger.setLevel(logging.INFO)
         elif verbosity == 3:
             logger.setLevel(logging.DEBUG)
+        # Prevent usage of --import_only or --update_only outside of test environment.
+        if (options.get('import_only') or options.get('update_only')) and (not TEST):
+            raise ValueError('--import_only and --update_only are only allowed in testing.')
         # First, backup the db before anything is changed.
         if not options.get('no_backup'):
             management.call_command('dbbackup', compress=True, clean=True)
@@ -1079,10 +1087,10 @@ class Command(BaseCommand):
         self._lock_source_db(full_source_db)
         logger.info('Locked source db against writes from others.')
         # First update, then import new data.
-        if not options['import_only']:
+        if not options.get('import_only'):
             self._update_source_tables(source_db=ro_source_db)
             self._update_harmonized_tables(source_db=ro_source_db)
-        if not options['update_only']:
+        if not options.get('update_only'):
             self._import_source_tables(source_db=ro_source_db)
             self._import_harmonized_tables(source_db=ro_source_db)
         # Unlock the full permissions db connection.
