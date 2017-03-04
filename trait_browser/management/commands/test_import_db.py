@@ -24,7 +24,6 @@ from django.core import management
 from django.test import TestCase
 from django.utils import timezone
 
-from core.factories import build_test_db
 from trait_browser.management.commands.import_db import Command
 from trait_browser.management.commands.db_factory import fake_row_dict
 from trait_browser.factories import GlobalStudyFactory, HarmonizedTraitFactory, HarmonizedTraitEncodedValueFactory, HarmonizedTraitSetFactory, SourceDatasetFactory, SourceStudyVersionFactory, SourceTraitFactory, SourceTraitEncodedValueFactory, StudyFactory, SubcohortFactory
@@ -1495,12 +1494,7 @@ class BackupTestCase(VisitTestDataTestCase):
     def test_backup_is_created(self):
         """Backup dump file is created in the expected directory."""
         set_backup_dir()
-        # Create some fake data in the Django db first.
-        build_test_db(n_global_studies=3,
-                      n_subcohort_range=(2,3),
-                      n_dataset_range=(3,9),
-                      n_trait_range=(2,16),
-                      n_enc_value_range=(2,9))
+        # No initial fake data in the test db is needed here. Backing up an empty db works fine.
         # Import data from the source db.
         management.call_command('import_db', '--which_db=devel')
         # Does the backup dir exist?
@@ -1519,12 +1513,7 @@ class BackupTestCase(VisitTestDataTestCase):
         # TODO: Couldn't get the dbrestore command to work, so leaving this for later.
         return None
         set_backup_dir()
-        # Create some fake data in the Django db first.
-        build_test_db(n_global_studies=3,
-                      n_subcohort_range=(2,3),
-                      n_dataset_range=(3,9),
-                      n_trait_range=(2,16),
-                      n_enc_value_range=(2,9))
+
         # Import data from the source db.
         management.call_command('import_db', '--which_db=devel')
         # Restore from the backup file.
