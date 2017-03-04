@@ -15,10 +15,12 @@ from datetime import datetime
 import logging
 import mysql.connector
 import socket
-from sys import stdout
+from re import search
+from sys import argv, stdout
 import pytz
 
 from django.core.management.base import BaseCommand, CommandError
+from django.core import management
 from django.utils import timezone
 from django.conf import settings
 
@@ -31,6 +33,10 @@ console_handler = logging.StreamHandler(stdout)
 detail_formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 console_handler.setFormatter(detail_formatter)
 logger.addHandler(console_handler)
+
+# Detect whether we're in the test environment or not.
+TEST = len(argv) >= 2 and search(r'manage.py$', argv[0]) and argv[1] == 'test'
+
 
 class Command(BaseCommand):
     """Management command to pull data from the source phenotype db."""
@@ -56,11 +62,28 @@ class Command(BaseCommand):
             raise ValueError('Requested full permissions for {} source database. Not allowed!!!')
         # Default is to connect as readonly; only test functions connect as full user.
         cnf_group = ['client', 'mysql_topmed_pheno_{}_{}'.format(permissions, which_db)]
-        cnx = mysql.connector.connect(option_files=cnf_path, option_groups=cnf_group, charset='latin1', use_unicode=False, time_zone='+00:00')
-        logger.debug('Connected to source db {}'.format(cnx))
+        source_db = mysql.connector.connect(option_files=cnf_path, option_groups=cnf_group, charset='latin1', use_unicode=False, time_zone='+00:00')
+        logger.debug('Connected to source db {}'.format(source_db))
         # TODO add a try/except block here in case the db connection fails.
-        return cnx
+        return source_db
 
+    def _lock_source_db(self, source_db):
+        """Read-lock all tables in source_db (prevents others writing to the db)."""
+        cursor = source_db.cursor(buffered=True, dictionary=False)
+        cursor.execute('SHOW TABLES;')
+        tables = [el[0].decode('utf-8') for el in cursor.fetchall()]
+        tables.remove('schema_changes')
+        tables = [el for el in tables if not el.startswith('view_')]
+        lock_query = 'LOCK TABLES {}'.format(', '.join(['{} READ'.format(el) for el in tables]))
+        cursor.execute(lock_query)
+        cursor.close()
+    
+    def _unlock_source_db(self, source_db):
+        """Undo a read-lock placed on tables in the source db."""
+        cursor = source_db.cursor(buffered=True, dictionary=False)
+        cursor.execute('UNLOCK TABLES')
+        cursor.close()
+    
 
     # Helper methods for data munging.
     def _fix_bytearray(self, row_dict):
@@ -709,6 +732,7 @@ class Command(BaseCommand):
                                                 child_pk=type_fixed_row[kwargs['child_source_pk']],
                                                 **kwargs)
             links.append((parent.pk, child.pk))
+        cursor.close()
         return links
 
     def _update_m2m_field(self, source_db, **kwargs):
@@ -746,11 +770,12 @@ class Command(BaseCommand):
             for pk in to_remove:
                 remove_parent, remove_child = self._break_m2m_link(parent_pk=parent.pk, child_pk=pk, **kwargs)
                 links['removed'].append((remove_parent, remove_child))
+        cursor.close()
         return links
 
 
     # Methods to run all of the updating or importing on all of the models.
-    def _import_source_tables(self, which_db):
+    def _import_source_tables(self, source_db):
         """Import all source trait-related data from the source db into the Django models.
         
         Connect to the specified source db and run helper methods to import new data
@@ -760,15 +785,12 @@ class Command(BaseCommand):
         the source db connection when finished.
         
         Arguments:
-            which_db (str): the type of source db to connect to (should be one
-                of 'devel', 'test', 'production'); passed on from the command
-                line argument
+            source_db (MySQLConnection): a mysql.connector open db connection 
         
         Returns:
             None
         """
         logger.info('Importing new source traits...')
-        source_db = self._get_source_db(which_db=which_db)
 
         new_global_study_pks = self._import_new_data(source_db=source_db,
                                                      source_table='global_study',
@@ -823,9 +845,7 @@ class Command(BaseCommand):
                                                                         import_parent_pks=new_source_dataset_pks)
         logger.info("Added {} source dataset subcohorts".format(len(new_source_dataset_subcohort_links)))
 
-        source_db.close()    
-
-    def _import_harmonized_tables(self, which_db):
+    def _import_harmonized_tables(self, source_db):
         """Import all harmonized trait-related data from the source db into the Django models.
         
         Connect to the specified source db and run helper methods to import new data
@@ -835,15 +855,12 @@ class Command(BaseCommand):
         the source db connection when finished.
         
         Arguments:
-            which_db (str): the type of source db to connect to (should be one
-                of 'devel', 'test', 'production'); passed on from the command
-                line argument
+            source_db (MySQLConnection): a mysql.connector open db connection 
         
         Returns:
             None
         """
         logger.info('Importing new harmonized traits...')
-        source_db = self._get_source_db(which_db=which_db)
         
         new_harmonized_trait_set_pks = self._import_new_data(source_db=source_db,
                                                              source_table='harmonized_trait_set',
@@ -877,9 +894,7 @@ class Command(BaseCommand):
                                                                         import_parent_pks=new_harmonized_trait_set_pks)
         logger.info("Added {} component source traits".format(len(new_component_source_trait_links)))
 
-        source_db.close()
-
-    def _update_source_tables(self, which_db):
+    def _update_source_tables(self, source_db):
         """Update source trait-related Django models from modified data in the source db.
         
         Connect to the specified source db and run helper methods to detect modifications
@@ -891,15 +906,12 @@ class Command(BaseCommand):
         finished.
         
         Arguments:
-            which_db (str): the type of source db to connect to (should be one
-                of 'devel', 'test', 'production'); passed on from the command
-                line argument
+            source_db (MySQLConnection): a mysql.connector open db connection 
         
         Returns:
             None
         """
         logger.info('Updating source traits...')
-        source_db = self._get_source_db(which_db=which_db)
 
         updated_source_dataset_subcohort_links = self._update_m2m_field(source_db=source_db,
                                                                     source_table='source_dataset_subcohorts',
@@ -967,9 +979,7 @@ class Command(BaseCommand):
                                     expected=False)
         logger.info('{} source trait encoded values updated'.format(source_trait_ev_update_count))
 
-        source_db.close()
-
-    def _update_harmonized_tables(self, which_db):
+    def _update_harmonized_tables(self, source_db):
         """Update harmonized trait-related Django models from modified data in the source db.
         
         Connect to the specified source db and run helper methods to detect modifications
@@ -981,15 +991,12 @@ class Command(BaseCommand):
         finished.
         
         Arguments:
-            which_db (str): the type of source db to connect to (should be one
-                of 'devel', 'test', 'production'); passed on from the command
-                line argument
+            source_db (MySQLConnection): a mysql.connector open db connection 
         
         Returns:
             None
         """
         logger.info('Updating harmonized traits...')
-        source_db = self._get_source_db(which_db=which_db)
 
         updated_component_source_trait_links = self._update_m2m_field(source_db=source_db,
                                                                   source_table='component_source_trait',
@@ -1025,8 +1032,6 @@ class Command(BaseCommand):
                                     expected=False)
         logger.info('{} harmonized trait encoded values updated'.format(htrait_ev_update_count))
 
-        source_db.close()    
-
 
     # Methods to actually do the management command.
     def add_arguments(self, parser):
@@ -1034,6 +1039,8 @@ class Command(BaseCommand):
         parser.add_argument('--which_db', action='store', type=str,
                             choices=['test', 'devel', 'production'], default=None, required=True,
                             help='Which source database to connect to for retrieving source data.')
+        parser.add_argument('--no_backup', action='store_true',
+                            help='Do not backup the Django db before running update and import functions. This should only be used for testing purposes.')
         only_group = parser.add_mutually_exclusive_group()
         only_group.add_argument('--update_only', action='store_true',
                                 help='Only update the db records that are already in the db, and do not add new ones.')
@@ -1063,11 +1070,32 @@ class Command(BaseCommand):
             logger.setLevel(logging.INFO)
         elif verbosity == 3:
             logger.setLevel(logging.DEBUG)
-        
+        # Prevent usage of --import_only or --update_only outside of test environment.
+        if (options.get('import_only') or options.get('update_only')) and (not TEST):
+            raise ValueError('--import_only and --update_only are only allowed in testing.')
+        # First, backup the db before anything is changed.
+        if not options.get('no_backup'):
+            management.call_command('dbbackup', compress=True, clean=True)
+            logger.info('Django db backup completed.')
+        else:
+            logger.info('No backup of Django db, due to no_backup option.')
+        # Get a read-only connection to the db, which will be used in helper functions.
+        ro_source_db = self._get_source_db(which_db=options.get('which_db'))
+        # Get a full-privileges db connection, so that you can lock the tables 
+        # to prevent anyone from writing new data to the db during the update/import.
+        full_source_db = self._get_source_db(which_db=options.get('which_db'), permissions='full')
+        self._lock_source_db(full_source_db)
+        logger.info('Locked source db against writes from others.')
         # First update, then import new data.
-        if not options['import_only']:
-            self._update_source_tables(which_db=options['which_db'])
-            self._update_harmonized_tables(which_db=options['which_db'])
-        if not options['update_only']:
-            self._import_source_tables(which_db=options['which_db'])
-            self._import_harmonized_tables(which_db=options['which_db'])
+        if not options.get('import_only'):
+            self._update_source_tables(source_db=ro_source_db)
+            self._update_harmonized_tables(source_db=ro_source_db)
+        if not options.get('update_only'):
+            self._import_source_tables(source_db=ro_source_db)
+            self._import_harmonized_tables(source_db=ro_source_db)
+        # Unlock the full permissions db connection.
+        self._unlock_source_db(full_source_db)
+        logger.info('Unlocked source db.')
+        # Close all db connections.
+        ro_source_db.close()
+        full_source_db.close()
