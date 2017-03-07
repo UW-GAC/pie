@@ -1,5 +1,8 @@
 """Test the functions and classes for views.py"""
 
+from copy import copy
+import re
+
 from django.test import TestCase, Client
 from django.http import QueryDict
 from django.core.urlresolvers import reverse, RegexURLResolver, RegexURLPattern
@@ -556,3 +559,50 @@ class TraitBrowserLoginRequiredTestCase(LoginRequiredTestCase):
     def test_trait_browser_login_required(self):
         """All trait_browser urls redirect to login page if no user is logged in."""
         self.assert_redirect_all_urls(urlpatterns, 'phenotypes')
+
+
+class SourceTraitPHVAutocompleteTestCase(ViewsAutoLoginTestCase):
+    """Autocomplete view works as expected."""
+    
+    def test_no_deprecated_traits_in_queryset(self):
+        """Queryset returns only the latest version of a trait."""
+        # Create a source trait with linked source dataset and source study version.
+        source_trait = SourceTraitFactory.create(i_trait_id=5, source_dataset__i_id=6, i_dbgap_variable_accession=60, source_dataset__source_study_version__i_id=5)
+        ds = source_trait.source_dataset
+        ssv = source_trait.source_dataset.source_study_version
+        # Copy the source study version and increment it.
+        ssv2 = copy(ssv)
+        ssv2.i_version += 1
+        ssv2.i_id += 1
+        ssv2.save()
+        # Make the old ssv deprecated.
+        ssv.i_is_deprecated = True
+        ssv.save()
+        # Copy the source dataset and increment it. Link it to the new ssv.
+        ds2 = copy(ds)
+        ds2.i_id += 1
+        ds2.source_study_version = ssv2
+        ds2.save()
+        # Copy the source trait and increment it. Link it to the new source dataset.
+        source_trait2 = copy(source_trait)
+        source_trait2.source_dataset = ds2
+        source_trait2.i_trait_id += 1
+        source_trait2.save()
+        # Get results from the autocomplete view and make sure only the new version is found.
+        url = reverse('trait_browser:source:autocomplete')
+        response = self.client.get(url, {'q': source_trait2.i_dbgap_variable_accession})
+        id_re = re.compile(r'"id": (\d+)')
+        ids_in_content = [match[0] for match in id_re.findall(str(response.content))]
+        self.assertTrue(len(ids_in_content) == 1)
+        self.assertTrue(str(source_trait2.i_trait_id) in ids_in_content)
+    
+    def test_proper_phv_in_queryset(self):
+        """Queryset returns only the proper phv number."""
+        source_traits = SourceTraitFactory.create_batch(10)
+        st1 = source_traits[0]
+        url = reverse('trait_browser:source:autocomplete')
+        response = self.client.get(url, {'q': st1.i_dbgap_variable_accession})
+        phv_re = re.compile(r'phv\d{8}')
+        phvs_in_content = [match for match in phv_re.findall(str(response.content))]
+        self.assertTrue(len(phvs_in_content) == 1)
+        self.assertTrue('phv{:08d}'.format(st1.i_dbgap_variable_accession) in phvs_in_content)

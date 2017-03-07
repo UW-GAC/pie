@@ -210,21 +210,22 @@ def trait_search(request, trait_type):
     return render(request, 'trait_browser/search.html', page_data)
 
 
-class SourceTraitIDAutocomplete(autocomplete.Select2QuerySetView):
+class SourceTraitPHVAutocomplete(autocomplete.Select2QuerySetView):
     """View for returning querysets that allow auto-completing SourceTrait-based form fields.
     
-    Used with django-autocomplete-light package.
+    Used with django-autocomplete-light package. Autocomplete by dbGaP accession. 
+    Only include latest version.
     """    
     
     def get_queryset(self):
-        retrieved = SourceTrait.objects.all()
+        retrieved = SourceTrait.objects.filter(source_dataset__source_study_version__i_is_deprecated=False)
         if self.q:
-            retrieved = retrieved.filter(i_trait_id__regex=r'^{}'.format(self.q))
+            retrieved = retrieved.filter(i_dbgap_variable_accession__regex=r'^{}'.format(self.q))
         return retrieved
 
     @method_decorator(login_required)
     def dispatch(self, *args, **kwargs):
-        return super(SourceTraitIDAutocomplete, self).dispatch(*args, **kwargs)
+        return super(SourceTraitPHVAutocomplete, self).dispatch(*args, **kwargs)
 
 @login_required
 def save_search_to_profile(request):
