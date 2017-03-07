@@ -9,8 +9,8 @@ from .models import UnitRecipe, HarmonizationRecipe
 
 class UnitRecipeAdmin(admin.ModelAdmin):
     """Admin class for UnitRecipe objects."""
-    list_display = ('name', 'creator', 'version', 'get_age_variables', 'get_batch_variables', 'get_phenotype_variables', 'id', )
-    list_filter = ('creator', 'last_modifier', )
+    list_display = ('name', 'creator', 'version', 'type', 'get_age_variables', 'get_batch_variables', 'get_phenotype_variables', 'id', )
+    list_filter = ('creator', 'last_modifier', 'type', )
     search_fields = ('name', )
     form = UnitRecipeAdminForm
     
@@ -59,8 +59,8 @@ class UnitRecipeAdmin(admin.ModelAdmin):
 
 class HarmonizationRecipeAdmin(admin.ModelAdmin):
     """Admin class for HarmonizationRecipe objects."""
-    list_display = ('name', 'creator', 'target_name', 'version', 'type', 'get_number_of_units', 'id', )
-    list_filter = ('creator', 'last_modifier', 'type', )
+    list_display = ('name', 'creator', 'target_name', 'version', 'get_number_of_units', 'id', )
+    list_filter = ('creator', 'last_modifier', )
     search_fields = ('name', 'target_name', )
     form = HarmonizationRecipeAdminForm
     

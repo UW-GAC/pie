@@ -30,7 +30,17 @@ class TimeStampedModel(models.Model):
 class UnitRecipe(TimeStampedModel):
     """Model for harmonization recipe for one harmonization unit.
     """
-    
+    UNIT_RECODE = 'unit_recode'
+    CATEGORY_RECODE = 'category_recode'
+    FORMULA = 'formula'
+    OTHER = 'other'
+    TYPE_CHOICES = (
+        (UNIT_RECODE, 'recode variable for different units of measurement'),
+        (CATEGORY_RECODE, 'recode variable for new encoded value category definitions'),
+        (FORMULA, 'calculate variable from a formula'),
+        (OTHER, 'other'),
+    )
+
     age_variables = models.ManyToManyField(SourceTrait, related_name='units_as_age_trait')
     batch_variables = models.ManyToManyField(SourceTrait, related_name='units_as_batch_trait', blank=True)
     phenotype_variables =  models.ManyToManyField(SourceTrait, related_name='units_as_phenotype_trait')
@@ -39,6 +49,7 @@ class UnitRecipe(TimeStampedModel):
     instructions = models.TextField(verbose_name='harmonization instructions')
     version = models.IntegerField(default=1)
     name = models.CharField(max_length=255, verbose_name='harmonization unit name')
+    type = models.CharField(max_length=100, choices=TYPE_CHOICES, verbose_name='harmonization type')
 
     class Meta:
         verbose_name = 'harmonization unit recipe'
@@ -60,17 +71,6 @@ class HarmonizationRecipe(TimeStampedModel):
     to create the target harmonized variable.
     """
     
-    UNIT_RECODE = 'unit_recode'
-    CATEGORY_RECODE = 'category_recode'
-    FORMULA = 'formula'
-    OTHER = 'other'
-    TYPE_CHOICES = (
-        (UNIT_RECODE, 'recode variable for different units of measurement'),
-        (CATEGORY_RECODE, 'recode variable for new encoded value category definitions'),
-        (FORMULA, 'calculate variable from a formula'),
-        (OTHER, 'other'),
-    )
-
     name = models.CharField(max_length=255, verbose_name='harmonization recipe name')
     units = models.ManyToManyField(UnitRecipe, verbose_name='harmonization units')
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='harmonization_recipes_created_by')
@@ -79,7 +79,6 @@ class HarmonizationRecipe(TimeStampedModel):
     target_name = models.CharField(max_length=50, verbose_name='target phenotype variable name', validators=[validate_alphanumeric_underscore])
     target_description = models.TextField(verbose_name='target phenotype variable description')
     encoded_values = models.TextField(verbose_name='definition of encoded values for target variable', blank=True, validators=[validate_encoded_values])
-    type = models.CharField(max_length=100, choices=TYPE_CHOICES, verbose_name='harmonization type')
     measurement_unit = models.CharField(max_length=100, verbose_name='unit of measurement')
     
     class Meta:

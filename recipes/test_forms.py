@@ -5,14 +5,14 @@ from django.core.urlresolvers import reverse
 
 from .forms import HarmonizationRecipeForm, UnitRecipeForm
 from .factories import HarmonizationRecipeFactory, UnitRecipeFactory
-from .models import HarmonizationRecipe
+from .models import UnitRecipe
 from core.factories import UserFactory
 from trait_browser.factories import SourceTraitFactory
 
 
 class UnitRecipeFormTestCase(TestCase):
     
-    def test_form_with_valid_input(self):
+    def test_form_with_valid_input_type_other(self):
         """Test that the UnitRecipeForm is valid with valid input data and a valid user set on the form."""
         source_traits = SourceTraitFactory.create_batch(3, source_dataset__source_study_version__study__global_study__i_id=1)
         input = {'name': 'Example study name, subcohort 5.',
@@ -20,6 +20,55 @@ class UnitRecipeFormTestCase(TestCase):
                  'age_variables': [str(source_traits[0].pk), ] ,
                  'batch_variables': [str(source_traits[1].pk), ] ,
                  'phenotype_variables': [str(source_traits[2].pk), ] ,
+                 'type': UnitRecipe.OTHER,
+                 }
+        form = UnitRecipeForm(input)
+        # Usually form.user is added by a mixin on the View, but have to add it manually here.
+        user = UserFactory.create()
+        form.user = user
+        self.assertTrue(form.is_valid())
+    
+    def test_form_with_valid_input_type_unit_recode(self):
+        """Test that the UnitRecipeForm is valid with valid input data and a valid user set on the form."""
+        source_traits = SourceTraitFactory.create_batch(3, source_dataset__source_study_version__study__global_study__i_id=1)
+        input = {'name': 'Example study name, subcohort 5.',
+                 'instructions': 'Do something to combine these variables',
+                 'age_variables': [str(source_traits[0].pk), ] ,
+                 'batch_variables': [str(source_traits[1].pk), ] ,
+                 'phenotype_variables': [str(source_traits[2].pk), ] ,
+                 'type': UnitRecipe.UNIT_RECODE,
+                 }
+        form = UnitRecipeForm(input)
+        # Usually form.user is added by a mixin on the View, but have to add it manually here.
+        user = UserFactory.create()
+        form.user = user
+        self.assertTrue(form.is_valid())
+    
+    def test_form_with_valid_input_type_category_recode(self):
+        """Test that the UnitRecipeForm is valid with valid input data and a valid user set on the form."""
+        source_traits = SourceTraitFactory.create_batch(3, source_dataset__source_study_version__study__global_study__i_id=1)
+        input = {'name': 'Example study name, subcohort 5.',
+                 'instructions': 'Do something to combine these variables',
+                 'age_variables': [str(source_traits[0].pk), ] ,
+                 'batch_variables': [str(source_traits[1].pk), ] ,
+                 'phenotype_variables': [str(source_traits[2].pk), ] ,
+                 'type': UnitRecipe.CATEGORY_RECODE,
+                 }
+        form = UnitRecipeForm(input)
+        # Usually form.user is added by a mixin on the View, but have to add it manually here.
+        user = UserFactory.create()
+        form.user = user
+        self.assertTrue(form.is_valid())
+    
+    def test_form_with_valid_input_type_formula(self):
+        """Test that the UnitRecipeForm is valid with valid input data and a valid user set on the form."""
+        source_traits = SourceTraitFactory.create_batch(3, source_dataset__source_study_version__study__global_study__i_id=1)
+        input = {'name': 'Example study name, subcohort 5.',
+                 'instructions': 'Do something to combine these variables',
+                 'age_variables': [str(source_traits[0].pk), ] ,
+                 'batch_variables': [str(source_traits[1].pk), ] ,
+                 'phenotype_variables': [str(source_traits[2].pk), ] ,
+                 'type': UnitRecipe.FORMULA,
                  }
         form = UnitRecipeForm(input)
         # Usually form.user is added by a mixin on the View, but have to add it manually here.
@@ -39,6 +88,7 @@ class UnitRecipeFormTestCase(TestCase):
                  'instructions': 'Do something to combine these variables',
                  'age_variables': [str(source_traits[0].pk), ] ,
                  'phenotype_variables': [str(source_traits[2].pk), ] ,
+                 'type': UnitRecipe.OTHER, 
                  }
         form = UnitRecipeForm(input)
         # Usually form.user is added by a mixin on the View, but have to add it manually here.
@@ -53,6 +103,7 @@ class UnitRecipeFormTestCase(TestCase):
                  'age_variables': [str(source_traits[0].pk), ] ,
                  'batch_variables': [str(source_traits[1].pk), ] ,
                  'phenotype_variables': [str(source_traits[2].pk), ] ,
+                 'type': UnitRecipe.OTHER, 
                  }
         form = UnitRecipeForm(input)
         # Usually form.user is added by a mixin on the View, but have to add it manually here.
@@ -233,11 +284,44 @@ class UnitRecipeFormTestCase(TestCase):
         self.assertTrue(form.has_error('phenotype_variables'))
         self.assertFalse(form.is_valid())
 
+    def test_form_with_missing_type_is_invalid(self):
+        """Test that the UnitRecipeForm is invalid if the type field is not submitted."""
+        source_traits = SourceTraitFactory.create_batch(3, source_dataset__source_study_version__study__global_study__i_id=1)
+        input = {'name': 'Example study name, subcohort 5.',
+                 'instructions': 'Do something to combine these variables',
+                 'age_variables': [str(source_traits[0].pk), ] ,
+                 'batch_variables': [str(source_traits[1].pk), ] ,
+                 'phenotype_variables': [str(source_traits[2].pk), ] ,
+                 }
+        form = UnitRecipeForm(input)
+        # Usually form.user is added by a mixin on the View, but have to add it manually here.
+        user = UserFactory.create()
+        form.user = user
+        self.assertTrue(form.has_error('type'))
+        self.assertFalse(form.is_valid())
+
+    def test_form_with_bad_type_value_is_invalid(self):
+        """Test that the HarmonizationRecipeForm is invalid when the input type value is invalid."""
+        source_traits = SourceTraitFactory.create_batch(3, source_dataset__source_study_version__study__global_study__i_id=1)
+        input = {'name': 'Example study name, subcohort 5.',
+                 'instructions': 'Do something to combine these variables',
+                 'age_variables': [str(source_traits[0].pk), ] ,
+                 'batch_variables': [str(source_traits[1].pk), ] ,
+                 'phenotype_variables': [str(source_traits[2].pk), ] ,
+                 'type': 'not_a_type',
+                 }
+        form = UnitRecipeForm(input)
+        # Usually form.user is added by a mixin on the View, but have to add it manually here.
+        user = UserFactory.create()
+        form.user = user
+        self.assertTrue(form.has_error('type'))
+        self.assertFalse(form.is_valid())
+
 
 class HarmonizationRecipeFormTestCase(TestCase):
     
-    def test_form_with_valid_input_type_unit_recode(self):
-        """Test that the HarmonizationRecipeForm is valid with good input data and type=UNIT_RECODE."""
+    def test_form_with_valid_input(self):
+        """Test that the HarmonizationRecipeForm is valid with good input data."""
         user = UserFactory.create()
         unit_recipes = UnitRecipeFactory.create_batch(5, creator=user)
         input = {'name': 'Harmonization of this specific trait here.',
@@ -245,55 +329,6 @@ class HarmonizationRecipeFormTestCase(TestCase):
                  'target_name': 'test_variable_name',
                  'target_description': 'This is a test variable.',
                  'encoded_values': '1: blue\r\n2: red\r\n3: yellow',
-                 'type': HarmonizationRecipe.UNIT_RECODE,
-                 'measurement_unit': 'kilograms',
-                 }
-        # Usually form.user is added by a mixin on the View, but have to add it manually here.
-        form = HarmonizationRecipeForm(input, user=user)
-        self.assertTrue(form.is_valid())
-    
-    def test_form_with_valid_input_type_category_recode(self):
-        """Test that the HarmonizationRecipeForm is valid with good input data and type=CATEGORY_RECODE."""
-        user = UserFactory.create()
-        unit_recipes = UnitRecipeFactory.create_batch(5, creator=user)
-        input = {'name': 'Harmonization of this specific trait here.',
-                 'units': [str(u.pk) for u in unit_recipes],
-                 'target_name': 'test_variable_name',
-                 'target_description': 'This is a test variable.',
-                 'encoded_values': '1: blue\r\n2: red\r\n3: yellow',
-                 'type': HarmonizationRecipe.CATEGORY_RECODE,
-                 'measurement_unit': 'kilograms',
-                 }
-        # Usually form.user is added by a mixin on the View, but have to add it manually here.
-        form = HarmonizationRecipeForm(input, user=user)
-        self.assertTrue(form.is_valid())
-    
-    def test_form_with_valid_input_type_formula(self):
-        """Test that the HarmonizationRecipeForm is valid with good input data and type=FORMULA."""
-        user = UserFactory.create()
-        unit_recipes = UnitRecipeFactory.create_batch(5, creator=user)
-        input = {'name': 'Harmonization of this specific trait here.',
-                 'units': [str(u.pk) for u in unit_recipes],
-                 'target_name': 'test_variable_name',
-                 'target_description': 'This is a test variable.',
-                 'encoded_values': '1: blue\r\n2: red\r\n3: yellow',
-                 'type': HarmonizationRecipe.FORMULA,
-                 'measurement_unit': 'kilograms',
-                 }
-        # Usually form.user is added by a mixin on the View, but have to add it manually here.
-        form = HarmonizationRecipeForm(input, user=user)
-        self.assertTrue(form.is_valid())
-
-    def test_form_with_valid_input_type_other(self):
-        """Test that the HarmonizationRecipeForm is valid with good input data and type=OTHER."""
-        user = UserFactory.create()
-        unit_recipes = UnitRecipeFactory.create_batch(5, creator=user)
-        input = {'name': 'Harmonization of this specific trait here.',
-                 'units': [str(u.pk) for u in unit_recipes],
-                 'target_name': 'test_variable_name',
-                 'target_description': 'This is a test variable.',
-                 'encoded_values': '1: blue\r\n2: red\r\n3: yellow',
-                 'type': HarmonizationRecipe.OTHER,
                  'measurement_unit': 'kilograms',
                  }
         # Usually form.user is added by a mixin on the View, but have to add it manually here.
@@ -313,7 +348,6 @@ class HarmonizationRecipeFormTestCase(TestCase):
                  'units': [str(u.pk) for u in unit_recipes],
                  'target_name': 'test_variable_name',
                  'target_description': 'This is a test variable.',
-                 'type': HarmonizationRecipe.OTHER,
                  'measurement_unit': 'kilograms',
                  }
         # Usually form.user is added by a mixin on the View, but have to add it manually here.
@@ -329,7 +363,6 @@ class HarmonizationRecipeFormTestCase(TestCase):
                  'target_name': 'test_variable_name',
                  'target_description': 'This is a test variable.',
                  'encoded_values': '1: blue\r\n2: red\r\n3: yellow',
-                 'type': HarmonizationRecipe.OTHER,
                  'measurement_unit': 'kilograms',
                  }
         # Usually form.user is added by a mixin on the View, but have to add it manually here.
@@ -344,7 +377,6 @@ class HarmonizationRecipeFormTestCase(TestCase):
         input = {'name': 'Harmonization of this specific trait here.',
                  'target_name': 'test_variable_name',
                  'target_description': 'This is a test variable.',
-                 'type': HarmonizationRecipe.OTHER,
                  'measurement_unit': 'kilograms',
                  }
         # Usually form.user is added by a mixin on the View, but have to add it manually here.
@@ -359,7 +391,6 @@ class HarmonizationRecipeFormTestCase(TestCase):
         input = {'name': 'Harmonization of this specific trait here.',
                  'units': [str(u.pk) for u in unit_recipes],
                  'target_description': 'This is a test variable.',
-                 'type': HarmonizationRecipe.OTHER,
                  'measurement_unit': 'kilograms',
                  }
         # Usually form.user is added by a mixin on the View, but have to add it manually here.
@@ -374,27 +405,11 @@ class HarmonizationRecipeFormTestCase(TestCase):
         input = {'name': 'Harmonization of this specific trait here.',
                  'units': [str(u.pk) for u in unit_recipes],
                  'target_name': 'test_variable_name',
-                 'type': HarmonizationRecipe.OTHER,
                  'measurement_unit': 'kilograms',
                  }
         # Usually form.user is added by a mixin on the View, but have to add it manually here.
         form = HarmonizationRecipeForm(input, user=user)
         self.assertTrue(form.has_error('target_description'))
-        self.assertFalse(form.is_valid())
-
-    def test_form_with_missing_type_is_invalid(self):
-        """Test that the HarmonizationRecipeForm is invalid if the type field is not submitted."""
-        user = UserFactory.create()
-        unit_recipes = UnitRecipeFactory.create_batch(5, creator=user)
-        input = {'name': 'Harmonization of this specific trait here.',
-                 'units': [str(u.pk) for u in unit_recipes],
-                 'target_name': 'test_variable_name',
-                 'target_description': 'This is a test variable.',
-                 'measurement_unit': 'kilograms',
-                 }
-        # Usually form.user is added by a mixin on the View, but have to add it manually here.
-        form = HarmonizationRecipeForm(input, user=user)
-        self.assertTrue(form.has_error('type'))
         self.assertFalse(form.is_valid())
     
     def test_form_with_missing_measurement_unit_is_invalid(self):
@@ -405,7 +420,6 @@ class HarmonizationRecipeFormTestCase(TestCase):
                  'units': [str(u.pk) for u in unit_recipes],
                  'target_name': 'test_variable_name',
                  'target_description': 'This is a test variable.',
-                 'type': HarmonizationRecipe.OTHER,
                  }
         # Usually form.user is added by a mixin on the View, but have to add it manually here.
         form = HarmonizationRecipeForm(input, user=user)
@@ -422,7 +436,6 @@ class HarmonizationRecipeFormTestCase(TestCase):
                  'target_name': 'test_variable_name',
                  'target_description': 'This is a test variable.',
                  'encoded_values': '1: blue\r\n2: red\r\n3: yellow',
-                 'type': HarmonizationRecipe.OTHER,
                  'measurement_unit': 'kilograms',
                  }
         # Usually form.user is added by a mixin on the View, but have to add it manually here.
@@ -439,7 +452,6 @@ class HarmonizationRecipeFormTestCase(TestCase):
                  'target_name': 'test_variable_name',
                  'target_description': 'This is a test variable.',
                  'encoded_values': '1:blue\r\n2: red\r\n3: yellow',
-                 'type': HarmonizationRecipe.OTHER,
                  'measurement_unit': 'kilograms',
                  }
         # Usually form.user is added by a mixin on the View, but have to add it manually here.
@@ -456,30 +468,12 @@ class HarmonizationRecipeFormTestCase(TestCase):
                  'target_name': 'test_variable_name',
                  'target_description': 'This is a test variable.',
                  'encoded_values': 'non smoker: this person is a non-smoker\r\n2: red\r\n3: yellow',
-                 'type': HarmonizationRecipe.OTHER,
                  'measurement_unit': 'kilograms',
                  }
         # Usually form.user is added by a mixin on the View, but have to add it manually here.
         form = HarmonizationRecipeForm(input, user=user)
         self.assertTrue(form.is_valid())
 
-    def test_form_with_bad_type_value_is_invalid(self):
-        """Test that the HarmonizationRecipeForm is invalid when the input type value is invalid."""
-        user = UserFactory.create()
-        unit_recipes = UnitRecipeFactory.create_batch(5, creator=user)
-        input = {'name': 'Harmonization of this specific trait here.',
-                 'units': [str(u.pk) for u in unit_recipes],
-                 'target_name': 'test_variable_name',
-                 'target_description': 'This is a test variable.',
-                 'encoded_values': '1: blue\r\n2: red\r\n3: yellow',
-                 'type': 'not_a_type',
-                 'measurement_unit': 'kilograms',
-                 }
-        # Usually form.user is added by a mixin on the View, but have to add it manually here.
-        form = HarmonizationRecipeForm(input, user=user)
-        self.assertTrue(form.has_error('type'))
-        self.assertFalse(form.is_valid())
-        
     def test_form_with_spaces_in_target_name_is_invalid(self):
         """Test that the HarmonizationRecipeForm is invalid when target_name contains spaces."""
         user = UserFactory.create()
@@ -489,7 +483,6 @@ class HarmonizationRecipeFormTestCase(TestCase):
                  'target_name': 'Bad Variable Name',
                  'target_description': 'This is a test variable.',
                  'encoded_values': '1: blue\r\n2: red\r\n3: yellow',
-                 'type': HarmonizationRecipe.OTHER,
                  'measurement_unit': 'kilograms',
                  }
         # Usually form.user is added by a mixin on the View, but have to add it manually here.
@@ -506,7 +499,6 @@ class HarmonizationRecipeFormTestCase(TestCase):
                  'target_name': 'Bad Variable Name @#!$',
                  'target_description': 'This is a test variable.',
                  'encoded_values': '1: blue\r\n2: red\r\n3: yellow',
-                 'type': HarmonizationRecipe.OTHER,
                  'measurement_unit': 'kilograms',
                  }
         # Usually form.user is added by a mixin on the View, but have to add it manually here.
@@ -523,7 +515,6 @@ class HarmonizationRecipeFormTestCase(TestCase):
         input = {'name': 'Harmonization of this specific trait here.',
                  'target_name': 'test_variable_name',
                  'target_description': 'This is a test variable.',
-                 'type': HarmonizationRecipe.OTHER,
                  'measurement_unit': 'kilograms',
                  'units': [str(u.pk) for u in user_units + user2_units],
                  }
