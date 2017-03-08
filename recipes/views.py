@@ -133,22 +133,6 @@ class UpdateHarmonizationRecipe(LoginRequiredMixin, OwnerQuerysetMixin, UserForm
         return formattable_valid_message.format(HarmonizationRecipe._meta.verbose_name.title(), self.object.name, 'save')
 
 
-class UnitRecipeIDAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
-    """View for returning querysets that allow auto-completing UnitRecipe-based form fields.
-    
-    Used with django-autocomplete-light package.
-
-    LoginRequiredMixin - requires user to be logged in to access this view
-    """    
-    
-    def get_queryset(self):
-        """Return a queryset of UnitRecipes whose pk starts with the string from the GET request."""
-        retrieved = UnitRecipe.objects.filter(creator=self.request.user)
-        if self.q:
-            retrieved = retrieved.filter(id__regex=r'^{}'.format(self.q))
-        return retrieved
-
-
 class HarmonizationRecipeDetail(LoginRequiredMixin, OwnerQuerysetMixin, DetailView):
     """Detail view class for HarmonizationRecipe.
 
