@@ -31,6 +31,7 @@ class UnitRecipeViewsTestCase(ViewsAutoLoginTestCase):
                  'age_variables': [str(source_traits[0].pk), ] ,
                  'batch_variables': [str(source_traits[1].pk), ] ,
                  'phenotype_variables': [str(source_traits[2].pk), ] ,
+                 'type': UnitRecipe.UNIT_RECODE
                  }
         url = reverse('recipes:unit:create')
         response = self.client.post(url, input)
@@ -62,6 +63,7 @@ class UnitRecipeViewsTestCase(ViewsAutoLoginTestCase):
                  'age_variables': [str(v.pk) for v in new_unit.age_variables.all()],
                  'batch_variables': [str(v.pk) for v in new_unit.batch_variables.all()] ,
                  'phenotype_variables': [str(v.pk) for v in new_unit.phenotype_variables.all()],
+                 'type': UnitRecipe.OTHER,
                  }
         response = self.client.post(url, input)
         # self.assertRedirects(response, new_unit.get_absolute_url())
@@ -129,7 +131,6 @@ class HarmonizationRecipeViewsTestCase(ViewsAutoLoginTestCase):
                  'target_name': 'test_variable_name',
                  'target_description': 'This is a test variable.',
                  'encoded_values': '1: blue\r\n2: red\r\n3: yellow',
-                 'type': HarmonizationRecipe.UNIT_RECODE,
                  'measurement_unit': 'kilograms',
                  }
         url = reverse('recipes:harmonization:create')
@@ -158,7 +159,6 @@ class HarmonizationRecipeViewsTestCase(ViewsAutoLoginTestCase):
                  'target_name': new_harmonization.target_name,
                  'target_description': new_harmonization.target_description,
                  'encoded_values': new_harmonization.encoded_values,
-                 'type': new_harmonization.type,
                  'measurement_unit': new_harmonization.measurement_unit,
                  }
         response = self.client.post(url, input)

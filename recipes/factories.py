@@ -14,6 +14,7 @@ class UnitRecipeFactory(factory.DjangoModelFactory):
     instructions = factory.Faker('sentence')
     version = factory.Faker('random_digit')
     name = factory.Faker('sentence')
+    type = factory.Faker('random_element', elements=[el[0] for el in UnitRecipe.TYPE_CHOICES])
     # Make last_modifier the same as creator.
     last_modifier = factory.LazyAttribute(lambda obj: obj.creator)
     
@@ -62,7 +63,6 @@ class HarmonizationRecipeFactory(factory.DjangoModelFactory):
     name = factory.Faker('sentence')
     target_name = factory.Faker('word')
     target_description = factory.Faker('sentence')
-    type = factory.Faker('random_element', elements=[el[0] for el in HarmonizationRecipe.TYPE_CHOICES])
     measurement_unit = factory.Faker('rgb_css_color')
 
     class Meta:

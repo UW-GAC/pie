@@ -66,7 +66,7 @@ class UnitRecipeForm(UserKwargModelFormMixin, UnitRecipeCleanMixin, forms.ModelF
         
     class Meta:
         model = UnitRecipe
-        fields = ('name', 'age_variables', 'batch_variables', 'phenotype_variables', 'instructions', )
+        fields = ('name', 'age_variables', 'batch_variables', 'phenotype_variables', 'type', 'instructions', )
         widgets = {'age_variables': autocomplete.ModelSelect2Multiple(url='trait_browser:source:autocomplete'),
             'batch_variables': autocomplete.ModelSelect2Multiple(url='trait_browser:source:autocomplete'),
             'phenotype_variables': autocomplete.ModelSelect2Multiple(url='trait_browser:source:autocomplete'),
@@ -76,6 +76,7 @@ class UnitRecipeForm(UserKwargModelFormMixin, UnitRecipeCleanMixin, forms.ModelF
             'batch_variables': 'Enter the DCC id(s) of the variable(s) needed to derive a harmonized batch variable <strong>in this harmonization unit</strong>. (optional)',
             'phenotype_variables': 'Enter the DCC id(s) of the variable(s) needed to derive your target harmonized variable <strong>in this harmonization unit</strong>.',
             'instructions': 'Describe how to use the age variables to derive age, how to use the batch variables to derive a harmonized batch, and how to use the phenotype variables to derive your target harmonized variable <strong>in this harmonization unit</strong>.',
+            'type': 'The general type of harmonization required to produce your target variable.',
         }
 
     def clean(self):
@@ -99,7 +100,7 @@ class UnitRecipeAdminForm(UnitRecipeCleanMixin, forms.ModelForm):
     
     class Meta:
         model = UnitRecipe
-        fields = ('name', 'age_variables', 'batch_variables', 'phenotype_variables', 'instructions', )
+        fields = ('name', 'age_variables', 'batch_variables', 'phenotype_variables', 'type', 'instructions', )
         widgets = {'age_variables': autocomplete.ModelSelect2Multiple(url='trait_browser:source:autocomplete'),
             'batch_variables': autocomplete.ModelSelect2Multiple(url='trait_browser:source:autocomplete'),
             'phenotype_variables': autocomplete.ModelSelect2Multiple(url='trait_browser:source:autocomplete'),
@@ -109,6 +110,7 @@ class UnitRecipeAdminForm(UnitRecipeCleanMixin, forms.ModelForm):
             'batch_variables': 'Enter the DCC id(s) of the variable(s) needed to derive a harmonized batch variable <strong>in this harmonization unit</strong>. (optional)',
             'phenotype_variables': 'Enter the DCC id(s) of the variable(s) needed to derive your target harmonized variable <strong>in this harmonization unit</strong>.',
             'instructions': 'Describe how to use the age variables to derive age, how to use the batch variables to derive a harmonized batch, and how to use the phenotype variables to derive your target harmonized variable <strong>in this harmonization unit</strong>.',
+            'type': 'The general type of harmonization required to produce your target variable.',
         }
 
     def clean(self):
@@ -149,14 +151,13 @@ class HarmonizationRecipeForm(UserKwargModelFormMixin, HarmonizationRecipeCleanM
         
     class Meta:
         model = HarmonizationRecipe
-        fields = ('name', 'target_name', 'target_description', 'measurement_unit', 'type', 'units', 'encoded_values', )
+        fields = ('name', 'target_name', 'target_description', 'measurement_unit', 'units', 'encoded_values', )
         # widgets = {'units': autocomplete.ModelSelect2Multiple(url='recipes:unit_autocomplete'), }
         help_texts = {
             'name': 'A unique and informative name for your harmonization recipe.',
             'target_name': 'A short and informative name for your harmonized variable. Only letters, numbers, and underscores allowed.',
             'target_description': 'A detailed description of your harmonized variable. This description will appear in documentation and data dictionaries.',
             'measurement_unit': 'The units of measurement for your target harmonized variable.',
-            'type': 'The general type of harmonization required to produce your target variable.',
             'units': 'The harmonization units to include in your target harmonized variable.',
             'encoded_values': 'Values and descriptions for encoded values for your target harmonized variable. Define one encoded value per line, separating the value from its description with a semicolon and a single space.<br>Example:<br>1: blue<br>2: red<br>3: green',
         }
@@ -187,14 +188,13 @@ class HarmonizationRecipeAdminForm(HarmonizationRecipeCleanMixin, forms.ModelFor
     
     class Meta:
         model = HarmonizationRecipe
-        fields = ('name', 'target_name', 'target_description', 'measurement_unit', 'type', 'units', 'encoded_values', )
+        fields = ('name', 'target_name', 'target_description', 'measurement_unit', 'units', 'encoded_values', )
         # widgets = {'units': autocomplete.ModelSelect2Multiple(url='recipes:unit_autocomplete'), }
         help_texts = {
             'name': 'A unique and informative name for your harmonization recipe.',
             'target_name': 'A short and informative name for your harmonized variable. Only letters, numbers, and underscores allowed.',
             'target_description': 'A detailed description of your harmonized variable. This description will appear in documentation and data dictionaries.',
             'measurement_unit': 'The units of measurement for your target harmonized variable.',
-            'type': 'The general type of harmonization required to produce your target variable.',
             'units': 'The harmonization units to include in your target harmonized variable.',
             'encoded_values': 'Values and descriptions for encoded values for your target harmonized variable. Define one encoded value per line, separating the value from its description with a semicolon and a single space.<br>Example:<br>1: blue<br>2: red<br>3: green',
         }
