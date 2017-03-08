@@ -12,7 +12,6 @@ unit_patterns = [
     url(r'^new/$', views.CreateUnitRecipe.as_view(), name='create'),
     url(r'^edit/(?P<pk>\d+)/$', views.UpdateUnitRecipe.as_view(), name='edit'),
     url(r'^detail/(?P<pk>\d+)/$', views.UnitRecipeDetail.as_view(), name='detail'),    
-    url(r'^unit/autocomplete/$', views.UnitRecipeIDAutocomplete.as_view(), name='autocomplete'),
 ]
 
 harmonization_patterns = [
