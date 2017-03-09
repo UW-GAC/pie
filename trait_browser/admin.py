@@ -8,20 +8,7 @@ from django.contrib.sites.models import Site
 from .models import GlobalStudy, HarmonizedTrait, HarmonizedTraitEncodedValue, HarmonizedTraitSet, SourceDataset, SourceStudyVersion, SourceTrait, SourceTraitEncodedValue, Study, Subcohort
 
 
-class ReadOnlyAdmin(admin.ModelAdmin):
-    """SuperClass for non-editable admin models."""
-    
-    # There's not a good way to include these in unit-testing.
-    def has_add_permission(self, request, obj=None):
-        return False
-    def has_delete_permission(self, request, obj=None):
-        return False
-    
-    # Make these available to add to each model's admin.
-    list_display = ('created', 'modified', )
-
-
-class GlobalStudyAdmin(ReadOnlyAdmin):
+class GlobalStudyAdmin(admin.ModelAdmin):
     """Admin class for GlobalStudy objects."""
     
     # Make all fields read-only
@@ -31,7 +18,7 @@ class GlobalStudyAdmin(ReadOnlyAdmin):
         if not field.is_relation    # Exclude foreign keys from the results.
     )))
     # Set fields to display, filter, and search on.
-    list_display = ('i_id', 'i_name', 'get_linked_studies', ) + ReadOnlyAdmin.list_display
+    list_display = ('i_id', 'i_name', 'get_linked_studies', 'created', 'modified', )
     search_fields = ('i_id', 'i_name', )
     
     def get_linked_studies(self, global_study):
@@ -47,7 +34,7 @@ class GlobalStudyAdmin(ReadOnlyAdmin):
     get_linked_studies.short_description = 'Linked studies'
 
 
-class StudyAdmin(ReadOnlyAdmin):
+class StudyAdmin(admin.ModelAdmin):
     """Admin class for Study objects."""
     
     # Make all fields read-only
@@ -57,7 +44,7 @@ class StudyAdmin(ReadOnlyAdmin):
         if not field.is_relation    # Exclude foreign keys from the results.
     )))
     # Set fields to display, filter, and search on.
-    list_display = ('i_accession', 'i_study_name', 'get_global_study', ) + ReadOnlyAdmin.list_display
+    list_display = ('i_accession', 'i_study_name', 'get_global_study', 'created', 'modified', )
     list_filter = ('global_study__i_name', )
     search_fields = ('i_accession', 'i_study_name', )
 
@@ -67,7 +54,7 @@ class StudyAdmin(ReadOnlyAdmin):
     get_global_study.short_description = 'Global study name'
 
 
-class SourceStudyVersionAdmin(ReadOnlyAdmin):
+class SourceStudyVersionAdmin(admin.ModelAdmin):
     """Admin class for SourceStudyVersion objects."""
     
     # Make all fields read-only
@@ -77,12 +64,12 @@ class SourceStudyVersionAdmin(ReadOnlyAdmin):
         if not field.is_relation    # Exclude foreign keys from the results.
     )))
     # Set fields to display, filter, and search on.
-    list_display = ('i_id', 'study', 'i_version', 'i_is_prerelease', 'i_is_deprecated', 'phs_version_string', ) + ReadOnlyAdmin.list_display
+    list_display = ('i_id', 'study', 'i_version', 'i_is_prerelease', 'i_is_deprecated', 'phs_version_string', 'created', 'modified', )
     list_filter = ('study__i_accession', 'i_is_prerelease', 'i_is_deprecated', )
     search_fields = ('i_id', 'phs_version_string', )
     
 
-class SubcohortAdmin(ReadOnlyAdmin):
+class SubcohortAdmin(admin.ModelAdmin):
     """Admin class for Subcohort objects."""
     
     # Make all fields read-only
@@ -92,12 +79,12 @@ class SubcohortAdmin(ReadOnlyAdmin):
         if not field.is_relation    # Exclude foreign keys from the results.
     )))
     # Set fields to display, filter, and search on.
-    list_display = ('i_id', 'i_name', 'study', ) + ReadOnlyAdmin.list_display
+    list_display = ('i_id', 'i_name', 'study', 'created', 'modified', )
     list_filter = ('study__i_study_name', 'study__i_accession', )
     search_fields = ('i_id', 'i_name', )
 
 
-class SourceDatasetAdmin(ReadOnlyAdmin):
+class SourceDatasetAdmin(admin.ModelAdmin):
     """Admin class for SourceDataset objects."""
     
     # Make all fields read-only
@@ -109,14 +96,14 @@ class SourceDatasetAdmin(ReadOnlyAdmin):
     # Set fields to display, filter, and search on.
     list_display = ('i_id', 'i_version', 'i_dbgap_description', 'pht_version_string',
                     'i_visit_code', 'i_visit_number', 'i_is_medication_dataset',
-                    'i_dcc_description', )  + ReadOnlyAdmin.list_display
+                    'i_dcc_description', 'created', 'modified', ) 
     list_filter = ('source_study_version__study__i_accession',
                    'source_study_version__study__global_study__i_name',
                    'i_is_medication_dataset', 'i_is_subject_file', )
     search_fields = ('i_id', 'i_accession', 'pht_version_string', )
 
 
-class HarmonizedTraitSetAdmin(ReadOnlyAdmin):
+class HarmonizedTraitSetAdmin(admin.ModelAdmin):
     """Admin class for HarmonizedTraitSet objects."""
     
     # Make all fields read-only
@@ -126,11 +113,11 @@ class HarmonizedTraitSetAdmin(ReadOnlyAdmin):
         if not field.is_relation    # Exclude foreign keys from the results.
     )))
     # Set fields to display, filter, and search on.
-    list_display = ('i_id', 'i_trait_set_name', 'i_version', 'i_flavor' ) + ReadOnlyAdmin.list_display
+    list_display = ('i_id', 'i_trait_set_name', 'i_version', 'i_flavor' , 'created', 'modified', )
     search_fields = ('i_id', 'i_trait_set_name', )
 
 
-class SourceTraitAdmin(ReadOnlyAdmin):
+class SourceTraitAdmin(admin.ModelAdmin):
     """Admin class for SourceTrait objects."""
     
     # Make all fields read-only
@@ -141,14 +128,14 @@ class SourceTraitAdmin(ReadOnlyAdmin):
     )))
     # Set fields to display, filter, and search on.
     list_display = ('i_trait_id', 'i_trait_name', 'variable_accession', 'i_description',
-                    'i_visit_number', 'i_is_unique_key', 'i_is_visit_column') + ReadOnlyAdmin.list_display
+                    'i_visit_number', 'i_is_unique_key', 'i_is_visit_column', 'created', 'modified')
     list_filter = ('source_dataset__source_study_version__study__i_accession',
                    'source_dataset__source_study_version__study__global_study__i_name',
                    'i_is_unique_key', 'i_is_visit_column', )
     search_fields = ('i_trait_id', 'i_trait_name', 'i_description', 'variable_accession', )
 
 
-class HarmonizedTraitAdmin(ReadOnlyAdmin):
+class HarmonizedTraitAdmin(admin.ModelAdmin):
     """Admin class for HarmonizedTrait objects."""
     
     # Make all fields read-only
@@ -158,13 +145,13 @@ class HarmonizedTraitAdmin(ReadOnlyAdmin):
         # if not field.is_relation    # Exclude foreign keys from the results.
     )))
     # Set fields to display, filter, and search on.
-    list_display = ('i_trait_id', 'i_trait_name', 'i_description', ) + ReadOnlyAdmin.list_display
+    list_display = ('i_trait_id', 'i_trait_name', 'i_description', 'created', 'modified', )
     list_filter = ('i_is_unique_key', )
     search_fields = ('i_trait_id', 'i_trait_name', 'i_description',
                      'harmonized_trait_set__i_trait_set_name', )
 
 
-class SourceTraitEncodedValueAdmin(ReadOnlyAdmin):
+class SourceTraitEncodedValueAdmin(admin.ModelAdmin):
     """Admin class for SourceTraitEncodedValue objects."""
     
     # Make all fields read-only.
@@ -174,14 +161,14 @@ class SourceTraitEncodedValueAdmin(ReadOnlyAdmin):
         # if not field.is_relation    # Exclude foreign keys from the results.
     )))
     # Set fields to display, filter, and search on.
-    list_display = ('i_id', 'i_category', 'i_value', 'source_trait', ) + ReadOnlyAdmin.list_display
+    list_display = ('i_id', 'i_category', 'i_value', 'source_trait', 'created', 'modified', )
     # There are too many traits with encoded values to use trait as a filter.
     list_filter = ('source_trait__source_dataset__source_study_version__study__i_accession',
                    'source_trait__source_dataset__source_study_version__study__global_study__i_name', )
     search_fields = ('i_id', 'i_category', 'i_value', 'source_trait__i_trait_name')
 
 
-class HarmonizedTraitEncodedValueAdmin(ReadOnlyAdmin):
+class HarmonizedTraitEncodedValueAdmin(admin.ModelAdmin):
     """Admin class for HarmonizedTraitEncodedValue objects."""
     
     # Make all fields read-only.
@@ -191,7 +178,7 @@ class HarmonizedTraitEncodedValueAdmin(ReadOnlyAdmin):
         # if not field.is_relation    # Exclude foreign keys from the results.
     )))
     # Set fields to display, filter, and search on.
-    list_display = ('i_id', 'i_category', 'i_value', 'harmonized_trait', ) + ReadOnlyAdmin.list_display
+    list_display = ('i_id', 'i_category', 'i_value', 'harmonized_trait', 'created', 'modified', )
     search_fields = ('i_id', 'i_category', 'i_value', 'harmonized_trait__i_trait_name', )
 
 
