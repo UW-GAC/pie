@@ -10,13 +10,6 @@ from .models import GlobalStudy, HarmonizedTrait, HarmonizedTraitEncodedValue, H
 
 class GlobalStudyAdmin(admin.ModelAdmin):
     """Admin class for GlobalStudy objects."""
-    
-    # Make all fields read-only
-    readonly_fields = list(set(chain.from_iterable(
-        (field.name, field.attname) if hasattr(field, 'attname') else (field.name,)
-        for field in GlobalStudy._meta.get_fields()
-        if not field.is_relation    # Exclude foreign keys from the results.
-    )))
     # Set fields to display, filter, and search on.
     list_display = ('i_id', 'i_name', 'get_linked_studies', 'created', 'modified', )
     search_fields = ('i_id', 'i_name', )
@@ -36,13 +29,6 @@ class GlobalStudyAdmin(admin.ModelAdmin):
 
 class StudyAdmin(admin.ModelAdmin):
     """Admin class for Study objects."""
-    
-    # Make all fields read-only
-    readonly_fields = list(set(chain.from_iterable(
-        (field.name, field.attname) if hasattr(field, 'attname') else (field.name,)
-        for field in Study._meta.get_fields()
-        if not field.is_relation    # Exclude foreign keys from the results.
-    )))
     # Set fields to display, filter, and search on.
     list_display = ('i_accession', 'i_study_name', 'get_global_study', 'created', 'modified', )
     list_filter = ('global_study__i_name', )
@@ -56,13 +42,6 @@ class StudyAdmin(admin.ModelAdmin):
 
 class SourceStudyVersionAdmin(admin.ModelAdmin):
     """Admin class for SourceStudyVersion objects."""
-    
-    # Make all fields read-only
-    readonly_fields = list(set(chain.from_iterable(
-        (field.name, field.attname) if hasattr(field, 'attname') else (field.name,)
-        for field in SourceStudyVersion._meta.get_fields()
-        if not field.is_relation    # Exclude foreign keys from the results.
-    )))
     # Set fields to display, filter, and search on.
     list_display = ('i_id', 'study', 'i_version', 'i_is_prerelease', 'i_is_deprecated', 'phs_version_string', 'created', 'modified', )
     list_filter = ('study__i_accession', 'i_is_prerelease', 'i_is_deprecated', )
@@ -71,13 +50,6 @@ class SourceStudyVersionAdmin(admin.ModelAdmin):
 
 class SubcohortAdmin(admin.ModelAdmin):
     """Admin class for Subcohort objects."""
-    
-    # Make all fields read-only
-    readonly_fields = list(set(chain.from_iterable(
-        (field.name, field.attname) if hasattr(field, 'attname') else (field.name,)
-        for field in Subcohort._meta.get_fields()
-        if not field.is_relation    # Exclude foreign keys from the results.
-    )))
     # Set fields to display, filter, and search on.
     list_display = ('i_id', 'i_name', 'study', 'created', 'modified', )
     list_filter = ('study__i_study_name', 'study__i_accession', )
@@ -86,13 +58,6 @@ class SubcohortAdmin(admin.ModelAdmin):
 
 class SourceDatasetAdmin(admin.ModelAdmin):
     """Admin class for SourceDataset objects."""
-    
-    # Make all fields read-only
-    readonly_fields = list(set(chain.from_iterable(
-        (field.name, field.attname) if hasattr(field, 'attname') else (field.name,)
-        for field in SourceDataset._meta.get_fields()
-        if not field.is_relation    # Exclude foreign keys from the results.
-    )))
     # Set fields to display, filter, and search on.
     list_display = ('i_id', 'i_version', 'i_dbgap_description', 'pht_version_string',
                     'i_visit_code', 'i_visit_number', 'i_is_medication_dataset',
@@ -105,13 +70,6 @@ class SourceDatasetAdmin(admin.ModelAdmin):
 
 class HarmonizedTraitSetAdmin(admin.ModelAdmin):
     """Admin class for HarmonizedTraitSet objects."""
-    
-    # Make all fields read-only
-    readonly_fields = list(set(chain.from_iterable(
-        (field.name, field.attname) if hasattr(field, 'attname') else (field.name,)
-        for field in HarmonizedTraitSet._meta.get_fields()
-        if not field.is_relation    # Exclude foreign keys from the results.
-    )))
     # Set fields to display, filter, and search on.
     list_display = ('i_id', 'i_trait_set_name', 'i_version', 'i_flavor' , 'created', 'modified', )
     search_fields = ('i_id', 'i_trait_set_name', )
@@ -119,13 +77,6 @@ class HarmonizedTraitSetAdmin(admin.ModelAdmin):
 
 class SourceTraitAdmin(admin.ModelAdmin):
     """Admin class for SourceTrait objects."""
-    
-    # Make all fields read-only
-    readonly_fields = list(set(chain.from_iterable(
-        (field.name, field.attname) if hasattr(field, 'attname') else (field.name,)
-        for field in SourceTrait._meta.get_fields()
-        # if not field.is_relation    # Exclude foreign keys from the results.
-    )))
     # Set fields to display, filter, and search on.
     list_display = ('i_trait_id', 'i_trait_name', 'variable_accession', 'i_description',
                     'i_visit_number', 'i_is_unique_key', 'i_is_visit_column', 'created', 'modified')
@@ -137,13 +88,6 @@ class SourceTraitAdmin(admin.ModelAdmin):
 
 class HarmonizedTraitAdmin(admin.ModelAdmin):
     """Admin class for HarmonizedTrait objects."""
-    
-    # Make all fields read-only
-    readonly_fields = list(set(chain.from_iterable(
-        (field.name, field.attname) if hasattr(field, 'attname') else (field.name,)
-        for field in HarmonizedTrait._meta.get_fields()
-        # if not field.is_relation    # Exclude foreign keys from the results.
-    )))
     # Set fields to display, filter, and search on.
     list_display = ('i_trait_id', 'i_trait_name', 'i_description', 'created', 'modified', )
     list_filter = ('i_is_unique_key', )
@@ -153,13 +97,6 @@ class HarmonizedTraitAdmin(admin.ModelAdmin):
 
 class SourceTraitEncodedValueAdmin(admin.ModelAdmin):
     """Admin class for SourceTraitEncodedValue objects."""
-    
-    # Make all fields read-only.
-    readonly_fields = list(set(chain.from_iterable(
-        (field.name, field.attname) if hasattr(field, 'attname') else (field.name,)
-        for field in SourceTraitEncodedValue._meta.get_fields()
-        # if not field.is_relation    # Exclude foreign keys from the results.
-    )))
     # Set fields to display, filter, and search on.
     list_display = ('i_id', 'i_category', 'i_value', 'source_trait', 'created', 'modified', )
     # There are too many traits with encoded values to use trait as a filter.
@@ -170,13 +107,6 @@ class SourceTraitEncodedValueAdmin(admin.ModelAdmin):
 
 class HarmonizedTraitEncodedValueAdmin(admin.ModelAdmin):
     """Admin class for HarmonizedTraitEncodedValue objects."""
-    
-    # Make all fields read-only.
-    readonly_fields = list(set(chain.from_iterable(
-        (field.name, field.attname) if hasattr(field, 'attname') else (field.name,)
-        for field in HarmonizedTraitEncodedValue._meta.get_fields()
-        # if not field.is_relation    # Exclude foreign keys from the results.
-    )))
     # Set fields to display, filter, and search on.
     list_display = ('i_id', 'i_category', 'i_value', 'harmonized_trait', 'created', 'modified', )
     search_fields = ('i_id', 'i_category', 'i_value', 'harmonized_trait__i_trait_name', )
