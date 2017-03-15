@@ -16,7 +16,6 @@ from core.models import TimeStampedModel
 class SourceDBTimeStampedModel(TimeStampedModel):
     """Superclass for models pulled from the source db, with i_date_added and i_date_changed fields.
     """
-    
     i_date_added = models.DateTimeField()
     i_date_changed = models.DateTimeField()
 
@@ -32,12 +31,7 @@ class GlobalStudy(SourceDBTimeStampedModel):
     Global study connects data that are from the same parent study, but may be spread across
     parent and child accessions. Use GlobalStudy for all of the queries you think you might
     want to use Study for.
-    
-    Fields:
-        i_id
-        i_name
     """
-
     i_id = models.PositiveIntegerField('global study id', primary_key=True, db_column='study_id')
     i_name = models.CharField('global study name', max_length=200)
 
@@ -51,15 +45,7 @@ class GlobalStudy(SourceDBTimeStampedModel):
 
 class Study(SourceDBTimeStampedModel):
     """Model for dbGaP study accessions.
-    
-    Fields:
-        i_accession
-        i_study_name
-        global_study
-        phs
-        dbgap_latest_version_link
     """
-    
     global_study = models.ForeignKey(GlobalStudy)
     # Adds .global_study (object) and .global_study_id (pk).
     i_accession = models.PositiveIntegerField('study accession', primary_key=True, db_column='i_accession')
@@ -114,18 +100,7 @@ class Study(SourceDBTimeStampedModel):
 
 class SourceStudyVersion(SourceDBTimeStampedModel):
     """Model for versions of each dbGaP study accession.
-    
-    Fields:
-        i_id
-        study
-        i_version
-        i_participant_set
-        i_dbgap_date
-        i_prerelease
-        i_deprecated
-        phs_version_string
     """
-    
     study = models.ForeignKey(Study)
     # Adds .study (object) and .study_id (pk).
     i_id = models.PositiveIntegerField('source study version id', primary_key=True, db_column='i_id')
@@ -156,13 +131,7 @@ class SourceStudyVersion(SourceDBTimeStampedModel):
 
 class Subcohort(SourceDBTimeStampedModel):
     """Model for subcohorts.
-    
-    Fields:
-        study
-        i_id
-        i_name
     """
-    
     study = models.ForeignKey(Study)
     # Adds .study (object) and .study_id (pk).
     i_id = models.PositiveIntegerField('id', primary_key=True, db_column='i_id')
@@ -177,22 +146,7 @@ class Subcohort(SourceDBTimeStampedModel):
 # ------------------------------------------------------------------------------
 class SourceDataset(SourceDBTimeStampedModel):
     """Model for dbGaP datasets from which SourceTraits are obtained.
-    
-    Fields:
-        i_id
-        study_version
-        i_accession
-        i_version
-        i_visit_code
-        i_visit_number
-        i_is_subject_file
-        i_study_subject_column
-        i_is_medication_dataset
-        i_dbgap_description
-        i_dcc_description
-        subcohorts
     """
-    
     source_study_version = models.ForeignKey(SourceStudyVersion)
     # Adds .source_study_version (object) and .source_study_version_id (pk).
     i_id = models.PositiveIntegerField('dataset id', primary_key=True, db_column='i_id')
@@ -230,15 +184,7 @@ class SourceDataset(SourceDBTimeStampedModel):
 class HarmonizedTraitSet(SourceDBTimeStampedModel):
     """Model for harmonized trait set from snuffles. Analagous to the SourceDataset
     for source traits.
-    
-    Fields:
-        i_id
-        i_trait_set_name
-        i_flavor
-        i_version
-        i_description
     """
-
     i_id = models.PositiveIntegerField('harmonized trait set id', primary_key=True, db_column='i_id')
     i_trait_set_name = models.CharField('trait set name', max_length=45)
     i_flavor = models.PositiveIntegerField('flavor')
@@ -259,13 +205,7 @@ class Trait(SourceDBTimeStampedModel):
     
     SourceTrait and HarmonizedTrait Models inherit from this Model, but the Trait
     model itself won't be used to create a db table.
-    
-    Fields:
-        i_trait_id
-        i_trait_name
-        i_description
     """
-    
     i_trait_id = models.PositiveIntegerField('phenotype id', primary_key=True, db_column='i_trait_id')
     i_trait_name = models.CharField('phenotype name', max_length=100)
     i_description = models.TextField('description')
@@ -280,25 +220,7 @@ class SourceTrait(Trait):
     """Model for 'raw' source variable metadata as received from dbGaP.
     
     Extends the Trait abstract model.
-    
-    Fields:
-        source_dataset
-        i_detected_type
-        i_dbgap_type
-        i_visit_number
-        i_dbgap_variable_accession
-        i_dbgap_variable_version
-        i_dbgap_comment
-        i_dbgap_unit
-        i_n_records
-        i_n_missing
-        study_accession
-        dataset_accession
-        variable_accession
-        dbgap_study_link
-        dbgap_variable_link
     """
-    
     source_dataset = models.ForeignKey(SourceDataset)
     # Adds .source_dataset (object) and .source_dataset_id (pk).
     i_detected_type = models.CharField('detected type', max_length=100, blank=True)
@@ -398,20 +320,12 @@ class SourceTrait(Trait):
         """Gets the absolute URL of the detail page for a given SourceTrait instance."""
         return reverse('trait_browser:source:detail', kwargs={'pk': self.pk})
 
+
 class HarmonizedTrait(Trait):
     """Model for traits harmonized by the DCC.
     
     Extends the Trait abstract superclass. 
-    
-    Fields:
-        harmonized_trait_set
-        i_data_type
-        i_unit
-        i_is_unique_key
-        component_source_traits
-        component_harmonized_traits
     """
-    
     harmonized_trait_set = models.ForeignKey(HarmonizedTraitSet)
     # Adds .harmonized_trait_set (object) and .harmonized_trait_set_id (pk).
     i_data_type = models.CharField('data type', max_length=45)
@@ -447,6 +361,7 @@ class HarmonizedTrait(Trait):
         """Gets the absolute URL of the detail page for a given HarmonizedTrait instance."""
         return reverse('trait_browser:harmonized:detail', kwargs={'pk': self.pk})
 
+
 # Encoded Value models.
 # ------------------------------------------------------------------------------
 class TraitEncodedValue(SourceDBTimeStampedModel):
@@ -454,12 +369,7 @@ class TraitEncodedValue(SourceDBTimeStampedModel):
     
     SourceEncodedValue and HarmonizedEncodedValue models inherit from this Model,
     but the EncodedValue model itself won't be used to create a db table.
-    
-    Fields:
-        i_category
-        i_value
     """
-    
     i_id = models.PositiveIntegerField('id', primary_key=True, db_column='i_id')
     i_category = models.CharField('category', max_length=45)
     i_value = models.CharField('value', max_length=1000)
@@ -472,11 +382,7 @@ class SourceTraitEncodedValue(TraitEncodedValue):
     """Model for encoded values from 'raw' dbGaP data, as received from dbGaP.
     
     Extends the TraitEncodedValue abstract superclass.
-    
-    Fields:
-        source_trait
     """
-    
     source_trait = models.ForeignKey(SourceTrait)
     # Adds .source_trait (object) and .source_trait_id (pk)
     
@@ -489,9 +395,6 @@ class HarmonizedTraitEncodedValue(TraitEncodedValue):
     """Model for encoded values from DCC harmonized traits.
     
     Extends the TraitEncodedValue superclass.
-    
-    Fields:
-    
     """
     harmonized_trait = models.ForeignKey(HarmonizedTrait)
     # Adds .harmonized_trait (object) and .harmonized_trait_id (pk).
