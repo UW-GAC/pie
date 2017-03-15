@@ -352,6 +352,13 @@ class DbFixersTestCase(TestCase):
         fixed_row = CMD._fix_null(row)
         self.assertDictEqual(row, fixed_row)
     
+    def test_fix_null_date_stays_none(self):
+        """Dict values with 'date' in the key name are left as None."""
+        row = {'date_column': None, 'other_column': None}
+        fixed_row = CMD._fix_null(row)
+        self.assertIsNone(fixed_row['date_column'])
+        self.assertIsNotNone(fixed_row['other_column'])
+    
     def test_fix_timezone_result_is_aware(self):
         """The resulting datetimes from _fix_timezone are in fact timezone aware."""
         row = fake_row_dict()

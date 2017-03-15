@@ -128,10 +128,11 @@ class Command(BaseCommand):
         
         Returns:
             a dictionary with identical values to row_dict, where all Nones have
-            been replaced with empty strings
+            been replaced with empty strings, unless the key for the None value contains
+            the word 'date', since null datetimes need to be None still
         """
         fixed_row = {
-            (k): ('' if row_dict[k] is None
+            (k): ('' if row_dict[k] is None and 'date' not in k
             else row_dict[k]) for k in row_dict
         }
         return fixed_row
