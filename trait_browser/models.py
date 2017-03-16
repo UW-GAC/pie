@@ -132,14 +132,13 @@ class SourceStudyVersion(SourceDBTimeStampedModel):
 class Subcohort(SourceDBTimeStampedModel):
     """Model for subcohorts.
     """
-    study = models.ForeignKey(Study)
-    # Adds .study (object) and .study_id (pk).
+    global_study = models.ForeignKey(GlobalStudy)
     i_id = models.PositiveIntegerField('id', primary_key=True, db_column='i_id')
     i_name = models.CharField('name', max_length=45)
 
     def __str__(self):
         """Pretty printing."""
-        return '{} subcohort of study {}, id={}'.format(self.i_name, self.study, self.i_id)
+        return '{} subcohort of global study {}, id={}'.format(self.i_name, self.global_study, self.i_id)
 
 
 # Dataset related models.
@@ -157,6 +156,8 @@ class SourceDataset(SourceDBTimeStampedModel):
     i_is_subject_file = models.BooleanField('is subject file?')
     i_study_subject_column = models.CharField('study subject column name', max_length=45, blank=True)
     i_is_medication_dataset = models.NullBooleanField('is medication dataset?', blank=True)
+    i_dbgap_date_created = models.DateTimeField('dbGaP date created', null=True, blank=True)
+    i_date_visit_reviewed = models.DateTimeField('date visit was reviewed', null=True, blank=True)
     # These TextFields use longtext in MySQL rather than just text, like in snuffles.
     i_dbgap_description = models.TextField('dbGaP description', blank=True) 
     i_dcc_description = models.TextField('DCC description', blank=True)
@@ -190,13 +191,29 @@ class HarmonizedTraitSet(SourceDBTimeStampedModel):
     i_flavor = models.PositiveIntegerField('flavor')
     i_version = models.PositiveIntegerField('version')
     i_description = models.CharField('description', max_length=1000)
-    # This is a quoted string because the referenced model hasn't been defined yet.
-    component_source_traits = models.ManyToManyField('SourceTrait')
-    component_harmonized_traits = models.ManyToManyField('HarmonizedTrait')
+    i_harmonized_by = models.CharField('harmonized by', max_length=45)
+    i_git_commit_hash = models.CharField('git commit hash', max_length=40)
+    i_is_longitudinal = models.BooleanField('is longitudinal?')
 
     def __str__(self):
         """Pretty printing."""
         return 'harmonized trait set {}, id={}'.format(self.i_trait_set_name, self.i_id)
+
+
+class HarmonizationUnit(SourceDBTimeStampedModel):
+    """Model for harmonization units from source db."""
+    harmonized_trait_set = models.ForeignKey(HarmonizedTraitSet)
+    i_id = models.PositiveIntegerField('harmonization unit id', primary_key=True, db_column='i_id')
+    i_tag = models.CharField('tag', max_length=100)
+    component_source_traits = models.ManyToManyField('SourceTrait', related_name='source_component_of_harmonization_unit')
+    component_harmonized_traits = models.ManyToManyField('HarmonizedTrait', related_name='harmonized_component_of_harmonization_unit')
+    component_batch_traits = models.ManyToManyField('SourceTrait', related_name='batch_component_of_harmonization_unit')
+    component_age_traits = models.ManyToManyField('SourceTrait', related_name='age_component_of_harmonization_unit')
+    
+    def __str___(self):
+        """Pretty printing."""
+        return 'Harmonization unit - id {} tagged {}'.format(self.i_id, self.tag)
+
 
 # Trait models.
 # ------------------------------------------------------------------------------
@@ -228,6 +245,7 @@ class SourceTrait(Trait):
     i_visit_number = models.CharField('visit number', max_length=45, blank=True)
     i_dbgap_variable_accession = models.PositiveIntegerField('dbGaP variable accession')
     i_dbgap_variable_version = models.PositiveIntegerField('dbGaP variable version')
+    i_dbgap_description = models.TextField('dbGaP description')
     i_dbgap_comment = models.TextField('dbGaP comment', blank=True)
     i_dbgap_unit = models.CharField('dbGaP unit', max_length=45, blank=True)
     i_n_records = models.PositiveIntegerField('n records', null=True, blank=True)
@@ -330,10 +348,12 @@ class HarmonizedTrait(Trait):
     # Adds .harmonized_trait_set (object) and .harmonized_trait_set_id (pk).
     i_data_type = models.CharField('data type', max_length=45)
     i_unit = models.CharField('unit', max_length=100, blank=True)
+    i_has_batch = models.BooleanField('has batch?')
     i_is_unique_key = models.BooleanField('is unique key?')
-    # component_source_traits = models.ManyToManyField(SourceTrait)
-    # # This is a quoted string because the referenced model hasn't been defined yet.
-    # component_harmonized_traits = models.ManyToManyField('HarmonizedTrait')
+    component_source_traits = models.ManyToManyField('SourceTrait', related_name='source_component_of_harmonized_trait')
+    component_harmonized_traits = models.ManyToManyField('HarmonizedTrait', related_name='harmonized_component_of_harmonized_trait')
+    component_batch_traits = models.ManyToManyField('SourceTrait', related_name='batch_component_of_harmonized_trait')
+    harmonization_units = models.ManyToManyField(HarmonizationUnit)
     trait_flavor_name = models.CharField(max_length=150)
 
     def __str__(self):

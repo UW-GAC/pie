@@ -2,8 +2,8 @@
 
 from django.test import TestCase
 
-from .factories import GlobalStudyFactory, HarmonizedTraitFactory, HarmonizedTraitEncodedValueFactory, HarmonizedTraitSetFactory, SourceDatasetFactory, SourceStudyVersionFactory, SourceTraitFactory, SourceTraitEncodedValueFactory, StudyFactory, SubcohortFactory
-from .models import GlobalStudy, HarmonizedTrait, HarmonizedTraitEncodedValue, HarmonizedTraitSet, SourceDataset, SourceStudyVersion, SourceTrait, SourceTraitEncodedValue, Study, Subcohort
+from .factories import GlobalStudyFactory, HarmonizedTraitFactory, HarmonizedTraitEncodedValueFactory, HarmonizedTraitSetFactory, HarmonizationUnitFactory, SourceDatasetFactory, SourceStudyVersionFactory, SourceTraitFactory, SourceTraitEncodedValueFactory, StudyFactory, SubcohortFactory
+from .models import GlobalStudy, HarmonizedTrait, HarmonizedTraitEncodedValue, HarmonizedTraitSet, HarmonizationUnit, SourceDataset, SourceStudyVersion, SourceTrait, SourceTraitEncodedValue, Study, Subcohort
 
 
 class GlobalStudyFactoryTestCase(TestCase):
@@ -132,7 +132,7 @@ class SourceDatasetFactoryTestCase(TestCase):
 
     def test_source_dataset_factory_create_with_subcohorts(self):
         """Test that passing subcohorts to SourceDatasetFactory creates a SourceDataset with non-empty subcohorts"""
-        subcohorts = SubcohortFactory.create_batch(5, study__i_accession=5)
+        subcohorts = SubcohortFactory.create_batch(5, global_study__i_id=5)
         source_dataset = SourceDatasetFactory.create(subcohorts=subcohorts)
         self.assertEqual(subcohorts, list(source_dataset.subcohorts.all()))
 
@@ -161,25 +161,58 @@ class HarmonizedTraitSetFactoryTestCase(TestCase):
         for one in harmonized_trait_sets:
             self.assertIsInstance(one, HarmonizedTraitSet)
 
+
+class HarmonizationUnitFactoryTestCase(TestCase):
+
+    def test_build(self):
+        """Test that a HarmonizationUnit instance is returned by HarmonizationUnitFactory.build()"""
+        harmonization_unit = HarmonizationUnitFactory.build()
+        self.assertIsInstance(harmonization_unit, HarmonizationUnit)
+        
+    def test_create(self):
+        """Test that a HarmonizationUnit instance is returned by HarmonizationUnitFactory.create()"""
+        harmonization_unit = HarmonizationUnitFactory.create()
+        self.assertIsInstance(harmonization_unit, HarmonizationUnit)
+
+    def test_build_batch(self):
+        """Test that a HarmonizationUnit instance is returned by HarmonizationUnitFactory.build_batch(5)"""
+        harmonization_units = HarmonizationUnitFactory.build_batch(5)
+        for one in harmonization_units:
+            self.assertIsInstance(one, HarmonizationUnit)
+        
+    def test_create_batch(self):
+        """Test that a HarmonizationUnit instance is returned by HarmonizationUnitFactory.create_batch(5)"""
+        harmonization_units = HarmonizationUnitFactory.create_batch(5)
+        for one in harmonization_units:
+            self.assertIsInstance(one, HarmonizationUnit)
+
     def test_create_with_component_source_traits(self):
-        """Test that passing component_source_traits to HarmonizedTraitSetSetFactory creates a HarmonizedTraitSetSet with non-empty component_source_traits"""
+        """Test that passing component_source_traits to HarmonizationUnitSetFactory creates a HarmonizationUnitSet with non-empty component_source_traits"""
         source_traits = SourceTraitFactory.create_batch(10)
-        harmonized_trait_set = HarmonizedTraitSetFactory.create(component_source_traits=source_traits)
-        self.assertEqual(source_traits, list(harmonized_trait_set.component_source_traits.all()))
-
+        harmonization_unit = HarmonizationUnitFactory.create(component_source_traits=source_traits)
+        self.assertEqual(source_traits, list(harmonization_unit.component_source_traits.all()))
+    
     def test_create_with_component_harmonized_traits(self):
-        """Test that passing component_harmonized_traits to HarmonizedTraitSetSetFactory creates a HarmonizedTraitSetSet with non-empty component_harmonized_traits"""
+        """Test that passing component_harmonized_traits to HarmonizationUnitSetFactory creates a HarmonizationUnitSet with non-empty component_harmonized_traits"""
         harmonized_traits = HarmonizedTraitFactory.create_batch(10)
-        harmonized_trait_set = HarmonizedTraitSetFactory.create(component_harmonized_traits=harmonized_traits)
-        self.assertEqual(harmonized_traits, list(harmonized_trait_set.component_harmonized_traits.all()))
-
-    def test_create_with_component_source_and_harmonized_traits(self):
-        """Test that passing component_source_traits to HarmonizedTraitSetSetFactory creates a HarmonizedTraitSetSet with non-empty component_source_traits and component_harmonized_traits"""
+        harmonization_unit = HarmonizationUnitFactory.create(component_harmonized_traits=harmonized_traits)
+        self.assertEqual(harmonized_traits, list(harmonization_unit.component_harmonized_traits.all()))
+    
+    def test_create_with_component_batch_traits(self):
+        """Test that passing component_batch_traits to HarmonizationUnitSetFactory creates a HarmonizationUnitSet with non-empty component_batch_traits"""
         source_traits = SourceTraitFactory.create_batch(10)
+        harmonization_unit = HarmonizationUnitFactory.create(component_batch_traits=source_traits)
+        self.assertEqual(source_traits, list(harmonization_unit.component_batch_traits.all()))
+
+    def test_create_with_component_source_and_harmonized_and_batch_traits(self):
+        """Test that passing component_source_traits to HarmonizationUnitSetFactory creates a HarmonizationUnitSet with non-empty component_source_traits and component_harmonized_traits"""
+        source_traits = SourceTraitFactory.create_batch(5)
+        batch_traits = SourceTraitFactory.create_batch(5)
         harmonized_traits = HarmonizedTraitFactory.create_batch(10)
-        harmonized_trait_set = HarmonizedTraitSetFactory.create(component_source_traits=source_traits, component_harmonized_traits=harmonized_traits)
-        self.assertEqual(source_traits, list(harmonized_trait_set.component_source_traits.all()))
-        self.assertEqual(harmonized_traits, list(harmonized_trait_set.component_harmonized_traits.all()))
+        harmonization_unit = HarmonizationUnitFactory.create(component_source_traits=source_traits, component_batch_traits=batch_traits, component_harmonized_traits=harmonized_traits)
+        self.assertEqual(source_traits, list(harmonization_unit.component_source_traits.all()))
+        self.assertEqual(harmonized_traits, list(harmonization_unit.component_harmonized_traits.all()))
+        self.assertEqual(batch_traits, list(harmonization_unit.component_batch_traits.all()))
 
 
 class SourceTraitFactoryTestCase(TestCase):
@@ -231,25 +264,39 @@ class HarmonizedTraitFactoryTestCase(TestCase):
         for one in harmonized_traits:
             self.assertIsInstance(one, HarmonizedTrait)
 
-    # def test_create_with_component_source_traits(self):
-    #     """Test that passing component_source_traits to HarmonizedTraitSetFactory creates a HarmonizedTraitSet with non-empty component_source_traits"""
-    #     source_traits = SourceTraitFactory.create_batch(10)
-    #     harmonized_trait = HarmonizedTraitFactory.create(component_source_traits=source_traits)
-    #     self.assertEqual(source_traits, list(harmonized_trait.component_source_traits.all()))
-    # 
-    # def test_create_with_component_harmonized_traits(self):
-    #     """Test that passing component_harmonized_traits to HarmonizedTraitSetFactory creates a HarmonizedTraitSet with non-empty component_harmonized_traits"""
-    #     harmonized_traits = HarmonizedTraitFactory.create_batch(10)
-    #     harmonized_trait = HarmonizedTraitFactory.create(component_harmonized_traits=harmonized_traits)
-    #     self.assertEqual(harmonized_traits, list(harmonized_trait.component_harmonized_traits.all()))
-    # 
-    # def test_create_with_component_source_and_harmonized_traits(self):
-    #     """Test that passing component_source_traits to HarmonizedTraitSetFactory creates a HarmonizedTraitSet with non-empty component_source_traits and component_harmonized_traits"""
-    #     source_traits = SourceTraitFactory.create_batch(10)
-    #     harmonized_traits = HarmonizedTraitFactory.create_batch(10)
-    #     harmonized_trait = HarmonizedTraitFactory.create(component_source_traits=source_traits, component_harmonized_traits=harmonized_traits)
-    #     self.assertEqual(source_traits, list(harmonized_trait.component_source_traits.all()))
-    #     self.assertEqual(harmonized_traits, list(harmonized_trait.component_harmonized_traits.all()))
+    def test_create_with_harmonization_units(self):
+        """Test that passing harmonization_units to HarmonizedTraitSetFactory creates a HarmonizedTraitSet with non-empty harmonization_units"""
+        harmonization_units = HarmonizationUnitFactory.create_batch(10)
+        harmonized_trait = HarmonizedTraitFactory.create(harmonization_units=harmonization_units)
+        self.assertEqual(harmonization_units, list(harmonized_trait.harmonization_units.all()))
+
+    def test_create_with_component_source_traits(self):
+        """Test that passing component_source_traits to HarmonizedTraitSetFactory creates a HarmonizedTraitSet with non-empty component_source_traits"""
+        source_traits = SourceTraitFactory.create_batch(10)
+        harmonized_trait = HarmonizedTraitFactory.create(component_source_traits=source_traits)
+        self.assertEqual(source_traits, list(harmonized_trait.component_source_traits.all()))
+    
+    def test_create_with_component_harmonized_traits(self):
+        """Test that passing component_harmonized_traits to HarmonizedTraitSetFactory creates a HarmonizedTraitSet with non-empty component_harmonized_traits"""
+        harmonized_traits = HarmonizedTraitFactory.create_batch(10)
+        harmonized_trait = HarmonizedTraitFactory.create(component_harmonized_traits=harmonized_traits)
+        self.assertEqual(harmonized_traits, list(harmonized_trait.component_harmonized_traits.all()))
+    
+    def test_create_with_component_batch_traits(self):
+        """Test that passing component_batch_traits to HarmonizedTraitSetFactory creates a HarmonizedTraitSet with non-empty component_batch_traits"""
+        harmonized_traits = HarmonizedTraitFactory.create_batch(10)
+        harmonized_trait = HarmonizedTraitFactory.create(component_harmonized_traits=harmonized_traits)
+        self.assertEqual(harmonized_traits, list(harmonized_trait.component_harmonized_traits.all()))
+
+    def test_create_with_component_source_and_harmonized_and_batch_traits(self):
+        """Test that passing component_source_traits to HarmonizedTraitSetFactory creates a HarmonizedTraitSet with non-empty component_source_traits and component_harmonized_traits"""
+        source_traits = SourceTraitFactory.create_batch(5)
+        batch_traits = SourceTraitFactory.create_batch(5)
+        harmonized_traits = HarmonizedTraitFactory.create_batch(10)
+        harmonized_trait = HarmonizedTraitFactory.create(component_source_traits=source_traits, component_batch_traits=batch_traits, component_harmonized_traits=harmonized_traits)
+        self.assertEqual(source_traits, list(harmonized_trait.component_source_traits.all()))
+        self.assertEqual(harmonized_traits, list(harmonized_trait.component_harmonized_traits.all()))
+        self.assertEqual(batch_traits, list(harmonized_trait.component_batch_traits.all()))
 
 
 class SourceTraitEncodedValueFactoryTestCase(TestCase):

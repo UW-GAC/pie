@@ -254,8 +254,7 @@ class VisitTestCase(VisitTestDataTestCase):
         self.cursor.execute(subcohort_query)
         row_dict = self.cursor.fetchone()
         # Have to make global study and study first.
-        global_study = GlobalStudyFactory.create(i_id=1)
-        study = StudyFactory.create(i_accession=row_dict['study_accession'], global_study=global_study)
+        global_study = GlobalStudyFactory.create(i_id=row_dict['global_study_id'])
         #
         subcohort_args = CMD._make_subcohort_args(CMD._fix_row(row_dict))
         subcohort = Subcohort(**subcohort_args)
@@ -739,7 +738,7 @@ class M2MHelperTestCase(TestCase):
     def test_break_m2m_link(self):
         """Removes a child model from its parent M2M field."""
         sd = SourceDatasetFactory.create()
-        sc = SubcohortFactory.create(study=sd.source_study_version.study)
+        sc = SubcohortFactory.create(global_study=sd.source_study_version.study.global_study)
         sd.subcohorts.add(sc)
         CMD._break_m2m_link(SourceDataset, sd.pk, Subcohort, sc.pk, 'subcohorts')
         self.assertNotIn(sc, sd.subcohorts.all())
@@ -747,7 +746,7 @@ class M2MHelperTestCase(TestCase):
     def test_make_m2m_link(self):
         """Adds a child model to its parent M2M field."""
         sd = SourceDatasetFactory.create()
-        sc = SubcohortFactory.create(study=sd.source_study_version.study)
+        sc = SubcohortFactory.create(global_study=sd.source_study_version.study.global_study)
         CMD._make_m2m_link(SourceDataset, sd.pk, Subcohort, sc.pk, 'subcohorts')
         self.assertIn(sc, sd.subcohorts.all())
         
@@ -931,7 +930,7 @@ class UpdateModelsTestCase(VisitTestDataTestCase):
         sc = Subcohort.objects.get(pk=1)
         # Find a dataset which this subcohort isn't linked to already.
         linked_datasets = sc.sourcedataset_set.all()
-        possible_datasets = SourceDataset.objects.filter(source_study_version__study = sc.study)
+        possible_datasets = SourceDataset.objects.filter(source_study_version__study__global_study = sc.global_study)
         unlinked_datasets = set(possible_datasets) - set(linked_datasets)
         if len(unlinked_datasets) < 1:
             raise ValueError('The subcohort is already linked to all possible datasets.')
@@ -961,7 +960,7 @@ class UpdateModelsTestCase(VisitTestDataTestCase):
         sc = Subcohort.objects.get(pk=1)
         # Find a dataset which this subcohort is already linked to.
         linked_datasets = sc.sourcedataset_set.all()
-        possible_datasets = SourceDataset.objects.filter(source_study_version__study = sc.study)
+        possible_datasets = SourceDataset.objects.filter(source_study_version__study__global_study = sc.global_study)
         if len(linked_datasets) < 1:
             raise ValueError('The subcohort is not linked to any datasets.')
         dataset_to_unlink = linked_datasets[0]
@@ -1060,28 +1059,36 @@ class UpdateModelsTestCase(VisitTestDataTestCase):
         source_trait = SourceTrait.objects.get(pk=1)
         # Find a harmonized_trait which this source trait isn't linked to already
         for x in range(1, 100):
-            htrait_set = HarmonizedTraitSet.objects.get(pk=x)
-            if htrait_set not in source_trait.harmonizedtraitset_set.all():
+            htrait = HarmonizedTrait.objects.get(pk=x)
+            if htrait not in source_trait.source_component_of_harmonized_trait.all():
                 break
-        # Add source_trait as a component trait of htrait_set in the source db.
-        self.cursor.close()
-        self.source_db.close()
+        # Prep for altering the devel db.
         self.source_db = get_devel_db(permissions='full')
         self.cursor = self.source_db.cursor(buffered=True, dictionary=True)
-        # Have to add a harmonized function here first...
-        self.cursor.execute("INSERT INTO harmonized_function (function_definition) values ('return(dataset)');")
+        # Add source_trait as a component trait of htrait_set in the source db.
+        # Have to add a harmonized function and harmonization_unit here first...
+        add_hfunction_query = "INSERT INTO harmonized_function (function_definition, date_added) values ('return(dataset)', '{}')".format(timezone.now().strftime('%Y-%m-%d %H:%M:%S'))
+        self.cursor.execute(add_hfunction_query)
         self.source_db.commit()
-        add_component_trait_query = "INSERT INTO component_source_trait (harmonized_trait_set_id, harmonized_function_id, component_trait_id, date_added) VALUES ({}, 1, {}, '{}');".format(htrait_set.i_id, source_trait.i_trait_id, timezone.now().strftime('%Y-%m-%d %H:%M:%S'))
+        self.cursor.execute('SELECT LAST_INSERT_ID() AS last')
+        last_id = self.cursor.fetchone()['last']
+        add_hunit_query = "INSERT INTO harmonization_unit (function_id, harmonized_trait_set_id, tag, date_added) values ({}, {}, 'example unit tag', '{}')".format(last_id, htrait.harmonized_trait_set.i_id, timezone.now().strftime('%Y-%m-%d %H:%M:%S'))
+        self.cursor.execute(add_hunit_query)
+        self.source_db.commit()
+        self.cursor.execute('SELECT LAST_INSERT_ID() AS last')
+        last_id = self.cursor.fetchone()['last']
+        add_component_trait_query = "INSERT INTO component_source_trait (harmonized_trait_id, harmonization_unit_id, component_trait_id, date_added) VALUES ({}, {}, {}, '{}')".format(htrait.harmonized_trait_set.i_id, last_id, source_trait.i_trait_id, timezone.now().strftime('%Y-%m-%d %H:%M:%S'))
         self.cursor.execute(add_component_trait_query)
         self.source_db.commit()
+        # Close the db connection.
         self.cursor.close()
         self.source_db.close()
         # Now run the update commands.
         management.call_command('import_db', '--which_db=devel', '--update_only', '--verbosity=0', '--no_backup')
         # Check that the chosen subcohort is now linked to the dataset that was picked, in the Django db.
         source_trait.refresh_from_db()
-        htrait_set.refresh_from_db()
-        self.assertTrue(htrait_set in source_trait.harmonizedtraitset_set.all())
+        htrait.refresh_from_db()
+        self.assertTrue(htrait in source_trait.source_component_of_harmonized_trait.all())
 
 
 class ImportHelperTestCase(TestCase):
@@ -1342,7 +1349,7 @@ class ImportNoUpdateTestCase(VisitTestDataTestCase):
         sc = Subcohort.objects.get(pk=1)
         # Find a dataset which this subcohort isn't linked to already.
         linked_datasets = sc.sourcedataset_set.all()
-        possible_datasets = SourceDataset.objects.filter(source_study_version__study = sc.study)
+        possible_datasets = SourceDataset.objects.filter(source_study_version__study__global_study = sc.global_study)
         unlinked_datasets = set(possible_datasets) - set(linked_datasets)
         if len(unlinked_datasets) < 1:
             raise ValueError('The subcohort is already linked to all possible datasets.')
@@ -1372,7 +1379,7 @@ class ImportNoUpdateTestCase(VisitTestDataTestCase):
         sc = Subcohort.objects.get(pk=1)
         # Find a dataset which this subcohort is already linked to.
         linked_datasets = sc.sourcedataset_set.all()
-        possible_datasets = SourceDataset.objects.filter(source_study_version__study = sc.study)
+        possible_datasets = SourceDataset.objects.filter(source_study_version__study__global_study = sc.global_study)
         if len(linked_datasets) < 1:
             raise ValueError('The subcohort is not linked to any datasets.')
         dataset_to_unlink = linked_datasets[0]
@@ -1471,28 +1478,36 @@ class ImportNoUpdateTestCase(VisitTestDataTestCase):
         source_trait = SourceTrait.objects.get(pk=1)
         # Find a harmonized_trait which this source trait isn't linked to already
         for x in range(1, 100):
-            htrait_set = HarmonizedTraitSet.objects.get(pk=x)
-            if htrait_set not in source_trait.harmonizedtraitset_set.all():
+            htrait = HarmonizedTrait.objects.get(pk=x)
+            if htrait not in source_trait.source_component_of_harmonized_trait.all():
                 break
-        # Add source_trait as a component trait of htrait_set in the source db.
-        self.cursor.close()
-        self.source_db.close()
+        # Prep for altering the devel db.
         self.source_db = get_devel_db(permissions='full')
         self.cursor = self.source_db.cursor(buffered=True, dictionary=True)
-        # Have to add a harmonized function here first...
-        self.cursor.execute("INSERT INTO harmonized_function (function_definition) values ('return(dataset)');")
+        # Add source_trait as a component trait of htrait_set in the source db.
+        # Have to add a harmonized function and harmonization_unit here first...
+        add_hfunction_query = "INSERT INTO harmonized_function (function_definition, date_added) values ('return(dataset)', '{}')".format(timezone.now().strftime('%Y-%m-%d %H:%M:%S'))
+        self.cursor.execute(add_hfunction_query)
         self.source_db.commit()
-        add_component_trait_query = "INSERT INTO component_source_trait (harmonized_trait_set_id, harmonized_function_id, component_trait_id, date_added) VALUES ({}, 1, {}, '{}');".format(htrait_set.i_id, source_trait.i_trait_id, timezone.now().strftime('%Y-%m-%d %H:%M:%S'))
+        self.cursor.execute('SELECT LAST_INSERT_ID() AS last')
+        last_id = self.cursor.fetchone()['last']
+        add_hunit_query = "INSERT INTO harmonization_unit (function_id, harmonized_trait_set_id, tag, date_added) values ({}, {}, 'example unit tag', '{}')".format(last_id, htrait.harmonized_trait_set.i_id, timezone.now().strftime('%Y-%m-%d %H:%M:%S'))
+        self.cursor.execute(add_hunit_query)
+        self.source_db.commit()
+        self.cursor.execute('SELECT LAST_INSERT_ID() AS last')
+        last_id = self.cursor.fetchone()['last']
+        add_component_trait_query = "INSERT INTO component_source_trait (harmonized_trait_id, harmonization_unit_id, component_trait_id, date_added) VALUES ({}, {}, {}, '{}')".format(htrait.harmonized_trait_set.i_id, last_id, source_trait.i_trait_id, timezone.now().strftime('%Y-%m-%d %H:%M:%S'))
         self.cursor.execute(add_component_trait_query)
         self.source_db.commit()
+        # Close the db connection.
         self.cursor.close()
         self.source_db.close()
         # Now run the update commands.
-        management.call_command('import_db', '--which_db=devel', '--import_only', '--no_backup')
+        management.call_command('import_db', '--which_db=devel', '--import_only', '--verbosity=0', '--no_backup')
         # Check that the chosen subcohort is now linked to the dataset that was picked, in the Django db.
         source_trait.refresh_from_db()
-        htrait_set.refresh_from_db()
-        self.assertFalse(htrait_set in source_trait.harmonizedtraitset_set.all())
+        htrait.refresh_from_db()
+        self.assertFalse(htrait in source_trait.source_component_of_harmonized_trait.all())
 
 
 class BackupTestCase(VisitTestDataTestCase):
@@ -1637,7 +1652,7 @@ class IntegrationTest(VisitTestDataTestCase):
         self.cursor = self.source_db.cursor(buffered=True, dictionary=True)
         # Find a dataset which this subcohort isn't linked to already
         linked_datasets = subcohort.sourcedataset_set.all()
-        possible_datasets = SourceDataset.objects.filter(source_study_version__study = subcohort.study)
+        possible_datasets = SourceDataset.objects.filter(source_study_version__study__global_study = subcohort.global_study)
         unlinked_datasets = set(possible_datasets) - set(linked_datasets)
         if len(unlinked_datasets) < 1:
             raise ValueError('The subcohort is already linked to all possible datasets.')
@@ -1657,16 +1672,24 @@ class IntegrationTest(VisitTestDataTestCase):
         remove_subcohort_link_query = "DELETE FROM source_dataset_subcohorts WHERE dataset_id={} AND subcohort_id={}".format(dataset_to_unlink.pk, subcohort2.pk)
         self.cursor.execute(remove_subcohort_link_query)
         self.source_db.commit()
-        # Find a harmonized_trait_set which the source trait isn't linked to already
+        # Find a harmonized_trait which the source trait isn't linked to already
         for x in range(1, 100):
-            htrait_set = HarmonizedTraitSet.objects.get(pk=x)
-            if htrait_set not in source_trait.harmonizedtraitset_set.all():
+            htrait = HarmonizedTrait.objects.get(pk=x)
+            if htrait not in source_trait.source_component_of_harmonized_trait.all():
                 break
         # Add source_trait as a component trait of htrait_set in the source db.
-        # Have to add a harmonized function here first...
-        self.cursor.execute("INSERT INTO harmonized_function (function_definition) values ('return(dataset)');")
+        # Have to add a harmonized function and harmonization_unit here first...
+        add_hfunction_query = "INSERT INTO harmonized_function (function_definition, date_added) values ('return(dataset)', '{}')".format(timezone.now().strftime('%Y-%m-%d %H:%M:%S'))
+        self.cursor.execute(add_hfunction_query)
         self.source_db.commit()
-        add_component_trait_query = "INSERT INTO component_source_trait (harmonized_trait_set_id, harmonized_function_id, component_trait_id, date_added) VALUES ({}, 1, {}, '{}');".format(htrait_set.i_id, source_trait.i_trait_id, timezone.now().strftime('%Y-%m-%d %H:%M:%S'))
+        self.cursor.execute('SELECT LAST_INSERT_ID() AS last')
+        last_id = self.cursor.fetchone()['last']
+        add_hunit_query = "INSERT INTO harmonization_unit (function_id, harmonized_trait_set_id, tag, date_added) values ({}, {}, 'example unit tag', '{}')".format(last_id, htrait.harmonized_trait_set.i_id, timezone.now().strftime('%Y-%m-%d %H:%M:%S'))
+        self.cursor.execute(add_hunit_query)
+        self.source_db.commit()
+        self.cursor.execute('SELECT LAST_INSERT_ID() AS last')
+        last_id = self.cursor.fetchone()['last']
+        add_component_trait_query = "INSERT INTO component_source_trait (harmonized_trait_id, harmonization_unit_id, component_trait_id, date_added) VALUES ({}, {}, {}, '{}')".format(htrait.harmonized_trait_set.i_id, last_id, source_trait.i_trait_id, timezone.now().strftime('%Y-%m-%d %H:%M:%S'))
         self.cursor.execute(add_component_trait_query)
         self.source_db.commit()
         # Close the db connection.
@@ -1690,7 +1713,7 @@ class IntegrationTest(VisitTestDataTestCase):
         dataset_to_link.refresh_from_db()
         subcohort2.refresh_from_db()
         dataset_to_unlink.refresh_from_db()
-        htrait_set.refresh_from_db()
+        htrait.refresh_from_db()
         
         # Check that modified date > created date, values are updated, for each model.
         self.assertEqual(new_value, global_study.i_name)
@@ -1725,7 +1748,7 @@ class IntegrationTest(VisitTestDataTestCase):
         
         self.assertTrue(dataset_to_link in subcohort.sourcedataset_set.all())
         self.assertFalse(dataset_to_unlink in subcohort2.sourcedataset_set.all())
-        self.assertTrue(htrait_set in source_trait.harmonizedtraitset_set.all())
+        self.assertTrue(htrait in source_trait.source_component_of_harmonized_trait.all())
 
     def test_handle_with_new_study_added(self):
         """New data and updates are properly imported after a new study is added."""

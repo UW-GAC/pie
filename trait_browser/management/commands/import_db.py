@@ -24,7 +24,7 @@ from django.core import management
 from django.utils import timezone
 from django.conf import settings
 
-from trait_browser.models import GlobalStudy, HarmonizedTrait, HarmonizedTraitEncodedValue, HarmonizedTraitSet, SourceDataset, SourceStudyVersion, SourceTrait, SourceTraitEncodedValue, Study, Subcohort
+from trait_browser.models import GlobalStudy, HarmonizedTrait, HarmonizedTraitEncodedValue, HarmonizedTraitSet, HarmonizationUnit, SourceDataset, SourceStudyVersion, SourceTrait, SourceTraitEncodedValue, Study, Subcohort
 
 
 # Set up a logger to handle messages based on verbosity setting.
@@ -539,7 +539,7 @@ class Command(BaseCommand):
         return self._make_args_mapping(row_dict,
                                        ['id', 'accession', 'dbgap_description', 'dcc_description', 'is_medication_dataset',
                                         'is_subject_file','study_subject_column', 'version', 'visit_code', 'visit_number',
-                                        'date_added', 'date_changed'],
+                                        'date_added', 'date_changed', 'dbgap_date_created', 'date_visit_reviewed', ],
                                        foreign_key_mapping={'study_version_id':SourceStudyVersion})
 
     def _make_harmonized_trait_set_args(self, row_dict):
@@ -557,8 +557,27 @@ class Command(BaseCommand):
             a dict of (required_HarmonizedTraitSet_attribute: attribute_value) pairs
         """
         return self._make_args_mapping(row_dict,
-                                       ['id', 'trait_set_name', 'version', 'flavor', 'description', 'date_added', 'date_changed'])
-    
+                                       ['id', 'trait_set_name', 'version', 'flavor', 'description', 
+                                       'harmonized_by', 'git_commit_hash', 'is_longitudinal', 'date_added', 'date_changed'])
+
+    def _make_harmonization_unit_args(self, row_dict):
+        """Get args for making a HarmonizationUnit object from a source db row.
+        
+        Converts a dictionary containing {colname: row value} pairs from a database
+        query into a dict with the necessary arguments for constructing a
+        HarmoniztionUnit object. If there is a schema change in the source db,
+        this function may need to be modified.
+
+        Arguments:
+            row_dict (dict): (column_name, row_value) pairs retrieved from the source db
+
+        Returns:
+            a dict of (required_HarmonizationUnit_attribute: attribute_value) pairs
+        """
+        return self._make_args_mapping(row_dict,
+                                       ['id', 'tag', 'date_added', 'date_changed'],
+                                       foreign_key_mapping={'harmonized_trait_set_id': HarmonizedTraitSet})
+
     def _make_source_trait_args(self, row_dict):
         """Get args for making a SourceTrait object from a source db row.
         
@@ -575,7 +594,7 @@ class Command(BaseCommand):
         return self._make_args_mapping(row_dict,
                                        ['trait_name', 'detected_type', 'dbgap_type', 'visit_number', 'dbgap_variable_accession',
                                         'dbgap_variable_version', 'dbgap_comment', 'dbgap_unit', 'n_records', 'n_missing',
-                                        'date_added', 'date_changed'],
+                                        'dbgap_description', 'date_added', 'date_changed'],
                                        source_field_names_to_map={'source_trait_id':'i_trait_id', 'dcc_description':'i_description'},
                                        foreign_key_mapping={'dataset_id': SourceDataset})
 
@@ -594,7 +613,7 @@ class Command(BaseCommand):
         """
         return self._make_args_mapping(row_dict,
                                        ['description', 'data_type', 'unit', 'is_unique_key', 'trait_name',
-                                        'date_added', 'date_changed'],
+                                        'has_batch', 'date_added', 'date_changed'],
                                        source_field_names_to_map={'harmonized_trait_id':'i_trait_id'},
                                        foreign_key_mapping={'harmonized_trait_set_id': HarmonizedTraitSet})
 
@@ -614,7 +633,7 @@ class Command(BaseCommand):
         """
         return self._make_args_mapping(row_dict,
                                        ['id', 'name', 'date_added', 'date_changed'],
-                                       foreign_key_mapping={'study_accession':Study})
+                                       foreign_key_mapping={'global_study_id': GlobalStudy})
     
     def _make_source_trait_encoded_value_args(self, row_dict):
         """Get args for making a SourceTraitEncodedValue object from a source db row.
@@ -870,6 +889,13 @@ class Command(BaseCommand):
                                                              make_args=self._make_harmonized_trait_set_args)
         logger.info("Added {} harmonized trait sets".format(len(new_harmonized_trait_set_pks)))
 
+        new_harmonization_unit_pks = self._import_new_data(source_db=source_db,
+                                                             source_table='harmonization_unit',
+                                                             source_pk='id',
+                                                             model=HarmonizationUnit,
+                                                             make_args=self._make_harmonization_unit_args)
+        logger.info("Added {} harmonization units".format(len(new_harmonization_unit_pks)))
+
         new_harmonized_trait_pks = self._import_new_data(source_db=source_db,
                                                              source_table='harmonized_trait',
                                                              source_pk='harmonized_trait_id',
@@ -884,16 +910,85 @@ class Command(BaseCommand):
                                                              make_args=self._make_harmonized_trait_encoded_value_args)
         logger.info("Added {} harmonized trait encoded values".format(len(new_harmonized_trait_encoded_value_pks)))
         
-
-        new_component_source_trait_links = self._import_new_m2m_field(source_db=source_db,
+        new_component_source_trait_links_to_unit = self._import_new_m2m_field(source_db=source_db,
                                                                         source_table='component_source_trait',
-                                                                        parent_model=HarmonizedTraitSet,
-                                                                        parent_source_pk='harmonized_trait_set_id',
+                                                                        parent_model=HarmonizationUnit,
+                                                                        parent_source_pk='harmonization_unit_id',
                                                                         child_model=SourceTrait,
                                                                         child_source_pk='component_trait_id',
                                                                         child_related_name='component_source_traits',
-                                                                        import_parent_pks=new_harmonized_trait_set_pks)
-        logger.info("Added {} component source traits".format(len(new_component_source_trait_links)))
+                                                                        import_parent_pks=new_harmonization_unit_pks)
+        logger.info("Added {} component source traits".format(len(new_component_source_trait_links_to_unit)))
+
+        new_component_harmonized_trait_links_to_unit = self._import_new_m2m_field(source_db=source_db,
+                                                                            source_table='component_harmonized_trait',
+                                                                            parent_model=HarmonizationUnit,
+                                                                            parent_source_pk='harmonization_unit_id',
+                                                                            child_model=HarmonizedTrait,
+                                                                            child_source_pk='component_trait_id',
+                                                                            child_related_name='component_harmonized_traits',
+                                                                            import_parent_pks=new_harmonization_unit_pks)
+        logger.info("Added {} component harmonized traits".format(len(new_component_harmonized_trait_links_to_unit)))
+
+        new_component_batch_trait_links_to_unit = self._import_new_m2m_field(source_db=source_db,
+                                                                        source_table='component_source_trait',
+                                                                        parent_model=HarmonizationUnit,
+                                                                        parent_source_pk='harmonization_unit_id',
+                                                                        child_model=SourceTrait,
+                                                                        child_source_pk='component_trait_id',
+                                                                        child_related_name='component_source_traits',
+                                                                        import_parent_pks=new_harmonization_unit_pks)
+        logger.info("Added {} component batch traits".format(len(new_component_source_trait_links_to_unit)))
+
+        new_component_age_trait_links_to_unit = self._import_new_m2m_field(source_db=source_db,
+                                                                    source_table='component_age_trait',
+                                                                    parent_model=HarmonizationUnit,
+                                                                    parent_source_pk='harmonization_unit_id',
+                                                                    child_model=SourceTrait,
+                                                                    child_source_pk='component_trait_id',
+                                                                    child_related_name='component_source_traits',
+                                                                    import_parent_pks=new_harmonization_unit_pks)
+        logger.info("Added {} component age traits".format(len(new_component_age_trait_links_to_unit)))
+
+        new_component_source_trait_links_to_trait = self._import_new_m2m_field(source_db=source_db,
+                                                                        source_table='component_source_trait',
+                                                                        parent_model=HarmonizedTrait,
+                                                                        parent_source_pk='harmonized_trait_id',
+                                                                        child_model=SourceTrait,
+                                                                        child_source_pk='component_trait_id',
+                                                                        child_related_name='component_source_traits',
+                                                                        import_parent_pks=new_harmonization_unit_pks)
+        logger.info("Added {} component source traits".format(len(new_component_source_trait_links_to_trait)))
+
+        new_component_harmonized_trait_links_to_trait = self._import_new_m2m_field(source_db=source_db,
+                                                                            source_table='component_harmonized_trait',
+                                                                            parent_model=HarmonizedTrait,
+                                                                            parent_source_pk='harmonized_trait_id',
+                                                                            child_model=HarmonizedTrait,
+                                                                            child_source_pk='component_trait_id',
+                                                                            child_related_name='component_harmonized_traits',
+                                                                            import_parent_pks=new_harmonization_unit_pks)
+        logger.info("Added {} component harmonized traits".format(len(new_component_harmonized_trait_links_to_trait)))
+
+        new_component_batch_trait_links_to_trait = self._import_new_m2m_field(source_db=source_db,
+                                                                        source_table='component_source_trait',
+                                                                        parent_model=HarmonizedTrait,
+                                                                        parent_source_pk='harmonized_trait_id',
+                                                                        child_model=SourceTrait,
+                                                                        child_source_pk='component_trait_id',
+                                                                        child_related_name='component_source_traits',
+                                                                        import_parent_pks=new_harmonization_unit_pks)
+        logger.info("Added {} component batch traits".format(len(new_component_source_trait_links_to_trait)))
+
+        # new_harmonization_unit_harmonized_trait_links = self._import_new_m2m_field(source_db=source_db,
+        #                                                                             source_table='component_source_trait',
+        #                                                                             parent_model=HarmonizationUnit,
+        #                                                                             parent_source_pk='harmonization_unit_id',
+        #                                                                             child_model=HarmonizedTrait,
+        #                                                                             child_source_pk='harmonized_trait_id',
+        #                                                                             child_related_name='harmonized_traits',
+        #                                                                             import_parent_pks=new_harmonization_unit_pks)
+        # logger.info("Added {} harmonized_traits to harmonization units".format(len(new_harmonization_unit_harmonized_trait_links)))
 
     def _update_source_tables(self, source_db):
         """Update source trait-related Django models from modified data in the source db.
@@ -1000,14 +1095,74 @@ class Command(BaseCommand):
         logger.info('Updating harmonized traits...')
 
         updated_component_source_trait_links = self._update_m2m_field(source_db=source_db,
-                                                                  source_table='component_source_trait',
-                                                                  parent_model=HarmonizedTraitSet,
-                                                                  parent_source_pk='harmonized_trait_set_id',
-                                                                  child_model=SourceTrait,
-                                                                  child_source_pk='component_trait_id',
-                                                                  child_related_name='component_source_traits')
+                                                                    source_table='component_source_trait',
+                                                                    parent_model=HarmonizationUnit,
+                                                                    parent_source_pk='harmonization_unit_id',
+                                                                    child_model=SourceTrait,
+                                                                    child_source_pk='component_trait_id',
+                                                                    child_related_name='component_source_traits')
         logger.info("Update: added {} component source traits".format(len(updated_component_source_trait_links['added'])))
         logger.info("Update: removed {} component source traits".format(len(updated_component_source_trait_links['removed'])))
+
+        updated_component_harmonized_trait_links = self._update_m2m_field(source_db=source_db,
+                                                                        source_table='component_harmonized_trait',
+                                                                        parent_model=HarmonizationUnit,
+                                                                        parent_source_pk='harmonization_unit_id',
+                                                                        child_model=HarmonizedTrait,
+                                                                        child_source_pk='component_trait_id',
+                                                                        child_related_name='component_harmonized_traits')
+        logger.info("Update: added {} component harmonized traits".format(len(updated_component_harmonized_trait_links['added'])))
+        logger.info("Update: removed {} component harmonized traits".format(len(updated_component_harmonized_trait_links['removed'])))
+
+        updated_component_batch_trait_links = self._update_m2m_field(source_db=source_db,
+                                                                    source_table='component_source_trait',
+                                                                    parent_model=HarmonizationUnit,
+                                                                    parent_source_pk='harmonization_unit_id',
+                                                                    child_model=SourceTrait,
+                                                                    child_source_pk='component_trait_id',
+                                                                    child_related_name='component_source_traits')
+        logger.info("Update: added {} component batch traits".format(len(updated_component_source_trait_links['added'])))
+        logger.info("Update: removed {} component batch traits".format(len(updated_component_source_trait_links['removed'])))
+
+        updated_component_age_trait_links = self._update_m2m_field(source_db=source_db,
+                                                                source_table='component_age_trait',
+                                                                parent_model=HarmonizationUnit,
+                                                                parent_source_pk='harmonization_unit_id',
+                                                                child_model=SourceTrait,
+                                                                child_source_pk='component_trait_id',
+                                                                child_related_name='component_source_traits')
+        logger.info("Update: added {} component age traits".format(len(updated_component_age_trait_links['added'])))
+        logger.info("Update: removed {} component age traits".format(len(updated_component_age_trait_links['removed'])))
+
+        updated_component_source_trait_links = self._update_m2m_field(source_db=source_db,
+                                                                    source_table='component_source_trait',
+                                                                    parent_model=HarmonizedTrait,
+                                                                    parent_source_pk='harmonized_trait_id',
+                                                                    child_model=SourceTrait,
+                                                                    child_source_pk='component_trait_id',
+                                                                    child_related_name='component_source_traits')
+        logger.info("Update: added {} component source traits".format(len(updated_component_source_trait_links['added'])))
+        logger.info("Update: removed {} component source traits".format(len(updated_component_source_trait_links['removed'])))
+
+        updated_component_harmonized_trait_links = self._update_m2m_field(source_db=source_db,
+                                                                        source_table='component_harmonized_trait',
+                                                                        parent_model=HarmonizedTrait,
+                                                                        parent_source_pk='harmonized_trait_id',
+                                                                        child_model=HarmonizedTrait,
+                                                                        child_source_pk='component_trait_id',
+                                                                        child_related_name='component_harmonized_traits')
+        logger.info("Update: added {} component harmonized traits".format(len(updated_component_harmonized_trait_links['added'])))
+        logger.info("Update: removed {} component harmonized traits".format(len(updated_component_harmonized_trait_links['removed'])))
+
+        updated_component_batch_trait_links = self._update_m2m_field(source_db=source_db,
+                                                                source_table='component_source_trait',
+                                                                parent_model=HarmonizedTrait,
+                                                                parent_source_pk='harmonized_trait_id',
+                                                                child_model=SourceTrait,
+                                                                child_source_pk='component_trait_id',
+                                                                child_related_name='component_source_traits')
+        logger.info("Update: added {} component batch traits".format(len(updated_component_source_trait_links['added'])))
+        logger.info("Update: removed {} component batch traits".format(len(updated_component_source_trait_links['removed'])))
 
         htrait_set_update_count = self._update_existing_data(source_db=source_db,
                                     source_table='harmonized_trait_set',

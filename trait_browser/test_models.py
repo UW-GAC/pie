@@ -102,9 +102,9 @@ class SourceDatasetTestCase(TestCase):
     
     def test_adding_subcohorts(self):
         """Test that adding associated subcohorts works."""
-        study = StudyFactory.create()
-        subcohorts = SubcohortFactory.create_batch(5, study=study)
-        source_dataset = SourceDatasetFactory.create(source_study_version__study=study, subcohorts=subcohorts)
+        global_study = GlobalStudyFactory.create()
+        subcohorts = SubcohortFactory.create_batch(5, global_study=global_study)
+        source_dataset = SourceDatasetFactory.create(source_study_version__study__global_study=global_study, subcohorts=subcohorts)
         self.assertEqual(len(source_dataset.subcohorts.all()), 5)
 
     def test_custom_save(self):

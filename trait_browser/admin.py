@@ -51,8 +51,8 @@ class SourceStudyVersionAdmin(admin.ModelAdmin):
 class SubcohortAdmin(admin.ModelAdmin):
     """Admin class for Subcohort objects."""
     # Set fields to display, filter, and search on.
-    list_display = ('i_id', 'i_name', 'study', 'created', 'modified', )
-    list_filter = ('study__i_study_name', 'study__i_accession', )
+    list_display = ('i_id', 'i_name', 'global_study', 'created', 'modified', )
+    list_filter = ('global_study__i_name', 'global_study__i_id', )
     search_fields = ('i_id', 'i_name', )
 
 
@@ -71,8 +71,15 @@ class SourceDatasetAdmin(admin.ModelAdmin):
 class HarmonizedTraitSetAdmin(admin.ModelAdmin):
     """Admin class for HarmonizedTraitSet objects."""
     # Set fields to display, filter, and search on.
-    list_display = ('i_id', 'i_trait_set_name', 'i_version', 'i_flavor' , 'created', 'modified', )
+    list_display = ('i_id', 'i_trait_set_name', 'i_version', 'i_flavor' , 'i_is_longitudinal', 'i_harmonized_by', 'created', 'modified', )
     search_fields = ('i_id', 'i_trait_set_name', )
+
+
+class HarmonizationUnitAdmin(admin.ModelAdmin):
+    """Admin class for HarmonizationUnit objects."""
+    # Set fields to display, filter, and search on.
+    list_display = ('i_id', 'tag', 'created', 'modified', )
+    search_fields = ('i_id', 'tag', )
 
 
 class SourceTraitAdmin(admin.ModelAdmin):

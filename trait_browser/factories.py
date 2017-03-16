@@ -9,7 +9,7 @@ import pytz
 from django.utils import timezone
 
 
-from .models import GlobalStudy, HarmonizedTrait, HarmonizedTraitEncodedValue, HarmonizedTraitSet, SourceDataset, SourceStudyVersion, SourceTrait, SourceTraitEncodedValue, Study, Subcohort
+from .models import GlobalStudy, HarmonizedTrait, HarmonizedTraitEncodedValue, HarmonizedTraitSet, HarmonizationUnit, SourceDataset, SourceStudyVersion, SourceTrait, SourceTraitEncodedValue, Study, Subcohort
 
 
 # Use these later for SourceStudyVersion factories.
@@ -77,7 +77,7 @@ class SourceStudyVersionFactory(SourceDBTimeStampMixin, factory.DjangoModelFacto
 class SubcohortFactory(SourceDBTimeStampMixin, factory.DjangoModelFactory):
     """Factory for Subcohort objects using Faker faked data."""
     
-    study = factory.SubFactory(StudyFactory)
+    global_study = factory.SubFactory(GlobalStudyFactory)
     i_id = factory.Sequence(lambda n: n)
     i_name = factory.Faker('job')
 
@@ -95,10 +95,12 @@ class SourceDatasetFactory(SourceDBTimeStampMixin, factory.DjangoModelFactory):
     i_version = factory.Faker('random_int', min=1, max=10)
     i_is_subject_file = False
     i_study_subject_column = factory.Faker('pystr', max_chars=45)
+    i_dbgap_date_created = factory.Faker('date_time_this_century', tzinfo=pytz.utc)
     # Visit data is NULL by default.
     # i_is_medication_dataset = factory.Faker('boolean')
     # i_dbgap_description = factory.Faker('text')
     # i_dcc_description = factory.Faker('text')
+    # i_date_visit_reviewed = factory.Faker('date_time_this_year', tzinfo=pytz.utc)
 
     class Meta:
         model = SourceDataset
@@ -123,9 +125,24 @@ class HarmonizedTraitSetFactory(SourceDBTimeStampMixin, factory.DjangoModelFacto
     i_version = factory.Faker('random_int', min=1, max=10)
     i_description = factory.Faker('text')
     i_flavor = factory.Faker('random_int', min=1, max=10)
+    i_harmonized_by = factory.Faker('user_name')
+    i_git_commit_hash = factory.Faker('sha1')
+    i_is_longitudinal = factory.Faker('boolean')
     
     class Meta:
         model = HarmonizedTraitSet
+        django_get_or_create = ('i_id', )
+
+
+class HarmonizationUnitFactory(SourceDBTimeStampMixin, factory.DjangoModelFactory):
+    """Factory for HarmonizationUnit objects using Faker faked data."""
+    
+    i_id = factory.Sequence(lambda n: n)
+    i_tag = factory.Faker('word')
+    harmonized_trait_set = factory.SubFactory(HarmonizedTraitSetFactory)
+    
+    class Meta:
+        model = HarmonizationUnit
         django_get_or_create = ('i_id', )
 
     @factory.post_generation
@@ -148,6 +165,26 @@ class HarmonizedTraitSetFactory(SourceDBTimeStampMixin, factory.DjangoModelFacto
             for harmonized_trait in extracted:
                 self.component_harmonized_traits.add(harmonized_trait)
 
+    @factory.post_generation
+    def component_batch_traits(self, create, extracted, **kwargs):
+        # Do not add any component_source_traits for simple builds.
+        if not create:
+            return
+        # Add component_source_traits from a list that was passed in.
+        if extracted:
+            for source_trait in extracted:
+                self.component_batch_traits.add(source_trait)
+
+    @factory.post_generation
+    def component_age_traits(self, create, extracted, **kwargs):
+        # Do not add any component_age_traits for simple builds.
+        if not create:
+            return
+        # Add component_age_traits from a list that was passed in.
+        if extracted:
+            for source_trait in extracted:
+                self.component_age_traits.add(source_trait)
+
 
 class SourceTraitFactory(SourceDBTimeStampMixin, factory.DjangoModelFactory):
     """Factory for SourceTrait objects using Faker faked data."""
@@ -155,12 +192,12 @@ class SourceTraitFactory(SourceDBTimeStampMixin, factory.DjangoModelFactory):
     i_trait_id = factory.Sequence(lambda n: n)
     i_trait_name = factory.Faker('word')
     i_description = factory.Faker('text')
-    
     source_dataset = factory.SubFactory(SourceDatasetFactory)
     i_detected_type = factory.Faker('random_element', elements=DETECTED_TYPES)
     i_dbgap_type = factory.Faker('word')
     i_dbgap_variable_accession = factory.Faker('random_int', min=1, max=99999999)
     i_dbgap_variable_version = factory.Faker('random_int', min=1, max=15)
+    i_dbgap_description = factory.Faker('sentence')
     i_dbgap_comment = factory.Faker('text')
     i_dbgap_unit = factory.Faker('word')
     i_n_records = factory.Faker('random_int', min=100, max=5000)
@@ -182,31 +219,52 @@ class HarmonizedTraitFactory(SourceDBTimeStampMixin, factory.DjangoModelFactory)
     harmonized_trait_set = factory.SubFactory(HarmonizedTraitSetFactory)
     i_data_type = factory.Faker('random_element', elements=('', 'encoded', 'character', 'double', 'integer', ))
     i_unit = factory.Faker('word')
+    i_has_batch = factory.Faker('boolean')
     i_is_unique_key = False
     
     class Meta:
         model = HarmonizedTrait
         django_get_or_create = ('i_trait_id', )
 
-    # @factory.post_generation
-    # def component_source_traits(self, create, extracted, **kwargs):
-    #     # Do not add any component_source_traits for simple builds.
-    #     if not create:
-    #         return
-    #     # Add component_source_traits from a list that was passed in.
-    #     if extracted:
-    #         for source_trait in extracted:
-    #             self.component_source_traits.add(source_trait)
-    # 
-    # @factory.post_generation
-    # def component_harmonized_traits(self, create, extracted, **kwargs):
-    #     # Do not add any component_harmonized_traits for simple builds.
-    #     if not create:
-    #         return
-    #     # Add component_harmonized_traits from a list that was passed in.
-    #     if extracted:
-    #         for harmonized_trait in extracted:
-    #             self.component_harmonized_traits.add(harmonized_trait)
+    @factory.post_generation
+    def component_source_traits(self, create, extracted, **kwargs):
+        # Do not add any component_source_traits for simple builds.
+        if not create:
+            return
+        # Add component_source_traits from a list that was passed in.
+        if extracted:
+            for source_trait in extracted:
+                self.component_source_traits.add(source_trait)
+
+    @factory.post_generation
+    def component_harmonized_traits(self, create, extracted, **kwargs):
+        # Do not add any component_harmonized_traits for simple builds.
+        if not create:
+            return
+        # Add component_harmonized_traits from a list that was passed in.
+        if extracted:
+            for harmonized_trait in extracted:
+                self.component_harmonized_traits.add(harmonized_trait)
+
+    @factory.post_generation
+    def component_batch_traits(self, create, extracted, **kwargs):
+        # Do not add any component_source_traits for simple builds.
+        if not create:
+            return
+        # Add component_source_traits from a list that was passed in.
+        if extracted:
+            for source_trait in extracted:
+                self.component_batch_traits.add(source_trait)
+
+    @factory.post_generation
+    def harmonization_units(self, create, extracted, **kwargs):
+        # Do not add any harmonization_units for simple builds.
+        if not create:
+            return
+        # Add harmonization_units from a list that was passed in.
+        if extracted:
+            for harmonization_unit in extracted:
+                self.harmonization_units.add(harmonization_unit)
 
 
 class SourceTraitEncodedValueFactory(SourceDBTimeStampMixin, factory.DjangoModelFactory):
