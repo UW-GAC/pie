@@ -37,6 +37,16 @@ logger.addHandler(console_handler)
 # Detect whether we're in the test environment or not.
 TEST = len(argv) >= 2 and search(r'manage.py$', argv[0]) and argv[1] == 'test'
 
+# Special query for getting harmonization unit links from the component trait tables.
+HUNIT_QUERY = ' '.join(['SELECT DISTINCT unit_trait_map.harmonized_trait_id, unit_trait_map.harmonization_unit_id FROM (',
+                        'SELECT harmonized_trait_id, harmonization_unit_id FROM component_source_trait AS comp_source',
+                        'UNION',
+                        'SELECT harmonized_trait_id, harmonization_unit_id FROM component_harmonized_trait AS comp_harm',
+                        'UNION',
+                        'SELECT harmonized_trait_id, harmonization_unit_id FROM component_batch_trait AS comp_batch',
+                        ') AS unit_trait_map'
+                        ])
+
 
 class Command(BaseCommand):
     """Management command to pull data from the source phenotype db."""
@@ -798,6 +808,80 @@ class Command(BaseCommand):
         cursor.close()
         return links
 
+    def _import_new_m2m_field_with_query(self, source_db, query, **kwargs):
+        """Import ManyToMany field links from an m2m source table for a set of pks for the newly imported parent model, using a specified query.
+        
+        parent_model must have a field that is a ManyToManyField to child_model.
+        Query the source db for entries in the m2m table (source_table) that link
+        child_source_pk values to parent_source_pk values, for parent_source_pk values
+        that are in the import_parent_pks list. Then use the results of that query
+        to link child_model instances to parent_model instances, using
+        parent_model_obj.children.add(child_model_obj)
+        
+        Arguments:
+            source_db (MySQLConnection): a mysql.connector open db connection
+            query (str): 
+        
+        Returns:
+            list of str pk values for (parent_pk, child_pk) pairs that have now been linked
+        """
+        new_m2m_query = query
+        cursor = source_db.cursor(buffered=True, dictionary=True)
+        cursor.execute(new_m2m_query)
+        links = []
+        logger.debug('Importing M2M links for parent {} and child {}'.format(kwargs['parent_model']._meta.object_name, kwargs['child_model']._meta.object_name))
+        for row in cursor:
+            type_fixed_row = self._fix_row(row)
+            child, parent = self._make_m2m_link(parent_pk=type_fixed_row[kwargs['parent_source_pk']],
+                                                child_pk=type_fixed_row[kwargs['child_source_pk']],
+                                                **kwargs)
+            links.append((parent.pk, child.pk))
+        cursor.close()
+        return links
+
+    def _update_m2m_field_with_query(self, source_db, query, **kwargs):
+        """Remove m2m links that have been removed from the source db (for already-imported parent models), using a specified query.
+        
+        For each parent model that has been imported, get a list of the linked children
+        and check the source db to see if the link between parent and child is still
+        present there. If it is no longer linked in the source db, remove the child
+        from the m2m field. 
+        
+        Arguments:
+            source_db (MySQLConnection): a mysql.connector open db connection 
+            query (str):
+        
+        Returns:
+            list of str pk values for (parent_pk, child_pk) pairs that have now been linked
+        """
+        links = {'added': [], 'removed': []}
+        cursor = source_db.cursor(buffered=True, dictionary=True)
+        current_parents = kwargs['parent_model'].objects.all()
+        logger.debug('Updating M2M links for parent {} and child {}'.format(kwargs['parent_model']._meta.object_name, kwargs['child_model']._meta.object_name))
+        for parent in current_parents:
+            # Which links are currently present in the Django db?
+            linked_pks = [str(el.pk) for el in getattr(parent, kwargs['child_related_name']).all()]
+            # Which links are currently present in the source db?
+            source_links_query = query + ' WHERE {pk_name}={pk}'.format(pk_name=kwargs['parent_source_pk'], pk=str(parent.pk))
+            logger.debug(source_links_query)
+            cursor.execute(source_links_query)
+            source_linked_pks = [str(self._fix_row(row)[kwargs['child_source_pk']]) for row in cursor.fetchall()]
+            logger.debug(source_linked_pks)
+            # Figure out which child pk's to add or remove links to.
+            to_add = set(source_linked_pks) - set(linked_pks)
+            to_remove = set(linked_pks) - set(source_linked_pks)
+            # Do the adding and removing
+            logger.debug('Adding linked pks {}'.format(to_add))
+            for pk in to_add:
+                add_parent, add_child = self._make_m2m_link(parent_pk=parent.pk, child_pk=pk, **kwargs)
+                links['added'].append((add_parent, add_child))
+            logger.debug('Removing linked pks {}'.format(to_remove))
+            for pk in to_remove:
+                remove_parent, remove_child = self._break_m2m_link(parent_pk=parent.pk, child_pk=pk, **kwargs)
+                links['removed'].append((remove_parent, remove_child))
+        cursor.close()
+        return links
+
 
     # Methods to run all of the updating or importing on all of the models.
     def _import_source_tables(self, source_db):
@@ -985,15 +1069,15 @@ class Command(BaseCommand):
                                                                         import_parent_pks=new_harmonized_trait_pks)
         logger.info("Added {} component batch traits".format(len(new_component_source_trait_links_to_trait)))
 
-        # new_harmonization_unit_harmonized_trait_links = self._import_new_m2m_field(source_db=source_db,
-        #                                                                             source_table='component_source_trait',
-        #                                                                             parent_model=HarmonizationUnit,
-        #                                                                             parent_source_pk='harmonization_unit_id',
-        #                                                                             child_model=HarmonizedTrait,
-        #                                                                             child_source_pk='harmonized_trait_id',
-        #                                                                             child_related_name='harmonized_traits',
-        #                                                                             import_parent_pks=new_harmonization_unit_pks)
-        # logger.info("Added {} harmonized_traits to harmonization units".format(len(new_harmonization_unit_harmonized_trait_links)))
+        new_harmonization_unit_harmonized_trait_links = self._import_new_m2m_field_with_query(source_db=source_db,
+                                                                                                query = HUNIT_QUERY,
+                                                                                                parent_model=HarmonizedTrait,
+                                                                                                parent_source_pk='harmonized_trait_id',
+                                                                                                child_model=HarmonizationUnit,
+                                                                                                child_source_pk='harmonization_unit_id',
+                                                                                                child_related_name='harmonization_units',
+                                                                                                import_parent_pks=new_harmonized_trait_pks)
+        logger.info("Added {} harmonized_traits to harmonization units".format(len(new_harmonization_unit_harmonized_trait_links)))
 
     def _update_source_tables(self, source_db):
         """Update source trait-related Django models from modified data in the source db.
@@ -1168,6 +1252,16 @@ class Command(BaseCommand):
                                                                 child_related_name='component_batch_traits')
         logger.info("Update: added {} component batch traits".format(len(updated_component_source_trait_links_to_trait['added'])))
         logger.info("Update: removed {} component batch traits".format(len(updated_component_source_trait_links_to_trait['removed'])))
+
+        updated_harmonization_unit_harmonized_trait_links = self._update_m2m_field_with_query(source_db=source_db,
+                                                                                                query = HUNIT_QUERY,
+                                                                                                parent_model=HarmonizedTrait,
+                                                                                                parent_source_pk='harmonized_trait_id',
+                                                                                                child_model=HarmonizationUnit,
+                                                                                                child_source_pk='harmonization_unit_id',
+                                                                                                child_related_name='harmonization_units')
+        logger.info("Update: added {} harmonized_traits to harmonization units".format(len(updated_harmonization_unit_harmonized_trait_links['added'])))
+        logger.info("Update: removed {} harmonized_traits to harmonization units".format(len(updated_harmonization_unit_harmonized_trait_links['removed'])))
 
         htrait_set_update_count = self._update_existing_data(source_db=source_db,
                                     source_table='harmonized_trait_set',
