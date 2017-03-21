@@ -1085,6 +1085,104 @@ class UpdateModelsTestCase(VisitTestDataTestCase):
         self.assertTrue(htrait_to_link in source_trait.source_component_of_harmonized_trait.all())
         self.assertTrue(hunit_to_link in source_trait.source_component_of_harmonization_unit.all())
 
+    def test_update_component_batch_traits(self):
+        """A new component batch trait link to an existing harmonized trait is imported."""
+        # Run the initial db import.
+        management.call_command('import_db', '--which_db=devel', '--no_backup')
+        # Pick a source trait to create a new link to in the source db.
+        source_trait = SourceTrait.objects.get(pk=1)
+        # Find a harmonization_unit which this source trait isn't linked to already
+        for x in range(1, 100):
+            hunit_to_link = HarmonizationUnit.objects.get(pk=x)
+            if hunit_to_link not in source_trait.batch_component_of_harmonization_unit.all():
+                break
+        # Find a harmonized trait from within this harmonization unit.
+        htrait_to_link = hunit_to_link.harmonized_trait_set.harmonizedtrait_set.all()[0]
+        # Prep for altering the devel db.
+        self.source_db = get_devel_db(permissions='full')
+        self.cursor = self.source_db.cursor(buffered=True, dictionary=True)
+        # Add source_trait as a component trait of harmonization unit and harmonized trait in the source db.
+        add_component_trait_query = "INSERT INTO component_batch_trait (harmonized_trait_id, harmonization_unit_id, component_trait_id, date_added) values ('{}', '{}', '{}', '{}')".format(htrait_to_link.i_trait_id, hunit_to_link.i_id, source_trait.i_trait_id, timezone.now().strftime('%Y-%m-%d %H:%M:%S'))
+        self.cursor.execute(add_component_trait_query)
+        self.source_db.commit()
+        self.cursor.execute('SELECT LAST_INSERT_ID() AS last')
+        last_id = self.cursor.fetchone()['last']
+        # Close the db connection.
+        self.cursor.close()
+        self.source_db.close()
+        # Now run the update commands.
+        management.call_command('import_db', '--which_db=devel', '--update_only', '--verbosity=0', '--no_backup')
+        # Check that the chosen source trait is now linked to the harmonization unit and harmonized trait that were picked, in the Django db.
+        source_trait.refresh_from_db()
+        htrait_to_link.refresh_from_db()
+        hunit_to_link.refresh_from_db()
+        self.assertTrue(htrait_to_link in source_trait.batch_component_of_harmonized_trait.all())
+        self.assertTrue(hunit_to_link in source_trait.batch_component_of_harmonization_unit.all())
+
+    def test_update_component_age_traits(self):
+        """A new component source trait link to an existing harmonized trait is imported."""
+        # Run the initial db import.
+        management.call_command('import_db', '--which_db=devel', '--no_backup')
+        # Pick a source trait to create a new link to in the source db.
+        source_trait = SourceTrait.objects.get(pk=1)
+        # Find a harmonization_unit which this source trait isn't linked to already
+        for x in range(1, 100):
+            hunit_to_link = HarmonizationUnit.objects.get(pk=x)
+            if hunit_to_link not in source_trait.age_component_of_harmonization_unit.all():
+                break
+        # Prep for altering the devel db.
+        self.source_db = get_devel_db(permissions='full')
+        self.cursor = self.source_db.cursor(buffered=True, dictionary=True)
+        # Add source_trait as a component trait of harmonization unit and harmonized trait in the source db.
+        add_component_trait_query = "INSERT INTO component_age_trait (harmonization_unit_id, component_trait_id, date_added) values ('{}', '{}', '{}')".format(hunit_to_link.i_id, source_trait.i_trait_id, timezone.now().strftime('%Y-%m-%d %H:%M:%S'))
+        self.cursor.execute(add_component_trait_query)
+        self.source_db.commit()
+        self.cursor.execute('SELECT LAST_INSERT_ID() AS last')
+        last_id = self.cursor.fetchone()['last']
+        # Close the db connection.
+        self.cursor.close()
+        self.source_db.close()
+        # Now run the update commands.
+        management.call_command('import_db', '--which_db=devel', '--update_only', '--verbosity=0', '--no_backup')
+        # Check that the chosen source trait is now linked to the harmonization unit and harmonized trait that were picked, in the Django db.
+        source_trait.refresh_from_db()
+        hunit_to_link.refresh_from_db()
+        self.assertTrue(hunit_to_link in source_trait.age_component_of_harmonization_unit.all())
+
+    def test_update_component_harmonized_traits(self):
+        """A new component source trait link to an existing harmonized trait is imported."""
+        # Run the initial db import.
+        management.call_command('import_db', '--which_db=devel', '--no_backup')
+        # Pick a source trait to create a new link to in the source db.
+        harmonized_trait = HarmonizedTrait.objects.get(pk=1)
+        # Find a harmonization_unit which this harmonized trait isn't linked to already
+        for x in range(1, 100):
+            hunit_to_link = HarmonizationUnit.objects.get(pk=x)
+            if hunit_to_link not in harmonized_trait.harmonized_component_of_harmonization_unit.all():
+                break
+        # Find a harmonized trait from within this harmonization unit.
+        htrait_to_link = hunit_to_link.harmonized_trait_set.harmonizedtrait_set.all()[0]
+        # Prep for altering the devel db.
+        self.source_db = get_devel_db(permissions='full')
+        self.cursor = self.source_db.cursor(buffered=True, dictionary=True)
+        # Add source_trait as a component trait of harmonization unit and harmonized trait in the source db.
+        add_component_trait_query = "INSERT INTO component_harmonized_trait (harmonized_trait_id, harmonization_unit_id, component_trait_id, date_added) values ('{}', '{}', '{}', '{}')".format(htrait_to_link.i_trait_id, hunit_to_link.i_id, harmonized_trait.i_trait_id, timezone.now().strftime('%Y-%m-%d %H:%M:%S'))
+        self.cursor.execute(add_component_trait_query)
+        self.source_db.commit()
+        self.cursor.execute('SELECT LAST_INSERT_ID() AS last')
+        last_id = self.cursor.fetchone()['last']
+        # Close the db connection.
+        self.cursor.close()
+        self.source_db.close()
+        # Now run the update commands.
+        management.call_command('import_db', '--which_db=devel', '--update_only', '--verbosity=0', '--no_backup')
+        # Check that the chosen source trait is now linked to the harmonization unit and harmonized trait that were picked, in the Django db.
+        harmonized_trait.refresh_from_db()
+        htrait_to_link.refresh_from_db()
+        hunit_to_link.refresh_from_db()
+        self.assertTrue(htrait_to_link in harmonized_trait.harmonized_component_of_harmonized_trait.all())
+        self.assertTrue(hunit_to_link in harmonized_trait.harmonized_component_of_harmonization_unit.all())
+
 
 class ImportHelperTestCase(TestCase):
     """Tests of the _import_[source|harmonized]_tables helper methods."""
@@ -1466,43 +1564,136 @@ class ImportNoUpdateTestCase(VisitTestDataTestCase):
         self.assertFalse(model_instance.modified > t1)
 
     def test_no_update_on_import_component_source_traits(self):
-        """Updates in component_source_trait are not imported with --import_only."""
+        """A new component source trait link to an existing harmonized trait is imported."""
         # Run the initial db import.
         management.call_command('import_db', '--which_db=devel', '--no_backup')
         # Pick a source trait to create a new link to in the source db.
         source_trait = SourceTrait.objects.get(pk=1)
-        # Find a harmonized_trait which this source trait isn't linked to already
+        # Find a harmonization_unit which this source trait isn't linked to already
         for x in range(1, 100):
-            htrait = HarmonizedTrait.objects.get(pk=x)
-            if htrait not in source_trait.source_component_of_harmonized_trait.all():
+            hunit_to_link = HarmonizationUnit.objects.get(pk=x)
+            if hunit_to_link not in source_trait.source_component_of_harmonization_unit.all():
                 break
+        # Find a harmonized trait from within this harmonization unit.
+        htrait_to_link = hunit_to_link.harmonized_trait_set.harmonizedtrait_set.all()[0]
         # Prep for altering the devel db.
         self.source_db = get_devel_db(permissions='full')
         self.cursor = self.source_db.cursor(buffered=True, dictionary=True)
-        # Add source_trait as a component trait of htrait_set in the source db.
-        # Have to add a harmonized function and harmonization_unit here first...
-        add_hfunction_query = "INSERT INTO harmonized_function (function_definition, date_added) values ('return(dataset)', '{}')".format(timezone.now().strftime('%Y-%m-%d %H:%M:%S'))
-        self.cursor.execute(add_hfunction_query)
-        self.source_db.commit()
-        self.cursor.execute('SELECT LAST_INSERT_ID() AS last')
-        last_id = self.cursor.fetchone()['last']
-        add_hunit_query = "INSERT INTO harmonization_unit (function_id, harmonized_trait_set_id, tag, date_added) values ({}, {}, 'example unit tag', '{}')".format(last_id, htrait.harmonized_trait_set.i_id, timezone.now().strftime('%Y-%m-%d %H:%M:%S'))
-        self.cursor.execute(add_hunit_query)
-        self.source_db.commit()
-        self.cursor.execute('SELECT LAST_INSERT_ID() AS last')
-        last_id = self.cursor.fetchone()['last']
-        add_component_trait_query = "INSERT INTO component_source_trait (harmonized_trait_id, harmonization_unit_id, component_trait_id, date_added) VALUES ({}, {}, {}, '{}')".format(htrait.harmonized_trait_set.i_id, last_id, source_trait.i_trait_id, timezone.now().strftime('%Y-%m-%d %H:%M:%S'))
+        # Add source_trait as a component trait of harmonization unit and harmonized trait in the source db.
+        add_component_trait_query = "INSERT INTO component_source_trait (harmonized_trait_id, harmonization_unit_id, component_trait_id, date_added) values ('{}', '{}', '{}', '{}')".format(htrait_to_link.i_trait_id, hunit_to_link.i_id, source_trait.i_trait_id, timezone.now().strftime('%Y-%m-%d %H:%M:%S'))
         self.cursor.execute(add_component_trait_query)
         self.source_db.commit()
+        self.cursor.execute('SELECT LAST_INSERT_ID() AS last')
+        last_id = self.cursor.fetchone()['last']
         # Close the db connection.
         self.cursor.close()
         self.source_db.close()
         # Now run the update commands.
         management.call_command('import_db', '--which_db=devel', '--import_only', '--verbosity=0', '--no_backup')
-        # Check that the chosen subcohort is now linked to the dataset that was picked, in the Django db.
+        # Check that the chosen source trait is now linked to the harmonization unit and harmonized trait that were picked, in the Django db.
         source_trait.refresh_from_db()
-        htrait.refresh_from_db()
-        self.assertFalse(htrait in source_trait.source_component_of_harmonized_trait.all())
+        htrait_to_link.refresh_from_db()
+        hunit_to_link.refresh_from_db()
+        self.assertFalse(htrait_to_link in source_trait.source_component_of_harmonized_trait.all())
+        self.assertFalse(hunit_to_link in source_trait.source_component_of_harmonization_unit.all())
+
+    def test_no_update_on_import_component_batch_traits(self):
+        """A new component batch trait link to an existing harmonized trait is imported."""
+        # Run the initial db import.
+        management.call_command('import_db', '--which_db=devel', '--no_backup')
+        # Pick a source trait to create a new link to in the source db.
+        source_trait = SourceTrait.objects.get(pk=1)
+        # Find a harmonization_unit which this source trait isn't linked to already
+        for x in range(1, 100):
+            hunit_to_link = HarmonizationUnit.objects.get(pk=x)
+            if hunit_to_link not in source_trait.batch_component_of_harmonization_unit.all():
+                break
+        # Find a harmonized trait from within this harmonization unit.
+        htrait_to_link = hunit_to_link.harmonized_trait_set.harmonizedtrait_set.all()[0]
+        # Prep for altering the devel db.
+        self.source_db = get_devel_db(permissions='full')
+        self.cursor = self.source_db.cursor(buffered=True, dictionary=True)
+        # Add source_trait as a component trait of harmonization unit and harmonized trait in the source db.
+        add_component_trait_query = "INSERT INTO component_batch_trait (harmonized_trait_id, harmonization_unit_id, component_trait_id, date_added) values ('{}', '{}', '{}', '{}')".format(htrait_to_link.i_trait_id, hunit_to_link.i_id, source_trait.i_trait_id, timezone.now().strftime('%Y-%m-%d %H:%M:%S'))
+        self.cursor.execute(add_component_trait_query)
+        self.source_db.commit()
+        self.cursor.execute('SELECT LAST_INSERT_ID() AS last')
+        last_id = self.cursor.fetchone()['last']
+        # Close the db connection.
+        self.cursor.close()
+        self.source_db.close()
+        # Now run the update commands.
+        management.call_command('import_db', '--which_db=devel', '--import_only', '--verbosity=0', '--no_backup')
+        # Check that the chosen source trait is now linked to the harmonization unit and harmonized trait that were picked, in the Django db.
+        source_trait.refresh_from_db()
+        htrait_to_link.refresh_from_db()
+        hunit_to_link.refresh_from_db()
+        self.assertFalse(htrait_to_link in source_trait.batch_component_of_harmonized_trait.all())
+        self.assertFalse(hunit_to_link in source_trait.batch_component_of_harmonization_unit.all())
+
+    def test_no_update_on_import_component_age_traits(self):
+        """A new component source trait link to an existing harmonized trait is imported."""
+        # Run the initial db import.
+        management.call_command('import_db', '--which_db=devel', '--no_backup')
+        # Pick a source trait to create a new link to in the source db.
+        source_trait = SourceTrait.objects.get(pk=1)
+        # Find a harmonization_unit which this source trait isn't linked to already
+        for x in range(1, 100):
+            hunit_to_link = HarmonizationUnit.objects.get(pk=x)
+            if hunit_to_link not in source_trait.age_component_of_harmonization_unit.all():
+                break
+        # Prep for altering the devel db.
+        self.source_db = get_devel_db(permissions='full')
+        self.cursor = self.source_db.cursor(buffered=True, dictionary=True)
+        # Add source_trait as a component trait of harmonization unit and harmonized trait in the source db.
+        add_component_trait_query = "INSERT INTO component_age_trait (harmonization_unit_id, component_trait_id, date_added) values ('{}', '{}', '{}')".format(hunit_to_link.i_id, source_trait.i_trait_id, timezone.now().strftime('%Y-%m-%d %H:%M:%S'))
+        self.cursor.execute(add_component_trait_query)
+        self.source_db.commit()
+        self.cursor.execute('SELECT LAST_INSERT_ID() AS last')
+        last_id = self.cursor.fetchone()['last']
+        # Close the db connection.
+        self.cursor.close()
+        self.source_db.close()
+        # Now run the update commands.
+        management.call_command('import_db', '--which_db=devel', '--import_only', '--verbosity=0', '--no_backup')
+        # Check that the chosen source trait is now linked to the harmonization unit and harmonized trait that were picked, in the Django db.
+        source_trait.refresh_from_db()
+        hunit_to_link.refresh_from_db()
+        self.assertFalse(hunit_to_link in source_trait.age_component_of_harmonization_unit.all())
+
+    def test_no_update_on_import_component_harmonized_traits(self):
+        """A new component source trait link to an existing harmonized trait is imported."""
+        # Run the initial db import.
+        management.call_command('import_db', '--which_db=devel', '--no_backup')
+        # Pick a source trait to create a new link to in the source db.
+        harmonized_trait = HarmonizedTrait.objects.get(pk=1)
+        # Find a harmonization_unit which this harmonized trait isn't linked to already
+        for x in range(1, 100):
+            hunit_to_link = HarmonizationUnit.objects.get(pk=x)
+            if hunit_to_link not in harmonized_trait.harmonized_component_of_harmonization_unit.all():
+                break
+        # Find a harmonized trait from within this harmonization unit.
+        htrait_to_link = hunit_to_link.harmonized_trait_set.harmonizedtrait_set.all()[0]
+        # Prep for altering the devel db.
+        self.source_db = get_devel_db(permissions='full')
+        self.cursor = self.source_db.cursor(buffered=True, dictionary=True)
+        # Add source_trait as a component trait of harmonization unit and harmonized trait in the source db.
+        add_component_trait_query = "INSERT INTO component_harmonized_trait (harmonized_trait_id, harmonization_unit_id, component_trait_id, date_added) values ('{}', '{}', '{}', '{}')".format(htrait_to_link.i_trait_id, hunit_to_link.i_id, harmonized_trait.i_trait_id, timezone.now().strftime('%Y-%m-%d %H:%M:%S'))
+        self.cursor.execute(add_component_trait_query)
+        self.source_db.commit()
+        self.cursor.execute('SELECT LAST_INSERT_ID() AS last')
+        last_id = self.cursor.fetchone()['last']
+        # Close the db connection.
+        self.cursor.close()
+        self.source_db.close()
+        # Now run the update commands.
+        management.call_command('import_db', '--which_db=devel', '--import_only', '--verbosity=0', '--no_backup')
+        # Check that the chosen source trait is now linked to the harmonization unit and harmonized trait that were picked, in the Django db.
+        harmonized_trait.refresh_from_db()
+        htrait_to_link.refresh_from_db()
+        hunit_to_link.refresh_from_db()
+        self.assertFalse(htrait_to_link in harmonized_trait.harmonized_component_of_harmonized_trait.all())
+        self.assertFalse(hunit_to_link in harmonized_trait.harmonized_component_of_harmonization_unit.all())
 
 
 class BackupTestCase(VisitTestDataTestCase):
