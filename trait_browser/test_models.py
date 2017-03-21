@@ -5,8 +5,8 @@ from datetime import datetime
 from django.test import TestCase
 from django.core.urlresolvers import reverse
 
-from .factories import GlobalStudyFactory, HarmonizedTraitFactory, HarmonizedTraitEncodedValueFactory, HarmonizedTraitSetFactory, SourceDatasetFactory, SourceStudyVersionFactory, SourceTraitFactory, SourceTraitEncodedValueFactory, StudyFactory, SubcohortFactory
-from .models import GlobalStudy, HarmonizedTrait, HarmonizedTraitEncodedValue, HarmonizedTraitSet, SourceDataset, SourceStudyVersion, SourceTrait, SourceTraitEncodedValue, Study, Subcohort
+from .factories import *
+from .models import *
 
 
 class GlobalStudyTestCase(TestCase):
@@ -57,6 +57,7 @@ class StudyTestCase(TestCase):
         study = StudyFactory.create()
         url = ''.join([reverse('trait_browser:source:search'), '\?study=\d+'])
         self.assertRegex(study.get_search_url(),  url)
+
 
 class SourceStudyVersionTestCase(TestCase):
     
@@ -131,6 +132,53 @@ class HarmonizedTraitSetTestCase(TestCase):
         self.assertIsInstance(harmonized_trait_set.created, datetime)
         self.assertIsInstance(harmonized_trait_set.modified, datetime)
     
+
+class HarmonizationUnitTestCase(TestCase):
+    
+    def test_model_saving(self):
+        """Test that you can save a HarmonizationUnit object."""
+        harmonization_unit = HarmonizationUnitFactory.create()
+        self.assertIsInstance(HarmonizationUnit.objects.get(pk=harmonization_unit.pk), HarmonizationUnit)
+
+    def test_printing(self):
+        """Test the custom __str__ method."""
+        harmonization_unit = HarmonizationUnitFactory.build()
+        self.assertIsInstance(harmonization_unit.__str__(), str)
+
+    def test_timestamps_added(self):
+        """Test that timestamps are added."""
+        harmonization_unit = HarmonizationUnitFactory.create()
+        self.assertIsInstance(harmonization_unit.created, datetime)
+        self.assertIsInstance(harmonization_unit.modified, datetime)
+
+    def test_adding_component_source_traits(self):
+        """Test that adding associated component_source_traits works."""
+        global_study = GlobalStudyFactory.create()
+        component_source_traits = SourceTraitFactory.create_batch(5, source_dataset__source_study_version__study__global_study=global_study)
+        harmonization_unit = HarmonizationUnitFactory.create(component_source_traits=component_source_traits)
+        self.assertEqual(len(harmonization_unit.component_source_traits.all()), 5)
+
+    def test_adding_component_harmonized_traits(self):
+        """Test that adding associated component_harmonized_traits works."""
+        htrait_set = HarmonizedTraitSetFactory.create()
+        component_harmonized_traits = HarmonizedTraitFactory.create_batch(5, harmonized_trait_set=htrait_set)
+        harmonization_unit = HarmonizationUnitFactory.create(component_harmonized_traits=component_harmonized_traits)
+        self.assertEqual(len(harmonization_unit.component_harmonized_traits.all()), 5)
+
+    def test_adding_component_batch_traits(self):
+        """Test that adding associated component_batch_traits works."""
+        global_study = GlobalStudyFactory.create()
+        component_batch_traits = SourceTraitFactory.create_batch(5, source_dataset__source_study_version__study__global_study=global_study)
+        harmonization_unit = HarmonizationUnitFactory.create(component_batch_traits=component_batch_traits)
+        self.assertEqual(len(harmonization_unit.component_batch_traits.all()), 5)
+
+    def test_adding_component_age_traits(self):
+        """Test that adding associated component_age_traits works."""
+        global_study = GlobalStudyFactory.create()
+        component_age_traits = SourceTraitFactory.create_batch(5, source_dataset__source_study_version__study__global_study=global_study)
+        harmonization_unit = HarmonizationUnitFactory.create(component_age_traits=component_age_traits)
+        self.assertEqual(len(harmonization_unit.component_age_traits.all()), 5)
+
  
 class SourceTraitTestCase(TestCase):
     
@@ -186,6 +234,34 @@ class HarmonizedTraitTestCase(TestCase):
         """Test that the custom save method works."""
         harmonized_trait = HarmonizedTraitFactory.create()
         self.assertEqual(harmonized_trait.trait_flavor_name, '{}_{}'.format(harmonized_trait.i_trait_name, harmonized_trait.harmonized_trait_set.i_flavor))
+
+    def test_adding_component_source_traits(self):
+        """Test that adding associated component_source_traits works."""
+        global_study = GlobalStudyFactory.create()
+        component_source_traits = SourceTraitFactory.create_batch(5, source_dataset__source_study_version__study__global_study=global_study)
+        harmonized_trait = HarmonizedTraitFactory.create(component_source_traits=component_source_traits)
+        self.assertEqual(len(harmonized_trait.component_source_traits.all()), 5)
+
+    def test_adding_component_harmonized_traits(self):
+        """Test that adding associated component_harmonized_traits works."""
+        htrait_set = HarmonizedTraitSetFactory.create()
+        component_harmonized_traits = HarmonizedTraitFactory.create_batch(5, harmonized_trait_set=htrait_set)
+        harmonized_trait = HarmonizedTraitFactory.create(component_harmonized_traits=component_harmonized_traits)
+        self.assertEqual(len(harmonized_trait.component_harmonized_traits.all()), 5)
+
+    def test_adding_component_batch_traits(self):
+        """Test that adding associated component_batch_traits works."""
+        global_study = GlobalStudyFactory.create()
+        component_batch_traits = SourceTraitFactory.create_batch(5, source_dataset__source_study_version__study__global_study=global_study)
+        harmonized_trait = HarmonizedTraitFactory.create(component_batch_traits=component_batch_traits)
+        self.assertEqual(len(harmonized_trait.component_batch_traits.all()), 5)
+
+    def test_adding_harmonization_units(self):
+        """Test that adding associated harmonization_units works."""
+        htrait_set = HarmonizedTraitSetFactory.create()
+        harmonization_units = HarmonizationUnitFactory.create_batch(5, harmonized_trait_set=htrait_set)
+        harmonized_trait = HarmonizedTraitFactory.create(harmonization_units=harmonization_units)
+        self.assertEqual(len(harmonized_trait.harmonization_units.all()), 5)
 
 
 class SourceTraitEncodedValueTestCase(TestCase):
