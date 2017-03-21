@@ -745,6 +745,7 @@ class Command(BaseCommand):
                                                filter_not=False, **kwargs)
         cursor = source_db.cursor(buffered=True, dictionary=True)
         cursor.execute(new_m2m_query)
+        logger.debug('Importing M2M links for parent {} and child {}'.format(kwargs['parent_model']._meta.object_name, kwargs['child_model']._meta.object_name))
         links = []
         for row in cursor:
             type_fixed_row = self._fix_row(row)
@@ -772,17 +773,21 @@ class Command(BaseCommand):
         links = {'added': [], 'removed': []}
         cursor = source_db.cursor(buffered=True, dictionary=True)
         current_parents = kwargs['parent_model'].objects.all()
+        logger.debug('Updating M2M links for parent {} and child {}'.format(kwargs['parent_model']._meta.object_name, kwargs['child_model']._meta.object_name))
         for parent in current_parents:
             logger.debug(parent)
             # Which links are currently present in the Django db?
             linked_pks = [str(el.pk) for el in getattr(parent, kwargs['child_related_name']).all()]
             # Which links are currently present in the source db?
             source_links_query = self._make_table_query(filter_field=kwargs['parent_source_pk'], filter_values=[str(parent.pk)], filter_not=False, **kwargs)
+            logger.debug(source_links_query)
             cursor.execute(source_links_query)
             source_linked_pks = [str(self._fix_row(row)[kwargs['child_source_pk']]) for row in cursor.fetchall()]
             # Figure out which child pk's to add or remove links to.
             to_add = set(source_linked_pks) - set(linked_pks)
             to_remove = set(linked_pks) - set(source_linked_pks)
+            logger.debug('Adding linked pks {}'.format(to_add))
+            logger.debug('Removing linked pks {}'.format(to_remove))
             # Do the adding and removing
             for pk in to_add:
                 add_parent, add_child = self._make_m2m_link(parent_pk=parent.pk, child_pk=pk, **kwargs)
