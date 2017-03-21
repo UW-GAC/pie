@@ -210,9 +210,9 @@ class HarmonizationUnit(SourceDBTimeStampedModel):
     component_batch_traits = models.ManyToManyField('SourceTrait', related_name='batch_component_of_harmonization_unit')
     component_age_traits = models.ManyToManyField('SourceTrait', related_name='age_component_of_harmonization_unit')
     
-    def __str___(self):
+    def __str__(self):
         """Pretty printing."""
-        return 'Harmonization unit - id {} tagged {}'.format(self.i_id, self.tag)
+        return 'Harmonization unit - id {} tagged {}'.format(self.i_id, self.i_tag)
 
 
 # Trait models.
