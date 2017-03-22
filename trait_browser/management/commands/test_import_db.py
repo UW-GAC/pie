@@ -459,12 +459,6 @@ class M2MHelperTest(TestCase):
     def test_update_m2m_field(self):
         pass
 
-    def test_import_new_m2m_field_with_query(self):
-        pass
-    
-    def test_update_m2m_field_with_query(self):
-        pass
-
 
 class ImportHelperTest(TestCase):
     """Tests of the _import_[source|harmonized]_tables helper methods."""

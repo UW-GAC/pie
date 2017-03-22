@@ -734,7 +734,7 @@ class Command(BaseCommand):
         logger.debug('Linked {} to {}'.format(child, parent))
         return (parent, child)
     
-    def _import_new_m2m_field(self, source_db, **kwargs):
+    def _import_new_m2m_field(self, source_db, query=None, **kwargs):
         """Import ManyToMany field links from an m2m source table for a set of pks for the newly imported parent model.
         
         parent_model must have a field that is a ManyToManyField to child_model.
@@ -750,9 +750,12 @@ class Command(BaseCommand):
         Returns:
             list of str pk values for (parent_pk, child_pk) pairs that have now been linked
         """
-        new_m2m_query = self._make_table_query(filter_field=kwargs['parent_source_pk'],
-                                               filter_values=kwargs['import_parent_pks'], 
-                                               filter_not=False, **kwargs)
+        if query is not None:
+            new_m2m_query = query
+        else:
+            new_m2m_query = self._make_table_query(filter_field=kwargs['parent_source_pk'],
+                                                   filter_values=kwargs['import_parent_pks'], 
+                                                   filter_not=False, **kwargs)
         cursor = source_db.cursor(buffered=True, dictionary=True)
         cursor.execute(new_m2m_query)
         logger.debug('Importing M2M links for parent {} and child {}'.format(kwargs['parent_model']._meta.object_name, kwargs['child_model']._meta.object_name))
@@ -766,7 +769,7 @@ class Command(BaseCommand):
         cursor.close()
         return links
 
-    def _update_m2m_field(self, source_db, expected, **kwargs):
+    def _update_m2m_field(self, source_db, expected, query=None, **kwargs):
         """Remove m2m links that have been removed from the source db (for already-imported parent models).
         
         For each parent model that has been imported, get a list of the linked children
@@ -789,14 +792,17 @@ class Command(BaseCommand):
             # Which links are currently present in the Django db?
             linked_pks = [str(el.pk) for el in getattr(parent, kwargs['child_related_name']).all()]
             # Which links are currently present in the source db?
-            source_links_query = self._make_table_query(filter_field=kwargs['parent_source_pk'], filter_values=[str(parent.pk)], filter_not=False, **kwargs)
+            if query is not None:
+                source_links_query = query + ' WHERE {pk_name}={pk}'.format(pk_name=kwargs['parent_source_pk'], pk=str(parent.pk))
+            else:
+                source_links_query = self._make_table_query(filter_field=kwargs['parent_source_pk'], filter_values=[str(parent.pk)], filter_not=False, **kwargs)
             logger.debug(source_links_query)
             cursor.execute(source_links_query)
             source_linked_pks = [str(self._fix_row(row)[kwargs['child_source_pk']]) for row in cursor.fetchall()]
             # Figure out which child pk's to add or remove links to.
             to_add = set(source_linked_pks) - set(linked_pks)
             to_remove = set(linked_pks) - set(source_linked_pks)
-            update_message = 'Add links for child pks {}; Remove links for child pks {}'.format(','.join([str(el) for el in to_add], ','.join([str(el) for el in to_remove]))
+            update_message = 'Add links for child pks {}; Remove links for child pks {}'.format(','.join([str(el) for el in to_add]), ','.join([str(el) for el in to_remove]))
             if expected:
                 logger.debug('Unexpected update: ' + update_message)
             else:
@@ -805,80 +811,6 @@ class Command(BaseCommand):
             for pk in to_add:
                 add_parent, add_child = self._make_m2m_link(parent_pk=parent.pk, child_pk=pk, **kwargs)
                 links['added'].append((add_parent, add_child))
-            for pk in to_remove:
-                remove_parent, remove_child = self._break_m2m_link(parent_pk=parent.pk, child_pk=pk, **kwargs)
-                links['removed'].append((remove_parent, remove_child))
-        cursor.close()
-        return links
-
-    def _import_new_m2m_field_with_query(self, source_db, query, **kwargs):
-        """Import ManyToMany field links from an m2m source table for a set of pks for the newly imported parent model, using a specified query.
-        
-        parent_model must have a field that is a ManyToManyField to child_model.
-        Query the source db for entries in the m2m table (source_table) that link
-        child_source_pk values to parent_source_pk values, for parent_source_pk values
-        that are in the import_parent_pks list. Then use the results of that query
-        to link child_model instances to parent_model instances, using
-        parent_model_obj.children.add(child_model_obj)
-        
-        Arguments:
-            source_db (MySQLConnection): a mysql.connector open db connection
-            query (str): 
-        
-        Returns:
-            list of str pk values for (parent_pk, child_pk) pairs that have now been linked
-        """
-        new_m2m_query = query
-        cursor = source_db.cursor(buffered=True, dictionary=True)
-        cursor.execute(new_m2m_query)
-        links = []
-        logger.debug('Importing M2M links for parent {} and child {}'.format(kwargs['parent_model']._meta.object_name, kwargs['child_model']._meta.object_name))
-        for row in cursor:
-            type_fixed_row = self._fix_row(row)
-            child, parent = self._make_m2m_link(parent_pk=type_fixed_row[kwargs['parent_source_pk']],
-                                                child_pk=type_fixed_row[kwargs['child_source_pk']],
-                                                **kwargs)
-            links.append((parent.pk, child.pk))
-        cursor.close()
-        return links
-
-    def _update_m2m_field_with_query(self, source_db, query, **kwargs):
-        """Remove m2m links that have been removed from the source db (for already-imported parent models), using a specified query.
-        
-        For each parent model that has been imported, get a list of the linked children
-        and check the source db to see if the link between parent and child is still
-        present there. If it is no longer linked in the source db, remove the child
-        from the m2m field. 
-        
-        Arguments:
-            source_db (MySQLConnection): a mysql.connector open db connection 
-            query (str):
-        
-        Returns:
-            list of str pk values for (parent_pk, child_pk) pairs that have now been linked
-        """
-        links = {'added': [], 'removed': []}
-        cursor = source_db.cursor(buffered=True, dictionary=True)
-        current_parents = kwargs['parent_model'].objects.all()
-        logger.debug('Updating M2M links for parent {} and child {}'.format(kwargs['parent_model']._meta.object_name, kwargs['child_model']._meta.object_name))
-        for parent in current_parents:
-            # Which links are currently present in the Django db?
-            linked_pks = [str(el.pk) for el in getattr(parent, kwargs['child_related_name']).all()]
-            # Which links are currently present in the source db?
-            source_links_query = query + ' WHERE {pk_name}={pk}'.format(pk_name=kwargs['parent_source_pk'], pk=str(parent.pk))
-            logger.debug(source_links_query)
-            cursor.execute(source_links_query)
-            source_linked_pks = [str(self._fix_row(row)[kwargs['child_source_pk']]) for row in cursor.fetchall()]
-            logger.debug(source_linked_pks)
-            # Figure out which child pk's to add or remove links to.
-            to_add = set(source_linked_pks) - set(linked_pks)
-            to_remove = set(linked_pks) - set(source_linked_pks)
-            # Do the adding and removing
-            logger.debug('Adding linked pks {}'.format(to_add))
-            for pk in to_add:
-                add_parent, add_child = self._make_m2m_link(parent_pk=parent.pk, child_pk=pk, **kwargs)
-                links['added'].append((add_parent, add_child))
-            logger.debug('Removing linked pks {}'.format(to_remove))
             for pk in to_remove:
                 remove_parent, remove_child = self._break_m2m_link(parent_pk=parent.pk, child_pk=pk, **kwargs)
                 links['removed'].append((remove_parent, remove_child))
@@ -1072,7 +1004,7 @@ class Command(BaseCommand):
                                                                         import_parent_pks=new_harmonized_trait_pks)
         logger.info("Added {} component batch traits".format(len(new_component_source_trait_links_to_trait)))
 
-        new_harmonization_unit_harmonized_trait_links = self._import_new_m2m_field_with_query(source_db=source_db,
+        new_harmonization_unit_harmonized_trait_links = self._import_new_m2m_field(source_db=source_db,
                                                                                                 query = HUNIT_QUERY,
                                                                                                 parent_model=HarmonizedTrait,
                                                                                                 parent_source_pk='harmonized_trait_id',
@@ -1107,7 +1039,8 @@ class Command(BaseCommand):
                                                                     parent_source_pk='dataset_id',
                                                                     child_model=Subcohort,
                                                                     child_source_pk='subcohort_id',
-                                                                    child_related_name='subcohorts')
+                                                                    child_related_name='subcohorts',
+                                                                    expected=True)
         logger.info("Update: added {} source dataset subcohorts".format(len(updated_source_dataset_subcohort_links['added'])))
         logger.info("Update: removed {} source dataset subcohorts".format(len(updated_source_dataset_subcohort_links['removed'])))
 
@@ -1192,7 +1125,8 @@ class Command(BaseCommand):
                                                                     parent_source_pk='harmonization_unit_id',
                                                                     child_model=SourceTrait,
                                                                     child_source_pk='component_trait_id',
-                                                                    child_related_name='component_source_traits')
+                                                                    child_related_name='component_source_traits',
+                                                                    expected=False)
         logger.info("Update: added {} component source traits".format(len(updated_component_source_trait_links_to_unit['added'])))
         logger.info("Update: removed {} component source traits".format(len(updated_component_source_trait_links_to_unit['removed'])))
 
@@ -1202,7 +1136,8 @@ class Command(BaseCommand):
                                                                         parent_source_pk='harmonization_unit_id',
                                                                         child_model=HarmonizedTrait,
                                                                         child_source_pk='component_trait_id',
-                                                                        child_related_name='component_harmonized_traits')
+                                                                        child_related_name='component_harmonized_traits',
+                                                                        expected=False)
         logger.info("Update: added {} component harmonized traits".format(len(updated_component_harmonized_trait_links_to_unit['added'])))
         logger.info("Update: removed {} component harmonized traits".format(len(updated_component_harmonized_trait_links_to_unit['removed'])))
 
@@ -1212,7 +1147,8 @@ class Command(BaseCommand):
                                                                     parent_source_pk='harmonization_unit_id',
                                                                     child_model=SourceTrait,
                                                                     child_source_pk='component_trait_id',
-                                                                    child_related_name='component_batch_traits')
+                                                                    child_related_name='component_batch_traits',
+                                                                    expected=False)
         logger.info("Update: added {} component batch traits".format(len(updated_component_source_trait_links_to_unit['added'])))
         logger.info("Update: removed {} component batch traits".format(len(updated_component_source_trait_links_to_unit['removed'])))
 
@@ -1222,7 +1158,8 @@ class Command(BaseCommand):
                                                                 parent_source_pk='harmonization_unit_id',
                                                                 child_model=SourceTrait,
                                                                 child_source_pk='component_trait_id',
-                                                                child_related_name='component_age_traits')
+                                                                child_related_name='component_age_traits',
+                                                                expected=False)
         logger.info("Update: added {} component age traits".format(len(updated_component_age_trait_links_to_unit['added'])))
         logger.info("Update: removed {} component age traits".format(len(updated_component_age_trait_links_to_unit['removed'])))
 
@@ -1232,7 +1169,8 @@ class Command(BaseCommand):
                                                                     parent_source_pk='harmonized_trait_id',
                                                                     child_model=SourceTrait,
                                                                     child_source_pk='component_trait_id',
-                                                                    child_related_name='component_source_traits')
+                                                                    child_related_name='component_source_traits',
+                                                                    expected=False)
         logger.info("Update: added {} component source traits".format(len(updated_component_source_trait_links_to_trait['added'])))
         logger.info("Update: removed {} component source traits".format(len(updated_component_source_trait_links_to_trait['removed'])))
 
@@ -1242,7 +1180,8 @@ class Command(BaseCommand):
                                                                         parent_source_pk='harmonized_trait_id',
                                                                         child_model=HarmonizedTrait,
                                                                         child_source_pk='component_trait_id',
-                                                                        child_related_name='component_harmonized_traits')
+                                                                        child_related_name='component_harmonized_traits',
+                                                                        expected=False)
         logger.info("Update: added {} component harmonized traits".format(len(updated_component_harmonized_trait_links_to_trait['added'])))
         logger.info("Update: removed {} component harmonized traits".format(len(updated_component_harmonized_trait_links_to_trait['removed'])))
 
@@ -1252,17 +1191,19 @@ class Command(BaseCommand):
                                                                 parent_source_pk='harmonized_trait_id',
                                                                 child_model=SourceTrait,
                                                                 child_source_pk='component_trait_id',
-                                                                child_related_name='component_batch_traits')
+                                                                child_related_name='component_batch_traits',
+                                                                expected=False)
         logger.info("Update: added {} component batch traits".format(len(updated_component_source_trait_links_to_trait['added'])))
         logger.info("Update: removed {} component batch traits".format(len(updated_component_source_trait_links_to_trait['removed'])))
 
-        updated_harmonization_unit_harmonized_trait_links = self._update_m2m_field_with_query(source_db=source_db,
+        updated_harmonization_unit_harmonized_trait_links = self._update_m2m_field(source_db=source_db,
                                                                                                 query = HUNIT_QUERY,
                                                                                                 parent_model=HarmonizedTrait,
                                                                                                 parent_source_pk='harmonized_trait_id',
                                                                                                 child_model=HarmonizationUnit,
                                                                                                 child_source_pk='harmonization_unit_id',
-                                                                                                child_related_name='harmonization_units')
+                                                                                                child_related_name='harmonization_units',
+                                                                                                expected=False)
         logger.info("Update: added {} harmonized_traits to harmonization units".format(len(updated_harmonization_unit_harmonized_trait_links['added'])))
         logger.info("Update: removed {} harmonized_traits to harmonization units".format(len(updated_harmonization_unit_harmonized_trait_links['removed'])))
 
