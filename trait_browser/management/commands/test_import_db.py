@@ -24,7 +24,7 @@ from django.core import management
 from django.test import TestCase
 from django.utils import timezone
 
-from trait_browser.management.commands.import_db import Command
+from trait_browser.management.commands.import_db import Command, HUNIT_QUERY
 from trait_browser.management.commands.db_factory import fake_row_dict
 from trait_browser.factories import *
 from trait_browser.models import *
@@ -886,6 +886,18 @@ class BackupTest(VisitTestDataTestCase):
         # Is the contents of the new backup the same as the old?
 
         cleanup_backup_dir()
+
+
+class SpecialQueryTest(BaseTestDataTestCase):
+    """Test the special queries saved as constant variables in import_db."""
+    
+    def test_HUNIT_QUERY(self):
+        """HUNIT_QUERY returns good results."""
+        self.cursor.execute(HUNIT_QUERY)
+        results = self.cursor.fetchall()
+        self.assertTrue(len(results) == 10) # Change if changing test data.
+        self.assertIn('harmonized_trait_id', results[0].keys())
+        self.assertIn('harmonization_unit_id', results[0].keys())
 
 
 class UpdateModelsTest(VisitTestDataTestCase):
