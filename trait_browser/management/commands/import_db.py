@@ -766,7 +766,7 @@ class Command(BaseCommand):
         cursor.close()
         return links
 
-    def _update_m2m_field(self, source_db, **kwargs):
+    def _update_m2m_field(self, source_db, expected, **kwargs):
         """Remove m2m links that have been removed from the source db (for already-imported parent models).
         
         For each parent model that has been imported, get a list of the linked children
@@ -785,7 +785,7 @@ class Command(BaseCommand):
         current_parents = kwargs['parent_model'].objects.all()
         logger.debug('Updating M2M links for parent {} and child {}'.format(kwargs['parent_model']._meta.object_name, kwargs['child_model']._meta.object_name))
         for parent in current_parents:
-            logger.debug(parent)
+            logger.debug('...updating parent {}'.format(parent))
             # Which links are currently present in the Django db?
             linked_pks = [str(el.pk) for el in getattr(parent, kwargs['child_related_name']).all()]
             # Which links are currently present in the source db?
@@ -796,8 +796,11 @@ class Command(BaseCommand):
             # Figure out which child pk's to add or remove links to.
             to_add = set(source_linked_pks) - set(linked_pks)
             to_remove = set(linked_pks) - set(source_linked_pks)
-            logger.debug('Adding linked pks {}'.format(to_add))
-            logger.debug('Removing linked pks {}'.format(to_remove))
+            update_message = 'Add links for child pks {}; Remove links for child pks {}'.format(','.join([str(el) for el in to_add], ','.join([str(el) for el in to_remove]))
+            if expected:
+                logger.debug('Unexpected update: ' + update_message)
+            else:
+                logger.warning('Update: ' + update_message)
             # Do the adding and removing
             for pk in to_add:
                 add_parent, add_child = self._make_m2m_link(parent_pk=parent.pk, child_pk=pk, **kwargs)
