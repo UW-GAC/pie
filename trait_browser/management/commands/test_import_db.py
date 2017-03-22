@@ -116,7 +116,7 @@ def cleanup_backup_dir():
     rmtree(settings.DBBACKUP_STORAGE_OPTIONS['location'])
     settings.DBBACKUP_STORAGE_OPTIONS['location'] = ORIGINAL_BACKUP_DIR
 
-
+# Mixins
 class OpenCloseDBMixin(object):
     """Mixin to add setUp and tearDown methods to TestCases.
     
@@ -134,7 +134,37 @@ class OpenCloseDBMixin(object):
         self.source_db.close()
 
 
-class TestFunctionsTestCase(TestCase):
+# TestCase superclasses (contain no tests)
+class BaseTestDataTestCase(OpenCloseDBMixin, TestCase):
+    """Superclass to test importing commands on the base.sql test source db data."""
+    
+    @classmethod
+    def setUpClass(cls):
+        """Load the base test data, once for all tests."""
+        # Run the TestCase setUpClass method.
+        super(BaseTestDataTestCase, cls).setUpClass()
+        # Clean out the devel db and load the first test dataset.
+        # By default, all tests will use dataset 1.
+        clean_devel_db()
+        load_test_source_db_data('base.sql')
+
+
+class VisitTestDataTestCase(OpenCloseDBMixin, TestCase):
+    """Tests that need visit data to already be added to the source db test data."""
+    
+    @classmethod
+    def setUpClass(cls):
+        """Load the base+visit test data once for all of the tests."""
+        # Run the TestCase setUpClass method.
+        super(VisitTestDataTestCase, cls).setUpClass()
+        # Clean out the devel db and load the first test dataset.
+        # By default, all tests will use dataset 1.
+        clean_devel_db()
+        load_test_source_db_data('base_plus_visit.sql')
+
+
+# Tests that don't require test data
+class TestFunctionsTest(TestCase):
     """Tests of the helper functions used by this test script."""
     
     def test_clean_devel_db(self):
@@ -217,52 +247,7 @@ class TestFunctionsTestCase(TestCase):
         remove(tmp_file_path) 
 
 
-class BaseTestDataTestCase(OpenCloseDBMixin, TestCase):
-    """Superclass to test importing commands on the base.sql test source db data."""
-    
-    @classmethod
-    def setUpClass(cls):
-        """Load the base test data, once for all tests."""
-        # Run the TestCase setUpClass method.
-        super(BaseTestDataTestCase, cls).setUpClass()
-        # Clean out the devel db and load the first test dataset.
-        # By default, all tests will use dataset 1.
-        clean_devel_db()
-        load_test_source_db_data('base.sql')
-
-
-class VisitTestDataTestCase(OpenCloseDBMixin, TestCase):
-    """Tests that need visit data to already be added to the source db test data."""
-    
-    @classmethod
-    def setUpClass(cls):
-        """Load the base+visit test data once for all of the tests."""
-        # Run the TestCase setUpClass method.
-        super(VisitTestDataTestCase, cls).setUpClass()
-        # Clean out the devel db and load the first test dataset.
-        # By default, all tests will use dataset 1.
-        clean_devel_db()
-        load_test_source_db_data('base_plus_visit.sql')
-
-
-class VisitTestCase(VisitTestDataTestCase):
-    """Tests that require visit data from the get-go."""
-    
-    def test_make_subcohort_args_one_row_make_subcohort_obj(self):
-        """Get a single row of test data from the database and see if the results from _make_subcohort_args can be used to successfully make and save a Subcohort object."""
-        subcohort_query = 'SELECT * FROM subcohort;'
-        self.cursor.execute(subcohort_query)
-        row_dict = self.cursor.fetchone()
-        # Have to make global study and study first.
-        global_study = GlobalStudyFactory.create(i_id=row_dict['global_study_id'])
-        #
-        subcohort_args = CMD._make_subcohort_args(CMD._fix_row(row_dict))
-        subcohort = Subcohort(**subcohort_args)
-        subcohort.save()
-        self.assertIsInstance(subcohort, Subcohort)
-
-
-class DbFixersTestCase(TestCase):
+class DbFixersTest(TestCase):
     """Tests of the _fix_[something] methods."""
 
     def test_fix_bytearray_no_bytearrays_left(self):
@@ -402,7 +387,7 @@ class DbFixersTestCase(TestCase):
         self.assertDictEqual(fixed_row, row)
     
 
-class GetDbTestCase(TestCase):
+class GetDbTest(TestCase):
     """Tests of the _get_db() utility function."""
     
     def test_get_source_db_returns_connection_test(self):
@@ -433,7 +418,7 @@ class GetDbTestCase(TestCase):
         self.assertEqual(timedelta(0), timezone_offset)
 
 
-class DbLockingTestCase(TestCase):
+class DbLockingTest(TestCase):
     """Tests of the functions to lock the source db."""
     
     def test_lock_source_db_does_not_fail(self):
@@ -448,9 +433,143 @@ class DbLockingTestCase(TestCase):
     # TODO: write tests that ensure the lock works
     # Could use this decorator from pytest-timeout package
     # @pytest.mark.timeout(180)
-    
 
-class MakeArgsTestCase(BaseTestDataTestCase):
+
+class M2MHelperTest(TestCase):
+    """Tests of the helper functions for importing and updating m2m tables."""
+    
+    def test_break_m2m_link(self):
+        """Removes a child model from its parent M2M field."""
+        sd = SourceDatasetFactory.create()
+        sc = SubcohortFactory.create(global_study=sd.source_study_version.study.global_study)
+        sd.subcohorts.add(sc)
+        CMD._break_m2m_link(SourceDataset, sd.pk, Subcohort, sc.pk, 'subcohorts')
+        self.assertNotIn(sc, sd.subcohorts.all())
+        
+    def test_make_m2m_link(self):
+        """Adds a child model to its parent M2M field."""
+        sd = SourceDatasetFactory.create()
+        sc = SubcohortFactory.create(global_study=sd.source_study_version.study.global_study)
+        CMD._make_m2m_link(SourceDataset, sd.pk, Subcohort, sc.pk, 'subcohorts')
+        self.assertIn(sc, sd.subcohorts.all())
+        
+    def test_import_new_m2m_field(self):
+        pass
+    
+    def test_update_m2m_field(self):
+        pass
+
+    def test_import_new_m2m_field_with_query(self):
+        pass
+    
+    def test_update_m2m_field_with_query(self):
+        pass
+
+
+class ImportHelperTest(TestCase):
+    """Tests of the _import_[source|harmonized]_tables helper methods."""
+    
+    def test_import_source_tables(self):
+        pass
+    
+    def test_import_harmonized_tables(self):
+        pass
+
+
+class UpdateHelperTest(TestCase):
+    """Tests of the _update_[source|harmonized]_tables helper methods."""
+    
+    def test_update_source_tables(self):
+        pass
+    
+    def test_update_harmonized_tables(self):
+        pass
+
+
+class GetCurrentListsTest(TestCase):
+    """Tests of _get_current_pks with each possible model."""
+    n = 32
+    
+    def test_get_current_global_studies(self):
+        """Returns the right number of global_study ids."""
+        GlobalStudyFactory.create_batch(self.n)
+        pks = CMD._get_current_pks(GlobalStudy)
+        self.assertEqual(len(pks), self.n)
+
+    def test_get_current_studies(self):
+        """Returns the right number of study ids."""
+        StudyFactory.create_batch(self.n)
+        pks = CMD._get_current_pks(Study)
+        self.assertEqual(len(pks), self.n)
+
+    def test_get_current_source_study_versions(self):
+        """Returns the right number of source study version ids."""
+        SourceStudyVersionFactory.create_batch(self.n)
+        pks = CMD._get_current_pks(SourceStudyVersion)
+        self.assertEqual(len(pks), self.n)
+
+    def test_get_current_subcohorts(self):
+        """Returns the right number of subcohort ids."""
+        SubcohortFactory.create_batch(self.n)
+        pks = CMD._get_current_pks(Subcohort)
+        self.assertEqual(len(pks), self.n)
+
+    def test_get_current_source_datasets(self):
+        """Returns the right number of source dataset ids."""
+        SourceTraitFactory.create_batch(self.n)
+        pks = CMD._get_current_pks(SourceTrait)
+        self.assertEqual(len(pks), self.n)
+    
+    def test_get_current_harmonized_trait_set(self):
+        """Returns the right number of harmonized trait sets."""
+        HarmonizedTraitSetFactory.create_batch(self.n)
+        pks = CMD._get_current_pks(HarmonizedTraitSet)
+        self.assertEqual(len(pks), self.n)
+    
+    def test_get_current_source_traits(self):
+        """Returns the right number of source trait ids."""
+        SourceTraitFactory.create_batch(self.n)
+        pks = CMD._get_current_pks(SourceTrait)
+        self.assertEqual(len(pks), self.n)
+    
+    def test_get_current_harmonized_trait(self):
+        """Returns the right number of harmonized trait ids."""
+        HarmonizedTraitFactory.create_batch(self.n)
+        pks = CMD._get_current_pks(HarmonizedTrait)
+        self.assertEqual(len(pks), self.n)
+    
+    def test_get_current_source_trait_encoded_values(self):
+        """Returns the right number of source trait encoded value ids."""
+        SourceTraitEncodedValueFactory.create_batch(self.n)
+        pks = CMD._get_current_pks(SourceTraitEncodedValue)
+        self.assertEqual(len(pks), self.n)
+    
+    def test_get_current_harmonized_trait_encoded_values(self):
+        """Returns the right number of harmonized trait encoded value ids."""
+        HarmonizedTraitEncodedValueFactory.create_batch(self.n)
+        pks = CMD._get_current_pks(HarmonizedTraitEncodedValue)
+        self.assertEqual(len(pks), self.n)
+
+
+# Tests that require test data
+class MakeArgsForVisitDataTest(VisitTestDataTestCase):
+    """Tests of the _make_[model]_args functions that require the larger visit test data."""
+    
+    def test_make_subcohort_args_one_row_make_subcohort_obj(self):
+        """Get a single row of test data from the database and see if the results from _make_subcohort_args can be used to successfully make and save a Subcohort object."""
+        subcohort_query = 'SELECT * FROM subcohort;'
+        self.cursor.execute(subcohort_query)
+        row_dict = self.cursor.fetchone()
+        # Have to make global study and study first.
+        global_study = GlobalStudyFactory.create(i_id=row_dict['global_study_id'])
+        #
+        subcohort_args = CMD._make_subcohort_args(CMD._fix_row(row_dict))
+        subcohort = Subcohort(**subcohort_args)
+        subcohort.save()
+        self.assertIsInstance(subcohort, Subcohort)
+
+
+class MakeArgsTest(BaseTestDataTestCase):
     """Tests of the _make_[model]_args functions."""
     
     def test_make_global_study_args_one_row_make_global_study_obj(self):
@@ -582,7 +701,7 @@ class MakeArgsTestCase(BaseTestDataTestCase):
         self.assertIsInstance(harmonized_trait_encoded_value, HarmonizedTraitEncodedValue)
 
 
-class HelperTestCase(BaseTestDataTestCase):
+class HelperTest(BaseTestDataTestCase):
     """Tests of the helper functions from import_db.Command()."""
     
     def test_make_table_query(self):
@@ -732,32 +851,44 @@ class HelperTestCase(BaseTestDataTestCase):
         self.assertTrue(model_instance.modified > t1)
 
 
-class M2MHelperTestCase(TestCase):
-    """Tests of the helper functions for importing and updating m2m tables."""
+class BackupTest(VisitTestDataTestCase):
+    """Tests to make sure backing up the Django db in handle() is working right."""
     
-    def test_break_m2m_link(self):
-        """Removes a child model from its parent M2M field."""
-        sd = SourceDatasetFactory.create()
-        sc = SubcohortFactory.create(global_study=sd.source_study_version.study.global_study)
-        sd.subcohorts.add(sc)
-        CMD._break_m2m_link(SourceDataset, sd.pk, Subcohort, sc.pk, 'subcohorts')
-        self.assertNotIn(sc, sd.subcohorts.all())
+    def test_backup_is_created(self):
+        """Backup dump file is created in the expected directory."""
+        set_backup_dir()
+        # No initial fake data in the test db is needed here. Backing up an empty db works fine.
+        # Import data from the source db.
+        management.call_command('import_db', '--which_db=devel')
+        # Does the backup dir exist?
+        self.assertTrue(exists(settings.DBBACKUP_STORAGE_OPTIONS['location']))
+        # Is there a single compressed dump file in there?
+        backup_files = listdir(settings.DBBACKUP_STORAGE_OPTIONS['location'])
+        self.assertTrue(len(backup_files) == 1)
+        self.assertTrue(backup_files[0].endswith('.dump.gz'))
+        # Is a reasonable size that would indicate it's not empty?
+        file_size = stat(join(settings.DBBACKUP_STORAGE_OPTIONS['location'], backup_files[0])).st_size
+        self.assertTrue(1000000000 > file_size > 100)
+        cleanup_backup_dir()
+
+    def test_backup_can_be_restored(self):
+        """A saved backup can be used to restore the db to it's previous state."""
+        # TODO: Couldn't get the dbrestore command to work, so leaving this for later.
+        return None
+        set_backup_dir()
+
+        # Import data from the source db.
+        management.call_command('import_db', '--which_db=devel')
+        # Restore from the backup file.
         
-    def test_make_m2m_link(self):
-        """Adds a child model to its parent M2M field."""
-        sd = SourceDatasetFactory.create()
-        sc = SubcohortFactory.create(global_study=sd.source_study_version.study.global_study)
-        CMD._make_m2m_link(SourceDataset, sd.pk, Subcohort, sc.pk, 'subcohorts')
-        self.assertIn(sc, sd.subcohorts.all())
+        # Make a new backup file after the restore.
         
-    def test_import_new_m2m_field(self):
-        pass
-    
-    def test_update_m2m_field(self):
-        pass
+        # Is the contents of the new backup the same as the old?
+
+        cleanup_backup_dir()
 
 
-class UpdateModelsTestCase(VisitTestDataTestCase):
+class UpdateModelsTest(VisitTestDataTestCase):
     """Tests of the update functions with updates to each possible source_db table."""
     
     # Source trait updates.
@@ -1184,92 +1315,7 @@ class UpdateModelsTestCase(VisitTestDataTestCase):
         self.assertTrue(hunit_to_link in harmonized_trait.harmonized_component_of_harmonization_unit.all())
 
 
-class ImportHelperTestCase(TestCase):
-    """Tests of the _import_[source|harmonized]_tables helper methods."""
-    
-    def test_import_source_tables(self):
-        pass
-    
-    def test_import_harmonized_tables(self):
-        pass
-
-
-class UpdateHelperTestCase(TestCase):
-    """Tests of the _update_[source|harmonized]_tables helper methods."""
-    
-    def test_update_source_tables(self):
-        pass
-    
-    def test_update_harmonized_tables(self):
-        pass
-
-
-class GetCurrentListsTestCase(TestCase):
-    """Tests of _get_current_pks with each possible model."""
-    n = 32
-    
-    def test_get_current_global_studies(self):
-        """Returns the right number of global_study ids."""
-        GlobalStudyFactory.create_batch(self.n)
-        pks = CMD._get_current_pks(GlobalStudy)
-        self.assertEqual(len(pks), self.n)
-
-    def test_get_current_studies(self):
-        """Returns the right number of study ids."""
-        StudyFactory.create_batch(self.n)
-        pks = CMD._get_current_pks(Study)
-        self.assertEqual(len(pks), self.n)
-
-    def test_get_current_source_study_versions(self):
-        """Returns the right number of source study version ids."""
-        SourceStudyVersionFactory.create_batch(self.n)
-        pks = CMD._get_current_pks(SourceStudyVersion)
-        self.assertEqual(len(pks), self.n)
-
-    def test_get_current_subcohorts(self):
-        """Returns the right number of subcohort ids."""
-        SubcohortFactory.create_batch(self.n)
-        pks = CMD._get_current_pks(Subcohort)
-        self.assertEqual(len(pks), self.n)
-
-    def test_get_current_source_datasets(self):
-        """Returns the right number of source dataset ids."""
-        SourceTraitFactory.create_batch(self.n)
-        pks = CMD._get_current_pks(SourceTrait)
-        self.assertEqual(len(pks), self.n)
-    
-    def test_get_current_harmonized_trait_set(self):
-        """Returns the right number of harmonized trait sets."""
-        HarmonizedTraitSetFactory.create_batch(self.n)
-        pks = CMD._get_current_pks(HarmonizedTraitSet)
-        self.assertEqual(len(pks), self.n)
-    
-    def test_get_current_source_traits(self):
-        """Returns the right number of source trait ids."""
-        SourceTraitFactory.create_batch(self.n)
-        pks = CMD._get_current_pks(SourceTrait)
-        self.assertEqual(len(pks), self.n)
-    
-    def test_get_current_harmonized_trait(self):
-        """Returns the right number of harmonized trait ids."""
-        HarmonizedTraitFactory.create_batch(self.n)
-        pks = CMD._get_current_pks(HarmonizedTrait)
-        self.assertEqual(len(pks), self.n)
-    
-    def test_get_current_source_trait_encoded_values(self):
-        """Returns the right number of source trait encoded value ids."""
-        SourceTraitEncodedValueFactory.create_batch(self.n)
-        pks = CMD._get_current_pks(SourceTraitEncodedValue)
-        self.assertEqual(len(pks), self.n)
-    
-    def test_get_current_harmonized_trait_encoded_values(self):
-        """Returns the right number of harmonized trait encoded value ids."""
-        HarmonizedTraitEncodedValueFactory.create_batch(self.n)
-        pks = CMD._get_current_pks(HarmonizedTraitEncodedValue)
-        self.assertEqual(len(pks), self.n)
-
-
-class ImportNoUpdateTestCase(VisitTestDataTestCase):
+class ImportNoUpdateTest(VisitTestDataTestCase):
     """Tests that updated source data is NOT imported when the --import_only flag is used."""
     
     # Source trait updates.
@@ -1696,43 +1742,7 @@ class ImportNoUpdateTestCase(VisitTestDataTestCase):
         self.assertFalse(hunit_to_link in harmonized_trait.harmonized_component_of_harmonization_unit.all())
 
 
-class BackupTestCase(VisitTestDataTestCase):
-    """Tests to make sure backing up the Django db in handle() is working right."""
-    
-    def test_backup_is_created(self):
-        """Backup dump file is created in the expected directory."""
-        set_backup_dir()
-        # No initial fake data in the test db is needed here. Backing up an empty db works fine.
-        # Import data from the source db.
-        management.call_command('import_db', '--which_db=devel')
-        # Does the backup dir exist?
-        self.assertTrue(exists(settings.DBBACKUP_STORAGE_OPTIONS['location']))
-        # Is there a single compressed dump file in there?
-        backup_files = listdir(settings.DBBACKUP_STORAGE_OPTIONS['location'])
-        self.assertTrue(len(backup_files) == 1)
-        self.assertTrue(backup_files[0].endswith('.dump.gz'))
-        # Is a reasonable size that would indicate it's not empty?
-        file_size = stat(join(settings.DBBACKUP_STORAGE_OPTIONS['location'], backup_files[0])).st_size
-        self.assertTrue(1000000000 > file_size > 100)
-        cleanup_backup_dir()
-
-    def test_backup_can_be_restored(self):
-        """A saved backup can be used to restore the db to it's previous state."""
-        # TODO: Couldn't get the dbrestore command to work, so leaving this for later.
-        return None
-        set_backup_dir()
-
-        # Import data from the source db.
-        management.call_command('import_db', '--which_db=devel')
-        # Restore from the backup file.
-        
-        # Make a new backup file after the restore.
-        
-        # Is the contents of the new backup the same as the old?
-
-        cleanup_backup_dir()
-
-
+# Tests that run import_db from start to finish
 class IntegrationTest(VisitTestDataTestCase):
     """Integration test of the whole management command.
     
@@ -1936,4 +1946,3 @@ class IntegrationTest(VisitTestDataTestCase):
     def test_handle_with_new_study_added(self):
         """New data and updates are properly imported after a new study is added."""
         pass
-
