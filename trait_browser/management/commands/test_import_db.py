@@ -1195,10 +1195,7 @@ class UpdateModelsTest(VisitTestDataTestCase):
         # Pick a source trait to create a new link to in the source db.
         source_trait = SourceTrait.objects.get(pk=1)
         # Find a harmonization_unit which this source trait isn't linked to already
-        for x in range(1, 100):
-            hunit_to_link = HarmonizationUnit.objects.get(pk=x)
-            if hunit_to_link not in source_trait.source_component_of_harmonization_unit.all():
-                break
+        hunit_to_link = HarmonizationUnit.objects.exclude(i_id__in=HarmonizationUnit.objects.filter(component_source_traits__in=[source_trait]))[0]
         # Find a harmonized trait from within this harmonization unit.
         htrait_to_link = hunit_to_link.harmonized_trait_set.harmonizedtrait_set.all()[0]
         # Prep for altering the devel db.
@@ -1229,10 +1226,7 @@ class UpdateModelsTest(VisitTestDataTestCase):
         # Pick a source trait to create a new link to in the source db.
         source_trait = SourceTrait.objects.get(pk=1)
         # Find a harmonization_unit which this source trait isn't linked to already
-        for x in range(1, 100):
-            hunit_to_link = HarmonizationUnit.objects.get(pk=x)
-            if hunit_to_link not in source_trait.batch_component_of_harmonization_unit.all():
-                break
+        hunit_to_link = HarmonizationUnit.objects.exclude(i_id__in=HarmonizationUnit.objects.filter(component_batch_traits__in=[source_trait]))[0]
         # Find a harmonized trait from within this harmonization unit.
         htrait_to_link = hunit_to_link.harmonized_trait_set.harmonizedtrait_set.all()[0]
         # Prep for altering the devel db.
@@ -1263,10 +1257,7 @@ class UpdateModelsTest(VisitTestDataTestCase):
         # Pick a source trait to create a new link to in the source db.
         source_trait = SourceTrait.objects.get(pk=1)
         # Find a harmonization_unit which this source trait isn't linked to already
-        for x in range(1, 100):
-            hunit_to_link = HarmonizationUnit.objects.get(pk=x)
-            if hunit_to_link not in source_trait.age_component_of_harmonization_unit.all():
-                break
+        hunit_to_link = HarmonizationUnit.objects.exclude(i_id__in=HarmonizationUnit.objects.filter(component_age_traits__in=[source_trait]))[0]
         # Prep for altering the devel db.
         self.source_db = get_devel_db(permissions='full')
         self.cursor = self.source_db.cursor(buffered=True, dictionary=True)
@@ -1293,10 +1284,7 @@ class UpdateModelsTest(VisitTestDataTestCase):
         # Pick a source trait to create a new link to in the source db.
         harmonized_trait = HarmonizedTrait.objects.get(pk=1)
         # Find a harmonization_unit which this harmonized trait isn't linked to already
-        for x in range(1, 100):
-            hunit_to_link = HarmonizationUnit.objects.get(pk=x)
-            if hunit_to_link not in harmonized_trait.harmonized_component_of_harmonization_unit.all():
-                break
+        hunit_to_link = HarmonizationUnit.objects.exclude(i_id__in=HarmonizationUnit.objects.filter(component_harmonized_traits__in=[harmonized_trait]))[0]
         # Find a harmonized trait from within this harmonization unit.
         htrait_to_link = hunit_to_link.harmonized_trait_set.harmonizedtrait_set.all()[0]
         # Prep for altering the devel db.
@@ -1622,10 +1610,7 @@ class ImportNoUpdateTest(VisitTestDataTestCase):
         # Pick a source trait to create a new link to in the source db.
         source_trait = SourceTrait.objects.get(pk=1)
         # Find a harmonization_unit which this source trait isn't linked to already
-        for x in range(1, 100):
-            hunit_to_link = HarmonizationUnit.objects.get(pk=x)
-            if hunit_to_link not in source_trait.source_component_of_harmonization_unit.all():
-                break
+        hunit_to_link = HarmonizationUnit.objects.exclude(i_id__in=HarmonizationUnit.objects.filter(component_source_traits__in=[source_trait]))[0]
         # Find a harmonized trait from within this harmonization unit.
         htrait_to_link = hunit_to_link.harmonized_trait_set.harmonizedtrait_set.all()[0]
         # Prep for altering the devel db.
@@ -1656,10 +1641,7 @@ class ImportNoUpdateTest(VisitTestDataTestCase):
         # Pick a source trait to create a new link to in the source db.
         source_trait = SourceTrait.objects.get(pk=1)
         # Find a harmonization_unit which this source trait isn't linked to already
-        for x in range(1, 100):
-            hunit_to_link = HarmonizationUnit.objects.get(pk=x)
-            if hunit_to_link not in source_trait.batch_component_of_harmonization_unit.all():
-                break
+        hunit_to_link = HarmonizationUnit.objects.exclude(i_id__in=HarmonizationUnit.objects.filter(component_batch_traits__in=[source_trait]))[0]
         # Find a harmonized trait from within this harmonization unit.
         htrait_to_link = hunit_to_link.harmonized_trait_set.harmonizedtrait_set.all()[0]
         # Prep for altering the devel db.
@@ -1690,10 +1672,7 @@ class ImportNoUpdateTest(VisitTestDataTestCase):
         # Pick a source trait to create a new link to in the source db.
         source_trait = SourceTrait.objects.get(pk=1)
         # Find a harmonization_unit which this source trait isn't linked to already
-        for x in range(1, 100):
-            hunit_to_link = HarmonizationUnit.objects.get(pk=x)
-            if hunit_to_link not in source_trait.age_component_of_harmonization_unit.all():
-                break
+        hunit_to_link = HarmonizationUnit.objects.exclude(i_id__in=HarmonizationUnit.objects.filter(component_age_traits__in=[source_trait]))[0]
         # Prep for altering the devel db.
         self.source_db = get_devel_db(permissions='full')
         self.cursor = self.source_db.cursor(buffered=True, dictionary=True)
@@ -1720,10 +1699,7 @@ class ImportNoUpdateTest(VisitTestDataTestCase):
         # Pick a source trait to create a new link to in the source db.
         harmonized_trait = HarmonizedTrait.objects.get(pk=1)
         # Find a harmonization_unit which this harmonized trait isn't linked to already
-        for x in range(1, 100):
-            hunit_to_link = HarmonizationUnit.objects.get(pk=x)
-            if hunit_to_link not in harmonized_trait.harmonized_component_of_harmonization_unit.all():
-                break
+        hunit_to_link = HarmonizationUnit.objects.exclude(i_id__in=HarmonizationUnit.objects.filter(component_harmonized_traits__in=[harmonized_trait]))[0]
         # Find a harmonized trait from within this harmonization unit.
         htrait_to_link = hunit_to_link.harmonized_trait_set.harmonizedtrait_set.all()[0]
         # Prep for altering the devel db.
