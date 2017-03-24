@@ -1737,49 +1737,39 @@ class IntegrationTest(VisitTestDataTestCase):
     def test_imported_ids_match_source_ids(self):
         """import_db imports all of the primary keys for each model."""
         management.call_command('import_db', '--which_db=devel', '--no_backup')
-        # GlobalStudy
-        global_studies_query = 'SELECT id FROM global_study'
-        self.cursor.execute(global_studies_query)
-        global_study_ids = [str(row['id']) for row in self.cursor.fetchall()]
-        self.assertEqual(sorted(global_study_ids), sorted(CMD._get_current_pks(GlobalStudy)))
-        # Study
-        studies_query = 'SELECT accession FROM study'
-        self.cursor.execute(studies_query)
-        study_ids = [str(row['accession']) for row in self.cursor.fetchall()]
-        self.assertEqual(sorted(study_ids), sorted(CMD._get_current_pks(Study)))
-        # SourceStudyVersion
-        source_study_versions_query = 'SELECT id FROM source_study_version'
-        self.cursor.execute(source_study_versions_query)
-        source_study_version_ids = [str(row['id']) for row in self.cursor.fetchall()]
-        self.assertEqual(sorted(source_study_version_ids), sorted(CMD._get_current_pks(SourceStudyVersion)))
-        # SourceDataset
-        source_datasets_query = 'SELECT id FROM source_dataset'
-        self.cursor.execute(source_datasets_query)
-        source_dataset_ids = [str(row['id']) for row in self.cursor.fetchall()]
-        self.assertEqual(sorted(source_dataset_ids), sorted(CMD._get_current_pks(SourceDataset)))
-        # SourceTrait
-        source_traits_query = 'SELECT source_trait_id FROM source_trait'
-        self.cursor.execute(source_traits_query)
-        source_trait_ids = [str(row['source_trait_id']) for row in self.cursor.fetchall()]
-        self.assertEqual(sorted(source_trait_ids), sorted(CMD._get_current_pks(SourceTrait)))
-        #Subcohort
-        subcohorts_query = 'SELECT id FROM subcohort'
-        self.cursor.execute(subcohorts_query)
-        subcohort_ids = [str(row['id']) for row in self.cursor.fetchall()]
-        self.assertEqual(sorted(subcohort_ids), sorted(CMD._get_current_pks(Subcohort)))
-        # SourceDataset.subcohorts counts are right
-        subcohorts_m2m_query = 'SELECT COUNT(*),dataset_id FROM source_dataset_subcohorts GROUP BY dataset_id'
-        self.cursor.execute(subcohorts_m2m_query)
-        for row in self.cursor:
-            row = CMD._fix_row(row)
-            django_count = SourceDataset.objects.get(pk=row['dataset_id']).subcohorts.count()
-            self.assertEqual(row['COUNT(*)'], django_count)
-        # SourceTraitEncodedValue
-        source_trait_encoded_values_query = 'SELECT id FROM source_trait_encoded_values'
-        self.cursor.execute(source_trait_encoded_values_query)
-        source_trait_encoded_value_ids = [str(row['id']) for row in self.cursor.fetchall()]
-        self.assertEqual(sorted(source_trait_encoded_value_ids), sorted(CMD._get_current_pks(SourceTraitEncodedValue)))
-        # TODO: Add tests for harmonized tables, especially m2m tables.
+        # Check all of the regular models.
+        pk_names = ('id', 'accession', 'id', 'id', 'source_trait_id', 'id', 'id', 'id', 'harmonized_trait_id', 'id', )
+        tables = ('global_study', 'study', 'source_study_version', 'source_dataset', 'source_trait', 'subcohort', 
+            'source_trait_encoded_values', 'harmonized_trait_set', 'harmonized_trait', 'harmonization_unit', )
+        models = (GlobalStudy, Study, SourceStudyVersion, SourceDataset, SourceTrait, Subcohort, SourceTraitEncodedValue, 
+            HarmonizedTraitSet, HarmonizedTrait, HarmonizationUnit, )
+        for source_pk, table_name, model in zip(pk_names, tables, models):
+            # print(source_pk, table_name, model)
+            # query = 'SELECT {} FROM {}'.format(source_pk, table_name)
+            self.cursor.execute(query)
+            source_ids = [str(row[source_pk]) for row in self.cursor.fetchall()]
+            self.assertEqual(sorted(source_ids), sorted(CMD._get_current_pks(model)))
+        # Check all of the M2M relationships.
+        m2m_tables = ('source_dataset_subcohorts', 'component_source_trait', 'component_harmonized_trait', 'component_batch_trait',
+            'component_age_trait', 'component_source_trait', 'component_harmonized_trait', 'component_batch_trait', )
+        group_by_fields = ('dataset_id', 'harmonized_trait_id', 'harmonized_trait_id', 'harmonized_trait_id',
+            'harmonization_unit_id', 'harmonization_unit_id', 'harmonization_unit_id', 'harmonization_unit_id',)
+        concat_fields = ('subcohort_id', 'component_trait_id', 'component_trait_id', 'component_trait_id',
+            'component_trait_id', 'component_trait_id', 'component_trait_id', 'component_trait_id',)
+        parent_models = (SourceDataset, HarmonizedTrait, HarmonizedTrait, HarmonizedTrait,
+            HarmonizationUnit, HarmonizationUnit, HarmonizationUnit, HarmonizationUnit,)
+        m2m_att_names = ('subcohorts', 'component_source_traits', 'component_harmonized_traits', 'component_batch_traits',
+            'component_age_traits', 'component_source_traits', 'component_harmonized_traits', 'component_batch_traits', )
+        for table, group, concat, model, m2m_att in zip(m2m_tables, group_by_fields, concat_fields, parent_models, m2m_att_names):
+            query = 'SELECT GROUP_CONCAT({}) AS id_list,{} FROM {} GROUP BY {}'.format(concat, group, table, group)
+            # print(table, group, concat, model, m2m_att)
+            # print(query)
+            self.cursor.execute(query)
+            for row in self.cursor:
+                row = CMD._fix_row(row)
+                source_ids = [int(i) for i in row['id_list'].split(',')]
+                django_ids = [obj.pk for obj in getattr(model.objects.get(pk=row[group]), m2m_att).all()]
+                self.assertEqual(sorted(source_ids), sorted(django_ids))
 
     def test_updated_data_from_every_table(self):
         """Every kind of update is detected and imported by import_db."""
