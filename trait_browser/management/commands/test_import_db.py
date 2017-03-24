@@ -1735,50 +1735,50 @@ class IntegrationTest(VisitTestDataTestCase):
     """
 
     def test_handle_with_visit_data(self):
-        """Calling import_db imports the correct number of each model type."""
+        """import_db imports all of the primary keys for each model."""
         management.call_command('import_db', '--which_db=devel', '--no_backup')
         # GlobalStudy
-        global_studies_query = 'SELECT COUNT(*) FROM global_study;'
+        global_studies_query = 'SELECT id FROM global_study'
         self.cursor.execute(global_studies_query)
-        global_studies_count = self.cursor.fetchone()['COUNT(*)']
-        self.assertEqual(global_studies_count, GlobalStudy.objects.count())
+        global_study_ids = [str(row['id']) for row in self.cursor.fetchall()]
+        self.assertEqual(sorted(global_study_ids), sorted(CMD._get_current_pks(GlobalStudy)))
         # Study
-        studies_query = 'SELECT COUNT(*) FROM study;'
+        studies_query = 'SELECT accession FROM study'
         self.cursor.execute(studies_query)
-        studies_count = self.cursor.fetchone()['COUNT(*)']
-        self.assertEqual(studies_count, Study.objects.count())
+        study_ids = [str(row['accession']) for row in self.cursor.fetchall()]
+        self.assertEqual(sorted(study_ids), sorted(CMD._get_current_pks(Study)))
         # SourceStudyVersion
-        source_study_versions_query = 'SELECT COUNT(*) FROM source_study_version;'
+        source_study_versions_query = 'SELECT id FROM source_study_version'
         self.cursor.execute(source_study_versions_query)
-        source_study_versions_count = self.cursor.fetchone()['COUNT(*)']
-        self.assertEqual(source_study_versions_count, SourceStudyVersion.objects.count())
+        source_study_version_ids = [str(row['id']) for row in self.cursor.fetchall()]
+        self.assertEqual(sorted(source_study_version_ids), sorted(CMD._get_current_pks(SourceStudyVersion)))
         # SourceDataset
-        source_datasets_query = 'SELECT COUNT(*) FROM source_dataset;'
+        source_datasets_query = 'SELECT id FROM source_dataset'
         self.cursor.execute(source_datasets_query)
-        source_datasets_count = self.cursor.fetchone()['COUNT(*)']
-        self.assertEqual(source_datasets_count, SourceDataset.objects.count())
+        source_dataset_ids = [str(row['id']) for row in self.cursor.fetchall()]
+        self.assertEqual(sorted(source_dataset_ids), sorted(CMD._get_current_pks(SourceDataset)))
         # SourceTrait
-        source_traits_query = 'SELECT COUNT(*) FROM source_trait;'
+        source_traits_query = 'SELECT source_trait_id FROM source_trait'
         self.cursor.execute(source_traits_query)
-        source_traits_count = self.cursor.fetchone()['COUNT(*)']
-        self.assertEqual(source_traits_count, SourceTrait.objects.count())
+        source_trait_ids = [str(row['source_trait_id']) for row in self.cursor.fetchall()]
+        self.assertEqual(sorted(source_trait_ids), sorted(CMD._get_current_pks(SourceTrait)))
         #Subcohort
-        subcohorts_query = 'SELECT COUNT(*) FROM subcohort;'
+        subcohorts_query = 'SELECT id FROM subcohort'
         self.cursor.execute(subcohorts_query)
-        subcohorts_count = self.cursor.fetchone()['COUNT(*)']
-        self.assertEqual(subcohorts_count, Subcohort.objects.count())
-        # SourceDataset.subcohorts
-        subcohorts_m2m_query = 'SELECT COUNT(*),dataset_id FROM source_dataset_subcohorts GROUP BY dataset_id;'
+        subcohort_ids = [str(row['id']) for row in self.cursor.fetchall()]
+        self.assertEqual(sorted(subcohort_ids), sorted(CMD._get_current_pks(Subcohort)))
+        # SourceDataset.subcohorts counts are right
+        subcohorts_m2m_query = 'SELECT COUNT(*),dataset_id FROM source_dataset_subcohorts GROUP BY dataset_id'
         self.cursor.execute(subcohorts_m2m_query)
         for row in self.cursor:
             row = CMD._fix_row(row)
             django_count = SourceDataset.objects.get(pk=row['dataset_id']).subcohorts.count()
             self.assertEqual(row['COUNT(*)'], django_count)
         # SourceTraitEncodedValue
-        source_trait_encoded_values_query = 'SELECT COUNT(*) FROM source_trait_encoded_values;'
+        source_trait_encoded_values_query = 'SELECT id FROM source_trait_encoded_values'
         self.cursor.execute(source_trait_encoded_values_query)
-        source_trait_encoded_values_count = self.cursor.fetchone()['COUNT(*)']
-        self.assertEqual(source_trait_encoded_values_count, SourceTraitEncodedValue.objects.count())
+        source_trait_encoded_value_ids = [str(row['id']) for row in self.cursor.fetchall()]
+        self.assertEqual(sorted(source_trait_encoded_value_ids), sorted(CMD._get_current_pks(SourceTraitEncodedValue)))
         # TODO: Add tests for harmonized tables, especially m2m tables.
 
     def test_handle_with_updated_data(self):
