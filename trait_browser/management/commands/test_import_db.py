@@ -1734,7 +1734,7 @@ class IntegrationTest(VisitTestDataTestCase):
     nice unit tests.
     """
 
-    def test_handle_with_visit_data(self):
+    def test_imported_ids_match_source_ids(self):
         """import_db imports all of the primary keys for each model."""
         management.call_command('import_db', '--which_db=devel', '--no_backup')
         # GlobalStudy
@@ -1781,7 +1781,7 @@ class IntegrationTest(VisitTestDataTestCase):
         self.assertEqual(sorted(source_trait_encoded_value_ids), sorted(CMD._get_current_pks(SourceTraitEncodedValue)))
         # TODO: Add tests for harmonized tables, especially m2m tables.
 
-    def test_handle_with_updated_data(self):
+    def test_updated_data_from_every_table(self):
         """Every kind of update is detected and imported by import_db."""
         # This test is largely just all of the methods from UpdateModelsTestCase all put together.
         # Initial call of the import command.
@@ -1958,6 +1958,6 @@ class IntegrationTest(VisitTestDataTestCase):
         self.assertTrue(htrait_to_link_harmonized in component_harmonized_trait.harmonized_component_of_harmonized_trait.all())
         self.assertTrue(hunit_to_link_harmonized in component_harmonized_trait.harmonized_component_of_harmonization_unit.all())
 
-    def test_handle_with_new_study_added(self):
-        """New data and updates are properly imported after a new study is added."""
+    def test_import_update_add_study(self):
+        """"""
         pass
