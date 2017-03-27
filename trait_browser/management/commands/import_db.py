@@ -803,10 +803,11 @@ class Command(BaseCommand):
             to_add = set(source_linked_pks) - set(linked_pks)
             to_remove = set(linked_pks) - set(source_linked_pks)
             update_message = 'Add links for child pks {}; Remove links for child pks {}'.format(','.join([str(el) for el in to_add]), ','.join([str(el) for el in to_remove]))
-            if expected:
-                logger.debug('Unexpected update: ' + update_message)
-            else:
-                logger.warning('Update: ' + update_message)
+            if len(to_add) > 0 or len(to_remove) > 0:
+                if expected:
+                    logger.debug('Unexpected update: ' + update_message)
+                else:
+                    logger.warning('Update: ' + update_message)
             # Do the adding and removing
             for pk in to_add:
                 add_parent, add_child = self._make_m2m_link(parent_pk=parent.pk, child_pk=pk, **kwargs)
@@ -955,7 +956,7 @@ class Command(BaseCommand):
         logger.info("Added {} component harmonized traits".format(len(new_component_harmonized_trait_links_to_unit)))
 
         new_component_batch_trait_links_to_unit = self._import_new_m2m_field(source_db=source_db,
-                                                                        source_table='component_source_trait',
+                                                                        source_table='component_batch_trait',
                                                                         parent_model=HarmonizationUnit,
                                                                         parent_source_pk='harmonization_unit_id',
                                                                         child_model=SourceTrait,
@@ -995,7 +996,7 @@ class Command(BaseCommand):
         logger.info("Added {} component harmonized traits".format(len(new_component_harmonized_trait_links_to_trait)))
 
         new_component_batch_trait_links_to_trait = self._import_new_m2m_field(source_db=source_db,
-                                                                        source_table='component_source_trait',
+                                                                        source_table='component_batch_trait',
                                                                         parent_model=HarmonizedTrait,
                                                                         parent_source_pk='harmonized_trait_id',
                                                                         child_model=SourceTrait,
