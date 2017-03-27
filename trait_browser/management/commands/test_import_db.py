@@ -116,6 +116,7 @@ def cleanup_backup_dir():
     rmtree(settings.DBBACKUP_STORAGE_OPTIONS['location'])
     settings.DBBACKUP_STORAGE_OPTIONS['location'] = ORIGINAL_BACKUP_DIR
 
+
 # Mixins
 class OpenCloseDBMixin(object):
     """Mixin to add setUp and tearDown methods to TestCases.
@@ -132,6 +133,28 @@ class OpenCloseDBMixin(object):
         """Close the source db connection at the end of each test."""
         self.cursor.close()
         self.source_db.close()
+
+    def check_imported_pks_match(self, pk_names, tables, models):
+        """Check that imported primary keys match those from the appropriate source db table."""
+        for source_pk, table_name, model in zip(pk_names, tables, models):
+            # print(source_pk, table_name, model)
+            query = 'SELECT {} FROM {}'.format(source_pk, table_name)
+            self.cursor.execute(query)
+            source_ids = [str(row[source_pk]) for row in self.cursor.fetchall()]
+            self.assertEqual(sorted(source_ids), sorted(CMD._get_current_pks(model)))
+
+    def check_imported_m2m_relations_match(self, m2m_tables, group_by_fields, concat_fields, parent_models, m2m_att_names):
+        """Check that imported ManyToMany fields match those from the appropriate M2M source db table."""
+        for table, group, concat, model, m2m_att in zip(m2m_tables, group_by_fields, concat_fields, parent_models, m2m_att_names):
+            query = 'SELECT GROUP_CONCAT({}) AS id_list,{} FROM {} GROUP BY {}'.format(concat, group, table, group)
+            # print(table, group, concat, model, m2m_att)
+            # print(query)
+            self.cursor.execute(query)
+            for row in self.cursor:
+                row = CMD._fix_row(row)
+                source_ids = [int(i) for i in row['id_list'].split(',')]
+                django_ids = [obj.pk for obj in getattr(model.objects.get(pk=row[group]), m2m_att).all()]
+                self.assertEqual(sorted(source_ids), sorted(django_ids))
 
 
 # TestCase superclasses (contain no tests)
@@ -1743,12 +1766,7 @@ class IntegrationTest(VisitTestDataTestCase):
             'source_trait_encoded_values', 'harmonized_trait_set', 'harmonized_trait', 'harmonization_unit', )
         models = (GlobalStudy, Study, SourceStudyVersion, SourceDataset, SourceTrait, Subcohort, SourceTraitEncodedValue, 
             HarmonizedTraitSet, HarmonizedTrait, HarmonizationUnit, )
-        for source_pk, table_name, model in zip(pk_names, tables, models):
-            print(source_pk, table_name, model)
-            query = 'SELECT {} FROM {}'.format(source_pk, table_name)
-            self.cursor.execute(query)
-            source_ids = [str(row[source_pk]) for row in self.cursor.fetchall()]
-            self.assertEqual(sorted(source_ids), sorted(CMD._get_current_pks(model)))
+        self.check_imported_pks_match(pk_names, tables, models)
         # Check all of the M2M relationships.
         m2m_tables = ('source_dataset_subcohorts', 'component_source_trait', 'component_harmonized_trait', 'component_batch_trait',
             'component_age_trait', 'component_source_trait', 'component_harmonized_trait', 'component_batch_trait', )
@@ -1760,59 +1778,19 @@ class IntegrationTest(VisitTestDataTestCase):
             HarmonizationUnit, HarmonizationUnit, HarmonizationUnit, HarmonizationUnit,)
         m2m_att_names = ('subcohorts', 'component_source_traits', 'component_harmonized_traits', 'component_batch_traits',
             'component_age_traits', 'component_source_traits', 'component_harmonized_traits', 'component_batch_traits', )
-        for table, group, concat, model, m2m_att in zip(m2m_tables, group_by_fields, concat_fields, parent_models, m2m_att_names):
-            query = 'SELECT GROUP_CONCAT({}) AS id_list,{} FROM {} GROUP BY {}'.format(concat, group, table, group)
-            # print(table, group, concat, model, m2m_att)
-            # print(query)
-            self.cursor.execute(query)
-            for row in self.cursor:
-                row = CMD._fix_row(row)
-                source_ids = [int(i) for i in row['id_list'].split(',')]
-                django_ids = [obj.pk for obj in getattr(model.objects.get(pk=row[group]), m2m_att).all()]
-                self.assertEqual(sorted(source_ids), sorted(django_ids))
+        self.check_imported_m2m_relations_match(m2m_tables, group_by_fields, concat_fields, parent_models, m2m_att_names)
         # Load a new study and run all of these checks again.
         self.cursor.close()
         self.source_db.close()
         load_test_source_db_data('new_study.sql')
         management.call_command('import_db', '--which_db=devel', '--no_backup')
-
         self.source_db = get_devel_db()
         self.cursor = self.source_db.cursor(buffered=True, dictionary=True)
         # Check all of the regular models.
-        pk_names = ('id', 'accession', 'id', 'id', 'source_trait_id', 'id', 'id', 'id', 'harmonized_trait_id', 'id', )
-        tables = ('global_study', 'study', 'source_study_version', 'source_dataset', 'source_trait', 'subcohort', 
-            'source_trait_encoded_values', 'harmonized_trait_set', 'harmonized_trait', 'harmonization_unit', )
-        models = (GlobalStudy, Study, SourceStudyVersion, SourceDataset, SourceTrait, Subcohort, SourceTraitEncodedValue, 
-            HarmonizedTraitSet, HarmonizedTrait, HarmonizationUnit, )
-        for source_pk, table_name, model in zip(pk_names, tables, models):
-            # print(source_pk, table_name, model)
-            query = 'SELECT {} FROM {}'.format(source_pk, table_name)
-            self.cursor.execute(query)
-            source_ids = [str(row[source_pk]) for row in self.cursor.fetchall()]
-            self.assertEqual(sorted(source_ids), sorted(CMD._get_current_pks(model)))
+        self.check_imported_pks_match(pk_names, tables, models)
         # Check all of the M2M relationships.
-        m2m_tables = ('source_dataset_subcohorts', 'component_source_trait', 'component_harmonized_trait', 'component_batch_trait',
-            'component_age_trait', 'component_source_trait', 'component_harmonized_trait', 'component_batch_trait', )
-        group_by_fields = ('dataset_id', 'harmonized_trait_id', 'harmonized_trait_id', 'harmonized_trait_id',
-            'harmonization_unit_id', 'harmonization_unit_id', 'harmonization_unit_id', 'harmonization_unit_id',)
-        concat_fields = ('subcohort_id', 'component_trait_id', 'component_trait_id', 'component_trait_id',
-            'component_trait_id', 'component_trait_id', 'component_trait_id', 'component_trait_id',)
-        parent_models = (SourceDataset, HarmonizedTrait, HarmonizedTrait, HarmonizedTrait,
-            HarmonizationUnit, HarmonizationUnit, HarmonizationUnit, HarmonizationUnit,)
-        m2m_att_names = ('subcohorts', 'component_source_traits', 'component_harmonized_traits', 'component_batch_traits',
-            'component_age_traits', 'component_source_traits', 'component_harmonized_traits', 'component_batch_traits', )
-        for table, group, concat, model, m2m_att in zip(m2m_tables, group_by_fields, concat_fields, parent_models, m2m_att_names):
-            query = 'SELECT GROUP_CONCAT({}) AS id_list,{} FROM {} GROUP BY {}'.format(concat, group, table, group)
-            print(table, group, concat, model, m2m_att)
-            print(query)
-            self.cursor.execute(query)
-            for row in self.cursor:
-                row = CMD._fix_row(row)
-                source_ids = [int(i) for i in row['id_list'].split(',')]
-                django_ids = [obj.pk for obj in getattr(model.objects.get(pk=row[group]), m2m_att).all()]
-                self.assertEqual(sorted(source_ids), sorted(django_ids))
+        self.check_imported_m2m_relations_match(m2m_tables, group_by_fields, concat_fields, parent_models, m2m_att_names)
     
-
     def test_updated_data_from_every_table(self):
         """Every kind of update is detected and imported by import_db."""
         # This test is largely just all of the methods from UpdateModelsTestCase all put together.
