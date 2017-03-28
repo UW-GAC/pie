@@ -142,7 +142,7 @@ class Command(BaseCommand):
             the word 'date', since null datetimes need to be None still
         """
         fixed_row = {
-            (k): ('' if row_dict[k] is None and 'date' not in k
+            (k): ('' if row_dict[k] is None and 'date' not in k and 'medication_dataset' not in k
             else row_dict[k]) for k in row_dict
         }
         return fixed_row
