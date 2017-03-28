@@ -146,7 +146,7 @@ class OpenCloseDBMixin(object):
     def check_imported_values_match(self, make_args_functions, tables, models):
         """Check that values for imported fields match those from the appropriate source db table."""
         for make_args, table_name, model in zip(make_args_functions, tables, models):
-            print(table_name, model)
+            # print(table_name, model)
             query = 'SELECT * FROM {}'.format(table_name)
             self.cursor.execute(query)
             for row in self.cursor:
@@ -1989,8 +1989,6 @@ class IntegrationTest(VisitTestDataTestCase):
         # Close the db connections because change_data_in_table() opens new connections.
         self.cursor.close()
         self.source_db.close()
-        self.source_db = get_devel_db(permissions='full')
-        self.cursor = self.source_db.cursor(buffered=True, dictionary=True)
         
         ## Make updates of every kind in the devel db.
         t1 = timezone.now() # Save a time to compare to modified date.
@@ -2030,10 +2028,82 @@ class IntegrationTest(VisitTestDataTestCase):
         # Update HarmonizationUnit
         hunit = HarmonizationUnit.objects.all()[0]
         change_data_in_table('harmonization_unit', 'tag', new_value, hunit._meta.pk.name.replace('i_', ''), hunit.pk)
+        # Open new db connection with full permissions.
+        self.source_db = get_devel_db(permissions='full')
+        self.cursor = self.source_db.cursor(buffered=True, dictionary=True)
+        # Create a new subcohort-dataset link.
+        linked_datasets = subcohort.sourcedataset_set.all()
+        possible_datasets = SourceDataset.objects.filter(source_study_version__study__global_study = subcohort.global_study)
+        unlinked_datasets = set(possible_datasets) - set(linked_datasets)
+        if len(unlinked_datasets) < 1:
+            raise ValueError('The subcohort is already linked to all possible datasets.')
+        dataset_to_link = list(unlinked_datasets)[0]
+        add_subcohort_link_query = "INSERT INTO source_dataset_subcohorts (dataset_id, subcohort_id, date_added) VALUES ({}, {}, '{}');".format(subcohort.i_id, dataset_to_link.i_id, timezone.now().strftime('%Y-%m-%d %H:%M:%S'))
+        self.cursor.execute(add_subcohort_link_query)
+        # Remove an existing subcohort-dataset link.
+        subcohort2 = Subcohort.objects.get(pk=2)
+        linked_datasets = subcohort2.sourcedataset_set.all()
+        if len(linked_datasets) < 1:
+            raise ValueError('The subcohort is not linked to any datasets.')
+        dataset_to_unlink = linked_datasets[0]
+        remove_subcohort_link_query = "DELETE FROM source_dataset_subcohorts WHERE dataset_id={} AND subcohort_id={}".format(dataset_to_unlink.pk, subcohort2.pk)
+        self.cursor.execute(remove_subcohort_link_query)
+        # Add a new component source trait.
+        component_source_trait = SourceTrait.objects.order_by('?').first()
+        hunit_to_link_source = HarmonizationUnit.objects.exclude(i_id__in=HarmonizationUnit.objects.filter(component_source_traits__in=[component_source_trait]))[0]
+        htrait_to_link_source = hunit_to_link_source.harmonized_trait_set.harmonizedtrait_set.all()[0]
+        add_component_trait_query = "INSERT INTO component_source_trait (harmonized_trait_id, harmonization_unit_id, component_trait_id, date_added) values ('{}', '{}', '{}', '{}')".format(htrait_to_link_source.i_trait_id, hunit_to_link_source.i_id, component_source_trait.i_trait_id, timezone.now().strftime('%Y-%m-%d %H:%M:%S'))
+        self.cursor.execute(add_component_trait_query)
+        # Remove an existing component source trait.
+        hunit_to_unlink_source = HarmonizationUnit.objects.exclude(component_source_traits=None).order_by('?').first()
+        htrait_to_unlink_source = hunit_to_unlink_source.harmonizedtrait_set.all().order_by('?').first()
+        component_source_trait = hunit_to_unlink_source.component_source_traits.all().order_by('?').first()
+        remove_component_trait_query = "DELETE FROM component_source_trait WHERE harmonized_trait_id={} AND harmonization_unit_id={} AND component_trait_id={}".format(htrait_to_unlink_source.pk, hunit_to_unlink_source.pk, component_source_trait.pk)
+        self.cursor.execute(remove_component_trait_query)
+        # Add a new component batch trait.
+        component_batch_trait = SourceTrait.objects.order_by('?').first()
+        hunit_to_link_batch = HarmonizationUnit.objects.exclude(i_id__in=HarmonizationUnit.objects.filter(component_batch_traits__in=[component_batch_trait]))[0]
+        htrait_to_link_batch = hunit_to_link_batch.harmonized_trait_set.harmonizedtrait_set.all()[0]
+        add_component_trait_query = "INSERT INTO component_batch_trait (harmonized_trait_id, harmonization_unit_id, component_trait_id, date_added) values ('{}', '{}', '{}', '{}')".format(htrait_to_link_batch.i_trait_id, hunit_to_link_batch.i_id, component_batch_trait.i_trait_id, timezone.now().strftime('%Y-%m-%d %H:%M:%S'))
+        self.cursor.execute(add_component_trait_query)
+        # Remove an existing component batch trait.
+        hunit_to_unlink_batch = HarmonizationUnit.objects.exclude(component_batch_traits=None).order_by('?').first()
+        htrait_to_unlink_batch = hunit_to_unlink_batch.harmonizedtrait_set.all().order_by('?').first()
+        component_batch_trait = hunit_to_unlink_batch.component_batch_traits.all().order_by('?').first()
+        remove_component_trait_query = "DELETE FROM component_batch_trait WHERE harmonized_trait_id={} AND harmonization_unit_id={} AND component_trait_id={}".format(htrait_to_unlink_batch.pk, hunit_to_unlink_batch.pk, component_batch_trait.pk)
+        self.cursor.execute(remove_component_trait_query)
+        # Add a new component age trait.
+        component_age_trait = SourceTrait.objects.order_by('?').first()
+        hunit_to_link_age = HarmonizationUnit.objects.exclude(i_id__in=HarmonizationUnit.objects.filter(component_age_traits__in=[component_age_trait]))[0]
+        add_component_trait_query = "INSERT INTO component_age_trait (harmonization_unit_id, component_trait_id, date_added) values ('{}', '{}', '{}')".format(hunit_to_link_age.i_id, component_age_trait.i_trait_id, timezone.now().strftime('%Y-%m-%d %H:%M:%S'))
+        self.cursor.execute(add_component_trait_query)
+        # Remove an existing component age trait.
+        hunit_to_unlink_age = HarmonizationUnit.objects.exclude(component_age_traits=None).order_by('?').first()
+        component_age_trait = hunit_to_unlink_age.component_age_traits.all().order_by('?').first()
+        remove_component_trait_query = "DELETE FROM component_age_trait WHERE harmonization_unit_id={} AND component_trait_id={}".format(hunit_to_unlink_age.pk, component_age_trait.pk)
+        self.cursor.execute(remove_component_trait_query)
+        # Add a new component harmonized trait.
+        component_harmonized_trait = HarmonizedTrait.objects.order_by('?').first()
+        hunit_to_link_harmonized = HarmonizationUnit.objects.exclude(i_id__in=HarmonizationUnit.objects.filter(component_harmonized_traits__in=[component_harmonized_trait]))[0]
+        htrait_to_link_harmonized = hunit_to_link_harmonized.harmonized_trait_set.harmonizedtrait_set.all()[0]
+        add_component_trait_query = "INSERT INTO component_harmonized_trait (harmonized_trait_id, harmonization_unit_id, component_trait_id, date_added) values ('{}', '{}', '{}', '{}')".format(htrait_to_link_harmonized.i_trait_id, hunit_to_link_harmonized.i_id, component_harmonized_trait.i_trait_id, timezone.now().strftime('%Y-%m-%d %H:%M:%S'))
+        self.cursor.execute(add_component_trait_query)
+        # Remove an existing component harmonized trait.
+        hunit_to_unlink_harmonized = HarmonizationUnit.objects.exclude(component_harmonized_traits=None).order_by('?').first()
+        htrait_to_unlink_harmonized = hunit_to_unlink_harmonized.harmonizedtrait_set.all().order_by('?').first()
+        component_harmonized_trait = hunit_to_unlink_harmonized.component_harmonized_traits.all().order_by('?').first()
+        remove_component_trait_query = "DELETE FROM component_harmonized_trait WHERE harmonized_trait_id={} AND harmonization_unit_id={} AND component_trait_id={}".format(htrait_to_unlink_harmonized.pk, hunit_to_unlink_harmonized.pk, component_harmonized_trait.pk)
+        self.cursor.execute(remove_component_trait_query)
+        
+        # Close the full privileges db connection, and reopen as read-only.
+        self.cursor.close()
+        self.source_db.close()
+        self.source_db = get_devel_db()
+        self.cursor = self.source_db.cursor(buffered=True, dictionary=True)
         
         ## Get the updates.
         management.call_command('import_db', '--which_db=devel', '--no_backup', '--verbosity=0')
-
+        
         ## Check that the regular models have correct imported field values.
         make_args_functions = (CMD._make_global_study_args, CMD._make_study_args,
             CMD._make_source_study_version_args, CMD._make_source_dataset_args,
@@ -2055,6 +2125,15 @@ class IntegrationTest(VisitTestDataTestCase):
             HarmonizationUnit, )
         self.check_imported_values_match(make_args_functions, tables, models)
 
-    def test_import_update_add_study(self):
-        """"""
-        pass
+        ## Check all of the M2M relationships.
+        m2m_tables = ('source_dataset_subcohorts', 'component_source_trait', 'component_harmonized_trait', 'component_batch_trait',
+            'component_age_trait', 'component_source_trait', 'component_harmonized_trait', 'component_batch_trait', )
+        group_by_fields = ('dataset_id', 'harmonized_trait_id', 'harmonized_trait_id', 'harmonized_trait_id',
+            'harmonization_unit_id', 'harmonization_unit_id', 'harmonization_unit_id', 'harmonization_unit_id',)
+        concat_fields = ('subcohort_id', 'component_trait_id', 'component_trait_id', 'component_trait_id',
+            'component_trait_id', 'component_trait_id', 'component_trait_id', 'component_trait_id',)
+        parent_models = (SourceDataset, HarmonizedTrait, HarmonizedTrait, HarmonizedTrait,
+            HarmonizationUnit, HarmonizationUnit, HarmonizationUnit, HarmonizationUnit,)
+        m2m_att_names = ('subcohorts', 'component_source_traits', 'component_harmonized_traits', 'component_batch_traits',
+            'component_age_traits', 'component_source_traits', 'component_harmonized_traits', 'component_batch_traits', )
+        self.check_imported_m2m_relations_match(m2m_tables, group_by_fields, concat_fields, parent_models, m2m_att_names)
