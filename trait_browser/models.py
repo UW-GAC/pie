@@ -155,7 +155,7 @@ class SourceDataset(SourceDBTimeStampedModel):
     i_visit_number = models.CharField('visit number', max_length=45, blank=True)
     i_is_subject_file = models.BooleanField('is subject file?')
     i_study_subject_column = models.CharField('study subject column name', max_length=45, blank=True)
-    i_is_medication_dataset = models.NullBooleanField('is medication dataset?', blank=True)
+    i_is_medication_dataset = models.NullBooleanField('is medication dataset?', blank=True, default=None)
     i_dbgap_date_created = models.DateTimeField('dbGaP date created', null=True, blank=True)
     i_date_visit_reviewed = models.DateTimeField('date visit was reviewed', null=True, blank=True)
     # These TextFields use longtext in MySQL rather than just text, like in snuffles.
