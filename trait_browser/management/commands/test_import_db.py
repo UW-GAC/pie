@@ -1094,6 +1094,100 @@ class UpdateModelsTest(VisitTestDataTestCase):
         self.assertEqual(new_value, getattr(model_instance, 'i_'+field_to_update))
         self.assertTrue(model_instance.modified > t1)
 
+    # Harmonized trait updates.
+    def test_update_harmonized_trait_set(self):
+        """Updates to harmonized_trait_set are imported."""
+        management.call_command('import_db', '--which_db=devel', '--no_backup')
+        t1 = timezone.now() # Save a time to compare to modified date.
+        # Close the db connections because change_data_in_table() opens new connections.
+        # This does not affect the .cursor and .source_db attributes in other functions.
+        self.cursor.close()
+        self.source_db.close()
+        
+        model = HarmonizedTraitSet
+        model_instance = model.objects.all()[0]
+        source_db_table_name = 'harmonized_trait_set'
+        field_to_update = 'description'
+        new_value = 'asdfghjkl'
+        source_db_pk_name = model_instance._meta.pk.name.replace('i_', '')
+        
+        change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
+        management.call_command('import_db', '--which_db=devel', '--update_only', '--verbosity=0', '--no_backup')
+        model_instance.refresh_from_db()
+        # Check that modified date > created date, and name is set to new value.
+        self.assertEqual(new_value, getattr(model_instance, 'i_'+field_to_update))
+        self.assertTrue(model_instance.modified > t1)
+
+    def test_update_harmonized_trait(self):
+        """Updates to harmonized_trait are imported."""
+        management.call_command('import_db', '--which_db=devel', '--no_backup')
+        t1 = timezone.now() # Save a time to compare to modified date.
+        # Close the db connections because change_data_in_table() opens new connections.
+        # This does not affect the .cursor and .source_db attributes in other functions.
+        self.cursor.close()
+        self.source_db.close()
+        
+        model = HarmonizedTrait
+        model_instance = model.objects.all()[0]
+        source_db_table_name = 'harmonized_trait'
+        field_to_update = 'description'
+        new_value = 'asdfghjkl'
+        source_db_pk_name = 'harmonized_trait_id'
+        
+        change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
+        management.call_command('import_db', '--which_db=devel', '--update_only', '--verbosity=0', '--no_backup')
+        model_instance.refresh_from_db()
+        # Check that modified date > created date, and name is set to new value.
+        self.assertEqual(new_value, getattr(model_instance, 'i_description'))
+        self.assertTrue(model_instance.modified > t1)
+
+    def test_update_harmonization_unit(self):
+        """Updates to harmonization_unit are imported."""
+        management.call_command('import_db', '--which_db=devel', '--no_backup')
+        t1 = timezone.now() # Save a time to compare to modified date.
+        # Close the db connections because change_data_in_table() opens new connections.
+        # This does not affect the .cursor and .source_db attributes in other functions.
+        self.cursor.close()
+        self.source_db.close()
+        
+        model = HarmonizationUnit
+        model_instance = model.objects.all()[0]
+        source_db_table_name = 'harmonization_unit'
+        field_to_update = 'tag'
+        new_value = 'asdfghjkl'
+        source_db_pk_name = 'id'
+        
+        change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
+        management.call_command('import_db', '--which_db=devel', '--update_only', '--verbosity=0', '--no_backup')
+        model_instance.refresh_from_db()
+        # Check that modified date > created date, and name is set to new value.
+        self.assertEqual(new_value, getattr(model_instance, 'i_'+field_to_update))
+        self.assertTrue(model_instance.modified > t1)
+        
+    def test_update_harmonized_trait_encoded_value(self):
+        """Updates to harmonized_trait_encoded_values are imported."""
+        management.call_command('import_db', '--which_db=devel', '--no_backup')
+        t1 = timezone.now() # Save a time to compare to modified date.
+        # Close the db connections because change_data_in_table() opens new connections.
+        # This does not affect the .cursor and .source_db attributes in other functions.
+        self.cursor.close()
+        self.source_db.close()
+        
+        model = HarmonizedTraitEncodedValue
+        model_instance = model.objects.all()[0]
+        source_db_table_name = 'harmonized_trait_encoded_values'
+        field_to_update = 'value'
+        new_value = 'asdfghjkl'
+        source_db_pk_name = model_instance._meta.pk.name.replace('i_', '')
+        
+        change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
+        management.call_command('import_db', '--which_db=devel', '--update_only', '--verbosity=0', '--no_backup')
+        model_instance.refresh_from_db()
+        # Check that modified date > created date, and name is set to new value.
+        self.assertEqual(new_value, getattr(model_instance, 'i_'+field_to_update))
+        self.assertTrue(model_instance.modified > t1)
+
+    # M2M link updates.
     def test_update_added_source_dataset_subcohorts(self):
         """A new subcohort link to an existing source dataset is imported after an update."""
         # Run the initial db import.
@@ -1153,77 +1247,7 @@ class UpdateModelsTest(VisitTestDataTestCase):
         dataset_to_unlink.refresh_from_db()
         self.assertFalse(dataset_to_unlink in sc.sourcedataset_set.all())
 
-    # Harmonized trait updates.
-    def test_update_harmonized_trait_set(self):
-        """Updates to harmonized_trait_set are imported."""
-        management.call_command('import_db', '--which_db=devel', '--no_backup')
-        t1 = timezone.now() # Save a time to compare to modified date.
-        # Close the db connections because change_data_in_table() opens new connections.
-        # This does not affect the .cursor and .source_db attributes in other functions.
-        self.cursor.close()
-        self.source_db.close()
-        
-        model = HarmonizedTraitSet
-        model_instance = model.objects.all()[0]
-        source_db_table_name = 'harmonized_trait_set'
-        field_to_update = 'description'
-        new_value = 'asdfghjkl'
-        source_db_pk_name = model_instance._meta.pk.name.replace('i_', '')
-        
-        change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
-        management.call_command('import_db', '--which_db=devel', '--update_only', '--verbosity=0', '--no_backup')
-        model_instance.refresh_from_db()
-        # Check that modified date > created date, and name is set to new value.
-        self.assertEqual(new_value, getattr(model_instance, 'i_'+field_to_update))
-        self.assertTrue(model_instance.modified > t1)
-
-    def test_update_harmonized_trait(self):
-        """Updates to harmonized_trait are imported."""
-        management.call_command('import_db', '--which_db=devel', '--no_backup')
-        t1 = timezone.now() # Save a time to compare to modified date.
-        # Close the db connections because change_data_in_table() opens new connections.
-        # This does not affect the .cursor and .source_db attributes in other functions.
-        self.cursor.close()
-        self.source_db.close()
-        
-        model = HarmonizedTrait
-        model_instance = model.objects.all()[0]
-        source_db_table_name = 'harmonized_trait'
-        field_to_update = 'description'
-        new_value = 'asdfghjkl'
-        source_db_pk_name = 'harmonized_trait_id'
-        
-        change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
-        management.call_command('import_db', '--which_db=devel', '--update_only', '--verbosity=0', '--no_backup')
-        model_instance.refresh_from_db()
-        # Check that modified date > created date, and name is set to new value.
-        self.assertEqual(new_value, getattr(model_instance, 'i_description'))
-        self.assertTrue(model_instance.modified > t1)
-
-    def test_update_harmonized_trait_encoded_value(self):
-        """Updates to harmonized_trait_encoded_values are imported."""
-        management.call_command('import_db', '--which_db=devel', '--no_backup')
-        t1 = timezone.now() # Save a time to compare to modified date.
-        # Close the db connections because change_data_in_table() opens new connections.
-        # This does not affect the .cursor and .source_db attributes in other functions.
-        self.cursor.close()
-        self.source_db.close()
-        
-        model = HarmonizedTraitEncodedValue
-        model_instance = model.objects.all()[0]
-        source_db_table_name = 'harmonized_trait_encoded_values'
-        field_to_update = 'value'
-        new_value = 'asdfghjkl'
-        source_db_pk_name = model_instance._meta.pk.name.replace('i_', '')
-        
-        change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
-        management.call_command('import_db', '--which_db=devel', '--update_only', '--verbosity=0', '--no_backup')
-        model_instance.refresh_from_db()
-        # Check that modified date > created date, and name is set to new value.
-        self.assertEqual(new_value, getattr(model_instance, 'i_'+field_to_update))
-        self.assertTrue(model_instance.modified > t1)
-
-    def test_update_component_source_traits(self):
+    def test_update_add_component_source_traits(self):
         """A new component source trait link to an existing harmonized trait is imported."""
         # Run the initial db import.
         management.call_command('import_db', '--which_db=devel', '--no_backup')
@@ -1254,7 +1278,34 @@ class UpdateModelsTest(VisitTestDataTestCase):
         self.assertTrue(htrait_to_link in source_trait.source_component_of_harmonized_trait.all())
         self.assertTrue(hunit_to_link in source_trait.source_component_of_harmonization_unit.all())
 
-    def test_update_component_batch_traits(self):
+    def test_update_remove_component_source_traits(self):
+        """A deleted component source trait link is removed."""
+        # Run the initial db import.
+        management.call_command('import_db', '--which_db=devel', '--no_backup')
+        # Pick a source trait to remove a link to in the source db.
+        hunit_to_unlink = HarmonizationUnit.objects.exclude(component_source_traits=None).order_by('?').first()
+        htrait_to_unlink = hunit_to_unlink.harmonizedtrait_set.all().order_by('?').first()
+        component_source_trait = hunit_to_unlink.component_source_traits.all().order_by('?').first()
+        # Open source db with full privileges.
+        self.source_db = get_devel_db(permissions='full')
+        self.cursor = self.source_db.cursor(buffered=True, dictionary=True)
+        # Remove a component source trait link.
+        remove_component_trait_query = "DELETE FROM component_source_trait WHERE harmonized_trait_id={} AND harmonization_unit_id={} AND component_trait_id={}".format(htrait_to_unlink.pk, hunit_to_unlink.pk, component_source_trait.pk)
+        self.cursor.execute(remove_component_trait_query)
+        self.source_db.commit()
+        # Close the db connection.
+        self.cursor.close()
+        self.source_db.close()
+        # Now run the update commands.
+        management.call_command('import_db', '--which_db=devel', '--update_only', '--verbosity=0', '--no_backup')
+        # Check that the link between these two models is now gone.
+        component_source_trait.refresh_from_db()
+        htrait_to_unlink.refresh_from_db()
+        hunit_to_unlink.refresh_from_db()
+        self.assertFalse(htrait_to_unlink in component_source_trait.source_component_of_harmonized_trait.all())
+        self.assertFalse(hunit_to_unlink in component_source_trait.source_component_of_harmonization_unit.all())
+
+    def test_update_add_component_batch_traits(self):
         """A new component batch trait link to an existing harmonized trait is imported."""
         # Run the initial db import.
         management.call_command('import_db', '--which_db=devel', '--no_backup')
@@ -1285,7 +1336,34 @@ class UpdateModelsTest(VisitTestDataTestCase):
         self.assertTrue(htrait_to_link in source_trait.batch_component_of_harmonized_trait.all())
         self.assertTrue(hunit_to_link in source_trait.batch_component_of_harmonization_unit.all())
 
-    def test_update_component_age_traits(self):
+    def test_update_remove_component_batch_traits(self):
+        """A deleted component batch trait link is removed."""
+        # Run the initial db import.
+        management.call_command('import_db', '--which_db=devel', '--no_backup')
+        # Pick a batch trait to remove a link to in the batch db.
+        hunit_to_unlink = HarmonizationUnit.objects.exclude(component_batch_traits=None).order_by('?').first()
+        htrait_to_unlink = hunit_to_unlink.harmonizedtrait_set.all().order_by('?').first()
+        component_batch_trait = hunit_to_unlink.component_batch_traits.all().order_by('?').first()
+        # Open batch db with full privileges.
+        self.source_db = get_devel_db(permissions='full')
+        self.cursor = self.source_db.cursor(buffered=True, dictionary=True)
+        # Remove a component batch trait link.
+        remove_component_trait_query = "DELETE FROM component_batch_trait WHERE harmonized_trait_id={} AND harmonization_unit_id={} AND component_trait_id={}".format(htrait_to_unlink.pk, hunit_to_unlink.pk, component_batch_trait.pk)
+        self.cursor.execute(remove_component_trait_query)
+        self.source_db.commit()
+        # Close the db connection.
+        self.cursor.close()
+        self.source_db.close()
+        # Now run the update commands.
+        management.call_command('import_db', '--which_db=devel', '--update_only', '--verbosity=0', '--no_backup')
+        # Check that the link between these two models is now gone.
+        component_batch_trait.refresh_from_db()
+        htrait_to_unlink.refresh_from_db()
+        hunit_to_unlink.refresh_from_db()
+        self.assertFalse(htrait_to_unlink in component_batch_trait.batch_component_of_harmonized_trait.all())
+        self.assertFalse(hunit_to_unlink in component_batch_trait.batch_component_of_harmonization_unit.all())
+
+    def test_update_add_component_age_traits(self):
         """A new component source trait link to an existing harmonized trait is imported."""
         # Run the initial db import.
         management.call_command('import_db', '--which_db=devel', '--no_backup')
@@ -1312,7 +1390,31 @@ class UpdateModelsTest(VisitTestDataTestCase):
         hunit_to_link.refresh_from_db()
         self.assertTrue(hunit_to_link in source_trait.age_component_of_harmonization_unit.all())
 
-    def test_update_component_harmonized_traits(self):
+    def test_update_remove_component_age_traits(self):
+        """A deleted component age trait link is removed."""
+        # Run the initial db import.
+        management.call_command('import_db', '--which_db=devel', '--no_backup')
+        # Pick a source trait to remove a link to in the source db.
+        hunit_to_unlink = HarmonizationUnit.objects.exclude(component_age_traits=None).order_by('?').first()
+        component_age_trait = hunit_to_unlink.component_age_traits.all().order_by('?').first()
+        # Open source db with full privileges.
+        self.source_db = get_devel_db(permissions='full')
+        self.cursor = self.source_db.cursor(buffered=True, dictionary=True)
+        # Remove a component source trait link.
+        remove_component_trait_query = "DELETE FROM component_age_trait WHERE harmonization_unit_id={} AND component_trait_id={}".format(hunit_to_unlink.pk, component_age_trait.pk)
+        self.cursor.execute(remove_component_trait_query)
+        self.source_db.commit()
+        # Close the db connection.
+        self.cursor.close()
+        self.source_db.close()
+        # Now run the update commands.
+        management.call_command('import_db', '--which_db=devel', '--update_only', '--verbosity=0', '--no_backup')
+        # Check that the link between these two models is now gone.
+        component_age_trait.refresh_from_db()
+        hunit_to_unlink.refresh_from_db()
+        self.assertFalse(hunit_to_unlink in component_age_trait.age_component_of_harmonization_unit.all())
+
+    def test_update_add_component_harmonized_traits(self):
         """A new component source trait link to an existing harmonized trait is imported."""
         # Run the initial db import.
         management.call_command('import_db', '--which_db=devel', '--no_backup')
@@ -1342,6 +1444,33 @@ class UpdateModelsTest(VisitTestDataTestCase):
         hunit_to_link.refresh_from_db()
         self.assertTrue(htrait_to_link in harmonized_trait.harmonized_component_of_harmonized_trait.all())
         self.assertTrue(hunit_to_link in harmonized_trait.harmonized_component_of_harmonization_unit.all())
+
+    def test_update_remove_component_harmonized_traits(self):
+        """A deleted component source trait link is removed."""
+        # Run the initial db import.
+        management.call_command('import_db', '--which_db=devel', '--no_backup')
+        # Pick a source trait to remove a link to in the source db.
+        hunit_to_unlink = HarmonizationUnit.objects.exclude(component_harmonized_traits=None).order_by('?').first()
+        htrait_to_unlink = hunit_to_unlink.harmonizedtrait_set.all().order_by('?').first()
+        component_harmonized_trait = hunit_to_unlink.component_harmonized_traits.all().order_by('?').first()
+        # Open source db with full privileges.
+        self.source_db = get_devel_db(permissions='full')
+        self.cursor = self.source_db.cursor(buffered=True, dictionary=True)
+        # Remove a component source trait link.
+        remove_component_trait_query = "DELETE FROM component_harmonized_trait WHERE harmonized_trait_id={} AND harmonization_unit_id={} AND component_trait_id={}".format(htrait_to_unlink.pk, hunit_to_unlink.pk, component_harmonized_trait.pk)
+        self.cursor.execute(remove_component_trait_query)
+        self.source_db.commit()
+        # Close the db connection.
+        self.cursor.close()
+        self.source_db.close()
+        # Now run the update commands.
+        management.call_command('import_db', '--which_db=devel', '--update_only', '--verbosity=0', '--no_backup')
+        # Check that the link between these two models is now gone.
+        component_harmonized_trait.refresh_from_db()
+        htrait_to_unlink.refresh_from_db()
+        hunit_to_unlink.refresh_from_db()
+        self.assertFalse(htrait_to_unlink in component_harmonized_trait.harmonized_component_of_harmonized_trait.all())
+        self.assertFalse(hunit_to_unlink in component_harmonized_trait.harmonized_component_of_harmonization_unit.all())
 
 
 class ImportNoUpdateTest(VisitTestDataTestCase):
