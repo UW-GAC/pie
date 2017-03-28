@@ -1232,6 +1232,14 @@ class Command(BaseCommand):
                                     expected=False)
         logger.info('{} harmonized trait encoded values updated'.format(htrait_ev_update_count))
 
+        harmonization_unit_update_count = self._update_existing_data(source_db=source_db,
+                                                                     source_table='harmonization_unit',
+                                                                     source_pk='id',
+                                                                     model=HarmonizationUnit,
+                                                                     make_args=self._make_harmonization_unit_args,
+                                                                     expected=False)
+        logger.info("{} harmonization units updated".format(harmonization_unit_update_count))
+
 
     # Methods to actually do the management command.
     def add_arguments(self, parser):
