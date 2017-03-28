@@ -143,6 +143,18 @@ class OpenCloseDBMixin(object):
             source_ids = [str(row[source_pk]) for row in self.cursor.fetchall()]
             self.assertEqual(sorted(source_ids), sorted(CMD._get_current_pks(model)))
 
+    def check_imported_values_match(self, make_args_functions, tables, models):
+        """Check that values for imported fields match those from the appropriate source db table."""
+        for make_args, table_name, model in zip(make_args_functions, tables, models):
+            print(table_name, model)
+            query = 'SELECT * FROM {}'.format(table_name)
+            self.cursor.execute(query)
+            for row in self.cursor:
+                model_args = make_args(CMD._fix_row(row))
+                django_obj = model.objects.get(pk=model_args[model._meta.pk.name])
+                for field in model_args:
+                    self.assertEqual(getattr(django_obj, field), model_args[field], msg='Field: {}'.format(field))
+
     def check_imported_m2m_relations_match(self, m2m_tables, group_by_fields, concat_fields, parent_models, m2m_att_names):
         """Check that imported ManyToMany fields match those from the appropriate M2M source db table."""
         for table, group, concat, model, m2m_att in zip(m2m_tables, group_by_fields, concat_fields, parent_models, m2m_att_names):
@@ -1967,6 +1979,81 @@ class IntegrationTest(VisitTestDataTestCase):
         self.assertTrue(hunit_to_link_age in component_age_trait.age_component_of_harmonization_unit.all())
         self.assertTrue(htrait_to_link_harmonized in component_harmonized_trait.harmonized_component_of_harmonized_trait.all())
         self.assertTrue(hunit_to_link_harmonized in component_harmonized_trait.harmonized_component_of_harmonization_unit.all())
+
+    def test_values_match_after_all_updates(self):
+        """All imported field values match those in the source db after making updates to the source db."""
+        # Initial import of the test data (with visit).
+        management.call_command('import_db', '--which_db=devel', '--no_backup')
+        
+        ## Prepare for making changes in the devel database.
+        # Close the db connections because change_data_in_table() opens new connections.
+        self.cursor.close()
+        self.source_db.close()
+        self.source_db = get_devel_db(permissions='full')
+        self.cursor = self.source_db.cursor(buffered=True, dictionary=True)
+        
+        ## Make updates of every kind in the devel db.
+        t1 = timezone.now() # Save a time to compare to modified date.
+        new_value = 'asdfghjkl' # Use this value to reset things in multiple models.
+        # Update the global study table.
+        global_study = GlobalStudy.objects.all()[0]
+        change_data_in_table('global_study', 'name', new_value, global_study._meta.pk.name.replace('i_', ''), global_study.pk)
+        # Update the study table.
+        study = Study.objects.all()[0]
+        change_data_in_table('study', 'study_name', new_value, study._meta.pk.name.replace('i_', ''), study.pk)
+        # Update the source study version table.
+        source_study_version = SourceStudyVersion.objects.all()[0]
+        new_is_deprecated = not source_study_version.i_is_deprecated
+        change_data_in_table('source_study_version', 'is_deprecated', new_is_deprecated, source_study_version._meta.pk.name.replace('i_', ''), source_study_version.pk)
+        # Update source dataset table.
+        source_dataset = SourceDataset.objects.all()[0]
+        new_visit_code = 'one_visit_per_file'
+        change_data_in_table('source_dataset', 'visit_code', new_visit_code, source_dataset._meta.pk.name.replace('i_', ''), source_dataset.pk)
+        # Update source trait table.
+        source_trait = SourceTrait.objects.all()[0]
+        change_data_in_table('source_trait', 'dcc_description', new_value, 'source_trait_id', source_trait.pk)
+        # Update the subcohort table.
+        subcohort = Subcohort.objects.get(pk=1)
+        change_data_in_table('subcohort', 'name', new_value, subcohort._meta.pk.name.replace('i_', ''), subcohort.pk)
+        # Update source trait encoded values table.
+        sev = SourceTraitEncodedValue.objects.all()[0]
+        change_data_in_table('source_trait_encoded_values', 'value', new_value, sev._meta.pk.name.replace('i_', ''), sev.pk)
+        # Update harmonized trait set table.
+        harmonized_trait_set = HarmonizedTraitSet.objects.all()[0]
+        change_data_in_table('harmonized_trait_set', 'description', new_value, harmonized_trait_set._meta.pk.name.replace('i_', ''), harmonized_trait_set.pk)
+        # Update harmonized trait table.
+        harmonized_trait = HarmonizedTrait.objects.all()[0]
+        change_data_in_table('harmonized_trait', 'description', new_value, 'harmonized_trait_id', harmonized_trait.pk)
+        # Update harmonized trait encoded values table.
+        hev = HarmonizedTraitEncodedValue.objects.all()[0]
+        change_data_in_table('harmonized_trait_encoded_values', 'value', new_value, hev._meta.pk.name.replace('i_', ''), hev.pk)
+        # Update HarmonizationUnit
+        hunit = HarmonizationUnit.objects.all()[0]
+        change_data_in_table('harmonization_unit', 'tag', new_value, hunit._meta.pk.name.replace('i_', ''), hunit.pk)
+        
+        ## Get the updates.
+        management.call_command('import_db', '--which_db=devel', '--no_backup', '--verbosity=0')
+
+        ## Check that the regular models have correct imported field values.
+        make_args_functions = (CMD._make_global_study_args, CMD._make_study_args,
+            CMD._make_source_study_version_args, CMD._make_source_dataset_args,
+            CMD._make_source_trait_args, CMD._make_subcohort_args, 
+            CMD._make_source_trait_encoded_value_args, CMD._make_harmonized_trait_set_args, 
+            CMD._make_harmonized_trait_args, CMD._make_harmonized_trait_encoded_value_args, 
+            CMD._make_harmonization_unit_args, )
+        tables = ('global_study', 'study',
+            'source_study_version', 'source_dataset',
+            'source_trait', 'subcohort',
+            'source_trait_encoded_values', 'harmonized_trait_set',
+            'harmonized_trait', 'harmonized_trait_encoded_values',
+            'harmonization_unit', )
+        models = (GlobalStudy, Study,
+            SourceStudyVersion, SourceDataset, 
+            SourceTrait, Subcohort, 
+            SourceTraitEncodedValue, HarmonizedTraitSet, 
+            HarmonizedTrait, HarmonizedTraitEncodedValue, 
+            HarmonizationUnit, )
+        self.check_imported_values_match(make_args_functions, tables, models)
 
     def test_import_update_add_study(self):
         """"""
