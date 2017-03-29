@@ -2,7 +2,7 @@
 
 import django_tables2 as tables
 
-from .models import SourceTrait, HarmonizedTrait, Study
+from .models import *
 
 
 class SourceTraitTable(tables.Table):

@@ -24,7 +24,7 @@ from django.core import management
 from django.utils import timezone
 from django.conf import settings
 
-from trait_browser.models import GlobalStudy, HarmonizedTrait, HarmonizedTraitEncodedValue, HarmonizedTraitSet, HarmonizationUnit, SourceDataset, SourceStudyVersion, SourceTrait, SourceTraitEncodedValue, Study, Subcohort
+from trait_browser.models import *
 
 
 # Set up a logger to handle messages based on verbosity setting.

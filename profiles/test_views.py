@@ -3,8 +3,8 @@
 from django.core.urlresolvers import reverse
 from django.test import TestCase
 
-from .models import SavedSearchMeta
-from .factories import SearchFactory
+from .models import *
+from .factories import *
 from trait_browser.factories import StudyFactory
 
 from core.utils import ViewsAutoLoginTestCase

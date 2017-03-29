@@ -3,10 +3,10 @@
 from django.test import TestCase
 
 
-from .models import UnitRecipe, HarmonizationRecipe
-from .factories import UnitRecipeFactory, HarmonizationRecipeFactory
 from core.factories import UserFactory
 from trait_browser.factories import SourceTraitFactory
+from .models import *
+from .factories import *
 
 
 class UnitRecipeFactoryTestCase(TestCase):

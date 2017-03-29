@@ -7,7 +7,7 @@ from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Submit
 from dal import autocomplete
 
-from .models import UnitRecipe, HarmonizationRecipe
+from .models import *
 
 
 # UnitRecipe form classes.

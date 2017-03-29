@@ -3,8 +3,8 @@
 from django.contrib import admin
 from django.forms.models import ModelFormMetaclass
 
-from .forms import HarmonizationRecipeAdminForm, UnitRecipeAdminForm
-from .models import UnitRecipe, HarmonizationRecipe
+from .forms import *
+from .models import *
 
 
 class UnitRecipeAdmin(admin.ModelAdmin):

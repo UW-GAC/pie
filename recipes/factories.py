@@ -4,7 +4,7 @@ import factory
 import factory.fuzzy
 
 from core.factories import UserFactory
-from .models import HarmonizationRecipe, UnitRecipe
+from .models import *
 
 
 class UnitRecipeFactory(factory.DjangoModelFactory):

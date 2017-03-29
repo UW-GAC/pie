@@ -1,10 +1,8 @@
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 
-from .tables import SourceSearchTable, HarmonizedSearchTable
-from .models import Search, SavedSearchMeta
-
-# Create your views here.
+from .tables import *
+from .models import *
 
 
 @login_required

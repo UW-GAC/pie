@@ -9,10 +9,10 @@ from django.core.urlresolvers import reverse, RegexURLResolver, RegexURLPattern
 
 from core.utils import ViewsAutoLoginTestCase, LoginRequiredTestCase
 from profiles.models import Search, UserData
-from .models import GlobalStudy, HarmonizedTrait, HarmonizedTraitEncodedValue, HarmonizedTraitSet, SourceDataset, SourceStudyVersion, SourceTrait, SourceTraitEncodedValue, Study, Subcohort
-from .factories import GlobalStudyFactory, HarmonizedTraitFactory, HarmonizedTraitEncodedValueFactory, HarmonizedTraitSetFactory, SourceDatasetFactory, SourceStudyVersionFactory, SourceTraitFactory, SourceTraitEncodedValueFactory, StudyFactory, SubcohortFactory 
-from .forms import SourceTraitCrispySearchForm, HarmonizedTraitCrispySearchForm
-from .tables import SourceTraitTable, HarmonizedTraitTable, StudyTable
+from .models import *
+from .factories import *
+from .forms import *
+from .tables import *
 from .urls import urlpatterns
 from .views import TABLE_PER_PAGE, search
 

@@ -3,8 +3,8 @@
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 
-from .factories import UserFactory, SuperUserFactory, build_test_db
-from trait_browser.models import GlobalStudy, HarmonizedTrait, HarmonizedTraitEncodedValue, HarmonizedTraitSet, SourceDataset, SourceStudyVersion, SourceTrait, SourceTraitEncodedValue, Study, Subcohort
+from .factories import *
+from trait_browser.models import *
 
 
 User = get_user_model()

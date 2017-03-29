@@ -10,8 +10,8 @@ from django.utils import timezone
 import factory
 import factory.fuzzy
 
-from trait_browser.models import GlobalStudy, HarmonizedTrait, HarmonizedTraitEncodedValue, HarmonizedTraitSet, HarmonizationUnit, SourceDataset, SourceStudyVersion, SourceTrait, SourceTraitEncodedValue, Study, Subcohort
-from trait_browser.factories import GlobalStudyFactory, HarmonizedTraitFactory, HarmonizedTraitEncodedValueFactory, HarmonizedTraitSetFactory, HarmonizationUnitFactory, SourceDatasetFactory, SourceStudyVersionFactory, SourceTraitFactory, SourceTraitEncodedValueFactory, StudyFactory, SubcohortFactory
+from trait_browser.models import *
+from trait_browser.factories import *
 
 
 User = get_user_model()

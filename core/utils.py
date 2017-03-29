@@ -9,7 +9,7 @@ from django.contrib.auth import get_user_model
 from django.core.urlresolvers import reverse, RegexURLResolver, RegexURLPattern
 from django.test import TestCase, Client
 
-from .factories import UserFactory, SuperUserFactory, USER_FACTORY_PASSWORD
+from .factories import *
 
 User = get_user_model()
 

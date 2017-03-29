@@ -6,18 +6,18 @@ urls will show up under /recipe.
 
 from django.conf.urls import include, url
 
-from . import views
+from .views import *
 
 unit_patterns = [
-    url(r'^new/$', views.CreateUnitRecipe.as_view(), name='create'),
-    url(r'^edit/(?P<pk>\d+)/$', views.UpdateUnitRecipe.as_view(), name='edit'),
-    url(r'^detail/(?P<pk>\d+)/$', views.UnitRecipeDetail.as_view(), name='detail'),    
+    url(r'^new/$', CreateUnitRecipe.as_view(), name='create'),
+    url(r'^edit/(?P<pk>\d+)/$', UpdateUnitRecipe.as_view(), name='edit'),
+    url(r'^detail/(?P<pk>\d+)/$', UnitRecipeDetail.as_view(), name='detail'),    
 ]
 
 harmonization_patterns = [
-    url(r'^new/$', views.CreateHarmonizationRecipe.as_view(), name='create'),
-    url(r'^edit/(?P<pk>\d+)/$', views.UpdateHarmonizationRecipe.as_view(), name='edit'),
-    url(r'^detail/(?P<pk>\d+)/$', views.HarmonizationRecipeDetail.as_view(), name='detail'),
+    url(r'^new/$', CreateHarmonizationRecipe.as_view(), name='create'),
+    url(r'^edit/(?P<pk>\d+)/$', UpdateHarmonizationRecipe.as_view(), name='edit'),
+    url(r'^detail/(?P<pk>\d+)/$', HarmonizationRecipeDetail.as_view(), name='detail'),
 ]
 
 urlpatterns = [
