@@ -24,7 +24,7 @@ from django.core import management
 from django.test import TestCase
 from django.utils import timezone
 
-from trait_browser.management.commands.import_db import Command, HUNIT_QUERY
+from trait_browser.management.commands.import_db import Command, HUNIT_QUERY, STRING_TYPES, MYSQL_TYPES
 from trait_browser.management.commands.db_factory import fake_row_dict
 from trait_browser.factories import *
 from trait_browser.models import *
@@ -150,7 +150,8 @@ class OpenCloseDBMixin(object):
             query = 'SELECT * FROM {}'.format(table_name)
             self.cursor.execute(query)
             for row in self.cursor:
-                model_args = make_args(CMD._fix_row(row))
+                field_types = {el[0]: el[1] for el in self.cursor.description}
+                model_args = make_args(CMD._fix_row(row, field_types))
                 django_obj = model.objects.get(pk=model_args[model._meta.pk.name])
                 for field in model_args:
                     self.assertEqual(getattr(django_obj, field), model_args[field], msg='Field: {}'.format(field))
@@ -163,7 +164,8 @@ class OpenCloseDBMixin(object):
             # print(query)
             self.cursor.execute(query)
             for row in self.cursor:
-                row = CMD._fix_row(row)
+                field_types = {el[0]: el[1] for el in self.cursor.description}
+                row = CMD._fix_row(row, field_types)
                 source_ids = [int(i) for i in row['id_list'].split(',')]
                 django_ids = [obj.pk for obj in getattr(model.objects.get(pk=row[group]), m2m_att).all()]
                 self.assertEqual(sorted(source_ids), sorted(django_ids))
@@ -234,7 +236,8 @@ class TestFunctionsTest(TestCase):
         cursor = source_db.cursor(buffered=True, dictionary=True)
         cursor.execute('SELECT * FROM {} WHERE {}={};'.format(table, where_field, where_value))
         row = cursor.fetchone()
-        row = CMD._fix_row(row)
+        field_types = {el[0]: el[1] for el in cursor.description}
+        row = CMD._fix_row(row, field_types)
         cursor.close()
         source_db.close()
         self.assertEqual(row[update_field], new_val)
@@ -287,14 +290,14 @@ class DbFixersTest(TestCase):
 
     def test_fix_bytearray_no_bytearrays_left(self):
         """Bytearrays from the row_dict are converted to strings."""
-        row = fake_row_dict()
+        row, types = fake_row_dict()
         fixed_row = CMD._fix_bytearray(row)
         for k in fixed_row:
             self.assertNotIsInstance(fixed_row[k], bytearray)
     
     def test_fix_bytearray_only_bytearrays_altered(self):
         """The non-bytearray values from the row_dict are not altered by _fix_bytearray."""
-        row = fake_row_dict()
+        row, types = fake_row_dict()
         fixed_row = CMD._fix_bytearray(row)
         bytearray_keys = [k for k in row.keys() if isinstance(row[k], bytearray)]
         other_keys = [k for k in row.keys() if not isinstance(row[k], bytearray)]
@@ -303,7 +306,7 @@ class DbFixersTest(TestCase):
 
     def test_fix_bytearray_to_string(self):
         """The bytearray values from the row_dict are converted to string type."""
-        row = fake_row_dict()
+        row, types = fake_row_dict()
         fixed_row = CMD._fix_bytearray(row)
         bytearray_keys = [k for k in row.keys() if isinstance(row[k], bytearray)]
         other_keys = [k for k in row.keys() if not isinstance(row[k], bytearray)]
@@ -335,52 +338,73 @@ class DbFixersTest(TestCase):
         self.assertDictEqual(row, fixed_row)
     
     def test_fix_null_no_none_left(self):
-        """None is completely removed by _fix_null."""
-        row = fake_row_dict()
-        fixed_row = CMD._fix_null(row)
+        """None is completely removed by _fix_null for string types."""
+        types = {str(i): i for i in STRING_TYPES}
+        row = {str(i): None for i in STRING_TYPES}
+        fixed_row = CMD._fix_null(row, types)
         for k in fixed_row:
             self.assertIsNotNone(fixed_row[k])
     
     def test_fix_null_only_none_altered(self):
         """Only dict values of None are altered."""
-        row = fake_row_dict()
-        fixed_row = CMD._fix_null(row)
+        row, types = fake_row_dict()
+        fixed_row = CMD._fix_null(row, types)
         none_keys = [k for k in row.keys() if row[k] is None]
         other_keys = [k for k in row.keys() if row[k] is not None]
         for k in other_keys:
             self.assertEqual(row[k], fixed_row[k])
     
-    def test_fix_null_to_empty_string(self):
-        """Dict values of None are changed to empty strings."""
-        row = fake_row_dict()
-        fixed_row = CMD._fix_null(row)
-        none_keys = [k for k in row.keys() if row[k] is None]
-        other_keys = [k for k in row.keys() if row[k] is not None]
-        for k in none_keys:
+    def test_fix_null_only_string_types_altered(self):
+        """Only None values for string type fields are altered."""
+        row, types = fake_row_dict()
+        fixed_row = CMD._fix_null(row, types)
+        none_string_keys = [k for k in row.keys() if row[k] is None and types[k] in STRING_TYPES]
+        other_keys = [k for k in row.keys() if k not in none_string_keys]
+        for k in other_keys:
+            self.assertEqual(row[k], fixed_row[k], msg='Field: {}'.format(k))
+
+    def test_fix_null_string_fields_to_empty_string(self):
+        """Dict values of None for each string type field are changed to empty strings."""
+        row, types = fake_row_dict()
+        fixed_row = CMD._fix_null(row, types)
+        none_string_keys = [k for (k, t) in zip(row.keys(), types) if row[k] is None and t in STRING_TYPES]
+        other_keys = [k for k in row.keys() if k not in none_string_keys]
+        for k in none_string_keys:
             self.assertEqual(fixed_row[k], '')
     
     def test_fix_null_no_nones(self):
         """A dict containing no Nones is unchanged by _fix_null."""
         row = {'a':1, 'b':'foobar', 'c':1.56, 'd': datetime(2000, 1, 1)}
-        fixed_row = CMD._fix_null(row)
+        types = {field: t for (t, field) in zip(row, STRING_TYPES)}
+        fixed_row = CMD._fix_null(row, types)
         self.assertDictEqual(row, fixed_row)
     
     def test_fix_null_empty_dict(self):
         """An empty dict is unchanged by _fix_null."""
         row = {}
-        fixed_row = CMD._fix_null(row)
+        types = {}
+        fixed_row = CMD._fix_null(row, types)
         self.assertDictEqual(row, fixed_row)
     
     def test_fix_null_date_stays_none(self):
-        """Dict values with 'date' in the key name are left as None."""
-        row = {'date_column': None, 'other_column': None}
-        fixed_row = CMD._fix_null(row)
-        self.assertIsNone(fixed_row['date_column'])
-        self.assertIsNotNone(fixed_row['other_column'])
+        """Dict values of datetime and timestamp type are left as None."""
+        row, types = fake_row_dict()
+        row['datetime'] = None
+        row['timestamp'] = None
+        fixed_row = CMD._fix_null(row, types)
+        self.assertIsNone(fixed_row['datetime'])
+        self.assertIsNone(fixed_row['timestamp'])
+        
+    def test_fix_null_boolean_stays_none(self):
+        """Dict values of boolean (tiny int) type are left as None."""
+        row, types = fake_row_dict()
+        row['boolean'] = None
+        fixed_row = CMD._fix_null(row, types)
+        self.assertIsNone(fixed_row['boolean'])
     
     def test_fix_timezone_result_is_aware(self):
         """The resulting datetimes from _fix_timezone are in fact timezone aware."""
-        row = fake_row_dict()
+        row, types = fake_row_dict()
         fixed_row = CMD._fix_timezone(row)
         for k in row:
             if isinstance(row[k], datetime):
@@ -389,7 +413,7 @@ class DbFixersTest(TestCase):
     
     def test_fix_timezone_only_datetimes_altered(self):
         """Non-datetime objects in the dict are not altered by _fix_timezone."""
-        row = fake_row_dict()
+        row, types = fake_row_dict()
         fixed_row = CMD._fix_timezone(row)
         for k in row:
             if not isinstance(row[k], datetime):
@@ -397,7 +421,7 @@ class DbFixersTest(TestCase):
     
     def test_fix_timezone_still_datetime(self):
         """Datetime objects in the dict are still of datetime type after conversion by _fix_timezone."""
-        row = fake_row_dict()
+        row, types = fake_row_dict()
         fixed_row = CMD._fix_timezone(row)
         for k in row:
             if isinstance(row[k], datetime):
@@ -592,7 +616,8 @@ class MakeArgsForVisitDataTest(VisitTestDataTestCase):
         # Have to make global study and study first.
         global_study = GlobalStudyFactory.create(i_id=row_dict['global_study_id'])
         #
-        subcohort_args = CMD._make_subcohort_args(CMD._fix_row(row_dict))
+        field_types = {el[0]: el[1] for el in self.cursor.description}
+        subcohort_args = CMD._make_subcohort_args(CMD._fix_row(row_dict, field_types))
         subcohort = Subcohort(**subcohort_args)
         subcohort.save()
         self.assertIsInstance(subcohort, Subcohort)
@@ -606,7 +631,8 @@ class MakeArgsTest(BaseTestDataTestCase):
         global_study_query = 'SELECT * FROM global_study;'
         self.cursor.execute(global_study_query)
         row_dict = self.cursor.fetchone()
-        global_study_args = CMD._make_global_study_args(CMD._fix_row(row_dict))
+        field_types = {el[0]: el[1] for el in self.cursor.description}
+        global_study_args = CMD._make_global_study_args(CMD._fix_row(row_dict, field_types))
         global_study = GlobalStudy(**global_study_args)
         global_study.save()
         self.assertIsInstance(global_study, GlobalStudy)
@@ -619,7 +645,8 @@ class MakeArgsTest(BaseTestDataTestCase):
         # Have to make a GlobalStudy first.
         global_study = GlobalStudyFactory.create(i_id=row_dict['global_study_id'])
         #
-        study_args = CMD._make_study_args(CMD._fix_row(row_dict))
+        field_types = {el[0]: el[1] for el in self.cursor.description}
+        study_args = CMD._make_study_args(CMD._fix_row(row_dict, field_types))
         study = Study(**study_args)
         study.save()
         self.assertIsInstance(study, Study)
@@ -633,7 +660,8 @@ class MakeArgsTest(BaseTestDataTestCase):
         global_study = GlobalStudyFactory.create(i_id=1)
         study = StudyFactory.create(i_accession=row_dict['accession'], global_study=global_study)
         #
-        source_study_version_args = CMD._make_source_study_version_args(CMD._fix_row(row_dict))
+        field_types = {el[0]: el[1] for el in self.cursor.description}
+        source_study_version_args = CMD._make_source_study_version_args(CMD._fix_row(row_dict, field_types))
         source_study_version = SourceStudyVersion(**source_study_version_args)
         source_study_version.save()
         self.assertIsInstance(source_study_version, SourceStudyVersion)
@@ -647,7 +675,8 @@ class MakeArgsTest(BaseTestDataTestCase):
         global_study = GlobalStudyFactory.create(i_id=1)
         study = StudyFactory.create(i_accession=1, global_study=global_study)
         source_study_version = SourceStudyVersionFactory.create(i_id=row_dict['study_version_id'], study=study)
-        source_dataset_args = CMD._make_source_dataset_args(CMD._fix_row(row_dict))
+        field_types = {el[0]: el[1] for el in self.cursor.description}
+        source_dataset_args = CMD._make_source_dataset_args(CMD._fix_row(row_dict, field_types))
         # 
         source_dataset = SourceDataset(**source_dataset_args)
         source_dataset.save()
@@ -658,7 +687,8 @@ class MakeArgsTest(BaseTestDataTestCase):
         harmonized_trait_set_query = 'SELECT * FROM harmonized_trait_set;'
         self.cursor.execute(harmonized_trait_set_query)
         row_dict = self.cursor.fetchone()
-        harmonized_trait_set_args = CMD._make_harmonized_trait_set_args(CMD._fix_row(row_dict))
+        field_types = {el[0]: el[1] for el in self.cursor.description}
+        harmonized_trait_set_args = CMD._make_harmonized_trait_set_args(CMD._fix_row(row_dict, field_types))
         # 
         harmonized_trait_set = HarmonizedTraitSet(**harmonized_trait_set_args)
         harmonized_trait_set.save()
@@ -675,7 +705,8 @@ class MakeArgsTest(BaseTestDataTestCase):
         source_study_version = SourceStudyVersionFactory.create(i_id=1, study=study)
         source_dataset = SourceDatasetFactory.create(i_id=row_dict['dataset_id'], source_study_version=source_study_version)
         # 
-        source_trait_args = CMD._make_source_trait_args(CMD._fix_row(row_dict))
+        field_types = {el[0]: el[1] for el in self.cursor.description}
+        source_trait_args = CMD._make_source_trait_args(CMD._fix_row(row_dict, field_types))
         source_trait = SourceTrait(**source_trait_args)
         source_trait.save()
         self.assertIsInstance(source_trait, SourceTrait)
@@ -688,7 +719,8 @@ class MakeArgsTest(BaseTestDataTestCase):
         # Have to make harmonized_trait_set first.
         harmonized_trait_set = HarmonizedTraitSetFactory.create(i_id=row_dict['harmonized_trait_set_id'])
         # 
-        harmonized_trait_args = CMD._make_harmonized_trait_args(CMD._fix_row(row_dict))
+        field_types = {el[0]: el[1] for el in self.cursor.description}
+        harmonized_trait_args = CMD._make_harmonized_trait_args(CMD._fix_row(row_dict, field_types))
         harmonized_trait = HarmonizedTrait(**harmonized_trait_args)
         harmonized_trait.save()
         self.assertIsInstance(harmonized_trait, HarmonizedTrait)
@@ -705,7 +737,8 @@ class MakeArgsTest(BaseTestDataTestCase):
         source_dataset = SourceDatasetFactory.create(i_id=1, source_study_version=source_study_version)
         source_trait = SourceTraitFactory.create(i_trait_id=row_dict['source_trait_id'], source_dataset=source_dataset)
         # 
-        source_trait_encoded_value_args = CMD._make_source_trait_encoded_value_args(CMD._fix_row(row_dict))
+        field_types = {el[0]: el[1] for el in self.cursor.description}
+        source_trait_encoded_value_args = CMD._make_source_trait_encoded_value_args(CMD._fix_row(row_dict, field_types))
         source_trait_encoded_value = SourceTraitEncodedValue(**source_trait_encoded_value_args)
         source_trait_encoded_value.save()
         self.assertIsInstance(source_trait_encoded_value, SourceTraitEncodedValue)
@@ -724,7 +757,8 @@ class MakeArgsTest(BaseTestDataTestCase):
         harmonized_trait_set = HarmonizedTraitSetFactory.create(i_id=harmonized_trait_row_dict['harmonized_trait_set_id'])
         harmonized_trait = HarmonizedTraitFactory.create(i_trait_id=row_dict['harmonized_trait_id'], harmonized_trait_set=harmonized_trait_set)
         # Make the encoded value object.
-        harmonized_trait_encoded_value_args = CMD._make_harmonized_trait_encoded_value_args(CMD._fix_row(row_dict))
+        field_types = {el[0]: el[1] for el in self.cursor.description}
+        harmonized_trait_encoded_value_args = CMD._make_harmonized_trait_encoded_value_args(CMD._fix_row(row_dict, field_types))
         harmonized_trait_encoded_value = HarmonizedTraitEncodedValue(**harmonized_trait_encoded_value_args)
         harmonized_trait_encoded_value.save()
         self.assertIsInstance(harmonized_trait_encoded_value, HarmonizedTraitEncodedValue)
@@ -828,7 +862,8 @@ class HelperTest(BaseTestDataTestCase):
         self.cursor.execute(updated_query)
         updates = self.cursor.fetchall()
         self.assertTrue(len(updates) == 1)
-        updated_row = CMD._fix_row(updates[0])
+        field_types = {el[0]: el[1] for el in self.cursor.description}
+        updated_row = CMD._fix_row(updates[0], field_types)
         self.assertEqual(updated_row[field_to_update], new_value)
         self.assertEqual(updated_row[source_db_pk_name], model_instance.pk)
     

@@ -47,6 +47,10 @@ HUNIT_QUERY = ' '.join(['SELECT DISTINCT unit_trait_map.harmonized_trait_id, uni
                         ') AS unit_trait_map'
                         ])
 
+FieldType = mysql.connector.FieldType
+MYSQL_TYPES = {FieldType.get_info(el): el for el in FieldType.get_binary_types() + FieldType.get_number_types() + FieldType.get_string_types() + FieldType.get_timestamp_types()}
+STRING_TYPES = FieldType.get_string_types() + [MYSQL_TYPES[ty] for ty in ('BLOB', 'MEDIUM_BLOB', 'LONG_BLOB', )]
+
 
 class Command(BaseCommand):
     """Management command to pull data from the source phenotype db."""
@@ -124,7 +128,7 @@ class Command(BaseCommand):
         }
         return fixed_row
     
-    def _fix_null(self, row_dict):
+    def _fix_null(self, row_dict, field_types):
         """Convert None values (NULL in the db) to empty strings.
         
         mysql.connector returns all NULL values from a database as None. However,
@@ -135,6 +139,7 @@ class Command(BaseCommand):
             row_dict (dict): a dictionary for one row of data, obtained from
                 cursor.fetchone or iterating over cursor.fetchall (where the
                 connection for the cursor has dictionary=True)
+            field_types (dict): a dict of field_name: field_type pairs, pulled from cursor.description
         
         Returns:
             a dictionary with identical values to row_dict, where all Nones have
@@ -142,7 +147,7 @@ class Command(BaseCommand):
             the word 'date', since null datetimes need to be None still
         """
         fixed_row = {
-            (k): ('' if row_dict[k] is None and 'date' not in k and 'medication_dataset' not in k
+            (k): ('' if row_dict[k] is None and field_types[k] in STRING_TYPES
             else row_dict[k]) for k in row_dict
         }
         return fixed_row
@@ -170,9 +175,9 @@ class Command(BaseCommand):
         }
         return fixed_row
     
-    def _fix_row(self, row_dict):
+    def _fix_row(self, row_dict, field_types):
         """Helper function to run all of the fixers."""
-        return self._fix_timezone(self._fix_bytearray(self._fix_null(row_dict)))
+        return self._fix_timezone(self._fix_bytearray(self._fix_null(row_dict, field_types)))
 
 
     # Methods to find out which objects are already in the db.
@@ -258,8 +263,9 @@ class Command(BaseCommand):
         """
         cursor = source_db.cursor(buffered=True, dictionary=True)
         cursor.execute(query)
+        field_types = {el[0]: el[1] for el in cursor.description}
         for row in cursor:
-            model_args = make_args(self._fix_row(row))
+            model_args = make_args(self._fix_row(row, field_types))
             self._make_model_object_from_args(model_args=model_args, **kwargs)
         cursor.close()
     
@@ -448,9 +454,10 @@ class Command(BaseCommand):
         # 
         cursor = source_db.cursor(buffered=True, dictionary=True)
         cursor.execute(query)
+        field_types = {el[0]: el[1] for el in cursor.description}
         updated = 0
         for row in cursor:
-            args = make_args(self._fix_row(row))
+            args = make_args(self._fix_row(row, field_types))
             if self._update_model_object_from_args(model_args=args, **kwargs):
                 updated += 1
         cursor.close()
@@ -758,10 +765,11 @@ class Command(BaseCommand):
                                                    filter_not=False, **kwargs)
         cursor = source_db.cursor(buffered=True, dictionary=True)
         cursor.execute(new_m2m_query)
+        field_types = {el[0]: el[1] for el in cursor.description}
         logger.debug('Importing M2M links for parent {} and child {}'.format(kwargs['parent_model']._meta.object_name, kwargs['child_model']._meta.object_name))
         links = []
         for row in cursor:
-            type_fixed_row = self._fix_row(row)
+            type_fixed_row = self._fix_row(row, field_types)
             child, parent = self._make_m2m_link(parent_pk=type_fixed_row[kwargs['parent_source_pk']],
                                                 child_pk=type_fixed_row[kwargs['child_source_pk']],
                                                 **kwargs)
@@ -798,7 +806,8 @@ class Command(BaseCommand):
                 source_links_query = self._make_table_query(filter_field=kwargs['parent_source_pk'], filter_values=[str(parent.pk)], filter_not=False, **kwargs)
             logger.debug(source_links_query)
             cursor.execute(source_links_query)
-            source_linked_pks = [str(self._fix_row(row)[kwargs['child_source_pk']]) for row in cursor.fetchall()]
+            field_types = {el[0]: el[1] for el in cursor.description}
+            source_linked_pks = [str(self._fix_row(row, field_types)[kwargs['child_source_pk']]) for row in cursor.fetchall()]
             # Figure out which child pk's to add or remove links to.
             to_add = set(source_linked_pks) - set(linked_pks)
             to_remove = set(linked_pks) - set(source_linked_pks)

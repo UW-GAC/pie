@@ -1,10 +1,15 @@
 """Models for trait_browser app."""
 
-# Model fields that are imported directly from Snuffles are preceded with i_
+# Model fields that are imported directly from topmed_pheno are preceded with i_
 # ForeignKey fields do not have this prefix, since they are links within the
 # Django database.
 # Custom primary_key fields have db_column set as well, otherwise their column
 # names in the backend db would have "_id" appended to them.
+
+# Query to find out which fields to set null=True for:
+# SELECT TABLE_NAME,COLUMN_NAME,DATA_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='topmed_pheno_devel_emeryl' AND IS_NULLABLE='YES' AND DATA_TYPE NOT IN ('varchar', 'text', 'tinyint') AND TABLE_NAME NOT IN ('harmonized_trait_data', 'subject', 'subject_archive');
+# Query to find out which fields should be NullBooleanFields:
+# SELECT TABLE_NAME,COLUMN_NAME,DATA_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='topmed_pheno_devel_emeryl' AND IS_NULLABLE='YES' AND DATA_TYPE='tinyint' AND TABLE_NAME NOT IN ('harmonized_trait_data', 'subject', 'subject_archive');
 
 from django.db import models
 from django.core.urlresolvers import reverse
