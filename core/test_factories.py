@@ -78,7 +78,7 @@ class BuildTestDbTestCase(TestCase):
                           n_enc_value_range=(2,9))    
     
     def test_build_db_trait_range_error(self):
-        """Test that calling build_test_db() with too small a value for n_global_studies raises ValueError."""
+        """Test that calling build_test_db() with invalid values for n_trait_range raises ValueError."""
         with self.assertRaises(ValueError):
             build_test_db(n_global_studies=3,
                           n_subcohort_range=(2,3),
@@ -91,7 +91,7 @@ class BuildTestDbTestCase(TestCase):
         build_test_db(n_global_studies=3,
                       n_subcohort_range=(2,3),
                       n_dataset_range=(3,9),
-                      n_trait_range=(2,16),
+                      n_trait_range=(3,16),
                       n_enc_value_range=(2,9))
         # Make sure there are saved objects for each of the models.
         self.assertTrue(GlobalStudy.objects.count() > 0)
@@ -110,7 +110,7 @@ class BuildTestDbTestCase(TestCase):
         build_test_db(n_global_studies=10,
                       n_subcohort_range=(2,3),
                       n_dataset_range=(3,9),
-                      n_trait_range=(2,16),
+                      n_trait_range=(3,16),
                       n_enc_value_range=(2,9))
         # Make sure there are saved objects for each of the models.
         self.assertTrue(GlobalStudy.objects.count() > 0)
@@ -129,7 +129,7 @@ class BuildTestDbTestCase(TestCase):
         build_test_db(n_global_studies=3,
                       n_subcohort_range=(1,2),
                       n_dataset_range=(1,2),
-                      n_trait_range=(2,3),
+                      n_trait_range=(3,4),
                       n_enc_value_range=(1,2))
         # Make sure there are saved objects for each of the models.
         self.assertTrue(GlobalStudy.objects.count() > 0)

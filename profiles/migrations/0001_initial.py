@@ -16,7 +16,7 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='SavedSearchMeta',
             fields=[
-                ('id', models.AutoField(auto_created=True, serialize=False, verbose_name='ID', primary_key=True)),
+                ('id', models.AutoField(auto_created=True, verbose_name='ID', primary_key=True, serialize=False)),
                 ('created', models.DateTimeField(auto_now_add=True)),
                 ('modified', models.DateTimeField(auto_now=True)),
                 ('active', models.BooleanField(default=True)),
@@ -28,10 +28,10 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='Search',
             fields=[
-                ('id', models.AutoField(auto_created=True, serialize=False, verbose_name='ID', primary_key=True)),
+                ('id', models.AutoField(auto_created=True, verbose_name='ID', primary_key=True, serialize=False)),
                 ('created', models.DateTimeField(auto_now_add=True)),
                 ('modified', models.DateTimeField(auto_now=True)),
-                ('param_text', models.CharField(db_index=True, max_length=100)),
+                ('param_text', models.CharField(max_length=100, db_index=True)),
                 ('search_count', models.IntegerField(default=1)),
                 ('search_type', models.CharField(max_length=25)),
                 ('param_studies', models.ManyToManyField(to='trait_browser.Study')),
@@ -43,10 +43,10 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='UserData',
             fields=[
-                ('id', models.AutoField(auto_created=True, serialize=False, verbose_name='ID', primary_key=True)),
+                ('id', models.AutoField(auto_created=True, verbose_name='ID', primary_key=True, serialize=False)),
                 ('created', models.DateTimeField(auto_now_add=True)),
                 ('modified', models.DateTimeField(auto_now=True)),
-                ('saved_searches', models.ManyToManyField(through='profiles.SavedSearchMeta', to='profiles.Search')),
+                ('saved_searches', models.ManyToManyField(to='profiles.Search', through='profiles.SavedSearchMeta')),
                 ('user', models.ForeignKey(to=settings.AUTH_USER_MODEL)),
             ],
             options={
