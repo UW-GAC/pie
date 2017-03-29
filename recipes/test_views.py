@@ -8,10 +8,9 @@ from core.factories import UserFactory, USER_FACTORY_PASSWORD
 from recipes.urls import urlpatterns
 from trait_browser.factories import SourceTraitFactory
 
-from .factories import HarmonizationRecipeFactory, UnitRecipeFactory
-from .models import HarmonizationRecipe, UnitRecipe
-from .views import CreateHarmonizationRecipe, UpdateHarmonizationRecipe, HarmonizationRecipeDetail
-from .views import CreateUnitRecipe, UpdateUnitRecipe, UnitRecipeDetail
+from .factories import *
+from .models import *
+from .views import *
 
 
 class UnitRecipeViewsTestCase(ViewsAutoLoginTestCase):

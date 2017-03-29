@@ -3,9 +3,9 @@
 from django.test import TestCase
 from django.core.urlresolvers import reverse
 
-from .forms import SourceTraitCrispySearchForm
-from .factories import StudyFactory, SourceTraitFactory
-from .models import Study
+from .forms import *
+from .factories import *
+from .models import *
 
 
 class SourceTraitCrispySearchFormTestCase(TestCase):

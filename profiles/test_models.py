@@ -2,8 +2,8 @@ from datetime import datetime
 
 from django.test import TestCase
 
-from .factories import SearchFactory, UserDataFactory, SavedSearchMetaFactory
-from .models import Search, UserData, SavedSearchMeta
+from .factories import *
+from .models import *
 
 
 class SearchTestCase(TestCase):

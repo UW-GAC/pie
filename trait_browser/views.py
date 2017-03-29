@@ -12,10 +12,10 @@ from dal import autocomplete
 from django_tables2 import RequestConfig
 from urllib.parse import unquote, urlparse, parse_qs
 
-from profiles.models import UserData, Search, SavedSearchMeta
-from .models import GlobalStudy, HarmonizedTrait, HarmonizedTraitEncodedValue, HarmonizedTraitSet, SourceDataset, SourceStudyVersion, SourceTrait, SourceTraitEncodedValue, Study, Subcohort
-from .tables import SourceTraitTable, HarmonizedTraitTable, StudyTable
-from .forms import SourceTraitCrispySearchForm, HarmonizedTraitCrispySearchForm
+from profiles.models import *
+from .models import *
+from .tables import *
+from .forms import *
 
 
 TABLE_PER_PAGE = 50    # Setting for per_page rows for all table views.  

@@ -5,9 +5,9 @@ from datetime import datetime
 from django.core.exceptions import ValidationError
 from django.test import TestCase
 
-from .factories import UnitRecipeFactory, HarmonizationRecipeFactory
-from .models import HarmonizationRecipe, UnitRecipe
 from core.factories import UserFactory
+from .factories import *
+from .models import *
 
 
 class UnitRecipeTestCase(TestCase):

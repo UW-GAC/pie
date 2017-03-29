@@ -9,7 +9,7 @@ import pytz
 from django.utils import timezone
 
 
-from .models import GlobalStudy, HarmonizedTrait, HarmonizedTraitEncodedValue, HarmonizedTraitSet, HarmonizationUnit, SourceDataset, SourceStudyVersion, SourceTrait, SourceTraitEncodedValue, Study, Subcohort
+from .models import *
 
 
 # Use these later for SourceStudyVersion factories.

@@ -8,8 +8,8 @@ from django.views.generic import DetailView, CreateView, UpdateView
 from braces.views import LoginRequiredMixin, UserFormKwargsMixin, FormMessagesMixin
 from dal import autocomplete
 
-from .forms import UnitRecipeForm, HarmonizationRecipeForm
-from .models import UnitRecipe, HarmonizationRecipe
+from .forms import *
+from .models import *
 
 
 unit_invalid_message = u'Something went wrong. {} was not saved.'.format(UnitRecipe._meta.verbose_name.title())

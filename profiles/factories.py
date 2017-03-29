@@ -2,7 +2,7 @@ import factory
 import factory.fuzzy
 
 from core.factories import UserFactory
-from .models import Search, UserData, SavedSearchMeta
+from .models import *
 from trait_browser.factories import StudyFactory
 
 class SearchFactory(factory.DjangoModelFactory):

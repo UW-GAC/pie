@@ -2,10 +2,10 @@
 
 from django.test import TestCase
 
-from .factories import SearchFactory, UserDataFactory, SavedSearchMetaFactory
+from .factories import *
 from trait_browser.factories import StudyFactory
 
-from .models import Search, UserData, SavedSearchMeta
+from .models import *
 from trait_browser.models import Study
 
 

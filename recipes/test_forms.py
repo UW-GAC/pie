@@ -3,11 +3,11 @@
 from django.test import TestCase
 from django.core.urlresolvers import reverse
 
-from .forms import HarmonizationRecipeForm, UnitRecipeForm
-from .factories import HarmonizationRecipeFactory, UnitRecipeFactory
-from .models import UnitRecipe
 from core.factories import UserFactory
 from trait_browser.factories import SourceTraitFactory
+from .forms import *
+from .factories import *
+from .models import *
 
 
 class UnitRecipeFormTestCase(TestCase):

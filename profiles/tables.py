@@ -1,6 +1,6 @@
 import django_tables2 as tables
 
-from .models import Search
+from .models import *
 
 class SourceSearchTable(tables.Table):
 
