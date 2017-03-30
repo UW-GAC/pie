@@ -24,7 +24,7 @@ source_patterns = [
 
 harmonized_patterns = [
     url(r'^all/$', trait_table, {'trait_type': 'harmonized'}, name='all'),
-    url(r'^detail/(?P<pk>\d+)/$', HarmonizedTraitDetail.as_view(), name='detail'),
+    url(r'^detail/(?P<pk>\d+)/$', HarmonizedTraitSetDetail.as_view(), name='detail'),
     url(r'^search/$', trait_search, {'trait_type': 'harmonized'}, name='search'),
 ]
 

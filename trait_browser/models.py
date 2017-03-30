@@ -204,6 +204,14 @@ class HarmonizedTraitSet(SourceDBTimeStampedModel):
         """Pretty printing."""
         return 'harmonized trait set {}, id={}'.format(self.i_trait_set_name, self.i_id)
 
+    def get_absolute_url(self):
+        """Gets the absolute URL of the detail page for a given HarmonizedTraitSet instance."""
+        return reverse('trait_browser:harmonized:detail', kwargs={'pk': self.pk})
+    
+    def get_trait_names(self):
+        """ """
+        return [trait.trait_flavor_name for trait in self.harmonizedtrait_set.all()]
+
 
 class HarmonizationUnit(SourceDBTimeStampedModel):
     """Model for harmonization units from source db."""
@@ -381,10 +389,6 @@ class HarmonizedTrait(Trait):
         available for easy use later.
         """
         return '{}_{}'.format(self.i_trait_name, self.harmonized_trait_set.i_flavor)
-
-    def get_absolute_url(self):
-        """Gets the absolute URL of the detail page for a given HarmonizedTrait instance."""
-        return reverse('trait_browser:harmonized:detail', kwargs={'pk': self.pk})
 
 
 # Encoded Value models.

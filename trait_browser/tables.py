@@ -42,7 +42,7 @@ class HarmonizedTraitTable(tables.Table):
     """
 
     # Set custom column values that need extra settings.
-    trait_flavor_name = tables.LinkColumn('trait_browser:harmonized:detail', args=[tables.utils.A('pk')], verbose_name='Phenotype name')
+    trait_flavor_name = tables.LinkColumn('trait_browser:harmonized:detail', args=[tables.utils.A('harmonized_trait_set.pk')])
     i_description = tables.Column('Phenotype description', orderable=False)
     
     class Meta:

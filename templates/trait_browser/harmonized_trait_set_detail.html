@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+
+{% block head_title %}
+     | {{ harmonized_trait_set.get_trait_names|join:", " }} details
+{% endblock %}
+
+{% block content %}
+    <div class="well">
+    
+        <h2>Harmonized phenotype details for {{ harmonized_trait_set.get_trait_names|join:", " }}</h2>
+        
+        {% for trait in harmonized_trait_set.harmonizedtrait_set.all %}
+            <div class="well">
+                <h3>Phenotype name: {{ trait.trait_flavor_name }}</h3>
+                <p><strong>Phenotype description</strong> : {{ trait.i_description }}</p>
+                <p><strong>Data type</strong> : {{ trait.i_data_type }}</p>
+                <p><strong>Unit</strong> : {{ trait.i_unit }}</p>
+
+                {% if trait.harmonizedtraitencodedvalue_set.all %}
+                   <strong>Encoded Values:</strong>
+                   <table class="table table-nonfluid table-condensed table-sm table-striped table-bordered">
+                       <tr>
+                           <th>Category</th>
+                           <th>Value</th>
+                       </tr>
+                       {% for ev in trait.harmonizedtraitencodedvalue_set.all %}
+                           <tr>
+                               <td>{{ ev.i_category }}</td>
+                               <td>{{ ev.i_value }}</td>
+                           </tr>
+                       {% endfor %}
+                   </table>
+                {% endif %}
+
+            </div>
+        {% endfor %}
+
+        <hr>
+<!-- handle unique keys somehow... -->
+
+        <h4>Component Phenotypes</h4>
+        {% for hunit in harmonized_trait_set.harmonizationunit_set.all %}
+            <div class="panel panel-default">
+                <div class="panel-heading"><h5>Harmonization Unit: {{hunit.i_tag}}</h5></div>
+                <div class="panel-body">
+                  
+                </div>
+            </div>
+            
+            
+            
+        
+        
+        {% endfor %}
+
+        <h4>Documentation</h4>
+        <p>Coming soon!</p>
+ 
+    </div>
+    
+{% endblock %}
