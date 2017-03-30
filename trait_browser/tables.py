@@ -20,6 +20,8 @@ class SourceTraitTable(tables.Table):
     study_name = tables.Column('Study name', accessor='source_dataset.source_study_version.study.i_study_name')
     dbGaP_study = tables.TemplateColumn(orderable=False,
         template_code='<a target="_blank" href={{ record.dbgap_study_link }}>{{ record.study_accession }}</a>')
+    dbGaP_dataset = tables.TemplateColumn(orderable=False,
+        template_code='<a target="_blank" href={{ record.dbgap_dataset_link }}>{{ record.dataset_accession }}</a>')
     dbGaP_variable = tables.TemplateColumn(orderable=False,
         template_code='<a target="_blank" href={{ record.dbgap_variable_link }}>{{ record.variable_accession }}</a>')
     
