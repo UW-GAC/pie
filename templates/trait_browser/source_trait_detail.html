@@ -1,31 +1,33 @@
 {% extends 'base.html' %}
 
 {% block head_title %}
-     | {{ source_trait.name }} details
+     | {{ source_trait.i_trait_name }} details
 {% endblock %}
 
 {% block content %}
     <div class="well">
     
-        <h2>Source phenotype details for {{ source_trait.i_trait_name }}</h2>
-        
-    
-        <p><strong>Phenotype name</strong> : {{ source_trait.i_trait_name }}</p>
-        <p><strong>Study name</strong> : {{ source_trait.source_dataset.source_study_version.study.i_study_name }}</p>
-        <p><strong>Phenotype description</strong> : {{ source_trait.i_description }}</p>
-        <p><strong>Data type</strong> : {{ source_trait.i_detected_type }}</p>
-        {% if source_trait.source_dataset.i_dbgap_description != '' %}
-          <p><strong>Dataset description</strong> : {{ source_trait.source_dataset.i_dbgap_description }}</p>
-        {% elif source_trait.source_dataset.i_dcc_description != '' %}
-          <p><strong>Dataset description</strong> : {{ source_trait.source_dataset.i_dcc_description }}</p>
-        {% endif %}
+    <h2>{{ source_trait.i_trait_name }} <small>source phenotype details</small></h2>
 
+    <div class="panel panel-info">
+        <div class="panel-heading">
+            <h3 class="panel-title">Phenotype name: {{ source_trait.i_trait_name }}</h3>
+        </div>
+        <div class="panel-body">
+            <dl class="dl-horizontal">
+                <dt>Study name</dt> <dd>{{ source_trait.source_dataset.source_study_version.study.i_study_name }}</dd>
+                <dt>Phenotype description</dt> <dd>{{ source_trait.i_description }}</dd>
+                <dt>Data type</dt> <dd>{{ source_trait.i_detected_type }}</dd>
+                {% if source_trait.source_dataset.i_dbgap_description != '' %}
+                  <dt>Dataset description</dt> <dd>{{ source_trait.source_dataset.i_dbgap_description }}</dd>
+                {% elif source_trait.source_dataset.i_dcc_description != '' %}
+                  <dt>Dataset description</dt> <dd>{{ source_trait.source_dataset.i_dcc_description }}</dd>
+                {% endif %}
+            </dl>
 
-        {% if source_trait.sourcetraitencodedvalue_set.all %}
-        <div class="panel panel-default">
-            <div class="panel-heading"><h4>Encoded values</h4></div>
-            <div class="panel-body">
-                <table class="table table-nonfluid table-condensed table-sm table-striped table-bordered">
+            {% if source_trait.sourcetraitencodedvalue_set.all %}
+                <table class="table table-nonfluid table-condensed table-sm">
+                    <caption><strong>Encoded values</strong></caption>
                     <tr>
                         <th>Category</th>
                         <th>Value</th>
@@ -37,22 +39,23 @@
                         </tr>
                     {% endfor %}
                 </table>
-            </div>
+            {% endif %}
         </div>
+    </div>
 
-       {% endif %}
-
-        <div class="panel panel-default">
-            <div class="panel-heading"><h4>Links to dbGaP information</h4></div>
-            <div class="panel-body">
-                <p><strong>Phenotype variable:</strong> <a target="_blank" href="{{ source_trait.dbgap_variable_link }}">{{ source_trait.variable_accession }}</a></p>
-                <p><strong>Dataset:</strong> <a target="_blank" href="{{ source_trait.dbgap_dataset_link }}">{{ source_trait.dataset_accession }}</a></p>
-                <p><strong>Study:</strong> <a target="_blank" href="{{ source_trait.dbgap_study_link }}">{{ source_trait.study_accession }}</a></p>
-                <p>A study's data forms and and related documents can be found on the dbGaP variable page.</p>
-                <p class="bg-warning">Please keep in mind that dbGaP data summaries might include many subjects who were not included in TOPMed sequencing.</p>
-            </div>
+    <div class="panel panel-default">
+        <div class="panel-heading"><h4 class="panel-title">Links to dbGaP information</h4></div>
+        <div class="panel-body">
+            <dl class="dl-horizontal">
+                <dt>Phenotype variable</dt> <dd><a target="_blank" href="{{ source_trait.dbgap_variable_link }}">{{ source_trait.variable_accession }}</a></dd>
+                <dt>Dataset</dt> <dd><a target="_blank" href="{{ source_trait.dbgap_dataset_link }}">{{ source_trait.dataset_accession }}</a></dd>
+                <dt>Study</dt> <dd><a target="_blank" href="{{ source_trait.dbgap_study_link }}">{{ source_trait.study_accession }}</a></dd>
+            </dl>
+            <p>A study's questionnaires and related documents can be found on the dbGaP variable page.</p>
+            <p><mark>Please keep in mind that dbGaP data summaries might include many subjects who were not included in TOPMed sequencing.</mark></p>
         </div>
- 
+    </div>
+
     </div>
     
 {% endblock %}
