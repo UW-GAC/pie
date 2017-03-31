@@ -186,6 +186,10 @@ class SourceDataset(SourceDBTimeStampedModel):
         """Automatically set pht_version_string from the accession, version, and particpant set."""
         return 'pht{:06}.v{}.p{}'.format(self.i_accession, self.i_version, self.source_study_version.i_participant_set)
 
+    def get_absolute_url(self):
+        """Gets the absolute URL of the detail page for a given SourceDataset instance."""
+        return reverse('trait_browser:source:dataset', kwargs={'pk': self.pk})
+
 
 class HarmonizedTraitSet(SourceDBTimeStampedModel):
     """Model for harmonized trait set from snuffles. Analagous to the SourceDataset
