@@ -16,6 +16,7 @@ study_patterns = [
 
 source_patterns = [
     url(r'^all/$', trait_table, {'trait_type': 'source'}, name='all'),
+    url(r'^dataset/(?P<pk>\d+)/$', SourceDatasetDetail.as_view(), name='dataset'),
     url(r'^detail/(?P<pk>\d+)/$', SourceTraitDetail.as_view(), name='detail'),
     url(r'^search/$', trait_search, {'trait_type': 'source'}, name='search'),
     url(r'^autocomplete/$', SourceTraitPHVAutocomplete.as_view(), name='autocomplete'),

@@ -10,7 +10,7 @@ from django.core.exceptions import ObjectDoesNotExist
 
 from braces.views import LoginRequiredMixin
 from dal import autocomplete
-from django_tables2 import RequestConfig
+from django_tables2 import RequestConfig, SingleTableMixin
 from urllib.parse import unquote, urlparse, parse_qs
 
 from profiles.models import *
@@ -21,6 +21,26 @@ from .forms import *
 
 TABLE_PER_PAGE = 50    # Setting for per_page rows for all table views.  
 
+# LoginRequiredMixin, 
+class SourceDatasetDetail(SingleTableMixin, DetailView):
+    """Detail view class for SourceDatasets. Displays the dataset's source traits in a table."""
+    
+    template_name = 'trait_browser/source_dataset_detail.html'
+    model = SourceDataset
+    context_table_name = 'trait_table'
+    table_class = SourceTraitTable
+    table_pagination = {'per_page': TABLE_PER_PAGE}
+    
+    def get_table_data(self):
+        return self.object.sourcetrait_set.all().order_by('i_dbgap_variable_accession')
+
+    def get_context_data(self, **kwargs):
+        context = super(SourceDatasetDetail, self).get_context_data(**kwargs)
+        trait = self.object.sourcetrait_set.first()
+        context['phs'] = trait.study_accession
+        context['phs_link'] = trait.dbgap_study_link
+        context['pht_link'] = trait.dbgap_dataset_link
+        return context
 
 class SourceTraitDetail(LoginRequiredMixin, DetailView):
     """Detail view class for SourceTraits. Inherits from django.views.generic.DetailView."""    
