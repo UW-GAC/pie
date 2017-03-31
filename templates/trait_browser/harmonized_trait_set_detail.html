@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load staticfiles %}
 
 {% block head_title %}
      | {{ harmonized_trait_set.get_trait_names|join:", " }} details
@@ -7,30 +8,36 @@
 {% block content %}
     <div class="well">
     
-        <h2>Harmonized phenotype details for {{ harmonized_trait_set.get_trait_names|join:", " }}</h2>
+        <h2>{{ harmonized_trait_set.get_trait_names|join:", " }} <small>harmonized phenotype details</small></h2>
         
         {% for trait in harmonized_trait_set.harmonizedtrait_set.all %}
-            <div class="well">
-                <h3>Phenotype name: {{ trait.trait_flavor_name }}</h3>
-                <p><strong>Phenotype description</strong> : {{ trait.i_description }}</p>
-                <p><strong>Data type</strong> : {{ trait.i_data_type }}</p>
-                <p><strong>Unit</strong> : {{ trait.i_unit }}</p>
+            <div class="panel panel-info">
+                <div class="panel-heading">
+                    <h3 class="panel-title">Phenotype name: {{ trait.trait_flavor_name }}</h3>
+                </div>
+                <div class="panel-body">
+                    <dl class="dl-horizontal">
+                    <dt>Description</dt><dd>{{ trait.i_description }}</dd>
+                    <dt>Data type</dt><dd>{{ trait.i_data_type }}</dd>
+                    <dt>Unit</dt><dd>{{ trait.i_unit }}</dd>
+                    <dt>Visit information</dt><dd><small>coming soon...</small></dd>
 
-                {% if trait.harmonizedtraitencodedvalue_set.all %}
-                   <strong>Encoded Values:</strong>
-                   <table class="table table-nonfluid table-condensed table-sm table-striped table-bordered">
-                       <tr>
-                           <th>Category</th>
-                           <th>Value</th>
-                       </tr>
-                       {% for ev in trait.harmonizedtraitencodedvalue_set.all %}
+                    {% if trait.harmonizedtraitencodedvalue_set.all %}
+                       <table class="table table-nonfluid table-condensed table-sm">
+                           <caption><strong>Encoded values</strong></caption>
                            <tr>
-                               <td>{{ ev.i_category }}</td>
-                               <td>{{ ev.i_value }}</td>
+                               <th>Category</th>
+                               <th>Value</th>
                            </tr>
-                       {% endfor %}
-                   </table>
-                {% endif %}
+                           {% for ev in trait.harmonizedtraitencodedvalue_set.all %}
+                               <tr>
+                                   <td>{{ ev.i_category }}</td>
+                                   <td>{{ ev.i_value }}</td>
+                               </tr>
+                           {% endfor %}
+                       </table>
+                    {% endif %}
+                </div>
 
             </div>
         {% endfor %}
@@ -38,24 +45,68 @@
         <hr>
 <!-- handle unique keys somehow... -->
 
-        <h4>Component Phenotypes</h4>
-        {% for hunit in harmonized_trait_set.harmonizationunit_set.all %}
-            <div class="panel panel-default">
-                <div class="panel-heading"><h5>Harmonization Unit: {{hunit.i_tag}}</h5></div>
-                <div class="panel-body">
-                  
+        <button type="button" class="btn btn-default" data-toggle="collapse" data-target="#components">Component Phenotypes</button>
+        <div id="components" class="collapse">
+            {% for hunit in harmonized_trait_set.harmonizationunit_set.all %}
+                <div class="panel panel-default">
+                    <div class="panel-heading"><h5 class="panel-title">Harmonization Unit: {{hunit.i_tag}}</h5></div>
+                    <div class="panel-body">
+                        {% if hunit.get_source_studies %}
+                            <p><strong>Included studies</strong>:
+                            {% for study in hunit.get_source_studies %}
+                                <a href="{{study.get_absolute_url}}">{{study.i_study_name}}</a>
+                            {% endfor %}
+                            </p>
+                        {% endif %}
+                        {% if hunit.component_age_traits.all %}
+                            <p><strong>Component age phenotypes</strong>:
+                            <ul class="list-inline">
+                            {% for age_trait in hunit.component_age_traits.all %}
+                                <li>
+                                    <a href="{{ age_trait.get_absolute_url }}" data-toggle="popover" data-trigger="hover" data-placement="top" data-content="{{ age_trait.i_description }}">{{ age_trait.i_trait_name }}</a> 
+                                </li>
+                            {% endfor %}
+                            </ul>
+                            </p>
+                        {% endif %}
+                        {% if hunit.component_batch_traits.all %}
+                            <p><strong>Component batch variables</strong>:
+                            <ul class="list-inline">
+                            {% for batch_trait in hunit.component_batch_traits.all %}
+                                <li>
+                                    <a href="{{ batch_trait.get_absolute_url }}" data-toggle="popover" data-trigger="hover" data-placement="top" data-content="{{ batch_trait.i_description }}">{{ batch_trait.i_trait_name }}</a> 
+                                </li>
+                            {% endfor %}
+                            </ul>
+                            </p>
+                        {% endif %}
+                        <ul class="list-inline">
+                        {% for trait in hunit.harmonizedtrait_set.all %}
+                            <p><strong>Component phenotypes for {{ trait.trait_flavor_name }}</strong>:
+                            {% for source_trait in trait.component_source_traits.all %}
+                                <li>
+                                    <a href="{{ source_trait.get_absolute_url }}" data-toggle="popover" data-trigger="hover" data-placement="top" data-content="{{ source_trait.i_description }}">{{ source_trait.i_trait_name }}</a> 
+                                </li>
+                            {% endfor %}
+                            {% for harm_trait in trait.component_harmonized_traits.all %}
+                                <li>
+                                    <a href="{{ harm_trait.get_absolute_url }}" data-toggle="popover" data-trigger="hover" data-placement="top" data-content="{{ harm_trait.i_description }}">{{ harm_trait.trait_flavor_name }}</a>
+                                </li>
+                            {% endfor %}
+                            </ul>
+                            </p>
+                        {% endfor %}
+                    </div>
                 </div>
-            </div>
-            
-            
-            
-        
-        
-        {% endfor %}
+            {% endfor %}
+        </div>
 
         <h4>Documentation</h4>
-        <p>Coming soon!</p>
+        <p>Coming soon...</p>
  
     </div>
-    
+{% endblock %}
+
+{% block custom_javascript %}
+    <script src="{% static 'js/popover.js' %}"></script>
 {% endblock %}

@@ -226,6 +226,14 @@ class HarmonizationUnit(SourceDBTimeStampedModel):
     def __str__(self):
         """Pretty printing."""
         return 'Harmonization unit - id {} tagged {}'.format(self.i_id, self.i_tag)
+    
+    def get_all_source_traits(self):
+        """Get a list of all the SourceTraits connected to this harmonization unit (age, batch, or source component)."""
+        return self.component_source_traits.all() | self.component_batch_traits.all() | self.component_age_traits.all()
+    
+    def get_source_studies(self):
+        """ """
+        return list(set([trait.source_dataset.source_study_version.study for trait in self.get_all_source_traits()]))
 
 
 # Trait models.
