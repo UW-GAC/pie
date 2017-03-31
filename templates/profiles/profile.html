@@ -62,8 +62,12 @@
               </div>
             </div>
           </div>
-          <div role="tabpanel" class="tab-pane fade" id="unitrecipes">Unit recipes</div>
-          <div role="tabpanel" class="tab-pane fade" id="harmonizationrecipes">Harmonization recipes</div>
+          <div role="tabpanel" class="tab-pane fade" id="unitrecipes">
+              {% render_table unit_recipe_table %}
+          </div>
+          <div role="tabpanel" class="tab-pane fade" id="harmonizationrecipes">
+              {% render_table harmonization_recipe_table %}
+          </div>
         </div>
       </div>
 

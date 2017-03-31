@@ -1,6 +1,8 @@
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 
+from recipes.models import *
+from recipes.tables import *
 from .tables import *
 from .models import *
 
@@ -9,6 +11,11 @@ from .models import *
 def profile(request):
     # user is automatically passed in the request somehow
     page_title = 'profile'
+
+    user_unit_recipes = UnitRecipe.objects.filter(creator=request.user).order_by('-modified')
+    unit_recipe_table = UnitRecipeTable(user_unit_recipes)
+    user_harmonization_recipes = HarmonizationRecipe.objects.filter(creator=request.user).order_by('-modified')
+    harmonization_recipe_table = HarmonizationRecipeTable(user_harmonization_recipes)
 
     if request.method == "POST":
         # remove saved searches
@@ -25,11 +32,11 @@ def profile(request):
     # RequestConfig(request).configure(savedsource)
     # RequestConfig(request).configure(savedharmonized)
 
-
     return render(
         request,
         'profiles/profile.html',
-        {'page_title': page_title, 'savedsource': savedsource, 'savedharmonized': savedharmonized}
+        {'page_title': page_title, 'savedsource': savedsource, 'savedharmonized': savedharmonized,
+        'unit_recipe_table': unit_recipe_table, 'harmonization_recipe_table': harmonization_recipe_table}
     )
 
 

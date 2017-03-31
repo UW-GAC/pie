@@ -5,6 +5,7 @@ from django.core.urlresolvers import reverse
 from django.core.validators import RegexValidator
 from django.db import models
 
+from core.models import TimeStampedModel
 from trait_browser.models import SourceTrait
 
 
@@ -13,18 +14,6 @@ validate_alphanumeric_underscore = RegexValidator(regex=r'^[0-9a-zA-Z_]*$',
 
 validate_encoded_values = RegexValidator(regex=r'^(.*: .*\n)*(.*: .*)$',
                                          message='Invalid format for encoded values definitions.')
-
-class TimeStampedModel(models.Model):
-    """
-    An abstract base class model that provides selfupdating
-    ``created`` and ``modified`` fields.
-    """
-
-    created = models.DateTimeField(auto_now_add=True)
-    modified = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        abstract = True
 
 
 class UnitRecipe(TimeStampedModel):
