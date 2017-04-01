@@ -8,7 +8,7 @@ from .models import *
 class UnitRecipeTable(tables.Table):
     """django-tables2 table for displaying a list of UnitRecipes."""
     
-    name = tables.LinkColumn()
+    name = tables.LinkColumn(orderable=False)
     version = tables.Column(orderable=False)
     modified = tables.Column(orderable=False)
     created = tables.Column(orderable=False)

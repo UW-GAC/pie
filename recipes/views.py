@@ -8,6 +8,8 @@ from django.views.generic import DetailView, CreateView, UpdateView
 from braces.views import LoginRequiredMixin, UserFormKwargsMixin, FormMessagesMixin
 from dal import autocomplete
 
+from recipes.tables import *
+from trait_browser.tables import *
 from .forms import *
 from .models import *
 
@@ -143,6 +145,11 @@ class HarmonizationRecipeDetail(LoginRequiredMixin, OwnerQuerysetMixin, DetailVi
     context_object_name = 'h_recipe'
     template_name = 'recipes/harmonization_recipe_detail.html'
     
+    def get_context_data(self, **kwargs):
+        context = super(HarmonizationRecipeDetail, self).get_context_data(**kwargs)
+        context['unit_recipe_table'] = UnitRecipeTable(self.object.units.all())
+        return context
+    
 
 class UnitRecipeDetail(LoginRequiredMixin, OwnerQuerysetMixin, DetailView):
     """Detail view class for UnitRecipe.
@@ -153,3 +160,10 @@ class UnitRecipeDetail(LoginRequiredMixin, OwnerQuerysetMixin, DetailView):
     model = UnitRecipe
     context_object_name = 'u_recipe'
     template_name = 'recipes/unit_recipe_detail.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super(UnitRecipeDetail, self).get_context_data(**kwargs)
+        context['age_table'] = SourceTraitTable(self.object.age_variables.all())
+        context['batch_table'] = SourceTraitTable(self.object.batch_variables.all())
+        context['phenotype_table'] = SourceTraitTable(self.object.phenotype_variables.all())
+        return context
