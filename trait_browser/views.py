@@ -27,6 +27,7 @@ class SourceDatasetDetail(SingleTableMixin, DetailView):
     
     template_name = 'trait_browser/source_dataset_detail.html'
     model = SourceDataset
+    context_object_name = 'source_dataset'
     context_table_name = 'trait_table'
     table_class = SourceTraitTable
     table_pagination = {'per_page': TABLE_PER_PAGE}
