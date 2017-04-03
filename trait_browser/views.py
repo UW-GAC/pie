@@ -21,8 +21,7 @@ from .forms import *
 
 TABLE_PER_PAGE = 50    # Setting for per_page rows for all table views.  
 
-# LoginRequiredMixin, 
-class SourceDatasetDetail(SingleTableMixin, DetailView):
+class SourceDatasetDetail(LoginRequiredMixin, SingleTableMixin, DetailView):
     """Detail view class for SourceDatasets. Displays the dataset's source traits in a table."""
     
     template_name = 'trait_browser/source_dataset_detail.html'
@@ -42,6 +41,7 @@ class SourceDatasetDetail(SingleTableMixin, DetailView):
         context['phs_link'] = trait.dbgap_study_link
         context['pht_link'] = trait.dbgap_dataset_link
         return context
+
 
 class SourceTraitDetail(LoginRequiredMixin, DetailView):
     """Detail view class for SourceTraits. Inherits from django.views.generic.DetailView."""    
