@@ -481,7 +481,7 @@ class HarmonizedTraitViewsTestCase(ViewsAutoLoginTestCase):
         """Tests that the HarmonizedTrait detail page returns 200 with a valid pk."""
         trait = HarmonizedTraitFactory.create()
         # Test that the page works with a valid pk.
-        url = reverse('trait_browser:harmonized:detail', args=[trait.i_trait_id])
+        url = reverse('trait_browser:harmonized:detail', args=[trait.harmonized_trait_set.pk])
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         
