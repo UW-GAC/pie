@@ -402,6 +402,13 @@ class HarmonizedTrait(Trait):
         """
         return '{}_{}'.format(self.i_trait_name, self.harmonized_trait_set.i_flavor)
 
+    def get_absolute_url(self):
+        """Gets the absolute URL of the detail page for a given HarmonizedTrait instance.
+        
+        In this special case, goes to the detail page for the related trait set.
+        """
+        return reverse('trait_browser:harmonized:detail', kwargs={'pk': self.harmonized_trait_set.pk})
+
 
 # Encoded Value models.
 # ------------------------------------------------------------------------------
