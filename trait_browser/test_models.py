@@ -132,6 +132,13 @@ class HarmonizedTraitSetTestCase(TestCase):
         self.assertIsInstance(harmonized_trait_set.created, datetime)
         self.assertIsInstance(harmonized_trait_set.modified, datetime)
     
+    def test_get_trait_names(self):
+        """List of trait names is correct."""
+        hts = HarmonizedTraitSetFactory.create()
+        htraits = HarmonizedTraitFactory.create_batch(5, harmonized_trait_set=hts)
+        hts.refresh_from_db()
+        self.assertEqual(sorted(hts.get_trait_names()), sorted([tr.trait_flavor_name for tr in htraits]))
+
 
 class HarmonizationUnitTestCase(TestCase):
     
@@ -178,6 +185,21 @@ class HarmonizationUnitTestCase(TestCase):
         component_age_traits = SourceTraitFactory.create_batch(5, source_dataset__source_study_version__study__global_study=global_study)
         harmonization_unit = HarmonizationUnitFactory.create(component_age_traits=component_age_traits)
         self.assertEqual(len(harmonization_unit.component_age_traits.all()), 5)
+    
+    def test_get_all_source_traits(self):
+        """Returned queryset of source traits is correct."""
+        source_traits = SourceTraitFactory.create_batch(6)
+        hu = HarmonizationUnitFactory.create(component_age_traits=source_traits[0:2], component_batch_traits=source_traits[2:4], component_source_traits=source_traits[4:])
+        self.assertEqual(list(hu.get_all_source_traits().order_by('pk')), list(SourceTrait.objects.all().order_by('pk')))
+    
+    def test_get_source_studies(self):
+        """Returned list of linked studies is correct."""
+        global_study = GlobalStudyFactory.create()
+        studies = StudyFactory.create_batch(2, global_study=global_study)
+        traits1 = SourceTraitFactory.create_batch(3, source_dataset__source_study_version__study=studies[0])
+        traits2 = SourceTraitFactory.create_batch(3, source_dataset__source_study_version__study=studies[1])
+        hu = HarmonizationUnitFactory.create(component_age_traits=[traits1[0], traits2[0]], component_batch_traits=[traits1[1], traits2[1]], component_source_traits=[traits1[2], traits2[2]])
+        self.assertEqual(list(studies), list(hu.get_source_studies()))
 
  
 class SourceTraitTestCase(TestCase):
