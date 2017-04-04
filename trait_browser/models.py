@@ -213,8 +213,8 @@ class HarmonizedTraitSet(SourceDBTimeStampedModel):
         return reverse('trait_browser:harmonized:detail', kwargs={'pk': self.pk})
     
     def get_trait_names(self):
-        """ """
         return [trait.trait_flavor_name for trait in self.harmonizedtrait_set.all()]
+        """Gets a list of trait_flavor_names for harmonized traits in this trait set."""
 
 
 class HarmonizationUnit(SourceDBTimeStampedModel):
@@ -232,11 +232,11 @@ class HarmonizationUnit(SourceDBTimeStampedModel):
         return 'Harmonization unit - id {} tagged {}'.format(self.i_id, self.i_tag)
     
     def get_all_source_traits(self):
-        """Get a list of all the SourceTraits connected to this harmonization unit (age, batch, or source component)."""
+        """Get a queryset of all the SourceTraits connected to this harmonization unit (age, batch, or source component)."""
         return self.component_source_traits.all() | self.component_batch_traits.all() | self.component_age_traits.all()
     
     def get_source_studies(self):
-        """ """
+        """Get a list containing all of the studies linked to component traits for this unit."""
         return list(set([trait.source_dataset.source_study_version.study for trait in self.get_all_source_traits()]))
 
 
