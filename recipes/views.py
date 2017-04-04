@@ -166,4 +166,5 @@ class UnitRecipeDetail(LoginRequiredMixin, OwnerQuerysetMixin, DetailView):
         context['age_table'] = SourceTraitTable(self.object.age_variables.all())
         context['batch_table'] = SourceTraitTable(self.object.batch_variables.all())
         context['phenotype_table'] = SourceTraitTable(self.object.phenotype_variables.all())
+        context['harmonized_phenotype_table'] = HarmonizedTraitTable(self.object.harmonized_phenotype_variables.all())
         return context
