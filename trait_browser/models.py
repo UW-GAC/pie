@@ -213,8 +213,8 @@ class HarmonizedTraitSet(SourceDBTimeStampedModel):
         return reverse('trait_browser:harmonized:detail', kwargs={'pk': self.pk})
     
     def get_trait_names(self):
-        return [trait.trait_flavor_name for trait in self.harmonizedtrait_set.all()]
         """Gets a list of trait_flavor_names for harmonized traits in this trait set."""
+        return self.harmonizedtrait_set.values_list('trait_flavor_name', flat=True)
 
 
 class HarmonizationUnit(SourceDBTimeStampedModel):
