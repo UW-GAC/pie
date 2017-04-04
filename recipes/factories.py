@@ -52,7 +52,17 @@ class UnitRecipeFactory(factory.DjangoModelFactory):
             for batch_var in extracted:
                 self.batch_variables.add(batch_var)
 
-    
+    @factory.post_generation
+    def harmonized_phenotype_variables(self, create, extracted, **kwargs):
+        # Do not add any phenotype variables for simple builds.
+        if not create:
+            return
+        # Add phenotype variables from a list that was passed in.
+        if extracted:
+            for phenotype_var in extracted:
+                self.phenotype_variables.add(phenotype_var)
+
+
 class HarmonizationRecipeFactory(factory.DjangoModelFactory):
     """Factory for HarmonizationRecipe objects using Faker faked data."""
     
