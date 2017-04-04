@@ -111,6 +111,7 @@ class UnitRecipeForm(UserKwargModelFormMixin, UnitRecipeCleanMixin, forms.ModelF
         widgets = {'age_variables': autocomplete.ModelSelect2Multiple(url='trait_browser:source:autocomplete'),
             'batch_variables': autocomplete.ModelSelect2Multiple(url='trait_browser:source:autocomplete'),
             'phenotype_variables': autocomplete.ModelSelect2Multiple(url='trait_browser:source:autocomplete'),
+            'harmonized_phenotype_variables': autocomplete.ModelSelect2Multiple(url='trait_browser:harmonized:autocomplete'),
         }
         help_texts = {'name': 'A unique and informative name for the harmonization unit.',
             'harmonized_phenotype_variables': 'Enter the variable name of the DCC-harmonized phenotype variable needed to derive your harmonized variable <em>in this harmonization unit</em>.',

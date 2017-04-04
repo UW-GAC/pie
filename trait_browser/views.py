@@ -238,6 +238,21 @@ class SourceTraitPHVAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySe
         return retrieved
 
 
+class HarmonizedTraitFlavorNameAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
+    """View for returning querysets that allow auto-completing HarmonizedTrait form fields with trait_flavor_name.
+    
+    Used with django-autocomplete-light package. Autocomplete by trait_flavor_name. 
+    Only include latest version.
+    """    
+    
+    def get_queryset(self):
+        # TODO: Will need to filter to the latest version, once this is implemented.
+        retrieved = HarmonizedTrait.objects.all()
+        if self.q:
+            retrieved = retrieved.filter(trait_flavor_name__regex=r'^{}'.format(self.q))
+        return retrieved
+
+
 @login_required
 def save_search_to_profile(request):
     """Saves the user's search to their profile"""

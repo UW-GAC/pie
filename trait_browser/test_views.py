@@ -626,3 +626,31 @@ class SourceTraitPHVAutocompleteTestCase(ViewsAutoLoginTestCase):
         phvs_in_content = [match for match in phv_re.findall(str(response.content))]
         self.assertTrue(len(phvs_in_content) == 1)
         self.assertTrue('phv{:08d}'.format(st1.i_dbgap_variable_accession) in phvs_in_content)
+
+
+class HarmonizedTraitFlavorNameAutocompleteViewTest(ViewsAutoLoginTestCase):
+    """Autocomplete view works as expected."""
+    
+    def test_no_deprecated_traits_in_queryset(self):
+        """Queryset returns only the latest version of a trait."""
+        # Create a source trait with linked source dataset and source study version.
+        # Make some fake data here.
+        # Get results from the autocomplete view and make sure only the new version is found.
+        # url = reverse('trait_browser:source:autocomplete')
+        # response = self.client.get(url, {'q': source_trait2.i_dbgap_variable_accession})
+        # id_re = re.compile(r'"id": (\d+)')
+        # ids_in_content = [match[0] for match in id_re.findall(str(response.content))]
+        # self.assertTrue(len(ids_in_content) == 1)
+        # self.assertTrue(str(source_trait2.i_trait_id) in ids_in_content)
+        pass
+    
+    def test_proper_phv_in_queryset(self):
+        """Queryset returns only the proper phv number."""
+        harmonized_traits = HarmonizedTraitFactory.create_batch(10)
+        ht1 = harmonized_traits[0]
+        url = reverse('trait_browser:harmonized:autocomplete')
+        response = self.client.get(url, {'q': ht1.trait_flavor_name})
+        names_re = re.compile(r'"text": "(.+?)"')
+        names_in_content = [match for match in names_re.findall(str(response.content))]
+        self.assertTrue(len(names_in_content) == 1)
+        self.assertEqual(names_in_content[0], ht1.trait_flavor_name)
