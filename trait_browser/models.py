@@ -383,7 +383,7 @@ class HarmonizedTrait(Trait):
 
     def __str__(self):
         """Pretty printing."""
-        return 'harmonized trait {}, id={}, from trait set {}'.format(self.i_trait_name, self.i_trait_id, self.harmonized_trait_set)
+        return self.trait_flavor_name
 
     def save(self, *args, **kwargs):
         """Custom save method for making the trait flavor name.

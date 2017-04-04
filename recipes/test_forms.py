@@ -4,7 +4,7 @@ from django.test import TestCase
 from django.core.urlresolvers import reverse
 
 from core.factories import UserFactory
-from trait_browser.factories import SourceTraitFactory
+from trait_browser.factories import *
 from .forms import *
 from .factories import *
 from .models import *
@@ -119,6 +119,7 @@ class UnitRecipeFormTestCase(TestCase):
                  'age_variables': [str(source_traits[0].pk), ] ,
                  'batch_variables': [str(source_traits[1].pk), ] ,
                  'phenotype_variables': [str(source_traits[2].pk), ] ,
+                 'type': UnitRecipe.OTHER,
                  }
         form = UnitRecipeForm(input)
         # Usually form.user is added by a mixin on the View, but have to add it manually here.
@@ -134,6 +135,7 @@ class UnitRecipeFormTestCase(TestCase):
                  'instructions': 'Do something to combine these variables',
                  'batch_variables': [str(source_traits[1].pk), ] ,
                  'phenotype_variables': [str(source_traits[2].pk), ] ,
+                 'type': UnitRecipe.OTHER,
                  }
         form = UnitRecipeForm(input)
         # Usually form.user is added by a mixin on the View, but have to add it manually here.
@@ -149,6 +151,7 @@ class UnitRecipeFormTestCase(TestCase):
                  'instructions': 'Do something to combine these variables',
                  'age_variables': [str(source_traits[0].pk), ] ,
                  'batch_variables': [str(source_traits[1].pk), ] ,
+                 'type': UnitRecipe.OTHER,
                  }
         form = UnitRecipeForm(input)
         # Usually form.user is added by a mixin on the View, but have to add it manually here.
@@ -167,6 +170,7 @@ class UnitRecipeFormTestCase(TestCase):
                  'age_variables': [str(source_traits[0].pk), ] ,
                  'batch_variables': [str(source_traits[1].pk), ] ,
                  'phenotype_variables': [str(source_traits[2].pk), ] ,
+                 'type': UnitRecipe.OTHER,
                  }
         form = UnitRecipeForm(input)
         # Usually form.user is added by a mixin on the View, but have to add it manually here.
@@ -182,6 +186,7 @@ class UnitRecipeFormTestCase(TestCase):
                  'age_variables': [str(source_trait.pk), ] ,
                  'batch_variables': [str(source_trait.pk), ] ,
                  'phenotype_variables': [str(source_trait.pk), ] ,
+                 'type': UnitRecipe.OTHER,
                  }
         form = UnitRecipeForm(input)
         # Usually form.user is added by a mixin on the View, but have to add it manually here.
@@ -200,6 +205,7 @@ class UnitRecipeFormTestCase(TestCase):
                  'age_variables': [str(source_traits[0].pk), ] ,
                  'batch_variables': [str(source_traits[0].pk), ] ,
                  'phenotype_variables': [str(source_traits[2].pk), ] ,
+                 'type': UnitRecipe.OTHER,
                  }
         form = UnitRecipeForm(input)
         # Usually form.user is added by a mixin on the View, but have to add it manually here.
@@ -218,6 +224,7 @@ class UnitRecipeFormTestCase(TestCase):
                  'age_variables': [str(source_traits[0].pk), ] ,
                  'batch_variables': [str(source_traits[1].pk), ] ,
                  'phenotype_variables': [str(source_traits[0].pk), ] ,
+                 'type': UnitRecipe.OTHER,
                  }
         form = UnitRecipeForm(input)
         # Usually form.user is added by a mixin on the View, but have to add it manually here.
@@ -236,6 +243,7 @@ class UnitRecipeFormTestCase(TestCase):
                  'age_variables': [str(source_traits[0].pk), ] ,
                  'batch_variables': [str(source_traits[2].pk), ] ,
                  'phenotype_variables': [str(source_traits[2].pk), ] ,
+                 'type': UnitRecipe.OTHER,
                  }
         form = UnitRecipeForm(input)
         # Usually form.user is added by a mixin on the View, but have to add it manually here.
@@ -256,6 +264,7 @@ class UnitRecipeFormTestCase(TestCase):
                  'age_variables': [str(source_trait1.pk), ] ,
                  'batch_variables': [str(source_trait2.pk), ] ,
                  'phenotype_variables': [str(source_trait3.pk), ] ,
+                 'type': UnitRecipe.OTHER,
                  }
         form = UnitRecipeForm(input)
         # Usually form.user is added by a mixin on the View, but have to add it manually here.
@@ -274,6 +283,7 @@ class UnitRecipeFormTestCase(TestCase):
                  'instructions': 'Do something to combine these variables',
                  'age_variables': [str(source_trait1.pk), ] ,
                  'phenotype_variables': [str(source_trait3.pk), ] ,
+                 'type': UnitRecipe.OTHER,
                  }
         form = UnitRecipeForm(input)
         # Usually form.user is added by a mixin on the View, but have to add it manually here.
@@ -316,6 +326,21 @@ class UnitRecipeFormTestCase(TestCase):
         form.user = user
         self.assertTrue(form.has_error('type'))
         self.assertFalse(form.is_valid())
+
+    def test_form_with_harmonized_phenotype_variable_is_valid(self):
+        """Form is valid when given harmonized phenotype variables, but none of the source trait variables."""
+        harmonized_trait = HarmonizedTraitFactory.create()
+        input = {'name': 'Only one unit here.',
+                 'instructions': 'Do something to combine these variables',
+                 'harmonized_phenotype_variables': [str(harmonized_trait.pk), ] ,
+                 'type': UnitRecipe.OTHER,
+                 }
+        form = UnitRecipeForm(input)
+        # Usually form.user is added by a mixin on the View, but have to add it manually here.
+        user = UserFactory.create()
+        form.user = user
+        self.assertFalse(form.has_error('phenotype_variables'))
+        self.assertTrue(form.is_valid())
 
 
 class HarmonizationRecipeFormTestCase(TestCase):

@@ -22,12 +22,20 @@
         <div class="panel panel-default">
             <div class="panel-heading"><h4 class="panel-title">Component phenotype variables</h4></div>
             <div class="panel-body">
-                <h5>Age variables</h5>
-                {% render_table age_table %}
-                <h5>Batch variables</h5>
-                {% render_table batch_table %}
+                {% if age_table.rows|length > 0 %}
+                    <h5>Age variables</h5>
+                    {% render_table age_table %}
+                {% endif %}
+                {% if batch_table.rows|length > 0 %}
+                    <h5>Batch variables</h5>
+                    {% render_table batch_table %}
+                {% endif %}
                 <h5>Phenotype variables</h5>
-                {% render_table phenotype_table %}
+                {% if phenotype_table.rows|length > 0 %}
+                    {% render_table phenotype_table %}
+                {% else %}
+                    {% render_table harmonized_phenotype_table %}
+                {% endif %}
            </div>
        </div>
     
