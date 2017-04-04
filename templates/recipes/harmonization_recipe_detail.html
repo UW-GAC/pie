@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load render_table from django_tables2 %}
 
 {% block head_title %}
      | {{ h_recipe.name }} details
@@ -7,28 +8,28 @@
 {% block content %}
     <div class="well">
     
-        <h2>Harmonization recipe details</h2>
+        <h2>{{ h_recipe.name }} <small>harmonization recipe</small></h2>
         
         {% include '_messages.html' %}
-    
-        <p><strong>Recipe name</strong> : {{ h_recipe.name }}</p>
-        <p><strong>Version</strong> : {{ h_recipe.version }}</p>
-        
-        <p>Created by {{ h_recipe.creator.username }} at {{ h_recipe.created }} </p>
-        <p>Last modified by {{ h_recipe.last_modifier.username }} at {{ h_recipe.modified }} </p>
+        <dl class="dl-horizontal">
+            <dt>Version</dt><dd>{{ h_recipe.version }}</dd>
+            <dt>Created by</dt><dd>{{ h_recipe.creator.name }}, {{ h_recipe.created }}</dd>
+            <dt>Last modified by</dt><dd>{{ h_recipe.last_modifier.name }}, {{ h_recipe.modified }}</dd>
+        </dl>
         <p><a href="{% url 'recipes:harmonization:edit' pk=h_recipe.pk %}" class="btn btn-primary" role="button">Edit</a></p>
         
         <div class="panel panel-default">
-            <div class="panel-heading"><h4>Target harmonized variable</h4></div>
+            <div class="panel-heading"><h4 class="panel-title">Target harmonized variable</h4></div>
             <div class="panel-body">
-                <p><strong>Name</strong> : {{ h_recipe.target_name }}</p>
-                <p><strong>Description</strong> : {{ h_recipe.target_description }}</p>
-                <p><strong>Unit of measurement</strong> : {{ h_recipe.measurement_unit }}</p>
-                <p><strong>Harmonization type</strong> : {{ h_recipe.type }}</p>
+                <dl class="dl-horizontal">
+                    <dt>Name</dt><dd>{{ h_recipe.target_name }}</dd>
+                    <dt>Description</dt><dd>{{ h_recipe.target_description }}</dd>
+                    <dt>Unit of measurement</dt><dd>{{ h_recipe.measurement_unit }}</dd>
+                </dl>
                 
                 {% if h_recipe.encoded_values %}
-                <p><strong>Encoded value definitions</strong>
-                <table class="table table-nonfluid table-condensed table-sm table-striped table-bordered">
+                <table class="table table-nonfluid table-condensed table-sm">
+                    <caption><strong>Encoded value definitions</strong></caption>
                      <tr>
                          <th>Category</th>
                          <th>Value</th>
@@ -44,25 +45,11 @@
             </div>
         </div> 
         
-        <div class="well" style='background:white'>
-            <h4>Harmonization units included</h4>
-            <table class="table table-nonfluid table-condensed table-sm table-striped table-bordered">
-                 <tr>
-                     <th>Harmonization unit id</th>
-                     <th>Name</th>
-                     <th>Creator</th>
-                 </tr>
-                 {% for unit in h_recipe.units.all %}
-                     <tr>
-                         <td><a href='{% url 'recipes:unit:detail' unit.pk %}'>{{ unit.pk }}</a></td>
-                         <td>{{ unit.name }}</td>
-                         <td>{{ unit.creator.username }}</td>
-                     </tr>
-                 {% endfor %}
-             </table>
-        
+        <div class="panel panel-default">
+            <div class="panel-heading"><h4 class="panel-title">Harmonization unit recipes</h4></div>
+            <div class="panel-body">
+                {% render_table unit_recipe_table %}
+            </div>
         </div>
-    
     </div>
-    
 {% endblock %}

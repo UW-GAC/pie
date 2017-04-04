@@ -348,8 +348,7 @@ class SourceTraitSearchViewTestCase(ViewsAutoLoginTestCase):
         self.assertTrue(response.context['form'].is_bound)    # Form is bound to data
         self.assertEqual(response.context['trait_type'], 'source')    # trait type is still correct
         self.assertIsInstance(response.context['form'], SourceTraitCrispySearchForm)    # Form is of the correct type
-
-        
+    
     def test_source_trait_search_with_valid_results_and_study_filter(self):
         """Tests that the source_trait_search view has a 200 reponse code and the number of results is accurate when search text and study filter is entered and there are search results to display."""
         SourceTraitFactory.create_batch(10)
@@ -438,6 +437,17 @@ class SourceTraitSearchViewTestCase(ViewsAutoLoginTestCase):
         self.assertIn(search, user_searches)
 
 
+class SourceDatasetViewTest(ViewsAutoLoginTestCase):
+    """Unit tests for the SourceDataset views."""
+    
+    def test_source_dataset_absolute_url(self):
+        """Tests the get_absolute_url() method of the SourceDataset object returns a 200 as a response."""
+        dataset = SourceDatasetFactory.create()
+        source_traits = SourceTraitFactory.create_batch(10, source_dataset=dataset)
+        response = self.client.get(dataset.get_absolute_url())
+        self.assertEqual(response.status_code, 200)
+
+
 class HarmonizedTraitViewsTestCase(ViewsAutoLoginTestCase):
     """Unit tests for the HarmonizedTrait views."""
     
@@ -481,7 +491,7 @@ class HarmonizedTraitViewsTestCase(ViewsAutoLoginTestCase):
         """Tests that the HarmonizedTrait detail page returns 200 with a valid pk."""
         trait = HarmonizedTraitFactory.create()
         # Test that the page works with a valid pk.
-        url = reverse('trait_browser:harmonized:detail', args=[trait.i_trait_id])
+        url = reverse('trait_browser:harmonized:detail', args=[trait.harmonized_trait_set.pk])
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         
@@ -505,6 +515,16 @@ class HarmonizedTraitViewsTestCase(ViewsAutoLoginTestCase):
         response = self.client.get(url)
         with self.assertRaises(KeyError):
             response.context['search_url']
+
+
+class HarmonizedTraitSetViewsTest(ViewsAutoLoginTestCase):
+    """Unit tests for the HarmonizedTraitSet views."""
+    
+    def test_harmonized_trait_set_absolute_url(self):
+        """Tests the get_absolute_url() method of the HarmonizedTraitSet object returns a 200 as a response."""
+        trait = HarmonizedTraitSetFactory.create()
+        response = self.client.get(trait.get_absolute_url())
+        self.assertEqual(response.status_code, 200)
 
 
 class HarmonizedTraitSearchViewTestCase(ViewsAutoLoginTestCase):

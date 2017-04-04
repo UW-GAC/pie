@@ -8,8 +8,9 @@ from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
 from django.core.exceptions import ObjectDoesNotExist
 
+from braces.views import LoginRequiredMixin
 from dal import autocomplete
-from django_tables2 import RequestConfig
+from django_tables2 import RequestConfig, SingleTableMixin
 from urllib.parse import unquote, urlparse, parse_qs
 
 from profiles.models import *
@@ -20,29 +21,42 @@ from .forms import *
 
 TABLE_PER_PAGE = 50    # Setting for per_page rows for all table views.  
 
+class SourceDatasetDetail(LoginRequiredMixin, SingleTableMixin, DetailView):
+    """Detail view class for SourceDatasets. Displays the dataset's source traits in a table."""
+    
+    template_name = 'trait_browser/source_dataset_detail.html'
+    model = SourceDataset
+    context_object_name = 'source_dataset'
+    context_table_name = 'trait_table'
+    table_class = SourceTraitTable
+    table_pagination = {'per_page': TABLE_PER_PAGE}
+    
+    def get_table_data(self):
+        return self.object.sourcetrait_set.all().order_by('i_dbgap_variable_accession')
 
-class SourceTraitDetail(DetailView):
+    def get_context_data(self, **kwargs):
+        context = super(SourceDatasetDetail, self).get_context_data(**kwargs)
+        trait = self.object.sourcetrait_set.first()
+        context['phs'] = trait.study_accession
+        context['phs_link'] = trait.dbgap_study_link
+        context['pht_link'] = trait.dbgap_dataset_link
+        return context
+
+
+class SourceTraitDetail(LoginRequiredMixin, DetailView):
     """Detail view class for SourceTraits. Inherits from django.views.generic.DetailView."""    
     
     model = SourceTrait
     context_object_name = 'source_trait'
     template_name = 'trait_browser/source_trait_detail.html'
 
-    @method_decorator(login_required)
-    def dispatch(self, *args, **kwargs):
-        return super(SourceTraitDetail, self).dispatch(*args, **kwargs)
 
-
-class HarmonizedTraitDetail(DetailView):
-    """Detail view class for HarmonizedTraits. Inherits from django.views.generic.DetailView."""    
+class HarmonizedTraitSetDetail(LoginRequiredMixin, DetailView):
+    """Detail view class for HarmonizedTraitSets. Inherits from django.views.generic.DetailView."""    
     
-    model = HarmonizedTrait
-    context_object_name = 'harmonized_trait'
-    template_name = 'trait_browser/harmonized_trait_detail.html'
-
-    @method_decorator(login_required)
-    def dispatch(self, *args, **kwargs):
-        return super(HarmonizedTraitDetail, self).dispatch(*args, **kwargs)
+    model = HarmonizedTraitSet
+    context_object_name = 'harmonized_trait_set'
+    template_name = 'trait_browser/harmonized_trait_set_detail.html'
 
 
 @login_required

@@ -186,6 +186,10 @@ class SourceDataset(SourceDBTimeStampedModel):
         """Automatically set pht_version_string from the accession, version, and particpant set."""
         return 'pht{:06}.v{}.p{}'.format(self.i_accession, self.i_version, self.source_study_version.i_participant_set)
 
+    def get_absolute_url(self):
+        """Gets the absolute URL of the detail page for a given SourceDataset instance."""
+        return reverse('trait_browser:source:dataset', kwargs={'pk': self.pk})
+
 
 class HarmonizedTraitSet(SourceDBTimeStampedModel):
     """Model for harmonized trait set from snuffles. Analagous to the SourceDataset
@@ -204,6 +208,14 @@ class HarmonizedTraitSet(SourceDBTimeStampedModel):
         """Pretty printing."""
         return 'harmonized trait set {}, id={}'.format(self.i_trait_set_name, self.i_id)
 
+    def get_absolute_url(self):
+        """Gets the absolute URL of the detail page for a given HarmonizedTraitSet instance."""
+        return reverse('trait_browser:harmonized:detail', kwargs={'pk': self.pk})
+    
+    def get_trait_names(self):
+        """Gets a list of trait_flavor_names for harmonized traits in this trait set."""
+        return self.harmonizedtrait_set.values_list('trait_flavor_name', flat=True)
+
 
 class HarmonizationUnit(SourceDBTimeStampedModel):
     """Model for harmonization units from source db."""
@@ -218,6 +230,14 @@ class HarmonizationUnit(SourceDBTimeStampedModel):
     def __str__(self):
         """Pretty printing."""
         return 'Harmonization unit - id {} tagged {}'.format(self.i_id, self.i_tag)
+    
+    def get_all_source_traits(self):
+        """Get a queryset of all the SourceTraits connected to this harmonization unit (age, batch, or source component)."""
+        return self.component_source_traits.all() | self.component_batch_traits.all() | self.component_age_traits.all()
+    
+    def get_source_studies(self):
+        """Get a list containing all of the studies linked to component traits for this unit."""
+        return list(set([trait.source_dataset.source_study_version.study for trait in self.get_all_source_traits()]))
 
 
 # Trait models.
@@ -383,8 +403,11 @@ class HarmonizedTrait(Trait):
         return '{}_{}'.format(self.i_trait_name, self.harmonized_trait_set.i_flavor)
 
     def get_absolute_url(self):
-        """Gets the absolute URL of the detail page for a given HarmonizedTrait instance."""
-        return reverse('trait_browser:harmonized:detail', kwargs={'pk': self.pk})
+        """Gets the absolute URL of the detail page for a given HarmonizedTrait instance.
+        
+        In this special case, goes to the detail page for the related trait set.
+        """
+        return reverse('trait_browser:harmonized:detail', kwargs={'pk': self.harmonized_trait_set.pk})
 
 
 # Encoded Value models.

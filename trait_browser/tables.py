@@ -20,6 +20,8 @@ class SourceTraitTable(tables.Table):
     study_name = tables.Column('Study name', accessor='source_dataset.source_study_version.study.i_study_name')
     dbGaP_study = tables.TemplateColumn(orderable=False,
         template_code='<a target="_blank" href={{ record.dbgap_study_link }}>{{ record.study_accession }}</a>')
+    dbGaP_dataset = tables.TemplateColumn(orderable=False,
+        template_code='<a target="_blank" href={{ record.dbgap_dataset_link }}>{{ record.dataset_accession }}</a>')
     dbGaP_variable = tables.TemplateColumn(orderable=False,
         template_code='<a target="_blank" href={{ record.dbgap_variable_link }}>{{ record.variable_accession }}</a>')
     
@@ -40,7 +42,7 @@ class HarmonizedTraitTable(tables.Table):
     """
 
     # Set custom column values that need extra settings.
-    trait_flavor_name = tables.LinkColumn('trait_browser:harmonized:detail', args=[tables.utils.A('pk')], verbose_name='Phenotype name')
+    trait_flavor_name = tables.LinkColumn('trait_browser:harmonized:detail', args=[tables.utils.A('harmonized_trait_set.pk')])
     i_description = tables.Column('Phenotype description', orderable=False)
     
     class Meta:
