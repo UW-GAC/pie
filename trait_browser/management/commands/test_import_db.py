@@ -16,6 +16,7 @@ from os import listdir, remove, stat
 from shutil import rmtree
 from subprocess import call
 from tempfile import mkdtemp
+from time import sleep
 
 import mysql.connector
 # Use the mysql-connector-python-rf package from pypi (advice via this SO post http://stackoverflow.com/q/34168651/2548371)
@@ -901,6 +902,7 @@ class HelperTest(BaseTestDataTestCase):
         field_to_update = 'name'
         new_value = 'asdfghjkl'
         source_db_pk_name = model_instance._meta.pk.name.replace('i_', '')
+        sleep(1)
         change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
         # Need to open the db and cursor again...
         self.source_db = get_devel_db()
@@ -986,6 +988,7 @@ class UpdateModelsTest(VisitTestDataTestCase):
         new_value = 'asdfghjkl'
         source_db_pk_name = model_instance._meta.pk.name.replace('i_', '')
         
+        sleep(1)
         change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
         management.call_command('import_db', '--which_db=devel', '--update_only', '--verbosity=0', '--no_backup')
         model_instance.refresh_from_db()
@@ -1009,6 +1012,7 @@ class UpdateModelsTest(VisitTestDataTestCase):
         new_value = 'asdfghjkl'
         source_db_pk_name = model_instance._meta.pk.name.replace('i_', '')
         
+        sleep(1)
         change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
         management.call_command('import_db', '--which_db=devel', '--update_only', '--verbosity=0', '--no_backup')
         model_instance.refresh_from_db()
@@ -1032,6 +1036,7 @@ class UpdateModelsTest(VisitTestDataTestCase):
         new_value = not getattr(model_instance, 'i_'+field_to_update)
         source_db_pk_name = model_instance._meta.pk.name.replace('i_', '')
         
+        sleep(1)
         change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
         management.call_command('import_db', '--which_db=devel', '--update_only', '--verbosity=0', '--no_backup')
         model_instance.refresh_from_db()
@@ -1055,6 +1060,7 @@ class UpdateModelsTest(VisitTestDataTestCase):
         new_value = 'one_visit_per_file'
         source_db_pk_name = model_instance._meta.pk.name.replace('i_', '')
         
+        sleep(1)
         change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
         management.call_command('import_db', '--which_db=devel', '--update_only', '--verbosity=0', '--no_backup')
         model_instance.refresh_from_db()
@@ -1078,6 +1084,7 @@ class UpdateModelsTest(VisitTestDataTestCase):
         new_value = 'asdfghjkl'
         source_db_pk_name = 'source_trait_id'
         
+        sleep(1)
         change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
         management.call_command('import_db', '--which_db=devel', '--update_only', '--verbosity=0', '--no_backup')
         model_instance.refresh_from_db()
@@ -1101,6 +1108,7 @@ class UpdateModelsTest(VisitTestDataTestCase):
         new_value = 'asdfghjkl'
         source_db_pk_name = model_instance._meta.pk.name.replace('i_', '')
         
+        sleep(1)
         change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
         management.call_command('import_db', '--which_db=devel', '--update_only', '--verbosity=0', '--no_backup')
         model_instance.refresh_from_db()
@@ -1124,6 +1132,7 @@ class UpdateModelsTest(VisitTestDataTestCase):
         new_value = 'asdfghjkl'
         source_db_pk_name = model_instance._meta.pk.name.replace('i_', '')
         
+        sleep(1)
         change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
         management.call_command('import_db', '--which_db=devel', '--update_only', '--verbosity=0', '--no_backup')
         model_instance.refresh_from_db()
@@ -1148,6 +1157,7 @@ class UpdateModelsTest(VisitTestDataTestCase):
         new_value = 'asdfghjkl'
         source_db_pk_name = model_instance._meta.pk.name.replace('i_', '')
         
+        sleep(1)
         change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
         management.call_command('import_db', '--which_db=devel', '--update_only', '--verbosity=0', '--no_backup')
         model_instance.refresh_from_db()
@@ -1171,6 +1181,7 @@ class UpdateModelsTest(VisitTestDataTestCase):
         new_value = 'asdfghjkl'
         source_db_pk_name = 'harmonized_trait_id'
         
+        sleep(1)
         change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
         management.call_command('import_db', '--which_db=devel', '--update_only', '--verbosity=0', '--no_backup')
         model_instance.refresh_from_db()
@@ -1194,6 +1205,7 @@ class UpdateModelsTest(VisitTestDataTestCase):
         new_value = 'asdfghjkl'
         source_db_pk_name = 'id'
         
+        sleep(1)
         change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
         management.call_command('import_db', '--which_db=devel', '--update_only', '--verbosity=0', '--no_backup')
         model_instance.refresh_from_db()
@@ -1217,6 +1229,7 @@ class UpdateModelsTest(VisitTestDataTestCase):
         new_value = 'asdfghjkl'
         source_db_pk_name = model_instance._meta.pk.name.replace('i_', '')
         
+        sleep(1)
         change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
         management.call_command('import_db', '--which_db=devel', '--update_only', '--verbosity=0', '--no_backup')
         model_instance.refresh_from_db()
@@ -1530,6 +1543,8 @@ class ImportNoUpdateTest(VisitTestDataTestCase):
         new_value = 'asdfghjkl'
         source_db_pk_name = model_instance._meta.pk.name.replace('i_', '')
         
+        sleep(1)
+        sleep(1)
         change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
         management.call_command('import_db', '--which_db=devel', '--import_only', '--no_backup')
         model_instance.refresh_from_db()
@@ -1553,6 +1568,7 @@ class ImportNoUpdateTest(VisitTestDataTestCase):
         new_value = 'asdfghjkl'
         source_db_pk_name = model_instance._meta.pk.name.replace('i_', '')
         
+        sleep(1)
         change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
         management.call_command('import_db', '--which_db=devel', '--import_only', '--no_backup')
         model_instance.refresh_from_db()
@@ -1576,6 +1592,7 @@ class ImportNoUpdateTest(VisitTestDataTestCase):
         new_value = not getattr(model_instance, 'i_'+field_to_update)
         source_db_pk_name = model_instance._meta.pk.name.replace('i_', '')
         
+        sleep(1)
         change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
         management.call_command('import_db', '--which_db=devel', '--import_only', '--no_backup')
         model_instance.refresh_from_db()
@@ -1599,6 +1616,7 @@ class ImportNoUpdateTest(VisitTestDataTestCase):
         new_value = 'one_visit_per_file'
         source_db_pk_name = model_instance._meta.pk.name.replace('i_', '')
         
+        sleep(1)
         change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
         management.call_command('import_db', '--which_db=devel', '--import_only', '--no_backup')
         model_instance.refresh_from_db()
@@ -1622,6 +1640,7 @@ class ImportNoUpdateTest(VisitTestDataTestCase):
         new_value = 'asdfghjkl'
         source_db_pk_name = 'source_trait_id'
         
+        sleep(1)
         change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
         management.call_command('import_db', '--which_db=devel', '--import_only', '--no_backup')
         model_instance.refresh_from_db()
@@ -1645,6 +1664,7 @@ class ImportNoUpdateTest(VisitTestDataTestCase):
         new_value = 'asdfghjkl'
         source_db_pk_name = model_instance._meta.pk.name.replace('i_', '')
         
+        sleep(1)
         change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
         management.call_command('import_db', '--which_db=devel', '--import_only', '--no_backup')
         model_instance.refresh_from_db()
@@ -1668,6 +1688,7 @@ class ImportNoUpdateTest(VisitTestDataTestCase):
         new_value = 'asdfghjkl'
         source_db_pk_name = model_instance._meta.pk.name.replace('i_', '')
         
+        sleep(1)
         change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
         management.call_command('import_db', '--which_db=devel', '--import_only', '--no_backup')
         model_instance.refresh_from_db()
@@ -1751,6 +1772,7 @@ class ImportNoUpdateTest(VisitTestDataTestCase):
         new_value = 'asdfghjkl'
         source_db_pk_name = model_instance._meta.pk.name.replace('i_', '')
         
+        sleep(1)
         change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
         management.call_command('import_db', '--which_db=devel', '--import_only', '--no_backup')
         model_instance.refresh_from_db()
@@ -1774,6 +1796,7 @@ class ImportNoUpdateTest(VisitTestDataTestCase):
         new_value = 'asdfghjkl'
         source_db_pk_name = 'harmonized_trait_id'
         
+        sleep(1)
         change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
         management.call_command('import_db', '--which_db=devel', '--import_only', '--no_backup')
         model_instance.refresh_from_db()
@@ -1797,6 +1820,7 @@ class ImportNoUpdateTest(VisitTestDataTestCase):
         new_value = 'asdfghjkl'
         source_db_pk_name = model_instance._meta.pk.name.replace('i_', '')
         
+        sleep(1)
         change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
         management.call_command('import_db', '--which_db=devel', '--import_only', '--no_backup')
         model_instance.refresh_from_db()
