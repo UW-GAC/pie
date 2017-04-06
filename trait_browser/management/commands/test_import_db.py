@@ -77,7 +77,7 @@ def load_test_source_db_data(filename):
     """
     filepath = join(TEST_DATA_DIR, filename)
     # if verbose: print('Loading test data from ' + filepath + ' ...')
-    mysql_load = ['mysql', '--defaults-file={}'.format(settings.CNF_PATH),
+    mysql_load = ['mysql', '--defaults-file={}'.format(join(settings.SITE_ROOT, settings.CNF_PATH)),
                  '--defaults-group-suffix=_topmed_pheno_full_devel', '<', filepath]
     return_code = call(' '.join(mysql_load), shell=True, cwd=settings.SITE_ROOT)
     if return_code == 1:
@@ -252,7 +252,8 @@ class TestFunctionsTest(TestCase):
         test_file = join(TEST_DATA_DIR, file_name)
         load_test_source_db_data(file_name)
         # Parse the name of the devel db out of the mysql conf file.
-        with open(settings.CNF_PATH) as f:
+        cnf_path = join(settings.SITE_ROOT, settings.CNF_PATH)
+        with open(cnf_path) as f:
             cnf = f.readlines()
         statement_lines = [i for (i, line) in enumerate(cnf) if line.startswith('[')]
         devel_line = [i for (i, line) in enumerate(cnf) if line.startswith('[mysql_topmed_pheno_full_devel]')][0]
@@ -264,7 +265,7 @@ class TestFunctionsTest(TestCase):
         tmp_file = 'tmp.sql'
         tmp_file_path = join(settings.SITE_ROOT, TEST_DATA_DIR, tmp_file)
         # Now do a mysqldump to the same file.
-        mysqldump = ['mysqldump', '--defaults-file={}'.format(settings.CNF_PATH),
+        mysqldump = ['mysqldump', '--defaults-file={}'.format(cnf_path),
                      '--defaults-group-suffix=_topmed_pheno_full_devel', '--opt',
                      devel_db_name, '>', tmp_file]
         return_code = call(' '.join(mysqldump), shell=True, cwd=join(settings.SITE_ROOT, TEST_DATA_DIR))
