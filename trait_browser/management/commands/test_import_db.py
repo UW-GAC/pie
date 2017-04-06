@@ -843,7 +843,6 @@ class HelperTest(BaseTestDataTestCase):
     def test_make_query_for_rows_to_update_global_study(self):
         """Returns a query that contains only the updated rows."""
         management.call_command('import_db', '--which_db=devel', '--no_backup')
-        t1 = timezone.now() # Save a time to compare to modified date.
         # Close the db connections because change_data_in_table() opens new connections.
         # This does not affect the .cursor and .source_db attributes in other functions.
         self.cursor.close()
@@ -890,7 +889,6 @@ class HelperTest(BaseTestDataTestCase):
         clean_devel_db()
         load_test_source_db_data('base_plus_visit.sql')
         management.call_command('import_db', '--which_db=devel', '--no_backup')
-        t1 = timezone.now() # Save a time to compare to modified date.
         # Close the db connections because change_data_in_table() opens new connections.
         # This does not affect the .cursor and .source_db attributes in other functions.
         self.cursor.close()
@@ -898,6 +896,7 @@ class HelperTest(BaseTestDataTestCase):
         # Change the data in the source db.
         model = GlobalStudy
         model_instance = model.objects.all()[0]
+        old_mod_time = model_instance.modified
         source_db_table_name = 'global_study'
         field_to_update = 'name'
         new_value = 'asdfghjkl'
@@ -915,7 +914,7 @@ class HelperTest(BaseTestDataTestCase):
         # Check that modified date > created date, and name is set to new value.
         model_instance.refresh_from_db()
         self.assertEqual(new_value, getattr(model_instance, 'i_'+field_to_update))
-        self.assertTrue(model_instance.modified > t1)
+        self.assertTrue(model_instance.modified > old_mod_time)
 
 
 class BackupTest(VisitTestDataTestCase):
@@ -974,7 +973,6 @@ class UpdateModelsTest(VisitTestDataTestCase):
     def test_update_global_study(self):
         """Updates in global_study are imported."""
         management.call_command('import_db', '--which_db=devel', '--no_backup')
-        t1 = timezone.now() # Save a time to compare to modified date.
         # Close the db connections because change_data_in_table() opens new connections.
         # This does not affect the .cursor and .source_db attributes in other functions.
         self.cursor.close()
@@ -982,6 +980,7 @@ class UpdateModelsTest(VisitTestDataTestCase):
         
         model = GlobalStudy
         model_instance = model.objects.all()[0]
+        old_mod_time = model_instance.modified
         source_db_table_name = 'global_study'
         field_to_update = 'name'
         new_value = 'asdfghjkl'
@@ -992,12 +991,11 @@ class UpdateModelsTest(VisitTestDataTestCase):
         model_instance.refresh_from_db()
         # Check that modified date > created date, and name is set to new value.
         self.assertEqual(new_value, getattr(model_instance, 'i_'+field_to_update))
-        self.assertTrue(model_instance.modified > t1)
+        self.assertTrue(model_instance.modified > old_mod_time)
     
     def test_update_study(self):
         """Updates in study are imported."""
         management.call_command('import_db', '--which_db=devel', '--no_backup')
-        t1 = timezone.now() # Save a time to compare to modified date.
         # Close the db connections because change_data_in_table() opens new connections.
         # This does not affect the .cursor and .source_db attributes in other functions.
         self.cursor.close()
@@ -1005,6 +1003,7 @@ class UpdateModelsTest(VisitTestDataTestCase):
         
         model = Study
         model_instance = model.objects.all()[0]
+        old_mod_time = model_instance.modified
         source_db_table_name = 'study'
         field_to_update = 'study_name'
         new_value = 'asdfghjkl'
@@ -1015,12 +1014,11 @@ class UpdateModelsTest(VisitTestDataTestCase):
         model_instance.refresh_from_db()
         # Check that modified date > created date, and name is set to new value.
         self.assertEqual(new_value, getattr(model_instance, 'i_'+field_to_update))
-        self.assertTrue(model_instance.modified > t1)
+        self.assertTrue(model_instance.modified > old_mod_time)
 
     def test_update_source_study_version(self):
         """Updates in source_study_version are imported."""
         management.call_command('import_db', '--which_db=devel', '--no_backup')
-        t1 = timezone.now() # Save a time to compare to modified date.
         # Close the db connections because change_data_in_table() opens new connections.
         # This does not affect the .cursor and .source_db attributes in other functions.
         self.cursor.close()
@@ -1028,6 +1026,7 @@ class UpdateModelsTest(VisitTestDataTestCase):
         
         model = SourceStudyVersion
         model_instance = model.objects.all()[0]
+        old_mod_time = model_instance.modified
         source_db_table_name = 'source_study_version'
         field_to_update = 'is_deprecated'
         new_value = not getattr(model_instance, 'i_'+field_to_update)
@@ -1038,12 +1037,11 @@ class UpdateModelsTest(VisitTestDataTestCase):
         model_instance.refresh_from_db()
         # Check that modified date > created date, and name is set to new value.
         self.assertEqual(new_value, getattr(model_instance, 'i_'+field_to_update))
-        self.assertTrue(model_instance.modified > t1)
+        self.assertTrue(model_instance.modified > old_mod_time)
 
     def test_update_source_dataset(self):
         """Updates in source_dataset table are imported."""
         management.call_command('import_db', '--which_db=devel', '--no_backup')
-        t1 = timezone.now() # Save a time to compare to modified date.
         # Close the db connections because change_data_in_table() opens new connections.
         # This does not affect the .cursor and .source_db attributes in other functions.
         self.cursor.close()
@@ -1051,6 +1049,7 @@ class UpdateModelsTest(VisitTestDataTestCase):
         
         model = SourceDataset
         model_instance = model.objects.all()[0]
+        old_mod_time = model_instance.modified
         source_db_table_name = 'source_dataset'
         field_to_update = 'visit_code'
         new_value = 'one_visit_per_file'
@@ -1061,12 +1060,11 @@ class UpdateModelsTest(VisitTestDataTestCase):
         model_instance.refresh_from_db()
         # Check that modified date > created date, and name is set to new value.
         self.assertEqual(new_value, getattr(model_instance, 'i_'+field_to_update))
-        self.assertTrue(model_instance.modified > t1)
+        self.assertTrue(model_instance.modified > old_mod_time)
 
     def test_update_source_trait(self):
         """Updates in source_trait table are imported."""
         management.call_command('import_db', '--which_db=devel', '--no_backup')
-        t1 = timezone.now() # Save a time to compare to modified date.
         # Close the db connections because change_data_in_table() opens new connections.
         # This does not affect the .cursor and .source_db attributes in other functions.
         self.cursor.close()
@@ -1074,6 +1072,7 @@ class UpdateModelsTest(VisitTestDataTestCase):
         
         model = SourceTrait
         model_instance = model.objects.all()[0]
+        old_mod_time = model_instance.modified
         source_db_table_name = 'source_trait'
         field_to_update = 'dcc_description'
         new_value = 'asdfghjkl'
@@ -1084,12 +1083,11 @@ class UpdateModelsTest(VisitTestDataTestCase):
         model_instance.refresh_from_db()
         # Check that modified date > created date, and name is set to new value.
         self.assertEqual(new_value, getattr(model_instance, 'i_description'))
-        self.assertTrue(model_instance.modified > t1)
+        self.assertTrue(model_instance.modified > old_mod_time)
 
     def test_update_subcohort(self):
         """Updates in subcohort are imported."""
         management.call_command('import_db', '--which_db=devel', '--no_backup')
-        t1 = timezone.now() # Save a time to compare to modified date.
         # Close the db connections because change_data_in_table() opens new connections.
         # This does not affect the .cursor and .source_db attributes in other functions.
         self.cursor.close()
@@ -1097,6 +1095,7 @@ class UpdateModelsTest(VisitTestDataTestCase):
         
         model = Subcohort
         model_instance = model.objects.all()[0]
+        old_mod_time = model_instance.modified
         source_db_table_name = 'subcohort'
         field_to_update = 'name'
         new_value = 'asdfghjkl'
@@ -1107,12 +1106,11 @@ class UpdateModelsTest(VisitTestDataTestCase):
         model_instance.refresh_from_db()
         # Check that modified date > created date, and name is set to new value.
         self.assertEqual(new_value, getattr(model_instance, 'i_'+field_to_update))
-        self.assertTrue(model_instance.modified > t1)
+        self.assertTrue(model_instance.modified > old_mod_time)
 
     def test_update_source_trait_encoded_value(self):
         """Updates in source_trait_encoded_values are imported."""
         management.call_command('import_db', '--which_db=devel', '--no_backup')
-        t1 = timezone.now() # Save a time to compare to modified date.
         # Close the db connections because change_data_in_table() opens new connections.
         # This does not affect the .cursor and .source_db attributes in other functions.
         self.cursor.close()
@@ -1120,6 +1118,7 @@ class UpdateModelsTest(VisitTestDataTestCase):
         
         model = SourceTraitEncodedValue
         model_instance = model.objects.all()[0]
+        old_mod_time = model_instance.modified
         source_db_table_name = 'source_trait_encoded_values'
         field_to_update = 'value'
         new_value = 'asdfghjkl'
@@ -1130,13 +1129,12 @@ class UpdateModelsTest(VisitTestDataTestCase):
         model_instance.refresh_from_db()
         # Check that modified date > created date, and name is set to new value.
         self.assertEqual(new_value, getattr(model_instance, 'i_'+field_to_update))
-        self.assertTrue(model_instance.modified > t1)
+        self.assertTrue(model_instance.modified > old_mod_time)
 
     # Harmonized trait updates.
     def test_update_harmonized_trait_set(self):
         """Updates to harmonized_trait_set are imported."""
         management.call_command('import_db', '--which_db=devel', '--no_backup')
-        t1 = timezone.now() # Save a time to compare to modified date.
         # Close the db connections because change_data_in_table() opens new connections.
         # This does not affect the .cursor and .source_db attributes in other functions.
         self.cursor.close()
@@ -1144,6 +1142,7 @@ class UpdateModelsTest(VisitTestDataTestCase):
         
         model = HarmonizedTraitSet
         model_instance = model.objects.all()[0]
+        old_mod_time = model_instance.modified
         source_db_table_name = 'harmonized_trait_set'
         field_to_update = 'description'
         new_value = 'asdfghjkl'
@@ -1154,12 +1153,11 @@ class UpdateModelsTest(VisitTestDataTestCase):
         model_instance.refresh_from_db()
         # Check that modified date > created date, and name is set to new value.
         self.assertEqual(new_value, getattr(model_instance, 'i_'+field_to_update))
-        self.assertTrue(model_instance.modified > t1)
+        self.assertTrue(model_instance.modified > old_mod_time)
 
     def test_update_harmonized_trait(self):
         """Updates to harmonized_trait are imported."""
         management.call_command('import_db', '--which_db=devel', '--no_backup')
-        t1 = timezone.now() # Save a time to compare to modified date.
         # Close the db connections because change_data_in_table() opens new connections.
         # This does not affect the .cursor and .source_db attributes in other functions.
         self.cursor.close()
@@ -1167,6 +1165,7 @@ class UpdateModelsTest(VisitTestDataTestCase):
         
         model = HarmonizedTrait
         model_instance = model.objects.all()[0]
+        old_mod_time = model_instance.modified
         source_db_table_name = 'harmonized_trait'
         field_to_update = 'description'
         new_value = 'asdfghjkl'
@@ -1177,12 +1176,11 @@ class UpdateModelsTest(VisitTestDataTestCase):
         model_instance.refresh_from_db()
         # Check that modified date > created date, and name is set to new value.
         self.assertEqual(new_value, getattr(model_instance, 'i_description'))
-        self.assertTrue(model_instance.modified > t1)
+        self.assertTrue(model_instance.modified > old_mod_time)
 
     def test_update_harmonization_unit(self):
         """Updates to harmonization_unit are imported."""
         management.call_command('import_db', '--which_db=devel', '--no_backup')
-        t1 = timezone.now() # Save a time to compare to modified date.
         # Close the db connections because change_data_in_table() opens new connections.
         # This does not affect the .cursor and .source_db attributes in other functions.
         self.cursor.close()
@@ -1190,6 +1188,7 @@ class UpdateModelsTest(VisitTestDataTestCase):
         
         model = HarmonizationUnit
         model_instance = model.objects.all()[0]
+        old_mod_time = model_instance.modified
         source_db_table_name = 'harmonization_unit'
         field_to_update = 'tag'
         new_value = 'asdfghjkl'
@@ -1200,12 +1199,11 @@ class UpdateModelsTest(VisitTestDataTestCase):
         model_instance.refresh_from_db()
         # Check that modified date > created date, and name is set to new value.
         self.assertEqual(new_value, getattr(model_instance, 'i_'+field_to_update))
-        self.assertTrue(model_instance.modified > t1)
+        self.assertTrue(model_instance.modified > old_mod_time)
         
     def test_update_harmonized_trait_encoded_value(self):
         """Updates to harmonized_trait_encoded_values are imported."""
         management.call_command('import_db', '--which_db=devel', '--no_backup')
-        t1 = timezone.now() # Save a time to compare to modified date.
         # Close the db connections because change_data_in_table() opens new connections.
         # This does not affect the .cursor and .source_db attributes in other functions.
         self.cursor.close()
@@ -1213,6 +1211,7 @@ class UpdateModelsTest(VisitTestDataTestCase):
         
         model = HarmonizedTraitEncodedValue
         model_instance = model.objects.all()[0]
+        old_mod_time = model_instance.modified
         source_db_table_name = 'harmonized_trait_encoded_values'
         field_to_update = 'value'
         new_value = 'asdfghjkl'
@@ -1223,7 +1222,7 @@ class UpdateModelsTest(VisitTestDataTestCase):
         model_instance.refresh_from_db()
         # Check that modified date > created date, and name is set to new value.
         self.assertEqual(new_value, getattr(model_instance, 'i_'+field_to_update))
-        self.assertTrue(model_instance.modified > t1)
+        self.assertTrue(model_instance.modified > old_mod_time)
 
     # M2M link updates.
     def test_update_added_source_dataset_subcohorts(self):
@@ -1518,7 +1517,6 @@ class ImportNoUpdateTest(VisitTestDataTestCase):
     def test_no_update_on_import_global_study(self):
         """Updates in global_study are not imported with --import_only."""
         management.call_command('import_db', '--which_db=devel', '--no_backup')
-        t1 = timezone.now() # Save a time to compare to modified date.
         # Close the db connections because change_data_in_table() opens new connections.
         # This does not affect the .cursor and .source_db attributes in other functions.
         self.cursor.close()
@@ -1526,6 +1524,7 @@ class ImportNoUpdateTest(VisitTestDataTestCase):
         
         model = GlobalStudy
         model_instance = model.objects.all()[0]
+        old_mod_time = model_instance.modified
         source_db_table_name = 'global_study'
         field_to_update = 'name'
         new_value = 'asdfghjkl'
@@ -1536,12 +1535,11 @@ class ImportNoUpdateTest(VisitTestDataTestCase):
         model_instance.refresh_from_db()
         # Check that modified date > created date, and name is set to new value.
         self.assertNotEqual(new_value, getattr(model_instance, 'i_'+field_to_update))
-        self.assertFalse(model_instance.modified > t1)
+        self.assertFalse(model_instance.modified > old_mod_time)
     
     def test_no_update_on_import_study(self):
         """Updates in study are not imported with --import_only."""
         management.call_command('import_db', '--which_db=devel', '--no_backup')
-        t1 = timezone.now() # Save a time to compare to modified date.
         # Close the db connections because change_data_in_table() opens new connections.
         # This does not affect the .cursor and .source_db attributes in other functions.
         self.cursor.close()
@@ -1549,6 +1547,7 @@ class ImportNoUpdateTest(VisitTestDataTestCase):
         
         model = Study
         model_instance = model.objects.all()[0]
+        old_mod_time = model_instance.modified
         source_db_table_name = 'study'
         field_to_update = 'study_name'
         new_value = 'asdfghjkl'
@@ -1559,12 +1558,11 @@ class ImportNoUpdateTest(VisitTestDataTestCase):
         model_instance.refresh_from_db()
         # Check that modified date > created date, and name is set to new value.
         self.assertNotEqual(new_value, getattr(model_instance, 'i_'+field_to_update))
-        self.assertFalse(model_instance.modified > t1)
+        self.assertFalse(model_instance.modified > old_mod_time)
 
     def test_no_update_on_import_source_study_version(self):
         """Updates in source_study_version are not imported with --import_only."""
         management.call_command('import_db', '--which_db=devel', '--no_backup')
-        t1 = timezone.now() # Save a time to compare to modified date.
         # Close the db connections because change_data_in_table() opens new connections.
         # This does not affect the .cursor and .source_db attributes in other functions.
         self.cursor.close()
@@ -1572,6 +1570,7 @@ class ImportNoUpdateTest(VisitTestDataTestCase):
         
         model = SourceStudyVersion
         model_instance = model.objects.all()[0]
+        old_mod_time = model_instance.modified
         source_db_table_name = 'source_study_version'
         field_to_update = 'is_deprecated'
         new_value = not getattr(model_instance, 'i_'+field_to_update)
@@ -1582,12 +1581,11 @@ class ImportNoUpdateTest(VisitTestDataTestCase):
         model_instance.refresh_from_db()
         # Check that modified date > created date, and name is set to new value.
         self.assertNotEqual(new_value, getattr(model_instance, 'i_'+field_to_update))
-        self.assertFalse(model_instance.modified > t1)
+        self.assertFalse(model_instance.modified > old_mod_time)
 
     def test_no_update_on_import_source_dataset(self):
         """Updates in source_dataset are not imported with --import_only."""
         management.call_command('import_db', '--which_db=devel', '--no_backup')
-        t1 = timezone.now() # Save a time to compare to modified date.
         # Close the db connections because change_data_in_table() opens new connections.
         # This does not affect the .cursor and .source_db attributes in other functions.
         self.cursor.close()
@@ -1595,6 +1593,7 @@ class ImportNoUpdateTest(VisitTestDataTestCase):
         
         model = SourceDataset
         model_instance = model.objects.all()[0]
+        old_mod_time = model_instance.modified
         source_db_table_name = 'source_dataset'
         field_to_update = 'visit_code'
         new_value = 'one_visit_per_file'
@@ -1605,12 +1604,11 @@ class ImportNoUpdateTest(VisitTestDataTestCase):
         model_instance.refresh_from_db()
         # Check that modified date > created date, and name is set to new value.
         self.assertNotEqual(new_value, getattr(model_instance, 'i_'+field_to_update))
-        self.assertFalse(model_instance.modified > t1)
+        self.assertFalse(model_instance.modified > old_mod_time)
 
     def test_no_update_on_import_source_trait(self):
         """Updates in source_trait are not imported with --import_only."""
         management.call_command('import_db', '--which_db=devel', '--no_backup')
-        t1 = timezone.now() # Save a time to compare to modified date.
         # Close the db connections because change_data_in_table() opens new connections.
         # This does not affect the .cursor and .source_db attributes in other functions.
         self.cursor.close()
@@ -1618,6 +1616,7 @@ class ImportNoUpdateTest(VisitTestDataTestCase):
         
         model = SourceTrait
         model_instance = model.objects.all()[0]
+        old_mod_time = model_instance.modified
         source_db_table_name = 'source_trait'
         field_to_update = 'dcc_description'
         new_value = 'asdfghjkl'
@@ -1628,12 +1627,11 @@ class ImportNoUpdateTest(VisitTestDataTestCase):
         model_instance.refresh_from_db()
         # Check that modified date > created date, and name is set to new value.
         self.assertNotEqual(new_value, getattr(model_instance, 'i_description'))
-        self.assertFalse(model_instance.modified > t1)
+        self.assertFalse(model_instance.modified > old_mod_time)
 
     def test_no_update_on_import_subcohort(self):
         """Updates in subcohort are not imported with --import_only."""
         management.call_command('import_db', '--which_db=devel', '--no_backup')
-        t1 = timezone.now() # Save a time to compare to modified date.
         # Close the db connections because change_data_in_table() opens new connections.
         # This does not affect the .cursor and .source_db attributes in other functions.
         self.cursor.close()
@@ -1641,6 +1639,7 @@ class ImportNoUpdateTest(VisitTestDataTestCase):
         
         model = Subcohort
         model_instance = model.objects.all()[0]
+        old_mod_time = model_instance.modified
         source_db_table_name = 'subcohort'
         field_to_update = 'name'
         new_value = 'asdfghjkl'
@@ -1651,12 +1650,11 @@ class ImportNoUpdateTest(VisitTestDataTestCase):
         model_instance.refresh_from_db()
         # Check that modified date > created date, and name is set to new value.
         self.assertNotEqual(new_value, getattr(model_instance, 'i_'+field_to_update))
-        self.assertFalse(model_instance.modified > t1)
+        self.assertFalse(model_instance.modified > old_mod_time)
 
     def test_no_update_on_import_source_trait_encoded_value(self):
         """Updates in source_trait_encoded_values are not imported with --import_only."""
         management.call_command('import_db', '--which_db=devel', '--no_backup')
-        t1 = timezone.now() # Save a time to compare to modified date.
         # Close the db connections because change_data_in_table() opens new connections.
         # This does not affect the .cursor and .source_db attributes in other functions.
         self.cursor.close()
@@ -1664,6 +1662,7 @@ class ImportNoUpdateTest(VisitTestDataTestCase):
         
         model = SourceTraitEncodedValue
         model_instance = model.objects.all()[0]
+        old_mod_time = model_instance.modified
         source_db_table_name = 'source_trait_encoded_values'
         field_to_update = 'value'
         new_value = 'asdfghjkl'
@@ -1674,7 +1673,7 @@ class ImportNoUpdateTest(VisitTestDataTestCase):
         model_instance.refresh_from_db()
         # Check that modified date > created date, and name is set to new value.
         self.assertNotEqual(new_value, getattr(model_instance, 'i_'+field_to_update))
-        self.assertFalse(model_instance.modified > t1)
+        self.assertFalse(model_instance.modified > old_mod_time)
 
     def test_no_update_on_import_added_source_dataset_subcohorts(self):
         """A new subcohort link to an existing source dataset is imported after an update."""
@@ -1739,7 +1738,6 @@ class ImportNoUpdateTest(VisitTestDataTestCase):
     def test_no_update_on_import_harmonized_trait_set(self):
         """Updates in harmonized_trait_set are not imported with --import_only."""
         management.call_command('import_db', '--which_db=devel', '--no_backup')
-        t1 = timezone.now() # Save a time to compare to modified date.
         # Close the db connections because change_data_in_table() opens new connections.
         # This does not affect the .cursor and .source_db attributes in other functions.
         self.cursor.close()
@@ -1747,6 +1745,7 @@ class ImportNoUpdateTest(VisitTestDataTestCase):
         
         model = HarmonizedTraitSet
         model_instance = model.objects.all()[0]
+        old_mod_time = model_instance.modified
         source_db_table_name = 'harmonized_trait_set'
         field_to_update = 'description'
         new_value = 'asdfghjkl'
@@ -1757,12 +1756,11 @@ class ImportNoUpdateTest(VisitTestDataTestCase):
         model_instance.refresh_from_db()
         # Check that modified date > created date, and name is set to new value.
         self.assertNotEqual(new_value, getattr(model_instance, 'i_'+field_to_update))
-        self.assertFalse(model_instance.modified > t1)
+        self.assertFalse(model_instance.modified > old_mod_time)
 
     def test_no_update_on_import_harmonized_trait(self):
         """Updates in harmonized_trait are not imported with --import_only."""
         management.call_command('import_db', '--which_db=devel', '--no_backup')
-        t1 = timezone.now() # Save a time to compare to modified date.
         # Close the db connections because change_data_in_table() opens new connections.
         # This does not affect the .cursor and .source_db attributes in other functions.
         self.cursor.close()
@@ -1770,6 +1768,7 @@ class ImportNoUpdateTest(VisitTestDataTestCase):
         
         model = HarmonizedTrait
         model_instance = model.objects.all()[0]
+        old_mod_time = model_instance.modified
         source_db_table_name = 'harmonized_trait'
         field_to_update = 'description'
         new_value = 'asdfghjkl'
@@ -1780,12 +1779,11 @@ class ImportNoUpdateTest(VisitTestDataTestCase):
         model_instance.refresh_from_db()
         # Check that modified date > created date, and name is set to new value.
         self.assertNotEqual(new_value, getattr(model_instance, 'i_description'))
-        self.assertFalse(model_instance.modified > t1)
+        self.assertFalse(model_instance.modified > old_mod_time)
 
     def test_no_update_on_import_harmonized_trait_encoded_value(self):
         """Updates in harmonized_trait_encoded_values are not imported with --import_only."""
         management.call_command('import_db', '--which_db=devel', '--no_backup')
-        t1 = timezone.now() # Save a time to compare to modified date.
         # Close the db connections because change_data_in_table() opens new connections.
         # This does not affect the .cursor and .source_db attributes in other functions.
         self.cursor.close()
@@ -1793,6 +1791,7 @@ class ImportNoUpdateTest(VisitTestDataTestCase):
         
         model = HarmonizedTraitEncodedValue
         model_instance = model.objects.all()[0]
+        old_mod_time = model_instance.modified
         source_db_table_name = 'harmonized_trait_encoded_values'
         field_to_update = 'value'
         new_value = 'asdfghjkl'
@@ -1803,7 +1802,7 @@ class ImportNoUpdateTest(VisitTestDataTestCase):
         model_instance.refresh_from_db()
         # Check that modified date > created date, and name is set to new value.
         self.assertNotEqual(new_value, getattr(model_instance, 'i_'+field_to_update))
-        self.assertFalse(model_instance.modified > t1)
+        self.assertFalse(model_instance.modified > old_mod_time)
 
     def test_no_update_on_import_component_source_traits(self):
         """A new component source trait link to an existing harmonized trait is imported."""
@@ -1975,7 +1974,7 @@ class IntegrationTest(VisitTestDataTestCase):
         # This test is largely just all of the methods from UpdateModelsTestCase all put together.
         # Initial call of the import command.
         management.call_command('import_db', '--which_db=devel', '--no_backup')
-        t1 = timezone.now() # Save a time to compare to modified date.
+        t1 = timezone.now()
         new_value = 'asdfghjkl' # Use this value to reset things in multiple models.
         # Close the db connections because change_data_in_table() opens new connections.
         # This does not affect the .cursor and .source_db attributes in other functions.
@@ -2158,7 +2157,6 @@ class IntegrationTest(VisitTestDataTestCase):
         self.source_db.close()
         
         ## Make updates of every kind in the devel db.
-        t1 = timezone.now() # Save a time to compare to modified date.
         new_value = 'asdfghjkl' # Use this value to reset things in multiple models.
         # Update the global study table.
         global_study = GlobalStudy.objects.all()[0]
