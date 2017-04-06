@@ -2006,6 +2006,7 @@ class IntegrationTest(VisitTestDataTestCase):
         self.source_db.close()
         # Update the global study table.
         global_study = GlobalStudy.objects.all()[0]
+        sleep(1)
         change_data_in_table('global_study', 'name', new_value, global_study._meta.pk.name.replace('i_', ''), global_study.pk)
         # Update the study table.
         study = Study.objects.all()[0]
