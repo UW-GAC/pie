@@ -342,6 +342,28 @@ class UnitRecipeFormTestCase(TestCase):
         self.assertFalse(form.has_error('phenotype_variables'))
         self.assertTrue(form.is_valid())
 
+    def test_form_with_harmonized_and_unharmonized_phenotype_variables_is_invalid(self):
+        """Form is invalid when given harmonized phenotype variables, but some of the source trait variables."""
+        harmonized_trait = HarmonizedTraitFactory.create()
+        source_traits = SourceTraitFactory.create_batch(3, source_dataset__source_study_version__study__global_study__i_id=1)
+        input = {'name': 'Only one unit here.',
+                 'instructions': 'Do something to combine these variables',
+                 'harmonized_phenotype_variables': [str(harmonized_trait.pk), ] ,
+                 'age_variables': [str(source_traits[0].pk), ] ,
+                 'batch_variables': [str(source_traits[0].pk), ] ,
+                 'phenotype_variables': [str(source_traits[2].pk), ] ,
+                 'type': UnitRecipe.OTHER,
+                 }
+        form = UnitRecipeForm(input)
+        # Usually form.user is added by a mixin on the View, but have to add it manually here.
+        user = UserFactory.create()
+        form.user = user
+        self.assertTrue(form.has_error('phenotype_variables'))
+        self.assertTrue(form.has_error('age_variables'))
+        self.assertTrue(form.has_error('batch_variables'))
+        self.assertTrue(form.has_error('harmonized_phenotype_variables'))
+        self.assertFalse(form.is_valid())
+
 
 class HarmonizationRecipeFormTestCase(TestCase):
     
