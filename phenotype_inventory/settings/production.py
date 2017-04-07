@@ -30,7 +30,7 @@ from .staging import *
 
 # DEBUG SETTINGS
 DEBUG = False
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['topmedphenotypes.org']
 
 
 # DATABASE SETTINGS
@@ -42,10 +42,13 @@ DATABASES = {
         'PASSWORD': get_secret('DB_PASS'),
         'HOST': get_secret('DB_HOST'),
         'PORT': get_secret('DB_PORT'),
+        'ATOMIC_REQUESTS': True, 
     }
 }
 
 
 # STATIC FILE SETTINGS
 # TODO: change the path for the static files for deployment.
-STATIC_ROOT = '/var/django/topmed_pheno_site/static_collected/'
+STATIC_ROOT = '/var/django/phenotype_inventory_static'
+# URL prefix for static files.
+STATIC_URL = '/static/'

@@ -3,9 +3,9 @@
 from django.test import TestCase
 from django.core.urlresolvers import reverse
 
-from .forms import SourceTraitCrispySearchForm
-from .factories import StudyFactory, SourceTraitFactory
-from .models import Study
+from .forms import *
+from .factories import *
+from .models import *
 
 
 class SourceTraitCrispySearchFormTestCase(TestCase):
@@ -19,7 +19,7 @@ class SourceTraitCrispySearchFormTestCase(TestCase):
     def test_form_with_valid_text_and_one_study(self):
         """Test that the form is valid when given valid search text and one valid study."""
         studies = StudyFactory.create_batch(10)
-        input = {'text': 'some_string', 'study': [studies[0].study_id]}
+        input = {'text': 'some_string', 'study': [studies[0].pk]}
         form = SourceTraitCrispySearchForm(input)
         self.assertTrue(form.is_valid())
     
@@ -28,7 +28,7 @@ class SourceTraitCrispySearchFormTestCase(TestCase):
         studies = StudyFactory.create_batch(10)
         input = {
             'text': 'some_string',
-            'study': [studies[0].study_id, studies[3].study_id]
+            'study': [studies[0].pk, studies[3].pk]
         }
         form = SourceTraitCrispySearchForm(input)
         self.assertTrue(form.is_valid())
@@ -38,7 +38,7 @@ class SourceTraitCrispySearchFormTestCase(TestCase):
         studies = StudyFactory.create_batch(10)
         input = {
             'text': '',
-            'study': [studies[0].study_id, studies[3].study_id]
+            'study': [studies[0].pk, studies[3].pk]
         }
         form = SourceTraitCrispySearchForm(input)
         self.assertFalse(form.is_valid())
@@ -71,10 +71,10 @@ class SourceTraitCrispySearchFormTestCase(TestCase):
         """Test that the form has an error on the study field when given an invalid study name"""
         traits = SourceTraitFactory.create_batch(5)
         studies = Study.objects.all()
-        study_ids = [st.study_id for st in studies]
+        study_ids = [st.pk for st in studies]
         # Get the first study id from 1-100 that is not in the valid studies
         bad_study_id = [n for n in range(1, 101) if n not in study_ids][0]
-        input = {'text': traits[0].name, 'study': [bad_study_id]}
+        input = {'text': traits[0].i_trait_name, 'study': [bad_study_id]}
         form = SourceTraitCrispySearchForm(input)
         form.is_valid()
         self.assertTrue(form.has_error('study'))
@@ -84,5 +84,5 @@ class SourceTraitCrispySearchFormTestCase(TestCase):
         studies = StudyFactory.create_batch(5)
         input = {'text': 'some_string'}
         form = SourceTraitCrispySearchForm(input)
-        current_studies = [[st.pk, st.name] for st in Study.objects.all().order_by('name')]
+        current_studies = [[st.pk, st.i_study_name] for st in Study.objects.all().order_by('i_study_name')]
         self.assertEqual(current_studies, form.STUDIES)

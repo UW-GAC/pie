@@ -22,6 +22,7 @@ Custom Constants:
 """
 
 import os
+from socket import gethostname
 
 # Normally you should not import ANYTHING from Django directly
 # into your settings, but ImproperlyConfigured is an exception
@@ -107,6 +108,7 @@ TEMPLATES = [
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
+                'phenotype_inventory.context_processors.site',
                 'django.template.context_processors.debug',
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
@@ -115,6 +117,14 @@ TEMPLATES = [
         },
     },
 ]
+
+# Change the message tag name to match the bootstrap alert class name.
+from django.contrib.messages import constants as message_constants
+MESSAGE_TAGS = {message_constants.DEBUG: 'alert-debug',
+                message_constants.INFO: 'alert-info',
+                message_constants.SUCCESS: 'alert-success',
+                message_constants.WARNING: 'alert-warning',
+                message_constants.ERROR: 'alert-danger',}
 
 
 # MIDDLEWARE SETTINGS
@@ -132,6 +142,10 @@ MIDDLEWARE_CLASSES = (
 
 # APP SETTINGS
 INSTALLED_APPS = (
+    # django-autocomplete-light, which must be loaded BEFORE django.contrib.admin
+    'dal',
+    'dal_select2',
+    'django_admin_bootstrapped',
     # Built-in apps.
     'django.contrib.admin',
     'django.contrib.auth',
@@ -145,18 +159,37 @@ INSTALLED_APPS = (
     # 3rd party apps.
     'django_tables2',    # https://github.com/bradleyayers/django-tables2
     'crispy_forms',    # https://github.com/maraujop/django-crispy-forms
+    'django_extensions',    # https://github.com/django-extensions/django-extensions
+    'authtools',    # https://django-authtools.readthedocs.io/en/latest/index.html
+    'dbbackup',    # https://github.com/django-dbbackup/django-dbbackup
     # Our custom apps.
     'trait_browser',    # Handles table-based viewing and searching of trait data.
-    'core',    # Handles data migrations for built-in apps (e.g. sites).
+    'core',    # Code used across the project, and data migrations for built-in apps (e.g. sites).
+    'profiles',    # Handles profile data for users interacting with the site.
+    'recipes',
 )
 
 
 # URL SETTINGS
 ROOT_URLCONF = '%s.urls' % SITE_NAME
+LOGIN_URL = 'login'
+LOGIN_REDIRECT_URL = 'home'
 
 
-# APP-SPECIFIC SETTINGS
+# THIRD PARTY APP SETTINGS
 # django.contrib.sites SETTINGS variables.
 SITE_ID = 1
 # crispy_forms SETTINGS variables.
 CRISPY_TEMPLATE_PACK = 'bootstrap3'
+# dbbackup
+DBBACKUP_STORAGE = 'django.core.files.storage.FileSystemStorage'
+DBBACKUP_STORAGE_OPTIONS = {'location': SITE_ROOT + '/../phenotype_inventory_db_backups'}
+DBBACKUP_CLEANUP_KEEP = 10
+
+# USER AUTHENTICATION SETTINGS
+AUTH_USER_MODEL = 'authtools.User'
+
+
+# PROJECT SETTINGS
+GAC_WEBSERVERS = ['modu', 'gcc-pc-004', ]
+DEVELOPMENT = not (gethostname() in GAC_WEBSERVERS)

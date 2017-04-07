@@ -15,18 +15,20 @@ Including another URLconf
 '''
 
 from django.conf.urls import include, url
-from django.views.generic import TemplateView # for static pages
 from django.contrib import admin
+from django.views.generic import TemplateView # for static pages
 
 
 urlpatterns = [
-    url(r'^home/', TemplateView.as_view(template_name="home.html"), name='home'),    # static home page
-    url(r'^about/', TemplateView.as_view(template_name="about.html"), name='about'),    # static home page
-    url(r'^contact/', TemplateView.as_view(template_name="contact.html"), name='contact'),    # static home page
+    url(r'^$', TemplateView.as_view(template_name="home.html"), name='home'),    # static home page
+    url(r'^about/$', TemplateView.as_view(template_name="about.html"), name='about'),    # static home page
+    url(r'^contact/$', TemplateView.as_view(template_name="contact.html"), name='contact'),    # static home page
     url(r'^pages/', include('django.contrib.flatpages.urls')),    # Flat pages 
     url(r'^admin/', include(admin.site.urls)),    # Admin interface
-    url(r'^trait_browser/', include('trait_browser.urls')),    # Trait browser app
+    url(r'^phenotypes/', include('trait_browser.urls', namespace='trait_browser')),    # Trait browser app
+    url('^', include('django.contrib.auth.urls')), # authentication views
+    url(r'^profile/', include('profiles.urls', namespace='profiles')),    # relating to user accounts
+    url(r'^recipe/', include('recipes.urls', namespace='recipes')),    # Recipes app
+    url(r'^auth/', include('authtools.urls')),
 ]
 
-# Set the name for the admin site.
-admin.site.site_header = 'NHLBI TOPMed Phenotype Inventory Administration'

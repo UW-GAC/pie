@@ -19,18 +19,14 @@ body {
   color: #aaaaaa;
 }
 
-/* home page glyphicons */
-.glyphicon-home {
-    font-size: 150px;
-    opacity: 0.4;
+/* Homepage div hover/non-hover classes */
+.action-home {
+    opacity: 0.6;
 }
 
-.glyphicon-disabled {
-    color: gray;
-}
-
-.glyphicon-disabled:hover {
-    opacity: 0.4;
+.action-home a {
+    color: #000000;
+    text-decoration: none;
 }
 
 .jumbotron {
@@ -153,4 +149,54 @@ body {
   left: auto;
   transform: rotate(-45deg);
   -webkit-transform: rotate(-45deg);
+}
+
+/* This is a fix to keep the navbar from covering up body content */
+/* See this SO answer http://stackoverflow.com/a/11124805/2548371 */
+body { padding-top: 100px; }
+@media screen and (max-width: 768px) {
+    body { padding-top: 120px; }
+}
+
+/* Add padding above the sticky footer. */
+body { padding-bottom: 100px; }
+
+/* Sticky footer styles
+-------------------------------------------------- */
+html {
+  position: relative;
+  min-height: 100%;
+}
+body {
+  /* Margin bottom by footer height */
+  margin-bottom: 60px;
+}
+
+.footer {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  /* Set the fixed height of the footer here */
+  height: 140px;
+  /* Set the background to the gradient used in navbar-inverse */
+  background-image: -webkit-linear-gradient(top, #3c3c3c 0%, #222 100%);
+  background-image:      -o-linear-gradient(top, #3c3c3c 0%, #222 100%);
+  background-image: -webkit-gradient(linear, left top, left bottom, from(#3c3c3c), to(#222));
+  background-image:         linear-gradient(to bottom, #3c3c3c 0%, #222 100%);
+  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#ff3c3c3c', endColorstr='#ff222222', GradientType=0);
+  filter: progid:DXImageTransform.Microsoft.gradient(enabled = false);
+  background-repeat: repeat-x;
+  color: #E5E5E5;
+  text-shadow: 0 -1px 0 rgba(0, 0, 0, .25);
+}
+
+/* Set link color in the footer */
+.footer a {
+    /*color: #a0a0a0;*/
+    color: #E5E5E5;
+}
+
+/* Set hover color for table-hover */
+.table-hover tbody tr:hover td, .table-hover tbody tr:hover th {
+  background-color: #D9EDF7;
 }

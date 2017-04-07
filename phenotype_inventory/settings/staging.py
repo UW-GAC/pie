@@ -88,6 +88,7 @@ DATABASES = {
         'PASSWORD': get_secret('DB_PASS'),
         'HOST': get_secret('DB_HOST'),
         'PORT': get_secret('DB_PORT'),
+        'ATOMIC_REQUESTS': True, 
     }
 }
 
@@ -100,3 +101,13 @@ STATIC_URL = '/pheno/static/'
 
 # WSGI SETTINGS FOR APACHE MOD_WSGI
 WSGI_APPLICATION = '%s.wsgi.application' % SITE_NAME
+
+
+# EMAIL SETTINGS
+EMAIL_USE_SSL = True
+EMAIL_HOST = get_secret('EMAIL_HOST')
+EMAIL_PORT =   get_secret('EMAIL_PORT')
+EMAIL_HOST_USER = get_secret('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = get_secret('EMAIL_HOST_PASSWORD')
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+DEFAULT_TO_EMAIL = EMAIL_HOST_USER

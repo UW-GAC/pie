@@ -20,7 +20,7 @@ def add_site_data(apps, schema_editor):
     '''
     Site = apps.get_model('sites', 'Site') # Get the historical Site model
     new_domain = 'topmedphenotypes.org'
-    new_name = 'Startup Organizer'
+    new_name = 'TOPMed PIE'
     site_id = getattr(settings, 'SITE_ID', 1)
     if Site.objects.exists():
         current_site = Site.objects.get(

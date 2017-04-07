@@ -33,13 +33,21 @@
 
     </div>
     
+    {% include 'footer_navbar.html' %}
+
     <!-- Bootstrap core JavaScript
     ================================================== -->
     <!-- Placed at the end of the document so the pages load faster -->
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
     <script src="{% static 'bootstrap/js/bootstrap.min.js' %}"></script>
     <script src="{% static 'js/home.js' %}"></script>
+    {% block custom_javascript %}
+    {% endblock %}
 
     <!--<script src="{% static 'js/.js' %}"></script>-->
+
+    {% block footer %}
+    {% endblock %}
+
   </body>
 </html>
