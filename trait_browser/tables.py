@@ -30,7 +30,7 @@ class SourceTraitTable(tables.Table):
         fields = ('i_trait_name', 'i_description', 'study_name', )
         attrs = {'class': 'table table-striped table-bordered table-hover table-condensed'}
         template = 'trait_browser/bootstrap_tables2.html'
-        order_by = ('i_trait_name', 'study_name', )
+        order_by = ('dbGaP_dataset', 'dbGaP_variable', )
 
 
 class HarmonizedTraitTable(tables.Table):
@@ -42,7 +42,7 @@ class HarmonizedTraitTable(tables.Table):
     """
 
     # Set custom column values that need extra settings.
-    trait_flavor_name = tables.LinkColumn('trait_browser:harmonized:detail', args=[tables.utils.A('harmonized_trait_set.pk')])
+    trait_flavor_name = tables.LinkColumn('trait_browser:harmonized:detail', args=[tables.utils.A('harmonized_trait_set.pk')], verbose_name='Phenotype name')
     i_description = tables.Column('Phenotype description', orderable=False)
     
     class Meta:
