@@ -57,7 +57,7 @@ class Command(BaseCommand):
 
     help ='Import/update data from the source db (topmed_pheno) into the Django models.'
 
-    def _get_source_db(self, which_db, cnf_path=settings.CNF_PATH, permissions='readonly'):
+    def _get_source_db(self, which_db, cnf_path=settings.CNF_PATH, permissions='readonly', just_locking=False):
         """Get a connection to the source phenotype db.
         
         Arguments:
@@ -72,7 +72,7 @@ class Command(BaseCommand):
         """
         if which_db is None:
             raise ValueError('which_db as passed to _get_source_db MUST be set to a valid value ({} is not valid)'.format(which_db))
-        if (which_db == 'test' or which_db == 'production') and (permissions == 'full'):
+        if which_db == 'production' and (permissions == 'full') and not just_locking:
             raise ValueError('Requested full permissions for {} source database. Not allowed!!!')
         # Default is to connect as readonly; only test functions connect as full user.
         cnf_group = ['client', 'mysql_topmed_pheno_{}_{}'.format(permissions, which_db)]
@@ -1254,7 +1254,7 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         """Add custom command line arguments to this management command."""
         parser.add_argument('--which_db', action='store', type=str,
-                            choices=['test', 'devel', 'production'], default=None, required=True,
+                            choices=['devel', 'production'], default=None, required=True,
                             help='Which source database to connect to for retrieving source data.')
         parser.add_argument('--no_backup', action='store_true',
                             help='Do not backup the Django db before running update and import functions. This should only be used for testing purposes.')
@@ -1300,7 +1300,7 @@ class Command(BaseCommand):
         ro_source_db = self._get_source_db(which_db=options.get('which_db'))
         # Get a full-privileges db connection, so that you can lock the tables 
         # to prevent anyone from writing new data to the db during the update/import.
-        full_source_db = self._get_source_db(which_db=options.get('which_db'), permissions='full')
+        full_source_db = self._get_source_db(which_db=options.get('which_db'), permissions='full', just_locking=True)
         self._lock_source_db(full_source_db)
         logger.info('Locked source db against writes from others.')
         # First update, then import new data.

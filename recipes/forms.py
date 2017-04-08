@@ -61,6 +61,17 @@ class UnitRecipeCleanMixin(object):
                     self.add_error('batch_variables', blank_error)
                 self.add_error('phenotype_variables', blank_error)
                 raise forms.ValidationError(study_error)
+        else:
+            both_error = forms.ValidationError(u"Unharmonized phenotypes can't be used along with harmonized phenotypes.")
+            if len(age) > 0:
+                self.add_error('age_variables', both_error)
+                self.add_error('harmonized_phenotype_variables', both_error)
+            if len(batch) > 0:
+                self.add_error('batch_variables', both_error)
+                self.add_error('harmonized_phenotype_variables', both_error)
+            if len(phenotype) > 0:
+                self.add_error('phenotype_variables', both_error)
+                self.add_error('harmonized_phenotype_variables', both_error)
         return cleaned_data
 
 
