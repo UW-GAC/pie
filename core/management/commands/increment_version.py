@@ -66,3 +66,4 @@ class Command(BaseCommand):
         self.increment_version(which=version_type)
         # Save the new version numbers.
         self.save_version_numbers()
+        print('Version', self.get_version_string())
