@@ -14,6 +14,7 @@ Including another URLconf
     2. Add a URL to urlpatterns:  url(r'^blog/', include(blog_urls))
 '''
 
+from django.conf import settings
 from django.conf.urls import include, url
 from django.contrib import admin
 from django.views.generic import TemplateView # for static pages
@@ -32,3 +33,9 @@ urlpatterns = [
     url(r'^auth/', include('authtools.urls')),
 ]
 
+# Include URLs for django-debug-toolbar if DEBUG=True
+if settings.DEBUG:
+    import debug_toolbar
+    urlpatterns = [
+        url(r'^__debug__/', include(debug_toolbar.urls)),
+    ] + urlpatterns
