@@ -116,6 +116,7 @@ class Study(SourceDBTimeStampedModel):
         """Get html for study's name linking to study detail page."""
         return URL_HTML.format(url=self.get_absolute_url(), name=self.i_study_name)
 
+
 class SourceStudyVersion(SourceDBTimeStampedModel):
     """Model for versions of each dbGaP study accession.
     """
@@ -259,12 +260,17 @@ class HarmonizationUnit(SourceDBTimeStampedModel):
     def get_component_html(self):
         """Get html for a panel of component traits for the harmonization unit, with an inline list of included studies if applicable."""
         study_list = '\n'.join([study.get_name_link_html() for study in self.get_source_studies()])
-        study_html = INLINE_LIST_HTML.format(list_title='Included studies', list_elements=study_list)
+        age_list = '\n'.join([trait.get_name_link_html() for trait in self.component_age_traits.all()])
         component_html = '\n'.join([trait.get_component_html(harmonization_unit=self) for trait in self.harmonizedtrait_set.all()])
+        panel_body = []
         if len(study_list) > 0:
-            panel_body = '\n'.join((study_html, component_html))
-        else:
-            panel_body = component_html
+            study_html = INLINE_LIST_HTML.format(list_title='Included studies', list_elements=study_list)
+            panel_body.append(study_html)
+        if len(age_list) > 0:
+            age_html = INLINE_LIST_HTML.format(list_title='Component age variables', list_elements=age_list)
+            panel_body.append(age_html)
+        panel_body.append(component_html)
+        panel_body = '\n'.join(panel_body)
         unit_panel = PANEL_HTML.format(panel_title='Harmonization unit: {}'.format(self.i_tag), panel_body=panel_body)
         return unit_panel
 
