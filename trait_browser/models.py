@@ -18,6 +18,16 @@ from django.core.urlresolvers import reverse
 from core.models import TimeStampedModel
 
 
+INLINE_LIST_HTML = '\n'.join(('<p><strong>{list_title}</strong>',
+    '<ul class="list-inline">{list_elements}</ul>', '</p>'))
+LIST_ELEMENT_HTML = '<li>{element}</li>'
+POPOVER_URL_HTML = '<a href="{url}" data-toggle="popover" data-trigger="hover" data-placement="top" data-content="{popover}">{name}</a>'
+URL_HTML = '<a href="{url}">{name}</a>'
+PANEL_HTML = '\n'.join(('<div class="panel panel-default">',
+    '<div class="panel-heading">', '<h5 class="panel-title">{panel_title}</h5>', '</div>',
+    '<div class="panel-body">{panel_body}', '</div>',
+    '</div>'))
+
 class SourceDBTimeStampedModel(TimeStampedModel):
     """Superclass for models pulled from the source db, with i_date_added and i_date_changed fields.
     """
@@ -102,6 +112,9 @@ class Study(SourceDBTimeStampedModel):
         """Produce a url to initially populate checkboxes in the search page based on the study."""
         return reverse('trait_browser:source:search') + '?study={}'.format(self.i_accession)
 
+    def get_name_link_html(self):
+        """Get html for study's name linking to study detail page."""
+        return URL_HTML.format(url=self.get_absolute_url(), name=self.i_study_name)
 
 class SourceStudyVersion(SourceDBTimeStampedModel):
     """Model for versions of each dbGaP study accession.
@@ -215,6 +228,10 @@ class HarmonizedTraitSet(SourceDBTimeStampedModel):
     def get_trait_names(self):
         """Gets a list of trait_flavor_names for harmonized traits in this trait set."""
         return self.harmonizedtrait_set.values_list('trait_flavor_name', flat=True)
+    
+    def get_component_html(self):
+        """Get html for component traits, in panels by harmonization unit and harmonized trait."""
+        return '\n'.join([hunit.get_component_html() for hunit in self.harmonizationunit_set.all()])
 
 
 class HarmonizationUnit(SourceDBTimeStampedModel):
@@ -238,6 +255,18 @@ class HarmonizationUnit(SourceDBTimeStampedModel):
     def get_source_studies(self):
         """Get a list containing all of the studies linked to component traits for this unit."""
         return list(set([trait.source_dataset.source_study_version.study for trait in self.get_all_source_traits()]))
+
+    def get_component_html(self):
+        """Get html for a panel of component traits for the harmonization unit, with an inline list of included studies if applicable."""
+        study_list = '\n'.join([study.get_name_link_html() for study in self.get_source_studies()])
+        study_html = INLINE_LIST_HTML.format(list_title='Included studies', list_elements=study_list)
+        component_html = '\n'.join([trait.get_component_html(harmonization_unit=self) for trait in self.harmonizedtrait_set.all()])
+        if len(study_list) > 0:
+            panel_body = '\n'.join((study_html, component_html))
+        else:
+            panel_body = component_html
+        unit_panel = PANEL_HTML.format(panel_title='Harmonization unit: {}'.format(self.i_tag), panel_body=panel_body)
+        return unit_panel
 
 
 # Trait models.
@@ -363,6 +392,10 @@ class SourceTrait(Trait):
         """Gets the absolute URL of the detail page for a given SourceTrait instance."""
         return reverse('trait_browser:source:detail', kwargs={'pk': self.pk})
 
+    def get_name_link_html(self):
+        """Get html for the trait name linked to the trait's detail page, with description as popover."""
+        return POPOVER_URL_HTML.format(url=self.get_absolute_url(), popover=self.i_description, name=self.i_trait_name)
+
 
 class HarmonizedTrait(Trait):
     """Model for traits harmonized by the DCC.
@@ -408,6 +441,23 @@ class HarmonizedTrait(Trait):
         In this special case, goes to the detail page for the related trait set.
         """
         return reverse('trait_browser:harmonized:detail', kwargs={'pk': self.harmonized_trait_set.pk})
+
+    def get_name_link_html(self):
+        """Get html for the trait name linked to the harmonized trait's detail page, with description as popover."""
+        return POPOVER_URL_HTML.format(url=self.get_absolute_url(), popover=self.i_description, name=self.trait_flavor_name)
+
+    def get_component_html(self, harmonization_unit):
+        """Get html for inline lists of source and harmonized component phenotypes for the harmonized trait."""
+        source = [tr.get_name_link_html() for tr in (self.component_source_traits.all() & harmonization_unit.component_source_traits.all())]
+        harmonized = [tr.get_name_link_html() for tr in (self.component_harmonized_traits.all() & harmonization_unit.component_harmonized_traits.all())]
+        component_html = ''
+        if len(source) > 0:
+            trait_list = '\n'.join([LIST_ELEMENT_HTML.format(element=trait) for trait in source])
+            component_html += INLINE_LIST_HTML.format(list_title='Component source phenotypes for {}'.format(self.trait_flavor_name), list_elements=trait_list)
+        if len(harmonized) > 0:
+            trait_list = '\n'.join([LIST_ELEMENT_HTML.format(element=trait) for trait in harmonized])
+            component_html += '\n' + INLINE_LIST_HTML.format(list_title='Component harmonized phenotypes for {}'.format(self.trait_flavor_name), list_elements=trait_list)
+        return component_html
 
 
 # Encoded Value models.
