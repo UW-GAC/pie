@@ -69,7 +69,7 @@
                             {% endblock %}
                             <ul class="dropdown-menu">
                                 {% if site_url %}
-                                    <li><a href="{{ site_url }}">{% trans 'View site' %}</a></li>
+                                    <li><a href="{% url 'home' %}">{% trans 'View site' %}</a></li>
                                 {% endif %}
                                 {% if user.is_active and user.is_staff %}
                                     {% url 'django-admindocs-docroot' as docsroot %}
