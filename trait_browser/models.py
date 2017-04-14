@@ -114,7 +114,8 @@ class Study(SourceDBTimeStampedModel):
 
     def get_name_link_html(self):
         """Get html for study's name linking to study detail page."""
-        return URL_HTML.format(url=self.get_absolute_url(), name=self.i_study_name)
+        url_text = "{{% url 'trait_browser:source:study:detail' pk={} %}} ".format(self.pk)
+        return URL_HTML.format(url=url_text, name=self.i_study_name)
 
 
 class SourceStudyVersion(SourceDBTimeStampedModel):
@@ -401,7 +402,8 @@ class SourceTrait(Trait):
 
     def get_name_link_html(self):
         """Get html for the trait name linked to the trait's detail page, with description as popover."""
-        return POPOVER_URL_HTML.format(url=self.get_absolute_url(), popover=self.i_description, name=self.i_trait_name)
+        url_text = "{{% url 'trait_browser:source:detail' pk={} %}} ".format(self.pk)
+        return POPOVER_URL_HTML.format(url=url_text, popover=self.i_description, name=self.i_trait_name)
 
 
 class HarmonizedTrait(Trait):
@@ -451,7 +453,8 @@ class HarmonizedTrait(Trait):
 
     def get_name_link_html(self):
         """Get html for the trait name linked to the harmonized trait's detail page, with description as popover."""
-        return POPOVER_URL_HTML.format(url=self.get_absolute_url(), popover=self.i_description, name=self.trait_flavor_name)
+        url_text = "{{% url 'trait_browser:harmonized:detail' pk={} %}} ".format(self.pk)
+        return POPOVER_URL_HTML.format(url=url_text, popover=self.i_description, name=self.trait_flavor_name)
 
     def get_component_html(self, harmonization_unit):
         """Get html for inline lists of source and harmonized component phenotypes for the harmonized trait."""

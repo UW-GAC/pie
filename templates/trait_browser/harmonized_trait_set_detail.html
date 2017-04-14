@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load staticfiles %}
+{% load core_tags %}
 
 {% block head_title %}
      | {{ harmonized_trait_set.get_trait_names|join:", " }} details
@@ -47,7 +48,7 @@
 
         <button type="button" class="btn btn-default" data-toggle="collapse" data-target="#components">Component Phenotypes</button>
         <div id="components" class="collapse">
-            {{ harmonized_trait_set.component_html_detail|safe }}
+            {% render_as_template harmonized_trait_set.component_html_detail|safe %}
         </div>
 
         <h4>Documentation</h4>
