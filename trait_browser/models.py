@@ -217,6 +217,7 @@ class HarmonizedTraitSet(SourceDBTimeStampedModel):
     i_harmonized_by = models.CharField('harmonized by', max_length=45)
     i_git_commit_hash = models.CharField('git commit hash', max_length=40)
     i_is_longitudinal = models.BooleanField('is longitudinal?')
+    component_html_detail = models.TextField(default='')
 
     def __str__(self):
         """Pretty printing."""
