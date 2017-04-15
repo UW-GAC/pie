@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load staticfiles %}
+{% load core_tags %}
 
 {% block head_title %}
      | {{ harmonized_trait_set.get_trait_names|join:", " }} details
@@ -43,62 +44,11 @@
         {% endfor %}
 
         <hr>
-<!-- handle unique keys somehow... -->
+<!-- TODO: handle unique keys somehow... -->
 
         <button type="button" class="btn btn-default" data-toggle="collapse" data-target="#components">Component Phenotypes</button>
         <div id="components" class="collapse">
-            {% for hunit in harmonized_trait_set.harmonizationunit_set.all %}
-                <div class="panel panel-default">
-                    <div class="panel-heading"><h5 class="panel-title">Harmonization Unit: {{hunit.i_tag}}</h5></div>
-                    <div class="panel-body">
-                        {% if hunit.get_source_studies %}
-                            <p><strong>Included studies</strong>:
-                            {% for study in hunit.get_source_studies %}
-                                <a href="{{study.get_absolute_url}}">{{study.i_study_name}}</a>
-                            {% endfor %}
-                            </p>
-                        {% endif %}
-                        {% if hunit.component_age_traits.all %}
-                            <p><strong>Component age phenotypes</strong>:
-                            <ul class="list-inline">
-                            {% for age_trait in hunit.component_age_traits.all %}
-                                <li>
-                                    <a href="{{ age_trait.get_absolute_url }}" data-toggle="popover" data-trigger="hover" data-placement="top" data-content="{{ age_trait.i_description }}">{{ age_trait.i_trait_name }}</a> 
-                                </li>
-                            {% endfor %}
-                            </ul>
-                            </p>
-                        {% endif %}
-                        {% if hunit.component_batch_traits.all %}
-                            <p><strong>Component batch variables</strong>:
-                            <ul class="list-inline">
-                            {% for batch_trait in hunit.component_batch_traits.all %}
-                                <li>
-                                    <a href="{{ batch_trait.get_absolute_url }}" data-toggle="popover" data-trigger="hover" data-placement="top" data-content="{{ batch_trait.i_description }}">{{ batch_trait.i_trait_name }}</a> 
-                                </li>
-                            {% endfor %}
-                            </ul>
-                            </p>
-                        {% endif %}
-                        <ul class="list-inline">
-                        {% for trait in hunit.harmonizedtrait_set.all %}
-                            <p><strong>Component phenotypes for {{ trait.trait_flavor_name }}</strong>:
-                            {% for source_trait in trait.component_source_traits.all %}
-                                <li>
-                                    <a href="{{ source_trait.get_absolute_url }}" data-toggle="popover" data-trigger="hover" data-placement="top" data-content="{{ source_trait.i_description }}">{{ source_trait.i_trait_name }}</a> 
-                                </li>
-                            {% endfor %}
-                            {% for harm_trait in trait.component_harmonized_traits.all %}
-                                <li>
-                                    <a href="{{ harm_trait.get_absolute_url }}" data-toggle="popover" data-trigger="hover" data-placement="top" data-content="{{ harm_trait.i_description }}">{{ harm_trait.trait_flavor_name }}</a>
-                                </li>
-                            {% endfor %}
-                            </ul>
-                            </p>
-                        {% endfor %}
-                    </div>
-                </div>
-            {% endfor %}
+            {% render_as_template harmonized_trait_set.component_html_detail|safe %}
         </div>
 
         <h4>Documentation</h4>

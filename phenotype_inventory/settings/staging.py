@@ -78,6 +78,19 @@ CNF_PATH = get_secret('CNF_PATH')
 # DEBUG SETTINGS
 DEBUG = True
 
+def show_toolbar(request):
+    """Show the django debug toolbar for all requests, as long as DEBUG=True.
+    
+    debug_toolbar's default callback function, debug_toolbar.middleware.show_toolbar,
+    also checks INTERNAL_IPS, but since access to the staging server is already controlled
+    by BITE, that check is just cumbersome.
+    """
+    return DEBUG
+
+DEBUG_TOOLBAR_CONFIG = {
+    'SHOW_TOOLBAR_CALLBACK': show_toolbar, 
+}
+
 
 # DATABASE SETTINGS
 DATABASES = {

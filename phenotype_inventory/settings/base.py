@@ -129,6 +129,7 @@ MESSAGE_TAGS = {message_constants.DEBUG: 'alert-debug',
 
 # MIDDLEWARE SETTINGS
 MIDDLEWARE_CLASSES = (
+    'debug_toolbar.middleware.DebugToolbarMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -157,6 +158,7 @@ INSTALLED_APPS = (
     'django.contrib.sites',    # https://docs.djangoproject.com/en/1.8/ref/contrib/sites/
     'django.contrib.flatpages',    # https://docs.djangoproject.com/es/1.9/ref/contrib/flatpages/
     # 3rd party apps.
+    'debug_toolbar',    # https://github.com/jazzband/django-debug-toolbar
     'django_tables2',    # https://github.com/bradleyayers/django-tables2
     'crispy_forms',    # https://github.com/maraujop/django-crispy-forms
     'django_extensions',    # https://github.com/django-extensions/django-extensions
