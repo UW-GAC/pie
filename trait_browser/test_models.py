@@ -199,7 +199,7 @@ class HarmonizationUnitTestCase(TestCase):
         traits1 = SourceTraitFactory.create_batch(3, source_dataset__source_study_version__study=studies[0])
         traits2 = SourceTraitFactory.create_batch(3, source_dataset__source_study_version__study=studies[1])
         hu = HarmonizationUnitFactory.create(component_age_traits=[traits1[0], traits2[0]], component_batch_traits=[traits1[1], traits2[1]], component_source_traits=[traits1[2], traits2[2]])
-        self.assertEqual(list(studies), list(hu.get_source_studies()))
+        self.assertEqual(set(list(studies)), set(list(hu.get_source_studies())))
 
  
 class SourceTraitTestCase(TestCase):

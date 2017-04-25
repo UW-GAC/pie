@@ -13,9 +13,10 @@ django-autocomplete-light==3.2.1
 django-braces==1.11.0
 django-crispy-forms==1.6.1
 django-dbbackup==3.1.3
+django-debug-toolbar==1.7
 django-extensions==1.7.8
 django-tables2==1.4.2
-django==1.8.15            # via django-admin-bootstrapped, django-authtools, django-dbbackup, django-tables2
+django==1.8.15
 exrex==0.10.4
 factory-boy==2.8.1
 faker==0.7.10             # via factory-boy
@@ -30,6 +31,7 @@ python-dateutil==2.6.0    # via faker
 pytz==2017.2
 selenium==3.3.1
 six==1.10.0               # via django-dbbackup, django-extensions, faker, packaging, pip-tools, python-dateutil, setuptools
+sqlparse==0.2.3           # via django-debug-toolbar
 
 # The following packages are considered to be unsafe in a requirements file:
 # setuptools                # via django-admin-bootstrapped

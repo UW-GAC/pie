@@ -77,7 +77,11 @@ CNF_PATH = get_secret('CNF_PATH')
 
 # DEBUG SETTINGS
 DEBUG = True
-
+INTERNAL_IPS = ('10.208.179.74', ) # The IP for gcc-pc-004.
+# This IP is a "private network" IP, which is why the public IP for the client
+# doesn't work in this case. 
+# "The assumption is that these private address ranges are not directly connected
+# to the Internet, so the addresses don't have to be unique."
 
 # DATABASE SETTINGS
 DATABASES = {
