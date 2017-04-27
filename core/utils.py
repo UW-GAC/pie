@@ -58,13 +58,15 @@ class DCCAnalystLoginTestCase(TestCase):
     """
     
     def setUp(self):
-        super(UserLoginTestCase, self).setUp()
+        super(DCCAnalystLoginTestCase, self).setUp()
 
         self.client = Client()
         self.user_password = USER_FACTORY_PASSWORD
         self.user = UserFactory.create()
         dcc_analysts = Group.objects.get(name='dcc_analysts')
         self.user.groups.add(dcc_analysts)
+        self.user.is_staff = True
+        self.user.save()
         self.user.refresh_from_db()
         self.client.login(username=self.user.email, password=self.user_password)
 
@@ -76,13 +78,15 @@ class DCCDeveloperLoginTestCase(TestCase):
     """
     
     def setUp(self):
-        super(UserLoginTestCase, self).setUp()
+        super(DCCDeveloperLoginTestCase, self).setUp()
 
         self.client = Client()
         self.user_password = USER_FACTORY_PASSWORD
         self.user = UserFactory.create()
         dcc_developers = Group.objects.get(name='dcc_developers')
         self.user.groups.add(dcc_developers)
+        self.user.is_staff = True
+        self.user.save()
         self.user.refresh_from_db()
         self.client.login(username=self.user.email, password=self.user_password)
 
@@ -94,7 +98,7 @@ class RecipeSubmitterLoginTestCase(TestCase):
     """
     
     def setUp(self):
-        super(UserLoginTestCase, self).setUp()
+        super(RecipeSubmitterLoginTestCase, self).setUp()
 
         self.client = Client()
         self.user_password = USER_FACTORY_PASSWORD
