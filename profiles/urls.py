@@ -11,5 +11,5 @@ from . import views
 
 urlpatterns = [
     # General views
-    url(r'^home/$', views.profile, name='profile'),
+    url(r'^$', views.profile, name='profile'),
 ]
