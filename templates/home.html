@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load staticfiles %}
+{% load core_tags %}
 
 {% block content %}
 
@@ -20,6 +21,12 @@
 
 
 <div class="row">
+  
+  {% if request.user|has_group:"recipe_submitters" != True and request.user.is_staff != True %}
+    <div class="col-md-2 text-center action-home">
+    </div>
+  {% endif %}
+  
   <div class="col-md-4 text-center action-home">
     <a href="{% url 'trait_browser:source:all' %}">    
     <h2>Browse source phenotypes</h2>
@@ -29,14 +36,15 @@
     </a>
   </div>
 
-  <div class="col-md-4 text-center ribbon-parent">
-    <!--<a href="{% comment %}{% url 'trait_browser:harmonized:all' %}{% endcomment %}">-->
-    <h2 class="text-disabled">Submit a harmonization request</h2>
-    <p class="bg-info text-info">Coming soon.</p>
-    <p class="text-disabled">Submit pre-approved harmonization requests here.</p>
-    <!--<img src="{% static "icons/recipe.svg" %}" alt="harmonization_request_recipe" width=150 style="margin:15px; opacity:0.4;"/>-->
-    <!--</a>-->
-  </div>
+  {% if request.user|has_group:"recipe_submitters" or request.user.is_staff %}
+    <div class="col-md-4 text-center action-home">
+        <a href="{% url 'recipes:unit:create' %}">
+        <h2>Submit a harmonization request</h2>
+        <p>Submit pre-approved harmonization requests here.</p>
+        <!--<img src="{% static "icons/recipe.svg" %}" alt="harmonization_request_recipe" width=150 style="margin:15px; opacity:0.4;"/>-->
+        </a>
+    </div>
+  {% endif %}
 
   <div class="col-md-4 text-center action-home">
     <a href="{% url 'trait_browser:harmonized:all' %}">
@@ -45,6 +53,11 @@
     <!--<img src="{% static "icons/pie.svg" %}" alt="harmonized_phenotype_pie" width=150 style="margin:15px"/>-->
     </a>
   </div>
+
+  {% if request.user|has_group:"recipe_submitters" != True and request.user.is_staff != True %}
+    <div class="col-md-2 text-center action-home">
+    </div>
+  {% endif %}
 
 </div>
 
