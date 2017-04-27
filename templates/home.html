@@ -39,8 +39,8 @@
   {% if request.user|has_group:"recipe_submitters" or request.user.is_staff %}
     <div class="col-md-4 text-center action-home">
         <a href="{% url 'recipes:unit:create' %}">
-        <h2>Submit a harmonization request</h2>
-        <p>Submit pre-approved harmonization requests here.</p>
+        <h2>Submit a harmonization recipe</h2>
+        <p>For DCC collaborators, submit harmonization recipes here.</p>
         <!--<img src="{% static "icons/recipe.svg" %}" alt="harmonization_request_recipe" width=150 style="margin:15px; opacity:0.4;"/>-->
         </a>
     </div>
