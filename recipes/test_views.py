@@ -3,7 +3,7 @@
 from django.test import TestCase, Client
 from django.core.urlresolvers import reverse
 
-from core.utils import ViewsAutoLoginTestCase, LoginRequiredTestCase
+from core.utils import UserLoginTestCase, LoginRequiredTestCase
 from core.factories import UserFactory, USER_FACTORY_PASSWORD
 from recipes.urls import urlpatterns
 from trait_browser.factories import SourceTraitFactory
@@ -13,7 +13,7 @@ from .models import *
 from .views import *
 
 
-class UnitRecipeViewsTestCase(ViewsAutoLoginTestCase):
+class UnitRecipeViewsTestCase(UserLoginTestCase):
     
     def test_create_unit_recipe(self):
         """Test that CreateUnitRecipe view can be navigated to."""
@@ -113,7 +113,7 @@ class UnitRecipeViewsTestCase(ViewsAutoLoginTestCase):
         self.assertEqual(response.status_code, 404)
 
 
-class HarmonizationRecipeViewsTestCase(ViewsAutoLoginTestCase):
+class HarmonizationRecipeViewsTestCase(UserLoginTestCase):
     
     def test_create_harmonization_recipe(self):
         """Test that CreateHarmonizationRecipe view can be navigated to."""

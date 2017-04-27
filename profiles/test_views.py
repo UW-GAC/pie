@@ -7,10 +7,10 @@ from .models import *
 from .factories import *
 from trait_browser.factories import StudyFactory
 
-from core.utils import ViewsAutoLoginTestCase
+from core.utils import UserLoginTestCase
 
 
-class ProfileViewTestCase(ViewsAutoLoginTestCase):
+class ProfileViewTestCase(UserLoginTestCase):
 
     def test_working(self):
         url = reverse('profiles:profile')
@@ -30,7 +30,7 @@ class ProfileViewWithoutLoginTestCase(TestCase):
         self.assertRedirects(response, expected_url)
 
 
-class RemoveSearchTestCase(ViewsAutoLoginTestCase):
+class RemoveSearchTestCase(UserLoginTestCase):
     """ Test removal of searches """
 
     def test_search_removal(self):
