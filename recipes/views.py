@@ -42,6 +42,7 @@ class CreateUnitRecipe(LoginRequiredMixin, GroupRequiredMixin, UserFormKwargsMix
     form_invalid_message = unit_invalid_message
     group_required = [u"dcc_analysts", u"dcc_developers", u"recipe_submitters"]
     raise_exception = True
+    redirect_unauthenticated_users = True
     
     def form_valid(self, form):
         """Custom processing for valid forms.
@@ -70,6 +71,7 @@ class CreateHarmonizationRecipe(LoginRequiredMixin, GroupRequiredMixin, UserForm
     form_invalid_message = harmonization_invalid_message
     group_required = [u"dcc_analysts", u"dcc_developers", u"recipe_submitters"]
     raise_exception = True
+    redirect_unauthenticated_users = True
 
     def form_valid(self, form):
         """Custom processing for valid forms.
@@ -99,6 +101,7 @@ class UpdateUnitRecipe(LoginRequiredMixin, GroupRequiredMixin, OwnerQuerysetMixi
     form_invalid_message = unit_invalid_message
     group_required = [u"dcc_analysts", u"dcc_developers", u"recipe_submitters"]
     raise_exception = True
+    redirect_unauthenticated_users = True
 
     def form_valid(self, form):
         """Custom processing for valid forms.
@@ -128,6 +131,7 @@ class UpdateHarmonizationRecipe(LoginRequiredMixin, GroupRequiredMixin, OwnerQue
     form_invalid_message = harmonization_invalid_message
     group_required = [u"dcc_analysts", u"dcc_developers", u"recipe_submitters"]
     raise_exception = True
+    redirect_unauthenticated_users = True
 
     def form_valid(self, form):
         """Custom processing for valid forms.
@@ -154,6 +158,7 @@ class UnitRecipeDetail(LoginRequiredMixin, GroupRequiredMixin, OwnerQuerysetMixi
     template_name = 'recipes/unit_recipe_detail.html'
     group_required = [u"dcc_analysts", u"dcc_developers", u"recipe_submitters"]
     raise_exception = True
+    redirect_unauthenticated_users = True
     
     def get_context_data(self, **kwargs):
         context = super(UnitRecipeDetail, self).get_context_data(**kwargs)
@@ -175,6 +180,7 @@ class HarmonizationRecipeDetail(LoginRequiredMixin, GroupRequiredMixin, OwnerQue
     template_name = 'recipes/harmonization_recipe_detail.html'
     group_required = [u"dcc_analysts", u"dcc_developers", u"recipe_submitters"]
     raise_exception = True
+    redirect_unauthenticated_users = True
     
     def get_context_data(self, **kwargs):
         context = super(HarmonizationRecipeDetail, self).get_context_data(**kwargs)
