@@ -5,7 +5,7 @@ from django.shortcuts import render, redirect
 from django.utils.decorators import method_decorator
 from django.views.generic import DetailView, CreateView, UpdateView
 
-from braces.views import LoginRequiredMixin, UserFormKwargsMixin, FormMessagesMixin
+from braces.views import LoginRequiredMixin, UserFormKwargsMixin, FormMessagesMixin, GroupRequiredMixin
 from dal import autocomplete
 
 from recipes.tables import *
@@ -28,7 +28,7 @@ class OwnerQuerysetMixin(object):
         return queryset
 
 
-class CreateUnitRecipe(LoginRequiredMixin, UserFormKwargsMixin, FormMessagesMixin, CreateView):
+class CreateUnitRecipe(LoginRequiredMixin, GroupRequiredMixin, UserFormKwargsMixin, FormMessagesMixin, CreateView):
     """Create form view class for UnitRecipe creation, used with UnitRecipeModelForm.
     
     LoginRequiredMixin - requires user to be logged in to access this view
@@ -40,7 +40,9 @@ class CreateUnitRecipe(LoginRequiredMixin, UserFormKwargsMixin, FormMessagesMixi
     form_class = UnitRecipeForm
     template_name = 'recipes/recipe_form.html'
     form_invalid_message = unit_invalid_message
-
+    group_required = [u"dcc_analysts", u"dcc_developers", u"recipe_submitters"]
+    raise_exception = True
+    
     def form_valid(self, form):
         """Custom processing for valid forms.
         
@@ -55,7 +57,7 @@ class CreateUnitRecipe(LoginRequiredMixin, UserFormKwargsMixin, FormMessagesMixi
         return formattable_valid_message.format(UnitRecipe._meta.verbose_name, self.object.name, 'create')
 
 
-class CreateHarmonizationRecipe(LoginRequiredMixin, UserFormKwargsMixin, FormMessagesMixin, CreateView):
+class CreateHarmonizationRecipe(LoginRequiredMixin, GroupRequiredMixin, UserFormKwargsMixin, FormMessagesMixin, CreateView):
     """Create form view class for HarmonizationRecipe creation, used with HarmonizationRecipeModelForm.
         
     LoginRequiredMixin - requires user to be logged in to access this view
@@ -66,6 +68,8 @@ class CreateHarmonizationRecipe(LoginRequiredMixin, UserFormKwargsMixin, FormMes
     form_class = HarmonizationRecipeForm
     template_name = 'recipes/recipe_form.html'
     form_invalid_message = harmonization_invalid_message
+    group_required = [u"dcc_analysts", u"dcc_developers", u"recipe_submitters"]
+    raise_exception = True
 
     def form_valid(self, form):
         """Custom processing for valid forms.
@@ -81,7 +85,7 @@ class CreateHarmonizationRecipe(LoginRequiredMixin, UserFormKwargsMixin, FormMes
         return formattable_valid_message.format(HarmonizationRecipe._meta.verbose_name.title(), self.object.name, 'create')
 
 
-class UpdateUnitRecipe(LoginRequiredMixin, OwnerQuerysetMixin, UserFormKwargsMixin, FormMessagesMixin, UpdateView):
+class UpdateUnitRecipe(LoginRequiredMixin, GroupRequiredMixin, OwnerQuerysetMixin, UserFormKwargsMixin, FormMessagesMixin, UpdateView):
     """Update form view class for UnitRecipe editing, used with UnitRecipeModelForm.
     
     LoginRequiredMixin - requires user to be logged in to access this view
@@ -93,6 +97,8 @@ class UpdateUnitRecipe(LoginRequiredMixin, OwnerQuerysetMixin, UserFormKwargsMix
     form_class = UnitRecipeForm
     template_name = 'recipes/recipe_form.html'
     form_invalid_message = unit_invalid_message
+    group_required = [u"dcc_analysts", u"dcc_developers", u"recipe_submitters"]
+    raise_exception = True
 
     def form_valid(self, form):
         """Custom processing for valid forms.
@@ -108,7 +114,7 @@ class UpdateUnitRecipe(LoginRequiredMixin, OwnerQuerysetMixin, UserFormKwargsMix
         return formattable_valid_message.format(UnitRecipe._meta.verbose_name.title(), self.object.name, 'save')
 
 
-class UpdateHarmonizationRecipe(LoginRequiredMixin, OwnerQuerysetMixin, UserFormKwargsMixin, FormMessagesMixin, UpdateView):
+class UpdateHarmonizationRecipe(LoginRequiredMixin, GroupRequiredMixin, OwnerQuerysetMixin, UserFormKwargsMixin, FormMessagesMixin, UpdateView):
     """Update form view class for HarmonizationRecipe editing, used with HarmonizationRecipeModelForm.
     
     LoginRequiredMixin - requires user to be logged in to access this view
@@ -120,6 +126,8 @@ class UpdateHarmonizationRecipe(LoginRequiredMixin, OwnerQuerysetMixin, UserForm
     form_class = HarmonizationRecipeForm
     template_name = 'recipes/recipe_form.html'
     form_invalid_message = harmonization_invalid_message
+    group_required = [u"dcc_analysts", u"dcc_developers", u"recipe_submitters"]
+    raise_exception = True
 
     def form_valid(self, form):
         """Custom processing for valid forms.
@@ -135,7 +143,28 @@ class UpdateHarmonizationRecipe(LoginRequiredMixin, OwnerQuerysetMixin, UserForm
         return formattable_valid_message.format(HarmonizationRecipe._meta.verbose_name.title(), self.object.name, 'save')
 
 
-class HarmonizationRecipeDetail(LoginRequiredMixin, OwnerQuerysetMixin, DetailView):
+class UnitRecipeDetail(LoginRequiredMixin, GroupRequiredMixin, OwnerQuerysetMixin, DetailView):
+    """Detail view class for UnitRecipe.
+    
+    LoginRequiredMixin - requires user to be logged in to access this view
+    """
+    
+    model = UnitRecipe
+    context_object_name = 'u_recipe'
+    template_name = 'recipes/unit_recipe_detail.html'
+    group_required = [u"dcc_analysts", u"dcc_developers", u"recipe_submitters"]
+    raise_exception = True
+    
+    def get_context_data(self, **kwargs):
+        context = super(UnitRecipeDetail, self).get_context_data(**kwargs)
+        context['age_table'] = SourceTraitTable(self.object.age_variables.all())
+        context['batch_table'] = SourceTraitTable(self.object.batch_variables.all())
+        context['phenotype_table'] = SourceTraitTable(self.object.phenotype_variables.all())
+        context['harmonized_phenotype_table'] = HarmonizedTraitTable(self.object.harmonized_phenotype_variables.all())
+        return context
+
+
+class HarmonizationRecipeDetail(LoginRequiredMixin, GroupRequiredMixin, OwnerQuerysetMixin, DetailView):
     """Detail view class for HarmonizationRecipe.
 
     LoginRequiredMixin - requires user to be logged in to access this view
@@ -144,27 +173,10 @@ class HarmonizationRecipeDetail(LoginRequiredMixin, OwnerQuerysetMixin, DetailVi
     model = HarmonizationRecipe
     context_object_name = 'h_recipe'
     template_name = 'recipes/harmonization_recipe_detail.html'
+    group_required = [u"dcc_analysts", u"dcc_developers", u"recipe_submitters"]
+    raise_exception = True
     
     def get_context_data(self, **kwargs):
         context = super(HarmonizationRecipeDetail, self).get_context_data(**kwargs)
         context['unit_recipe_table'] = UnitRecipeTable(self.object.units.all())
-        return context
-    
-
-class UnitRecipeDetail(LoginRequiredMixin, OwnerQuerysetMixin, DetailView):
-    """Detail view class for UnitRecipe.
-
-    LoginRequiredMixin - requires user to be logged in to access this view
-    """
-    
-    model = UnitRecipe
-    context_object_name = 'u_recipe'
-    template_name = 'recipes/unit_recipe_detail.html'
-    
-    def get_context_data(self, **kwargs):
-        context = super(UnitRecipeDetail, self).get_context_data(**kwargs)
-        context['age_table'] = SourceTraitTable(self.object.age_variables.all())
-        context['batch_table'] = SourceTraitTable(self.object.batch_variables.all())
-        context['phenotype_table'] = SourceTraitTable(self.object.phenotype_variables.all())
-        context['harmonized_phenotype_table'] = HarmonizedTraitTable(self.object.harmonized_phenotype_variables.all())
         return context
