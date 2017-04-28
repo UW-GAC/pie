@@ -1,0 +1,52 @@
+[
+{
+  "model": "auth.group",
+  "pk": 1,
+  "fields": {
+    "name": "dcc_analysts",
+    "permissions": [
+      70,
+      71,
+      72,
+      67,
+      68,
+      69
+    ]
+  }
+},
+{
+  "model": "auth.group",
+  "pk": 2,
+  "fields": {
+    "name": "dcc_developers",
+    "permissions": [
+      7,
+      8,
+      9,
+      4,
+      5,
+      6,
+      22,
+      23,
+      24,
+      19,
+      20,
+      21,
+      70,
+      71,
+      72,
+      67,
+      68,
+      69
+    ]
+  }
+},
+{
+  "model": "auth.group",
+  "pk": 3,
+  "fields": {
+    "name": "recipe_submitters",
+    "permissions": []
+  }
+}
+]

@@ -7,7 +7,7 @@ from django.test import TestCase, Client
 from django.http import QueryDict
 from django.core.urlresolvers import reverse, RegexURLResolver, RegexURLPattern
 
-from core.utils import ViewsAutoLoginTestCase, LoginRequiredTestCase
+from core.utils import UserLoginTestCase, LoginRequiredTestCase
 from profiles.models import Search, UserData
 from .models import *
 from .factories import *
@@ -124,7 +124,7 @@ class HarmonizedSearchTestCase(TestCase):
         self.assertNotIn(st_nonmatch, search1)
 
 
-class SourceTraitViewsTestCase(ViewsAutoLoginTestCase):
+class SourceTraitViewsTestCase(UserLoginTestCase):
     """Unit tests for the SourceTrait views."""
     
     def test_source_trait_table_empty(self):
@@ -193,7 +193,7 @@ class SourceTraitViewsTestCase(ViewsAutoLoginTestCase):
             response.context['search_url']
 
 
-class StudySourceTableViewsTestCase(ViewsAutoLoginTestCase):
+class StudySourceTableViewsTestCase(UserLoginTestCase):
     """Unit tests for the SourceTrait by Study views."""
     
     def test_study_source_table_empty(self):
@@ -312,7 +312,7 @@ class StudySourceTableViewsTestCase(ViewsAutoLoginTestCase):
         self.assertEqual(response.context['form'].initial['study'], str(this_study.i_accession))
 
 
-class SourceTraitSearchViewTestCase(ViewsAutoLoginTestCase):
+class SourceTraitSearchViewTestCase(UserLoginTestCase):
 
     def test_source_trait_search_with_valid_results(self):
         """Tests that the source_trait_search view has a 200 reponse code and the number of results is accurate when search text is entered and there are search results to display."""
@@ -437,7 +437,7 @@ class SourceTraitSearchViewTestCase(ViewsAutoLoginTestCase):
         self.assertIn(search, user_searches)
 
 
-class SourceDatasetViewTest(ViewsAutoLoginTestCase):
+class SourceDatasetViewTest(UserLoginTestCase):
     """Unit tests for the SourceDataset views."""
     
     def test_source_dataset_absolute_url(self):
@@ -448,7 +448,7 @@ class SourceDatasetViewTest(ViewsAutoLoginTestCase):
         self.assertEqual(response.status_code, 200)
 
 
-class HarmonizedTraitViewsTestCase(ViewsAutoLoginTestCase):
+class HarmonizedTraitViewsTestCase(UserLoginTestCase):
     """Unit tests for the HarmonizedTrait views."""
     
     def test_harmonized_trait_table_empty(self):
@@ -517,7 +517,7 @@ class HarmonizedTraitViewsTestCase(ViewsAutoLoginTestCase):
             response.context['search_url']
 
 
-class HarmonizedTraitSetViewsTest(ViewsAutoLoginTestCase):
+class HarmonizedTraitSetViewsTest(UserLoginTestCase):
     """Unit tests for the HarmonizedTraitSet views."""
     
     def test_harmonized_trait_set_absolute_url(self):
@@ -527,7 +527,7 @@ class HarmonizedTraitSetViewsTest(ViewsAutoLoginTestCase):
         self.assertEqual(response.status_code, 200)
 
 
-class HarmonizedTraitSearchViewTestCase(ViewsAutoLoginTestCase):
+class HarmonizedTraitSearchViewTestCase(UserLoginTestCase):
 
     def test_harmonized_trait_search_with_valid_results(self):
         """Tests that the harmonized_trait_search view has a 200 reponse code and the number of results is accurate when search text is entered and there are search results to display."""
@@ -581,7 +581,7 @@ class TraitBrowserLoginRequiredTestCase(LoginRequiredTestCase):
         self.assert_redirect_all_urls(urlpatterns, 'phenotypes')
 
 
-class SourceTraitPHVAutocompleteTestCase(ViewsAutoLoginTestCase):
+class SourceTraitPHVAutocompleteTestCase(UserLoginTestCase):
     """Autocomplete view works as expected."""
     
     def test_no_deprecated_traits_in_queryset(self):
@@ -628,7 +628,7 @@ class SourceTraitPHVAutocompleteTestCase(ViewsAutoLoginTestCase):
         self.assertTrue('phv{:08d}'.format(st1.i_dbgap_variable_accession) in phvs_in_content)
 
 
-class HarmonizedTraitFlavorNameAutocompleteViewTest(ViewsAutoLoginTestCase):
+class HarmonizedTraitFlavorNameAutocompleteViewTest(UserLoginTestCase):
     """Autocomplete view works as expected."""
     
     def test_no_deprecated_traits_in_queryset(self):

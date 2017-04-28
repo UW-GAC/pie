@@ -4,10 +4,10 @@ from django.contrib.auth.models import User
 from django.test import TestCase, Client
 from django.core.urlresolvers import reverse
 
-from core.utils import ViewsSuperuserLoginTestCase
+from core.utils import SuperuserLoginTestCase
 
 
-class AdminTestCase(ViewsSuperuserLoginTestCase):
+class AdminTestCase(SuperuserLoginTestCase):
     """Unit tests for Trait Browser admin interface."""
     
     def test_admin_exists(self):

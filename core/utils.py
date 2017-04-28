@@ -6,6 +6,7 @@ Two Scoops of Django 1.8.
 import exrex
 
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
 from django.core.urlresolvers import reverse, RegexURLResolver, RegexURLPattern
 from django.test import TestCase, Client
 
@@ -34,15 +35,15 @@ def find_all_urls(root_patterns, parents, url_list):
             url_list.append(''.join(parents) + next(exrex.generate(regex_string, limit=1)))
 
 
-class ViewsAutoLoginTestCase(TestCase):
-    """TestCase to use for accessing views that require user login.
+class UserLoginTestCase(TestCase):
+    """TestCase that creates a user and logs in as that user.
     
     Creates a user and logs them into the site, allowing access to the @login_required
     (or LoginRequiredMixin) views. Mostly used in test_views.py scripts.
     """
     
     def setUp(self):
-        super(ViewsAutoLoginTestCase, self).setUp()
+        super(UserLoginTestCase, self).setUp()
 
         self.client = Client()
         self.user_password = USER_FACTORY_PASSWORD
@@ -50,20 +51,79 @@ class ViewsAutoLoginTestCase(TestCase):
         self.client.login(username=self.user.email, password=self.user_password)
 
 
-class ViewsSuperuserLoginTestCase(TestCase):
+class DCCAnalystLoginTestCase(TestCase):
+    """TestCase that creates a dcc_analyst user and logs in as that user.
+    
+    Creates a user, adds them to dcc_analyst group, and logs them into the site.
+    """
+    
+    def setUp(self):
+        super(DCCAnalystLoginTestCase, self).setUp()
+
+        self.client = Client()
+        self.user_password = USER_FACTORY_PASSWORD
+        self.user = UserFactory.create()
+        dcc_analysts = Group.objects.get(name='dcc_analysts')
+        self.user.groups.add(dcc_analysts)
+        self.user.is_staff = True
+        self.user.save()
+        self.user.refresh_from_db()
+        self.client.login(username=self.user.email, password=self.user_password)
+
+
+class DCCDeveloperLoginTestCase(TestCase):
+    """TestCase that creates a dcc_developer user and logs in as that user.
+    
+    Creates a user, adds them to dcc_developer group, and logs them into the site.
+    """
+    
+    def setUp(self):
+        super(DCCDeveloperLoginTestCase, self).setUp()
+
+        self.client = Client()
+        self.user_password = USER_FACTORY_PASSWORD
+        self.user = UserFactory.create()
+        dcc_developers = Group.objects.get(name='dcc_developers')
+        self.user.groups.add(dcc_developers)
+        self.user.is_staff = True
+        self.user.save()
+        self.user.refresh_from_db()
+        self.client.login(username=self.user.email, password=self.user_password)
+
+
+class RecipeSubmitterLoginTestCase(TestCase):
+    """TestCase that creates a recipe_submitter user and logs in as that user.
+    
+    Creates a user, adds them to recipe_submitter group, and logs them into the site.
+    """
+    
+    def setUp(self):
+        super(RecipeSubmitterLoginTestCase, self).setUp()
+
+        self.client = Client()
+        self.user_password = USER_FACTORY_PASSWORD
+        self.user = UserFactory.create()
+        recipe_submitters = Group.objects.get(name='recipe_submitters')
+        self.user.groups.add(recipe_submitters)
+        self.user.refresh_from_db()
+        self.client.login(username=self.user.email, password=self.user_password)
+
+
+class SuperuserLoginTestCase(TestCase):
     """TestCase to use for accessing views that require Superuser login.
     
     Creates a superuser and logs them into the site.
     """
     
     def setUp(self):
-        super(ViewsSuperuserLoginTestCase, self).setUp()
+        super(SuperuserLoginTestCase, self).setUp()
 
         self.client = Client()
         self.user_password = USER_FACTORY_PASSWORD
         self.user = SuperUserFactory.create()
         self.client.login(username=self.user.email, password=self.user_password)        
-        
+
+
 class LoginRequiredTestCase(TestCase):
     """Tests all views in this app that they are using login_required"""
 

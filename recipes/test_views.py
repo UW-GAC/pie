@@ -1,10 +1,11 @@
 """Test the functions and classes for recipes.views."""
 
-from django.test import TestCase, Client
+from django.contrib.auth.models import Group
 from django.core.urlresolvers import reverse
+from django.test import TestCase, Client
 
-from core.utils import ViewsAutoLoginTestCase, LoginRequiredTestCase
-from core.factories import UserFactory, USER_FACTORY_PASSWORD
+from core.utils import DCCAnalystLoginTestCase, DCCDeveloperLoginTestCase, RecipeSubmitterLoginTestCase, UserLoginTestCase, SuperuserLoginTestCase, LoginRequiredTestCase
+from core.factories import UserFactory, SuperUserFactory, USER_FACTORY_PASSWORD
 from recipes.urls import urlpatterns
 from trait_browser.factories import SourceTraitFactory
 
@@ -13,7 +14,7 @@ from .models import *
 from .views import *
 
 
-class UnitRecipeViewsTestCase(ViewsAutoLoginTestCase):
+class UnitRecipeViewsTestCase(RecipeSubmitterLoginTestCase):
     
     def test_create_unit_recipe(self):
         """Test that CreateUnitRecipe view can be navigated to."""
@@ -69,18 +70,6 @@ class UnitRecipeViewsTestCase(ViewsAutoLoginTestCase):
         new_unit.refresh_from_db()
         self.assertEqual(new_unit.name, edited_name)
         
-    def test_update_unit_recipe_cannot_edit_other_user_recipes(self):
-        """Test that a user cannot access UpdateUnitRecipe view for another user's saved unit recipe."""
-        user2 = UserFactory.create()
-        unit2 = UnitRecipeFactory.create(creator=user2)
-        url = reverse('recipes:unit:edit', kwargs={'pk': unit2.pk})
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, 404)
-        self.client.logout()
-        login = self.client.login(username=user2.email, password=USER_FACTORY_PASSWORD)
-        response=self.client.get(url)
-        self.assertEqual(response.status_code, 200)
-
     def test_update_unit_recipe_error_on_invalid_pk(self):
         """Test that the UpdateUnitRecipe view gives an error when given an invalid pk."""
         url = reverse('recipes:unit:edit', kwargs={'pk': 1})
@@ -94,26 +83,82 @@ class UnitRecipeViewsTestCase(ViewsAutoLoginTestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
     
-    def test_unit_recipe_detail_error_for_other_user_recipes(self):
-        """Test that a user cannot view detail pages for other users' UnitRecipes."""
-        user2 = UserFactory.create()
-        unit2 = UnitRecipeFactory.create(creator=user2)
-        url = reverse('recipes:unit:detail', kwargs={'pk': unit2.pk})
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, 404)
-        self.client.logout()
-        login = self.client.login(username=user2.email, password=USER_FACTORY_PASSWORD)
-        response=self.client.get(url)
-        self.assertEqual(response.status_code, 200)
-
     def test_unit_recipe_detail_error_for_invalid_pk(self):
         """Test that the UnitRecipeDetail view gives an error for an invalid pk."""
         url = reverse('recipes:unit:detail', kwargs={'pk': 1})
         response = self.client.get(url)
         self.assertEqual(response.status_code, 404)
 
+    def test_unit_recipe_detail_error_for_other_user_recipes(self):
+        """Test that a user cannot view detail pages for other users' UnitRecipes."""
+        new_recipe = UnitRecipeFactory.create(creator=self.user)
+        url = reverse('recipes:unit:detail', kwargs={'pk': new_recipe.pk})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        # A different recipe_submitter cannot view the page.
+        submitter = UserFactory.create()
+        submitter.groups.add(Group.objects.get(name='recipe_submitters'))
+        self.client.logout()
+        self.client.login(username=submitter.email, password=USER_FACTORY_PASSWORD)
+        response=self.client.get(url)
+        self.assertEqual(response.status_code, 404) 
+        # A dcc_analyst cannot view the page.
+        analyst = UserFactory.create()
+        analyst.groups.add(Group.objects.get(name='dcc_analysts'))
+        self.client.logout()
+        self.client.login(username=analyst.email, password=USER_FACTORY_PASSWORD)
+        response=self.client.get(url)
+        self.assertEqual(response.status_code, 404) 
+        # A dcc_developer cannot view the page.
+        developer = UserFactory.create()
+        developer.groups.add(Group.objects.get(name='dcc_developers'))
+        self.client.logout()
+        self.client.login(username=developer.email, password=USER_FACTORY_PASSWORD)
+        response=self.client.get(url)
+        self.assertEqual(response.status_code, 404) 
+        # A superuser cannot view the page.
+        superuser = SuperUserFactory.create()
+        self.client.logout()
+        self.client.login(username=superuser.email, password=USER_FACTORY_PASSWORD)
+        response=self.client.get(url)
+        self.assertEqual(response.status_code, 404) 
 
-class HarmonizationRecipeViewsTestCase(ViewsAutoLoginTestCase):
+    def test_update_unit_recipe_cannot_edit_other_user_recipes(self):
+        """Test that a user cannot access UpdateUnitRecipe view for another user's saved unit recipe."""
+        new_recipe = UnitRecipeFactory.create(creator=self.user)
+        url = reverse('recipes:unit:edit', kwargs={'pk': new_recipe.pk})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        # A different recipe_submitter cannot view the page.
+        submitter = UserFactory.create()
+        submitter.groups.add(Group.objects.get(name='recipe_submitters'))
+        self.client.logout()
+        self.client.login(username=submitter.email, password=USER_FACTORY_PASSWORD)
+        response=self.client.get(url)
+        self.assertEqual(response.status_code, 404) 
+        # A dcc_analyst cannot view the page.
+        analyst = UserFactory.create()
+        analyst.groups.add(Group.objects.get(name='dcc_analysts'))
+        self.client.logout()
+        self.client.login(username=analyst.email, password=USER_FACTORY_PASSWORD)
+        response=self.client.get(url)
+        self.assertEqual(response.status_code, 404) 
+        # A dcc_developer cannot view the page.
+        developer = UserFactory.create()
+        developer.groups.add(Group.objects.get(name='dcc_developers'))
+        self.client.logout()
+        self.client.login(username=developer.email, password=USER_FACTORY_PASSWORD)
+        response=self.client.get(url)
+        self.assertEqual(response.status_code, 404) 
+        # A superuser cannot view the page.
+        superuser = SuperUserFactory.create()
+        self.client.logout()
+        self.client.login(username=superuser.email, password=USER_FACTORY_PASSWORD)
+        response=self.client.get(url)
+        self.assertEqual(response.status_code, 404) 
+
+
+class HarmonizationRecipeViewsTestCase(RecipeSubmitterLoginTestCase):
     
     def test_create_harmonization_recipe(self):
         """Test that CreateHarmonizationRecipe view can be navigated to."""
@@ -164,19 +209,7 @@ class HarmonizationRecipeViewsTestCase(ViewsAutoLoginTestCase):
         # self.assertRedirects(response, new_harmonization.get_absolute_url())
         new_harmonization.refresh_from_db()
         self.assertEqual(new_harmonization.name, edited_name)
-        
-    def test_update_harmonization_recipe_cannot_edit_other_user_recipes(self):
-        """Test that a user cannot access UpdateHarmonizationRecipe view for another user's saved harmonization recipe."""
-        user2 = UserFactory.create()
-        harmonization2 = HarmonizationRecipeFactory.create(creator=user2)
-        url = reverse('recipes:harmonization:edit', kwargs={'pk': harmonization2.pk})
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, 404)
-        self.client.logout()
-        login = self.client.login(username=user2.email, password=USER_FACTORY_PASSWORD)
-        response=self.client.get(url)
-        self.assertEqual(response.status_code, 200)
-
+    
     def test_update_harmonization_recipe_error_on_invalid_pk(self):
         """Test that the UpdateHarmonizationRecipe view gives an error when given an invalid pk."""
         url = reverse('recipes:harmonization:edit', kwargs={'pk': 1})
@@ -190,23 +223,315 @@ class HarmonizationRecipeViewsTestCase(ViewsAutoLoginTestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
     
-    def test_harmonization_recipe_detail_error_for_other_user_recipes(self):
-        """Test that a user cannot view detail pages for other users' HarmonizationRecipes."""
-        user2 = UserFactory.create()
-        harmonization2 = HarmonizationRecipeFactory.create(creator=user2)
-        url = reverse('recipes:harmonization:detail', kwargs={'pk': harmonization2.pk})
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, 404)
-        self.client.logout()
-        login = self.client.login(username=user2.email, password=USER_FACTORY_PASSWORD)
-        response=self.client.get(url)
-        self.assertEqual(response.status_code, 200)
-
     def test_harmonization_recipe_detail_error_for_invalid_pk(self):
         """Test that the UnitRecipeDetail view gives an error for an invalid pk."""
         url = reverse('recipes:harmonization:detail', kwargs={'pk': 1})
         response = self.client.get(url)
         self.assertEqual(response.status_code, 404)
+    
+    def test_harmonization_recipe_detail_error_for_other_user_recipes(self):
+        """Test that a user cannot view detail pages for other users' HarmonizationRecipes."""
+        new_recipe = HarmonizationRecipeFactory.create(creator=self.user)
+        url = reverse('recipes:harmonization:detail', kwargs={'pk': new_recipe.pk})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        # A different recipe_submitter cannot view the page.
+        submitter = UserFactory.create()
+        submitter.groups.add(Group.objects.get(name='recipe_submitters'))
+        self.client.logout()
+        self.client.login(username=submitter.email, password=USER_FACTORY_PASSWORD)
+        response=self.client.get(url)
+        self.assertEqual(response.status_code, 404) 
+        # A dcc_analyst cannot view the page.
+        analyst = UserFactory.create()
+        analyst.groups.add(Group.objects.get(name='dcc_analysts'))
+        self.client.logout()
+        self.client.login(username=analyst.email, password=USER_FACTORY_PASSWORD)
+        response=self.client.get(url)
+        self.assertEqual(response.status_code, 404) 
+        # A dcc_developer cannot view the page.
+        developer = UserFactory.create()
+        developer.groups.add(Group.objects.get(name='dcc_developers'))
+        self.client.logout()
+        self.client.login(username=developer.email, password=USER_FACTORY_PASSWORD)
+        response=self.client.get(url)
+        self.assertEqual(response.status_code, 404) 
+        # A superuser cannot view the page.
+        superuser = SuperUserFactory.create()
+        self.client.logout()
+        self.client.login(username=superuser.email, password=USER_FACTORY_PASSWORD)
+        response=self.client.get(url)
+        self.assertEqual(response.status_code, 404) 
+    
+    def test_update_harmonization_recipe_cannot_edit_other_user_recipes(self):
+        """Test that a user cannot access UpdateHarmonizationRecipe view for another user's saved unit recipe."""
+        new_recipe = HarmonizationRecipeFactory.create(creator=self.user)
+        url = reverse('recipes:harmonization:edit', kwargs={'pk': new_recipe.pk})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        # A different recipe_submitter cannot view the page.
+        submitter = UserFactory.create()
+        submitter.groups.add(Group.objects.get(name='recipe_submitters'))
+        self.client.logout()
+        self.client.login(username=submitter.email, password=USER_FACTORY_PASSWORD)
+        response=self.client.get(url)
+        self.assertEqual(response.status_code, 404) 
+        # A dcc_analyst cannot view the page.
+        analyst = UserFactory.create()
+        analyst.groups.add(Group.objects.get(name='dcc_analysts'))
+        self.client.logout()
+        self.client.login(username=analyst.email, password=USER_FACTORY_PASSWORD)
+        response=self.client.get(url)
+        self.assertEqual(response.status_code, 404) 
+        # A dcc_developer cannot view the page.
+        developer = UserFactory.create()
+        developer.groups.add(Group.objects.get(name='dcc_developers'))
+        self.client.logout()
+        self.client.login(username=developer.email, password=USER_FACTORY_PASSWORD)
+        response=self.client.get(url)
+        self.assertEqual(response.status_code, 404) 
+        # A superuser cannot view the page.
+        superuser = SuperUserFactory.create()
+        self.client.logout()
+        self.client.login(username=superuser.email, password=USER_FACTORY_PASSWORD)
+        response=self.client.get(url)
+        self.assertEqual(response.status_code, 404) 
+
+
+class GrouplessUserRecipeViewsTest(UserLoginTestCase):
+
+    def test_unit_create_forbidden_to_groupless(self):
+        """Test that CreateUnitRecipe view can't be accessed by groupless users."""
+        url = reverse('recipes:unit:create')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 403)
+
+    def test_harmonization_create_forbidden_to_groupless(self):
+        """Test that CreateHarmonizationRecipe view can't be accessed by groupless users."""
+        url = reverse('recipes:harmonization:create')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 403)
+    
+    def test_unit_edit_forbidden_to_groupless(self):
+        """Test that UpdateUnitRecipe view can't be accessed by groupless users."""
+        recipe = UnitRecipeFactory.create()
+        url = reverse('recipes:unit:edit', kwargs={'pk': recipe.pk})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 403)
+
+    def test_harmonization_edit_forbidden_to_groupless(self):
+        """Test that UpdateHarmonizationRecipe view can't be accessed by groupless users."""
+        recipe = HarmonizationRecipeFactory.create()
+        url = reverse('recipes:harmonization:edit', kwargs={'pk': recipe.pk})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 403)
+    
+    def test_unit_detail_forbidden_to_groupless(self):
+        """Test that UnitRecipeDetail view can't be accessed by groupless users."""
+        recipe = UnitRecipeFactory.create()
+        url = reverse('recipes:unit:detail', kwargs={'pk': recipe.pk})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 403)
+
+    def test_harmonization_detail_forbidden_to_groupless(self):
+        """Test that HarmonizationRecipeDetail view can't be accessed by groupless users."""
+        recipe = HarmonizationRecipeFactory.create()
+        url = reverse('recipes:harmonization:detail', kwargs={'pk': recipe.pk})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 403)
+    
+    def test_recipes_not_on_homepage(self):
+        """The harmonization recipe elements don't appear on the home page for groupless users."""
+        url = reverse('home')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, '<h2>Submit a harmonization recipe</h2>', html=True)
+        self.assertNotContains(response, '<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Harmonization recipes <span class="caret"></span></a>', html=True)
+
+    def test_recipes_not_on_profile_page(self):
+        """The harmonization recipe tabs don't appear on the profile page for groupless users."""
+        url = reverse('profiles:profile')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, '<li role="presentation"><a href="#unitrecipes" role="tab" data-toggle="tab">Unit Recipes</a></li>', html=True)
+        self.assertNotContains(response, '<li role="presentation"><a href="#harmonizationrecipes" role="tab" data-toggle="tab">Harmonization Recipes</a></li>', html=True)
+
+
+class DCCAnalystRecipeViewsTest(DCCAnalystLoginTestCase):
+
+    def test_unit_create_viewable_to_groupless(self):
+        """Test that CreateUnitRecipe view can be accessed by dcc_analysts users.."""
+        url = reverse('recipes:unit:create')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+
+    def test_harmonization_create_viewable_to_groupless(self):
+        """Test that CreateHarmonizationRecipe view can be accessed by dcc_analysts users.."""
+        url = reverse('recipes:harmonization:create')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+    
+    def test_unit_edit_viewable_to_groupless(self):
+        """Test that UpdateUnitRecipe view can be accessed by dcc_analysts users.."""
+        recipe = UnitRecipeFactory.create(creator=self.user)
+        url = reverse('recipes:unit:edit', kwargs={'pk': recipe.pk})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+
+    def test_harmonization_edit_viewable_to_groupless(self):
+        """Test that UpdateHarmonizationRecipe view can be accessed by dcc_analysts users.."""
+        recipe = HarmonizationRecipeFactory.create(creator=self.user)
+        url = reverse('recipes:harmonization:edit', kwargs={'pk': recipe.pk})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+    
+    def test_unit_detail_viewable_to_groupless(self):
+        """Test that UnitRecipeDetail view can be accessed by dcc_analysts users.."""
+        recipe = UnitRecipeFactory.create(creator=self.user)
+        url = reverse('recipes:unit:detail', kwargs={'pk': recipe.pk})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+
+    def test_harmonization_detail_viewable_to_groupless(self):
+        """Test that HarmonizationRecipeDetail view can be accessed by dcc_analysts users.."""
+        recipe = HarmonizationRecipeFactory.create(creator=self.user)
+        url = reverse('recipes:harmonization:detail', kwargs={'pk': recipe.pk})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+
+    def test_recipes_on_homepage(self):
+        """The harmonization recipe elements don't appear on the home page for DCC analyst users."""
+        url = reverse('home')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, '<h2>Submit a harmonization recipe</h2>', html=True)
+        self.assertContains(response, '<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Harmonization recipes <span class="caret"></span></a>', html=True)
+
+    def test_recipes_on_profile_page(self):
+        """The harmonization recipe tabs don't appear on the profile page for DCC analyst users."""
+        url = reverse('profiles:profile')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, '<li role="presentation"><a href="#unitrecipes" role="tab" data-toggle="tab">Unit Recipes</a></li>', html=True)
+        self.assertContains(response, '<li role="presentation"><a href="#harmonizationrecipes" role="tab" data-toggle="tab">Harmonization Recipes</a></li>', html=True)
+
+
+class DCCDeveloperRecipeViewsTest(DCCDeveloperLoginTestCase):
+
+    def test_unit_create_viewable_to_groupless(self):
+        """Test that CreateUnitRecipe view can be accessed by dcc_developers users.."""
+        url = reverse('recipes:unit:create')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+
+    def test_harmonization_create_viewable_to_groupless(self):
+        """Test that CreateHarmonizationRecipe view can be accessed by dcc_developers users.."""
+        url = reverse('recipes:harmonization:create')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+    
+    def test_unit_edit_viewable_to_groupless(self):
+        """Test that UpdateUnitRecipe view can be accessed by dcc_developers users.."""
+        recipe = UnitRecipeFactory.create(creator=self.user)
+        url = reverse('recipes:unit:edit', kwargs={'pk': recipe.pk})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+
+    def test_harmonization_edit_viewable_to_groupless(self):
+        """Test that UpdateHarmonizationRecipe view can be accessed by dcc_developers users.."""
+        recipe = HarmonizationRecipeFactory.create(creator=self.user)
+        url = reverse('recipes:harmonization:edit', kwargs={'pk': recipe.pk})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+    
+    def test_unit_detail_viewable_to_groupless(self):
+        """Test that UnitRecipeDetail view can be accessed by dcc_developers users.."""
+        recipe = UnitRecipeFactory.create(creator=self.user)
+        url = reverse('recipes:unit:detail', kwargs={'pk': recipe.pk})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+
+    def test_harmonization_detail_viewable_to_groupless(self):
+        """Test that HarmonizationRecipeDetail view can be accessed by dcc_developers users.."""
+        recipe = HarmonizationRecipeFactory.create(creator=self.user)
+        url = reverse('recipes:harmonization:detail', kwargs={'pk': recipe.pk})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+
+    def test_recipes_on_homepage(self):
+        """The harmonization recipe elements don't appear on the home page for DCC developer users."""
+        url = reverse('home')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, '<h2>Submit a harmonization recipe</h2>', html=True)
+        self.assertContains(response, '<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Harmonization recipes <span class="caret"></span></a>', html=True)
+
+    def test_recipes_on_profile_page(self):
+        """The harmonization recipe tabs don't appear on the profile page for DCC developer users."""
+        url = reverse('profiles:profile')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, '<li role="presentation"><a href="#unitrecipes" role="tab" data-toggle="tab">Unit Recipes</a></li>', html=True)
+        self.assertContains(response, '<li role="presentation"><a href="#harmonizationrecipes" role="tab" data-toggle="tab">Harmonization Recipes</a></li>', html=True)
+
+
+class SuperuserRecipeViewsTest(SuperuserLoginTestCase):
+
+    def test_unit_create_viewable_to_groupless(self):
+        """Test that CreateUnitRecipe view can be accessed by superusers.."""
+        url = reverse('recipes:unit:create')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+
+    def test_harmonization_create_viewable_to_groupless(self):
+        """Test that CreateHarmonizationRecipe view can be accessed by superusers.."""
+        url = reverse('recipes:harmonization:create')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+    
+    def test_unit_edit_viewable_to_groupless(self):
+        """Test that UpdateUnitRecipe view can be accessed by superusers.."""
+        recipe = UnitRecipeFactory.create(creator=self.user)
+        url = reverse('recipes:unit:edit', kwargs={'pk': recipe.pk})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+
+    def test_harmonization_edit_viewable_to_groupless(self):
+        """Test that UpdateHarmonizationRecipe view can be accessed by superusers.."""
+        recipe = HarmonizationRecipeFactory.create(creator=self.user)
+        url = reverse('recipes:harmonization:edit', kwargs={'pk': recipe.pk})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+    
+    def test_unit_detail_viewable_to_groupless(self):
+        """Test that UnitRecipeDetail view can be accessed by superusers.."""
+        recipe = UnitRecipeFactory.create(creator=self.user)
+        url = reverse('recipes:unit:detail', kwargs={'pk': recipe.pk})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+
+    def test_harmonization_detail_viewable_to_groupless(self):
+        """Test that HarmonizationRecipeDetail view can be accessed by superusers.."""
+        recipe = HarmonizationRecipeFactory.create(creator=self.user)
+        url = reverse('recipes:harmonization:detail', kwargs={'pk': recipe.pk})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+
+    def test_recipes_on_homepage(self):
+        """The harmonization recipe elements don't appear on the home page for superusers."""
+        url = reverse('home')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, '<h2>Submit a harmonization recipe</h2>', html=True)
+        self.assertContains(response, '<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Harmonization recipes <span class="caret"></span></a>', html=True)
+
+    def test_recipes_on_profile_page(self):
+        """The harmonization recipe tabs don't appear on the profile page for superusers."""
+        url = reverse('profiles:profile')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, '<li role="presentation"><a href="#unitrecipes" role="tab" data-toggle="tab">Unit Recipes</a></li>', html=True)
+        self.assertContains(response, '<li role="presentation"><a href="#harmonizationrecipes" role="tab" data-toggle="tab">Harmonization Recipes</a></li>', html=True)
 
 
 class RecipesLoginRequiredTestCase(LoginRequiredTestCase):
