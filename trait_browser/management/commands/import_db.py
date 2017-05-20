@@ -575,7 +575,8 @@ class Command(BaseCommand):
         """
         return self._make_args_mapping(row_dict,
                                        ['id', 'trait_set_name', 'version', 'flavor', 'description', 
-                                       'harmonized_by', 'git_commit_hash', 'is_longitudinal', 'date_added', 'date_changed'])
+                                       'harmonized_by', 'git_commit_hash', 'i_is_demographic',
+                                       'is_longitudinal', 'date_added', 'date_changed'])
 
     def _make_harmonization_unit_args(self, row_dict):
         """Get args for making a HarmonizationUnit object from a source db row.

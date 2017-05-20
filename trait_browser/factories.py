@@ -127,6 +127,7 @@ class HarmonizedTraitSetFactory(SourceDBTimeStampMixin, factory.DjangoModelFacto
     i_flavor = factory.Faker('random_int', min=1, max=10)
     i_harmonized_by = factory.Faker('user_name')
     i_git_commit_hash = factory.Faker('sha1')
+    i_is_demographic = factory.Faker('boolean')
     i_is_longitudinal = factory.Faker('boolean')
     
     class Meta:
