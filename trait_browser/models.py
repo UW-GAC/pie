@@ -247,6 +247,7 @@ class HarmonizationUnit(SourceDBTimeStampedModel):
     component_harmonized_traits = models.ManyToManyField('HarmonizedTrait', related_name='harmonized_component_of_harmonization_unit')
     component_batch_traits = models.ManyToManyField('SourceTrait', related_name='batch_component_of_harmonization_unit')
     component_age_traits = models.ManyToManyField('SourceTrait', related_name='age_component_of_harmonization_unit')
+    component_harmonized_trait_sets = models.ManyToManyField('HarmonizedTraitSet', related_name='harmonized_set_component_of_harmonization_unit')
     
     def __str__(self):
         """Pretty printing."""
@@ -421,6 +422,7 @@ class HarmonizedTrait(Trait):
     component_source_traits = models.ManyToManyField('SourceTrait', related_name='source_component_of_harmonized_trait')
     component_harmonized_traits = models.ManyToManyField('HarmonizedTrait', related_name='harmonized_component_of_harmonized_trait')
     component_batch_traits = models.ManyToManyField('SourceTrait', related_name='batch_component_of_harmonized_trait')
+    component_harmonized_trait_sets = models.ManyToManyField('HarmonizedTraitSet', related_name='harmonized_set_component_of_harmonized_trait')
     harmonization_units = models.ManyToManyField(HarmonizationUnit)
     trait_flavor_name = models.CharField(max_length=150)
 

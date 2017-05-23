@@ -186,6 +186,16 @@ class HarmonizationUnitFactory(SourceDBTimeStampMixin, factory.DjangoModelFactor
             for source_trait in extracted:
                 self.component_age_traits.add(source_trait)
 
+    @factory.post_generation
+    def component_harmonized_trait_sets(self, create, extracted, **kwargs):
+        # Do not add any component_harmonized_traits for simple builds.
+        if not create:
+            return
+        # Add component_harmonized_traits from a list that was passed in.
+        if extracted:
+            for harmonized_trait_set in extracted:
+                self.component_harmonized_trait_sets.add(harmonized_trait_set)
+
 
 class SourceTraitFactory(SourceDBTimeStampMixin, factory.DjangoModelFactory):
     """Factory for SourceTrait objects using Faker faked data."""
@@ -266,6 +276,16 @@ class HarmonizedTraitFactory(SourceDBTimeStampMixin, factory.DjangoModelFactory)
         if extracted:
             for harmonization_unit in extracted:
                 self.harmonization_units.add(harmonization_unit)
+
+    @factory.post_generation
+    def component_harmonized_trait_sets(self, create, extracted, **kwargs):
+        # Do not add any component_harmonized_traits for simple builds.
+        if not create:
+            return
+        # Add component_harmonized_traits from a list that was passed in.
+        if extracted:
+            for harmonized_trait_set in extracted:
+                self.component_harmonized_trait_sets.add(harmonized_trait_set)
 
 
 class SourceTraitEncodedValueFactory(SourceDBTimeStampMixin, factory.DjangoModelFactory):
