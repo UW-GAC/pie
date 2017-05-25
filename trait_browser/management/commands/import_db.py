@@ -956,14 +956,14 @@ class Command(BaseCommand):
         logger.info("Added {} component source traits".format(len(new_component_source_trait_links_to_unit)))
 
         new_component_harmonized_trait_links_to_unit = self._import_new_m2m_field(source_db=source_db,
-                                                                            source_table='component_harmonized_trait',
+                                                                            source_table='component_harmonized_trait_set',
                                                                             parent_model=HarmonizationUnit,
                                                                             parent_source_pk='harmonization_unit_id',
-                                                                            child_model=HarmonizedTrait,
-                                                                            child_source_pk='component_trait_id',
-                                                                            child_related_name='component_harmonized_traits',
+                                                                            child_model=HarmonizedTraitSet,
+                                                                            child_source_pk='component_trait_set_id',
+                                                                            child_related_name='component_harmonized_trait_sets',
                                                                             import_parent_pks=new_harmonization_unit_pks)
-        logger.info("Added {} component harmonized traits".format(len(new_component_harmonized_trait_links_to_unit)))
+        logger.info("Added {} component harmonized trait sets".format(len(new_component_harmonized_trait_links_to_unit)))
 
         new_component_batch_trait_links_to_unit = self._import_new_m2m_field(source_db=source_db,
                                                                         source_table='component_batch_trait',
@@ -996,14 +996,14 @@ class Command(BaseCommand):
         logger.info("Added {} component source traits".format(len(new_component_source_trait_links_to_trait)))
 
         new_component_harmonized_trait_links_to_trait = self._import_new_m2m_field(source_db=source_db,
-                                                                            source_table='component_harmonized_trait',
+                                                                            source_table='component_harmonized_trait_set',
                                                                             parent_model=HarmonizedTrait,
                                                                             parent_source_pk='harmonized_trait_id',
-                                                                            child_model=HarmonizedTrait,
-                                                                            child_source_pk='component_trait_id',
-                                                                            child_related_name='component_harmonized_traits',
+                                                                            child_model=HarmonizedTraitSet,
+                                                                            child_source_pk='component_trait_set_id',
+                                                                            child_related_name='component_harmonized_trait_sets',
                                                                             import_parent_pks=new_harmonized_trait_pks)
-        logger.info("Added {} component harmonized traits".format(len(new_component_harmonized_trait_links_to_trait)))
+        logger.info("Added {} component harmonized trait sets".format(len(new_component_harmonized_trait_links_to_trait)))
 
         new_component_batch_trait_links_to_trait = self._import_new_m2m_field(source_db=source_db,
                                                                         source_table='component_batch_trait',
@@ -1142,15 +1142,15 @@ class Command(BaseCommand):
         logger.info("Update: removed {} component source traits".format(len(updated_component_source_trait_links_to_unit['removed'])))
 
         updated_component_harmonized_trait_links_to_unit = self._update_m2m_field(source_db=source_db,
-                                                                        source_table='component_harmonized_trait',
+                                                                        source_table='component_harmonized_trait_set',
                                                                         parent_model=HarmonizationUnit,
                                                                         parent_source_pk='harmonization_unit_id',
-                                                                        child_model=HarmonizedTrait,
-                                                                        child_source_pk='component_trait_id',
-                                                                        child_related_name='component_harmonized_traits',
+                                                                        child_model=HarmonizedTraitSet,
+                                                                        child_source_pk='component_trait_set_id',
+                                                                        child_related_name='component_harmonized_trait_sets',
                                                                         expected=False)
-        logger.info("Update: added {} component harmonized traits".format(len(updated_component_harmonized_trait_links_to_unit['added'])))
-        logger.info("Update: removed {} component harmonized traits".format(len(updated_component_harmonized_trait_links_to_unit['removed'])))
+        logger.info("Update: added {} component harmonized trait sets".format(len(updated_component_harmonized_trait_links_to_unit['added'])))
+        logger.info("Update: removed {} component harmonized trait sets".format(len(updated_component_harmonized_trait_links_to_unit['removed'])))
 
         updated_component_batch_trait_links_to_unit = self._update_m2m_field(source_db=source_db,
                                                                     source_table='component_batch_trait',
@@ -1186,15 +1186,15 @@ class Command(BaseCommand):
         logger.info("Update: removed {} component source traits".format(len(updated_component_source_trait_links_to_trait['removed'])))
 
         updated_component_harmonized_trait_links_to_trait = self._update_m2m_field(source_db=source_db,
-                                                                        source_table='component_harmonized_trait',
+                                                                        source_table='component_harmonized_trait_set',
                                                                         parent_model=HarmonizedTrait,
                                                                         parent_source_pk='harmonized_trait_id',
-                                                                        child_model=HarmonizedTrait,
-                                                                        child_source_pk='component_trait_id',
-                                                                        child_related_name='component_harmonized_traits',
+                                                                        child_model=HarmonizedTraitSet,
+                                                                        child_source_pk='component_trait_set_id',
+                                                                        child_related_name='component_harmonized_trait_sets',
                                                                         expected=False)
-        logger.info("Update: added {} component harmonized traits".format(len(updated_component_harmonized_trait_links_to_trait['added'])))
-        logger.info("Update: removed {} component harmonized traits".format(len(updated_component_harmonized_trait_links_to_trait['removed'])))
+        logger.info("Update: added {} component harmonized trait sets".format(len(updated_component_harmonized_trait_links_to_trait['added'])))
+        logger.info("Update: removed {} component harmonized trait sets".format(len(updated_component_harmonized_trait_links_to_trait['removed'])))
 
         updated_component_batch_trait_links_to_trait = self._update_m2m_field(source_db=source_db,
                                                                 source_table='component_batch_trait',

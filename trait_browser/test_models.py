@@ -165,13 +165,6 @@ class HarmonizationUnitTestCase(TestCase):
         harmonization_unit = HarmonizationUnitFactory.create(component_source_traits=component_source_traits)
         self.assertEqual(len(harmonization_unit.component_source_traits.all()), 5)
 
-    def test_adding_component_harmonized_traits(self):
-        """Test that adding associated component_harmonized_traits works."""
-        htrait_set = HarmonizedTraitSetFactory.create()
-        component_harmonized_traits = HarmonizedTraitFactory.create_batch(5, harmonized_trait_set=htrait_set)
-        harmonization_unit = HarmonizationUnitFactory.create(component_harmonized_traits=component_harmonized_traits)
-        self.assertEqual(len(harmonization_unit.component_harmonized_traits.all()), 5)
-
     def test_adding_component_batch_traits(self):
         """Test that adding associated component_batch_traits works."""
         global_study = GlobalStudyFactory.create()
@@ -269,13 +262,6 @@ class HarmonizedTraitTestCase(TestCase):
         component_source_traits = SourceTraitFactory.create_batch(5, source_dataset__source_study_version__study__global_study=global_study)
         harmonized_trait = HarmonizedTraitFactory.create(component_source_traits=component_source_traits)
         self.assertEqual(len(harmonized_trait.component_source_traits.all()), 5)
-
-    def test_adding_component_harmonized_traits(self):
-        """Test that adding associated component_harmonized_traits works."""
-        htrait_set = HarmonizedTraitSetFactory.create()
-        component_harmonized_traits = HarmonizedTraitFactory.create_batch(5, harmonized_trait_set=htrait_set)
-        harmonized_trait = HarmonizedTraitFactory.create(component_harmonized_traits=component_harmonized_traits)
-        self.assertEqual(len(harmonized_trait.component_harmonized_traits.all()), 5)
 
     def test_adding_component_batch_traits(self):
         """Test that adding associated component_batch_traits works."""

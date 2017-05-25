@@ -166,13 +166,13 @@ def build_test_db(n_global_studies, n_subcohort_range, n_dataset_range, n_trait_
             hunit.component_age_traits.add(source_traits[1])
             # Add harmonization unit to harmonized trait.
             htrait.harmonization_units.add(hunit)
-    # Add one harmonized trait that has component harmonized and component source traits.
+    # Add one harmonized trait that has component harmonized traits.
     ht_set = HarmonizedTraitSetFactory.create()
     htrait = HarmonizedTraitFactory.create(harmonized_trait_set=ht_set)
     hunit = HarmonizationUnitFactory.create(harmonized_trait_set=ht_set)
-    component = sample(list(HarmonizedTrait.objects.all()), 1)[0]
-    hunit.component_harmonized_traits.add(component)
-    htrait.component_harmonized_traits.add(component)
+    component = sample(list(HarmonizedTraitSet.objects.all()), 1)[0]
+    hunit.component_harmonized_trait_sets.add(component)
+    htrait.component_harmonized_trait_sets.add(component)
     htrait.harmonization_units.add(hunit)
     # Add one harmonized trait that has component batch traits.
     ht_set = HarmonizedTraitSetFactory.create()

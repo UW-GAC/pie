@@ -157,16 +157,6 @@ class HarmonizationUnitFactory(SourceDBTimeStampMixin, factory.DjangoModelFactor
                 self.component_source_traits.add(source_trait)
 
     @factory.post_generation
-    def component_harmonized_traits(self, create, extracted, **kwargs):
-        # Do not add any component_harmonized_traits for simple builds.
-        if not create:
-            return
-        # Add component_harmonized_traits from a list that was passed in.
-        if extracted:
-            for harmonized_trait in extracted:
-                self.component_harmonized_traits.add(harmonized_trait)
-
-    @factory.post_generation
     def component_batch_traits(self, create, extracted, **kwargs):
         # Do not add any component_source_traits for simple builds.
         if not create:
@@ -246,16 +236,6 @@ class HarmonizedTraitFactory(SourceDBTimeStampMixin, factory.DjangoModelFactory)
         if extracted:
             for source_trait in extracted:
                 self.component_source_traits.add(source_trait)
-
-    @factory.post_generation
-    def component_harmonized_traits(self, create, extracted, **kwargs):
-        # Do not add any component_harmonized_traits for simple builds.
-        if not create:
-            return
-        # Add component_harmonized_traits from a list that was passed in.
-        if extracted:
-            for harmonized_trait in extracted:
-                self.component_harmonized_traits.add(harmonized_trait)
 
     @factory.post_generation
     def component_batch_traits(self, create, extracted, **kwargs):
