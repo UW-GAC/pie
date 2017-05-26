@@ -217,6 +217,7 @@ class HarmonizedTraitSet(SourceDBTimeStampedModel):
     i_description = models.CharField('description', max_length=1000)
     i_harmonized_by = models.CharField('harmonized by', max_length=45)
     i_git_commit_hash = models.CharField('git commit hash', max_length=40)
+    i_is_demographic = models.BooleanField('is_demographic', default=False)
     i_is_longitudinal = models.BooleanField('is longitudinal?')
     component_html_detail = models.TextField(default='')
 
@@ -243,9 +244,9 @@ class HarmonizationUnit(SourceDBTimeStampedModel):
     i_id = models.PositiveIntegerField('harmonization unit id', primary_key=True, db_column='i_id')
     i_tag = models.CharField('tag', max_length=100)
     component_source_traits = models.ManyToManyField('SourceTrait', related_name='source_component_of_harmonization_unit')
-    component_harmonized_traits = models.ManyToManyField('HarmonizedTrait', related_name='harmonized_component_of_harmonization_unit')
     component_batch_traits = models.ManyToManyField('SourceTrait', related_name='batch_component_of_harmonization_unit')
     component_age_traits = models.ManyToManyField('SourceTrait', related_name='age_component_of_harmonization_unit')
+    component_harmonized_trait_sets = models.ManyToManyField('HarmonizedTraitSet', related_name='harmonized_set_component_of_harmonization_unit')
     
     def __str__(self):
         """Pretty printing."""
@@ -418,8 +419,8 @@ class HarmonizedTrait(Trait):
     i_has_batch = models.BooleanField('has batch?')
     i_is_unique_key = models.BooleanField('is unique key?')
     component_source_traits = models.ManyToManyField('SourceTrait', related_name='source_component_of_harmonized_trait')
-    component_harmonized_traits = models.ManyToManyField('HarmonizedTrait', related_name='harmonized_component_of_harmonized_trait')
     component_batch_traits = models.ManyToManyField('SourceTrait', related_name='batch_component_of_harmonized_trait')
+    component_harmonized_trait_sets = models.ManyToManyField('HarmonizedTraitSet', related_name='harmonized_set_component_of_harmonized_trait')
     harmonization_units = models.ManyToManyField(HarmonizationUnit)
     trait_flavor_name = models.CharField(max_length=150)
 
@@ -459,7 +460,8 @@ class HarmonizedTrait(Trait):
     def get_component_html(self, harmonization_unit):
         """Get html for inline lists of source and harmonized component phenotypes for the harmonized trait."""
         source = [tr.get_name_link_html() for tr in (self.component_source_traits.all() & harmonization_unit.component_source_traits.all())]
-        harmonized = [tr.get_name_link_html() for tr in (self.component_harmonized_traits.all() & harmonization_unit.component_harmonized_traits.all())]
+        harmonized_trait_sets = [trait_set for trait_set in (self.component_harmonized_trait_sets.all() & harmonization_unit.component_harmonized_trait_sets.all())]
+        harmonized = [tr.get_name_link_html() for trait_set in harmonized_trait_sets for tr in trait_set.harmonizedtrait_set.all() if not tr.i_is_unique_key]
         component_html = ''
         if len(source) > 0:
             trait_list = '\n'.join([LIST_ELEMENT_HTML.format(element=trait) for trait in source])
