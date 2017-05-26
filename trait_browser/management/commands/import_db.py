@@ -41,7 +41,7 @@ TEST = len(argv) >= 2 and search(r'manage.py$', argv[0]) and argv[1] == 'test'
 HUNIT_QUERY = ' '.join(['SELECT DISTINCT unit_trait_map.harmonized_trait_id, unit_trait_map.harmonization_unit_id FROM (',
                         'SELECT harmonized_trait_id, harmonization_unit_id FROM component_source_trait AS comp_source',
                         'UNION',
-                        'SELECT harmonized_trait_id, harmonization_unit_id FROM component_harmonized_trait AS comp_harm',
+                        'SELECT harmonized_trait_id, harmonization_unit_id FROM component_harmonized_trait_set AS comp_harm',
                         'UNION',
                         'SELECT harmonized_trait_id, harmonization_unit_id FROM component_batch_trait AS comp_batch',
                         ') AS unit_trait_map'
@@ -575,7 +575,7 @@ class Command(BaseCommand):
         """
         return self._make_args_mapping(row_dict,
                                        ['id', 'trait_set_name', 'version', 'flavor', 'description', 
-                                       'harmonized_by', 'git_commit_hash', 'i_is_demographic',
+                                       'harmonized_by', 'git_commit_hash', 'is_demographic',
                                        'is_longitudinal', 'date_added', 'date_changed'])
 
     def _make_harmonization_unit_args(self, row_dict):

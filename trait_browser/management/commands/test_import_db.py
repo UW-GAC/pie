@@ -1256,7 +1256,7 @@ class UpdateModelsTest(VisitTestDataTestCase):
         self.source_db.close()
         self.source_db = get_devel_db(permissions='full')
         self.cursor = self.source_db.cursor(buffered=True, dictionary=True)
-        add_subcohort_link_query = "INSERT INTO source_dataset_subcohorts (dataset_id, subcohort_id, date_added) VALUES ({}, {}, '{}');".format(sc.i_id, dataset_to_link.i_id, timezone.now().strftime('%Y-%m-%d %H:%M:%S'))
+        add_subcohort_link_query = "INSERT INTO source_dataset_subcohorts (dataset_id, subcohort_id, date_added) VALUES ({}, {}, '{}');".format(dataset_to_link.i_id, sc.i_id, timezone.now().strftime('%Y-%m-%d %H:%M:%S'))
         self.cursor.execute(add_subcohort_link_query)
         self.source_db.commit()
         self.cursor.close()
@@ -1478,7 +1478,7 @@ class UpdateModelsTest(VisitTestDataTestCase):
         self.source_db = get_devel_db(permissions='full')
         self.cursor = self.source_db.cursor(buffered=True, dictionary=True)
         # Add source_trait as a component trait of harmonization unit and harmonized trait in the source db.
-        add_component_trait_query = "INSERT INTO component_harmonized_trait_set (harmonized_trait_id, harmonization_unit_id, component_trait_set_id, date_added) values ('{}', '{}', '{}', '{}')".format(htrait_to_link.i_trait_id, hunit_to_link.i_id, harmonized_trait_set.i_trait_id, timezone.now().strftime('%Y-%m-%d %H:%M:%S'))
+        add_component_trait_query = "INSERT INTO component_harmonized_trait_set (harmonized_trait_id, harmonization_unit_id, component_trait_set_id, date_added) values ('{}', '{}', '{}', '{}')".format(htrait_to_link.i_trait_id, hunit_to_link.i_id, harmonized_trait_set.i_id, timezone.now().strftime('%Y-%m-%d %H:%M:%S'))
         self.cursor.execute(add_component_trait_query)
         self.source_db.commit()
         self.cursor.execute('SELECT LAST_INSERT_ID() AS last')
@@ -1492,8 +1492,8 @@ class UpdateModelsTest(VisitTestDataTestCase):
         harmonized_trait_set.refresh_from_db()
         htrait_to_link.refresh_from_db()
         hunit_to_link.refresh_from_db()
-        self.assertTrue(htrait_to_link in harmonized_trait_set.harmonized_component_of_harmonized_trait.all())
-        self.assertTrue(hunit_to_link in harmonized_trait_set.harmonized_component_of_harmonization_unit.all())
+        self.assertTrue(htrait_to_link in harmonized_trait_set.harmonized_set_component_of_harmonized_trait.all())
+        self.assertTrue(hunit_to_link in harmonized_trait_set.harmonized_set_component_of_harmonization_unit.all())
 
     def test_update_remove_component_harmonized_traits(self):
         """A deleted component source trait link is removed."""
@@ -1502,7 +1502,7 @@ class UpdateModelsTest(VisitTestDataTestCase):
         # Pick a source trait to remove a link to in the source db.
         hunit_to_unlink = HarmonizationUnit.objects.exclude(component_harmonized_trait_sets=None).order_by('?').first()
         htrait_to_unlink = hunit_to_unlink.harmonizedtrait_set.all().order_by('?').first()
-        component_harmonized_trait_set = hunit_to_unlink.component_harmonized_traits.all().order_by('?').first()
+        component_harmonized_trait_set = hunit_to_unlink.component_harmonized_trait_sets.all().order_by('?').first()
         # Open source db with full privileges.
         self.source_db = get_devel_db(permissions='full')
         self.cursor = self.source_db.cursor(buffered=True, dictionary=True)
@@ -1519,8 +1519,8 @@ class UpdateModelsTest(VisitTestDataTestCase):
         component_harmonized_trait_set.refresh_from_db()
         htrait_to_unlink.refresh_from_db()
         hunit_to_unlink.refresh_from_db()
-        self.assertFalse(htrait_to_unlink in component_harmonized_trait_set.harmonized_component_of_harmonized_trait.all())
-        self.assertFalse(hunit_to_unlink in component_harmonized_trait_set.harmonized_component_of_harmonization_unit.all())
+        self.assertFalse(htrait_to_unlink in component_harmonized_trait_set.harmonized_set_component_of_harmonized_trait.all())
+        self.assertFalse(hunit_to_unlink in component_harmonized_trait_set.harmonized_set_component_of_harmonization_unit.all())
 
 
 class ImportNoUpdateTest(VisitTestDataTestCase):
@@ -1714,7 +1714,7 @@ class ImportNoUpdateTest(VisitTestDataTestCase):
         self.source_db.close()
         self.source_db = get_devel_db(permissions='full')
         self.cursor = self.source_db.cursor(buffered=True, dictionary=True)
-        add_subcohort_link_query = "INSERT INTO source_dataset_subcohorts (dataset_id, subcohort_id, date_added) VALUES ({}, {}, '{}');".format(sc.i_id, dataset_to_link.i_id, timezone.now().strftime('%Y-%m-%d %H:%M:%S'))
+        add_subcohort_link_query = "INSERT INTO source_dataset_subcohorts (dataset_id, subcohort_id, date_added) VALUES ({}, {}, '{}');".format(dataset_to_link.i_id, sc.i_id, timezone.now().strftime('%Y-%m-%d %H:%M:%S'))
         self.cursor.execute(add_subcohort_link_query)
         self.source_db.commit()
         self.cursor.close()
@@ -1931,7 +1931,7 @@ class ImportNoUpdateTest(VisitTestDataTestCase):
         self.source_db = get_devel_db(permissions='full')
         self.cursor = self.source_db.cursor(buffered=True, dictionary=True)
         # Add source_trait as a component trait of harmonization unit and harmonized trait in the source db.
-        add_component_trait_query = "INSERT INTO component_harmonized_trait_set (harmonized_trait_id, harmonization_unit_id, component_trait_set_id, date_added) values ('{}', '{}', '{}', '{}')".format(htrait_to_link.i_trait_id, hunit_to_link.i_id, harmonized_trait_set.i_trait_id, timezone.now().strftime('%Y-%m-%d %H:%M:%S'))
+        add_component_trait_query = "INSERT INTO component_harmonized_trait_set (harmonized_trait_id, harmonization_unit_id, component_trait_set_id, date_added) values ('{}', '{}', '{}', '{}')".format(htrait_to_link.i_trait_id, hunit_to_link.i_id, harmonized_trait_set.i_id, timezone.now().strftime('%Y-%m-%d %H:%M:%S'))
         self.cursor.execute(add_component_trait_query)
         self.source_db.commit()
         self.cursor.execute('SELECT LAST_INSERT_ID() AS last')
@@ -1945,8 +1945,8 @@ class ImportNoUpdateTest(VisitTestDataTestCase):
         harmonized_trait_set.refresh_from_db()
         htrait_to_link.refresh_from_db()
         hunit_to_link.refresh_from_db()
-        self.assertFalse(htrait_to_link in harmonized_trait_set.harmonized_component_of_harmonized_trait.all())
-        self.assertFalse(hunit_to_link in harmonized_trait_set.harmonized_component_of_harmonization_unit.all())
+        self.assertFalse(htrait_to_link in harmonized_trait_set.harmonized_set_component_of_harmonized_trait.all())
+        self.assertFalse(hunit_to_link in harmonized_trait_set.harmonized_set_component_of_harmonization_unit.all())
 
 
 # Tests that run import_db from start to finish
@@ -2049,7 +2049,7 @@ class IntegrationTest(VisitTestDataTestCase):
             raise ValueError('The subcohort is already linked to all possible datasets.')
         dataset_to_link = list(unlinked_datasets)[0]
         # Create a new dataset-subcohort link in the source db.
-        add_subcohort_link_query = "INSERT INTO source_dataset_subcohorts (dataset_id, subcohort_id, date_added) VALUES ({}, {}, '{}');".format(subcohort.i_id, dataset_to_link.i_id, timezone.now().strftime('%Y-%m-%d %H:%M:%S'))
+        add_subcohort_link_query = "INSERT INTO source_dataset_subcohorts (dataset_id, subcohort_id, date_added) VALUES ({}, {}, '{}');".format(dataset_to_link.i_id, subcohort.i_id, timezone.now().strftime('%Y-%m-%d %H:%M:%S'))
         self.cursor.execute(add_subcohort_link_query)
         self.source_db.commit()
         # Remove a dataset-subcohort link in the source db.
@@ -2090,7 +2090,7 @@ class IntegrationTest(VisitTestDataTestCase):
         component_harmonized_trait_set = HarmonizedTraitSet.objects.order_by('?').first()
         hunit_to_link_harmonized = HarmonizationUnit.objects.exclude(i_id__in=HarmonizationUnit.objects.filter(component_harmonized_trait_sets__in=[component_harmonized_trait_set]))[0]
         htrait_to_link_harmonized = hunit_to_link_harmonized.harmonized_trait_set.harmonizedtrait_set.all()[0]
-        add_component_trait_query = "INSERT INTO component_harmonized_trait_set (harmonized_trait_id, harmonization_unit_id, component_trait_set_id, date_added) values ('{}', '{}', '{}', '{}')".format(htrait_to_link_harmonized.i_trait_id, hunit_to_link_harmonized.i_id, component_harmonized_trait_set.i_trait_id, timezone.now().strftime('%Y-%m-%d %H:%M:%S'))
+        add_component_trait_query = "INSERT INTO component_harmonized_trait_set (harmonized_trait_id, harmonization_unit_id, component_trait_set_id, date_added) values ('{}', '{}', '{}', '{}')".format(htrait_to_link_harmonized.i_trait_id, hunit_to_link_harmonized.i_id, component_harmonized_trait_set.i_id, timezone.now().strftime('%Y-%m-%d %H:%M:%S'))
         self.cursor.execute(add_component_trait_query)
         self.source_db.commit()
         self.cursor.execute('SELECT LAST_INSERT_ID() AS last')
@@ -2168,8 +2168,8 @@ class IntegrationTest(VisitTestDataTestCase):
         self.assertTrue(htrait_to_link_batch in component_batch_trait.batch_component_of_harmonized_trait.all())
         self.assertTrue(hunit_to_link_batch in component_batch_trait.batch_component_of_harmonization_unit.all())
         self.assertTrue(hunit_to_link_age in component_age_trait.age_component_of_harmonization_unit.all())
-        self.assertTrue(htrait_to_link_harmonized in component_harmonized_trait_set.harmonized_component_of_harmonized_trait.all())
-        self.assertTrue(hunit_to_link_harmonized in component_harmonized_trait_set.harmonized_component_of_harmonization_unit.all())
+        self.assertTrue(htrait_to_link_harmonized in component_harmonized_trait_set.harmonized_set_component_of_harmonized_trait.all())
+        self.assertTrue(hunit_to_link_harmonized in component_harmonized_trait_set.harmonized_set_component_of_harmonization_unit.all())
 
     def test_values_match_after_all_updates(self):
         """All imported field values match those in the source db after making updates to the source db."""
@@ -2201,7 +2201,7 @@ class IntegrationTest(VisitTestDataTestCase):
         source_trait = SourceTrait.objects.all()[0]
         change_data_in_table('source_trait', 'dcc_description', new_value, 'source_trait_id', source_trait.pk)
         # Update the subcohort table.
-        subcohort = Subcohort.objects.get(pk=1)
+        subcohort = Subcohort.objects.get(pk=2)
         change_data_in_table('subcohort', 'name', new_value, subcohort._meta.pk.name.replace('i_', ''), subcohort.pk)
         # Update source trait encoded values table.
         sev = SourceTraitEncodedValue.objects.all()[0]
@@ -2228,7 +2228,7 @@ class IntegrationTest(VisitTestDataTestCase):
         if len(unlinked_datasets) < 1:
             raise ValueError('The subcohort is already linked to all possible datasets.')
         dataset_to_link = list(unlinked_datasets)[0]
-        add_subcohort_link_query = "INSERT INTO source_dataset_subcohorts (dataset_id, subcohort_id, date_added) VALUES ({}, {}, '{}');".format(subcohort.i_id, dataset_to_link.i_id, timezone.now().strftime('%Y-%m-%d %H:%M:%S'))
+        add_subcohort_link_query = "INSERT INTO source_dataset_subcohorts (dataset_id, subcohort_id, date_added) VALUES ({}, {}, '{}');".format(dataset_to_link.i_id, subcohort.i_id, timezone.now().strftime('%Y-%m-%d %H:%M:%S'))
         self.cursor.execute(add_subcohort_link_query)
         # Remove an existing subcohort-dataset link.
         subcohort2 = Subcohort.objects.get(pk=2)
@@ -2272,14 +2272,14 @@ class IntegrationTest(VisitTestDataTestCase):
         component_age_trait = hunit_to_unlink_age.component_age_traits.all().order_by('?').first()
         remove_component_trait_query = "DELETE FROM component_age_trait WHERE harmonization_unit_id={} AND component_trait_id={}".format(hunit_to_unlink_age.pk, component_age_trait.pk)
         self.cursor.execute(remove_component_trait_query)
-        # Add a new component harmonized trait.
+        # Add a new component harmonized trait set.
         component_harmonized_trait_set = HarmonizedTraitSet.objects.order_by('?').first()
-        hunit_to_link_harmonized = HarmonizationUnit.objects.exclude(i_id__in=HarmonizationUnit.objects.filter(component_harmonized_traits__in=[component_harmonized_trait_set]))[0]
-        htrait_to_link_harmonized = hunit_to_link_harmonized.harmonized_trait_sets.harmonizedtrait_set.all()[0]
-        add_component_trait_query = "INSERT INTO component_harmonized_trait_set (harmonized_trait_id, harmonization_unit_id, component_trait_set_id, date_added) values ('{}', '{}', '{}', '{}')".format(htrait_to_link_harmonized.i_trait_id, hunit_to_link_harmonized.i_id, component_harmonized_trait_set.i_trait_id, timezone.now().strftime('%Y-%m-%d %H:%M:%S'))
+        hunit_to_link_harmonized = HarmonizationUnit.objects.exclude(i_id__in=HarmonizationUnit.objects.filter(component_harmonized_trait_sets__in=[component_harmonized_trait_set]))[0]
+        htrait_to_link_harmonized = hunit_to_link_harmonized.harmonized_trait_set.harmonizedtrait_set.all()[0]
+        add_component_trait_query = "INSERT INTO component_harmonized_trait_set (harmonized_trait_id, harmonization_unit_id, component_trait_set_id, date_added) values ('{}', '{}', '{}', '{}')".format(htrait_to_link_harmonized.i_trait_id, hunit_to_link_harmonized.i_id, component_harmonized_trait_set.i_id, timezone.now().strftime('%Y-%m-%d %H:%M:%S'))
         self.cursor.execute(add_component_trait_query)
         # Remove an existing component harmonized trait.
-        hunit_to_unlink_harmonized = HarmonizationUnit.objects.exclude(component_harmonized_traits=None).order_by('?').first()
+        hunit_to_unlink_harmonized = HarmonizationUnit.objects.exclude(component_harmonized_trait_sets=None).order_by('?').first()
         htrait_to_unlink_harmonized = hunit_to_unlink_harmonized.harmonizedtrait_set.all().order_by('?').first()
         component_harmonized_trait_set = hunit_to_unlink_harmonized.component_harmonized_trait_sets.all().order_by('?').first()
         remove_component_trait_query = "DELETE FROM component_harmonized_trait_set WHERE harmonized_trait_id={} AND harmonization_unit_id={} AND component_trait_set_id={}".format(htrait_to_unlink_harmonized.pk, hunit_to_unlink_harmonized.pk, component_harmonized_trait_set.pk)
@@ -2320,10 +2320,10 @@ class IntegrationTest(VisitTestDataTestCase):
             'component_age_trait', 'component_source_trait', 'component_harmonized_trait_set', 'component_batch_trait', )
         group_by_fields = ('dataset_id', 'harmonized_trait_id', 'harmonized_trait_id', 'harmonized_trait_id',
             'harmonization_unit_id', 'harmonization_unit_id', 'harmonization_unit_id', 'harmonization_unit_id',)
-        concat_fields = ('subcohort_id', 'component_trait_id', 'component_trait_id', 'component_trait_id',
-            'component_trait_id', 'component_trait_id', 'component_trait_id', 'component_trait_id',)
+        concat_fields = ('subcohort_id', 'component_trait_id', 'component_trait_set_id', 'component_trait_id',
+            'component_trait_id', 'component_trait_id', 'component_trait_set_id', 'component_trait_id',)
         parent_models = (SourceDataset, HarmonizedTrait, HarmonizedTrait, HarmonizedTrait,
             HarmonizationUnit, HarmonizationUnit, HarmonizationUnit, HarmonizationUnit,)
-        m2m_att_names = ('subcohorts', 'component_source_traits', 'component_harmonized_traits', 'component_batch_traits',
-            'component_age_traits', 'component_source_traits', 'component_harmonized_traits', 'component_batch_traits', )
+        m2m_att_names = ('subcohorts', 'component_source_traits', 'component_harmonized_trait_sets', 'component_batch_traits',
+            'component_age_traits', 'component_source_traits', 'component_harmonized_trait_sets', 'component_batch_traits', )
         self.check_imported_m2m_relations_match(m2m_tables, group_by_fields, concat_fields, parent_models, m2m_att_names)
