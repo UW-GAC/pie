@@ -325,8 +325,7 @@ class TablePageTestCase(UserAutoLoginSeleniumTestCase):
         # Expect 2 extra rows here because of the table containing the upper right buttons.
         self.check_table_view(expected_rows=total_source_traits + 2)
         # Check the detail page for the first listed SourceTrait.
-        check_name = SourceTrait.objects.all().order_by('i_trait_name')[0].i_trait_name
-        detail_link = self.selenium.find_element_by_link_text(check_name)
+        detail_link = self.selenium.find_element_by_class_name('i_trait_name')
         detail_link.click()
         self.go_back()
     

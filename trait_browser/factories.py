@@ -127,6 +127,7 @@ class HarmonizedTraitSetFactory(SourceDBTimeStampMixin, factory.DjangoModelFacto
     i_flavor = factory.Faker('random_int', min=1, max=10)
     i_harmonized_by = factory.Faker('user_name')
     i_git_commit_hash = factory.Faker('sha1')
+    i_is_demographic = factory.Faker('boolean')
     i_is_longitudinal = factory.Faker('boolean')
     
     class Meta:
@@ -156,16 +157,6 @@ class HarmonizationUnitFactory(SourceDBTimeStampMixin, factory.DjangoModelFactor
                 self.component_source_traits.add(source_trait)
 
     @factory.post_generation
-    def component_harmonized_traits(self, create, extracted, **kwargs):
-        # Do not add any component_harmonized_traits for simple builds.
-        if not create:
-            return
-        # Add component_harmonized_traits from a list that was passed in.
-        if extracted:
-            for harmonized_trait in extracted:
-                self.component_harmonized_traits.add(harmonized_trait)
-
-    @factory.post_generation
     def component_batch_traits(self, create, extracted, **kwargs):
         # Do not add any component_source_traits for simple builds.
         if not create:
@@ -184,6 +175,16 @@ class HarmonizationUnitFactory(SourceDBTimeStampMixin, factory.DjangoModelFactor
         if extracted:
             for source_trait in extracted:
                 self.component_age_traits.add(source_trait)
+
+    @factory.post_generation
+    def component_harmonized_trait_sets(self, create, extracted, **kwargs):
+        # Do not add any component_harmonized_traits for simple builds.
+        if not create:
+            return
+        # Add component_harmonized_traits from a list that was passed in.
+        if extracted:
+            for harmonized_trait_set in extracted:
+                self.component_harmonized_trait_sets.add(harmonized_trait_set)
 
 
 class SourceTraitFactory(SourceDBTimeStampMixin, factory.DjangoModelFactory):
@@ -237,16 +238,6 @@ class HarmonizedTraitFactory(SourceDBTimeStampMixin, factory.DjangoModelFactory)
                 self.component_source_traits.add(source_trait)
 
     @factory.post_generation
-    def component_harmonized_traits(self, create, extracted, **kwargs):
-        # Do not add any component_harmonized_traits for simple builds.
-        if not create:
-            return
-        # Add component_harmonized_traits from a list that was passed in.
-        if extracted:
-            for harmonized_trait in extracted:
-                self.component_harmonized_traits.add(harmonized_trait)
-
-    @factory.post_generation
     def component_batch_traits(self, create, extracted, **kwargs):
         # Do not add any component_source_traits for simple builds.
         if not create:
@@ -265,6 +256,16 @@ class HarmonizedTraitFactory(SourceDBTimeStampMixin, factory.DjangoModelFactory)
         if extracted:
             for harmonization_unit in extracted:
                 self.harmonization_units.add(harmonization_unit)
+
+    @factory.post_generation
+    def component_harmonized_trait_sets(self, create, extracted, **kwargs):
+        # Do not add any component_harmonized_traits for simple builds.
+        if not create:
+            return
+        # Add component_harmonized_traits from a list that was passed in.
+        if extracted:
+            for harmonized_trait_set in extracted:
+                self.component_harmonized_trait_sets.add(harmonized_trait_set)
 
 
 class SourceTraitEncodedValueFactory(SourceDBTimeStampMixin, factory.DjangoModelFactory):
