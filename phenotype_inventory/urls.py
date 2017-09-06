@@ -1,4 +1,4 @@
-'''phenotype_inventory URL Configuration
+"""phenotype_inventory URL Configuration.
 
 The `urlpatterns` list routes URLs to views. For more information please see:
     https://docs.djangoproject.com/en/1.8/topics/http/urls/
@@ -12,24 +12,24 @@ Class-based views
 Including another URLconf
     1. Add an import:  from blog import urls as blog_urls
     2. Add a URL to urlpatterns:  url(r'^blog/', include(blog_urls))
-'''
+"""
 
 from django.conf import settings
 from django.conf.urls import include, url
 from django.contrib import admin
-from django.views.generic import TemplateView # for static pages
+from django.views.generic import TemplateView  # For static pages.
 
 
 urlpatterns = [
-    url(r'^$', TemplateView.as_view(template_name="home.html"), name='home'),    # static home page
-    url(r'^about/$', TemplateView.as_view(template_name="about.html"), name='about'),    # static home page
-    url(r'^contact/$', TemplateView.as_view(template_name="contact.html"), name='contact'),    # static home page
-    url(r'^pages/', include('django.contrib.flatpages.urls')),    # Flat pages 
-    url(r'^admin/', include(admin.site.urls)),    # Admin interface
-    url(r'^phenotypes/', include('trait_browser.urls', namespace='trait_browser')),    # Trait browser app
-    url('^', include('django.contrib.auth.urls')), # authentication views
-    url(r'^profile/', include('profiles.urls', namespace='profiles')),    # relating to user accounts
-    url(r'^recipe/', include('recipes.urls', namespace='recipes')),    # Recipes app
+    url(r'^$', TemplateView.as_view(template_name="home.html"), name='home'),    # Static home page.
+    url(r'^about/$', TemplateView.as_view(template_name="about.html"), name='about'),
+    url(r'^contact/$', TemplateView.as_view(template_name="contact.html"), name='contact'),
+    url(r'^pages/', include('django.contrib.flatpages.urls')),  # Flat pages.
+    url(r'^admin/', include(admin.site.urls)),  # Admin interface.
+    url(r'^phenotypes/', include('trait_browser.urls', namespace='trait_browser')),  # Trait browser app.
+    url('^', include('django.contrib.auth.urls')),  # Authentication views.
+    url(r'^profile/', include('profiles.urls', namespace='profiles')),  # Relating to user accounts.
+    url(r'^recipe/', include('recipes.urls', namespace='recipes')),  # Recipes app.
     url(r'^auth/', include('authtools.urls')),
 ]
 
