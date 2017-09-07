@@ -1,48 +1,41 @@
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 
-from recipes.models import *
-from recipes.tables import *
-from .tables import *
-from .models import *
+import recipes.models
+import recipes.tables
+from . import models
+from . import tables
 
 
 @login_required
 def profile(request):
-    # user is automatically passed in the request somehow
     page_title = 'profile'
-
-    user_unit_recipes = UnitRecipe.objects.filter(creator=request.user).order_by('-modified')
-    unit_recipe_table = UnitRecipeTable(user_unit_recipes)
-    user_harmonization_recipes = HarmonizationRecipe.objects.filter(creator=request.user).order_by('-modified')
-    harmonization_recipe_table = HarmonizationRecipeTable(user_harmonization_recipes)
-
+    user_unit_recipes = recipes.models.UnitRecipe.objects.filter(creator=request.user).order_by('-modified')
+    unit_recipe_table = recipes.tables.UnitRecipeTable(user_unit_recipes)
+    user_harmonization_recipes = recipes.models.HarmonizationRecipe.objects.filter(
+        creator=request.user).order_by('-modified')
+    harmonization_recipe_table = recipes.tables.HarmonizationRecipeTable(user_harmonization_recipes)
     if request.method == "POST":
         # remove saved searches
         if 'search_type' in request.POST:
             search_removal_list = request.POST.getlist('search_id')
             for search_id in search_removal_list:
-                saved_search = SavedSearchMeta.objects.get(search_id=search_id)
+                saved_search = models.SavedSearchMeta.objects.get(search_id=search_id)
                 saved_search.active = False
                 saved_search.save()
-
-    savedsource = SourceSearchTable(build_usersearches(request.user.id, 'source'), request=request)
-    savedharmonized = HarmonizedSearchTable(build_usersearches(request.user.id, 'harmonized'), request=request)
-
-    # RequestConfig(request).configure(savedsource)
-    # RequestConfig(request).configure(savedharmonized)
-
+    savedsource = tables.SourceSearchTable(build_usersearches(request.user.id, 'source'), request=request)
+    savedharmonized = tables.HarmonizedSearchTable(build_usersearches(request.user.id, 'harmonized'), request=request)
     return render(
         request,
         'profiles/profile.html',
         {'page_title': page_title, 'savedsource': savedsource, 'savedharmonized': savedharmonized,
-        'unit_recipe_table': unit_recipe_table, 'harmonization_recipe_table': harmonization_recipe_table}
+         'unit_recipe_table': unit_recipe_table, 'harmonization_recipe_table': harmonization_recipe_table}
     )
 
 
 def build_usersearches(user_id, search_type):
-    """Return a list of dictionaries for building user's saved searches"""
-    searches = Search.objects.select_related().filter(
+    """Return a list of dictionaries for building user's saved searches."""
+    searches = models.Search.objects.select_related().filter(
         userdata__user_id=user_id,
         search_type=search_type,
         savedsearchmeta__active=True)

@@ -7,11 +7,7 @@ from trait_browser.models import Study
 
 
 class TimeStampedModel(models.Model):
-    """
-    An abstract base class model that provides selfupdating
-
-    ``created`` and ``modified`` fields.
-    """
+    """Abstract base class model with autoupdating 'created' and 'modified' fields."""
 
     created = models.DateTimeField(auto_now_add=True)
     modified = models.DateTimeField(auto_now=True)
@@ -21,7 +17,7 @@ class TimeStampedModel(models.Model):
 
 
 class Search(TimeStampedModel):
-    """Model for searches that anyone has ever saved"""
+    """Model for searches that anyone has ever searched for."""
 
     param_text = models.CharField(max_length=100, db_index=True, null=False)
     param_studies = models.ManyToManyField(Study)
@@ -29,8 +25,7 @@ class Search(TimeStampedModel):
     search_type = models.CharField(max_length=25, null=False)
 
     def build_search_url(self):
-        """
-        This builds the appropriate url with query string.
+        """Build the appropriate url with query string.
 
         Django does not have built-in functionality to build a url with a query string,
         as such we need to build our own urls with query strings here.
@@ -58,12 +53,15 @@ class Search(TimeStampedModel):
 
 
 class UserData(TimeStampedModel):
+    """Model to hold data related to the User model."""
+
     user = models.ForeignKey(settings.AUTH_USER_MODEL)
-    # by default, Django uses the primary key of the foreign key related table
     saved_searches = models.ManyToManyField(Search, through="SavedSearchMeta")
 
 
 class SavedSearchMeta(TimeStampedModel):
+    """M2M through model for saved searches."""
+
     search = models.ForeignKey(Search)
     user_data = models.ForeignKey(UserData)
     active = models.BooleanField(default=True)

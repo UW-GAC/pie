@@ -2,18 +2,19 @@ import factory
 import factory.fuzzy
 
 from core.factories import UserFactory
-from .models import *
-from trait_browser.factories import StudyFactory
+from . import models
+
 
 class SearchFactory(factory.DjangoModelFactory):
+
     class Meta:
-        model = Search
+        model = models.Search
         django_get_or_create = ('param_text', 'search_type')
 
     # defaults
     param_text = factory.Faker('catch_phrase')
     search_type = 'source'
-    
+
     @factory.post_generation
     def param_studies(self, create, extracted, **kwargs):
         if not create:
@@ -25,7 +26,7 @@ class SearchFactory(factory.DjangoModelFactory):
 
 class UserDataFactory(factory.DjangoModelFactory):
     class Meta:
-        model = UserData
+        model = models.UserData
 
     user = factory.SubFactory(UserFactory)
 
@@ -40,7 +41,7 @@ class UserDataFactory(factory.DjangoModelFactory):
 
 class SavedSearchMetaFactory(factory.DjangoModelFactory):
     class Meta:
-        model = SavedSearchMeta
+        model = models.SavedSearchMeta
 
     user_data = factory.SubFactory(UserDataFactory)
     search = factory.SubFactory(SearchFactory)
