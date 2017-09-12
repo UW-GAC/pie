@@ -1,6 +1,5 @@
 import django_tables2 as tables
 
-from .models import *
 
 class SourceSearchTable(tables.Table):
 
@@ -14,12 +13,13 @@ class SourceSearchTable(tables.Table):
     )
     filtered_studies = tables.TemplateColumn(
         orderable=False,
-        template_code='<div data-toggle="popover" data-trigger="hover" data-html="true" data-content="{{ record.study_name_string }}">{{ record.search_studies }}</div>'
+        template_code='<div data-toggle="popover" data-trigger="hover" data-html="true" data-content="{{ record.study_name_string }}">{{ record.search_studies }}</div>'  # noqa: E501
     )
     date_saved = tables.DateTimeColumn(orderable=False)
 
     class Meta:
         attrs = {'class': 'table table-striped table-bordered table-hover table-condensed'}
+
 
 class HarmonizedSearchTable(tables.Table):
 

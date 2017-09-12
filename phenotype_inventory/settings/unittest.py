@@ -12,8 +12,8 @@ SECRET_KEY and CNF_PATH are obtained from the .secrets.json file.
 
 import os
 
-from .base import *
-from .staging import secrets, get_secret
+from .base import *  # noqa: F403
+from .staging import secrets, get_secret  # noqa: F401
 
 
 # DEBUG SETTINGS
@@ -24,7 +24,7 @@ DEBUG = True
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.normpath(os.path.join(SITE_ROOT, 'site_db.sqlite3')),
+        'NAME': os.path.normpath(os.path.join(SITE_ROOT, 'site_db.sqlite3')),  # noqa: F405
         'USER': '',
         'PASSWORD': '',
         'HOST': '',

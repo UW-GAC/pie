@@ -4,22 +4,22 @@ import factory
 import factory.fuzzy
 
 from core.factories import UserFactory
-from .models import *
+from . import models
 
 
 class UnitRecipeFactory(factory.DjangoModelFactory):
     """Factory for UnitRecipe objects using Faker faked data."""
-    
+
     creator = factory.SubFactory(UserFactory)
     instructions = factory.Faker('sentence')
     version = factory.Faker('random_digit')
     name = factory.Faker('sentence')
-    type = factory.Faker('random_element', elements=[el[0] for el in UnitRecipe.TYPE_CHOICES])
+    type = factory.Faker('random_element', elements=[el[0] for el in models.UnitRecipe.TYPE_CHOICES])
     # Make last_modifier the same as creator.
     last_modifier = factory.LazyAttribute(lambda obj: obj.creator)
-    
+
     class Meta:
-        model = UnitRecipe
+        model = models.UnitRecipe
         django_get_or_create = ()
 
     @factory.post_generation
@@ -65,7 +65,7 @@ class UnitRecipeFactory(factory.DjangoModelFactory):
 
 class HarmonizationRecipeFactory(factory.DjangoModelFactory):
     """Factory for HarmonizationRecipe objects using Faker faked data."""
-    
+
     creator = factory.SubFactory(UserFactory)
     # Make last_modifier the same as creator.
     last_modifier = factory.LazyAttribute(lambda obj: obj.creator)
@@ -76,9 +76,9 @@ class HarmonizationRecipeFactory(factory.DjangoModelFactory):
     measurement_unit = factory.Faker('rgb_css_color')
 
     class Meta:
-        model = HarmonizationRecipe
+        model = models.HarmonizationRecipe
         django_get_or_create = ()
-    
+
     @factory.post_generation
     def units(self, create, extracted, **kwargs):
         # Do not add any unit recipes for simple builds.

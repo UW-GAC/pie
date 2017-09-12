@@ -2,7 +2,7 @@
 
 Modules:
     base -- settings that apply to all environments
-    
+
     local
     staging
     production

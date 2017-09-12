@@ -1,7 +1,4 @@
-"""Test the version management command.
-
-"""
-
+"""Test the version management command."""
 
 import json
 

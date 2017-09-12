@@ -18,7 +18,10 @@ from django.test import TestCase
 class TestEmailSending(TestCase):
 
     def test_sending(self):
-        """SMTP settings can actually send an email to a real email address (uses a temp email address at Mailinator.com). This test may fail simply due to timing issues."""
+        """SMTP settings can actually send an email to a real email address.
+
+        Uses a temp email address at Mailinator.com. This test may fail simply due to timing issues.
+        """
         if settings.DEVELOPMENT:
             pass
         else:

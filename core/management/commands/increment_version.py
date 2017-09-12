@@ -1,7 +1,4 @@
-"""
-Utilities for tracking the major and minor version number of the phenotype_inventory
-Django project.
-"""
+"""Utilities for tracking the major and minor version number of phenotype_inventory."""
 
 import json
 import os
@@ -28,7 +25,7 @@ class Command(BaseCommand):
 
     def increment_version(self, which):
         """Increment major or minor version number.
-        
+
         Args:
             which (str): 'major' or 'minor'; which version number to increment.
             major (int):
@@ -49,9 +46,11 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         incrementer = parser.add_mutually_exclusive_group()
-        incrementer.add_argument("--major", action="store_true", default=False,
+        incrementer.add_argument(
+            "--major", action="store_true", default=False,
             help="Increment the major version number. Also sets minor version to 0.")
-        incrementer.add_argument("--minor", action="store_true", default=False,
+        incrementer.add_argument(
+            "--minor", action="store_true", default=False,
             help="Increment the minor version number.")
 
     def handle(self, *args, **options):

@@ -22,9 +22,7 @@ User = get_user_model()
 
 
 class UserCreationForm(UserCreationForm):
-    """
-    A UserCreationForm with optional password inputs.
-    """
+    """A UserCreationForm with optional password inputs."""
 
     def __init__(self, *args, **kwargs):
         super(UserCreationForm, self).__init__(*args, **kwargs)
@@ -44,10 +42,8 @@ class UserCreationForm(UserCreationForm):
 
 
 class UserAdmin(NamedUserAdmin):
-    """
-    A UserAdmin that sends a password-reset email when creating a new user,
-    unless a password was entered.
-    """
+    """A UserAdmin that sends a password-reset email when creating a new user without a password."""
+
     add_form = UserCreationForm
     add_fieldsets = (
         (None, {
@@ -85,6 +81,7 @@ class UserAdmin(NamedUserAdmin):
                 subject_template_name='registration/account_creation_email_subject.txt',
                 email_template_name='registration/account_creation_email.html',
             )
+
 
 admin.site.unregister(User)
 admin.site.register(User, UserAdmin)
