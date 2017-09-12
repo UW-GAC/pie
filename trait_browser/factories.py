@@ -1,15 +1,14 @@
 """Factory classes for generating test data for each of the trait_browser models."""
 
-from datetime import datetime, timedelta
 import factory
-from faker import Factory
-fake = Factory.create()
 import pytz
+from faker import Factory
 
 from django.utils import timezone
 
+from . import models
 
-from .models import *
+fake = Factory.create()
 
 
 # Use these later for SourceStudyVersion factories.
@@ -26,41 +25,42 @@ DETECTED_TYPES = ('encoded', 'character', 'double', 'integer')
 
 
 class SourceDBTimeStampMixin(factory.DjangoModelFactory):
-    
+
     i_date_added = factory.Faker('date_time_this_month', tzinfo=pytz.utc)
-    
+
     @factory.lazy_attribute
     def i_date_changed(self):
         """Set i_date_changed based on the value of i_date_added."""
-        return fake.date_time_between_dates(datetime_start=self.i_date_added, datetime_end=timezone.now(), tzinfo=pytz.utc)
-    
+        return fake.date_time_between_dates(
+            datetime_start=self.i_date_added, datetime_end=timezone.now(), tzinfo=pytz.utc)
+
 
 class GlobalStudyFactory(SourceDBTimeStampMixin, factory.DjangoModelFactory):
     """Factory for GlobalStudy objects using Faker faked data."""
-    
+
     i_id = factory.Sequence(lambda n: n)
     i_name = factory.Faker('company')
-    
+
     class Meta:
-        model = GlobalStudy
+        model = models.GlobalStudy
         django_get_or_create = ('i_id', )
 
 
 class StudyFactory(SourceDBTimeStampMixin, factory.DjangoModelFactory):
     """Factory for Study objects using Faker faked data."""
-        
+
     global_study = factory.SubFactory(GlobalStudyFactory)
     i_accession = factory.Faker('random_int', min=1, max=999999)
     i_study_name = factory.Faker('company')
-    
+
     class Meta:
-        model = Study
+        model = models.Study
         django_get_or_create = ('i_accession', )
 
 
 class SourceStudyVersionFactory(SourceDBTimeStampMixin, factory.DjangoModelFactory):
     """Factory for SourceStudyVersion objecsts using Faker faked data."""
-    
+
     study = factory.SubFactory(StudyFactory)
     i_id = factory.Sequence(lambda n: n)
     i_version = factory.Faker('random_int', min=1, max=10)
@@ -68,27 +68,27 @@ class SourceStudyVersionFactory(SourceDBTimeStampMixin, factory.DjangoModelFacto
     i_dbgap_date = factory.Faker('date_time_this_century', tzinfo=pytz.utc)
     i_is_prerelease = False
     i_is_deprecated = False
-    
+
     class Meta:
-        model = SourceStudyVersion
+        model = models.SourceStudyVersion
         django_get_or_create = ('i_id', )
 
 
 class SubcohortFactory(SourceDBTimeStampMixin, factory.DjangoModelFactory):
     """Factory for Subcohort objects using Faker faked data."""
-    
+
     global_study = factory.SubFactory(GlobalStudyFactory)
     i_id = factory.Sequence(lambda n: n)
     i_name = factory.Faker('job')
 
     class Meta:
-        model = Subcohort
+        model = models.Subcohort
         django_get_or_create = ('i_id', )
 
 
 class SourceDatasetFactory(SourceDBTimeStampMixin, factory.DjangoModelFactory):
     """Factory for SourceDataset objects using Faker faked data."""
-    
+
     source_study_version = factory.SubFactory(SourceStudyVersionFactory)
     i_id = factory.Sequence(lambda n: n)
     i_accession = factory.Faker('random_int', min=1, max=999999)
@@ -103,9 +103,9 @@ class SourceDatasetFactory(SourceDBTimeStampMixin, factory.DjangoModelFactory):
     # i_date_visit_reviewed = factory.Faker('date_time_this_year', tzinfo=pytz.utc)
 
     class Meta:
-        model = SourceDataset
+        model = models.SourceDataset
         django_get_or_create = ('i_id', )
-        
+
     @factory.post_generation
     def subcohorts(self, create, extracted, **kwargs):
         # Do not add any subcohorts for simple builds.
@@ -119,7 +119,7 @@ class SourceDatasetFactory(SourceDBTimeStampMixin, factory.DjangoModelFactory):
 
 class HarmonizedTraitSetFactory(SourceDBTimeStampMixin, factory.DjangoModelFactory):
     """Factory for HarmonizedTraitSet model using Faker faked data."""
-    
+
     i_id = factory.Sequence(lambda n: n)
     i_trait_set_name = factory.Faker('word')
     i_version = factory.Faker('random_int', min=1, max=10)
@@ -129,21 +129,21 @@ class HarmonizedTraitSetFactory(SourceDBTimeStampMixin, factory.DjangoModelFacto
     i_git_commit_hash = factory.Faker('sha1')
     i_is_demographic = factory.Faker('boolean')
     i_is_longitudinal = factory.Faker('boolean')
-    
+
     class Meta:
-        model = HarmonizedTraitSet
+        model = models.HarmonizedTraitSet
         django_get_or_create = ('i_id', )
 
 
 class HarmonizationUnitFactory(SourceDBTimeStampMixin, factory.DjangoModelFactory):
     """Factory for HarmonizationUnit objects using Faker faked data."""
-    
+
     i_id = factory.Sequence(lambda n: n)
     i_tag = factory.Faker('word')
     harmonized_trait_set = factory.SubFactory(HarmonizedTraitSetFactory)
-    
+
     class Meta:
-        model = HarmonizationUnit
+        model = models.HarmonizationUnit
         django_get_or_create = ('i_id', )
 
     @factory.post_generation
@@ -189,7 +189,7 @@ class HarmonizationUnitFactory(SourceDBTimeStampMixin, factory.DjangoModelFactor
 
 class SourceTraitFactory(SourceDBTimeStampMixin, factory.DjangoModelFactory):
     """Factory for SourceTrait objects using Faker faked data."""
-    
+
     i_trait_id = factory.Sequence(lambda n: n)
     i_trait_name = factory.Faker('word')
     i_description = factory.Faker('text')
@@ -202,29 +202,29 @@ class SourceTraitFactory(SourceDBTimeStampMixin, factory.DjangoModelFactory):
     i_dbgap_comment = factory.Faker('text')
     i_dbgap_unit = factory.Faker('word')
     i_n_records = factory.Faker('random_int', min=100, max=5000)
-    i_n_missing = factory.Faker('random_int', min=0, max=100) # This will always be less than i_n_records.
+    i_n_missing = factory.Faker('random_int', min=0, max=100)  # This will always be less than i_n_records.
     # Visit data is NULL by default.
-    
+
     class Meta:
-        model = SourceTrait
+        model = models.SourceTrait
         django_get_or_create = ('i_trait_id', )
 
 
 class HarmonizedTraitFactory(SourceDBTimeStampMixin, factory.DjangoModelFactory):
     """Factory for HarmonizedTrait objects using Faker faked data."""
-    
+
     i_trait_id = factory.Sequence(lambda n: n)
     i_trait_name = factory.Faker('word')
     i_description = factory.Faker('text')
-    
+
     harmonized_trait_set = factory.SubFactory(HarmonizedTraitSetFactory)
     i_data_type = factory.Faker('random_element', elements=('', 'encoded', 'character', 'double', 'integer', ))
     i_unit = factory.Faker('word')
     i_has_batch = factory.Faker('boolean')
     i_is_unique_key = False
-    
+
     class Meta:
-        model = HarmonizedTrait
+        model = models.HarmonizedTrait
         django_get_or_create = ('i_trait_id', )
 
     @factory.post_generation
@@ -270,25 +270,25 @@ class HarmonizedTraitFactory(SourceDBTimeStampMixin, factory.DjangoModelFactory)
 
 class SourceTraitEncodedValueFactory(SourceDBTimeStampMixin, factory.DjangoModelFactory):
     """Factory for SourceTraitEncodedValue objects using Faker faked data."""
-    
+
     i_id = factory.Sequence(lambda n: n)
     i_category = factory.Faker('word')
     i_value = factory.Faker('text', max_nb_chars=50)
-    
-    source_trait = factory.SubFactory(SourceTraitFactory) 
-       
+
+    source_trait = factory.SubFactory(SourceTraitFactory)
+
     class Meta:
-        model = SourceTraitEncodedValue
+        model = models.SourceTraitEncodedValue
 
 
 class HarmonizedTraitEncodedValueFactory(SourceDBTimeStampMixin, factory.DjangoModelFactory):
     """Factory for HarmonizedTraitEncodedValue objects using Faker faked data."""
-    
+
     i_id = factory.Sequence(lambda n: n)
     i_category = factory.Faker('word')
     i_value = factory.Faker('text', max_nb_chars=50)
-    
-    harmonized_trait = factory.SubFactory(HarmonizedTraitFactory) 
-       
+
+    harmonized_trait = factory.SubFactory(HarmonizedTraitFactory)
+
     class Meta:
-        model = HarmonizedTraitEncodedValue
+        model = models.HarmonizedTraitEncodedValue
