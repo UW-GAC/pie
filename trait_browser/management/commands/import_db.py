@@ -937,7 +937,7 @@ class Command(BaseCommand):
         logger.info("Added {} harmonized traits".format(len(new_harmonized_trait_pks)))
 
         new_harmonized_trait_encoded_value_pks = self._import_new_data(
-            source_db=source_db, source_table='harmonized_trait_encoded_values', source_pk='harmonized_trait_id',
+            source_db=source_db, source_table='harmonized_trait_encoded_values', source_pk='id',
             model=models.HarmonizedTraitEncodedValue, make_args=self._make_harmonized_trait_encoded_value_args)
         logger.info("Added {} harmonized trait encoded values".format(len(new_harmonized_trait_encoded_value_pks)))
 
@@ -1167,7 +1167,7 @@ class Command(BaseCommand):
         logger.info('{} harmonized traits updated'.format(harmonized_trait_update_count))
 
         htrait_ev_update_count = self._update_existing_data(
-            source_db=source_db, source_table='harmonized_trait_encoded_values', source_pk='harmonized_trait_id',
+            source_db=source_db, source_table='harmonized_trait_encoded_values', source_pk='id',
             model=models.HarmonizedTraitEncodedValue, make_args=self._make_harmonized_trait_encoded_value_args,
             expected=False)
         logger.info('{} harmonized trait encoded values updated'.format(htrait_ev_update_count))
