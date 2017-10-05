@@ -10,7 +10,8 @@ class GlobalStudyAdmin(admin.ModelAdmin):
     """Admin class for GlobalStudy objects."""
 
     # Set fields to display, filter, and search on.
-    list_display = ('i_id', 'i_name', 'get_linked_studies', 'created', 'modified', )
+    list_display = ('i_id', 'i_name', 'get_linked_studies', 'i_topmed_accession', 'i_topmed_abbreviation', 'created',
+                    'modified', )
     search_fields = ('i_id', 'i_name', )
 
     def get_linked_studies(self, global_study):
@@ -65,12 +66,11 @@ class SourceDatasetAdmin(admin.ModelAdmin):
     """Admin class for SourceDataset objects."""
 
     # Set fields to display, filter, and search on.
-    list_display = ('i_id', 'i_version', 'i_dbgap_description', 'pht_version_string',
-                    'i_visit_code', 'i_visit_number', 'i_is_medication_dataset',
-                    'i_dcc_description', 'created', 'modified', )
+    list_display = ('i_id', 'i_accession', 'i_version', 'i_dbgap_description', 'pht_version_string',
+                    'created', 'modified', )
     list_filter = ('source_study_version__study__i_accession',
                    'source_study_version__study__global_study__i_name',
-                   'i_is_medication_dataset', 'i_is_subject_file', )
+                   'i_is_subject_file', )
     search_fields = ('i_id', 'i_accession', 'pht_version_string', )
 
 
@@ -79,9 +79,25 @@ class HarmonizedTraitSetAdmin(admin.ModelAdmin):
 
     # Set fields to display, filter, and search on.
     list_display = (
-        'i_id', 'i_trait_set_name', 'i_version', 'i_flavor', 'i_is_longitudinal', 'i_harmonized_by', 'created',
+        'i_id', 'i_trait_set_name', 'i_flavor', 'i_is_longitudinal', 'i_is_demographic', 'created',
         'modified',
     )
+    search_fields = ('i_id', 'i_trait_set_name', )
+
+
+class AllowedUpdateReasonAdmin(admin.ModelAdmin):
+    """Admin class for AllowedUpdateReason objects."""
+
+    list_display = ('i_id', 'i_abbreviation', 'i_description', )
+    search_fields = ('i_abbreviation', 'i_description', )
+
+
+class HarmonizedTraitSetVersionAdmin(admin.ModelAdmin):
+    """Admin class for HarmonizedTraitSet objects."""
+
+    # Set fields to display, filter, and search on.
+    list_display = ('i_id', 'i_version', 'i_harmonized_by', 'i_is_deprecated', 'created', 'modified', )
+    list_filter = ('i_harmonized_by', 'i_is_deprecated', 'i_version', )
     search_fields = ('i_id', 'i_trait_set_name', )
 
 
@@ -90,7 +106,7 @@ class HarmonizationUnitAdmin(admin.ModelAdmin):
 
     # Set fields to display, filter, and search on.
     list_display = ('i_id', 'i_tag', 'created', 'modified', )
-    list_filter = ('harmonized_trait_set__i_id', )
+    list_filter = ('harmonized_trait_set_version__i_id', )
     search_fields = ('i_id', 'i_tag', )
 
 
@@ -99,10 +115,10 @@ class SourceTraitAdmin(admin.ModelAdmin):
 
     # Set fields to display, filter, and search on.
     list_display = ('i_trait_id', 'i_trait_name', 'variable_accession', 'i_description',
-                    'i_visit_number', 'i_is_unique_key', 'i_is_visit_column', 'created', 'modified')
+                    'i_is_unique_key', 'created', 'modified')
     list_filter = ('source_dataset__source_study_version__study__i_accession',
                    'source_dataset__source_study_version__study__global_study__i_name',
-                   'i_is_unique_key', 'i_is_visit_column', )
+                   'i_is_unique_key', )
     search_fields = ('i_trait_id', 'i_trait_name', 'i_description', 'variable_accession', )
 
 
@@ -142,6 +158,8 @@ admin.site.register(models.SourceStudyVersion, SourceStudyVersionAdmin)
 admin.site.register(models.Subcohort, SubcohortAdmin)
 admin.site.register(models.SourceDataset, SourceDatasetAdmin)
 admin.site.register(models.HarmonizedTraitSet, HarmonizedTraitSetAdmin)
+admin.site.register(models.AllowedUpdateReason, AllowedUpdateReasonAdmin)
+admin.site.register(models.HarmonizedTraitSetVersion, HarmonizedTraitSetVersionAdmin)
 admin.site.register(models.HarmonizationUnit, HarmonizationUnitAdmin)
 admin.site.register(models.SourceTrait, SourceTraitAdmin)
 admin.site.register(models.HarmonizedTrait, HarmonizedTraitAdmin)

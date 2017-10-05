@@ -128,7 +128,7 @@ def cleanup_backup_dir():
     settings.DBBACKUP_STORAGE_OPTIONS['location'] = ORIGINAL_BACKUP_DIR
 
 
-# Mixins
+# Mixins.
 class OpenCloseDBMixin(object):
     """Mixin to add setUp and tearDown methods to TestCases.
 
@@ -184,7 +184,7 @@ class OpenCloseDBMixin(object):
                 self.assertEqual(sorted(source_ids), sorted(django_ids))
 
 
-# TestCase superclasses (contain no tests)
+# TestCase superclasses (contain no tests).
 class BaseTestDataTestCase(OpenCloseDBMixin, TestCase):
     """Superclass to test importing commands on the base.sql test source db data."""
 
@@ -199,21 +199,20 @@ class BaseTestDataTestCase(OpenCloseDBMixin, TestCase):
         load_test_source_db_data('base.sql')
 
 
-class VisitTestDataTestCase(OpenCloseDBMixin, TestCase):
-    """Tests that need visit data to already be added to the source db test data."""
+class BaseTestDataReloadingTestCase(OpenCloseDBMixin, TestCase):
+    """Superclass to test importing commands on the base.sql test source db data for every test method."""
 
-    @classmethod
-    def setUpClass(cls):
-        """Load the base+visit test data once for all of the tests."""
-        # Run the TestCase setUpClass method.
-        super(VisitTestDataTestCase, cls).setUpClass()
+    def setUp(self):
+        """Load the base test data, once for each test method."""
+        # Run the OpenCloseDBMixin setUp method.
+        super(BaseTestDataReloadingTestCase, self).setUp()
         # Clean out the devel db and load the first test dataset.
         # By default, all tests will use dataset 1.
         clean_devel_db()
-        load_test_source_db_data('base_plus_visit.sql')
+        load_test_source_db_data('base.sql')
 
 
-# Tests that don't require test data
+# Tests that don't require test data.
 class TestFunctionsTest(TestCase):
     """Tests of the helper functions used by this test script."""
 
@@ -509,18 +508,21 @@ class M2MHelperTest(TestCase):
 
     def test_break_m2m_link(self):
         """Removes a child model from its parent M2M field."""
-        sd = factories.SourceDatasetFactory.create()
-        sc = factories.SubcohortFactory.create(global_study=sd.source_study_version.study.global_study)
-        sd.subcohorts.add(sc)
-        CMD._break_m2m_link(models.SourceDataset, sd.pk, models.Subcohort, sc.pk, 'subcohorts')
-        self.assertNotIn(sc, sd.subcohorts.all())
+        htsv = factories.HarmonizedTraitSetVersionFactory.create()
+        reason = factories.AllowedUpdateReasonFactory.create()
+        htsv.update_reasons.add(reason)
+        CMD._break_m2m_link(
+            models.HarmonizedTraitSetVersion, htsv.pk, models.AllowedUpdateReason, reason.pk, 'update_reasons')
+        self.assertNotIn(reason, htsv.update_reasons.all())
 
     def test_make_m2m_link(self):
         """Adds a child model to its parent M2M field."""
-        sd = factories.SourceDatasetFactory.create()
-        sc = factories.SubcohortFactory.create(global_study=sd.source_study_version.study.global_study)
-        CMD._make_m2m_link(models.SourceDataset, sd.pk, models.Subcohort, sc.pk, 'subcohorts')
-        self.assertIn(sc, sd.subcohorts.all())
+        htsv = factories.HarmonizedTraitSetVersionFactory.create()
+        reason = factories.AllowedUpdateReasonFactory.create()
+        htsv.update_reasons.add(reason)
+        CMD._make_m2m_link(
+            models.HarmonizedTraitSetVersion, htsv.pk, models.AllowedUpdateReason, reason.pk, 'update_reasons')
+        self.assertIn(reason, htsv.update_reasons.all())
 
     def test_import_new_m2m_field(self):
         pass
@@ -584,19 +586,37 @@ class GetCurrentListsTest(TestCase):
         pks = CMD._get_current_pks(models.SourceTrait)
         self.assertEqual(len(pks), self.n)
 
-    def test_get_current_harmonized_trait_set(self):
+    def test_get_current_harmonized_trait_sets(self):
         """Returns the right number of harmonized trait sets."""
         factories.HarmonizedTraitSetFactory.create_batch(self.n)
         pks = CMD._get_current_pks(models.HarmonizedTraitSet)
         self.assertEqual(len(pks), self.n)
 
-    def test_get_current_source_traits(self):
-        """Returns the right number of source trait ids."""
-        factories.SourceTraitFactory.create_batch(self.n)
-        pks = CMD._get_current_pks(models.SourceTrait)
+    def test_get_current_allowed_update_reasons(self):
+        """Returns the right number of allowed update reason ids."""
+        factories.AllowedUpdateReasonFactory.create_batch(self.n)
+        pks = CMD._get_current_pks(models.AllowedUpdateReason)
         self.assertEqual(len(pks), self.n)
 
-    def test_get_current_harmonized_trait(self):
+    def test_get_current_harmonized_trait_set_versions(self):
+        """Returns the right number of harmonized trait set versions."""
+        factories.HarmonizedTraitSetVersionFactory.create_batch(self.n)
+        pks = CMD._get_current_pks(models.HarmonizedTraitSetVersion)
+        self.assertEqual(len(pks), self.n)
+
+    def test_get_current_harmonization_units(self):
+        """Returns the right number of hamronization units."""
+        factories.HarmonizationUnitFactory.create_batch(self.n)
+        pks = CMD._get_current_pks(models.HarmonizationUnit)
+        self.assertEqual(len(pks), self.n)
+
+    def test_get_current_source_traits(self):
+        """Returns the right number of source trait ids."""
+        factories.AllowedUpdateReasonFactory.create_batch(self.n)
+        pks = CMD._get_current_pks(models.AllowedUpdateReason)
+        self.assertEqual(len(pks), self.n)
+
+    def test_get_current_harmonized_traits(self):
         """Returns the right number of harmonized trait ids."""
         factories.HarmonizedTraitFactory.create_batch(self.n)
         pks = CMD._get_current_pks(models.HarmonizedTrait)
@@ -615,25 +635,7 @@ class GetCurrentListsTest(TestCase):
         self.assertEqual(len(pks), self.n)
 
 
-# Tests that require test data
-class MakeArgsForVisitDataTest(VisitTestDataTestCase):
-    """Tests of the _make_[model]_args functions that require the larger visit test data."""
-
-    def test_make_subcohort_args_one_row_make_subcohort_obj(self):
-        """A Subcohort can be created from the args made from a row of test data."""
-        subcohort_query = 'SELECT * FROM subcohort;'
-        self.cursor.execute(subcohort_query)
-        row_dict = self.cursor.fetchone()
-        # Have to make global study and study first.
-        global_study = factories.GlobalStudyFactory.create(i_id=row_dict['global_study_id'])
-        #
-        field_types = {el[0]: el[1] for el in self.cursor.description}
-        subcohort_args = CMD._make_subcohort_args(CMD._fix_row(row_dict, field_types))
-        subcohort = models.Subcohort(**subcohort_args)
-        subcohort.save()
-        self.assertIsInstance(subcohort, models.Subcohort)
-
-
+# Tests that require test data.
 class MakeArgsTest(BaseTestDataTestCase):
     """Tests of the _make_[model]_args functions."""
 
@@ -677,6 +679,20 @@ class MakeArgsTest(BaseTestDataTestCase):
         source_study_version.save()
         self.assertIsInstance(source_study_version, models.SourceStudyVersion)
 
+    def test_make_subcohort_args_one_row_make_subcohort_obj(self):
+        """A Subcohort can be created from the args made from a row of test data."""
+        subcohort_query = 'SELECT * FROM subcohort;'
+        self.cursor.execute(subcohort_query)
+        row_dict = self.cursor.fetchone()
+        # Have to make a models.GlobalStudy first.
+        global_study = factories.GlobalStudyFactory.create(i_id=row_dict['global_study_id'])
+        #
+        field_types = {el[0]: el[1] for el in self.cursor.description}
+        subcohort_args = CMD._make_subcohort_args(CMD._fix_row(row_dict, field_types))
+        subcohort = models.Subcohort(**subcohort_args)
+        subcohort.save()
+        self.assertIsInstance(subcohort, models.Subcohort)
+
     def test_make_source_dataset_args_one_row_make_source_dataset_obj(self):
         """A SourceDataset can be created from the args made from a row of test data."""
         source_dataset_query = 'SELECT * FROM source_dataset;'
@@ -706,6 +722,33 @@ class MakeArgsTest(BaseTestDataTestCase):
         harmonized_trait_set.save()
         self.assertIsInstance(harmonized_trait_set, models.HarmonizedTraitSet)
 
+    def test_make_allowed_update_reason_args_one_row_make_allowed_update_reason_obj(self):
+        """A AllowedUpdateReason can be created from the args made from a row of test data."""
+        allowed_update_reason_query = 'SELECT * FROM allowed_update_reason;'
+        self.cursor.execute(allowed_update_reason_query)
+        row_dict = self.cursor.fetchone()
+        #
+        field_types = {el[0]: el[1] for el in self.cursor.description}
+        allowed_update_reason_args = CMD._make_allowed_update_reason_args(CMD._fix_row(row_dict, field_types))
+        allowed_update_reason = models.AllowedUpdateReason(**allowed_update_reason_args)
+        allowed_update_reason.save()
+        self.assertIsInstance(allowed_update_reason, models.AllowedUpdateReason)
+
+    def test_make_harmonized_trait_set_version_args_one_row_make_harmonized_trait_set_version_obj(self):
+        """A HarmonizedTraitSetVersion can be created from the args made from a row of test data."""
+        harmonized_trait_set_version_query = 'SELECT * FROM harmonized_trait_set_version;'
+        self.cursor.execute(harmonized_trait_set_version_query)
+        row_dict = self.cursor.fetchone()
+        # Have to make a HarmonizedTraitSet first.
+        harmonized_trait_set = factories.HarmonizedTraitSetFactory.create(i_id=row_dict['harmonized_trait_set_id'])
+        #
+        field_types = {el[0]: el[1] for el in self.cursor.description}
+        harmonized_trait_set_version_args = CMD._make_harmonized_trait_set_version_args(
+            CMD._fix_row(row_dict, field_types))
+        harmonized_trait_set_version = models.HarmonizedTraitSetVersion(**harmonized_trait_set_version_args)
+        harmonized_trait_set_version.save()
+        self.assertIsInstance(harmonized_trait_set_version, models.HarmonizedTraitSetVersion)
+
     def test_make_source_trait_args_one_row_make_source_trait_obj(self):
         """A SourceTrait can be created from the args made from a row of test data."""
         source_trait_query = 'SELECT * FROM source_trait;'
@@ -730,7 +773,8 @@ class MakeArgsTest(BaseTestDataTestCase):
         self.cursor.execute(harmonized_trait_query)
         row_dict = self.cursor.fetchone()
         # Have to make harmonized_trait_set first.
-        harmonized_trait_set = factories.HarmonizedTraitSetFactory.create(i_id=row_dict['harmonized_trait_set_id'])
+        harmonized_trait_set_version = factories.HarmonizedTraitSetVersionFactory.create(
+            i_id=row_dict['harmonized_trait_set_version_id'])
         #
         field_types = {el[0]: el[1] for el in self.cursor.description}
         harmonized_trait_args = CMD._make_harmonized_trait_args(CMD._fix_row(row_dict, field_types))
@@ -764,15 +808,14 @@ class MakeArgsTest(BaseTestDataTestCase):
         self.cursor.execute(harmonized_trait_encoded_value_query)
         row_dict = self.cursor.fetchone()
         # Get information for the harmonized_trait the encoded value is connected to.
-        harmonized_trait_set_query = 'SELECT * FROM harmonized_trait WHERE harmonized_trait_id = {};'.format(
+        harmonized_trait_query = 'SELECT * FROM harmonized_trait WHERE harmonized_trait_id = {};'.format(
             row_dict['harmonized_trait_id'])
-        self.cursor.execute(harmonized_trait_set_query)
+        self.cursor.execute(harmonized_trait_query)
         harmonized_trait_row_dict = self.cursor.fetchone()
         # Make a harmonized_trait and harmonized_trait_set before trying to make the encoded value object.
-        harmonized_trait_set = factories.HarmonizedTraitSetFactory.create(
-            i_id=harmonized_trait_row_dict['harmonized_trait_set_id'])
         harmonized_trait = factories.HarmonizedTraitFactory.create(
-            i_trait_id=row_dict['harmonized_trait_id'], harmonized_trait_set=harmonized_trait_set)
+            i_trait_id=row_dict['harmonized_trait_id'],
+            harmonized_trait_set_version__i_id=harmonized_trait_row_dict['harmonized_trait_set_version_id'])
         # Make the encoded value object.
         field_types = {el[0]: el[1] for el in self.cursor.description}
         fixed_row = CMD._fix_row(row_dict, field_types)
@@ -911,7 +954,7 @@ class HelperTest(BaseTestDataTestCase):
         """Updates in global_study are imported."""
         # Have to clean and reload the db because of updates in previous tests.
         clean_devel_db()
-        load_test_source_db_data('base_plus_visit.sql')
+        load_test_source_db_data('base.sql')
         management.call_command('import_db', '--which_db=devel', '--no_backup')
         # Close the db connections because change_data_in_table() opens new connections.
         # This does not affect the .cursor and .source_db attributes in other functions.
@@ -940,7 +983,7 @@ class HelperTest(BaseTestDataTestCase):
         self.assertTrue(model_instance.modified > old_mod_time)
 
 
-class BackupTest(VisitTestDataTestCase):
+class BackupTest(BaseTestDataTestCase):
     """Tests to make sure backing up the Django db in handle() is working right."""
 
     def test_backup_is_created(self):
@@ -984,12 +1027,12 @@ class SpecialQueryTest(BaseTestDataTestCase):
         """HUNIT_QUERY returns good results."""
         self.cursor.execute(HUNIT_QUERY)
         results = self.cursor.fetchall()
-        self.assertTrue(len(results) == 10)  # Change if changing test data.
+        self.assertTrue(len(results) == 16)  # Change if changing test data.
         self.assertIn('harmonized_trait_id', results[0].keys())
         self.assertIn('harmonization_unit_id', results[0].keys())
 
 
-class UpdateModelsTest(VisitTestDataTestCase):
+class UpdateModelsTest(BaseTestDataTestCase):
     """Tests of the update functions with updates to each possible source_db table."""
 
     # Source trait updates.
@@ -1077,8 +1120,32 @@ class UpdateModelsTest(VisitTestDataTestCase):
         model_instance = model.objects.all()[0]
         old_mod_time = model_instance.modified
         source_db_table_name = 'source_dataset'
-        field_to_update = 'visit_code'
-        new_value = 'one_visit_per_file'
+        field_to_update = 'dbgap_description'
+        new_value = 'asdgsdfg'
+        source_db_pk_name = model_instance._meta.pk.name.replace('i_', '')
+
+        sleep(1)
+        change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
+        management.call_command('import_db', '--which_db=devel', '--update_only', '--verbosity=0', '--no_backup')
+        model_instance.refresh_from_db()
+        # Check that modified date > created date, and name is set to new value.
+        self.assertEqual(new_value, getattr(model_instance, 'i_' + field_to_update))
+        self.assertTrue(model_instance.modified > old_mod_time)
+
+    def test_update_subcohort(self):
+        """Updates in subcohort are imported."""
+        management.call_command('import_db', '--which_db=devel', '--no_backup')
+        # Close the db connections because change_data_in_table() opens new connections.
+        # This does not affect the .cursor and .source_db attributes in other functions.
+        self.cursor.close()
+        self.source_db.close()
+
+        model = models.Subcohort
+        model_instance = model.objects.all()[0]
+        old_mod_time = model_instance.modified
+        source_db_table_name = 'subcohort'
+        field_to_update = 'name'
+        new_value = 'asdfghjkl'
         source_db_pk_name = model_instance._meta.pk.name.replace('i_', '')
 
         sleep(1)
@@ -1101,33 +1168,9 @@ class UpdateModelsTest(VisitTestDataTestCase):
         model_instance = model.objects.all()[0]
         old_mod_time = model_instance.modified
         source_db_table_name = 'source_trait'
-        field_to_update = 'dcc_description'
+        field_to_update = 'dbgap_comment'
         new_value = 'asdfghjkl'
         source_db_pk_name = 'source_trait_id'
-
-        sleep(1)
-        change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
-        management.call_command('import_db', '--which_db=devel', '--update_only', '--verbosity=0', '--no_backup')
-        model_instance.refresh_from_db()
-        # Check that modified date > created date, and name is set to new value.
-        self.assertEqual(new_value, getattr(model_instance, 'i_description'))
-        self.assertTrue(model_instance.modified > old_mod_time)
-
-    def test_update_subcohort(self):
-        """Updates in subcohort are imported."""
-        management.call_command('import_db', '--which_db=devel', '--no_backup')
-        # Close the db connections because change_data_in_table() opens new connections.
-        # This does not affect the .cursor and .source_db attributes in other functions.
-        self.cursor.close()
-        self.source_db.close()
-
-        model = models.Subcohort
-        model_instance = model.objects.all()[0]
-        old_mod_time = model_instance.modified
-        source_db_table_name = 'subcohort'
-        field_to_update = 'name'
-        new_value = 'asdfghjkl'
-        source_db_pk_name = model_instance._meta.pk.name.replace('i_', '')
 
         sleep(1)
         change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
@@ -1174,9 +1217,79 @@ class UpdateModelsTest(VisitTestDataTestCase):
         model_instance = model.objects.all()[0]
         old_mod_time = model_instance.modified
         source_db_table_name = 'harmonized_trait_set'
+        field_to_update = 'trait_set_name'
+        new_value = 'asdfghjkl'
+        source_db_pk_name = model_instance._meta.pk.name.replace('i_', '')
+
+        sleep(1)
+        change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
+        management.call_command('import_db', '--which_db=devel', '--update_only', '--verbosity=0', '--no_backup')
+        model_instance.refresh_from_db()
+        # Check that modified date > created date, and name is set to new value.
+        self.assertEqual(new_value, getattr(model_instance, 'i_' + field_to_update))
+        self.assertTrue(model_instance.modified > old_mod_time)
+
+    def test_update_harmonized_trait_set_version(self):
+        """Updates to harmonized_trait_set_version are imported."""
+        management.call_command('import_db', '--which_db=devel', '--no_backup')
+        # Close the db connections because change_data_in_table() opens new connections.
+        # This does not affect the .cursor and .source_db attributes in other functions.
+        self.cursor.close()
+        self.source_db.close()
+
+        model = models.HarmonizedTraitSetVersion
+        model_instance = model.objects.all()[0]
+        old_mod_time = model_instance.modified
+        source_db_table_name = 'harmonized_trait_set_version'
+        field_to_update = 'harmonized_by'
+        new_value = 'asdfghjkl'
+        source_db_pk_name = model_instance._meta.pk.name.replace('i_', '')
+
+        sleep(1)
+        change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
+        management.call_command('import_db', '--which_db=devel', '--update_only', '--verbosity=0', '--no_backup')
+        model_instance.refresh_from_db()
+        # Check that modified date > created date, and name is set to new value.
+        self.assertEqual(new_value, getattr(model_instance, 'i_' + field_to_update))
+        self.assertTrue(model_instance.modified > old_mod_time)
+
+    def test_update_allowed_update_reason(self):
+        """Updates to allowed_update_reason are NOT imported."""
+        management.call_command('import_db', '--which_db=devel', '--no_backup')
+        # Close the db connections because change_data_in_table() opens new connections.
+        # This does not affect the .cursor and .source_db attributes in other functions.
+        self.cursor.close()
+        self.source_db.close()
+
+        model = models.AllowedUpdateReason
+        model_instance = model.objects.all()[0]
+        source_db_table_name = 'allowed_update_reason'
         field_to_update = 'description'
         new_value = 'asdfghjkl'
         source_db_pk_name = model_instance._meta.pk.name.replace('i_', '')
+
+        sleep(1)
+        change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
+        management.call_command('import_db', '--which_db=devel', '--update_only', '--verbosity=0', '--no_backup')
+        model_instance.refresh_from_db()
+        # There should NOT be any imported updates.
+        self.assertNotEqual(new_value, getattr(model_instance, 'i_' + field_to_update))
+
+    def test_update_harmonization_unit(self):
+        """Updates to harmonization_unit are imported."""
+        management.call_command('import_db', '--which_db=devel', '--no_backup')
+        # Close the db connections because change_data_in_table() opens new connections.
+        # This does not affect the .cursor and .source_db attributes in other functions.
+        self.cursor.close()
+        self.source_db.close()
+
+        model = models.HarmonizationUnit
+        model_instance = model.objects.all()[0]
+        old_mod_time = model_instance.modified
+        source_db_table_name = 'harmonization_unit'
+        field_to_update = 'tag'
+        new_value = 'asdfghjkl'
+        source_db_pk_name = 'id'
 
         sleep(1)
         change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
@@ -1210,30 +1323,6 @@ class UpdateModelsTest(VisitTestDataTestCase):
         self.assertEqual(new_value, getattr(model_instance, 'i_description'))
         self.assertTrue(model_instance.modified > old_mod_time)
 
-    def test_update_harmonization_unit(self):
-        """Updates to harmonization_unit are imported."""
-        management.call_command('import_db', '--which_db=devel', '--no_backup')
-        # Close the db connections because change_data_in_table() opens new connections.
-        # This does not affect the .cursor and .source_db attributes in other functions.
-        self.cursor.close()
-        self.source_db.close()
-
-        model = models.HarmonizationUnit
-        model_instance = model.objects.all()[0]
-        old_mod_time = model_instance.modified
-        source_db_table_name = 'harmonization_unit'
-        field_to_update = 'tag'
-        new_value = 'asdfghjkl'
-        source_db_pk_name = 'id'
-
-        sleep(1)
-        change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
-        management.call_command('import_db', '--which_db=devel', '--update_only', '--verbosity=0', '--no_backup')
-        model_instance.refresh_from_db()
-        # Check that modified date > created date, and name is set to new value.
-        self.assertEqual(new_value, getattr(model_instance, 'i_' + field_to_update))
-        self.assertTrue(model_instance.modified > old_mod_time)
-
     def test_update_harmonized_trait_encoded_value(self):
         """Updates to harmonized_trait_encoded_values are imported."""
         management.call_command('import_db', '--which_db=devel', '--no_backup')
@@ -1259,69 +1348,66 @@ class UpdateModelsTest(VisitTestDataTestCase):
         self.assertTrue(model_instance.modified > old_mod_time)
 
     # M2M link updates.
-    def test_update_added_source_dataset_subcohorts(self):
-        """A new subcohort link to an existing source dataset is imported after an update."""
+    def test_update_added_harmonized_trait_set_version_update_reasons(self):
+        """A new reason link to an existing harmonized_trait_set_version is imported after an update."""
         # Run the initial db import.
         management.call_command('import_db', '--which_db=devel', '--no_backup')
-        # Pick a subcohort to create a new link to in the source db.
-        sc = models.Subcohort.objects.get(pk=1)
-        # Find a dataset which this subcohort isn't linked to already.
-        linked_datasets = sc.sourcedataset_set.all()
-        possible_datasets = models.SourceDataset.objects.filter(
-            source_study_version__study__global_study=sc.global_study)
-        unlinked_datasets = set(possible_datasets) - set(linked_datasets)
-        if len(unlinked_datasets) < 1:
-            raise ValueError('The subcohort is already linked to all possible datasets.')
-        dataset_to_link = list(unlinked_datasets)[0]
-        # Create a new dataset-subcohort link in the source db.
+        # Pick an allowed reason to create a new link to in the source db.
+        reason = models.AllowedUpdateReason.objects.get(pk=1)
+        # Find a harmonized_trait_set_version that this reason isn't linked to yet.
+        linked_hts_versions = reason.harmonizedtraitsetversion_set.all()
+        possible_hts_versions = models.HarmonizedTraitSetVersion.objects.all()
+        unlinked_hts_versions = set(possible_hts_versions) - set(linked_hts_versions)
+        if len(unlinked_hts_versions) < 1:
+            raise ValueError('The allowed update reason is already linked to all possible datasets.')
+        hts_version_to_link = list(unlinked_hts_versions)[0]
+        # Create a new hts_version-allowed_reason link in the source db.
         self.cursor.close()
         self.source_db.close()
         self.source_db = get_devel_db(permissions='full')
         self.cursor = self.source_db.cursor(buffered=True, dictionary=True)
-        add_subcohort_link_query = """INSERT INTO source_dataset_subcohorts (dataset_id, subcohort_id, date_added)
-                                      VALUES ({}, {}, '{}');""".format(
-            dataset_to_link.i_id, sc.i_id, timezone.now().strftime('%Y-%m-%d %H:%M:%S'))
-        self.cursor.execute(add_subcohort_link_query)
+        add_reason_link_query = """INSERT INTO harmonized_trait_set_version_update_reason (reason_id,
+                                   harmonized_trait_set_version_id, date_added)
+                                   VALUES ({}, {}, '{}');""".format(
+            reason.pk, hts_version_to_link.i_id, timezone.now().strftime('%Y-%m-%d %H:%M:%S'))
+        self.cursor.execute(add_reason_link_query)
         self.source_db.commit()
         self.cursor.close()
         self.source_db.close()
         # Now run the update commands.
         management.call_command('import_db', '--which_db=devel', '--update_only', '--verbosity=0', '--no_backup')
-        # Check that the chosen subcohort is now linked to the dataset that was picked, in the Django db.
-        sc.refresh_from_db()
-        dataset_to_link.refresh_from_db()
-        self.assertTrue(dataset_to_link in sc.sourcedataset_set.all())
+        # Check that the chosen reason is now linked to the hts_version that was picked, in the Django db.
+        reason.refresh_from_db()
+        hts_version_to_link.refresh_from_db()
+        self.assertTrue(hts_version_to_link in reason.harmonizedtraitsetversion_set.all())
+        self.assertTrue(reason in hts_version_to_link.update_reasons.all())
 
-    def test_update_removed_source_dataset_subcohorts(self):
-        """A source_dataset - subcohort link that is no longer in the source db is removed after an update."""
+    def test_update_removed_harmonized_trait_set_version_update_reasons(self):
+        """A harmonized_trait_set_version - reason link that is no longer in the source db is removed after update."""
         # Run the initial db import.
         management.call_command('import_db', '--which_db=devel', '--no_backup')
-        # Pick a subcohort to remove the link to in the source db.
-        sc = models.Subcohort.objects.get(pk=1)
-        # Find a dataset which this subcohort is already linked to.
-        linked_datasets = sc.sourcedataset_set.all()
-        possible_datasets = models.SourceDataset.objects.filter(
-            source_study_version__study__global_study=sc.global_study)
-        if len(linked_datasets) < 1:
-            raise ValueError('The subcohort is not linked to any datasets.')
-        dataset_to_unlink = linked_datasets[0]
-        # Remove the dataset-subcohort link in the source db.
+        # Pick a hts_version to remove the link to in the source db.
+        hts_version_to_unlink = models.HarmonizedTraitSetVersion.objects.filter(i_version=2).order_by('?').first()
+        reason_to_unlink = hts_version_to_unlink.update_reasons.all().order_by('?').first()
+        # Remove the link in the source db.
         self.cursor.close()
         self.source_db.close()
         self.source_db = get_devel_db(permissions='full')
         self.cursor = self.source_db.cursor(buffered=True, dictionary=True)
-        remove_subcohort_link_query = """DELETE FROM source_dataset_subcohorts WHERE dataset_id={} AND
-                                         subcohort_id={}""".format(dataset_to_unlink.pk, sc.pk)
-        self.cursor.execute(remove_subcohort_link_query)
+        remove_reason_link_query = """DELETE FROM harmonized_trait_set_version_update_reason WHERE
+                                      harmonized_trait_set_version_id={} AND
+                                      reason_id={}""".format(hts_version_to_unlink.pk, reason_to_unlink.pk)
+        self.cursor.execute(remove_reason_link_query)
         self.source_db.commit()
         self.cursor.close()
         self.source_db.close()
         # Now run the update commands.
         management.call_command('import_db', '--which_db=devel', '--update_only', '--verbosity=0', '--no_backup')
-        # Check that the chosen subcohort is now linked to the dataset that was picked, in the Django db.
-        sc.refresh_from_db()
-        dataset_to_unlink.refresh_from_db()
-        self.assertFalse(dataset_to_unlink in sc.sourcedataset_set.all())
+        # Check that the chosen reason is not linked to the hts_version now, in the Django db.
+        reason_to_unlink.refresh_from_db()
+        hts_version_to_unlink.refresh_from_db()
+        self.assertFalse(hts_version_to_unlink in reason_to_unlink.harmonizedtraitsetversion_set.all())
+        self.assertFalse(reason_to_unlink in hts_version_to_unlink.update_reasons.all())
 
     def test_update_add_component_source_traits(self):
         """A new component source trait link to an existing harmonized trait is imported."""
@@ -1333,7 +1419,7 @@ class UpdateModelsTest(VisitTestDataTestCase):
         hunit_to_link = models.HarmonizationUnit.objects.exclude(
             i_id__in=models.HarmonizationUnit.objects.filter(component_source_traits__in=[source_trait]))[0]
         # Find a harmonized trait from within this harmonization unit.
-        htrait_to_link = hunit_to_link.harmonized_trait_set.harmonizedtrait_set.all()[0]
+        htrait_to_link = hunit_to_link.harmonizedtrait_set.all()[0]
         # Prep for altering the devel db.
         self.source_db = get_devel_db(permissions='full')
         self.cursor = self.source_db.cursor(buffered=True, dictionary=True)
@@ -1398,7 +1484,7 @@ class UpdateModelsTest(VisitTestDataTestCase):
         hunit_to_link = models.HarmonizationUnit.objects.exclude(
             i_id__in=models.HarmonizationUnit.objects.filter(component_batch_traits__in=[source_trait]))[0]
         # Find a harmonized trait from within this harmonization unit.
-        htrait_to_link = hunit_to_link.harmonized_trait_set.harmonizedtrait_set.all()[0]
+        htrait_to_link = hunit_to_link.harmonized_trait_set_version.harmonizedtrait_set.all()[0]
         # Prep for altering the devel db.
         self.source_db = get_devel_db(permissions='full')
         self.cursor = self.source_db.cursor(buffered=True, dictionary=True)
@@ -1508,26 +1594,26 @@ class UpdateModelsTest(VisitTestDataTestCase):
         hunit_to_unlink.refresh_from_db()
         self.assertFalse(hunit_to_unlink in component_age_trait.age_component_of_harmonization_unit.all())
 
-    def test_update_add_component_harmonized_trait_sets(self):
-        """A new component source trait link to an existing harmonized trait is imported."""
+    def test_update_add_component_harmonized_trait_set_versions(self):
+        """New component harmonized trait links to existing harmonized trait and harmonization unit are imported."""
         # Run the initial db import.
         management.call_command('import_db', '--which_db=devel', '--no_backup')
         # Pick a harmonized trait set to create a new link to in the source db.
-        harmonized_trait_set = models.HarmonizedTraitSet.objects.get(pk=1)
+        harmonized_trait_set_version = models.HarmonizedTraitSetVersion.objects.get(pk=1)
         # Find a harmonization_unit which this harmonized trait set isn't linked to already
         hunit_to_link = models.HarmonizationUnit.objects.exclude(
             i_id__in=models.HarmonizationUnit.objects.filter(
-                component_harmonized_trait_sets__in=[harmonized_trait_set]))[0]
+                component_harmonized_trait_set_versions__in=[harmonized_trait_set_version]))[0]
         # Find a harmonized trait from within this harmonization unit.
-        htrait_to_link = hunit_to_link.harmonized_trait_set.harmonizedtrait_set.all()[0]
+        htrait_to_link = hunit_to_link.harmonizedtrait_set.all()[0]
         # Prep for altering the devel db.
         self.source_db = get_devel_db(permissions='full')
         self.cursor = self.source_db.cursor(buffered=True, dictionary=True)
         # Add source_trait as a component trait of harmonization unit and harmonized trait in the source db.
         add_component_trait_query = """INSERT INTO component_harmonized_trait_set (harmonized_trait_id,
-                                       harmonization_unit_id, component_trait_set_id, date_added) values
+                                       harmonization_unit_id, component_trait_set_version_id, date_added) values
                                        ('{}', '{}', '{}', '{}')""".format(
-            htrait_to_link.i_trait_id, hunit_to_link.i_id, harmonized_trait_set.i_id,
+            htrait_to_link.i_trait_id, hunit_to_link.i_id, harmonized_trait_set_version.i_id,
             timezone.now().strftime('%Y-%m-%d %H:%M:%S'))
         self.cursor.execute(add_component_trait_query)
         self.source_db.commit()
@@ -1539,28 +1625,28 @@ class UpdateModelsTest(VisitTestDataTestCase):
         # Now run the update commands.
         management.call_command('import_db', '--which_db=devel', '--update_only', '--verbosity=0', '--no_backup')
         # Check that the chosen source trait is now linked to the correct harmonization unit and harmonized trait.
-        harmonized_trait_set.refresh_from_db()
+        harmonized_trait_set_version.refresh_from_db()
         htrait_to_link.refresh_from_db()
         hunit_to_link.refresh_from_db()
-        self.assertTrue(htrait_to_link in harmonized_trait_set.harmonized_set_component_of_harmonized_trait.all())
-        self.assertTrue(hunit_to_link in harmonized_trait_set.harmonized_set_component_of_harmonization_unit.all())
+        self.assertTrue(htrait_to_link in harmonized_trait_set_version.harmonized_component_of_harmonized_trait.all())
+        self.assertTrue(hunit_to_link in harmonized_trait_set_version.harmonized_component_of_harmonization_unit.all())
 
-    def test_update_remove_component_harmonized_traits(self):
-        """A deleted component source trait link is removed."""
+    def test_update_remove_component_harmonized_trait_set_versions(self):
+        """Deleted component harmonized trait links to a harmonized trait and a harmonization unit are removed."""
         # Run the initial db import.
         management.call_command('import_db', '--which_db=devel', '--no_backup')
         # Pick a source trait to remove a link to in the source db.
         hunit_to_unlink = models.HarmonizationUnit.objects.exclude(
-            component_harmonized_trait_sets=None).order_by('?').first()
+            component_harmonized_trait_set_versions=None).order_by('?').first()
         htrait_to_unlink = hunit_to_unlink.harmonizedtrait_set.all().order_by('?').first()
-        component_harmonized_trait_set = hunit_to_unlink.component_harmonized_trait_sets.all().order_by('?').first()
+        component_harmonized_trait_set_version = hunit_to_unlink.component_harmonized_trait_set_versions.all().order_by('?').first()  # noqa: E501
         # Open source db with full privileges.
         self.source_db = get_devel_db(permissions='full')
         self.cursor = self.source_db.cursor(buffered=True, dictionary=True)
         # Remove a component source trait link.
         remove_component_trait_query = """DELETE FROM component_harmonized_trait_set WHERE harmonized_trait_id={} AND
-                                          harmonization_unit_id={} AND component_trait_set_id={}""".format(
-            htrait_to_unlink.pk, hunit_to_unlink.pk, component_harmonized_trait_set.pk)
+                                          harmonization_unit_id={} AND component_trait_set_version_id={}""".format(
+            htrait_to_unlink.pk, hunit_to_unlink.pk, component_harmonized_trait_set_version.pk)
         self.cursor.execute(remove_component_trait_query)
         self.source_db.commit()
         # Close the db connection.
@@ -1569,21 +1655,21 @@ class UpdateModelsTest(VisitTestDataTestCase):
         # Now run the update commands.
         management.call_command('import_db', '--which_db=devel', '--update_only', '--verbosity=0', '--no_backup')
         # Check that the link between these two models is now gone.
-        component_harmonized_trait_set.refresh_from_db()
+        component_harmonized_trait_set_version.refresh_from_db()
         htrait_to_unlink.refresh_from_db()
         hunit_to_unlink.refresh_from_db()
         self.assertFalse(
-            htrait_to_unlink in component_harmonized_trait_set.harmonized_set_component_of_harmonized_trait.all())
+            htrait_to_unlink in component_harmonized_trait_set_version.harmonized_component_of_harmonized_trait.all())
         self.assertFalse(
-            hunit_to_unlink in component_harmonized_trait_set.harmonized_set_component_of_harmonization_unit.all())
+            hunit_to_unlink in component_harmonized_trait_set_version.harmonized_component_of_harmonization_unit.all())
 
 
-class ImportNoUpdateTest(VisitTestDataTestCase):
+class ImportNoUpdateTest(BaseTestDataTestCase):
     """Tests that updated source data is NOT imported when the --import_only flag is used."""
 
     # Source trait updates.
-    def test_no_update_on_import_global_study(self):
-        """Updates in global_study are not imported with --import_only."""
+    def test_no_update_global_study(self):
+        """Updates in global_study are imported."""
         management.call_command('import_db', '--which_db=devel', '--no_backup')
         # Close the db connections because change_data_in_table() opens new connections.
         # This does not affect the .cursor and .source_db attributes in other functions.
@@ -1599,16 +1685,15 @@ class ImportNoUpdateTest(VisitTestDataTestCase):
         source_db_pk_name = model_instance._meta.pk.name.replace('i_', '')
 
         sleep(1)
-        sleep(1)
         change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
-        management.call_command('import_db', '--which_db=devel', '--import_only', '--no_backup')
+        management.call_command('import_db', '--which_db=devel', '--import_only', '--verbosity=0', '--no_backup')
         model_instance.refresh_from_db()
         # Check that modified date > created date, and name is set to new value.
         self.assertNotEqual(new_value, getattr(model_instance, 'i_' + field_to_update))
         self.assertFalse(model_instance.modified > old_mod_time)
 
-    def test_no_update_on_import_study(self):
-        """Updates in study are not imported with --import_only."""
+    def test_no_update_study(self):
+        """Updates in study are imported."""
         management.call_command('import_db', '--which_db=devel', '--no_backup')
         # Close the db connections because change_data_in_table() opens new connections.
         # This does not affect the .cursor and .source_db attributes in other functions.
@@ -1625,14 +1710,14 @@ class ImportNoUpdateTest(VisitTestDataTestCase):
 
         sleep(1)
         change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
-        management.call_command('import_db', '--which_db=devel', '--import_only', '--no_backup')
+        management.call_command('import_db', '--which_db=devel', '--import_only', '--verbosity=0', '--no_backup')
         model_instance.refresh_from_db()
         # Check that modified date > created date, and name is set to new value.
         self.assertNotEqual(new_value, getattr(model_instance, 'i_' + field_to_update))
         self.assertFalse(model_instance.modified > old_mod_time)
 
-    def test_no_update_on_import_source_study_version(self):
-        """Updates in source_study_version are not imported with --import_only."""
+    def test_no_update_source_study_version(self):
+        """Updates in source_study_version are imported."""
         management.call_command('import_db', '--which_db=devel', '--no_backup')
         # Close the db connections because change_data_in_table() opens new connections.
         # This does not affect the .cursor and .source_db attributes in other functions.
@@ -1649,14 +1734,14 @@ class ImportNoUpdateTest(VisitTestDataTestCase):
 
         sleep(1)
         change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
-        management.call_command('import_db', '--which_db=devel', '--import_only', '--no_backup')
+        management.call_command('import_db', '--which_db=devel', '--import_only', '--verbosity=0', '--no_backup')
         model_instance.refresh_from_db()
         # Check that modified date > created date, and name is set to new value.
         self.assertNotEqual(new_value, getattr(model_instance, 'i_' + field_to_update))
         self.assertFalse(model_instance.modified > old_mod_time)
 
-    def test_no_update_on_import_source_dataset(self):
-        """Updates in source_dataset are not imported with --import_only."""
+    def test_no_update_source_dataset(self):
+        """Updates in source_dataset table are imported."""
         management.call_command('import_db', '--which_db=devel', '--no_backup')
         # Close the db connections because change_data_in_table() opens new connections.
         # This does not affect the .cursor and .source_db attributes in other functions.
@@ -1667,44 +1752,20 @@ class ImportNoUpdateTest(VisitTestDataTestCase):
         model_instance = model.objects.all()[0]
         old_mod_time = model_instance.modified
         source_db_table_name = 'source_dataset'
-        field_to_update = 'visit_code'
-        new_value = 'one_visit_per_file'
+        field_to_update = 'dbgap_description'
+        new_value = 'asdgsdfg'
         source_db_pk_name = model_instance._meta.pk.name.replace('i_', '')
 
         sleep(1)
         change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
-        management.call_command('import_db', '--which_db=devel', '--import_only', '--no_backup')
+        management.call_command('import_db', '--which_db=devel', '--import_only', '--verbosity=0', '--no_backup')
         model_instance.refresh_from_db()
         # Check that modified date > created date, and name is set to new value.
         self.assertNotEqual(new_value, getattr(model_instance, 'i_' + field_to_update))
         self.assertFalse(model_instance.modified > old_mod_time)
 
-    def test_no_update_on_import_source_trait(self):
-        """Updates in source_trait are not imported with --import_only."""
-        management.call_command('import_db', '--which_db=devel', '--no_backup')
-        # Close the db connections because change_data_in_table() opens new connections.
-        # This does not affect the .cursor and .source_db attributes in other functions.
-        self.cursor.close()
-        self.source_db.close()
-
-        model = models.SourceTrait
-        model_instance = model.objects.all()[0]
-        old_mod_time = model_instance.modified
-        source_db_table_name = 'source_trait'
-        field_to_update = 'dcc_description'
-        new_value = 'asdfghjkl'
-        source_db_pk_name = 'source_trait_id'
-
-        sleep(1)
-        change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
-        management.call_command('import_db', '--which_db=devel', '--import_only', '--no_backup')
-        model_instance.refresh_from_db()
-        # Check that modified date > created date, and name is set to new value.
-        self.assertNotEqual(new_value, getattr(model_instance, 'i_description'))
-        self.assertFalse(model_instance.modified > old_mod_time)
-
-    def test_no_update_on_import_subcohort(self):
-        """Updates in subcohort are not imported with --import_only."""
+    def test_no_update_subcohort(self):
+        """Updates in subcohort are imported."""
         management.call_command('import_db', '--which_db=devel', '--no_backup')
         # Close the db connections because change_data_in_table() opens new connections.
         # This does not affect the .cursor and .source_db attributes in other functions.
@@ -1721,14 +1782,38 @@ class ImportNoUpdateTest(VisitTestDataTestCase):
 
         sleep(1)
         change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
-        management.call_command('import_db', '--which_db=devel', '--import_only', '--no_backup')
+        management.call_command('import_db', '--which_db=devel', '--import_only', '--verbosity=0', '--no_backup')
         model_instance.refresh_from_db()
         # Check that modified date > created date, and name is set to new value.
         self.assertNotEqual(new_value, getattr(model_instance, 'i_' + field_to_update))
         self.assertFalse(model_instance.modified > old_mod_time)
 
-    def test_no_update_on_import_source_trait_encoded_value(self):
-        """Updates in source_trait_encoded_values are not imported with --import_only."""
+    def test_no_update_source_trait(self):
+        """Updates in source_trait table are imported."""
+        management.call_command('import_db', '--which_db=devel', '--no_backup')
+        # Close the db connections because change_data_in_table() opens new connections.
+        # This does not affect the .cursor and .source_db attributes in other functions.
+        self.cursor.close()
+        self.source_db.close()
+
+        model = models.SourceTrait
+        model_instance = model.objects.all()[0]
+        old_mod_time = model_instance.modified
+        source_db_table_name = 'source_trait'
+        field_to_update = 'dbgap_comment'
+        new_value = 'asdfghjkl'
+        source_db_pk_name = 'source_trait_id'
+
+        sleep(1)
+        change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
+        management.call_command('import_db', '--which_db=devel', '--import_only', '--verbosity=0', '--no_backup')
+        model_instance.refresh_from_db()
+        # Check that modified date > created date, and name is set to new value.
+        self.assertNotEqual(new_value, getattr(model_instance, 'i_' + field_to_update))
+        self.assertFalse(model_instance.modified > old_mod_time)
+
+    def test_no_update_source_trait_encoded_value(self):
+        """Updates in source_trait_encoded_values are imported."""
         management.call_command('import_db', '--which_db=devel', '--no_backup')
         # Close the db connections because change_data_in_table() opens new connections.
         # This does not affect the .cursor and .source_db attributes in other functions.
@@ -1745,80 +1830,15 @@ class ImportNoUpdateTest(VisitTestDataTestCase):
 
         sleep(1)
         change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
-        management.call_command('import_db', '--which_db=devel', '--import_only', '--no_backup')
+        management.call_command('import_db', '--which_db=devel', '--import_only', '--verbosity=0', '--no_backup')
         model_instance.refresh_from_db()
         # Check that modified date > created date, and name is set to new value.
         self.assertNotEqual(new_value, getattr(model_instance, 'i_' + field_to_update))
         self.assertFalse(model_instance.modified > old_mod_time)
 
-    def test_no_update_on_import_added_source_dataset_subcohorts(self):
-        """A new subcohort link to an existing source dataset is imported after an update."""
-        # Run the initial db import.
-        management.call_command('import_db', '--which_db=devel', '--no_backup')
-        # Pick a subcohort to create a new link to in the source db.
-        sc = models.Subcohort.objects.get(pk=1)
-        # Find a dataset which this subcohort isn't linked to already.
-        linked_datasets = sc.sourcedataset_set.all()
-        possible_datasets = models.SourceDataset.objects.filter(
-            source_study_version__study__global_study=sc.global_study)
-        unlinked_datasets = set(possible_datasets) - set(linked_datasets)
-        if len(unlinked_datasets) < 1:
-            raise ValueError('The subcohort is already linked to all possible datasets.')
-        dataset_to_link = list(unlinked_datasets)[0]
-        # Create a new dataset-subcohort link in the source db.
-        self.cursor.close()
-        self.source_db.close()
-        self.source_db = get_devel_db(permissions='full')
-        self.cursor = self.source_db.cursor(buffered=True, dictionary=True)
-        add_subcohort_link_query = """INSERT INTO source_dataset_subcohorts (dataset_id, subcohort_id, date_added)
-                                      VALUES ({}, {}, '{}');""".format(
-            dataset_to_link.i_id, sc.i_id, timezone.now().strftime('%Y-%m-%d %H:%M:%S'))
-        self.cursor.execute(add_subcohort_link_query)
-        self.source_db.commit()
-        self.cursor.close()
-        self.source_db.close()
-        # Now run the update commands.
-        management.call_command('import_db', '--which_db=devel', '--import_only', '--no_backup')
-        # Check that the chosen subcohort is now linked to the dataset that was picked, in the Django db.
-        sc.refresh_from_db()
-        dataset_to_link.refresh_from_db()
-        self.assertFalse(dataset_to_link in sc.sourcedataset_set.all())
-
-    def test_no_update_on_import_removed_source_dataset_subcohorts(self):
-        """A source_dataset - subcohort link that is no longer in the source db is removed after an update."""
-        # Run the initial db import.
-        management.call_command('import_db', '--which_db=devel', '--no_backup')
-        # Pick a subcohort to remove the link to in the source db.
-        sc = models.Subcohort.objects.get(pk=1)
-        # Find a dataset which this subcohort is already linked to.
-        linked_datasets = sc.sourcedataset_set.all()
-        possible_datasets = models.SourceDataset.objects.filter(
-            source_study_version__study__global_study=sc.global_study)
-        if len(linked_datasets) < 1:
-            raise ValueError('The subcohort is not linked to any datasets.')
-        dataset_to_unlink = linked_datasets[0]
-        # Remove the dataset-subcohort link in the source db.
-        self.cursor.close()
-        self.source_db.close()
-        self.source_db = get_devel_db(permissions='full')
-        self.cursor = self.source_db.cursor(buffered=True, dictionary=True)
-        remove_subcohort_link_query = """DELETE FROM source_dataset_subcohorts WHERE dataset_id={} AND
-                                         subcohort_id={}""".format(
-            dataset_to_unlink.pk, sc.pk)
-        self.cursor.execute(remove_subcohort_link_query)
-        self.source_db.commit()
-        self.cursor.close()
-        self.source_db.close()
-        # Now run the update commands.
-        management.call_command('import_db', '--which_db=devel', '--import_only', '--no_backup')
-        # Check that the chosen subcohort is now linked to the dataset that was picked, in the Django db.
-        sc.refresh_from_db()
-        dataset_to_unlink.refresh_from_db()
-        self.assertTrue(dataset_to_unlink in sc.sourcedataset_set.all())
-
     # Harmonized trait updates.
-    def test_no_update_on_import_harmonized_trait_set(self):
-        """Updates in harmonized_trait_set are not imported with --import_only."""
+    def test_no_update_harmonized_trait_set(self):
+        """Updates to harmonized_trait_set are imported."""
         management.call_command('import_db', '--which_db=devel', '--no_backup')
         # Close the db connections because change_data_in_table() opens new connections.
         # This does not affect the .cursor and .source_db attributes in other functions.
@@ -1829,20 +1849,90 @@ class ImportNoUpdateTest(VisitTestDataTestCase):
         model_instance = model.objects.all()[0]
         old_mod_time = model_instance.modified
         source_db_table_name = 'harmonized_trait_set'
+        field_to_update = 'trait_set_name'
+        new_value = 'asdfghjkl'
+        source_db_pk_name = model_instance._meta.pk.name.replace('i_', '')
+
+        sleep(1)
+        change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
+        management.call_command('import_db', '--which_db=devel', '--import_only', '--verbosity=0', '--no_backup')
+        model_instance.refresh_from_db()
+        # Check that modified date > created date, and name is set to new value.
+        self.assertNotEqual(new_value, getattr(model_instance, 'i_' + field_to_update))
+        self.assertFalse(model_instance.modified > old_mod_time)
+
+    def test_no_update_harmonized_trait_set_version(self):
+        """Updates to harmonized_trait_set_version are imported."""
+        management.call_command('import_db', '--which_db=devel', '--no_backup')
+        # Close the db connections because change_data_in_table() opens new connections.
+        # This does not affect the .cursor and .source_db attributes in other functions.
+        self.cursor.close()
+        self.source_db.close()
+
+        model = models.HarmonizedTraitSetVersion
+        model_instance = model.objects.all()[0]
+        old_mod_time = model_instance.modified
+        source_db_table_name = 'harmonized_trait_set_version'
+        field_to_update = 'harmonized_by'
+        new_value = 'asdfghjkl'
+        source_db_pk_name = model_instance._meta.pk.name.replace('i_', '')
+
+        sleep(1)
+        change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
+        management.call_command('import_db', '--which_db=devel', '--import_only', '--verbosity=0', '--no_backup')
+        model_instance.refresh_from_db()
+        # Check that modified date > created date, and name is set to new value.
+        self.assertNotEqual(new_value, getattr(model_instance, 'i_' + field_to_update))
+        self.assertFalse(model_instance.modified > old_mod_time)
+
+    def test_no_update_allowed_update_reason(self):
+        """Updates to allowed_update_reason are NOT imported."""
+        management.call_command('import_db', '--which_db=devel', '--no_backup')
+        # Close the db connections because change_data_in_table() opens new connections.
+        # This does not affect the .cursor and .source_db attributes in other functions.
+        self.cursor.close()
+        self.source_db.close()
+
+        model = models.AllowedUpdateReason
+        model_instance = model.objects.all()[0]
+        source_db_table_name = 'allowed_update_reason'
         field_to_update = 'description'
         new_value = 'asdfghjkl'
         source_db_pk_name = model_instance._meta.pk.name.replace('i_', '')
 
         sleep(1)
         change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
-        management.call_command('import_db', '--which_db=devel', '--import_only', '--no_backup')
+        management.call_command('import_db', '--which_db=devel', '--import_only', '--verbosity=0', '--no_backup')
+        model_instance.refresh_from_db()
+        # There should NOT be any imported updates.
+        self.assertNotEqual(new_value, getattr(model_instance, 'i_' + field_to_update))
+
+    def test_no_update_harmonization_unit(self):
+        """Updates to harmonization_unit are imported."""
+        management.call_command('import_db', '--which_db=devel', '--no_backup')
+        # Close the db connections because change_data_in_table() opens new connections.
+        # This does not affect the .cursor and .source_db attributes in other functions.
+        self.cursor.close()
+        self.source_db.close()
+
+        model = models.HarmonizationUnit
+        model_instance = model.objects.all()[0]
+        old_mod_time = model_instance.modified
+        source_db_table_name = 'harmonization_unit'
+        field_to_update = 'tag'
+        new_value = 'asdfghjkl'
+        source_db_pk_name = 'id'
+
+        sleep(1)
+        change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
+        management.call_command('import_db', '--which_db=devel', '--import_only', '--verbosity=0', '--no_backup')
         model_instance.refresh_from_db()
         # Check that modified date > created date, and name is set to new value.
         self.assertNotEqual(new_value, getattr(model_instance, 'i_' + field_to_update))
         self.assertFalse(model_instance.modified > old_mod_time)
 
-    def test_no_update_on_import_harmonized_trait(self):
-        """Updates in harmonized_trait are not imported with --import_only."""
+    def test_no_update_harmonized_trait(self):
+        """Updates to harmonized_trait are imported."""
         management.call_command('import_db', '--which_db=devel', '--no_backup')
         # Close the db connections because change_data_in_table() opens new connections.
         # This does not affect the .cursor and .source_db attributes in other functions.
@@ -1859,14 +1949,14 @@ class ImportNoUpdateTest(VisitTestDataTestCase):
 
         sleep(1)
         change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
-        management.call_command('import_db', '--which_db=devel', '--import_only', '--no_backup')
+        management.call_command('import_db', '--which_db=devel', '--import_only', '--verbosity=0', '--no_backup')
         model_instance.refresh_from_db()
         # Check that modified date > created date, and name is set to new value.
         self.assertNotEqual(new_value, getattr(model_instance, 'i_description'))
         self.assertFalse(model_instance.modified > old_mod_time)
 
-    def test_no_update_on_import_harmonized_trait_encoded_value(self):
-        """Updates in harmonized_trait_encoded_values are not imported with --import_only."""
+    def test_no_update_harmonized_trait_encoded_value(self):
+        """Updates to harmonized_trait_encoded_values are imported."""
         management.call_command('import_db', '--which_db=devel', '--no_backup')
         # Close the db connections because change_data_in_table() opens new connections.
         # This does not affect the .cursor and .source_db attributes in other functions.
@@ -1883,13 +1973,75 @@ class ImportNoUpdateTest(VisitTestDataTestCase):
 
         sleep(1)
         change_data_in_table(source_db_table_name, field_to_update, new_value, source_db_pk_name, model_instance.pk)
-        management.call_command('import_db', '--which_db=devel', '--import_only', '--no_backup')
+        management.call_command('import_db', '--which_db=devel', '--import_only', '--verbosity=0', '--no_backup')
         model_instance.refresh_from_db()
         # Check that modified date > created date, and name is set to new value.
         self.assertNotEqual(new_value, getattr(model_instance, 'i_' + field_to_update))
         self.assertFalse(model_instance.modified > old_mod_time)
 
-    def test_no_update_on_import_component_source_traits(self):
+    # M2M link updates.
+    def test_no_update_added_harmonized_trait_set_version_update_reasons(self):
+        """A new reason link to an existing harmonized_trait_set_version is imported after an update."""
+        # Run the initial db import.
+        management.call_command('import_db', '--which_db=devel', '--no_backup')
+        # Pick an allowed reason to create a new link to in the source db.
+        reason = models.AllowedUpdateReason.objects.get(pk=1)
+        # Find a harmonized_trait_set_version that this reason isn't linked to yet.
+        linked_hts_versions = reason.harmonizedtraitsetversion_set.all()
+        possible_hts_versions = models.HarmonizedTraitSetVersion.objects.all()
+        unlinked_hts_versions = set(possible_hts_versions) - set(linked_hts_versions)
+        if len(unlinked_hts_versions) < 1:
+            raise ValueError('The allowed update reason is already linked to all possible datasets.')
+        hts_version_to_link = list(unlinked_hts_versions)[0]
+        # Create a new hts_version-allowed_reason link in the source db.
+        self.cursor.close()
+        self.source_db.close()
+        self.source_db = get_devel_db(permissions='full')
+        self.cursor = self.source_db.cursor(buffered=True, dictionary=True)
+        add_reason_link_query = """INSERT INTO harmonized_trait_set_version_update_reason (reason_id,
+                                   harmonized_trait_set_version_id, date_added)
+                                   VALUES ({}, {}, '{}');""".format(
+            reason.pk, hts_version_to_link.i_id, timezone.now().strftime('%Y-%m-%d %H:%M:%S'))
+        self.cursor.execute(add_reason_link_query)
+        self.source_db.commit()
+        self.cursor.close()
+        self.source_db.close()
+        # Now run the update commands.
+        management.call_command('import_db', '--which_db=devel', '--import_only', '--verbosity=0', '--no_backup')
+        # Check that the chosen reason is now linked to the hts_version that was picked, in the Django db.
+        reason.refresh_from_db()
+        hts_version_to_link.refresh_from_db()
+        self.assertFalse(hts_version_to_link in reason.harmonizedtraitsetversion_set.all())
+        self.assertFalse(reason in hts_version_to_link.update_reasons.all())
+
+    def test_no_update_removed_harmonized_trait_set_version_update_reasons(self):
+        """A harmonized_trait_set_version - reason link that is no longer in the source db is removed after update."""
+        # Run the initial db import.
+        management.call_command('import_db', '--which_db=devel', '--no_backup')
+        # Pick a hts_version to remove the link to in the source db.
+        hts_version_to_unlink = models.HarmonizedTraitSetVersion.objects.filter(i_version=2).order_by('?').first()
+        reason_to_unlink = hts_version_to_unlink.update_reasons.all().order_by('?').first()
+        # Remove the link in the source db.
+        self.cursor.close()
+        self.source_db.close()
+        self.source_db = get_devel_db(permissions='full')
+        self.cursor = self.source_db.cursor(buffered=True, dictionary=True)
+        remove_reason_link_query = """DELETE FROM harmonized_trait_set_version_update_reason WHERE
+                                      harmonized_trait_set_version_id={} AND
+                                      reason_id={}""".format(hts_version_to_unlink.pk, reason_to_unlink.pk)
+        self.cursor.execute(remove_reason_link_query)
+        self.source_db.commit()
+        self.cursor.close()
+        self.source_db.close()
+        # Now run the update commands.
+        management.call_command('import_db', '--which_db=devel', '--import_only', '--verbosity=0', '--no_backup')
+        # Check that the chosen reason is not linked to the hts_version now, in the Django db.
+        reason_to_unlink.refresh_from_db()
+        hts_version_to_unlink.refresh_from_db()
+        self.assertTrue(hts_version_to_unlink in reason_to_unlink.harmonizedtraitsetversion_set.all())
+        self.assertTrue(reason_to_unlink in hts_version_to_unlink.update_reasons.all())
+
+    def test_no_update_add_component_source_traits(self):
         """A new component source trait link to an existing harmonized trait is imported."""
         # Run the initial db import.
         management.call_command('import_db', '--which_db=devel', '--no_backup')
@@ -1899,7 +2051,7 @@ class ImportNoUpdateTest(VisitTestDataTestCase):
         hunit_to_link = models.HarmonizationUnit.objects.exclude(
             i_id__in=models.HarmonizationUnit.objects.filter(component_source_traits__in=[source_trait]))[0]
         # Find a harmonized trait from within this harmonization unit.
-        htrait_to_link = hunit_to_link.harmonized_trait_set.harmonizedtrait_set.all()[0]
+        htrait_to_link = hunit_to_link.harmonizedtrait_set.all()[0]
         # Prep for altering the devel db.
         self.source_db = get_devel_db(permissions='full')
         self.cursor = self.source_db.cursor(buffered=True, dictionary=True)
@@ -1907,7 +2059,8 @@ class ImportNoUpdateTest(VisitTestDataTestCase):
         add_component_trait_query = """INSERT INTO component_source_trait (harmonized_trait_id, harmonization_unit_id,
                                        component_trait_id, date_added) values ('{}', '{}', '{}', '{}')""".format(
             htrait_to_link.i_trait_id, hunit_to_link.i_id, source_trait.i_trait_id,
-            timezone.now().strftime('%Y-%m-%d %H:%M:%S'))
+            timezone.now().strftime('%Y-%m-%d %H:%M:%S')
+        )
         self.cursor.execute(add_component_trait_query)
         self.source_db.commit()
         self.cursor.execute('SELECT LAST_INSERT_ID() AS last')
@@ -1924,7 +2077,36 @@ class ImportNoUpdateTest(VisitTestDataTestCase):
         self.assertFalse(htrait_to_link in source_trait.source_component_of_harmonized_trait.all())
         self.assertFalse(hunit_to_link in source_trait.source_component_of_harmonization_unit.all())
 
-    def test_no_update_on_import_component_batch_traits(self):
+    def test_no_update_remove_component_source_traits(self):
+        """A deleted component source trait link is removed."""
+        # Run the initial db import.
+        management.call_command('import_db', '--which_db=devel', '--no_backup')
+        # Pick a source trait to remove a link to in the source db.
+        hunit_to_unlink = models.HarmonizationUnit.objects.exclude(component_source_traits=None).order_by('?').first()
+        htrait_to_unlink = hunit_to_unlink.harmonizedtrait_set.all().order_by('?').first()
+        component_source_trait = hunit_to_unlink.component_source_traits.all().order_by('?').first()
+        # Open source db with full privileges.
+        self.source_db = get_devel_db(permissions='full')
+        self.cursor = self.source_db.cursor(buffered=True, dictionary=True)
+        # Remove a component source trait link.
+        remove_component_trait_query = """DELETE FROM component_source_trait WHERE harmonized_trait_id={} AND
+                                          harmonization_unit_id={} AND component_trait_id={}""".format(
+            htrait_to_unlink.pk, hunit_to_unlink.pk, component_source_trait.pk)
+        self.cursor.execute(remove_component_trait_query)
+        self.source_db.commit()
+        # Close the db connection.
+        self.cursor.close()
+        self.source_db.close()
+        # Now run the update commands.
+        management.call_command('import_db', '--which_db=devel', '--import_only', '--verbosity=0', '--no_backup')
+        # Check that the link between these two models is now gone.
+        component_source_trait.refresh_from_db()
+        htrait_to_unlink.refresh_from_db()
+        hunit_to_unlink.refresh_from_db()
+        self.assertTrue(htrait_to_unlink in component_source_trait.source_component_of_harmonized_trait.all())
+        self.assertTrue(hunit_to_unlink in component_source_trait.source_component_of_harmonization_unit.all())
+
+    def test_no_update_add_component_batch_traits(self):
         """A new component batch trait link to an existing harmonized trait is imported."""
         # Run the initial db import.
         management.call_command('import_db', '--which_db=devel', '--no_backup')
@@ -1934,7 +2116,7 @@ class ImportNoUpdateTest(VisitTestDataTestCase):
         hunit_to_link = models.HarmonizationUnit.objects.exclude(
             i_id__in=models.HarmonizationUnit.objects.filter(component_batch_traits__in=[source_trait]))[0]
         # Find a harmonized trait from within this harmonization unit.
-        htrait_to_link = hunit_to_link.harmonized_trait_set.harmonizedtrait_set.all()[0]
+        htrait_to_link = hunit_to_link.harmonized_trait_set_version.harmonizedtrait_set.all()[0]
         # Prep for altering the devel db.
         self.source_db = get_devel_db(permissions='full')
         self.cursor = self.source_db.cursor(buffered=True, dictionary=True)
@@ -1959,7 +2141,36 @@ class ImportNoUpdateTest(VisitTestDataTestCase):
         self.assertFalse(htrait_to_link in source_trait.batch_component_of_harmonized_trait.all())
         self.assertFalse(hunit_to_link in source_trait.batch_component_of_harmonization_unit.all())
 
-    def test_no_update_on_import_component_age_traits(self):
+    def test_no_update_remove_component_batch_traits(self):
+        """A deleted component batch trait link is removed."""
+        # Run the initial db import.
+        management.call_command('import_db', '--which_db=devel', '--no_backup')
+        # Pick a batch trait to remove a link to in the batch db.
+        hunit_to_unlink = models.HarmonizationUnit.objects.exclude(component_batch_traits=None).order_by('?').first()
+        htrait_to_unlink = hunit_to_unlink.harmonizedtrait_set.all().order_by('?').first()
+        component_batch_trait = hunit_to_unlink.component_batch_traits.all().order_by('?').first()
+        # Open batch db with full privileges.
+        self.source_db = get_devel_db(permissions='full')
+        self.cursor = self.source_db.cursor(buffered=True, dictionary=True)
+        # Remove a component batch trait link.
+        remove_component_trait_query = """DELETE FROM component_batch_trait WHERE harmonized_trait_id={} AND
+                                          harmonization_unit_id={} AND component_trait_id={}""".format(
+            htrait_to_unlink.pk, hunit_to_unlink.pk, component_batch_trait.pk)
+        self.cursor.execute(remove_component_trait_query)
+        self.source_db.commit()
+        # Close the db connection.
+        self.cursor.close()
+        self.source_db.close()
+        # Now run the update commands.
+        management.call_command('import_db', '--which_db=devel', '--import_only', '--verbosity=0', '--no_backup')
+        # Check that the link between these two models is now gone.
+        component_batch_trait.refresh_from_db()
+        htrait_to_unlink.refresh_from_db()
+        hunit_to_unlink.refresh_from_db()
+        self.assertTrue(htrait_to_unlink in component_batch_trait.batch_component_of_harmonized_trait.all())
+        self.assertTrue(hunit_to_unlink in component_batch_trait.batch_component_of_harmonization_unit.all())
+
+    def test_no_update_add_component_age_traits(self):
         """A new component source trait link to an existing harmonized trait is imported."""
         # Run the initial db import.
         management.call_command('import_db', '--which_db=devel', '--no_backup')
@@ -1989,26 +2200,52 @@ class ImportNoUpdateTest(VisitTestDataTestCase):
         hunit_to_link.refresh_from_db()
         self.assertFalse(hunit_to_link in source_trait.age_component_of_harmonization_unit.all())
 
-    def test_no_update_on_import_component_harmonized_traits(self):
-        """A new component source trait link to an existing harmonized trait is imported."""
+    def test_no_update_remove_component_age_traits(self):
+        """A deleted component age trait link is removed."""
         # Run the initial db import.
         management.call_command('import_db', '--which_db=devel', '--no_backup')
-        # Pick a source trait to create a new link to in the source db.
-        harmonized_trait_set = models.HarmonizedTraitSet.objects.get(pk=1)
-        # Find a harmonization_unit which this harmonized trait isn't linked to already
+        # Pick a source trait to remove a link to in the source db.
+        hunit_to_unlink = models.HarmonizationUnit.objects.exclude(component_age_traits=None).order_by('?').first()
+        component_age_trait = hunit_to_unlink.component_age_traits.all().order_by('?').first()
+        # Open source db with full privileges.
+        self.source_db = get_devel_db(permissions='full')
+        self.cursor = self.source_db.cursor(buffered=True, dictionary=True)
+        # Remove a component source trait link.
+        remove_component_trait_query = """DELETE FROM component_age_trait WHERE harmonization_unit_id={} AND
+                                          component_trait_id={}""".format(
+            hunit_to_unlink.pk, component_age_trait.pk)
+        self.cursor.execute(remove_component_trait_query)
+        self.source_db.commit()
+        # Close the db connection.
+        self.cursor.close()
+        self.source_db.close()
+        # Now run the update commands.
+        management.call_command('import_db', '--which_db=devel', '--import_only', '--verbosity=0', '--no_backup')
+        # Check that the link between these two models is now gone.
+        component_age_trait.refresh_from_db()
+        hunit_to_unlink.refresh_from_db()
+        self.assertTrue(hunit_to_unlink in component_age_trait.age_component_of_harmonization_unit.all())
+
+    def test_no_update_add_component_harmonized_trait_set_versions(self):
+        """New component harmonized trait links to existing harmonized trait and harmonization unit are imported."""
+        # Run the initial db import.
+        management.call_command('import_db', '--which_db=devel', '--no_backup')
+        # Pick a harmonized trait set to create a new link to in the source db.
+        harmonized_trait_set_version = models.HarmonizedTraitSetVersion.objects.get(pk=1)
+        # Find a harmonization_unit which this harmonized trait set isn't linked to already
         hunit_to_link = models.HarmonizationUnit.objects.exclude(
             i_id__in=models.HarmonizationUnit.objects.filter(
-                component_harmonized_trait_sets__in=[harmonized_trait_set]))[0]
+                component_harmonized_trait_set_versions__in=[harmonized_trait_set_version]))[0]
         # Find a harmonized trait from within this harmonization unit.
-        htrait_to_link = hunit_to_link.harmonized_trait_set.harmonizedtrait_set.all()[0]
+        htrait_to_link = hunit_to_link.harmonizedtrait_set.all()[0]
         # Prep for altering the devel db.
         self.source_db = get_devel_db(permissions='full')
         self.cursor = self.source_db.cursor(buffered=True, dictionary=True)
         # Add source_trait as a component trait of harmonization unit and harmonized trait in the source db.
         add_component_trait_query = """INSERT INTO component_harmonized_trait_set (harmonized_trait_id,
-                                       harmonization_unit_id, component_trait_set_id, date_added) values
+                                       harmonization_unit_id, component_trait_set_version_id, date_added) values
                                        ('{}', '{}', '{}', '{}')""".format(
-            htrait_to_link.i_trait_id, hunit_to_link.i_id, harmonized_trait_set.i_id,
+            htrait_to_link.i_trait_id, hunit_to_link.i_id, harmonized_trait_set_version.i_id,
             timezone.now().strftime('%Y-%m-%d %H:%M:%S'))
         self.cursor.execute(add_component_trait_query)
         self.source_db.commit()
@@ -2020,15 +2257,49 @@ class ImportNoUpdateTest(VisitTestDataTestCase):
         # Now run the update commands.
         management.call_command('import_db', '--which_db=devel', '--import_only', '--verbosity=0', '--no_backup')
         # Check that the chosen source trait is now linked to the correct harmonization unit and harmonized trait.
-        harmonized_trait_set.refresh_from_db()
+        harmonized_trait_set_version.refresh_from_db()
         htrait_to_link.refresh_from_db()
         hunit_to_link.refresh_from_db()
-        self.assertFalse(htrait_to_link in harmonized_trait_set.harmonized_set_component_of_harmonized_trait.all())
-        self.assertFalse(hunit_to_link in harmonized_trait_set.harmonized_set_component_of_harmonization_unit.all())
+        self.assertFalse(
+            htrait_to_link in harmonized_trait_set_version.harmonized_component_of_harmonized_trait.all())
+        self.assertFalse(
+            hunit_to_link in harmonized_trait_set_version.harmonized_component_of_harmonization_unit.all())
+
+    def test_no_update_remove_component_harmonized_traits(self):
+        """Deleted component harmonized trait links to a harmonized trait and a harmonization unit are removed."""
+        # Run the initial db import.
+        management.call_command('import_db', '--which_db=devel', '--no_backup')
+        # Pick a source trait to remove a link to in the source db.
+        hunit_to_unlink = models.HarmonizationUnit.objects.exclude(
+            component_harmonized_trait_set_versions=None).order_by('?').first()
+        htrait_to_unlink = hunit_to_unlink.harmonizedtrait_set.all().order_by('?').first()
+        component_harmonized_trait_set_version = hunit_to_unlink.component_harmonized_trait_set_versions.all().order_by('?').first()  # noqa: E501
+        # Open source db with full privileges.
+        self.source_db = get_devel_db(permissions='full')
+        self.cursor = self.source_db.cursor(buffered=True, dictionary=True)
+        # Remove a component source trait link.
+        remove_component_trait_query = """DELETE FROM component_harmonized_trait_set WHERE harmonized_trait_id={} AND
+                                          harmonization_unit_id={} AND component_trait_set_version_id={}""".format(
+            htrait_to_unlink.pk, hunit_to_unlink.pk, component_harmonized_trait_set_version.pk)
+        self.cursor.execute(remove_component_trait_query)
+        self.source_db.commit()
+        # Close the db connection.
+        self.cursor.close()
+        self.source_db.close()
+        # Now run the update commands.
+        management.call_command('import_db', '--which_db=devel', '--import_only', '--verbosity=0', '--no_backup')
+        # Check that the link between these two models is now gone.
+        component_harmonized_trait_set_version.refresh_from_db()
+        htrait_to_unlink.refresh_from_db()
+        hunit_to_unlink.refresh_from_db()
+        self.assertTrue(
+            htrait_to_unlink in component_harmonized_trait_set_version.harmonized_component_of_harmonized_trait.all())
+        self.assertTrue(
+            hunit_to_unlink in component_harmonized_trait_set_version.harmonized_component_of_harmonization_unit.all())
 
 
-# Tests that run import_db from start to finish
-class IntegrationTest(VisitTestDataTestCase):
+# Tests that run import_db from start to finish.
+class IntegrationTest(BaseTestDataReloadingTestCase):
     """Integration test of the whole management command.
 
     It's very difficult to test just one function at a time here, because of
@@ -2041,34 +2312,103 @@ class IntegrationTest(VisitTestDataTestCase):
         """import_db imports all of the primary keys for each model."""
         management.call_command('import_db', '--which_db=devel', '--no_backup')
         # Check all of the regular models.
-        pk_names = ('id', 'accession', 'id', 'id', 'source_trait_id', 'id', 'id', 'id', 'harmonized_trait_id', 'id', )
+        pk_names = (
+            'id',
+            'accession',
+            'id',
+            'id',
+            'id',
+            'id',
+            'id',
+            'id',
+            'id',
+            'source_trait_id',
+            'harmonized_trait_id',
+            'id',
+            'id',
+        )
         tables = (
-            'global_study', 'study', 'source_study_version', 'source_dataset', 'source_trait', 'subcohort',
-            'source_trait_encoded_values', 'harmonized_trait_set', 'harmonized_trait', 'harmonization_unit', )
+            'global_study',
+            'study',
+            'source_study_version',
+            'subcohort',
+            'source_dataset',
+            'harmonized_trait_set',
+            'allowed_update_reason',
+            'harmonized_trait_set_version',
+            'harmonization_unit',
+            'source_trait',
+            'harmonized_trait',
+            'source_trait_encoded_values',
+            'harmonized_trait_encoded_values',
+        )
         model_names = (
-            models.GlobalStudy, models.Study, models.SourceStudyVersion, models.SourceDataset, models.SourceTrait,
-            models.Subcohort, models.SourceTraitEncodedValue, models.HarmonizedTraitSet, models.HarmonizedTrait,
+            models.GlobalStudy,
+            models.Study,
+            models.SourceStudyVersion,
+            models.Subcohort,
+            models.SourceDataset,
+            models.HarmonizedTraitSet,
+            models.AllowedUpdateReason,
+            models.HarmonizedTraitSetVersion,
             models.HarmonizationUnit,
+            models.SourceTrait,
+            models.HarmonizedTrait,
+            models.SourceTraitEncodedValue,
+            models.HarmonizedTraitEncodedValue,
         )
         self.check_imported_pks_match(pk_names, tables, model_names)
         # Check all of the M2M relationships.
         m2m_tables = (
-            'source_dataset_subcohorts', 'component_source_trait', 'component_harmonized_trait_set',
-            'component_batch_trait', 'component_age_trait', 'component_source_trait', 'component_harmonized_trait_set',
-            'component_batch_trait', )
+            'component_source_trait',
+            'component_harmonized_trait_set',
+            'component_batch_trait',
+            'component_age_trait',
+            'component_source_trait',
+            'component_harmonized_trait_set',
+            'component_batch_trait',
+            'harmonized_trait_set_version_update_reason',
+        )
         group_by_fields = (
-            'dataset_id', 'harmonized_trait_id', 'harmonized_trait_id', 'harmonized_trait_id',
-            'harmonization_unit_id', 'harmonization_unit_id', 'harmonization_unit_id', 'harmonization_unit_id',)
+            'harmonized_trait_id',
+            'harmonized_trait_id',
+            'harmonized_trait_id',
+            'harmonization_unit_id',
+            'harmonization_unit_id',
+            'harmonization_unit_id',
+            'harmonization_unit_id',
+            'harmonized_trait_set_version_id',
+        )
         concat_fields = (
-            'subcohort_id', 'component_trait_id', 'component_trait_set_id', 'component_trait_id',
-            'component_trait_id', 'component_trait_id', 'component_trait_set_id', 'component_trait_id',)
+            'component_trait_id',
+            'component_trait_set_version_id',
+            'component_trait_id',
+            'component_trait_id',
+            'component_trait_id',
+            'component_trait_set_version_id',
+            'component_trait_id',
+            'reason_id',
+        )
         parent_models = (
-            models.SourceDataset, models.HarmonizedTrait, models.HarmonizedTrait, models.HarmonizedTrait,
-            models.HarmonizationUnit, models.HarmonizationUnit, models.HarmonizationUnit, models.HarmonizationUnit,)
+            models.HarmonizedTrait,
+            models.HarmonizedTrait,
+            models.HarmonizedTrait,
+            models.HarmonizationUnit,
+            models.HarmonizationUnit,
+            models.HarmonizationUnit,
+            models.HarmonizationUnit,
+            models.HarmonizedTraitSetVersion,
+        )
         m2m_att_names = (
-            'subcohorts', 'component_source_traits', 'component_harmonized_trait_sets', 'component_batch_traits',
-            'component_age_traits', 'component_source_traits', 'component_harmonized_trait_sets',
-            'component_batch_traits', )
+            'component_source_traits',
+            'component_harmonized_trait_set_versions',
+            'component_batch_traits',
+            'component_age_traits',
+            'component_source_traits',
+            'component_harmonized_trait_set_versions',
+            'component_batch_traits',
+            'update_reasons',
+        )
         self.check_imported_m2m_relations_match(
             m2m_tables, group_by_fields, concat_fields, parent_models, m2m_att_names)
         # Load a new study and run all of these checks again.
@@ -2078,9 +2418,9 @@ class IntegrationTest(VisitTestDataTestCase):
         management.call_command('import_db', '--which_db=devel', '--no_backup')
         self.source_db = get_devel_db()
         self.cursor = self.source_db.cursor(buffered=True, dictionary=True)
-        # Check all of the regular models.
+        # Check all of the regular models again.
         self.check_imported_pks_match(pk_names, tables, model_names)
-        # Check all of the M2M relationships.
+        # Check all of the M2M relationships again.
         self.check_imported_m2m_relations_match(
             m2m_tables, group_by_fields, concat_fields, parent_models, m2m_att_names)
 
@@ -2111,16 +2451,16 @@ class IntegrationTest(VisitTestDataTestCase):
             source_study_version._meta.pk.name.replace('i_', ''), source_study_version.pk)
         # Update source dataset table.
         source_dataset = models.SourceDataset.objects.all()[0]
-        new_visit_code = 'one_visit_per_file'
+        new_description = '23oriuam.sadflkj'
         change_data_in_table(
-            'source_dataset', 'visit_code', new_visit_code, source_dataset._meta.pk.name.replace('i_', ''),
+            'source_dataset', 'dbgap_description', new_description, source_dataset._meta.pk.name.replace('i_', ''),
             source_dataset.pk)
-        # Update source trait table.
-        source_trait = models.SourceTrait.objects.all()[0]
-        change_data_in_table('source_trait', 'dcc_description', new_value, 'source_trait_id', source_trait.pk)
         # Update the subcohort table.
         subcohort = models.Subcohort.objects.get(pk=1)
         change_data_in_table('subcohort', 'name', new_value, subcohort._meta.pk.name.replace('i_', ''), subcohort.pk)
+        # Update source trait table.
+        source_trait = models.SourceTrait.objects.all()[0]
+        change_data_in_table('source_trait', 'dbgap_comment', new_value, 'source_trait_id', source_trait.pk)
         # Update source trait encoded values table.
         sev = models.SourceTraitEncodedValue.objects.all()[0]
         change_data_in_table(
@@ -2128,8 +2468,21 @@ class IntegrationTest(VisitTestDataTestCase):
         # Update harmonized trait set table.
         harmonized_trait_set = models.HarmonizedTraitSet.objects.all()[0]
         change_data_in_table(
-            'harmonized_trait_set', 'description', new_value, harmonized_trait_set._meta.pk.name.replace('i_', ''),
+            'harmonized_trait_set', 'trait_set_name', new_value, harmonized_trait_set._meta.pk.name.replace('i_', ''),
             harmonized_trait_set.pk)
+        # Update harmonized trait set version table.
+        harmonized_trait_set_version = models.HarmonizedTraitSetVersion.objects.all()[0]
+        change_data_in_table(
+            'harmonized_trait_set_version', 'harmonized_by',
+            new_value, harmonized_trait_set_version._meta.pk.name.replace('i_', ''), harmonized_trait_set_version.pk
+        )
+        # Don't update allowed update reason table, because it should NOT change.
+        # Update harmonization unit table.
+        harmonization_unit = models.HarmonizationUnit.objects.all()[0]
+        change_data_in_table(
+            'harmonization_unit', 'tag', new_value, harmonization_unit._meta.pk.name.replace('i_', ''),
+            harmonization_unit.pk
+        )
         # Update harmonized trait table.
         harmonized_trait = models.HarmonizedTrait.objects.all()[0]
         change_data_in_table('harmonized_trait', 'description', new_value, 'harmonized_trait_id', harmonized_trait.pk)
@@ -2141,50 +2494,23 @@ class IntegrationTest(VisitTestDataTestCase):
         # Prep for doing updates for m2m tables.
         self.source_db = get_devel_db(permissions='full')
         self.cursor = self.source_db.cursor(buffered=True, dictionary=True)
-        # Find a dataset which this subcohort isn't linked to already
-        linked_datasets = subcohort.sourcedataset_set.all()
-        possible_datasets = models.SourceDataset.objects.filter(
-            source_study_version__study__global_study=subcohort.global_study)
-        unlinked_datasets = set(possible_datasets) - set(linked_datasets)
-        if len(unlinked_datasets) < 1:
-            raise ValueError('The subcohort is already linked to all possible datasets.')
-        dataset_to_link = list(unlinked_datasets)[0]
-        # Create a new dataset-subcohort link in the source db.
-        add_subcohort_link_query = """INSERT INTO source_dataset_subcohorts (dataset_id, subcohort_id, date_added)
-                                      VALUES ({}, {}, '{}');""".format(
-            dataset_to_link.i_id, subcohort.i_id, timezone.now().strftime('%Y-%m-%d %H:%M:%S'))
-        self.cursor.execute(add_subcohort_link_query)
-        self.source_db.commit()
-        # Remove a dataset-subcohort link in the source db.
-        subcohort2 = models.Subcohort.objects.get(pk=2)
-        # Find a dataset which this subcohort is already linked to.
-        linked_datasets = subcohort2.sourcedataset_set.all()
-        if len(linked_datasets) < 1:
-            raise ValueError('The subcohort is not linked to any datasets.')
-        dataset_to_unlink = linked_datasets[0]
-        # Remove the dataset-subcohort link in the source db.
-        remove_subcohort_link_query = """DELETE FROM source_dataset_subcohorts WHERE dataset_id={} AND
-                                         subcohort_id={}""".format(
-            dataset_to_unlink.pk, subcohort2.pk)
-        self.cursor.execute(remove_subcohort_link_query)
-        self.source_db.commit()
 
-        # Update a component source trait.
+        # Add a component source trait.
         component_source_trait = models.SourceTrait.objects.order_by('?').first()
         hunit_to_link_source = models.HarmonizationUnit.objects.exclude(
             i_id__in=models.HarmonizationUnit.objects.filter(component_source_traits__in=[component_source_trait]))[0]
-        htrait_to_link_source = hunit_to_link_source.harmonized_trait_set.harmonizedtrait_set.all()[0]
+        htrait_to_link_source = hunit_to_link_source.harmonized_trait_set_version.harmonizedtrait_set.all()[0]
         add_component_trait_query = """INSERT INTO component_source_trait (harmonized_trait_id, harmonization_unit_id,
                                        component_trait_id, date_added) values ('{}', '{}', '{}', '{}')""".format(
             htrait_to_link_source.i_trait_id, hunit_to_link_source.i_id, component_source_trait.i_trait_id,
             timezone.now().strftime('%Y-%m-%d %H:%M:%S'))
         self.cursor.execute(add_component_trait_query)
         self.source_db.commit()
-        # Update a component batch trait.
+        # Add a component batch trait.
         component_batch_trait = models.SourceTrait.objects.order_by('?').first()
         hunit_to_link_batch = models.HarmonizationUnit.objects.exclude(
             i_id__in=models.HarmonizationUnit.objects.filter(component_batch_traits__in=[component_batch_trait]))[0]
-        htrait_to_link_batch = hunit_to_link_batch.harmonized_trait_set.harmonizedtrait_set.all()[0]
+        htrait_to_link_batch = hunit_to_link_batch.harmonized_trait_set_version.harmonizedtrait_set.all()[0]
         add_component_trait_query = """INSERT INTO component_batch_trait (harmonized_trait_id, harmonization_unit_id,
                                        component_trait_id, date_added) values ('{}', '{}', '{}', '{}')""".format(
             htrait_to_link_batch.i_trait_id, hunit_to_link_batch.i_id, component_batch_trait.i_trait_id,
@@ -2192,7 +2518,7 @@ class IntegrationTest(VisitTestDataTestCase):
         self.cursor.execute(add_component_trait_query)
         self.source_db.commit()
         self.cursor.execute('SELECT LAST_INSERT_ID() AS last')
-        # Update a component age trait.
+        # Add a component age trait.
         component_age_trait = models.SourceTrait.objects.order_by('?').first()
         hunit_to_link_age = models.HarmonizationUnit.objects.exclude(
             i_id__in=models.HarmonizationUnit.objects.filter(component_age_traits__in=[component_age_trait]))[0]
@@ -2202,20 +2528,33 @@ class IntegrationTest(VisitTestDataTestCase):
         self.cursor.execute(add_component_trait_query)
         self.source_db.commit()
         self.cursor.execute('SELECT LAST_INSERT_ID() AS last')
-        # Update a component harmonized trait.
-        component_harmonized_trait_set = models.HarmonizedTraitSet.objects.order_by('?').first()
+        # Add a component harmonized trait set version.
+        component_harmonized_trait_set_version = models.HarmonizedTraitSetVersion.objects.order_by('?').first()
         hunit_to_link_harmonized = models.HarmonizationUnit.objects.exclude(
             i_id__in=models.HarmonizationUnit.objects.filter(
-                component_harmonized_trait_sets__in=[component_harmonized_trait_set]))[0]
-        htrait_to_link_harmonized = hunit_to_link_harmonized.harmonized_trait_set.harmonizedtrait_set.all()[0]
+                component_harmonized_trait_set_versions__in=[component_harmonized_trait_set_version]))[0]
+        htrait_to_link_harmonized = hunit_to_link_harmonized.harmonized_trait_set_version.harmonizedtrait_set.all()[0]
         add_component_trait_query = """INSERT INTO component_harmonized_trait_set (harmonized_trait_id,
-                                       harmonization_unit_id, component_trait_set_id, date_added) values
+                                       harmonization_unit_id, component_trait_set_version_id, date_added) values
                                        ('{}', '{}', '{}', '{}')""".format(
-            htrait_to_link_harmonized.i_trait_id, hunit_to_link_harmonized.i_id, component_harmonized_trait_set.i_id,
-            timezone.now().strftime('%Y-%m-%d %H:%M:%S'))
+            htrait_to_link_harmonized.i_trait_id, hunit_to_link_harmonized.i_id,
+            component_harmonized_trait_set_version.i_id,
+            timezone.now().strftime('%Y-%m-%d %H:%M:%S')
+        )
         self.cursor.execute(add_component_trait_query)
+        # Add an update reason to a harmonized trait set version.
+        reason_to_link = models.AllowedUpdateReason.objects.get(pk=1)
+        linked_hts_versions = reason_to_link.harmonizedtraitsetversion_set.all()
+        possible_hts_versions = models.HarmonizedTraitSetVersion.objects.all()
+        unlinked_hts_versions = set(possible_hts_versions) - set(linked_hts_versions)
+        hts_version_to_link_reason = list(unlinked_hts_versions)[0]
+        add_reason_link_query = """INSERT INTO harmonized_trait_set_version_update_reason (reason_id,
+                                   harmonized_trait_set_version_id, date_added)
+                                   VALUES ({}, {}, '{}');""".format(
+            reason_to_link.pk, hts_version_to_link_reason.i_id, timezone.now().strftime('%Y-%m-%d %H:%M:%S'))
+        self.cursor.execute(add_reason_link_query)
+
         self.source_db.commit()
-        self.cursor.execute('SELECT LAST_INSERT_ID() AS last')
 
         # Close the db connection.
         self.cursor.close()
@@ -2229,27 +2568,32 @@ class IntegrationTest(VisitTestDataTestCase):
         study.refresh_from_db()
         source_study_version.refresh_from_db()
         source_dataset.refresh_from_db()
-        source_trait.refresh_from_db()
         subcohort.refresh_from_db()
+        source_trait.refresh_from_db()
         sev.refresh_from_db()
         harmonized_trait_set.refresh_from_db()
+        harmonized_trait_set_version.refresh_from_db()
+        harmonization_unit.refresh_from_db()
         harmonized_trait.refresh_from_db()
         hev.refresh_from_db()
-        dataset_to_link.refresh_from_db()
-        subcohort2.refresh_from_db()
-        dataset_to_unlink.refresh_from_db()
 
         component_source_trait.refresh_from_db()
         htrait_to_link_source.refresh_from_db()
         hunit_to_link_source.refresh_from_db()
+
         component_batch_trait.refresh_from_db()
         htrait_to_link_batch.refresh_from_db()
         hunit_to_link_batch.refresh_from_db()
+
         component_age_trait.refresh_from_db()
         hunit_to_link_age.refresh_from_db()
-        component_harmonized_trait_set.refresh_from_db()
+
+        component_harmonized_trait_set_version.refresh_from_db()
         htrait_to_link_harmonized.refresh_from_db()
         hunit_to_link_harmonized.refresh_from_db()
+
+        reason_to_link.refresh_from_db()
+        hts_version_to_link_reason.refresh_from_db()
 
         # Check that modified date > created date, values are updated, for each model.
         self.assertEqual(new_value, global_study.i_name)
@@ -2261,20 +2605,26 @@ class IntegrationTest(VisitTestDataTestCase):
         self.assertEqual(new_is_deprecated, source_study_version.i_is_deprecated)
         self.assertTrue(source_study_version.modified > t1)
 
-        self.assertEqual(new_visit_code, source_dataset.i_visit_code)
+        self.assertEqual(new_description, source_dataset.i_dbgap_description)
         self.assertTrue(source_dataset.modified > t1)
-
-        self.assertEqual(new_value, source_trait.i_description)
-        self.assertTrue(source_trait.modified > t1)
 
         self.assertEqual(new_value, subcohort.i_name)
         self.assertTrue(subcohort.modified > t1)
 
+        self.assertEqual(new_value, source_trait.i_dbgap_comment)
+        self.assertTrue(source_trait.modified > t1)
+
         self.assertEqual(new_value, sev.i_value)
         self.assertTrue(sev.modified > t1)
 
-        self.assertEqual(new_value, harmonized_trait_set.i_description)
+        self.assertEqual(new_value, harmonized_trait_set.i_trait_set_name)
         self.assertTrue(harmonized_trait_set.modified > t1)
+
+        self.assertEqual(new_value, harmonized_trait_set_version.i_harmonized_by)
+        self.assertTrue(harmonized_trait_set_version.modified > t1)
+
+        self.assertEqual(new_value, harmonization_unit.i_tag)
+        self.assertTrue(harmonization_unit.modified > t1)
 
         self.assertEqual(new_value, harmonized_trait.i_description)
         self.assertTrue(harmonized_trait.modified > t1)
@@ -2282,31 +2632,38 @@ class IntegrationTest(VisitTestDataTestCase):
         self.assertEqual(new_value, hev.i_value)
         self.assertTrue(hev.modified > t1)
 
-        self.assertTrue(dataset_to_link in subcohort.sourcedataset_set.all())
-        self.assertFalse(dataset_to_unlink in subcohort2.sourcedataset_set.all())
-
         self.assertTrue(htrait_to_link_source in component_source_trait.source_component_of_harmonized_trait.all())
         self.assertTrue(hunit_to_link_source in component_source_trait.source_component_of_harmonization_unit.all())
+
         self.assertTrue(htrait_to_link_batch in component_batch_trait.batch_component_of_harmonized_trait.all())
         self.assertTrue(hunit_to_link_batch in component_batch_trait.batch_component_of_harmonization_unit.all())
+
         self.assertTrue(hunit_to_link_age in component_age_trait.age_component_of_harmonization_unit.all())
-        self.assertTrue(htrait_to_link_harmonized in component_harmonized_trait_set.harmonized_set_component_of_harmonized_trait.all())  # noqa: E501
-        self.assertTrue(hunit_to_link_harmonized in component_harmonized_trait_set.harmonized_set_component_of_harmonization_unit.all())  # noqa: E501
+
+        self.assertTrue(htrait_to_link_harmonized in component_harmonized_trait_set_version.harmonized_component_of_harmonized_trait.all())  # noqa: E501
+        self.assertTrue(hunit_to_link_harmonized in component_harmonized_trait_set_version.harmonized_component_of_harmonization_unit.all())  # noqa: E501
+
+        self.assertTrue(reason_to_link in hts_version_to_link_reason.update_reasons.all())
+        self.assertTrue(hts_version_to_link_reason in reason_to_link.harmonizedtraitsetversion_set.all())
 
     def test_values_match_after_all_updates(self):
         """All imported field values match those in the source db after making updates to the source db."""
         # Initial import of the test data (with visit).
         management.call_command('import_db', '--which_db=devel', '--no_backup')
-        #
+
         # Prepare for making changes in the devel database.
         # Close the db connections because change_data_in_table() opens new connections.
         self.cursor.close()
         self.source_db.close()
-        #
+
+        # Copy/paste the upper part from test_updated_data_from_every_table and copy/paste the lower part from
+        # test_imported_ids_match_source_ids
+
         # Make updates of every kind in the devel db.
         new_value = 'asdfghjkl'  # Use this value to reset things in multiple models.
         # Update the global study table.
         global_study = models.GlobalStudy.objects.all()[0]
+        sleep(1)
         change_data_in_table(
             'global_study', 'name', new_value, global_study._meta.pk.name.replace('i_', ''), global_study.pk)
         # Update the study table.
@@ -2320,16 +2677,16 @@ class IntegrationTest(VisitTestDataTestCase):
             source_study_version._meta.pk.name.replace('i_', ''), source_study_version.pk)
         # Update source dataset table.
         source_dataset = models.SourceDataset.objects.all()[0]
-        new_visit_code = 'one_visit_per_file'
+        new_description = '23oriuam.sadflkj'
         change_data_in_table(
-            'source_dataset', 'visit_code', new_visit_code,
-            source_dataset._meta.pk.name.replace('i_', ''), source_dataset.pk)
+            'source_dataset', 'dbgap_description', new_description, source_dataset._meta.pk.name.replace('i_', ''),
+            source_dataset.pk)
+        # Update the subcohort table.
+        subcohort = models.Subcohort.objects.get(pk=1)
+        change_data_in_table('subcohort', 'name', new_value, subcohort._meta.pk.name.replace('i_', ''), subcohort.pk)
         # Update source trait table.
         source_trait = models.SourceTrait.objects.all()[0]
-        change_data_in_table('source_trait', 'dcc_description', new_value, 'source_trait_id', source_trait.pk)
-        # Update the subcohort table.
-        subcohort = models.Subcohort.objects.get(pk=2)
-        change_data_in_table('subcohort', 'name', new_value, subcohort._meta.pk.name.replace('i_', ''), subcohort.pk)
+        change_data_in_table('source_trait', 'dbgap_comment', new_value, 'source_trait_id', source_trait.pk)
         # Update source trait encoded values table.
         sev = models.SourceTraitEncodedValue.objects.all()[0]
         change_data_in_table(
@@ -2337,8 +2694,21 @@ class IntegrationTest(VisitTestDataTestCase):
         # Update harmonized trait set table.
         harmonized_trait_set = models.HarmonizedTraitSet.objects.all()[0]
         change_data_in_table(
-            'harmonized_trait_set', 'description', new_value, harmonized_trait_set._meta.pk.name.replace('i_', ''),
+            'harmonized_trait_set', 'trait_set_name', new_value, harmonized_trait_set._meta.pk.name.replace('i_', ''),
             harmonized_trait_set.pk)
+        # Update harmonized trait set version table.
+        harmonized_trait_set_version = models.HarmonizedTraitSetVersion.objects.all()[0]
+        change_data_in_table(
+            'harmonized_trait_set_version', 'harmonized_by',
+            new_value, harmonized_trait_set_version._meta.pk.name.replace('i_', ''), harmonized_trait_set_version.pk
+        )
+        # Don't update allowed update reason table, because it should NOT change.
+        # Update harmonization unit table.
+        harmonization_unit = models.HarmonizationUnit.objects.all()[0]
+        change_data_in_table(
+            'harmonization_unit', 'tag', new_value, harmonization_unit._meta.pk.name.replace('i_', ''),
+            harmonization_unit.pk
+        )
         # Update harmonized trait table.
         harmonized_trait = models.HarmonizedTrait.objects.all()[0]
         change_data_in_table('harmonized_trait', 'description', new_value, 'harmonized_trait_id', harmonized_trait.pk)
@@ -2346,73 +2716,35 @@ class IntegrationTest(VisitTestDataTestCase):
         hev = models.HarmonizedTraitEncodedValue.objects.all()[0]
         change_data_in_table(
             'harmonized_trait_encoded_values', 'value', new_value, hev._meta.pk.name.replace('i_', ''), hev.pk)
-        # Update models.HarmonizationUnit
-        hunit = models.HarmonizationUnit.objects.all()[0]
-        change_data_in_table('harmonization_unit', 'tag', new_value, hunit._meta.pk.name.replace('i_', ''), hunit.pk)
-        # Open new db connection with full permissions.
+
+        # Prep for doing updates for m2m tables.
         self.source_db = get_devel_db(permissions='full')
         self.cursor = self.source_db.cursor(buffered=True, dictionary=True)
-        # Create a new subcohort-dataset link.
-        linked_datasets = subcohort.sourcedataset_set.all()
-        possible_datasets = models.SourceDataset.objects.filter(
-            source_study_version__study__global_study=subcohort.global_study)
-        unlinked_datasets = set(possible_datasets) - set(linked_datasets)
-        if len(unlinked_datasets) < 1:
-            raise ValueError('The subcohort is already linked to all possible datasets.')
-        dataset_to_link = list(unlinked_datasets)[0]
-        add_subcohort_link_query = """INSERT INTO source_dataset_subcohorts (dataset_id, subcohort_id, date_added)
-                                      VALUES ({}, {}, '{}');""".format(
-            dataset_to_link.i_id, subcohort.i_id, timezone.now().strftime('%Y-%m-%d %H:%M:%S'))
-        self.cursor.execute(add_subcohort_link_query)
-        # Remove an existing subcohort-dataset link.
-        subcohort2 = models.Subcohort.objects.get(pk=2)
-        linked_datasets = subcohort2.sourcedataset_set.all()
-        if len(linked_datasets) < 1:
-            raise ValueError('The subcohort is not linked to any datasets.')
-        dataset_to_unlink = linked_datasets[0]
-        remove_subcohort_link_query = """DELETE FROM source_dataset_subcohorts WHERE dataset_id={} AND
-                                         subcohort_id={}""".format(
-            dataset_to_unlink.pk, subcohort2.pk)
-        self.cursor.execute(remove_subcohort_link_query)
-        # Add a new component source trait.
+
+        # Add a component source trait.
         component_source_trait = models.SourceTrait.objects.order_by('?').first()
         hunit_to_link_source = models.HarmonizationUnit.objects.exclude(
             i_id__in=models.HarmonizationUnit.objects.filter(component_source_traits__in=[component_source_trait]))[0]
-        htrait_to_link_source = hunit_to_link_source.harmonized_trait_set.harmonizedtrait_set.all()[0]
+        htrait_to_link_source = hunit_to_link_source.harmonized_trait_set_version.harmonizedtrait_set.all()[0]
         add_component_trait_query = """INSERT INTO component_source_trait (harmonized_trait_id, harmonization_unit_id,
                                        component_trait_id, date_added) values ('{}', '{}', '{}', '{}')""".format(
             htrait_to_link_source.i_trait_id, hunit_to_link_source.i_id, component_source_trait.i_trait_id,
             timezone.now().strftime('%Y-%m-%d %H:%M:%S'))
         self.cursor.execute(add_component_trait_query)
-        # Remove an existing component source trait.
-        hunit_to_unlink_source = models.HarmonizationUnit.objects.exclude(
-            component_source_traits=None).order_by('?').first()
-        htrait_to_unlink_source = hunit_to_unlink_source.harmonizedtrait_set.all().order_by('?').first()
-        component_source_trait = hunit_to_unlink_source.component_source_traits.all().order_by('?').first()
-        remove_component_trait_query = """DELETE FROM component_source_trait WHERE harmonized_trait_id={} AND
-                                          harmonization_unit_id={} AND component_trait_id={}""".format(
-            htrait_to_unlink_source.pk, hunit_to_unlink_source.pk, component_source_trait.pk)
-        self.cursor.execute(remove_component_trait_query)
-        # Add a new component batch trait.
+        self.source_db.commit()
+        # Add a component batch trait.
         component_batch_trait = models.SourceTrait.objects.order_by('?').first()
         hunit_to_link_batch = models.HarmonizationUnit.objects.exclude(
             i_id__in=models.HarmonizationUnit.objects.filter(component_batch_traits__in=[component_batch_trait]))[0]
-        htrait_to_link_batch = hunit_to_link_batch.harmonized_trait_set.harmonizedtrait_set.all()[0]
+        htrait_to_link_batch = hunit_to_link_batch.harmonized_trait_set_version.harmonizedtrait_set.all()[0]
         add_component_trait_query = """INSERT INTO component_batch_trait (harmonized_trait_id, harmonization_unit_id,
                                        component_trait_id, date_added) values ('{}', '{}', '{}', '{}')""".format(
             htrait_to_link_batch.i_trait_id, hunit_to_link_batch.i_id, component_batch_trait.i_trait_id,
             timezone.now().strftime('%Y-%m-%d %H:%M:%S'))
         self.cursor.execute(add_component_trait_query)
-        # Remove an existing component batch trait.
-        hunit_to_unlink_batch = models.HarmonizationUnit.objects.exclude(
-            component_batch_traits=None).order_by('?').first()
-        htrait_to_unlink_batch = hunit_to_unlink_batch.harmonizedtrait_set.all().order_by('?').first()
-        component_batch_trait = hunit_to_unlink_batch.component_batch_traits.all().order_by('?').first()
-        remove_component_trait_query = """DELETE FROM component_batch_trait WHERE harmonized_trait_id={} AND
-                                          harmonization_unit_id={} AND component_trait_id={}""".format(
-            htrait_to_unlink_batch.pk, hunit_to_unlink_batch.pk, component_batch_trait.pk)
-        self.cursor.execute(remove_component_trait_query)
-        # Add a new component age trait.
+        self.source_db.commit()
+        self.cursor.execute('SELECT LAST_INSERT_ID() AS last')
+        # Add a component age trait.
         component_age_trait = models.SourceTrait.objects.order_by('?').first()
         hunit_to_link_age = models.HarmonizationUnit.objects.exclude(
             i_id__in=models.HarmonizationUnit.objects.filter(component_age_traits__in=[component_age_trait]))[0]
@@ -2420,88 +2752,155 @@ class IntegrationTest(VisitTestDataTestCase):
                                        date_added) values ('{}', '{}', '{}')""".format(
             hunit_to_link_age.i_id, component_age_trait.i_trait_id, timezone.now().strftime('%Y-%m-%d %H:%M:%S'))
         self.cursor.execute(add_component_trait_query)
-        # Remove an existing component age trait.
-        hunit_to_unlink_age = models.HarmonizationUnit.objects.exclude(component_age_traits=None).order_by('?').first()
-        component_age_trait = hunit_to_unlink_age.component_age_traits.all().order_by('?').first()
-        remove_component_trait_query = """DELETE FROM component_age_trait WHERE harmonization_unit_id={} AND
-                                          component_trait_id={}""".format(
-            hunit_to_unlink_age.pk, component_age_trait.pk)
-        self.cursor.execute(remove_component_trait_query)
-        # Add a new component harmonized trait set.
-        component_harmonized_trait_set = models.HarmonizedTraitSet.objects.order_by('?').first()
+        self.source_db.commit()
+        self.cursor.execute('SELECT LAST_INSERT_ID() AS last')
+        # Add a component harmonized trait set version.
+        component_harmonized_trait_set_version = models.HarmonizedTraitSetVersion.objects.order_by('?').first()
         hunit_to_link_harmonized = models.HarmonizationUnit.objects.exclude(
             i_id__in=models.HarmonizationUnit.objects.filter(
-                component_harmonized_trait_sets__in=[component_harmonized_trait_set]))[0]
-        htrait_to_link_harmonized = hunit_to_link_harmonized.harmonized_trait_set.harmonizedtrait_set.all()[0]
+                component_harmonized_trait_set_versions__in=[component_harmonized_trait_set_version]))[0]
+        htrait_to_link_harmonized = hunit_to_link_harmonized.harmonized_trait_set_version.harmonizedtrait_set.all()[0]
         add_component_trait_query = """INSERT INTO component_harmonized_trait_set (harmonized_trait_id,
-                                       harmonization_unit_id, component_trait_set_id, date_added) values
+                                       harmonization_unit_id, component_trait_set_version_id, date_added) values
                                        ('{}', '{}', '{}', '{}')""".format(
-            htrait_to_link_harmonized.i_trait_id, hunit_to_link_harmonized.i_id, component_harmonized_trait_set.i_id,
-            timezone.now().strftime('%Y-%m-%d %H:%M:%S'))
+            htrait_to_link_harmonized.i_trait_id, hunit_to_link_harmonized.i_id,
+            component_harmonized_trait_set_version.i_id,
+            timezone.now().strftime('%Y-%m-%d %H:%M:%S')
+        )
         self.cursor.execute(add_component_trait_query)
-        # Remove an existing component harmonized trait.
-        hunit_to_unlink_harmonized = models.HarmonizationUnit.objects.exclude(
-            component_harmonized_trait_sets=None).order_by('?').first()
-        htrait_to_unlink_harmonized = hunit_to_unlink_harmonized.harmonizedtrait_set.all().order_by('?').first()
-        component_harmonized_trait_set = hunit_to_unlink_harmonized.component_harmonized_trait_sets.all().order_by(
-            '?').first()
-        remove_component_trait_query = """DELETE FROM component_harmonized_trait_set WHERE harmonized_trait_id={} AND
-                                          harmonization_unit_id={} AND component_trait_set_id={}""".format(
-            htrait_to_unlink_harmonized.pk, hunit_to_unlink_harmonized.pk, component_harmonized_trait_set.pk)
-        self.cursor.execute(remove_component_trait_query)
-        #
+        # Add an update reason to a harmonized trait set version.
+        reason_to_link = models.AllowedUpdateReason.objects.get(pk=1)
+        linked_hts_versions = reason_to_link.harmonizedtraitsetversion_set.all()
+        possible_hts_versions = models.HarmonizedTraitSetVersion.objects.all()
+        unlinked_hts_versions = set(possible_hts_versions) - set(linked_hts_versions)
+        hts_version_to_link_reason = list(unlinked_hts_versions)[0]
+        add_reason_link_query = """INSERT INTO harmonized_trait_set_version_update_reason (reason_id,
+                                   harmonized_trait_set_version_id, date_added)
+                                   VALUES ({}, {}, '{}');""".format(
+            reason_to_link.pk, hts_version_to_link_reason.i_id, timezone.now().strftime('%Y-%m-%d %H:%M:%S'))
+        self.cursor.execute(add_reason_link_query)
+
+        self.source_db.commit()
+
         # Close the full privileges db connection, and reopen as read-only.
         self.cursor.close()
         self.source_db.close()
         self.source_db = get_devel_db()
         self.cursor = self.source_db.cursor(buffered=True, dictionary=True)
-        #
+
         # Get the updates.
         management.call_command('import_db', '--which_db=devel', '--no_backup', '--verbosity=0')
-        #
-        # Check that the regular models have correct imported field values.
+
+        # Check all of the regular models.
         make_args_functions = (
-            CMD._make_global_study_args, CMD._make_study_args,
-            CMD._make_source_study_version_args, CMD._make_source_dataset_args,
-            CMD._make_source_trait_args, CMD._make_subcohort_args,
-            CMD._make_source_trait_encoded_value_args, CMD._make_harmonized_trait_set_args,
-            CMD._make_harmonized_trait_args, CMD._make_harmonized_trait_encoded_value_args,
+            CMD._make_global_study_args,
+            CMD._make_study_args,
+            CMD._make_source_study_version_args,
+            CMD._make_subcohort_args,
+            CMD._make_source_dataset_args,
+            CMD._make_harmonized_trait_set_args,
+            CMD._make_allowed_update_reason_args,
+            CMD._make_harmonized_trait_set_version_args,
             CMD._make_harmonization_unit_args,
+            CMD._make_source_trait_args,
+            CMD._make_harmonized_trait_args,
+            CMD._make_source_trait_encoded_value_args,
+            CMD._make_harmonized_trait_encoded_value_args,
         )
         tables = (
-            'global_study', 'study', 'source_study_version', 'source_dataset', 'source_trait', 'subcohort',
-            'source_trait_encoded_values', 'harmonized_trait_set', 'harmonized_trait',
-            'harmonized_trait_encoded_values', 'harmonization_unit',
+            'global_study',
+            'study',
+            'source_study_version',
+            'subcohort',
+            'source_dataset',
+            'harmonized_trait_set',
+            'allowed_update_reason',
+            'harmonized_trait_set_version',
+            'harmonization_unit',
+            'source_trait',
+            'harmonized_trait',
+            'source_trait_encoded_values',
+            'harmonized_trait_encoded_values',
         )
         model_names = (
-            models.GlobalStudy, models.Study, models.SourceStudyVersion, models.SourceDataset, models.SourceTrait,
-            models.Subcohort, models.SourceTraitEncodedValue, models.HarmonizedTraitSet, models.HarmonizedTrait,
-            models.HarmonizedTraitEncodedValue, models.HarmonizationUnit,
+            models.GlobalStudy,
+            models.Study,
+            models.SourceStudyVersion,
+            models.Subcohort,
+            models.SourceDataset,
+            models.HarmonizedTraitSet,
+            models.AllowedUpdateReason,
+            models.HarmonizedTraitSetVersion,
+            models.HarmonizationUnit,
+            models.SourceTrait,
+            models.HarmonizedTrait,
+            models.SourceTraitEncodedValue,
+            models.HarmonizedTraitEncodedValue,
         )
         self.check_imported_values_match(make_args_functions, tables, model_names)
-        #
         # Check all of the M2M relationships.
         m2m_tables = (
-            'source_dataset_subcohorts', 'component_source_trait', 'component_harmonized_trait_set',
-            'component_batch_trait', 'component_age_trait', 'component_source_trait', 'component_harmonized_trait_set',
+            'component_source_trait',
+            'component_harmonized_trait_set',
             'component_batch_trait',
+            'component_age_trait',
+            'component_source_trait',
+            'component_harmonized_trait_set',
+            'component_batch_trait',
+            'harmonized_trait_set_version_update_reason',
         )
         group_by_fields = (
-            'dataset_id', 'harmonized_trait_id', 'harmonized_trait_id', 'harmonized_trait_id', 'harmonization_unit_id',
-            'harmonization_unit_id', 'harmonization_unit_id', 'harmonization_unit_id',
+            'harmonized_trait_id',
+            'harmonized_trait_id',
+            'harmonized_trait_id',
+            'harmonization_unit_id',
+            'harmonization_unit_id',
+            'harmonization_unit_id',
+            'harmonization_unit_id',
+            'harmonized_trait_set_version_id',
         )
         concat_fields = (
-            'subcohort_id', 'component_trait_id', 'component_trait_set_id', 'component_trait_id', 'component_trait_id',
-            'component_trait_id', 'component_trait_set_id', 'component_trait_id',
+            'component_trait_id',
+            'component_trait_set_version_id',
+            'component_trait_id',
+            'component_trait_id',
+            'component_trait_id',
+            'component_trait_set_version_id',
+            'component_trait_id',
+            'reason_id',
         )
         parent_models = (
-            models.SourceDataset, models.HarmonizedTrait, models.HarmonizedTrait, models.HarmonizedTrait,
-            models.HarmonizationUnit, models.HarmonizationUnit, models.HarmonizationUnit, models.HarmonizationUnit,
+            models.HarmonizedTrait,
+            models.HarmonizedTrait,
+            models.HarmonizedTrait,
+            models.HarmonizationUnit,
+            models.HarmonizationUnit,
+            models.HarmonizationUnit,
+            models.HarmonizationUnit,
+            models.HarmonizedTraitSetVersion,
         )
         m2m_att_names = (
-            'subcohorts', 'component_source_traits', 'component_harmonized_trait_sets', 'component_batch_traits',
-            'component_age_traits', 'component_source_traits', 'component_harmonized_trait_sets',
+            'component_source_traits',
+            'component_harmonized_trait_set_versions',
             'component_batch_traits',
+            'component_age_traits',
+            'component_source_traits',
+            'component_harmonized_trait_set_versions',
+            'component_batch_traits',
+            'update_reasons',
         )
+        self.check_imported_m2m_relations_match(
+            m2m_tables, group_by_fields, concat_fields, parent_models, m2m_att_names)
+
+        # Load a new study and run all of these checks again.
+        self.cursor.close()
+        self.source_db.close()
+        load_test_source_db_data('new_study.sql')
+        management.call_command('import_db', '--which_db=devel', '--no_backup')
+        self.source_db = get_devel_db()
+        self.cursor = self.source_db.cursor(buffered=True, dictionary=True)
+        # Check all of the regular models again.
+        self.check_imported_values_match(make_args_functions, tables, model_names)
+        # Check all of the M2M relationships again.
         self.check_imported_m2m_relations_match(
             m2m_tables, group_by_fields, concat_fields, parent_models, m2m_att_names)

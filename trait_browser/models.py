@@ -1,14 +1,63 @@
 """Models for trait_browser app."""
 
-# Model fields that are imported directly from topmed_pheno are preceded with i_
-# ForeignKey fields do not have this prefix, since they are links within the Django database.
-# Custom primary_key fields have db_column set as well, otherwise their column names in the backend db would have "_id"
-# appended to them.
+# General guidelines:
+#   * For pk fields, call them i_id and set db_column='i_id' so that the column is named appropriately
+#       (otherwise they would be 'i_id_id')
+#   * For fk fields, just use the Djangonic field name and appropriate field type
+#   * All other fields should be named as their topmed_pheno name, but with 'i_' preceding the name
+#   * Don't use any model-level defaults here (those are all handled at topmed_pheno)
+#   * Include all NULL settings from topmed_pheno (except on string-like fields)
+#   * Include all UNIQUE constraint settings from topmed_pheno (just in case)
+#   * The model field type should match the topmed_pheno field type as closely as possible
+#   * Do not replicate enum field choices from topmed_pheno
 
 # Query to find out which fields to set null=True for:
 # SELECT TABLE_NAME,COLUMN_NAME,DATA_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='topmed_pheno_devel_emeryl' AND IS_NULLABLE='YES' AND DATA_TYPE NOT IN ('varchar', 'text', 'tinyint') AND TABLE_NAME NOT IN ('harmonized_trait_data', 'subject', 'subject_archive');  # noqa
 # Query to find out which fields should be NullBooleanFields:
 # SELECT TABLE_NAME,COLUMN_NAME,DATA_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='topmed_pheno_devel_emeryl' AND IS_NULLABLE='YES' AND DATA_TYPE='tinyint' AND TABLE_NAME NOT IN ('harmonized_trait_data', 'subject', 'subject_archive');  # noqa
+
+# Tables currently in topmed_pheno and wehther they are imported or not.
+# +--------------------------------------------+
+# | Tables_in_topmed_pheno_devel_emeryl        |
+# +--------------------------------------------+
+# | allowed_update_reason                      | y
+# | component_age_trait                        | y
+# | component_batch_trait                      | y
+# | component_harmonized_trait_set             | y
+# | component_source_trait                     | y
+# | global_study                               | y
+# | harmonization_unit                         | y
+# | harmonized_dataset                         | n
+# | harmonized_dataset_release                 | n
+# | harmonized_dataset_trait_set               | n
+# | harmonized_dataset_version                 | n
+# | harmonized_function                        | n
+# | harmonized_qc_document                     | n
+# | harmonized_trait                           | y
+# | harmonized_trait_data                      | n
+# | harmonized_trait_encoded_values            | y
+# | harmonized_trait_set                       | y
+# | harmonized_trait_set_version               | y
+# | harmonized_trait_set_version_update_reason | y
+# | schema_changes                             | n
+# | source_dataset                             | y
+# | source_dataset_data_files                  | n
+# | source_dataset_dictionary_files            | n
+# | source_study_version                       | y
+# | source_trait                               | y
+# | source_trait_data                          | n
+# | source_trait_encoded_values                | y
+# | source_trait_inconsistent_metadata         | n
+# | study                                      | y
+# | subcohort                                  | y
+# | subject                                    | n
+# | subject_archive                            | n
+# | view_harmonized_trait                      | n
+# | view_harmonized_trait_all                  | n
+# | view_source_trait                          | n
+# | view_source_trait_all                      | n
+# +--------------------------------------------+
+
 
 from django.db import models
 from django.core.urlresolvers import reverse
@@ -43,15 +92,19 @@ class SourceDBTimeStampedModel(TimeStampedModel):
 # Study models.
 # ------------------------------------------------------------------------------
 class GlobalStudy(SourceDBTimeStampedModel):
-    """Model for "global study", which links studies between parent & child accessions.
+    """Model for global_study from topmed_pheno, which links studies between parent & child accessions.
 
     Global study connects data that are from the same parent study, but may be spread across
     parent and child accessions. Use GlobalStudy for all of the queries you think you might
     want to use Study for.
     """
 
-    i_id = models.PositiveIntegerField('global study id', primary_key=True, db_column='study_id')
-    i_name = models.CharField('global study name', max_length=200)
+    i_id = models.PositiveIntegerField('global study id', primary_key=True, db_column='i_id')
+    i_name = models.CharField('global study name', max_length=200, unique=True)
+    i_topmed_accession = models.PositiveIntegerField('TOPMed accession', null=True, blank=True, unique=True)
+    # In topmed_pheno, topmed_abbreviation has a unique constraint, but I can't do that here since Django just turns
+    # all NULL string values into empty strings, and two empty strings are not counted as unique.
+    i_topmed_abbreviation = models.CharField('TOPMed abbreviation', max_length=45, blank=True, default='')
 
     class Meta:
         verbose_name_plural = 'GlobalStudies'
@@ -62,7 +115,7 @@ class GlobalStudy(SourceDBTimeStampedModel):
 
 
 class Study(SourceDBTimeStampedModel):
-    """Model for dbGaP study accessions."""
+    """Model for study from topmed_pheno."""
 
     global_study = models.ForeignKey(GlobalStudy)
     # Adds .global_study (object) and .global_study_id (pk).
@@ -123,7 +176,7 @@ class Study(SourceDBTimeStampedModel):
 
 
 class SourceStudyVersion(SourceDBTimeStampedModel):
-    """Model for versions of each dbGaP study accession."""
+    """Model for source_study_version from topmed_pheno."""
 
     study = models.ForeignKey(Study)
     # Adds .study (object) and .study_id (pk).
@@ -154,7 +207,7 @@ class SourceStudyVersion(SourceDBTimeStampedModel):
 
 
 class Subcohort(SourceDBTimeStampedModel):
-    """Model for subcohorts."""
+    """Model for subcohort from topmed_pheno."""
 
     global_study = models.ForeignKey(GlobalStudy)
     i_id = models.PositiveIntegerField('id', primary_key=True, db_column='i_id')
@@ -168,25 +221,19 @@ class Subcohort(SourceDBTimeStampedModel):
 # Dataset related models.
 # ------------------------------------------------------------------------------
 class SourceDataset(SourceDBTimeStampedModel):
-    """Model for dbGaP datasets from which SourceTraits are obtained."""
+    """Model for source_dataset from topmed_pheno."""
 
     source_study_version = models.ForeignKey(SourceStudyVersion)
     # Adds .source_study_version (object) and .source_study_version_id (pk).
     i_id = models.PositiveIntegerField('dataset id', primary_key=True, db_column='i_id')
     i_accession = models.PositiveIntegerField('dataset accession')
     i_version = models.PositiveIntegerField('dataset version')
-    i_visit_code = models.CharField('visit code', max_length=100, blank=True)
-    i_visit_number = models.CharField('visit number', max_length=45, blank=True)
     i_is_subject_file = models.BooleanField('is subject file?')
     i_study_subject_column = models.CharField('study subject column name', max_length=45, blank=True)
-    i_is_medication_dataset = models.NullBooleanField('is medication dataset?', blank=True, default=None)
-    i_dbgap_date_created = models.DateTimeField('dbGaP date created', null=True, blank=True)
-    i_date_visit_reviewed = models.DateTimeField('date visit was reviewed', null=True, blank=True)
-    # These TextFields use longtext in MySQL rather than just text, like in snuffles.
+    # The TextField uses longtext in MySQL rather than just text, like in topmed_pheno.
     i_dbgap_description = models.TextField('dbGaP description', blank=True)
-    i_dcc_description = models.TextField('DCC description', blank=True)
+    i_dbgap_date_created = models.DateTimeField('dbGaP date created', null=True, blank=True)
     pht_version_string = models.CharField(max_length=20)
-    subcohorts = models.ManyToManyField(Subcohort)
 
     def __str__(self):
         """Pretty printing."""
@@ -212,49 +259,79 @@ class SourceDataset(SourceDBTimeStampedModel):
 
 
 class HarmonizedTraitSet(SourceDBTimeStampedModel):
-    """Model for harmonized trait set from snuffles. Analagous to the SourceDataset for source traits."""
+    """Model for harmonized trait set from topmed_pheno. Analagous to the SourceDataset for source traits."""
 
     i_id = models.PositiveIntegerField('harmonized trait set id', primary_key=True, db_column='i_id')
     i_trait_set_name = models.CharField('trait set name', max_length=45)
     i_flavor = models.PositiveIntegerField('flavor')
-    i_version = models.PositiveIntegerField('version')
-    i_description = models.CharField('description', max_length=1000)
-    i_harmonized_by = models.CharField('harmonized by', max_length=45)
-    i_git_commit_hash = models.CharField('git commit hash', max_length=40)
+    i_is_longitudinal = models.BooleanField('is longitudinal?', default=False)
     i_is_demographic = models.BooleanField('is_demographic', default=False)
-    i_is_longitudinal = models.BooleanField('is longitudinal?')
-    component_html_detail = models.TextField(default='')
 
     def __str__(self):
         """Pretty printing."""
         return 'harmonized trait set {}, id={}'.format(self.i_trait_set_name, self.i_id)
 
-    def get_absolute_url(self):
-        """Gets the absolute URL of the detail page for a given HarmonizedTraitSet instance."""
-        return reverse('trait_browser:harmonized:detail', kwargs={'pk': self.pk})
+
+class AllowedUpdateReason(models.Model):
+    """Model for allowed_update_reason from topmed_pheno."""
+
+    # Note that this must be loaded during import BEFORE harmonized trait set version
+    i_id = models.PositiveIntegerField('allowed update reason id', primary_key=True, db_column='i_id')
+    i_abbreviation = models.CharField('abbreviation', max_length=45, unique=True)
+    i_description = models.CharField('description', max_length=1000)
+
+    def __str__(self):
+        """Pretty printing."""
+        return self.i_abbreviation
+
+
+class HarmonizedTraitSetVersion(SourceDBTimeStampedModel):
+    """Model for harmonized_trait_set_version from topmed_pheno."""
+
+    harmonized_trait_set = models.ForeignKey(HarmonizedTraitSet)
+    i_id = models.PositiveIntegerField('harmonized trait set version id', primary_key=True, db_column='i_id')
+    i_version = models.PositiveIntegerField('version')
+    i_git_commit_hash = models.CharField('git commit hash', max_length=40)
+    i_harmonized_by = models.CharField('harmonized by', max_length=45)
+    i_is_deprecated = models.BooleanField('is deprecated?')
+    update_reasons = models.ManyToManyField(AllowedUpdateReason)
+    component_html_detail = models.TextField(default='')
+
+    def __str__(self):
+        """Pretty printing."""
+        return 'Harm. trait set {} version {}, id='.format(
+            self.harmonized_trait_set.i_trait_set_name, self.i_version, self.i_id)
 
     def get_trait_names(self):
-        """Gets a list of trait_flavor_names for harmonized traits in this trait set."""
+        """Gets a list of trait_flavor_names for harmonized traits in this trait set version."""
         return self.harmonizedtrait_set.values_list('trait_flavor_name', flat=True)
 
     def get_component_html(self):
         """Get html for component traits, in panels by harmonization unit and harmonized trait."""
         return '\n'.join([hunit.get_component_html() for hunit in self.harmonizationunit_set.all()])
 
+    def get_absolute_url(self):
+        """Gets the absolute URL of the detail page for a given HarmonizedTraitSet instance."""
+        return reverse('trait_browser:harmonized:detail', kwargs={'pk': self.pk})
+
 
 class HarmonizationUnit(SourceDBTimeStampedModel):
-    """Model for harmonization units from source db."""
+    """Model for harmonization_unit from topmed_pheno."""
 
-    harmonized_trait_set = models.ForeignKey(HarmonizedTraitSet)
+    harmonized_trait_set_version = models.ForeignKey(HarmonizedTraitSetVersion, null=True, default=None)
     i_id = models.PositiveIntegerField('harmonization unit id', primary_key=True, db_column='i_id')
     i_tag = models.CharField('tag', max_length=100)
+    # From component_source_trait in topmed_pheno.
     component_source_traits = models.ManyToManyField(
         'SourceTrait', related_name='source_component_of_harmonization_unit')
+    # From component_batch_trait in topmed_pheno.
     component_batch_traits = models.ManyToManyField(
         'SourceTrait', related_name='batch_component_of_harmonization_unit')
+    # From component_age_trait in topmed_pheno.
     component_age_traits = models.ManyToManyField('SourceTrait', related_name='age_component_of_harmonization_unit')
-    component_harmonized_trait_sets = models.ManyToManyField(
-        'HarmonizedTraitSet', related_name='harmonized_set_component_of_harmonization_unit')
+    # From component_harmonized_trait_set in topmed_pheno.
+    component_harmonized_trait_set_versions = models.ManyToManyField(
+        'HarmonizedTraitSetVersion', related_name='harmonized_component_of_harmonization_unit')
 
     def __str__(self):
         """Pretty printing."""
@@ -310,7 +387,7 @@ class Trait(SourceDBTimeStampedModel):
 
 
 class SourceTrait(Trait):
-    """Model for 'raw' source variable metadata as received from dbGaP.
+    """Model for source_trait from topmed_pheno.
 
     Extends the Trait abstract model.
     """
@@ -319,16 +396,15 @@ class SourceTrait(Trait):
     # Adds .source_dataset (object) and .source_dataset_id (pk).
     i_detected_type = models.CharField('detected type', max_length=100, blank=True)
     i_dbgap_type = models.CharField('dbGaP type', max_length=100, blank=True)
-    i_visit_number = models.CharField('visit number', max_length=45, blank=True)
     i_dbgap_variable_accession = models.PositiveIntegerField('dbGaP variable accession')
     i_dbgap_variable_version = models.PositiveIntegerField('dbGaP variable version')
-    i_dbgap_description = models.TextField('dbGaP description')
+    # i_description contains data from dbgap_description field.
     i_dbgap_comment = models.TextField('dbGaP comment', blank=True)
     i_dbgap_unit = models.CharField('dbGaP unit', max_length=45, blank=True)
     i_n_records = models.PositiveIntegerField('n records', null=True, blank=True)
     i_n_missing = models.PositiveIntegerField('n missing', null=True, blank=True)
-    i_is_visit_column = models.NullBooleanField('is visit column?', blank=True)
     i_is_unique_key = models.NullBooleanField('is unique key?', blank=True)
+    i_are_values_truncated = models.NullBooleanField('are values truncated?', default=None)
     # dbGaP accession numbers
     study_accession = models.CharField(max_length=20)
     dataset_accession = models.CharField(max_length=20)
@@ -427,19 +503,28 @@ class HarmonizedTrait(Trait):
     Extends the Trait abstract superclass.
     """
 
-    harmonized_trait_set = models.ForeignKey(HarmonizedTraitSet)
+    harmonized_trait_set_version = models.ForeignKey(HarmonizedTraitSetVersion, null=True, default=None)
     # Adds .harmonized_trait_set (object) and .harmonized_trait_set_id (pk).
     i_data_type = models.CharField('data type', max_length=45)
     i_unit = models.CharField('unit', max_length=100, blank=True)
     i_has_batch = models.BooleanField('has batch?')
     i_is_unique_key = models.BooleanField('is unique key?')
+    # From component_source_trait in topmed_pheno.
     component_source_traits = models.ManyToManyField(
         'SourceTrait', related_name='source_component_of_harmonized_trait')
+    # From component_batch_trait in topmed_pheno.
     component_batch_traits = models.ManyToManyField('SourceTrait', related_name='batch_component_of_harmonized_trait')
-    component_harmonized_trait_sets = models.ManyToManyField(
-        'HarmonizedTraitSet', related_name='harmonized_set_component_of_harmonized_trait')
+    # From component_harmonized_trait_set in topmed_pheno.
+    component_harmonized_trait_set_versions = models.ManyToManyField(
+        'HarmonizedTraitSetVersion', related_name='harmonized_component_of_harmonized_trait')
+    # From a special query (HUNIT_QUERY in import_db) of component_batch_trait, component_source_trait, and
+    # component_harmonized_trait_set from topmed_pheno.
     harmonization_units = models.ManyToManyField(HarmonizationUnit)
+    # Created according to same rules as topmed_pheno.
     trait_flavor_name = models.CharField(max_length=150)
+
+    class Meta:
+        unique_together = (('harmonized_trait_set_version', 'i_trait_name'), )
 
     def __str__(self):
         """Pretty printing."""
@@ -460,14 +545,14 @@ class HarmonizedTrait(Trait):
         Properly format the trait_flavor_name for this harmonized trait so that it's
         available for easy use later.
         """
-        return '{}_{}'.format(self.i_trait_name, self.harmonized_trait_set.i_flavor)
+        return '{}_{}'.format(self.i_trait_name, self.harmonized_trait_set_version.harmonized_trait_set.i_flavor)
 
     def get_absolute_url(self):
         """Gets the absolute URL of the detail page for a given HarmonizedTrait instance.
 
         In this special case, goes to the detail page for the related trait set.
         """
-        return reverse('trait_browser:harmonized:detail', kwargs={'pk': self.harmonized_trait_set.pk})
+        return self.harmonized_trait_set_version.get_absolute_url()
 
     def get_name_link_html(self):
         """Get html for the trait name linked to the harmonized trait's detail page, with description as popover."""
@@ -478,9 +563,10 @@ class HarmonizedTrait(Trait):
         """Get html for inline lists of source and harmonized component phenotypes for the harmonized trait."""
         source = [tr.get_name_link_html() for tr in (
             self.component_source_traits.all() & harmonization_unit.component_source_traits.all())]
-        harmonized_trait_sets = [trait_set for trait_set in (
-            self.component_harmonized_trait_sets.all() & harmonization_unit.component_harmonized_trait_sets.all())]
-        harmonized = [tr.get_name_link_html() for trait_set in harmonized_trait_sets
+        harmonized_trait_set_versions = [trait_set_version for trait_set_version in (
+            self.component_harmonized_trait_set_versions.all() &
+            harmonization_unit.component_harmonized_trait_set_versions.all())]
+        harmonized = [tr.get_name_link_html() for trait_set in harmonized_trait_set_versions
                       for tr in trait_set.harmonizedtrait_set.all()
                       if not tr.i_is_unique_key]
         component_html = ''
@@ -515,7 +601,7 @@ class TraitEncodedValue(SourceDBTimeStampedModel):
 
 
 class SourceTraitEncodedValue(TraitEncodedValue):
-    """Model for encoded values from 'raw' dbGaP data, as received from dbGaP.
+    """Model for source_trait_encoded_values from topmed_pheno.
 
     Extends the TraitEncodedValue abstract superclass.
     """
@@ -529,7 +615,7 @@ class SourceTraitEncodedValue(TraitEncodedValue):
 
 
 class HarmonizedTraitEncodedValue(TraitEncodedValue):
-    """Model for encoded values from DCC harmonized traits.
+    """Model for harmonized_trait_encoded_values from topmed_pheno.
 
     Extends the TraitEncodedValue superclass.
     """

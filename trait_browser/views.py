@@ -50,12 +50,12 @@ class SourceTraitDetail(LoginRequiredMixin, DetailView):
     template_name = 'trait_browser/source_trait_detail.html'
 
 
-class HarmonizedTraitSetDetail(LoginRequiredMixin, DetailView):
-    """Detail view class for HarmonizedTraitSets. Inherits from django.views.generic.DetailView."""
+class HarmonizedTraitSetVersionDetail(LoginRequiredMixin, DetailView):
+    """Detail view class for HarmonizedTraitSetVersions. Inherits from django.views.generic.DetailView."""
 
-    model = models.HarmonizedTraitSet
-    context_object_name = 'harmonized_trait_set'
-    template_name = 'trait_browser/harmonized_trait_set_detail.html'
+    model = models.HarmonizedTraitSetVersion
+    context_object_name = 'harmonized_trait_set_version'
+    template_name = 'trait_browser/harmonized_trait_set_version_detail.html'
 
 
 @login_required

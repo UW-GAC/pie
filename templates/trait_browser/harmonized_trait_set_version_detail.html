@@ -3,15 +3,15 @@
 {% load core_tags %}
 
 {% block head_title %}
-     | {{ harmonized_trait_set.get_trait_names|join:", " }} details
+     | {{ harmonized_trait_set_version.get_trait_names|join:", " }} details
 {% endblock %}
 
 {% block content %}
     <div class="well">
     
-        <h2>{{ harmonized_trait_set.get_trait_names|join:", " }} <small>harmonized phenotype details</small></h2>
+        <h2>{{ harmonized_trait_set_version.get_trait_names|join:", " }} <small>harmonized phenotype details</small></h2>
         
-        {% for trait in harmonized_trait_set.harmonizedtrait_set.all %}
+        {% for trait in harmonized_trait_set_version.harmonizedtrait_set.all %}
             <div class="panel panel-info">
                 <div class="panel-heading">
                     <h3 class="panel-title">Phenotype name: {{ trait.trait_flavor_name }}</h3>
@@ -48,7 +48,7 @@
 
         <button type="button" class="btn btn-default" data-toggle="collapse" data-target="#components">Component Phenotypes</button>
         <div id="components" class="collapse">
-            {% render_as_template harmonized_trait_set.component_html_detail|safe %}
+            {% render_as_template harmonized_trait_set_version.component_html_detail|safe %}
         </div>
 
         <h4>Documentation</h4>
