@@ -99,7 +99,7 @@ class GlobalStudy(SourceDBTimeStampedModel):
     want to use Study for.
     """
 
-    i_id = models.PositiveIntegerField('global study id', primary_key=True, db_column='i_id')
+    i_id = models.PositiveIntegerField('global study id', primary_key=True, db_column='study_id')
     i_name = models.CharField('global study name', max_length=200, unique=True)
     i_topmed_accession = models.PositiveIntegerField('TOPMed accession', null=True, blank=True, unique=True)
     # In topmed_pheno, topmed_abbreviation has a unique constraint, but I can't do that here since Django just turns

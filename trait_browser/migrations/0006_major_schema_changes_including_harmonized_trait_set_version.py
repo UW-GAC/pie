@@ -14,9 +14,9 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='AllowedUpdateReason',
             fields=[
-                ('i_id', models.PositiveIntegerField(serialize=False, primary_key=True, verbose_name='allowed update reason id', db_column='i_id')),
-                ('i_abbreviation', models.CharField(max_length=45, unique=True, verbose_name='abbreviation')),
-                ('i_description', models.CharField(max_length=1000, verbose_name='description')),
+                ('i_id', models.PositiveIntegerField(verbose_name='allowed update reason id', db_column='i_id', primary_key=True, serialize=False)),
+                ('i_abbreviation', models.CharField(verbose_name='abbreviation', unique=True, max_length=45)),
+                ('i_description', models.CharField(verbose_name='description', max_length=1000)),
             ],
         ),
         migrations.CreateModel(
@@ -26,10 +26,10 @@ class Migration(migrations.Migration):
                 ('modified', models.DateTimeField(auto_now=True)),
                 ('i_date_added', models.DateTimeField()),
                 ('i_date_changed', models.DateTimeField()),
-                ('i_id', models.PositiveIntegerField(serialize=False, primary_key=True, verbose_name='harmonized trait set version id', db_column='i_id')),
+                ('i_id', models.PositiveIntegerField(verbose_name='harmonized trait set version id', db_column='i_id', primary_key=True, serialize=False)),
                 ('i_version', models.PositiveIntegerField(verbose_name='version')),
-                ('i_git_commit_hash', models.CharField(max_length=40, verbose_name='git commit hash')),
-                ('i_harmonized_by', models.CharField(max_length=45, verbose_name='harmonized by')),
+                ('i_git_commit_hash', models.CharField(verbose_name='git commit hash', max_length=40)),
+                ('i_harmonized_by', models.CharField(verbose_name='harmonized by', max_length=45)),
                 ('i_is_deprecated', models.BooleanField(verbose_name='is deprecated?')),
                 ('component_html_detail', models.TextField(default='')),
             ],
@@ -104,32 +104,27 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='globalstudy',
             name='i_topmed_abbreviation',
-            field=models.CharField(default='', max_length=45, verbose_name='TOPMed abbreviation', blank=True),
+            field=models.CharField(verbose_name='TOPMed abbreviation', blank=True, default='', max_length=45),
         ),
         migrations.AddField(
             model_name='globalstudy',
             name='i_topmed_accession',
-            field=models.PositiveIntegerField(null=True, unique=True, blank=True, verbose_name='TOPMed accession'),
+            field=models.PositiveIntegerField(verbose_name='TOPMed accession', null=True, blank=True, unique=True),
         ),
         migrations.AddField(
             model_name='sourcetrait',
             name='i_are_values_truncated',
-            field=models.NullBooleanField(default=None, verbose_name='are values truncated?'),
-        ),
-        migrations.AlterField(
-            model_name='globalstudy',
-            name='i_id',
-            field=models.PositiveIntegerField(serialize=False, primary_key=True, verbose_name='global study id', db_column='i_id'),
+            field=models.NullBooleanField(verbose_name='are values truncated?', default=None),
         ),
         migrations.AlterField(
             model_name='globalstudy',
             name='i_name',
-            field=models.CharField(max_length=200, unique=True, verbose_name='global study name'),
+            field=models.CharField(verbose_name='global study name', unique=True, max_length=200),
         ),
         migrations.AlterField(
             model_name='harmonizedtraitset',
             name='i_is_longitudinal',
-            field=models.BooleanField(default=False, verbose_name='is longitudinal?'),
+            field=models.BooleanField(verbose_name='is longitudinal?', default=False),
         ),
         migrations.AddField(
             model_name='harmonizedtraitsetversion',
@@ -157,7 +152,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='harmonizationunit',
             name='harmonized_trait_set_version',
-            field=models.ForeignKey(default=None, null=True, to='trait_browser.HarmonizedTraitSetVersion'),
+            field=models.ForeignKey(to='trait_browser.HarmonizedTraitSetVersion', default=None, null=True),
         ),
         migrations.AddField(
             model_name='harmonizedtrait',
@@ -167,7 +162,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='harmonizedtrait',
             name='harmonized_trait_set_version',
-            field=models.ForeignKey(default=None, null=True, to='trait_browser.HarmonizedTraitSetVersion'),
+            field=models.ForeignKey(to='trait_browser.HarmonizedTraitSetVersion', default=None, null=True),
         ),
         migrations.AlterUniqueTogether(
             name='harmonizedtrait',
