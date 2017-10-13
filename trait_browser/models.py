@@ -266,6 +266,7 @@ class HarmonizedTraitSet(SourceDBTimeStampedModel):
     i_flavor = models.PositiveIntegerField('flavor')
     i_is_longitudinal = models.BooleanField('is longitudinal?', default=False)
     i_is_demographic = models.BooleanField('is_demographic', default=False)
+    # TODO: remove the defaults in both of the above boolean fields.
 
     def __str__(self):
         """Pretty printing."""
@@ -319,6 +320,7 @@ class HarmonizationUnit(SourceDBTimeStampedModel):
     """Model for harmonization_unit from topmed_pheno."""
 
     harmonized_trait_set_version = models.ForeignKey(HarmonizedTraitSetVersion, null=True, default=None)
+    # TODO: make the fk non-nullable and remove the default.
     i_id = models.PositiveIntegerField('harmonization unit id', primary_key=True, db_column='i_id')
     i_tag = models.CharField('tag', max_length=100)
     # From component_source_trait in topmed_pheno.
@@ -405,6 +407,7 @@ class SourceTrait(Trait):
     i_n_missing = models.PositiveIntegerField('n missing', null=True, blank=True)
     i_is_unique_key = models.NullBooleanField('is unique key?', blank=True)
     i_are_values_truncated = models.NullBooleanField('are values truncated?', default=None)
+    # TODO: remove the default.
     # dbGaP accession numbers
     study_accession = models.CharField(max_length=20)
     dataset_accession = models.CharField(max_length=20)
@@ -504,6 +507,7 @@ class HarmonizedTrait(Trait):
     """
 
     harmonized_trait_set_version = models.ForeignKey(HarmonizedTraitSetVersion, null=True, default=None)
+    # TODO: make the fk non-nullable and remove the default.
     # Adds .harmonized_trait_set (object) and .harmonized_trait_set_id (pk).
     i_data_type = models.CharField('data type', max_length=45)
     i_unit = models.CharField('unit', max_length=100, blank=True)
