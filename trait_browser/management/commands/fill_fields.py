@@ -31,4 +31,3 @@ class Command(BaseCommand):
         if 'harmonized_trait_set_version__component_html_detail' in options.get('fields'):
             print('Updating harmonized_trait_set_version__component_html_detail ...')
             self._fill_harmonized_trait_set_version__component_html_detail()
-
