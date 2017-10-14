@@ -4,7 +4,7 @@ This settings module is designed to work with an Apached site deployment. Apache
 is pointed at the production_wsgi.py script in the .conf file and the
 DJANGO_SETTINGS_MODULE environment variable is set within that wsgi script. For
 these specific settings, here is how the variable is set:
-  
+
 os.environ['DJANGO_SETTINGS_MODULE'] = 'phenotype_inventory.settings.production'
 
 Secret values are set in a .secrets.json file rather than as environmental
@@ -25,7 +25,7 @@ Set Constants:
     WSGI_APPLICATION
 """
 
-from .staging import *
+from .staging import *  # noqa: F403
 
 
 # DEBUG SETTINGS
@@ -37,12 +37,12 @@ ALLOWED_HOSTS = ['topmedphenotypes.org']
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': get_secret('DB_NAME'),
-        'USER': get_secret('DB_USER'),
-        'PASSWORD': get_secret('DB_PASS'),
-        'HOST': get_secret('DB_HOST'),
-        'PORT': get_secret('DB_PORT'),
-        'ATOMIC_REQUESTS': True, 
+        'NAME': get_secret('DB_NAME'),  # noqa: F405
+        'USER': get_secret('DB_USER'),  # noqa: F405
+        'PASSWORD': get_secret('DB_PASS'),  # noqa: F405
+        'HOST': get_secret('DB_HOST'),  # noqa: F405
+        'PORT': get_secret('DB_PORT'),  # noqa: F405
+        'ATOMIC_REQUESTS': True,
     }
 }
 

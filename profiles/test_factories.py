@@ -2,89 +2,91 @@
 
 from django.test import TestCase
 
-from .factories import *
+from . import factories
 from trait_browser.factories import StudyFactory
 
-from .models import *
+from . import models
 from trait_browser.models import Study
 
 
 class SearchModelTestCase(TestCase):
-    
+
     def test_user_data_factory_build(self):
-        """Test that a Search instance is returned by SearchFactory.build()"""
-        search = SearchFactory.build()
-        self.assertIsInstance(search, Search)
-        
+        """A Search instance is returned by factories.SearchFactory.build()."""
+        search = factories.SearchFactory.build()
+        self.assertIsInstance(search, models.Search)
+
     def test_user_data_factory_create(self):
-        """Test that a Search instance is returned by SearchFactory.create()"""
-        search = SearchFactory.create()
-        self.assertIsInstance(search, Search)
+        """A Search instance is returned by factories.SearchFactory.create()."""
+        search = factories.SearchFactory.create()
+        self.assertIsInstance(search, models.Search)
 
     def test_user_data_factory_build_batch(self):
-        """Test that a Search instance is returned by SearchFactory.build_batch()"""
-        searches = SearchFactory.build_batch(5)
+        """A Search instance is returned by factories.SearchFactory.build_batch()."""
+        searches = factories.SearchFactory.build_batch(5)
         for rec in searches:
-            self.assertIsInstance(rec, Search)
-        
+            self.assertIsInstance(rec, models.Search)
+
     def test_user_data_factory_create_batch(self):
-        """Test that a Search instance is returned by SearchFactory.create_batch()"""
-        searches = SearchFactory.create_batch(5)
+        """A Search instance is returned by factories.SearchFactory.create_batch()."""
+        searches = factories.SearchFactory.create_batch(5)
         for rec in searches:
-            self.assertIsInstance(rec, Search)
+            self.assertIsInstance(rec, models.Search)
 
     def test_user_data_factory_create_with_studies(self):
-        """Test that a Search instance is returned by SearchFactory.create() with checked studies"""
+        """A Search instance is returned by factories.SearchFactory.create() with checked studies."""
         for i in range(3):
             StudyFactory.create()
         studies = Study.objects.all()
-        search = SearchFactory.create(param_studies=studies)
-        self.assertIsInstance(search, Search)
+        search = factories.SearchFactory.create(param_studies=studies)
+        self.assertIsInstance(search, models.Search)
+
 
 class UserDataModelTestCase(TestCase):
-    
+
     def test_user_data_factory_build(self):
-        """Test that a UserData instance is returned by UserDataFactory.build()"""
-        user_data = UserDataFactory.build()
-        self.assertIsInstance(user_data, UserData)
-        
+        """A UserData instance is returned by factories.UserDataFactory.build()."""
+        user_data = factories.UserDataFactory.build()
+        self.assertIsInstance(user_data, models.UserData)
+
     def test_user_data_factory_create(self):
-        """Test that a UserData instance is returned by UserDataFactory.create()"""
-        user_data = UserDataFactory.create()
-        self.assertIsInstance(user_data, UserData)
+        """A UserData instance is returned by factories.UserDataFactory.create()."""
+        user_data = factories.UserDataFactory.create()
+        self.assertIsInstance(user_data, models.UserData)
 
     def test_user_data_factory_build_batch(self):
-        """Test that a UserData instance is returned by UserDataFactory.build_batch()"""
-        user_data = UserDataFactory.build_batch(5)
+        """A UserData instance is returned by factories.UserDataFactory.build_batch()."""
+        user_data = factories.UserDataFactory.build_batch(5)
         for rec in user_data:
-            self.assertIsInstance(rec, UserData)
-        
+            self.assertIsInstance(rec, models.UserData)
+
     def test_user_data_factory_create_batch(self):
-        """Test that a UserData instance is returned by UserDataFactory.create_batch()"""
-        user_data = UserDataFactory.create_batch(5)
+        """A UserData instance is returned by factories.UserDataFactory.create_batch()."""
+        user_data = factories.UserDataFactory.create_batch(5)
         for rec in user_data:
-            self.assertIsInstance(rec, UserData)
+            self.assertIsInstance(rec, models.UserData)
+
 
 class SavedSearchMetaModelTestCase(TestCase):
 
     def test_saved_search_meta_build(self):
-        """Test that a UserData instance is returned by UserDataFactory.build()"""
-        saved_search_meta = SavedSearchMetaFactory.build()
-        self.assertIsInstance(saved_search_meta, SavedSearchMeta)
-        
+        """A SavedSearchMeta instance is returned by factories.SavedSearchMetaFactory.build()."""
+        saved_search_meta = factories.SavedSearchMetaFactory.build()
+        self.assertIsInstance(saved_search_meta, models.SavedSearchMeta)
+
     def test_saved_search_meta_create(self):
-        """Test that a UserData instance is returned by UserDataFactory.create()"""
-        saved_search_meta = SavedSearchMetaFactory.create()
-        self.assertIsInstance(saved_search_meta, SavedSearchMeta)
+        """A SavedSearchMeta instance is returned by factories.SavedSearchMetaFactory.create()."""
+        saved_search_meta = factories.SavedSearchMetaFactory.create()
+        self.assertIsInstance(saved_search_meta, models.SavedSearchMeta)
 
     def test_saved_search_meta_build_batch(self):
-        """Test that a UserData instance is returned by UserDataFactory.build_batch()"""
-        saved_search_meta = SavedSearchMetaFactory.build_batch(5)
+        """A SavedSearchMeta instance is returned by factories.SavedSearchMetaFactory.build_batch()."""
+        saved_search_meta = factories.SavedSearchMetaFactory.build_batch(5)
         for rec in saved_search_meta:
-            self.assertIsInstance(rec, SavedSearchMeta)
-        
+            self.assertIsInstance(rec, models.SavedSearchMeta)
+
     def test_saved_search_meta_create_batch(self):
-        """Test that a UserData instance is returned by UserDataFactory.create_batch()"""
-        saved_search_meta = SavedSearchMetaFactory.create_batch(5)
+        """A SavedSearchMeta instance is returned by factories.SavedSearchMetaFactory.create_batch()."""
+        saved_search_meta = factories.SavedSearchMetaFactory.create_batch(5)
         for rec in saved_search_meta:
-            self.assertIsInstance(rec, SavedSearchMeta)
+            self.assertIsInstance(rec, models.SavedSearchMeta)

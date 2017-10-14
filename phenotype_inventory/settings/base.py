@@ -13,7 +13,7 @@ site is set up.
 
 Functions:
     get_env_variable
-    
+
 Custom Constants:
     SITE_NAME
     SITE_ROOT
@@ -28,31 +28,33 @@ from socket import gethostname
 # into your settings, but ImproperlyConfigured is an exception
 # here for the purpose of returning an informative error message.
 from django.core.exceptions import ImproperlyConfigured
+# Use this in resetting MESSAGE_TAGS in the template settings.
+from django.contrib.messages import constants as message_constants
 
 
 def get_env_variable(var_name):
     """Get the environment variable or return exception.
-    
+
     From Two Scoops of Django, this function is the recommended way to
     access local vs. production settings for a django site. This is from
     example 5.15 from the book. For local settings, do 'export VAR_NAME=value'
     in a setting file for the conda env or virtualenv used for the project.
     Then this function can retrieve the environmental variable from bash
     using the variable name.
-    
+
     This funciton also prints an informative error message and raises an
     informative exception if the environmental variable is not already set.
-    
+
     Source:
         https://github.com/twoscoops/two-scoops-of-django-1.8/blob/master/code/chapter_05_example_15.py
-    
+
     Arguments:
         var_name is a string of the name of the variable to get from the bash
         environment
-    
+
     Returns:
         string value of the environmental variable value
-    
+
     Raises:
         ImproperlyConfigured when an environment variable is not set first.
     """
@@ -67,8 +69,8 @@ def get_env_variable(var_name):
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-## These are some custom settings based on an online example:
-## https://www.rdegges.com/2011/the-perfect-django-settings-file/
+# These are some custom settings based on an online example:
+# https://www.rdegges.com/2011/the-perfect-django-settings-file/
 # Get the project name from the base directory name.
 SITE_NAME = os.path.basename(BASE_DIR)
 # Absolute filesystem path to the top-level project folder.
@@ -89,14 +91,14 @@ USE_L10N = True
 USE_TZ = True
 
 
-#STATIC FILE SETTINGS
+# STATIC FILE SETTINGS
 # Additional locations of static files.
 STATICFILES_DIRS = (
     os.path.join(SITE_ROOT, 'static'),
-    )
+)
 # This may be overridden for a particular deployment.
 STATIC_URL = '/static/'
-########## END STATIC FILE CONFIGURATION
+# END STATIC FILE CONFIGURATION
 
 
 # TEMPLATE SETTINGS
@@ -119,12 +121,12 @@ TEMPLATES = [
 ]
 
 # Change the message tag name to match the bootstrap alert class name.
-from django.contrib.messages import constants as message_constants
 MESSAGE_TAGS = {message_constants.DEBUG: 'alert-debug',
                 message_constants.INFO: 'alert-info',
                 message_constants.SUCCESS: 'alert-success',
                 message_constants.WARNING: 'alert-warning',
-                message_constants.ERROR: 'alert-danger',}
+                message_constants.ERROR: 'alert-danger',
+                }
 
 
 # MIDDLEWARE SETTINGS

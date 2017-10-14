@@ -9,7 +9,7 @@ register = template.Library()
 @register.simple_tag(takes_context=True)
 def render_as_template(context, template_as_string):
     """Renders a template variable as template code.
-    
+
     Source:
         https://github.com/daniboy/django-render-as-template
         Taken from render_as_template.templatetags.render_as_template
@@ -21,7 +21,7 @@ def render_as_template(context, template_as_string):
 @register.filter(name='has_group')
 def has_group(user, group_name):
     """Tests if a user belongs to a given group.
-    
+
     Source:
         https://www.abidibo.net/blog/2014/05/22/check-if-user-belongs-group-django-templates/#sthash.vGVYYdzi.dpuf
     """

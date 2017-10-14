@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+{% load staticfiles %}
+{% load core_tags %}
+
+{% block head_title %}
+     | {{ harmonized_trait_set_version.get_trait_names|join:", " }} details
+{% endblock %}
+
+{% block content %}
+    <div class="well">
+    
+        <h2>{{ harmonized_trait_set_version.get_trait_names|join:", " }} <small>harmonized phenotype details</small></h2>
+        
+        {% for trait in harmonized_trait_set_version.harmonizedtrait_set.all %}
+            <div class="panel panel-info">
+                <div class="panel-heading">
+                    <h3 class="panel-title">Phenotype name: {{ trait.trait_flavor_name }}</h3>
+                </div>
+                <div class="panel-body">
+                    <dl class="dl-horizontal">
+                    <dt>Description</dt><dd>{{ trait.i_description }}</dd>
+                    <dt>Data type</dt><dd>{{ trait.i_data_type }}</dd>
+                    <dt>Unit</dt><dd>{{ trait.i_unit }}</dd>
+                    <dt>Visit information</dt><dd><small>coming soon...</small></dd>
+
+                    {% if trait.harmonizedtraitencodedvalue_set.all %}
+                       <table class="table table-nonfluid table-condensed table-sm">
+                           <caption><strong>Encoded values</strong></caption>
+                           <tr>
+                               <th>Category</th>
+                               <th>Value</th>
+                           </tr>
+                           {% for ev in trait.harmonizedtraitencodedvalue_set.all %}
+                               <tr>
+                                   <td>{{ ev.i_category }}</td>
+                                   <td>{{ ev.i_value }}</td>
+                               </tr>
+                           {% endfor %}
+                       </table>
+                    {% endif %}
+                </div>
+
+            </div>
+        {% endfor %}
+
+        <hr>
+<!-- TODO: handle unique keys somehow... -->
+
+        <button type="button" class="btn btn-default" data-toggle="collapse" data-target="#components">Component Phenotypes</button>
+        <div id="components" class="collapse">
+            {% render_as_template harmonized_trait_set_version.component_html_detail|safe %}
+        </div>
+
+        <h4>Documentation</h4>
+        <p>Coming soon...</p>
+ 
+    </div>
+{% endblock %}
+
+{% block custom_javascript %}
+    <script src="{% static 'js/popover.js' %}"></script>
+{% endblock %}
