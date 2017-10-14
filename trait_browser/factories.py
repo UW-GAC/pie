@@ -39,7 +39,9 @@ class GlobalStudyFactory(SourceDBTimeStampMixin, factory.DjangoModelFactory):
     """Factory for GlobalStudy objects using Faker faked data."""
 
     i_id = factory.Sequence(lambda n: n)
-    i_name = factory.Faker('company')
+    i_name = factory.Sequence(lambda n: 'Gstudy_{}'.format(n))
+    i_topmed_accession = factory.Sequence(lambda n: n)
+    i_topmed_abbreviation = factory.Sequence(lambda n: 'ABC{}'.format(n))
 
     class Meta:
         model = models.GlobalStudy
@@ -50,7 +52,7 @@ class StudyFactory(SourceDBTimeStampMixin, factory.DjangoModelFactory):
     """Factory for Study objects using Faker faked data."""
 
     global_study = factory.SubFactory(GlobalStudyFactory)
-    i_accession = factory.Faker('random_int', min=1, max=999999)
+    i_accession = factory.Sequence(lambda n: n)
     i_study_name = factory.Faker('company')
 
     class Meta:
@@ -96,25 +98,10 @@ class SourceDatasetFactory(SourceDBTimeStampMixin, factory.DjangoModelFactory):
     i_is_subject_file = False
     i_study_subject_column = factory.Faker('pystr', max_chars=45)
     i_dbgap_date_created = factory.Faker('date_time_this_century', tzinfo=pytz.utc)
-    # Visit data is NULL by default.
-    # i_is_medication_dataset = factory.Faker('boolean')
-    # i_dbgap_description = factory.Faker('text')
-    # i_dcc_description = factory.Faker('text')
-    # i_date_visit_reviewed = factory.Faker('date_time_this_year', tzinfo=pytz.utc)
 
     class Meta:
         model = models.SourceDataset
         django_get_or_create = ('i_id', )
-
-    @factory.post_generation
-    def subcohorts(self, create, extracted, **kwargs):
-        # Do not add any subcohorts for simple builds.
-        if not create:
-            return
-        # Add subcohorts from a list that was passed in.
-        if extracted:
-            for subcohort in extracted:
-                self.subcohorts.add(subcohort)
 
 
 class HarmonizedTraitSetFactory(SourceDBTimeStampMixin, factory.DjangoModelFactory):
@@ -122,16 +109,39 @@ class HarmonizedTraitSetFactory(SourceDBTimeStampMixin, factory.DjangoModelFacto
 
     i_id = factory.Sequence(lambda n: n)
     i_trait_set_name = factory.Faker('word')
-    i_version = factory.Faker('random_int', min=1, max=10)
-    i_description = factory.Faker('text')
     i_flavor = factory.Faker('random_int', min=1, max=10)
-    i_harmonized_by = factory.Faker('user_name')
-    i_git_commit_hash = factory.Faker('sha1')
-    i_is_demographic = factory.Faker('boolean')
     i_is_longitudinal = factory.Faker('boolean')
+    i_is_demographic = factory.Faker('boolean')
 
     class Meta:
         model = models.HarmonizedTraitSet
+        django_get_or_create = ('i_id', )
+
+
+class AllowedUpdateReasonFactory(factory.DjangoModelFactory):
+    """Factory for AllowedUpdateReason model using Faker faked data."""
+
+    i_id = factory.Sequence(lambda n: n)
+    i_abbreviation = factory.Sequence(lambda n: 'REASON_{}'.format(n))
+    i_description = factory.Faker('sentence')
+
+    class Meta:
+        model = models.AllowedUpdateReason
+        django_get_or_create = ('i_id', 'i_abbreviation', )
+
+
+class HarmonizedTraitSetVersionFactory(SourceDBTimeStampMixin, factory.DjangoModelFactory):
+    """Factory for HarmonizedTraitSetVersion model using Faker faked data."""
+
+    harmonized_trait_set = factory.SubFactory(HarmonizedTraitSetFactory)
+    i_id = factory.Sequence(lambda n: n)
+    i_version = factory.Faker('random_int', min=1, max=10)
+    i_git_commit_hash = factory.Faker('sha1')
+    i_harmonized_by = factory.Faker('user_name')
+    i_is_deprecated = factory.Faker('boolean')
+
+    class Meta:
+        model = models.HarmonizedTraitSetVersion
         django_get_or_create = ('i_id', )
 
 
@@ -140,7 +150,7 @@ class HarmonizationUnitFactory(SourceDBTimeStampMixin, factory.DjangoModelFactor
 
     i_id = factory.Sequence(lambda n: n)
     i_tag = factory.Faker('word')
-    harmonized_trait_set = factory.SubFactory(HarmonizedTraitSetFactory)
+    harmonized_trait_set_version = factory.SubFactory(HarmonizedTraitSetVersionFactory)
 
     class Meta:
         model = models.HarmonizationUnit
@@ -177,14 +187,14 @@ class HarmonizationUnitFactory(SourceDBTimeStampMixin, factory.DjangoModelFactor
                 self.component_age_traits.add(source_trait)
 
     @factory.post_generation
-    def component_harmonized_trait_sets(self, create, extracted, **kwargs):
+    def component_harmonized_trait_set_versions(self, create, extracted, **kwargs):
         # Do not add any component_harmonized_traits for simple builds.
         if not create:
             return
-        # Add component_harmonized_traits from a list that was passed in.
+        # Add component_harmonized_trait_set_versions from a list that was passed in.
         if extracted:
-            for harmonized_trait_set in extracted:
-                self.component_harmonized_trait_sets.add(harmonized_trait_set)
+            for harmonized_trait_set_version in extracted:
+                self.component_harmonized_trait_set_versions.add(harmonized_trait_set_version)
 
 
 class SourceTraitFactory(SourceDBTimeStampMixin, factory.DjangoModelFactory):
@@ -198,12 +208,13 @@ class SourceTraitFactory(SourceDBTimeStampMixin, factory.DjangoModelFactory):
     i_dbgap_type = factory.Faker('word')
     i_dbgap_variable_accession = factory.Faker('random_int', min=1, max=99999999)
     i_dbgap_variable_version = factory.Faker('random_int', min=1, max=15)
-    i_dbgap_description = factory.Faker('sentence')
     i_dbgap_comment = factory.Faker('text')
     i_dbgap_unit = factory.Faker('word')
     i_n_records = factory.Faker('random_int', min=100, max=5000)
     i_n_missing = factory.Faker('random_int', min=0, max=100)  # This will always be less than i_n_records.
     # Visit data is NULL by default.
+    i_is_unique_key = factory.Faker('boolean')
+    i_are_values_truncated = factory.Faker('boolean')
 
     class Meta:
         model = models.SourceTrait
@@ -217,7 +228,7 @@ class HarmonizedTraitFactory(SourceDBTimeStampMixin, factory.DjangoModelFactory)
     i_trait_name = factory.Faker('word')
     i_description = factory.Faker('text')
 
-    harmonized_trait_set = factory.SubFactory(HarmonizedTraitSetFactory)
+    harmonized_trait_set_version = factory.SubFactory(HarmonizedTraitSetVersionFactory)
     i_data_type = factory.Faker('random_element', elements=('', 'encoded', 'character', 'double', 'integer', ))
     i_unit = factory.Faker('word')
     i_has_batch = factory.Faker('boolean')
@@ -258,14 +269,14 @@ class HarmonizedTraitFactory(SourceDBTimeStampMixin, factory.DjangoModelFactory)
                 self.harmonization_units.add(harmonization_unit)
 
     @factory.post_generation
-    def component_harmonized_trait_sets(self, create, extracted, **kwargs):
+    def component_harmonized_trait_set_versions(self, create, extracted, **kwargs):
         # Do not add any component_harmonized_traits for simple builds.
         if not create:
             return
         # Add component_harmonized_traits from a list that was passed in.
         if extracted:
-            for harmonized_trait_set in extracted:
-                self.component_harmonized_trait_sets.add(harmonized_trait_set)
+            for harmonized_trait_set_version in extracted:
+                self.component_harmonized_trait_set_versions.add(harmonized_trait_set_version)
 
 
 class SourceTraitEncodedValueFactory(SourceDBTimeStampMixin, factory.DjangoModelFactory):

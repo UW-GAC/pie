@@ -164,7 +164,7 @@ class HomeTestCase(SeleniumTestCase):
         self.get_reverse('home')
         # Are the three main page icons there?
         main_elements = self.selenium.find_elements_by_class_name('col-md-4')
-        self.assertEqual(3, len(main_elements))
+        self.assertEqual(2, len(main_elements))
         # Is the navbar there?
         navbar = self.selenium.find_element_by_class_name('navbar')
         self.assertIsNotNone(navbar)

@@ -10,10 +10,10 @@ class Command(BaseCommand):
 
     help = 'For specified model fields, fill in field data using a standard method.'
 
-    def _fill_harmonized_trait_set__component_html_detail(self):
-        for harmonized_trait_set in models.HarmonizedTraitSet.objects.all():
-            harmonized_trait_set.component_html_detail = harmonized_trait_set.get_component_html()
-            harmonized_trait_set.save()
+    def _fill_harmonized_trait_set_version__component_html_detail(self):
+        for harmonized_trait_set_version in models.HarmonizedTraitSetVersion.objects.all():
+            harmonized_trait_set_version.component_html_detail = harmonized_trait_set_version.get_component_html()
+            harmonized_trait_set_version.save()
 
     # Methods to actually do the management command.
     def add_arguments(self, parser):
@@ -28,6 +28,6 @@ class Command(BaseCommand):
             **args and **options are handled as per the superclass handling; these
             argument dicts will pass on command line options
         """
-        if 'harmonized_trait_set__component_html_detail' in options.get('fields'):
-            print('Updating harmonized_trait_set__component_html_detail ...')
-            self._fill_harmonized_trait_set__component_html_detail()
+        if 'harmonized_trait_set_version__component_html_detail' in options.get('fields'):
+            print('Updating harmonized_trait_set_version__component_html_detail ...')
+            self._fill_harmonized_trait_set_version__component_html_detail()

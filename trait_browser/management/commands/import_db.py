@@ -505,7 +505,9 @@ class Command(BaseCommand):
         Returns:
             a dict of (required_models.GlobalStudy_attribute: attribute_value) pairs
         """
-        return self._make_args_mapping(row_dict, ['id', 'name', 'date_added', 'date_changed'])
+        return self._make_args_mapping(row_dict,
+                                       ['id', 'name', 'date_added', 'date_changed', 'topmed_accession',
+                                        'topmed_abbreviation'])
 
     def _make_study_args(self, row_dict):
         """Get args for making a models.Study object from a source db row.
@@ -546,6 +548,24 @@ class Command(BaseCommand):
             foreign_key_mapping={'accession': models.Study}
         )
 
+    def _make_subcohort_args(self, row_dict):
+        """Get args for making a models.Subcohort object from a source db row.
+
+        Converts a dictionary containing {colname: row value} pairs from a database
+        query into a dict with the necessary arguments for constructing a
+        models.Subcohort object. If there is a schema change in the source db,
+        this function may need to be modified.
+
+        Arguments:
+            row_dict (dict): (column_name, row_value) pairs retrieved from the source db
+
+        Returns:
+            a dict of (required_Subcohort_attribute: attribute_value) pairs
+        """
+        return self._make_args_mapping(row_dict,
+                                       ['id', 'name', 'date_added', 'date_changed'],
+                                       foreign_key_mapping={'global_study_id': models.GlobalStudy})
+
     def _make_source_dataset_args(self, row_dict):
         """Get args for making a models.SourceDataset object from a source db row.
 
@@ -562,9 +582,8 @@ class Command(BaseCommand):
         """
         return self._make_args_mapping(
             row_dict,
-            ['id', 'accession', 'dbgap_description', 'dcc_description', 'is_medication_dataset', 'is_subject_file',
-             'study_subject_column', 'version', 'visit_code', 'visit_number', 'date_added', 'date_changed',
-             'dbgap_date_created', 'date_visit_reviewed', ],
+            ['id', 'accession', 'version', 'is_subject_file', 'study_subject_column', 'dbgap_description',
+             'dbgap_date_created', 'date_added', 'date_changed', ],
             foreign_key_mapping={'study_version_id': models.SourceStudyVersion}
         )
 
@@ -584,8 +603,46 @@ class Command(BaseCommand):
         """
         return self._make_args_mapping(
             row_dict,
-            ['id', 'trait_set_name', 'version', 'flavor', 'description', 'harmonized_by', 'git_commit_hash',
-             'is_demographic', 'is_longitudinal', 'date_added', 'date_changed']
+            ['id', 'trait_set_name', 'flavor', 'is_longitudinal', 'is_demographic',
+             'date_added', 'date_changed']
+        )
+
+    def _make_allowed_update_reason_args(self, row_dict):
+        """Get args for making a models.AllowedUpdateReason object from a source db row.
+
+        Converts a dictionary containing {colname: row value} pairs from a database
+        query into a dict with the necessary arguments for constructing a
+        models.Subcohort object. If there is a schema change in the source db,
+        this function may need to be modified.
+
+        Arguments:
+            row_dict (dict): (column_name, row_value) pairs retrieved from the source db
+
+        Returns:
+            a dict of (required_Subcohort_attribute: attribute_value) pairs
+        """
+        return self._make_args_mapping(row_dict,
+                                       ['id', 'abbreviation', 'description'])
+
+    def _make_harmonized_trait_set_version_args(self, row_dict):
+        """Get args for making a models.HarmonizedTraitSetVersion object from a source db row.
+
+        Converts a dictionary containing {colname: row value} pairs from a database
+        query into a dict with the necessary arguments for constructing a
+        models.HarmonizedTraitSet object. If there is a schema change in the source db,
+        this function may need to be modified.
+
+        Arguments:
+            row_dict (dict): (column_name, row_value) pairs retrieved from the source db
+
+        Returns:
+            a dict of (required_HarmonizedTraitSetVersion_attribute: attribute_value) pairs
+        """
+        return self._make_args_mapping(
+            row_dict,
+            ['id', 'version', 'git_commit_hash', 'harmonized_by', 'is_deprecated',
+             'date_added', 'date_changed'],
+            foreign_key_mapping={'harmonized_trait_set_id': models.HarmonizedTraitSet}
         )
 
     def _make_harmonization_unit_args(self, row_dict):
@@ -605,7 +662,7 @@ class Command(BaseCommand):
         return self._make_args_mapping(
             row_dict,
             ['id', 'tag', 'date_added', 'date_changed'],
-            foreign_key_mapping={'harmonized_trait_set_id': models.HarmonizedTraitSet})
+            foreign_key_mapping={'harmonized_trait_set_version_id': models.HarmonizedTraitSetVersion})
 
     def _make_source_trait_args(self, row_dict):
         """Get args for making a models.SourceTrait object from a source db row.
@@ -622,10 +679,10 @@ class Command(BaseCommand):
         """
         return self._make_args_mapping(
             row_dict,
-            ['trait_name', 'detected_type', 'dbgap_type', 'visit_number', 'dbgap_variable_accession',
-             'dbgap_variable_version', 'dbgap_comment', 'dbgap_unit', 'n_records', 'n_missing', 'dbgap_description',
+            ['trait_name', 'detected_type', 'dbgap_type', 'dbgap_variable_accession',
+             'dbgap_variable_version', 'dbgap_comment', 'dbgap_unit', 'n_records', 'n_missing',
              'date_added', 'date_changed'],
-            source_field_names_to_map={'source_trait_id': 'i_trait_id', 'dcc_description': 'i_description'},
+            source_field_names_to_map={'source_trait_id': 'i_trait_id', 'dbgap_description': 'i_description'},
             foreign_key_mapping={'dataset_id': models.SourceDataset}
         )
 
@@ -644,28 +701,10 @@ class Command(BaseCommand):
         """
         return self._make_args_mapping(
             row_dict,
-            ['description', 'data_type', 'unit', 'is_unique_key', 'trait_name', 'has_batch', 'date_added',
+            ['trait_name', 'description', 'data_type', 'unit', 'has_batch', 'is_unique_key', 'date_added',
              'date_changed'],
             source_field_names_to_map={'harmonized_trait_id': 'i_trait_id'},
-            foreign_key_mapping={'harmonized_trait_set_id': models.HarmonizedTraitSet})
-
-    def _make_subcohort_args(self, row_dict):
-        """Get args for making a models.Subcohort object from a source db row.
-
-        Converts a dictionary containing {colname: row value} pairs from a database
-        query into a dict with the necessary arguments for constructing a
-        models.Subcohort object. If there is a schema change in the source db,
-        this function may need to be modified.
-
-        Arguments:
-            row_dict (dict): (column_name, row_value) pairs retrieved from the source db
-
-        Returns:
-            a dict of (required_Subcohort_attribute: attribute_value) pairs
-        """
-        return self._make_args_mapping(row_dict,
-                                       ['id', 'name', 'date_added', 'date_changed'],
-                                       foreign_key_mapping={'global_study_id': models.GlobalStudy})
+            foreign_key_mapping={'harmonized_trait_set_version_id': models.HarmonizedTraitSetVersion})
 
     def _make_source_trait_encoded_value_args(self, row_dict):
         """Get args for making a models.SourceTraitEncodedValue object from a source db row.
@@ -874,35 +913,36 @@ class Command(BaseCommand):
             source_db=source_db, source_table='global_study', source_pk='id', model=models.GlobalStudy,
             make_args=self._make_global_study_args)
         logger.info("Added {} global studies".format(len(new_global_study_pks)))
+
         new_study_pks = self._import_new_data(
             source_db=source_db, source_table='study', source_pk='accession', model=models.Study,
             make_args=self._make_study_args)
         logger.info("Added {} studies".format(len(new_study_pks)))
+
         new_source_study_version_pks = self._import_new_data(
             source_db=source_db, source_table='source_study_version', source_pk='id', model=models.SourceStudyVersion,
             make_args=self._make_source_study_version_args)
         logger.info("Added {} source study versions".format(len(new_source_study_version_pks)))
-        new_source_dataset_pks = self._import_new_data(
-            source_db=source_db, source_table='source_dataset', source_pk='id', model=models.SourceDataset,
-            make_args=self._make_source_dataset_args)
-        logger.info("Added {} source datasets".format(len(new_source_dataset_pks)))
-        new_source_trait_pks = self._import_new_data(
-            source_db=source_db, source_table='source_trait', source_pk='source_trait_id', model=models.SourceTrait,
-            make_args=self._make_source_trait_args)
-        logger.info("Added {} source traits".format(len(new_source_trait_pks)))
+
         new_subcohort_pks = self._import_new_data(
             source_db=source_db, source_table='subcohort', source_pk='id', model=models.Subcohort,
             make_args=self._make_subcohort_args)
         logger.info("Added {} subcohorts".format(len(new_subcohort_pks)))
+
+        new_source_dataset_pks = self._import_new_data(
+            source_db=source_db, source_table='source_dataset', source_pk='id', model=models.SourceDataset,
+            make_args=self._make_source_dataset_args)
+        logger.info("Added {} source datasets".format(len(new_source_dataset_pks)))
+
+        new_source_trait_pks = self._import_new_data(
+            source_db=source_db, source_table='source_trait', source_pk='source_trait_id', model=models.SourceTrait,
+            make_args=self._make_source_trait_args)
+        logger.info("Added {} source traits".format(len(new_source_trait_pks)))
+
         new_source_trait_encoded_value_pks = self._import_new_data(
             source_db=source_db, source_table='source_trait_encoded_values', source_pk='id',
             model=models.SourceTraitEncodedValue, make_args=self._make_source_trait_encoded_value_args)
         logger.info("Added {} source trait encoded values".format(len(new_source_trait_encoded_value_pks)))
-        new_source_dataset_subcohort_links = self._import_new_m2m_field(
-            source_db=source_db, source_table='source_dataset_subcohorts', parent_model=models.SourceDataset,
-            parent_source_pk='dataset_id', child_model=models.Subcohort, child_source_pk='subcohort_id',
-            child_related_name='subcohorts', import_parent_pks=new_source_dataset_pks)
-        logger.info("Added {} source dataset subcohorts".format(len(new_source_dataset_subcohort_links)))
 
     def _import_harmonized_tables(self, source_db):
         """Import all harmonized trait-related data from the source db into the Django models.
@@ -926,6 +966,16 @@ class Command(BaseCommand):
             model=models.HarmonizedTraitSet, make_args=self._make_harmonized_trait_set_args)
         logger.info("Added {} harmonized trait sets".format(len(new_harmonized_trait_set_pks)))
 
+        new_allowed_update_reason_pks = self._import_new_data(
+            source_db=source_db, source_table='allowed_update_reason', source_pk='id',
+            model=models.AllowedUpdateReason, make_args=self._make_allowed_update_reason_args)
+        logger.info("Added {} allowed update reasons".format(len(new_allowed_update_reason_pks)))
+
+        new_harmonized_trait_set_version_pks = self._import_new_data(
+            source_db=source_db, source_table='harmonized_trait_set_version', source_pk='id',
+            model=models.HarmonizedTraitSetVersion, make_args=self._make_harmonized_trait_set_version_args)
+        logger.info("Added {} harmonized trait set versions".format(len(new_harmonized_trait_set_version_pks)))
+
         new_harmonization_unit_pks = self._import_new_data(
             source_db=source_db, source_table='harmonization_unit', source_pk='id',
             model=models.HarmonizationUnit, make_args=self._make_harmonization_unit_args)
@@ -937,7 +987,7 @@ class Command(BaseCommand):
         logger.info("Added {} harmonized traits".format(len(new_harmonized_trait_pks)))
 
         new_harmonized_trait_encoded_value_pks = self._import_new_data(
-            source_db=source_db, source_table='harmonized_trait_encoded_values', source_pk='harmonized_trait_id',
+            source_db=source_db, source_table='harmonized_trait_encoded_values', source_pk='id',
             model=models.HarmonizedTraitEncodedValue, make_args=self._make_harmonized_trait_encoded_value_args)
         logger.info("Added {} harmonized trait encoded values".format(len(new_harmonized_trait_encoded_value_pks)))
 
@@ -950,10 +1000,11 @@ class Command(BaseCommand):
 
         new_component_harmonized_trait_links_to_unit = self._import_new_m2m_field(
             source_db=source_db, source_table='component_harmonized_trait_set', parent_model=models.HarmonizationUnit,
-            parent_source_pk='harmonization_unit_id', child_model=models.HarmonizedTraitSet,
-            child_source_pk='component_trait_set_id', child_related_name='component_harmonized_trait_sets',
+            parent_source_pk='harmonization_unit_id', child_model=models.HarmonizedTraitSetVersion,
+            child_source_pk='component_trait_set_version_id',
+            child_related_name='component_harmonized_trait_set_versions',
             import_parent_pks=new_harmonization_unit_pks)
-        logger.info("Added {} component harmonized trait sets".format(
+        logger.info("Added {} component harmonized trait set versions".format(
             len(new_component_harmonized_trait_links_to_unit)))
 
         new_component_batch_trait_links_to_unit = self._import_new_m2m_field(
@@ -979,8 +1030,9 @@ class Command(BaseCommand):
 
         new_component_harmonized_trait_links_to_trait = self._import_new_m2m_field(
             source_db=source_db, source_table='component_harmonized_trait_set', parent_model=models.HarmonizedTrait,
-            parent_source_pk='harmonized_trait_id', child_model=models.HarmonizedTraitSet,
-            child_source_pk='component_trait_set_id', child_related_name='component_harmonized_trait_sets',
+            parent_source_pk='harmonized_trait_id', child_model=models.HarmonizedTraitSetVersion,
+            child_source_pk='component_trait_set_version_id',
+            child_related_name='component_harmonized_trait_set_versions',
             import_parent_pks=new_harmonized_trait_pks)
         logger.info("Added {} component harmonized trait sets".format(
             len(new_component_harmonized_trait_links_to_trait)))
@@ -999,6 +1051,15 @@ class Command(BaseCommand):
             import_parent_pks=new_harmonized_trait_pks)
         logger.info("Added {} harmonized_traits to harmonization units".format(
             len(new_harmonization_unit_harmonized_trait_links)))
+
+        new_allowed_update_reason_links = self._import_new_m2m_field(
+            source_db=source_db, source_table='harmonized_trait_set_version_update_reason',
+            parent_model=models.HarmonizedTraitSetVersion,
+            parent_source_pk='harmonized_trait_set_version_id', child_model=models.AllowedUpdateReason,
+            child_source_pk='reason_id',
+            child_related_name='update_reasons', import_parent_pks=new_harmonized_trait_set_version_pks)
+        logger.info("Added {} harmonized trait set version allowed update reason links".format(
+            len(new_allowed_update_reason_links)))
 
     def _update_source_tables(self, source_db):
         """Update source trait-related Django models from modified data in the source db.
@@ -1019,15 +1080,6 @@ class Command(BaseCommand):
         """
         logger.info('Updating source traits...')
 
-        updated_source_dataset_subcohort_links = self._update_m2m_field(
-            source_db=source_db, source_table='source_dataset_subcohorts', parent_model=models.SourceDataset,
-            parent_source_pk='dataset_id', child_model=models.Subcohort, child_source_pk='subcohort_id',
-            child_related_name='subcohorts', expected=True)
-        logger.info("Update: added {} source dataset subcohorts".format(
-            len(updated_source_dataset_subcohort_links['added'])))
-        logger.info("Update: removed {} source dataset subcohorts".format(
-            len(updated_source_dataset_subcohort_links['removed'])))
-
         global_study_update_count = self._update_existing_data(
             source_db=source_db, source_table='global_study', source_pk='id', model=models.GlobalStudy,
             make_args=self._make_global_study_args, expected=False)
@@ -1043,6 +1095,11 @@ class Command(BaseCommand):
             make_args=self._make_source_study_version_args, expected=True)
         logger.info('{} source study versions updated'.format(source_study_version_update_count))
 
+        subcohort_update_count = self._update_existing_data(
+            source_db=source_db, source_table='subcohort', source_pk='id', model=models.Subcohort,
+            make_args=self._make_subcohort_args, expected=True)
+        logger.info('{} subcohorts updated'.format(subcohort_update_count))
+
         source_dataset_update_count = self._update_existing_data(
             source_db=source_db, source_table='source_dataset', source_pk='id', model=models.SourceDataset,
             make_args=self._make_source_dataset_args, expected=True)
@@ -1052,11 +1109,6 @@ class Command(BaseCommand):
             source_db=source_db, source_table='source_trait', source_pk='source_trait_id', model=models.SourceTrait,
             make_args=self._make_source_trait_args, expected=True)
         logger.info('{} source traits updated'.format(source_trait_update_count))
-
-        subcohort_update_count = self._update_existing_data(
-            source_db=source_db, source_table='subcohort', source_pk='id', model=models.Subcohort,
-            make_args=self._make_subcohort_args, expected=True)
-        logger.info('{} subcohorts updated'.format(subcohort_update_count))
 
         source_trait_ev_update_count = self._update_existing_data(
             source_db=source_db, source_table='source_trait_encoded_values', source_pk='id',
@@ -1093,8 +1145,9 @@ class Command(BaseCommand):
 
         updated_component_harmonized_trait_links_to_unit = self._update_m2m_field(
             source_db=source_db, source_table='component_harmonized_trait_set', parent_model=models.HarmonizationUnit,
-            parent_source_pk='harmonization_unit_id', child_model=models.HarmonizedTraitSet,
-            child_source_pk='component_trait_set_id', child_related_name='component_harmonized_trait_sets',
+            parent_source_pk='harmonization_unit_id', child_model=models.HarmonizedTraitSetVersion,
+            child_source_pk='component_trait_set_version_id',
+            child_related_name='component_harmonized_trait_set_versions',
             expected=False)
         logger.info("Update: added {} component harmonized trait sets".format(
             len(updated_component_harmonized_trait_links_to_unit['added'])))
@@ -1130,12 +1183,13 @@ class Command(BaseCommand):
 
         updated_component_harmonized_trait_links_to_trait = self._update_m2m_field(
             source_db=source_db, source_table='component_harmonized_trait_set', parent_model=models.HarmonizedTrait,
-            parent_source_pk='harmonized_trait_id', child_model=models.HarmonizedTraitSet,
-            child_source_pk='component_trait_set_id', child_related_name='component_harmonized_trait_sets',
+            parent_source_pk='harmonized_trait_id', child_model=models.HarmonizedTraitSetVersion,
+            child_source_pk='component_trait_set_version_id',
+            child_related_name='component_harmonized_trait_set_versions',
             expected=False)
-        logger.info("Update: added {} component harmonized trait sets".format(
+        logger.info("Update: added {} component harmonized trait set versions".format(
             len(updated_component_harmonized_trait_links_to_trait['added'])))
-        logger.info("Update: removed {} component harmonized trait sets".format(
+        logger.info("Update: removed {} component harmonized trait set versions".format(
             len(updated_component_harmonized_trait_links_to_trait['removed'])))
 
         updated_component_batch_trait_links_to_trait = self._update_m2m_field(
@@ -1156,10 +1210,35 @@ class Command(BaseCommand):
         logger.info("Update: removed {} harmonized_traits to harmonization units".format(
             len(updated_harmonization_unit_harmonized_trait_links['removed'])))
 
+        updated_harmonized_trait_set_version_update_reason_links = self._update_m2m_field(
+            source_db=source_db, source_table='harmonized_trait_set_version_update_reason',
+            parent_model=models.HarmonizedTraitSetVersion, parent_source_pk='harmonized_trait_set_version_id',
+            child_model=models.AllowedUpdateReason, child_source_pk='reason_id', child_related_name='update_reasons',
+            expected=False
+        )
+        logger.info("Update: added {} update_reasons to harmonized trait set versions".format(
+            len(updated_harmonized_trait_set_version_update_reason_links['added'])))
+        logger.info("Update: removed {} update_reasons from harmonized trait set versions".format(
+            len(updated_harmonized_trait_set_version_update_reason_links['removed'])))
+
         htrait_set_update_count = self._update_existing_data(
             source_db=source_db, source_table='harmonized_trait_set', source_pk='id', model=models.HarmonizedTraitSet,
             make_args=self._make_harmonized_trait_set_args, expected=False)
         logger.info('{} harmonized trait sets updated'.format(htrait_set_update_count))
+
+        # Don't even look for updates of allowed_update_reason table, because they shouldn't be there anyway and the
+        # update function won't even work because date_changed is not in the table.
+        # allowed_update_reason_update_count = self._update_existing_data(
+        #     source_db=source_db, source_table='allowed_update_reason', source_pk='id',
+        #     model=models.AllowedUpdateReason,
+        #     make_args=self._make_allowed_update_reason_args, expected=False)
+        # logger.info('{} allowed update reasons updated'.format(allowed_update_reason_update_count))
+
+        htrait_set_version_update_count = self._update_existing_data(
+            source_db=source_db, source_table='harmonized_trait_set_version', source_pk='id',
+            model=models.HarmonizedTraitSetVersion,
+            make_args=self._make_harmonized_trait_set_version_args, expected=False)
+        logger.info('{} harmonized trait set versions updated'.format(htrait_set_version_update_count))
 
         harmonized_trait_update_count = self._update_existing_data(
             source_db=source_db, source_table='harmonized_trait', source_pk='harmonized_trait_id',
@@ -1167,7 +1246,7 @@ class Command(BaseCommand):
         logger.info('{} harmonized traits updated'.format(harmonized_trait_update_count))
 
         htrait_ev_update_count = self._update_existing_data(
-            source_db=source_db, source_table='harmonized_trait_encoded_values', source_pk='harmonized_trait_id',
+            source_db=source_db, source_table='harmonized_trait_encoded_values', source_pk='id',
             model=models.HarmonizedTraitEncodedValue, make_args=self._make_harmonized_trait_encoded_value_args,
             expected=False)
         logger.info('{} harmonized trait encoded values updated'.format(htrait_ev_update_count))

@@ -25,7 +25,7 @@ source_patterns = [
 
 harmonized_patterns = [
     url(r'^all/$', views.trait_table, {'trait_type': 'harmonized'}, name='all'),
-    url(r'^detail/(?P<pk>\d+)/$', views.HarmonizedTraitSetDetail.as_view(), name='detail'),
+    url(r'^detail/(?P<pk>\d+)/$', views.HarmonizedTraitSetVersionDetail.as_view(), name='detail'),
     url(r'^search/$', views.trait_search, {'trait_type': 'harmonized'}, name='search'),
     url(r'^autocomplete/$', views.HarmonizedTraitFlavorNameAutocomplete.as_view(), name='autocomplete'),
 ]

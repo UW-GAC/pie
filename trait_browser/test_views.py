@@ -476,7 +476,7 @@ class HarmonizedTraitViewsTestCase(UserLoginTestCase):
         """Tests that the HarmonizedTrait detail page returns 200 with a valid pk."""
         trait = factories.HarmonizedTraitFactory.create()
         # Test that the page works with a valid pk.
-        url = reverse('trait_browser:harmonized:detail', args=[trait.harmonized_trait_set.pk])
+        url = reverse('trait_browser:harmonized:detail', args=[trait.harmonized_trait_set_version.pk])
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
 
@@ -502,13 +502,13 @@ class HarmonizedTraitViewsTestCase(UserLoginTestCase):
             response.context['search_url']
 
 
-class HarmonizedTraitSetViewsTest(UserLoginTestCase):
+class HarmonizedTraitSetVersionViewsTest(UserLoginTestCase):
     """Unit tests for the HarmonizedTraitSet views."""
 
     def test_harmonized_trait_set_absolute_url(self):
-        """Tests the get_absolute_url() method of the HarmonizedTraitSet object returns a 200 as a response."""
-        trait = factories.HarmonizedTraitSetFactory.create()
-        response = self.client.get(trait.get_absolute_url())
+        """get_absolute_url() returns a 200 as a response."""
+        instance = factories.HarmonizedTraitSetVersionFactory.create()
+        response = self.client.get(instance.get_absolute_url())
         self.assertEqual(response.status_code, 200)
 
 
