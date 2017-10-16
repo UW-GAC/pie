@@ -31,6 +31,7 @@ urlpatterns = [
     url(r'^profile/', include('profiles.urls', namespace='profiles')),  # Relating to user accounts.
     url(r'^recipe/', include('recipes.urls', namespace='recipes')),  # Recipes app.
     url(r'^auth/', include('authtools.urls')),
+    url(r'^tag/', include('tags.urls', namespace='tags')),  # Tags app.
 ]
 
 # Include URLs for django-debug-toolbar if DEBUG=True
