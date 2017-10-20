@@ -5,8 +5,10 @@ from random import randrange, sample
 
 from django.contrib.auth import get_user_model
 
-from trait_browser import models
-from trait_browser import factories
+import recipes.factories
+import tags.factories
+import trait_browser.models
+import trait_browser.factories
 
 User = get_user_model()
 USER_FACTORY_PASSWORD = 'qwerty'
@@ -30,30 +32,30 @@ def build_test_db(n_global_studies, n_subcohort_range, n_dataset_range, n_trait_
         raise ValueError('Values for n_dataset_range are too close together. max n_dataset_range must be greater than min n_dataset_range.')
     if (n_trait_range[1] - n_trait_range[0] < 1):
         raise ValueError('Values for n_trait_range are too close together. max n_trait_range must be greater than min n_trait_range.')
-    global_studies = factories.GlobalStudyFactory.create_batch(n_global_studies)
+    global_studies = trait_browser.factories.GlobalStudyFactory.create_batch(n_global_studies)
     # There will be global studies with 1, 2, or 3 linked studies.
-    for (i, gs) in enumerate(models.GlobalStudy.objects.all()):
-        factories.SubcohortFactory.create_batch(randrange(n_subcohort_range[0], n_subcohort_range[1]), global_study=gs)
+    for (i, gs) in enumerate(trait_browser.models.GlobalStudy.objects.all()):
+        trait_browser.factories.SubcohortFactory.create_batch(randrange(n_subcohort_range[0], n_subcohort_range[1]), global_study=gs)
         if i == 1:
-            factories.StudyFactory.create_batch(2, global_study=gs)
+            trait_browser.factories.StudyFactory.create_batch(2, global_study=gs)
         elif i == 2:
-            factories.StudyFactory.create_batch(3, global_study=gs)
+            trait_browser.factories.StudyFactory.create_batch(3, global_study=gs)
         else:
-            factories.StudyFactory.create(global_study=gs)
-    studies = models.Study.objects.all()
+            trait_browser.factories.StudyFactory.create(global_study=gs)
+    studies = trait_browser.models.Study.objects.all()
     for st in studies:
-        factories.SourceStudyVersionFactory.create(study=st)
-    source_study_versions = models.SourceStudyVersion.objects.all()
+        trait_browser.factories.SourceStudyVersionFactory.create(study=st)
+    source_study_versions = trait_browser.models.SourceStudyVersion.objects.all()
     for ssv in source_study_versions:
-        factories.SourceDatasetFactory.create_batch(
+        trait_browser.factories.SourceDatasetFactory.create_batch(
             randrange(n_dataset_range[0], n_dataset_range[1]), source_study_version=ssv)
-    source_datasets = models.SourceDataset.objects.all()
+    source_datasets = trait_browser.models.SourceDataset.objects.all()
     for sd in source_datasets:
         # Make source traits.
-        factories.SourceTraitFactory.create_batch(randrange(n_trait_range[0], n_trait_range[1]), source_dataset=sd)
+        trait_browser.factories.SourceTraitFactory.create_batch(randrange(n_trait_range[0], n_trait_range[1]), source_dataset=sd)
         # # Choose random set of subcohorts to add to the dataset.
         # possible_subcohorts = list(
-        #     models.Subcohort.objects.filter(global_study=sd.source_study_version.study.global_study).all())
+        #     trait_browser.models.Subcohort.objects.filter(global_study=sd.source_study_version.study.global_study).all())
         # if len(possible_subcohorts) > 0:
         #     if len(possible_subcohorts) > 1:
         #         add_subcohorts = sample(possible_subcohorts, randrange(1, len(possible_subcohorts) + 1))
@@ -61,9 +63,9 @@ def build_test_db(n_global_studies, n_subcohort_range, n_dataset_range, n_trait_
         #         add_subcohorts = possible_subcohorts
         #     for sc in add_subcohorts:
         #         sd.subcohorts.add(sc)
-    source_traits = models.SourceTrait.objects.all()
-    for st in models.SourceTrait.objects.filter(i_detected_type='encoded'):
-        factories.SourceTraitEncodedValueFactory.create_batch(
+    source_traits = trait_browser.models.SourceTrait.objects.all()
+    for st in trait_browser.models.SourceTrait.objects.filter(i_detected_type='encoded'):
+        trait_browser.factories.SourceTraitEncodedValueFactory.create_batch(
             randrange(n_enc_value_range[0], n_enc_value_range[1]), source_trait=st)
 
     # Add another source_study_version to one study. Use the same datasets, traits,
@@ -71,7 +73,7 @@ def build_test_db(n_global_studies, n_subcohort_range, n_dataset_range, n_trait_
     # Duplicate a source study version.
     ssv_study = studies[len(studies) - 1]
     ssv_to_dup = ssv_study.sourcestudyversion_set.all()[0]
-    existing_ssv_ids = [ssv.i_id for ssv in models.SourceStudyVersion.objects.all()]
+    existing_ssv_ids = [ssv.i_id for ssv in trait_browser.models.SourceStudyVersion.objects.all()]
     available_ssv_ids = list(set(range(1, 500)) - set(existing_ssv_ids))
     dup_ssv = copy(ssv_to_dup)
     dup_ssv.i_id = available_ssv_ids[0]
@@ -81,7 +83,7 @@ def build_test_db(n_global_studies, n_subcohort_range, n_dataset_range, n_trait_
     dup_ssv.save()
     # Duplicate datasets.
     datasets_to_dup = ssv_to_dup.sourcedataset_set.all()
-    existing_dataset_ids = [sd.i_id for sd in models.SourceDataset.objects.all()]
+    existing_dataset_ids = [sd.i_id for sd in trait_browser.models.SourceDataset.objects.all()]
     available_dataset_ids = iter(list(set(range(1, 10000)) - set(existing_dataset_ids)))
     duped_datasets = []
     for ds in datasets_to_dup:
@@ -93,9 +95,9 @@ def build_test_db(n_global_studies, n_subcohort_range, n_dataset_range, n_trait_
         new_ds.save()
         duped_datasets.append(new_ds)
     # Duplicate source traits.
-    existing_trait_ids = [tr.i_trait_id for tr in models.SourceTrait.objects.all()]
+    existing_trait_ids = [tr.i_trait_id for tr in trait_browser.models.SourceTrait.objects.all()]
     available_trait_ids = iter(list(set(range(1, 100000)) - set(existing_trait_ids)))
-    existing_source_trait_encoded_value_ids = [ev.i_id for ev in models.SourceTraitEncodedValue.objects.all()]
+    existing_source_trait_encoded_value_ids = [ev.i_id for ev in trait_browser.models.SourceTraitEncodedValue.objects.all()]
     available_source_trait_encoded_value_ids = iter(
         list(set(range(1, 1000000)) - set(existing_source_trait_encoded_value_ids)))
     # available_source_trait_encoded_value_ids = set(range(1, 1000000)) - set(existing_source_trait_encoded_value_ids)
@@ -120,28 +122,28 @@ def build_test_db(n_global_studies, n_subcohort_range, n_dataset_range, n_trait_
                     new_val.modified = None
                     new_val.save()
     # Add a completely new dataset to this study version.
-    new_dataset = factories.SourceDatasetFactory.create(source_study_version=dup_ssv)
-    new_traits = factories.SourceTraitFactory.create_batch(10, source_dataset=new_dataset)
+    new_dataset = trait_browser.factories.SourceDatasetFactory.create(source_study_version=dup_ssv)
+    new_traits = trait_browser.factories.SourceTraitFactory.create_batch(10, source_dataset=new_dataset)
     for tr in new_traits:
         if tr.i_detected_type == 'encoded':
             for n in range(randrange(n_enc_value_range[0], n_enc_value_range[1])):
-                factories.SourceTraitEncodedValueFactory.create(
+                trait_browser.factories.SourceTraitEncodedValueFactory.create(
                     i_id=next(available_source_trait_encoded_value_ids), source_trait=tr)
     # Add some allowed update reasons.
-    new_reasons = factories.AllowedUpdateReasonFactory.create_batch(5)
+    new_reasons = trait_browser.factories.AllowedUpdateReasonFactory.create_batch(5)
     #
     # Add simulated harmonized traits, each with a single harm. unit per global study.
     for nh in range(randrange(n_trait_range[0], n_trait_range[1])):
-        ht_set = factories.HarmonizedTraitSetFactory.create()
-        ht_set_v1 = factories.HarmonizedTraitSetVersionFactory.create(harmonized_trait_set=ht_set, i_version=1)
-        htrait = factories.HarmonizedTraitFactory.create(harmonized_trait_set_version=ht_set_v1)
+        ht_set = trait_browser.factories.HarmonizedTraitSetFactory.create()
+        ht_set_v1 = trait_browser.factories.HarmonizedTraitSetVersionFactory.create(harmonized_trait_set=ht_set, i_version=1)
+        htrait = trait_browser.factories.HarmonizedTraitFactory.create(harmonized_trait_set_version=ht_set_v1)
         # Make a dict of (global_study, harmonization_unit) pairs.
-        h_units = {gs: factories.HarmonizationUnitFactory.create(harmonized_trait_set_version=ht_set_v1)
-                   for gs in models.GlobalStudy.objects.all()}
+        h_units = {gs: trait_browser.factories.HarmonizationUnitFactory.create(harmonized_trait_set_version=ht_set_v1)
+                   for gs in trait_browser.models.GlobalStudy.objects.all()}
         for gs in h_units:
             hunit = h_units[gs]
             # Randomly select two source traits to be components.
-            source_traits = sample(list(models.SourceTrait.objects.filter(
+            source_traits = sample(list(trait_browser.models.SourceTrait.objects.filter(
                 source_dataset__source_study_version__study__global_study=gs)), 2)
             # Add component source trait to harmonized trait and harmonization unit.
             htrait.component_source_traits.add(source_traits[0])
@@ -151,34 +153,34 @@ def build_test_db(n_global_studies, n_subcohort_range, n_dataset_range, n_trait_
             # Add harmonization unit to harmonized trait.
             htrait.harmonization_units.add(hunit)
     # Add one harmonized trait that has component harmonized traits.
-    ht_set = factories.HarmonizedTraitSetFactory.create()
-    ht_set_v1 = factories.HarmonizedTraitSetVersionFactory.create(harmonized_trait_set=ht_set, i_version=1)
-    htrait = factories.HarmonizedTraitFactory.create(harmonized_trait_set_version=ht_set_v1)
-    hunit = factories.HarmonizationUnitFactory.create(harmonized_trait_set_version=ht_set_v1)
-    component = sample(list(models.HarmonizedTraitSetVersion.objects.all()), 1)[0]
+    ht_set = trait_browser.factories.HarmonizedTraitSetFactory.create()
+    ht_set_v1 = trait_browser.factories.HarmonizedTraitSetVersionFactory.create(harmonized_trait_set=ht_set, i_version=1)
+    htrait = trait_browser.factories.HarmonizedTraitFactory.create(harmonized_trait_set_version=ht_set_v1)
+    hunit = trait_browser.factories.HarmonizationUnitFactory.create(harmonized_trait_set_version=ht_set_v1)
+    component = sample(list(trait_browser.models.HarmonizedTraitSetVersion.objects.all()), 1)[0]
     hunit.component_harmonized_trait_set_versions.add(component)
     htrait.component_harmonized_trait_set_versions.add(component)
     htrait.harmonization_units.add(hunit)
     # Add a second harmonized trait set version for the harmonized trait immediately above.
-    ht_set_v2 = factories.HarmonizedTraitSetVersionFactory.create(harmonized_trait_set=ht_set, i_version=2)
+    ht_set_v2 = trait_browser.factories.HarmonizedTraitSetVersionFactory.create(harmonized_trait_set=ht_set, i_version=2)
     reason = new_reasons[0]
     ht_set_v2.update_reasons.add(reason)
-    htrait_v2 = factories.HarmonizedTraitFactory.create(harmonized_trait_set_version=ht_set_v2)
-    hunit_v2 = factories.HarmonizationUnitFactory.create(harmonized_trait_set_version=ht_set_v2)
+    htrait_v2 = trait_browser.factories.HarmonizedTraitFactory.create(harmonized_trait_set_version=ht_set_v2)
+    hunit_v2 = trait_browser.factories.HarmonizationUnitFactory.create(harmonized_trait_set_version=ht_set_v2)
     hunit_v2.component_harmonized_trait_set_versions.add(component)
     htrait_v2.component_harmonized_trait_set_versions.add(component)
     htrait_v2.harmonization_units.add(hunit_v2)
     # Add one harmonized trait that has component batch traits.
-    ht_set = factories.HarmonizedTraitSetFactory.create()
-    ht_set_v1 = factories.HarmonizedTraitSetVersionFactory.create(harmonized_trait_set=ht_set, i_version=1)
-    htrait = factories.HarmonizedTraitFactory.create(harmonized_trait_set_version=ht_set_v1)
-    h_units = {gs: factories.HarmonizationUnitFactory.create(harmonized_trait_set_version=ht_set_v1)
-               for gs in models.GlobalStudy.objects.all()}
+    ht_set = trait_browser.factories.HarmonizedTraitSetFactory.create()
+    ht_set_v1 = trait_browser.factories.HarmonizedTraitSetVersionFactory.create(harmonized_trait_set=ht_set, i_version=1)
+    htrait = trait_browser.factories.HarmonizedTraitFactory.create(harmonized_trait_set_version=ht_set_v1)
+    h_units = {gs: trait_browser.factories.HarmonizationUnitFactory.create(harmonized_trait_set_version=ht_set_v1)
+               for gs in trait_browser.models.GlobalStudy.objects.all()}
     for gs in h_units:
         hunit = h_units[gs]
         # Randomly select two source traits to be components.
         source_traits = sample(
-            list(models.SourceTrait.objects.filter(source_dataset__source_study_version__study__global_study=gs)), 3)
+            list(trait_browser.models.SourceTrait.objects.filter(source_dataset__source_study_version__study__global_study=gs)), 3)
         # Add component source trait to harmonized trait and harmonization unit.
         htrait.component_source_traits.add(source_traits[0])
         hunit.component_source_traits.add(source_traits[0])
@@ -190,16 +192,16 @@ def build_test_db(n_global_studies, n_subcohort_range, n_dataset_range, n_trait_
         htrait.component_batch_traits.add(source_traits[2])
         hunit.component_batch_traits.add(source_traits[2])
     # Add one harmonized trait that only uses source traits from *some* (only 2) of the studies.
-    ht_set = factories.HarmonizedTraitSetFactory.create()
-    ht_set_v1 = factories.HarmonizedTraitSetVersionFactory.create(harmonized_trait_set=ht_set, i_version=1)
-    htrait = factories.HarmonizedTraitFactory.create(harmonized_trait_set_version=ht_set_v1)
-    h_units = {gs: factories.HarmonizationUnitFactory.create(harmonized_trait_set_version=ht_set_v1)
-               for gs in sample(list(models.GlobalStudy.objects.all()), 2)}
+    ht_set = trait_browser.factories.HarmonizedTraitSetFactory.create()
+    ht_set_v1 = trait_browser.factories.HarmonizedTraitSetVersionFactory.create(harmonized_trait_set=ht_set, i_version=1)
+    htrait = trait_browser.factories.HarmonizedTraitFactory.create(harmonized_trait_set_version=ht_set_v1)
+    h_units = {gs: trait_browser.factories.HarmonizationUnitFactory.create(harmonized_trait_set_version=ht_set_v1)
+               for gs in sample(list(trait_browser.models.GlobalStudy.objects.all()), 2)}
     for gs in h_units:
         hunit = h_units[gs]
         # Randomly select two source traits to be components.
         source_traits = sample(
-            list(models.SourceTrait.objects.filter(source_dataset__source_study_version__study__global_study=gs)), 3)
+            list(trait_browser.models.SourceTrait.objects.filter(source_dataset__source_study_version__study__global_study=gs)), 3)
         # Add component source trait to harmonized trait and harmonization unit.
         htrait.component_source_traits.add(source_traits[0])
         hunit.component_source_traits.add(source_traits[0])
@@ -211,16 +213,16 @@ def build_test_db(n_global_studies, n_subcohort_range, n_dataset_range, n_trait_
         htrait.component_batch_traits.add(source_traits[2])
         hunit.component_batch_traits.add(source_traits[2])
     # Add a pair of harmonized traits in the same trait set.
-    ht_set = factories.HarmonizedTraitSetFactory.create()
-    ht_set_v1 = factories.HarmonizedTraitSetVersionFactory.create(harmonized_trait_set=ht_set, i_version=1)
-    htraits = factories.HarmonizedTraitFactory.create_batch(2, harmonized_trait_set_version=ht_set_v1)
-    h_units = {gs: factories.HarmonizationUnitFactory.create(harmonized_trait_set_version=ht_set_v1)
-               for gs in models.GlobalStudy.objects.all()}
+    ht_set = trait_browser.factories.HarmonizedTraitSetFactory.create()
+    ht_set_v1 = trait_browser.factories.HarmonizedTraitSetVersionFactory.create(harmonized_trait_set=ht_set, i_version=1)
+    htraits = trait_browser.factories.HarmonizedTraitFactory.create_batch(2, harmonized_trait_set_version=ht_set_v1)
+    h_units = {gs: trait_browser.factories.HarmonizationUnitFactory.create(harmonized_trait_set_version=ht_set_v1)
+               for gs in trait_browser.models.GlobalStudy.objects.all()}
     for gs in h_units:
         hunit = h_units[gs]
         for ht in htraits:
             # Randomly select two source traits to be components.
-            source_traits = sample(list(models.SourceTrait.objects.filter(
+            source_traits = sample(list(trait_browser.models.SourceTrait.objects.filter(
                 source_dataset__source_study_version__study__global_study=gs)), 3)
             # Add component source trait to harmonized trait and harmonization unit.
             ht.component_source_traits.add(source_traits[0])
@@ -233,13 +235,13 @@ def build_test_db(n_global_studies, n_subcohort_range, n_dataset_range, n_trait_
             ht.component_batch_traits.add(source_traits[2])
             hunit.component_batch_traits.add(source_traits[2])
     # If there's not a harmonized trait with encoded values already, make one.
-    encoded_harmonized_traits = models.HarmonizedTrait.objects.filter(i_data_type='encoded')
+    encoded_harmonized_traits = trait_browser.models.HarmonizedTrait.objects.filter(i_data_type='encoded')
     if len(encoded_harmonized_traits) < 1:
-        htrait_to_encode = sample(list(models.HarmonizedTrait.objects.all()), 1)[0]
+        htrait_to_encode = sample(list(trait_browser.models.HarmonizedTrait.objects.all()), 1)[0]
         htrait_to_encode.i_data_type = 'encoded'
         htrait_to_encode.save()
     # Add encoded values to all of the encoded value traits.
-    for htr in models.HarmonizedTrait.objects.filter(i_data_type='encoded'):
+    for htr in trait_browser.models.HarmonizedTrait.objects.filter(i_data_type='encoded'):
         for n in range(randrange(n_enc_value_range[0], n_enc_value_range[1])):
-            factories.HarmonizedTraitEncodedValueFactory.create_batch(
+            trait_browser.factories.HarmonizedTraitEncodedValueFactory.create_batch(
                 randrange(n_enc_value_range[0], n_enc_value_range[1]), harmonized_trait=htr)
