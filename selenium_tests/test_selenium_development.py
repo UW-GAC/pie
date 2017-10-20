@@ -9,7 +9,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.staticfiles.testing import StaticLiveServerTestCase
 from django.core.urlresolvers import reverse
 
-from core.factories import build_test_db
+from core.build_test_db import build_test_db
 import trait_browser.models
 import trait_browser.factories
 import trait_browser.views
