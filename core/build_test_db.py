@@ -245,3 +245,21 @@ def build_test_db(n_global_studies, n_subcohort_range, n_dataset_range, n_trait_
         for n in range(randrange(n_enc_value_range[0], n_enc_value_range[1])):
             trait_browser.factories.HarmonizedTraitEncodedValueFactory.create_batch(
                 randrange(n_enc_value_range[0], n_enc_value_range[1]), harmonized_trait=htr)
+
+    # Add fake recipe objects.
+    global_study = trait_browser.models.GlobalStudy.objects.all().first()
+    recipe_traits = trait_browser.factories.SourceTraitFactory.create_batch(
+        10, source_dataset__source_study_version__study__global_study=global_study)
+    unit1 = recipes.factories.UnitRecipeFactory.create()
+    unit1.age_variables.add(recipe_traits[0])
+    unit1.phenotype_variables.add(recipe_traits[1])
+    unit2 = recipes.factories.UnitRecipeFactory.create()
+    unit2.age_variables.add(recipe_traits[2])
+    unit2.phenotype_variables.add(recipe_traits[3])
+    harmonization_recipe = recipes.factories.HarmonizationRecipeFactory.create()
+    harmonization_recipe.units.add(unit1)
+    harmonization_recipe.units.add(unit2)
+
+    # Add fake tag and tagged trait objects.
+    dcc_tags = tags.factories.TagFactory.create_batch(10)
+    tagged_trait = tags.factories.TaggedTraitFactory.create(tag=dcc_tags[0], trait=recipe_traits[0])
