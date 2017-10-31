@@ -12,10 +12,10 @@ class Tag(TimeStampedModel):
 
     # Will get an auto-created id field.
     title = models.CharField(max_length=500)
-    lower_title = models.CharField(max_length=500, unique=True)
+    lower_title = models.CharField(max_length=500, unique=True, blank=True)
     description = models.TextField()
     instructions = models.TextField()
-    creator = models.ForeignKey(settings.AUTH_USER_MODEL)
+    creator = models.ForeignKey(settings.AUTH_USER_MODEL, blank=True)
     traits = models.ManyToManyField(SourceTrait, through='TaggedTrait')
 
     class Meta:
@@ -41,7 +41,7 @@ class TaggedTrait(TimeStampedModel):
     trait = models.ForeignKey(SourceTrait)
     tag = models.ForeignKey(Tag)
     recommended = models.BooleanField(default=False)
-    creator = models.ForeignKey(settings.AUTH_USER_MODEL)
+    creator = models.ForeignKey(settings.AUTH_USER_MODEL, blank=True)
 
     def __str__(self):
         """Pretty printing."""
