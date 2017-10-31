@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+
+{% block head_title %}
+     | {{ tag.lower_title }} details
+{% endblock %}
+
+{% block content %}
+    <div class="well">
+    
+        <h2><small>Phenotype tag</small> {{ tag.title }}</h2>
+        
+        {% include '_messages.html' %}
+        <dl class="dl-horizontal">
+            <dt>Description</dt><dd>{{ tag.description }}</dd>
+            <dt>Instructions</dt><dd>{{ tag.instructions }}</dd>
+            <dt>N tagged</dt><dd>{{ tag.traits.count }}</dd>
+        </dl>
+        <p><a href="#" class="btn btn-primary" role="button">Tag phenotypes as "{{ tag.title }}"</a></p>
+        
+        <div class="panel panel-default">
+            <div class="panel-heading"><h4 class="panel-title">Tagged phenotypes</h4></div>
+            <div class="panel-body">
+                Show the count of tagged variables by study here.
+           </div>
+       </div>
+    
+    </div>
+{% endblock %}
