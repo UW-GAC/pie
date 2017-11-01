@@ -40,7 +40,7 @@ class TaggedTrait(TimeStampedModel):
 
     trait = models.ForeignKey(SourceTrait)
     tag = models.ForeignKey(Tag)
-    recommended = models.BooleanField(default=False)
+    recommended = models.BooleanField()
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, blank=True)
 
     def __str__(self):

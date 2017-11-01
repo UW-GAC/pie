@@ -11,4 +11,5 @@ from . import views
 
 urlpatterns = [
     url(r'^detail/(?P<pk>\d+)/$', views.TagDetail.as_view(), name='detail'),
+    url(r'^tagging/$', views.TaggedTraitCreate.as_view(), name='tagging'),
 ]
