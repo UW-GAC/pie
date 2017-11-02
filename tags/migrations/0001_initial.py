@@ -8,19 +8,19 @@ from django.conf import settings
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('trait_browser', '0006_major_schema_changes_including_harmonized_trait_set_version'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
+        ('trait_browser', '0006_major_schema_changes_including_harmonized_trait_set_version'),
     ]
 
     operations = [
         migrations.CreateModel(
             name='Tag',
             fields=[
-                ('id', models.AutoField(verbose_name='ID', primary_key=True, serialize=False, auto_created=True)),
+                ('id', models.AutoField(primary_key=True, verbose_name='ID', serialize=False, auto_created=True)),
                 ('created', models.DateTimeField(auto_now_add=True)),
                 ('modified', models.DateTimeField(auto_now=True)),
-                ('title', models.CharField(max_length=500)),
-                ('lower_title', models.CharField(max_length=500, blank=True, unique=True)),
+                ('title', models.CharField(max_length=255)),
+                ('lower_title', models.CharField(max_length=255, blank=True, unique=True)),
                 ('description', models.TextField()),
                 ('instructions', models.TextField()),
                 ('creator', models.ForeignKey(to=settings.AUTH_USER_MODEL, blank=True)),
@@ -32,7 +32,7 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='TaggedTrait',
             fields=[
-                ('id', models.AutoField(verbose_name='ID', primary_key=True, serialize=False, auto_created=True)),
+                ('id', models.AutoField(primary_key=True, verbose_name='ID', serialize=False, auto_created=True)),
                 ('created', models.DateTimeField(auto_now_add=True)),
                 ('modified', models.DateTimeField(auto_now=True)),
                 ('recommended', models.BooleanField()),

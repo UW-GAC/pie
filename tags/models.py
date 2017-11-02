@@ -11,8 +11,8 @@ class Tag(TimeStampedModel):
     """Model for phenotype tags, to be created by DCC staff."""
 
     # Will get an auto-created id field.
-    title = models.CharField(max_length=500)
-    lower_title = models.CharField(max_length=500, unique=True, blank=True)
+    title = models.CharField(max_length=255)
+    lower_title = models.CharField(max_length=255, unique=True, blank=True)
     description = models.TextField()
     instructions = models.TextField()
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, blank=True)

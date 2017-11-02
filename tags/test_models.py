@@ -1,6 +1,6 @@
 """Tests of models for the tags app."""
 
-from django.core.exceptions import ValidationError
+from django.db.utils import IntegrityError
 from django.test import TestCase
 
 from core.factories import UserFactory
@@ -13,9 +13,11 @@ from . import models
 class TagTest(TestCase):
     model = models.Tag
     model_factory = factories.TagFactory
-    user = UserFactory.create()
-    model_args = {'title': 'hdl', 'description': 'high density lipoprotein cholesterol',
-                  'instructions': 'fill this out carefully', 'creator': user}
+
+    def setUp(self):
+        self.user = UserFactory.create()
+        self.model_args = {'title': 'hdl', 'description': 'high density lipoprotein cholesterol',
+                           'instructions': 'fill this out carefully', 'creator': self.user}
 
     def test_model_saving(self):
         """Creation using the model constructor and .save() works."""
@@ -40,9 +42,9 @@ class TagTest(TestCase):
         instance.save()
         model_args2 = self.model_args.copy()
         model_args2['title'] = self.model_args['title'].upper()
-        instance2 = self.model(**self.model_args)
-        with self.assertRaises(ValidationError):
-            instance2.full_clean()
+        instance2 = self.model(**model_args2)
+        with self.assertRaises(IntegrityError):
+            instance2.save()
 
     # def test_get_absolute_url(self):
     #     """get_absolute_url function doesn't fail."""
@@ -54,7 +56,7 @@ class TagTest(TestCase):
         """Creating the M2M TaggedTrait object adds a trait to tag.traits manager."""
         trait = SourceTraitFactory.create()
         tag = factories.TagFactory.create()
-        tagged_trait = models.TaggedTrait(trait=trait, tag=tag, creator=self.user)
+        tagged_trait = models.TaggedTrait(trait=trait, tag=tag, creator=self.user, recommended=True)
         tagged_trait.save()
         self.assertIn(trait, tag.traits.all())
 
@@ -67,7 +69,7 @@ class TaggedTraitTest(TestCase):
         self.user = UserFactory.create()
         self.tag = factories.TagFactory.create()
         self.trait = SourceTraitFactory.create()
-        self.model_args = {'trait': self.trait, 'tag': self.tag, 'creator': self.user}
+        self.model_args = {'trait': self.trait, 'tag': self.tag, 'creator': self.user, 'recommended': False}
 
     def test_model_saving(self):
         """Creation using the model constructor and .save() works."""

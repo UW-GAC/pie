@@ -27,6 +27,7 @@ class TaggedTraitFactory(factory.DjangoModelFactory):
     trait = factory.SubFactory(SourceTraitFactory)
     tag = factory.SubFactory(TagFactory)
     creator = factory.SubFactory(UserFactory)
+    recommended = factory.Faker('pybool')
 
     class Meta:
         model = models.TaggedTrait

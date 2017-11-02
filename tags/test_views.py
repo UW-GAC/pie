@@ -60,12 +60,12 @@ class TaggedTraitCreateTest(UserLoginTestCase):
         self.assertEqual(len(messages), 1)
         self.assertTrue('Oops!' in str(messages[0]))
 
-    def test_post_junk_data(self):
+    def test_post_blank_trait(self):
         """Posting bad data to the form doesn't tag the trait and shows a form error."""
-        response = self.client.post(self.get_url(), {'trait': 'junk', 'tag': self.tag.pk, 'recommended': False})
+        response = self.client.post(self.get_url(), {'trait': '', 'tag': self.tag.pk, 'recommended': False})
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
         self.assertTrue('Oops!' in str(messages[0]))
         form = response.context['form']
-        self.assertEqual(form['name'].errors, [u'This field is required.'])
+        self.assertEqual(form['trait'].errors, [u'This field is required.'])
         self.assertNotIn(self.tag, self.trait.tag_set.all())
