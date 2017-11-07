@@ -1,6 +1,7 @@
 """Models for the tags app."""
 
 from django.conf import settings
+from django.core.urlresolvers import reverse
 from django.db import models
 
 from core.models import TimeStampedModel
@@ -33,6 +34,9 @@ class Tag(TimeStampedModel):
     def __str__(self):
         """Pretty printing."""
         return 'Tag: {}'.format(self.lower_title)
+
+    def get_absolute_url(self):
+        return reverse('tags:detail', args=[self.pk])
 
 
 class TaggedTrait(TimeStampedModel):

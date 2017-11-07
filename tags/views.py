@@ -39,7 +39,7 @@ class TaggedTraitCreate(LoginRequiredMixin, FormMessagesMixin, CreateView):
         return super(TaggedTraitCreate, self).form_valid(form)
 
     def get_success_url(self):
-        return reverse('tags:detail', args=[self.object.tag.pk])
+        return reverse(self.tag.get_absolute_url())
 
     def get_form_valid_message(self):
         msg = 'Phenotype <a href="{}">{}</a> tagged as {}'.format(

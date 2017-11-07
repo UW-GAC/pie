@@ -46,11 +46,11 @@ class TagTest(TestCase):
         with self.assertRaises(IntegrityError):
             instance2.save()
 
-    # def test_get_absolute_url(self):
-    #     """get_absolute_url function doesn't fail."""
-    #     instance = self.model_factory.create()
-    #     url = instance.get_absolute_url()
-    #     # Just test that this function works.
+    def test_get_absolute_url(self):
+        """get_absolute_url function doesn't fail."""
+        instance = self.model_factory.create()
+        url = instance.get_absolute_url()
+        # Just test that this function works.
 
     def test_add_m2m_adds_traits(self):
         """Creating the M2M TaggedTrait object adds a trait to tag.traits manager."""
