@@ -16,6 +16,33 @@ from . import views
 fake = Faker()
 
 
+class TagDetailTest(UserLoginTestCase):
+
+    def setUp(self):
+        super(TagDetailTest, self).setUp()
+        self.tag = factories.TagFactory.create()
+
+    def get_url(self, *args):
+        return reverse('tags:detail', args=args)
+
+    def test_view_success_code(self):
+        """View returns successful response code."""
+        response = self.client.get(self.get_url(self.tag.pk))
+        self.assertEqual(response.status_code, 200)
+
+    def test_view_with_invalid_pk(self):
+        """View returns 404 response code when the pk doesn't exist."""
+        response = self.client.get(self.get_url(self.tag.pk + 1))
+        self.assertEqual(response.status_code, 404)
+
+    def test_context_data(self):
+        """View has appropriate data in the context."""
+        response = self.client.get(self.get_url(self.tag.pk))
+        context = response.context
+        self.assertTrue('tag' in context)
+        self.assertIsInstance(context['tag'], models.Tag)
+
+
 class TaggedTraitCreateTest(UserLoginTestCase):
 
     def setUp(self):
