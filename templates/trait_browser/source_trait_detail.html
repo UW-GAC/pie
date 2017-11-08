@@ -26,8 +26,6 @@
                 <dt>Dataset description</dt>
                     {% if source_trait.source_dataset.i_dbgap_description != '' %}
                       <dd>{{ source_trait.source_dataset.i_dbgap_description }}</dd>
-                    {% elif source_trait.source_dataset.i_dcc_description != '' %}
-                      <dd>{{ source_trait.source_dataset.i_dcc_description }}</dd>
                     {% endif %}
             </dl>
 
