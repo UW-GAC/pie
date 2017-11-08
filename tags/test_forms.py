@@ -92,3 +92,38 @@ class TaggedTraitMultipleFormTest(TestCase):
         form = self.form_class(data=form_data)
         self.assertTrue(form.is_valid())
         self.assertFalse(form.has_error('recommended'))
+
+
+class TaggedTraitMultipleFromTagFormTest(TestCase):
+    form_class = forms.TaggedTraitMultipleFromTagForm
+
+    def setUp(self):
+        self.tag = factories.TagFactory.create()
+        self.traits = SourceTraitFactory.create_batch(10)
+        self.user = UserFactory.create()
+
+    def test_valid(self):
+        """Form is valid with all necessary input."""
+        form_data = {'traits': [str(pk) for pk in SourceTrait.objects.all().values_list('pk', flat=True)],
+                     'recommended': False}
+        form = self.form_class(data=form_data)
+        self.assertTrue(form.is_valid())
+
+    def test_invalid_missing_trait(self):
+        """Form is invalid if traits is omitted."""
+        form_data = {'traits': [], 'recommended': False}
+        form = self.form_class(data=form_data)
+        self.assertFalse(form.is_valid())
+        self.assertTrue(form.has_error('traits'))
+
+    def test_valid_missing_recommended(self):
+        """Form is valid if recommended is omitted."""
+        # Because it's a boolean field, required=True has a different meaning.
+        # "If you want to include a boolean in your form that can be either True or False (e.g. a checked or unchecked
+        # checkbox), you must remember to pass in required=False when creating the BooleanField."
+        # See Django docs: https://docs.djangoproject.com/en/1.8/ref/forms/fields/#django.forms.BooleanField
+        form_data = {'traits': [str(pk) for pk in SourceTrait.objects.all().values_list('pk', flat=True)],
+                     'recommended': ''}
+        form = self.form_class(data=form_data)
+        self.assertTrue(form.is_valid())
+        self.assertFalse(form.has_error('recommended'))
