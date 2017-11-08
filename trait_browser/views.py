@@ -3,15 +3,19 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.core.urlresolvers import reverse
 from django.db.models import Q    # Allows complex queries when searching.
-from django.views.generic import DetailView
+from django.utils.safestring import mark_safe
+from django.views.generic import DetailView, FormView
 from django.contrib.auth.decorators import login_required
 
-from braces.views import LoginRequiredMixin
+from braces.views import LoginRequiredMixin, FormMessagesMixin
 from dal import autocomplete
 from django_tables2 import RequestConfig, SingleTableMixin
 from urllib.parse import parse_qs
 
 import profiles.models
+from tags.forms import TagSpecificTraitForm
+from tags.models import TaggedTrait
+from tags.views import TAGGING_ERROR_MESSAGE
 from . import models
 from . import tables
 from . import forms
@@ -50,12 +54,40 @@ class SourceTraitDetail(LoginRequiredMixin, DetailView):
     template_name = 'trait_browser/source_trait_detail.html'
 
 
-class HarmonizedTraitSetVersionDetail(LoginRequiredMixin, DetailView):
+class HarmonizedTraitSetVersionDetail(LoginRequiredMixin, FormMessagesMixin, DetailView):
     """Detail view class for HarmonizedTraitSetVersions. Inherits from django.views.generic.DetailView."""
 
     model = models.HarmonizedTraitSetVersion
     context_object_name = 'harmonized_trait_set_version'
     template_name = 'trait_browser/harmonized_trait_set_version_detail.html'
+
+
+class SourceTraitTagging(LoginRequiredMixin, FormMessagesMixin, FormView):
+    """Form view class for tagging a specific source trait."""
+
+    form_class = TagSpecificTraitForm
+    form_invalid_message = TAGGING_ERROR_MESSAGE
+    template_name = 'tags/taggedtrait_form.html'
+
+    def form_valid(self, form):
+        """Create a TaggedTrait object for the trait and tag specified."""
+        self.trait = get_object_or_404(models.SourceTrait, pk=self.kwargs['pk'])
+        tagged_trait = TaggedTrait(
+            tag=form.cleaned_data['tag'], trait=self.trait, creator=self.request.user,
+            recommended=form.cleaned_data['recommended'])
+        tagged_trait.full_clean()
+        tagged_trait.save()
+        # Save the tag for use in the success url.
+        self.tag = form.cleaned_data['tag']
+        return super(SourceTraitTagging, self).form_valid(form)
+
+    def get_success_url(self):
+        return self.trait.get_absolute_url()
+
+    def get_form_valid_message(self):
+        msg = 'Phenotype <a href="{}">{}</a> tagged as {}'.format(
+            self.trait.get_absolute_url(), self.trait.i_trait_name, self.tag.title)
+        return mark_safe(msg)
 
 
 @login_required

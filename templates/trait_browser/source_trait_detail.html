@@ -9,11 +9,15 @@
     
     <h2>{{ source_trait.i_trait_name }} <small>source phenotype details</small></h2>
 
+    {% include '_messages.html' %}
+
     <div class="panel panel-info">
         <div class="panel-heading">
             <h3 class="panel-title">Phenotype name: {{ source_trait.i_trait_name }}</h3>
         </div>
         <div class="panel-body">
+            <p><a href="{% url 'trait_browser:source:tagging' pk=source_trait.pk %}" class="btn btn-primary" role="button">Tag this phenotype</a></p>
+
             <dl class="dl-horizontal">
                 <dt>Study</dt> <dd><a href="{{ source_trait.source_dataset.source_study_version.study.get_absolute_url }}">{{ source_trait.source_dataset.source_study_version.study.i_study_name }}</a></dd>
                 <dt>Phenotype description</dt> <dd>{{ source_trait.i_description }}</dd>
@@ -59,5 +63,5 @@
     </div>
 
     </div>
-    
+
 {% endblock %}

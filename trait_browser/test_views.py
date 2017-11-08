@@ -8,6 +8,8 @@ from django.core.urlresolvers import reverse
 
 from core.utils import UserLoginTestCase, LoginRequiredTestCase
 from profiles.models import Search, UserData
+from tags.models import TaggedTrait, Tag
+from tags.factories import TagFactory
 from . import models
 from . import factories
 from . import forms
@@ -642,3 +644,65 @@ class HarmonizedTraitFlavorNameAutocompleteViewTest(UserLoginTestCase):
         names_in_content = [match for match in names_re.findall(str(response.content))]
         self.assertTrue(len(names_in_content) == 1)
         self.assertEqual(names_in_content[0], ht1.trait_flavor_name)
+
+
+class SourceTraitTaggingTest(UserLoginTestCase):
+
+    def setUp(self):
+        super(SourceTraitTaggingTest, self).setUp()
+        self.trait = factories.SourceTraitFactory.create()
+        self.tag = TagFactory.create()
+
+    def get_url(self, *args):
+        """Get the url for the view this class is supposed to test."""
+        return reverse('trait_browser:source:tagging', args=[self.trait.pk])
+
+    def test_view_success_code(self):
+        """View returns successful response code."""
+        response = self.client.get(self.get_url())
+        self.assertEqual(response.status_code, 200)
+
+    def test_context_data(self):
+        """View has appropriate data in the context."""
+        response = self.client.get(self.get_url())
+        context = response.context
+        self.assertTrue('form' in context)
+
+    def test_creates_new_object(self):
+        """Posting valid data to the form correctly tags a trait."""
+        # Check on redirection to detail page, M2M links, and creation message.
+        response = self.client.post(self.get_url(), {'tag': self.tag.pk, 'recommended': False})
+        new_object = TaggedTrait.objects.latest('pk')
+        self.assertIsInstance(new_object, TaggedTrait)
+        self.assertRedirects(response, reverse('trait_browser:source:detail', args=[self.trait.pk]))
+        self.assertEqual(new_object.tag, self.tag)
+        self.assertEqual(new_object.trait, self.trait)
+        self.assertIn(self.trait, self.tag.traits.all())
+        self.assertIn(self.tag, self.trait.tag_set.all())
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertFalse('Oops!' in str(messages[0]))
+
+    def test_invalid_form_message(self):
+        """Posting invalid data results in a message about the invalidity."""
+        response = self.client.post(self.get_url(), {'tag': '', 'recommended': False})
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertTrue('Oops!' in str(messages[0]))
+
+    def test_post_blank_tag(self):
+        """Posting bad data to the form doesn't tag the trait and shows a form error."""
+        response = self.client.post(self.get_url(), {'tag': '', 'recommended': False})
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertTrue('Oops!' in str(messages[0]))
+        form = response.context['form']
+        self.assertEqual(form['tag'].errors, [u'This field is required.'])
+        self.assertNotIn(self.tag, self.trait.tag_set.all())
+
+    def test_adds_user(self):
+        """When a trait is successfully tagged, it has the appropriate creator."""
+        response = self.client.post(self.get_url(),
+                                    {'tag': self.tag.pk, 'recommended': False})
+        new_object = TaggedTrait.objects.latest('pk')
+        self.assertEqual(self.user, new_object.creator)

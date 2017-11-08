@@ -95,3 +95,22 @@ class TaggedTraitMultipleFromTagForm(forms.Form):
         self.helper.form_method = 'post'
         button_save = generate_button_html('submit', 'Save', btn_type='submit', css_class='btn-primary')
         self.helper.layout.append(button_save)
+
+
+class TagSpecificTraitForm(forms.Form):
+    """Form for creating TaggedTrait objects from a specific SourceTrait object."""
+
+    tag = forms.ModelChoiceField(queryset=models.Tag.objects.all(), required=True)
+    # Set required=False for recommended - otherwise it will be required to be checked, which disallows False values.
+    # Submitting an empty value for this field sets the field to False.
+    recommended = forms.BooleanField(required=False)
+
+    def __init__(self, *args, **kwargs):
+        super(TagSpecificTraitForm, self).__init__(*args, **kwargs)
+        self.helper = FormHelper(self)
+        self.helper.form_class = 'form-horizontal'
+        self.helper.label_class = 'col-sm-2'
+        self.helper.field_class = 'col-sm-6'
+        self.helper.form_method = 'post'
+        button_save = generate_button_html('submit', 'Save', btn_type='submit', css_class='btn-primary')
+        self.helper.layout.append(button_save)
