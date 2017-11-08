@@ -10,6 +10,10 @@ from . import forms
 from . import models
 
 
+TAGGING_ERROR_MESSAGE = 'Oops! Tagging a phenotype was not successful.'
+TAGGING_MULTIPLE_ERROR_MESSAGE = 'Oops! Tagging phenotypes was not successful.'
+
+
 class TagDetail(LoginRequiredMixin, DetailView):
     """Detail view class for Tag."""
 
@@ -28,7 +32,7 @@ class TaggedTraitCreate(LoginRequiredMixin, FormMessagesMixin, CreateView):
 
     model = models.TaggedTrait
     form_class = forms.TaggedTraitForm
-    form_invalid_message = 'Oops! Tagging a phenotype was not successful.'
+    form_invalid_message = TAGGING_ERROR_MESSAGE
 
     def form_valid(self, form):
         """Custom processing for valid forms.
@@ -39,7 +43,7 @@ class TaggedTraitCreate(LoginRequiredMixin, FormMessagesMixin, CreateView):
         return super(TaggedTraitCreate, self).form_valid(form)
 
     def get_success_url(self):
-        return reverse(self.tag.get_absolute_url())
+        return self.object.tag.get_absolute_url()
 
     def get_form_valid_message(self):
         msg = 'Phenotype <a href="{}">{}</a> tagged as {}'.format(

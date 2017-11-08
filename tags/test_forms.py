@@ -10,6 +10,7 @@ from . import models
 
 
 class TaggedTraitFormTest(TestCase):
+    form_class = forms.TaggedTraitForm
 
     def setUp(self):
         self.tag = factories.TagFactory.create()
@@ -19,20 +20,20 @@ class TaggedTraitFormTest(TestCase):
     def test_valid(self):
         """Form is valid with all necessary input."""
         form_data = {'trait': self.trait.pk, 'tag': self.tag.pk, 'recommended': False}
-        form = forms.TaggedTraitForm(data=form_data)
+        form = self.form_class(data=form_data)
         self.assertTrue(form.is_valid())
 
     def test_invalid_missing_tag(self):
         """Form is invalid if tag is omitted."""
         form_data = {'trait': self.trait.pk, 'tag': '', 'recommended': False}
-        form = forms.TaggedTraitForm(data=form_data)
+        form = self.form_class(data=form_data)
         self.assertFalse(form.is_valid())
         self.assertTrue(form.has_error('tag'))
 
     def test_invalid_missing_trait(self):
         """Form is invalid if trait is omitted."""
         form_data = {'trait': '', 'tag': self.tag.pk, 'recommended': False}
-        form = forms.TaggedTraitForm(data=form_data)
+        form = self.form_class(data=form_data)
         self.assertFalse(form.is_valid())
         self.assertTrue(form.has_error('trait'))
 
@@ -43,6 +44,8 @@ class TaggedTraitFormTest(TestCase):
         # checkbox), you must remember to pass in required=False when creating the BooleanField."
         # See Django docs: https://docs.djangoproject.com/en/1.8/ref/forms/fields/#django.forms.BooleanField
         form_data = {'trait': self.trait.pk, 'tag': self.tag.pk, 'recommended': ''}
-        form = forms.TaggedTraitForm(data=form_data)
+        form = self.form_class(data=form_data)
+        self.assertTrue(form.is_valid())
+        self.assertFalse(form.has_error('recommended'))
         self.assertTrue(form.is_valid())
         self.assertFalse(form.has_error('recommended'))

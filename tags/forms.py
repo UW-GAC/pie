@@ -35,7 +35,7 @@ class TaggedTraitForm(forms.ModelForm):
     class Meta:
         model = models.TaggedTrait
         fields = ('tag', 'trait', 'recommended', )
-        help_texts = {'trait': 'Select one or more phenotypes.',
+        help_texts = {'trait': 'Select a phenotype.',
                       'recommended': 'Is this the phenotype you recommend to use for harmonizing the tag concept?',
                       }
 

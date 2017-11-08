@@ -69,3 +69,10 @@ class TaggedTraitCreateTest(UserLoginTestCase):
         form = response.context['form']
         self.assertEqual(form['trait'].errors, [u'This field is required.'])
         self.assertNotIn(self.tag, self.trait.tag_set.all())
+
+    def test_adds_user(self):
+        """When a trait is successfully tagged, it has the appropriate creator."""
+        response = self.client.post(self.get_url(),
+                                    {'trait': self.trait.pk, 'tag': self.tag.pk, 'recommended': False})
+        new_object = models.TaggedTrait.objects.latest('pk')
+        self.assertEqual(self.user, new_object.creator)
