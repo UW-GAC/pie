@@ -93,8 +93,8 @@ class SourceTraitTagging(LoginRequiredMixin, FormMessagesMixin, FormView):
         return self.trait.get_absolute_url()
 
     def get_form_valid_message(self):
-        msg = 'Phenotype <a href="{}">{}</a> tagged as {}'.format(
-            self.trait.get_absolute_url(), self.trait.i_trait_name, self.tag.title)
+        msg = 'Phenotype {} tagged as <a href="{}">{}</a>'.format(
+            self.trait.i_trait_name, self.tag.get_absolute_url(), self.tag.title)
         return mark_safe(msg)
 
 

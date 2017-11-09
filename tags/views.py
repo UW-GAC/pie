@@ -79,7 +79,7 @@ class TaggedTraitMultipleFormCreate(LoginRequiredMixin, FormMessagesMixin, FormV
     def get_form_valid_message(self):
         msg = ''
         for trait in self.traits:
-            msg += '<p>Phenotype <a href="{}">{}</a> tagged as {}<\p>'.format(
+            msg += 'Phenotype <a href="{}">{}</a> tagged as {} <br>'.format(
                 trait.get_absolute_url(), trait.i_trait_name, self.tag.title)
         return mark_safe(msg)
 
@@ -118,6 +118,6 @@ class CreateTaggedTraitFromTagPk(LoginRequiredMixin, FormMessagesMixin, FormView
     def get_form_valid_message(self):
         msg = ''
         for trait in self.traits:
-            msg += '<p>Phenotype <a href="{}">{}</a> tagged as {}<\p>'.format(
+            msg += 'Phenotype <a href="{}">{}</a> tagged as {} <br>'.format(
                 trait.get_absolute_url(), trait.i_trait_name, self.tag.title)
         return mark_safe(msg)
