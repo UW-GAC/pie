@@ -69,9 +69,17 @@ class SourceTraitTagging(LoginRequiredMixin, FormMessagesMixin, FormView):
     form_invalid_message = TAGGING_ERROR_MESSAGE
     template_name = 'tags/taggedtrait_form.html'
 
+    def dispatch(self, request, *args, **kwargs):
+        self.trait = get_object_or_404(models.SourceTrait, pk=kwargs.get('pk'))
+        return super(SourceTraitTagging, self).dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super(SourceTraitTagging, self).get_context_data(**kwargs)
+        context['trait'] = self.trait
+        return context
+
     def form_valid(self, form):
         """Create a TaggedTrait object for the trait and tag specified."""
-        self.trait = get_object_or_404(models.SourceTrait, pk=self.kwargs['pk'])
         tagged_trait = TaggedTrait(
             tag=form.cleaned_data['tag'], trait=self.trait, creator=self.request.user,
             recommended=form.cleaned_data['recommended'])

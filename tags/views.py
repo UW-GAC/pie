@@ -91,9 +91,17 @@ class CreateTaggedTraitFromTagPk(LoginRequiredMixin, FormMessagesMixin, FormView
     form_invalid_message = TAGGING_MULTIPLE_ERROR_MESSAGE
     template_name = 'tags/taggedtrait_form.html'
 
+    def dispatch(self, request, *args, **kwargs):
+        self.tag = get_object_or_404(models.Tag, pk=kwargs.get('pk'))
+        return super(CreateTaggedTraitFromTagPk, self).dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super(CreateTaggedTraitFromTagPk, self).get_context_data(**kwargs)
+        context['tag'] = self.tag
+        return context
+
     def form_valid(self, form):
         """Create a TaggedTrait object for each trait given."""
-        self.tag = get_object_or_404(models.Tag, pk=self.kwargs['pk'])
         for trait in form.cleaned_data['traits']:
             tagged_trait = models.TaggedTrait(
                 tag=self.tag, trait=trait, creator=self.request.user,

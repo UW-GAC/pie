@@ -226,6 +226,8 @@ class CreateTaggedTraitFromTagPkTest(UserLoginTestCase):
         response = self.client.get(self.get_url())
         context = response.context
         self.assertTrue('form' in context)
+        self.assertTrue('tag' in context)
+        self.assertEqual(context['tag'], self.tag)
 
     def test_creates_new_object(self):
         """Posting valid data to the form correctly tags a single trait."""

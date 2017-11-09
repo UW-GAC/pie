@@ -4,12 +4,17 @@
 {% load static %}
 
 {% block head_title %}
-    | Tag a phenotype
+    | {{ form.title }}
 {% endblock %}
 
 {% block content %}
     <h1>
-        Tag a phenotype
+        {{ form.title }}
+        {% if tag %}
+            as {{ tag.title }}
+        {% elif trait %}
+            {{ trait.i_trait_name }}
+        {% endif %}
     </h1>
     
     {% include '_messages.html' %}

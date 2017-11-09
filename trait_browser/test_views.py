@@ -8,7 +8,7 @@ from django.core.urlresolvers import reverse
 
 from core.utils import UserLoginTestCase, LoginRequiredTestCase
 from profiles.models import Search, UserData
-from tags.models import TaggedTrait, Tag
+from tags.models import TaggedTrait
 from tags.factories import TagFactory
 from . import models
 from . import factories
@@ -667,6 +667,8 @@ class SourceTraitTaggingTest(UserLoginTestCase):
         response = self.client.get(self.get_url())
         context = response.context
         self.assertTrue('form' in context)
+        self.assertTrue('trait' in context)
+        self.assertEqual(context['trait'], self.trait)
 
     def test_creates_new_object(self):
         """Posting valid data to the form correctly tags a trait."""

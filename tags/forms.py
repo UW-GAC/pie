@@ -25,6 +25,7 @@ def generate_button_html(name, value, btn_type="submit", css_class="btn-primary"
 class TaggedTraitForm(forms.ModelForm):
     """Form for creating TaggedTrait objects."""
 
+    title = 'Tag a phenotype'
     trait = forms.ModelChoiceField(queryset=SourceTrait.objects.all(),
                                    required=True,
                                    widget=autocomplete.ModelSelect2(url='trait_browser:source:autocomplete'))
@@ -53,6 +54,7 @@ class TaggedTraitForm(forms.ModelForm):
 class TaggedTraitMultipleForm(forms.Form):
     """Form for creating TaggedTrait objects."""
 
+    title = 'Tag phenotypes'
     traits = forms.ModelMultipleChoiceField(
         queryset=SourceTrait.objects.all(),
         required=True,
@@ -77,6 +79,7 @@ class TaggedTraitMultipleForm(forms.Form):
 class TaggedTraitMultipleFromTagForm(forms.Form):
     """Form for creating TaggedTrait objects from a specific Tag object."""
 
+    title = 'Tag phenotypes'
     traits = forms.ModelMultipleChoiceField(
         queryset=SourceTrait.objects.all(),
         required=True,
@@ -100,6 +103,7 @@ class TaggedTraitMultipleFromTagForm(forms.Form):
 class TagSpecificTraitForm(forms.Form):
     """Form for creating TaggedTrait objects from a specific SourceTrait object."""
 
+    title = 'Tag the phenotype'
     tag = forms.ModelChoiceField(queryset=models.Tag.objects.all(), required=True)
     # Set required=False for recommended - otherwise it will be required to be checked, which disallows False values.
     # Submitting an empty value for this field sets the field to False.
