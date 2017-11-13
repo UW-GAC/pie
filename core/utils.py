@@ -3,38 +3,32 @@
 Following a suggestion from Two Scoops of Django 1.8.
 """
 
-import exrex
 import json
+from io import StringIO
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
-from django.core.urlresolvers import reverse, RegexURLResolver, RegexURLPattern
+from django.core.management import call_command
+from django.core.urlresolvers import reverse
 from django.test import TestCase, Client
 
+from .build_test_db import build_test_db
 from . import factories
 
 User = get_user_model()
 
 
-def collect_all_urls(urlpatterns):
-    """Returns sample urls for views in app."""
-    url_list = []
-    for root_pattern in urlpatterns:
-        # first pattern is iterable, hence 1 element list
-        find_all_urls([root_pattern], [], url_list)
-    return url_list
+def get_app_urls(app_name):
+    """Get all of the urls for the given app name.
 
-
-def find_all_urls(root_patterns, parents, url_list):
-    """Produce a url based on a pattern."""
-    for url in root_patterns:
-        regex_string = url.regex.pattern
-        if isinstance(url, RegexURLResolver):
-            # print('Parent: ',regex_string)
-            parents.append(next(exrex.generate(regex_string, limit=1)))
-            find_all_urls(url.url_patterns, parents, url_list)  # Call this function recursively.
-        elif isinstance(url, RegexURLPattern):
-            url_list.append(''.join(parents) + next(exrex.generate(regex_string, limit=1)))
+    Uses django-extensions management command show_urls to get the entire project's urls,
+    and then pulls out only the ones that are for the module of app_name.
+    """
+    output = StringIO()
+    call_command('show_urls', '--format=json', stdout=output)
+    urls_json = json.loads(output.getvalue())
+    app_urls = [d['url'] for d in urls_json if app_name in d['module']]
+    return app_urls
 
 
 def get_autocomplete_view_ids(response):
@@ -135,15 +129,29 @@ class SuperuserLoginTestCase(TestCase):
 
 
 class LoginRequiredTestCase(TestCase):
-    """Tests all views in this app that they are using login_required."""
+    """Tests all views in this app to ensure that they are using login_required."""
 
-    def assert_redirect_all_urls(self, urlpatterns, pattern_root):
+    @classmethod
+    def setUpClass(cls):
+        super(LoginRequiredTestCase, cls).setUpClass()
+        # Create a bunch of test data first, so that pk-specific URLs still work.
+        build_test_db(
+            n_global_studies=3, n_subcohort_range=(2, 3), n_dataset_range=(3, 9),
+            n_trait_range=(3, 16), n_enc_value_range=(2, 9))
+
+    def assert_redirect_all_urls(self, app_name):
         """Use this in a subclass to ensure all urls from urlpatterns redirect to login."""
-        url_list = collect_all_urls(urlpatterns)
+        url_list = get_app_urls(app_name)
         for url in url_list:
-            full_url = '/' + pattern_root + '/' + url
-            # print('URL: ', full_url)
-            response = self.client.get(full_url)
-            # print (response)
-            self.assertRedirects(response, reverse('login') + '?next=' + full_url,
-                                 msg_prefix='{} is not login required'.format(full_url))
+            final_url = url
+            if '<' in url and '>' in url:
+                if '<pk>' in url:
+                    # The URL test will fail if a pk of 1 doesn't exist. I'm not sure how to match up each
+                    # URL with the model it uses, to make sure you're getting a valid pk.
+                    final_url = url.replace('<pk>', '1')
+                else:
+                    raise ValueError('URL {} has a regex that is not <pk>'.format(url))
+            response = self.client.get(final_url)
+            self.assertRedirects(response, reverse('login') + '?next=' + final_url,
+                                 msg_prefix='URL {} is not login required'.format(final_url))
+            # print('URL {} passes login_required test...'.format(url))

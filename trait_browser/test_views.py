@@ -7,7 +7,6 @@ from django.test import TestCase
 from django.core.urlresolvers import reverse
 
 from core.utils import UserLoginTestCase, LoginRequiredTestCase, get_autocomplete_view_ids
-from core.build_test_db import build_test_db
 from profiles.models import Search, UserData
 from tags.models import TaggedTrait
 from tags.factories import TagFactory
@@ -15,7 +14,6 @@ from . import models
 from . import factories
 from . import forms
 from . import tables
-from . import urls
 from .views import TABLE_PER_PAGE, search
 
 
@@ -567,11 +565,7 @@ class TraitBrowserLoginRequiredTestCase(LoginRequiredTestCase):
 
     def test_trait_browser_login_required(self):
         """All trait_browser urls redirect to login page if no user is logged in."""
-        # Create a bunch of test data first, so that pk-specific URLs still work.
-        build_test_db(
-            n_global_studies=3, n_subcohort_range=(2, 3), n_dataset_range=(3, 9),
-            n_trait_range=(3, 16), n_enc_value_range=(2, 9))
-        self.assert_redirect_all_urls(urls.urlpatterns, 'phenotypes')
+        self.assert_redirect_all_urls('trait_browser')
 
 
 class SourceTraitPHVAutocompleteTestCase(UserLoginTestCase):
