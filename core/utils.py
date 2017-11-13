@@ -136,4 +136,5 @@ class LoginRequiredTestCase(TestCase):
             # print('URL: ', full_url)
             response = self.client.get(full_url)
             # print (response)
-            self.assertRedirects(response, reverse('login') + '?next=' + full_url)
+            self.assertRedirects(response, reverse('login') + '?next=' + full_url,
+                                 msg_prefix='{} is not login required'.format(full_url))
