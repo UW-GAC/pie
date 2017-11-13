@@ -214,16 +214,16 @@ class CreateTaggedTraitFromTagPkTest(UserLoginTestCase):
 
     def get_url(self, *args):
         """Get the url for the view this class is supposed to test."""
-        return reverse('tags:tag-tagging', args=[self.tag.pk])
+        return reverse('tags:tag-tagging', args=args)
 
     def test_view_success_code(self):
         """View returns successful response code."""
-        response = self.client.get(self.get_url())
+        response = self.client.get(self.get_url(self.tag.pk))
         self.assertEqual(response.status_code, 200)
 
     def test_context_data(self):
         """View has appropriate data in the context."""
-        response = self.client.get(self.get_url())
+        response = self.client.get(self.get_url(self.tag.pk))
         context = response.context
         self.assertTrue('form' in context)
         self.assertTrue('tag' in context)
@@ -232,7 +232,7 @@ class CreateTaggedTraitFromTagPkTest(UserLoginTestCase):
     def test_creates_new_object(self):
         """Posting valid data to the form correctly tags a single trait."""
         # Check on redirection to detail page, M2M links, and creation message.
-        response = self.client.post(self.get_url(),
+        response = self.client.post(self.get_url(self.tag.pk),
                                     {'traits': [str(self.traits[0].pk)],
                                      'recommended': False})
         self.assertRedirects(response, self.tag.get_absolute_url())
@@ -250,7 +250,7 @@ class CreateTaggedTraitFromTagPkTest(UserLoginTestCase):
         """Posting valid data to the form correctly tags two traits."""
         # Check on redirection to detail page, M2M links, and creation message.
         some_traits = self.traits[:2]
-        response = self.client.post(self.get_url(),
+        response = self.client.post(self.get_url(self.tag.pk),
                                     {'traits': [str(t.pk) for t in some_traits],
                                      'recommended': False})
         self.assertRedirects(response, self.tag.get_absolute_url())
@@ -267,7 +267,7 @@ class CreateTaggedTraitFromTagPkTest(UserLoginTestCase):
     def test_creates_all_new_objects(self):
         """Posting valid data to the form correctly tags all of the traits listed."""
         # Check on redirection to detail page, M2M links, and creation message.
-        response = self.client.post(self.get_url(),
+        response = self.client.post(self.get_url(self.tag.pk),
                                     {'traits': [str(t.pk) for t in self.traits],
                                      'recommended': False})
         self.assertRedirects(response, self.tag.get_absolute_url())
@@ -283,14 +283,14 @@ class CreateTaggedTraitFromTagPkTest(UserLoginTestCase):
 
     def test_invalid_form_message(self):
         """Posting invalid data results in a message about the invalidity."""
-        response = self.client.post(self.get_url(), {'traits': '', 'recommended': False})
+        response = self.client.post(self.get_url(self.tag.pk), {'traits': '', 'recommended': False})
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
         self.assertTrue('Oops!' in str(messages[0]))
 
     def test_post_blank_trait(self):
         """Posting bad data to the form doesn't tag the trait and shows a form error."""
-        response = self.client.post(self.get_url(), {'traits': '', 'recommended': False})
+        response = self.client.post(self.get_url(self.tag.pk), {'traits': '', 'recommended': False})
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
         self.assertTrue('Oops!' in str(messages[0]))
@@ -300,7 +300,7 @@ class CreateTaggedTraitFromTagPkTest(UserLoginTestCase):
 
     def test_adds_user(self):
         """When a trait is successfully tagged, it has the appropriate creator."""
-        response = self.client.post(self.get_url(),
+        response = self.client.post(self.get_url(self.tag.pk),
                                     {'traits': [str(self.traits[0].pk)],
                                      'recommended': False})
         new_object = models.TaggedTrait.objects.latest('pk')

@@ -749,16 +749,21 @@ class SourceTraitTaggingTest(UserLoginTestCase):
 
     def get_url(self, *args):
         """Get the url for the view this class is supposed to test."""
-        return reverse('trait_browser:source:tagging', args=[self.trait.pk])
+        return reverse('trait_browser:source:tagging', args=args)
 
     def test_view_success_code(self):
         """View returns successful response code."""
-        response = self.client.get(self.get_url())
+        response = self.client.get(self.get_url(self.trait.pk))
         self.assertEqual(response.status_code, 200)
+
+    def test_view_with_invalid_pk(self):
+        """View returns 404 response code when the pk doesn't exist."""
+        response = self.client.get(self.get_url(self.trait.pk + 1))
+        self.assertEqual(response.status_code, 404)
 
     def test_context_data(self):
         """View has appropriate data in the context."""
-        response = self.client.get(self.get_url())
+        response = self.client.get(self.get_url(self.trait.pk))
         context = response.context
         self.assertTrue('form' in context)
         self.assertTrue('trait' in context)
@@ -767,7 +772,7 @@ class SourceTraitTaggingTest(UserLoginTestCase):
     def test_creates_new_object(self):
         """Posting valid data to the form correctly tags a trait."""
         # Check on redirection to detail page, M2M links, and creation message.
-        response = self.client.post(self.get_url(), {'tag': self.tag.pk, 'recommended': False})
+        response = self.client.post(self.get_url(self.trait.pk), {'tag': self.tag.pk, 'recommended': False})
         new_object = TaggedTrait.objects.latest('pk')
         self.assertIsInstance(new_object, TaggedTrait)
         self.assertRedirects(response, reverse('trait_browser:source:detail', args=[self.trait.pk]))
@@ -781,14 +786,14 @@ class SourceTraitTaggingTest(UserLoginTestCase):
 
     def test_invalid_form_message(self):
         """Posting invalid data results in a message about the invalidity."""
-        response = self.client.post(self.get_url(), {'tag': '', 'recommended': False})
+        response = self.client.post(self.get_url(self.trait.pk), {'tag': '', 'recommended': False})
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
         self.assertTrue('Oops!' in str(messages[0]))
 
     def test_post_blank_tag(self):
         """Posting bad data to the form doesn't tag the trait and shows a form error."""
-        response = self.client.post(self.get_url(), {'tag': '', 'recommended': False})
+        response = self.client.post(self.get_url(self.trait.pk), {'tag': '', 'recommended': False})
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
         self.assertTrue('Oops!' in str(messages[0]))
@@ -798,7 +803,7 @@ class SourceTraitTaggingTest(UserLoginTestCase):
 
     def test_adds_user(self):
         """When a trait is successfully tagged, it has the appropriate creator."""
-        response = self.client.post(self.get_url(),
+        response = self.client.post(self.get_url(self.trait.pk),
                                     {'tag': self.tag.pk, 'recommended': False})
         new_object = TaggedTrait.objects.latest('pk')
         self.assertEqual(self.user, new_object.creator)
