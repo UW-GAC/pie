@@ -6,7 +6,7 @@ import re
 from django.test import TestCase
 from django.core.urlresolvers import reverse
 
-from core.utils import UserLoginTestCase, LoginRequiredTestCase
+from core.utils import UserLoginTestCase, LoginRequiredTestCase, get_autocomplete_view_ids
 from core.build_test_db import build_test_db
 from profiles.models import Search, UserData
 from tags.models import TaggedTrait
@@ -621,6 +621,95 @@ class SourceTraitPHVAutocompleteTestCase(UserLoginTestCase):
         phvs_in_content = [match for match in phv_re.findall(str(response.content))]
         self.assertTrue(len(phvs_in_content) == 1)
         self.assertTrue('phv{:08d}'.format(st1.i_dbgap_variable_accession) in phvs_in_content)
+
+
+class SourceTraitPHVAutocompleteByStudyTestCase(UserLoginTestCase):
+    """Autocomplete view works as expected."""
+
+    def setUp(self):
+        super(SourceTraitPHVAutocompleteByStudyTestCase, self).setUp()
+        self.study = factories.StudyFactory.create()
+        self.source_study_version = factories.SourceStudyVersionFactory.create(study=self.study)
+        self.source_dataset = factories.SourceDatasetFactory.create(source_study_version=self.source_study_version)
+        self.source_traits = factories.SourceTraitFactory.create_batch(8, source_dataset=self.source_dataset)
+
+    def get_url(self, *args):
+        return reverse('trait_browser:source:study:trait-autocomplete', args=args)
+
+    def test_view_success_code(self):
+        """View returns successful response code."""
+        response = self.client.get(self.get_url(self.study.pk))
+        self.assertEqual(response.status_code, 200)
+
+    def test_view_with_invalid_pk(self):
+        """View returns 404 response code when the pk doesn't exist."""
+        response = self.client.get(self.get_url(self.study.pk + 1))
+        self.assertEqual(response.status_code, 404)
+
+    def test_returns_all_traits(self):
+        """Queryset returns all of the traits with no query (when there are 10, which is the page limit)."""
+        url = self.get_url(self.study.pk)
+        response = self.client.get(url)
+        pks = get_autocomplete_view_ids(response)
+        self.assertEqual(sorted([trait.pk for trait in self.source_traits]), sorted(pks))
+
+    def test_no_deprecated_traits_in_queryset(self):
+        """Queryset returns only the latest version of a trait."""
+        # Copy the source study version and increment it.
+        source_study_version2 = copy(self.source_study_version)
+        source_study_version2.i_version += 1
+        source_study_version2.i_id += 1
+        source_study_version2.save()
+        # Make the old ssv deprecated.
+        self.source_study_version.i_is_deprecated = True
+        self.source_study_version.save()
+        # Copy the source dataset and increment it. Link it to the new ssv.
+        source_dataset2 = copy(self.source_dataset)
+        source_dataset2.i_id += 1
+        source_dataset2.source_study_version = source_study_version2
+        source_dataset2.save()
+        # Copy the source traits and link them to the new source dataset.
+        source_traits2 = []
+        for trait in self.source_traits:
+            st2 = copy(trait)
+            st2.source_dataset = source_dataset2
+            st2.i_trait_id = trait.i_trait_id + len(self.source_traits)
+            st2.save()
+            source_traits2.append(st2)
+        # Get results from the autocomplete view and make sure only the new version is found.
+        url = self.get_url(self.study.pk)
+        response = self.client.get(url)
+        returned_pks = get_autocomplete_view_ids(response)
+        self.assertEqual(len(returned_pks), len(source_traits2))
+        for trait in source_traits2:
+            self.assertIn(trait.i_trait_id, returned_pks)
+        for trait in self.source_traits:
+            self.assertNotIn(trait.i_trait_id, returned_pks)
+
+    def test_other_study_not_in_queryset(self):
+        """Queryset returns only traits from the pk-specified study."""
+        study2 = factories.StudyFactory.create()
+        source_traits2 = factories.SourceTraitFactory.create_batch(
+            8, source_dataset__source_study_version__study=study2)
+        # Get results from the autocomplete view and make sure only the correct study is found.
+        url = self.get_url(self.study.pk)
+        response = self.client.get(url)
+        returned_pks = get_autocomplete_view_ids(response)
+        self.assertEqual(len(returned_pks), len(source_traits2))
+        for trait in source_traits2:
+            self.assertNotIn(trait.i_trait_id, returned_pks)
+        for trait in self.source_traits:
+            self.assertIn(trait.i_trait_id, returned_pks)
+
+    def test_proper_phv_in_queryset(self):
+        """Queryset returns only the proper phv number."""
+        query_trait = self.source_traits[0]
+        url = self.get_url(self.study.pk)
+        response = self.client.get(url, {'q': query_trait.i_dbgap_variable_accession})
+        returned_pks = get_autocomplete_view_ids(response)
+        self.assertEqual(len(returned_pks), 1)
+        self.assertIn(query_trait.pk, returned_pks)
+        self.assertNotIn(self.source_traits[2].pk, returned_pks)
 
 
 class HarmonizedTraitFlavorNameAutocompleteViewTest(UserLoginTestCase):

@@ -12,6 +12,8 @@ from . import views
 study_patterns = [
     url(r'^all/$', views.source_study_list, name='list'),
     url(r'^(?P<pk>\d+)/$', views.source_study_detail, name='detail'),
+    url(r'^(?P<pk>\d+)/trait-autocomplete/$', views.SourceTraitPHVAutocompleteByStudy.as_view(),
+        name='trait-autocomplete'),
 ]
 
 source_patterns = [

@@ -4,6 +4,7 @@ Following a suggestion from Two Scoops of Django 1.8.
 """
 
 import exrex
+import json
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
@@ -34,6 +35,14 @@ def find_all_urls(root_patterns, parents, url_list):
             find_all_urls(url.url_patterns, parents, url_list)  # Call this function recursively.
         elif isinstance(url, RegexURLPattern):
             url_list.append(''.join(parents) + next(exrex.generate(regex_string, limit=1)))
+
+
+def get_autocomplete_view_ids(response):
+    """Get the pks of objects returned by an autocomplete view, from the parsed response content."""
+    content = json.loads(response.content.decode('utf-8'))
+    results = content['results']
+    ids = [el['id'] for el in results]
+    return ids
 
 
 class UserLoginTestCase(TestCase):

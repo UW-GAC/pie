@@ -275,6 +275,24 @@ class SourceTraitPHVAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySe
         return retrieved
 
 
+class SourceTraitPHVAutocompleteByStudy(LoginRequiredMixin, autocomplete.Select2QuerySetView):
+    """View for auto-completing SourceTraits by phv in a specific study.
+
+    Used with django-autocomplete-light package. Autocomplete by dbGaP accession.
+    Only include latest version.
+    """
+
+    def get_queryset(self):
+        study = get_object_or_404(models.Study, pk=self.kwargs['pk'])
+        retrieved = models.SourceTrait.objects.filter(
+            source_dataset__source_study_version__study=study,
+            source_dataset__source_study_version__i_is_deprecated=False
+        )
+        if self.q:
+            retrieved = retrieved.filter(i_dbgap_variable_accession__regex=r'^{}'.format(self.q))
+        return retrieved
+
+
 class HarmonizedTraitFlavorNameAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
     """View for returning querysets that allow auto-completing HarmonizedTrait form fields with trait_flavor_name.
 
