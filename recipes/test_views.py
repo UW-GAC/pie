@@ -5,7 +5,6 @@ from django.core.urlresolvers import reverse
 
 import core.utils
 from core.factories import UserFactory, SuperUserFactory, USER_FACTORY_PASSWORD
-from recipes.urls import urlpatterns
 from trait_browser.factories import SourceTraitFactory
 
 from . import factories
@@ -576,4 +575,4 @@ class RecipesLoginRequiredTestCase(core.utils.LoginRequiredTestCase):
 
     def test_recipes_login_required(self):
         """All recipes urls redirect to login page if no user is logged in."""
-        self.assert_redirect_all_urls(urlpatterns, 'recipe')
+        self.assert_redirect_all_urls('recipes')

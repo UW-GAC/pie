@@ -2,9 +2,7 @@
 
 from faker import Faker
 
-from django.apps import apps
 from django.core.urlresolvers import reverse
-from django.test import TestCase
 
 from core.utils import LoginRequiredTestCase, UserLoginTestCase
 from trait_browser.factories import SourceTraitFactory
@@ -305,3 +303,10 @@ class CreateTaggedTraitFromTagPkTest(UserLoginTestCase):
                                      'recommended': False})
         new_object = models.TaggedTrait.objects.latest('pk')
         self.assertEqual(self.user, new_object.creator)
+
+
+class TagsLoginRequiredTestCase(LoginRequiredTestCase):
+
+    def test_recipes_login_required(self):
+        """All recipes urls redirect to login page if no user is logged in."""
+        self.assert_redirect_all_urls('tags')

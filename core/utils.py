@@ -9,7 +9,7 @@ from io import StringIO
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.core.management import call_command
-from django.core.urlresolvers import reverse
+from django.core.urlresolvers import resolve, reverse
 from django.test import TestCase, Client
 
 from .build_test_db import build_test_db
@@ -129,7 +129,7 @@ class SuperuserLoginTestCase(TestCase):
 
 
 class LoginRequiredTestCase(TestCase):
-    """Tests all views in this app to ensure that they are using login_required."""
+    """Tests all views in an app to ensure that they are using login_required."""
 
     @classmethod
     def setUpClass(cls):
@@ -146,8 +146,11 @@ class LoginRequiredTestCase(TestCase):
             final_url = url
             if '<' in url and '>' in url:
                 if '<pk>' in url:
-                    # The URL test will fail if a pk of 1 doesn't exist. I'm not sure how to match up each
-                    # URL with the model it uses, to make sure you're getting a valid pk.
+                    print(url)
+                    # print(resolve(url.replace('<pk>', '1')).func.view_class)
+                    # The URL test will fail if a pk of 1 doesn't exist. I can use the above call to get the view
+                    # class from the URL, and then use that to get a valid pk. BUT it will only work in
+                    # Django 1.9+, so it will have to wait until the upgrade.
                     final_url = url.replace('<pk>', '1')
                 else:
                     raise ValueError('URL {} has a regex that is not <pk>'.format(url))
