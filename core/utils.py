@@ -113,6 +113,24 @@ class RecipeSubmitterLoginTestCase(TestCase):
         self.client.login(username=self.user.email, password=self.user_password)
 
 
+class PhenotypeTaggerLoginTestCase(TestCase):
+    """TestCase that creates a phenotype_tagger user and logs in as that user.
+
+    Creates a user, adds them to phenotype_tagger group, and logs them into the site.
+    """
+
+    def setUp(self):
+        super(PhenotypeTaggerLoginTestCase, self).setUp()
+
+        self.client = Client()
+        self.user_password = factories.USER_FACTORY_PASSWORD
+        self.user = factories.UserFactory.create()
+        phenotype_taggers = Group.objects.get(name='phenotype_taggers')
+        self.user.groups.add(phenotype_taggers)
+        self.user.refresh_from_db()
+        self.client.login(username=self.user.email, password=self.user_password)
+
+
 class SuperuserLoginTestCase(TestCase):
     """TestCase to use for accessing views that require Superuser login.
 
