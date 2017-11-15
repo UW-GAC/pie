@@ -6,7 +6,7 @@ import re
 from django.test import TestCase
 from django.core.urlresolvers import reverse
 
-from core.utils import UserLoginTestCase, LoginRequiredTestCase, get_autocomplete_view_ids
+from core.utils import UserLoginTestCase, LoginRequiredTestCase, PhenotypeTaggerLoginTestCase, get_autocomplete_view_ids
 from profiles.models import Search, UserData
 from tags.models import TaggedTrait
 from tags.factories import TagFactory
@@ -734,7 +734,7 @@ class HarmonizedTraitFlavorNameAutocompleteViewTest(UserLoginTestCase):
         self.assertEqual(names_in_content[0], ht1.trait_flavor_name)
 
 
-class SourceTraitTaggingTest(UserLoginTestCase):
+class SourceTraitTaggingTest(PhenotypeTaggerLoginTestCase):
 
     def setUp(self):
         super(SourceTraitTaggingTest, self).setUp()

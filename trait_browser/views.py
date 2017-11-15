@@ -7,7 +7,7 @@ from django.utils.safestring import mark_safe
 from django.views.generic import DetailView, FormView
 from django.contrib.auth.decorators import login_required
 
-from braces.views import LoginRequiredMixin, FormMessagesMixin
+from braces.views import FormMessagesMixin, GroupRequiredMixin, LoginRequiredMixin
 from dal import autocomplete
 from django_tables2 import RequestConfig, SingleTableMixin
 from urllib.parse import parse_qs
@@ -62,12 +62,15 @@ class HarmonizedTraitSetVersionDetail(LoginRequiredMixin, FormMessagesMixin, Det
     template_name = 'trait_browser/harmonized_trait_set_version_detail.html'
 
 
-class SourceTraitTagging(LoginRequiredMixin, FormMessagesMixin, FormView):
+class SourceTraitTagging(LoginRequiredMixin, GroupRequiredMixin, FormMessagesMixin, FormView):
     """Form view class for tagging a specific source trait."""
 
     form_class = TagSpecificTraitForm
     form_invalid_message = TAGGING_ERROR_MESSAGE
     template_name = 'tags/taggedtrait_form.html'
+    group_required = [u"phenotype_taggers", ]
+    raise_exception = True
+    redirect_unauthenticated_users = True
 
     def dispatch(self, request, *args, **kwargs):
         self.trait = get_object_or_404(models.SourceTrait, pk=kwargs.get('pk'))
