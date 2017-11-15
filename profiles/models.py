@@ -57,6 +57,7 @@ class UserData(TimeStampedModel):
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL)
     saved_searches = models.ManyToManyField(Search, through="SavedSearchMeta")
+    taggable_studies = models.ManyToManyField(Study)
 
 
 class SavedSearchMeta(TimeStampedModel):
