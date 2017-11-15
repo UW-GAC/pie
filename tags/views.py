@@ -5,7 +5,7 @@ from django.utils.safestring import mark_safe
 from django.shortcuts import get_object_or_404
 from django.views.generic import CreateView, DetailView, FormView, UpdateView
 
-from braces.views import LoginRequiredMixin, UserFormKwargsMixin, FormMessagesMixin
+from braces.views import LoginRequiredMixin, FormMessagesMixin, GroupRequiredMixin, UserFormKwargsMixin
 
 from . import forms
 from . import models
@@ -28,12 +28,15 @@ class TagDetail(LoginRequiredMixin, DetailView):
         return context
 
 
-class TaggedTraitCreate(LoginRequiredMixin, FormMessagesMixin, CreateView):
+class TaggedTraitCreate(LoginRequiredMixin, GroupRequiredMixin, FormMessagesMixin, CreateView):
     """Create view class for TaggedTrait objects."""
 
     model = models.TaggedTrait
     form_class = forms.TaggedTraitForm
     form_invalid_message = TAGGING_ERROR_MESSAGE
+    group_required = [u"phenotype_taggers", ]
+    raise_exception = True
+    redirect_unauthenticated_users = True
 
     def form_valid(self, form):
         """Custom processing for valid forms.
@@ -52,12 +55,15 @@ class TaggedTraitCreate(LoginRequiredMixin, FormMessagesMixin, CreateView):
         return mark_safe(msg)
 
 
-class TaggedTraitMultipleFormCreate(LoginRequiredMixin, FormMessagesMixin, FormView):
+class TaggedTraitMultipleFormCreate(LoginRequiredMixin, GroupRequiredMixin, FormMessagesMixin, FormView):
     """Form view class for tagging multiple traits with one tag."""
 
     form_class = forms.TaggedTraitMultipleForm
     form_invalid_message = TAGGING_MULTIPLE_ERROR_MESSAGE
     template_name = 'tags/taggedtrait_form.html'
+    group_required = [u"phenotype_taggers", ]
+    raise_exception = True
+    redirect_unauthenticated_users = True
 
     def form_valid(self, form):
         """Create a TaggedTrait object for each trait given."""
@@ -84,12 +90,15 @@ class TaggedTraitMultipleFormCreate(LoginRequiredMixin, FormMessagesMixin, FormV
         return mark_safe(msg)
 
 
-class CreateTaggedTraitFromTagPk(LoginRequiredMixin, FormMessagesMixin, FormView):
+class CreateTaggedTraitFromTagPk(LoginRequiredMixin, GroupRequiredMixin, FormMessagesMixin, FormView):
     """Form view class for tagging multiple traits with a specific tag."""
 
     form_class = forms.TaggedTraitMultipleFromTagForm
     form_invalid_message = TAGGING_MULTIPLE_ERROR_MESSAGE
     template_name = 'tags/taggedtrait_form.html'
+    group_required = [u"phenotype_taggers", ]
+    raise_exception = True
+    redirect_unauthenticated_users = True
 
     def dispatch(self, request, *args, **kwargs):
         self.tag = get_object_or_404(models.Tag, pk=kwargs.get('pk'))

@@ -4,7 +4,7 @@ from faker import Faker
 
 from django.core.urlresolvers import reverse
 
-from core.utils import LoginRequiredTestCase, UserLoginTestCase
+from core.utils import LoginRequiredTestCase, PhenotypeTaggerLoginTestCase, UserLoginTestCase
 from trait_browser.factories import SourceTraitFactory
 from . import factories
 from . import forms
@@ -41,7 +41,7 @@ class TagDetailTest(UserLoginTestCase):
         self.assertIsInstance(context['tag'], models.Tag)
 
 
-class TaggedTraitCreateTest(UserLoginTestCase):
+class TaggedTraitCreateTest(PhenotypeTaggerLoginTestCase):
 
     def setUp(self):
         super(TaggedTraitCreateTest, self).setUp()
@@ -103,7 +103,7 @@ class TaggedTraitCreateTest(UserLoginTestCase):
         self.assertEqual(self.user, new_object.creator)
 
 
-class TaggedTraitMultipleFormCreateTest(UserLoginTestCase):
+class TaggedTraitMultipleFormCreateTest(PhenotypeTaggerLoginTestCase):
 
     def setUp(self):
         super(TaggedTraitMultipleFormCreateTest, self).setUp()
@@ -203,7 +203,7 @@ class TaggedTraitMultipleFormCreateTest(UserLoginTestCase):
         self.assertEqual(self.user, new_object.creator)
 
 
-class CreateTaggedTraitFromTagPkTest(UserLoginTestCase):
+class CreateTaggedTraitFromTagPkTest(PhenotypeTaggerLoginTestCase):
 
     def setUp(self):
         super(CreateTaggedTraitFromTagPkTest, self).setUp()
