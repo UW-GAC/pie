@@ -4,14 +4,26 @@ These urlpatterns are included in the project's urlpatterns, so these
 urls will show up under /tag.
 """
 
-from django.conf.urls import url
+from django.conf.urls import include, url
 
 from . import views
 
+add_one_patterns = [
+    # url(r'^$', views.  .as_view(), name=''),
+    # url(r'^(?P<pk>\d+)/$', views.  .as_view(), name=''),
+]
+
+add_many_patterns = [
+    # url(r'^$', views.  .as_view(), name=''),
+    # url(r'^(?P<pk>\d+)/$', views.  .as_view(), name='tag'),
+]
+
+tag_patterns = [
+    url(r'^$', views.TagDetail.as_view(), name='detail'),
+]
 
 urlpatterns = [
-    url(r'^detail/(?P<pk>\d+)/$', views.TagDetail.as_view(), name='detail'),
-    url(r'^(?P<pk>\d+)/tagging/$', views.CreateTaggedTraitFromTagPk.as_view(), name='tag-tagging'),
-    url(r'^tagging/$', views.TaggedTraitCreate.as_view(), name='tagging'),
-    url(r'^tagging-multiple/$', views.TaggedTraitMultipleFormCreate.as_view(), name='tagging-multiple')
+    url(r'^(?P<pk>\d+)/', include(tag_patterns, namespace='tag')),
+    url(r'^add-to-phenotype/', include(add_one_patterns, namespace='add-one')),
+    url(r'^add-to-many-phenotypes/', include(add_many_patterns, namespace='add-many')),
 ]
