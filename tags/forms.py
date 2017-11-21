@@ -8,7 +8,7 @@ from crispy_forms.layout import ButtonHolder, Div, Layout, Fieldset, HTML, Submi
 from dal import autocomplete
 
 from . import models
-from trait_browser.models import SourceTrait
+from trait_browser.models import SourceTrait, Study
 
 
 def generate_button_html(name, value, btn_type="submit", css_class="btn-primary"):
@@ -74,6 +74,18 @@ class TaggedTraitMultipleForm(forms.Form):
         self.helper.form_method = 'post'
         button_save = generate_button_html('submit', 'Save', btn_type='submit', css_class='btn-primary')
         self.helper.layout.append(button_save)
+
+
+class TaggedTraitMultipleByStudyForm(TaggedTraitMultipleForm):
+
+    def __init__(self, *args, **kwargs):
+        """Override __init__ to make the form study-specific."""
+        study_pk = kwargs.pop('study_pk')
+        super(TaggedTraitMultipleByStudyForm, self).__init__(*args, **kwargs)
+        study = Study.objects.get(pk=study_pk)
+        self.title += ' for study {} ({})'.format(study.phs, study.i_study_name)
+        self.fields['traits'].queryset = SourceTrait.objects.filter(
+            source_dataset__source_study_version__study__pk=study_pk)
 
 
 class TaggedTraitMultipleFromTagForm(forms.Form):

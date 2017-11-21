@@ -7,6 +7,7 @@ from django.views.generic import CreateView, DetailView, FormView, UpdateView
 
 from braces.views import LoginRequiredMixin, FormMessagesMixin, GroupRequiredMixin, UserFormKwargsMixin
 
+from trait_browser.models import Study
 from . import forms
 from . import models
 
@@ -88,6 +89,18 @@ class TaggedTraitMultipleFormCreate(LoginRequiredMixin, GroupRequiredMixin, Form
             msg += 'Phenotype <a href="{}">{}</a> tagged as {} <br>'.format(
                 trait.get_absolute_url(), trait.i_trait_name, self.tag.title)
         return mark_safe(msg)
+
+
+class TaggedTraitMultipleByStudyFormCreate(TaggedTraitMultipleFormCreate):
+    """View for creating multiple TaggedTraits with one Tag, for a specific study."""
+
+    form_class = forms.TaggedTraitMultipleByStudyForm
+
+    def get_form_kwargs(self):
+        kwargs = super(TaggedTraitMultipleByStudyFormCreate, self).get_form_kwargs()
+        kwargs['study_pk'] = self.kwargs['pk']
+        get_object_or_404(Study, pk=kwargs['study_pk'])
+        return kwargs
 
 
 class CreateTaggedTraitFromTagPk(LoginRequiredMixin, GroupRequiredMixin, FormMessagesMixin, FormView):
