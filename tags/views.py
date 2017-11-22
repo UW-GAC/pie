@@ -61,41 +61,42 @@ class TaggedTraitCreate(LoginRequiredMixin, GroupRequiredMixin, TaggableStudiesR
         return mark_safe(msg)
 
 
-# class TaggedTraitMultipleFormCreate(LoginRequiredMixin, GroupRequiredMixin, FormMessagesMixin, FormView):
-#     """Form view class for tagging multiple traits with one tag."""
-# 
-#     form_class = forms.TaggedTraitMultipleForm
-#     form_invalid_message = TAGGING_MULTIPLE_ERROR_MESSAGE
-#     template_name = 'tags/taggedtrait_form.html'
-#     group_required = [u"phenotype_taggers", ]
-#     raise_exception = True
-#     redirect_unauthenticated_users = True
-# 
-#     def form_valid(self, form):
-#         """Create a TaggedTrait object for each trait given."""
-#         for trait in form.cleaned_data['traits']:
-#             tagged_trait = models.TaggedTrait(
-#                 tag=form.cleaned_data['tag'], trait=trait, creator=self.request.user,
-#                 recommended=form.cleaned_data['recommended'])
-#             tagged_trait.full_clean()
-#             tagged_trait.save()
-#         # Save the tag object so that you can use it in get_success_url.
-#         self.tag = form.cleaned_data['tag']
-#         # Save the traits so you can use them in the form valid message.
-#         self.traits = form.cleaned_data['traits']
-#         return super(TaggedTraitMultipleFormCreate, self).form_valid(form)
-# 
-#     def get_success_url(self):
-#         return self.tag.get_absolute_url()
-# 
-#     def get_form_valid_message(self):
-#         msg = ''
-#         for trait in self.traits:
-#             msg += 'Phenotype <a href="{}">{}</a> tagged as {} <br>'.format(
-#                 trait.get_absolute_url(), trait.i_trait_name, self.tag.title)
-#         return mark_safe(msg)
-# 
-# 
+class ManyTaggedTraitsCreate(LoginRequiredMixin, GroupRequiredMixin, TaggableStudiesRequiredMixin, UserFormKwargsMixin,
+                             FormMessagesMixin, FormView):
+    """Form view class for tagging multiple traits with one tag."""
+
+    form_class = forms.ManyTaggedTraitsForm
+    form_invalid_message = TAGGING_MULTIPLE_ERROR_MESSAGE
+    template_name = 'tags/taggedtrait_form.html'
+    group_required = [u"phenotype_taggers", ]
+    raise_exception = True
+    redirect_unauthenticated_users = True
+
+    def form_valid(self, form):
+        """Create a TaggedTrait object for each trait given."""
+        for trait in form.cleaned_data['traits']:
+            tagged_trait = models.TaggedTrait(
+                tag=form.cleaned_data['tag'], trait=trait, creator=self.request.user,
+                recommended=form.cleaned_data['recommended'])
+            tagged_trait.full_clean()
+            tagged_trait.save()
+        # Save the tag object so that you can use it in get_success_url.
+        self.tag = form.cleaned_data['tag']
+        # Save the traits so you can use them in the form valid message.
+        self.traits = form.cleaned_data['traits']
+        return super(ManyTaggedTraitsCreate, self).form_valid(form)
+
+    def get_success_url(self):
+        return self.tag.get_absolute_url()
+
+    def get_form_valid_message(self):
+        msg = ''
+        for trait in self.traits:
+            msg += 'Phenotype <a href="{}">{}</a> tagged as {} <br>'.format(
+                trait.get_absolute_url(), trait.i_trait_name, self.tag.title)
+        return mark_safe(msg)
+
+
 # class TaggedTraitMultipleByStudyFormCreate(TaggedTraitMultipleFormCreate):
 #     """View for creating multiple TaggedTraits with one Tag, for a specific study."""
 # 

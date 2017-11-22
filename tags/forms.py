@@ -58,7 +58,7 @@ class TaggedTraitForm(forms.ModelForm):
             source_dataset__source_study_version__study__in=studies,
             source_dataset__source_study_version__i_is_deprecated=False
         )
-        # Not related to study filtering, but put formatting and submit button here to prevent repetition.
+        # Form formatting and add a submit button.
         self.helper = FormHelper(self)
         self.helper.form_class = 'form-horizontal'
         self.helper.label_class = 'col-sm-2'
@@ -68,32 +68,46 @@ class TaggedTraitForm(forms.ModelForm):
         self.helper.layout.append(button_save)
 
 
+class ManyTaggedTraitsForm(forms.Form):
+    """Form for creating TaggedTrait objects."""
 
-# class ManyTaggedTraitsForm(forms.Form):
-#     """Form for creating TaggedTrait objects."""
-# 
-#     title = 'Tag phenotypes'
-#     traits = forms.ModelMultipleChoiceField(
-#         queryset=SourceTrait.objects.all(),
-#         required=True,
-#         widget=autocomplete.ModelSelect2Multiple(url='trait_browser:source:autocomplete'),
-#         help_text='Select one or more phenotypes.')
-#     tag = forms.ModelChoiceField(queryset=models.Tag.objects.all(), required=True)
-#     # Set required=False for recommended - otherwise it will be required to be checked, which disallows False values.
-#     # Submitting an empty value for this field sets the field to False.
-#     recommended = forms.BooleanField(required=False)
-# 
-#     def __init__(self, *args, **kwargs):
-#         super(TaggedTraitMultipleForm, self).__init__(*args, **kwargs)
-#         self.helper = FormHelper(self)
-#         self.helper.form_class = 'form-horizontal'
-#         self.helper.label_class = 'col-sm-2'
-#         self.helper.field_class = 'col-sm-6'
-#         self.helper.form_method = 'post'
-#         button_save = generate_button_html('submit', 'Save', btn_type='submit', css_class='btn-primary')
-#         self.helper.layout.append(button_save)
-# 
-# 
+    title = 'Tag phenotypes'
+    traits = forms.ModelMultipleChoiceField(
+        queryset=SourceTrait.objects.all(),
+        required=True,
+        widget=autocomplete.ModelSelect2Multiple(url='trait_browser:source:autocomplete'),
+        help_text='Select one or more phenotypes.')
+    tag = forms.ModelChoiceField(queryset=models.Tag.objects.all(), required=True)
+    # Set required=False for recommended - otherwise it will be required to be checked, which disallows False values.
+    # Submitting an empty value for this field sets the field to False.
+    recommended = forms.BooleanField(required=False)
+
+    def __init__(self, *args, **kwargs):
+        # Get the user and remove it from kwargs (b/c/ of UserFormKwargsMixin on the view.)
+        self.user = kwargs.pop('user')
+        # Call super here to set up all of the fields.
+        super(ManyTaggedTraitsForm, self).__init__(*args, **kwargs)
+        # Filter the queryset of traits by the user's taggable studies, and only non-deprecated.
+        studies = list(UserData.objects.get(user=self.user).taggable_studies.all())
+        if len(studies) == 1:
+            self.title += ' for study {} ({})'.format(studies[0].phs, studies[0].i_study_name)
+        else:
+            study_string = '; '.join(['{} ({})'.format(x.phs, x.i_study_name) for x in studies])
+            self.title += ' for studies ' + study_string
+        self.fields['traits'].queryset = SourceTrait.objects.filter(
+            source_dataset__source_study_version__study__in=studies,
+            source_dataset__source_study_version__i_is_deprecated=False
+        )
+        # Form formatting and add a submit button.
+        self.helper = FormHelper(self)
+        self.helper.form_class = 'form-horizontal'
+        self.helper.label_class = 'col-sm-2'
+        self.helper.field_class = 'col-sm-6'
+        self.helper.form_method = 'post'
+        button_save = generate_button_html('submit', 'Save', btn_type='submit', css_class='btn-primary')
+        self.helper.layout.append(button_save)
+
+
 # class StudyManyTaggedTraitsForm(ManyTaggedTraitsForm):
 # 
 #     def __init__(self, *args, **kwargs):
