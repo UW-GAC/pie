@@ -36,7 +36,8 @@ class TaggableStudiesRequiredMixin(UserPassesTestMixin):
         return user.userdata_set.first().taggable_studies.count() > 0
 
 
-class TaggedTraitCreate(LoginRequiredMixin, GroupRequiredMixin, TaggableStudiesRequiredMixin, UserFormKwargsMixin, FormMessagesMixin, CreateView):
+class TaggedTraitCreate(LoginRequiredMixin, GroupRequiredMixin, TaggableStudiesRequiredMixin, UserFormKwargsMixin,
+                        FormMessagesMixin, CreateView):
     """Create view class for TaggedTrait objects."""
 
     model = models.TaggedTrait
@@ -47,10 +48,7 @@ class TaggedTraitCreate(LoginRequiredMixin, GroupRequiredMixin, TaggableStudiesR
     redirect_unauthenticated_users = True
 
     def form_valid(self, form):
-        """Custom processing for valid forms.
-
-        Sets current user as the TaggedTrait's creator.
-        """
+        """Override form processing to set current user as the TaggedTrait's creator."""
         form.instance.creator = self.request.user
         return super(TaggedTraitCreate, self).form_valid(form)
 
