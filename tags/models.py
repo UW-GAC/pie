@@ -36,7 +36,7 @@ class Tag(TimeStampedModel):
         return 'Tag: {}'.format(self.lower_title)
 
     def get_absolute_url(self):
-        return reverse('tags:detail', args=[self.pk])
+        return reverse('tags:tag:detail', args=[self.pk])
 
 
 class TaggedTrait(TimeStampedModel):

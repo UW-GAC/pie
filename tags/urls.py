@@ -9,7 +9,7 @@ from django.conf.urls import include, url
 from . import views
 
 add_one_patterns = [
-    # url(r'^$', views.  .as_view(), name=''),
+    url(r'^$', views.TaggedTraitCreate.as_view(), name='main'),
     # url(r'^(?P<pk>\d+)/$', views.  .as_view(), name=''),
 ]
 

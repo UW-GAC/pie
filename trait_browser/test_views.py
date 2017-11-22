@@ -617,32 +617,36 @@ class SourceTraitPHVAutocompleteTestCase(UserLoginTestCase):
         self.assertTrue('phv{:08d}'.format(st1.i_dbgap_variable_accession) in phvs_in_content)
 
 
-class SourceTraitPHVAutocompleteByStudyTestCase(UserLoginTestCase):
+class TaggableStudyFilteredSourceTraitPHVAutocompleteTestCase(PhenotypeTaggerLoginTestCase):
     """Autocomplete view works as expected."""
 
     def setUp(self):
-        super(SourceTraitPHVAutocompleteByStudyTestCase, self).setUp()
+        super(TaggableStudyFilteredSourceTraitPHVAutocompleteTestCase, self).setUp()
         self.study = factories.StudyFactory.create()
         self.source_study_version = factories.SourceStudyVersionFactory.create(study=self.study)
         self.source_dataset = factories.SourceDatasetFactory.create(source_study_version=self.source_study_version)
         self.source_traits = factories.SourceTraitFactory.create_batch(8, source_dataset=self.source_dataset)
+        UserData.objects.create(user=self.user)
+        self.user.refresh_from_db()
+        self.user.userdata_set.first().taggable_studies.add(self.study)
 
     def get_url(self, *args):
-        return reverse('trait_browser:source:study:trait-autocomplete', args=args)
+        return reverse('trait_browser:source:taggable-autocomplete')
 
     def test_view_success_code(self):
         """View returns successful response code."""
-        response = self.client.get(self.get_url(self.study.pk))
+        response = self.client.get(self.get_url())
         self.assertEqual(response.status_code, 200)
 
     def test_view_with_invalid_pk(self):
-        """View returns 404 response code when the pk doesn't exist."""
-        response = self.client.get(self.get_url(self.study.pk + 1))
+        """View returns 404 response code when the user has no taggable studies."""
+        self.user.userdata_set.first().taggable_studies.remove(self.study)
+        response = self.client.get(self.get_url())
         self.assertEqual(response.status_code, 404)
 
     def test_returns_all_traits(self):
         """Queryset returns all of the traits with no query (when there are 10, which is the page limit)."""
-        url = self.get_url(self.study.pk)
+        url = self.get_url()
         response = self.client.get(url)
         pks = get_autocomplete_view_ids(response)
         self.assertEqual(sorted([trait.pk for trait in self.source_traits]), sorted(pks))
@@ -671,7 +675,7 @@ class SourceTraitPHVAutocompleteByStudyTestCase(UserLoginTestCase):
             st2.save()
             source_traits2.append(st2)
         # Get results from the autocomplete view and make sure only the new version is found.
-        url = self.get_url(self.study.pk)
+        url = self.get_url()
         response = self.client.get(url)
         returned_pks = get_autocomplete_view_ids(response)
         self.assertEqual(len(returned_pks), len(source_traits2))
@@ -681,7 +685,7 @@ class SourceTraitPHVAutocompleteByStudyTestCase(UserLoginTestCase):
             self.assertNotIn(trait.i_trait_id, returned_pks)
 
     def test_other_study_not_in_queryset(self):
-        """Queryset returns only traits from the pk-specified study."""
+        """Queryset returns only traits from the user's taggable studies."""
         study2 = factories.StudyFactory.create()
         source_traits2 = factories.SourceTraitFactory.create_batch(
             8, source_dataset__source_study_version__study=study2)

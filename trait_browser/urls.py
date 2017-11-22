@@ -12,8 +12,6 @@ from . import views
 study_patterns = [
     url(r'^all/$', views.source_study_list, name='list'),
     url(r'^(?P<pk>\d+)/$', views.source_study_detail, name='detail'),
-    url(r'^(?P<pk>\d+)/trait-autocomplete/$', views.SourceTraitPHVAutocompleteByStudy.as_view(),
-        name='trait-autocomplete'),
 ]
 
 source_patterns = [
@@ -23,6 +21,8 @@ source_patterns = [
     url(r'^(?P<pk>\d+)/tagging/$', views.SourceTraitTagging.as_view(), name='tagging'),
     url(r'^search/$', views.trait_search, {'trait_type': 'source'}, name='search'),
     url(r'^autocomplete/$', views.SourceTraitPHVAutocomplete.as_view(), name='autocomplete'),
+    url(r'^taggable-autocomplete/$', views.TaggableStudyFilteredSourceTraitPHVAutocomplete.as_view(),
+        name='taggable-autocomplete'),
     url(r'^study/', include(study_patterns, namespace='study')),
 ]
 

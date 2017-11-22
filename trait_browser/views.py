@@ -1,11 +1,12 @@
 """View functions and classes for the trait_browser app."""
 
-from django.shortcuts import render, get_object_or_404, redirect
+from django.contrib.auth.decorators import login_required
 from django.core.urlresolvers import reverse
 from django.db.models import Q    # Allows complex queries when searching.
+from django.http import Http404
+from django.shortcuts import render, get_object_or_404, redirect
 from django.utils.safestring import mark_safe
 from django.views.generic import DetailView, FormView
-from django.contrib.auth.decorators import login_required
 
 from braces.views import FormMessagesMixin, GroupRequiredMixin, LoginRequiredMixin
 from dal import autocomplete
@@ -278,7 +279,7 @@ class SourceTraitPHVAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySe
         return retrieved
 
 
-class SourceTraitPHVAutocompleteByStudy(LoginRequiredMixin, autocomplete.Select2QuerySetView):
+class TaggableStudyFilteredSourceTraitPHVAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
     """View for auto-completing SourceTraits by phv in a specific study.
 
     Used with django-autocomplete-light package. Autocomplete by dbGaP accession.
@@ -286,9 +287,11 @@ class SourceTraitPHVAutocompleteByStudy(LoginRequiredMixin, autocomplete.Select2
     """
 
     def get_queryset(self):
-        study = get_object_or_404(models.Study, pk=self.kwargs['pk'])
+        studies = self.request.user.userdata_set.first().taggable_studies.all()
+        if len(studies) < 1:
+            raise Http404('User has no taggable studies.')
         retrieved = models.SourceTrait.objects.filter(
-            source_dataset__source_study_version__study=study,
+            source_dataset__source_study_version__study__in=list(studies),
             source_dataset__source_study_version__i_is_deprecated=False
         )
         if self.q:
