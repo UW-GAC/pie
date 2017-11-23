@@ -10,12 +10,12 @@ from . import views
 
 add_one_patterns = [
     url(r'^$', views.TaggedTraitCreate.as_view(), name='main'),
-    # url(r'^(?P<pk>\d+)/$', views.  .as_view(), name=''),
+    url(r'^(?P<pk>\d+)/$', views.TaggedTraitCreateByTag.as_view(), name='by-tag'),
 ]
 
 add_many_patterns = [
     url(r'^$', views.ManyTaggedTraitsCreate.as_view(), name='main'),
-    # url(r'^(?P<pk>\d+)/$', views.  .as_view(), name='tag'),
+    # url(r'^(?P<pk>\d+)/$', views.  .as_view(), name='by-tag'),
 ]
 
 tag_patterns = [

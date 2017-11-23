@@ -24,7 +24,7 @@ def generate_button_html(name, value, btn_type="submit", css_class="btn-primary"
 
 
 class TaggedTraitForm(forms.ModelForm):
-    """Form for creating TaggedTrait objects."""
+    """Form for creating a single TaggedTrait object."""
 
     title = 'Tag a phenotype'
     trait = forms.ModelChoiceField(queryset=SourceTrait.objects.all(),
@@ -68,6 +68,45 @@ class TaggedTraitForm(forms.ModelForm):
         self.helper.layout.append(button_save)
 
 
+class TaggedTraitByTagForm(forms.Form):
+    """Form for creating a single TaggedTrait object with a specific tag."""
+
+    title = 'Tag a phenotype'
+    trait = forms.ModelChoiceField(
+        queryset=SourceTrait.objects.all(),
+        required=True,
+        widget=autocomplete.ModelSelect2(url='trait_browser:source:taggable-autocomplete'),
+        help_text='Select one or more phenotypes.')
+    # Set required=False for recommended - otherwise it will be required to be checked, which disallows False values.
+    # Submitting an empty value for this field sets the field to False.
+    recommended = forms.BooleanField(required=False)
+
+    def __init__(self, *args, **kwargs):
+        # Get the user and remove it from kwargs (b/c/ of UserFormKwargsMixin on the view.)
+        self.user = kwargs.pop('user')
+        # Call super here to set up all of the fields.
+        super(TaggedTraitByTagForm, self).__init__(*args, **kwargs)
+        # Filter the queryset of traits by the user's taggable studies, and only non-deprecated.
+        studies = list(UserData.objects.get(user=self.user).taggable_studies.all())
+        if len(studies) == 1:
+            self.title += ' for study {} ({})'.format(studies[0].phs, studies[0].i_study_name)
+        else:
+            study_string = '; '.join(['{} ({})'.format(x.phs, x.i_study_name) for x in studies])
+            self.title += ' for studies ' + study_string
+        self.fields['trait'].queryset = SourceTrait.objects.filter(
+            source_dataset__source_study_version__study__in=studies,
+            source_dataset__source_study_version__i_is_deprecated=False
+        )
+        # Form formatting and add a submit button.
+        self.helper = FormHelper(self)
+        self.helper.form_class = 'form-horizontal'
+        self.helper.label_class = 'col-sm-2'
+        self.helper.field_class = 'col-sm-6'
+        self.helper.form_method = 'post'
+        button_save = generate_button_html('submit', 'Save', btn_type='submit', css_class='btn-primary')
+        self.helper.layout.append(button_save)
+
+
 class ManyTaggedTraitsForm(forms.Form):
     """Form for creating TaggedTrait objects."""
 
@@ -75,7 +114,7 @@ class ManyTaggedTraitsForm(forms.Form):
     traits = forms.ModelMultipleChoiceField(
         queryset=SourceTrait.objects.all(),
         required=True,
-        widget=autocomplete.ModelSelect2Multiple(url='trait_browser:source:autocomplete'),
+        widget=autocomplete.ModelSelect2Multiple(url='trait_browser:source:taggable-autocomplete'),
         help_text='Select one or more phenotypes.')
     tag = forms.ModelChoiceField(queryset=models.Tag.objects.all(), required=True)
     # Set required=False for recommended - otherwise it will be required to be checked, which disallows False values.
@@ -108,18 +147,6 @@ class ManyTaggedTraitsForm(forms.Form):
         self.helper.layout.append(button_save)
 
 
-# class StudyManyTaggedTraitsForm(ManyTaggedTraitsForm):
-# 
-#     def __init__(self, *args, **kwargs):
-#         """Override __init__ to make the form study-specific."""
-#         study_pk = kwargs.pop('study_pk')
-#         super(StudyManyTaggedTraitsForm, self).__init__(*args, **kwargs)
-#         study = Study.objects.get(pk=study_pk)
-#         self.title += ' for study {} ({})'.format(study.phs, study.i_study_name)
-#         self.fields['traits'].queryset = SourceTrait.objects.filter(
-#             source_dataset__source_study_version__study__pk=study_pk)
-# 
-# 
 # class ManyTaggedTraitsFromTagForm(forms.Form):
 #     """Form for creating TaggedTrait objects from a specific Tag object."""
 # 

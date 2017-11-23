@@ -109,6 +109,45 @@ class ManyTaggedTraitsFormTest(TestCase):
         self.assertFalse(form.has_error('recommended'))
 
 
+class TaggedTraitByTagFormTest(TestCase):
+    form_class = forms.TaggedTraitByTagForm
+
+    def setUp(self):
+        super(TaggedTraitByTagFormTest, self).setUp()
+        self.tag = factories.TagFactory.create()
+        self.trait = SourceTraitFactory.create()
+        self.user = UserFactory.create()
+        phenotype_taggers = Group.objects.get(name='phenotype_taggers')
+        self.user.groups.add(phenotype_taggers)
+        UserData.objects.create(user=self.user)
+        self.user.refresh_from_db()
+        self.user.userdata_set.first().taggable_studies.add(self.trait.source_dataset.source_study_version.study)
+
+    def test_valid(self):
+        """Form is valid with all necessary input."""
+        form_data = {'trait': [str(self.trait.pk)], 'recommended': False}
+        form = self.form_class(data=form_data, user=self.user)
+        self.assertTrue(form.is_valid())
+
+    def test_invalid_missing_trait(self):
+        """Form is invalid if trait is omitted."""
+        form_data = {'trait': '', 'recommended': False}
+        form = self.form_class(data=form_data, user=self.user)
+        self.assertFalse(form.is_valid())
+        self.assertTrue(form.has_error('trait'))
+
+    def test_valid_missing_recommended(self):
+        """Form is valid if recommended is omitted."""
+        # Because it's a boolean field, required=True has a different meaning.
+        # "If you want to include a boolean in your form that can be either True or False (e.g. a checked or unchecked
+        # checkbox), you must remember to pass in required=False when creating the BooleanField."
+        # See Django docs: https://docs.djangoproject.com/en/1.8/ref/forms/fields/#django.forms.BooleanField
+        form_data = {'trait': self.trait.pk, 'recommended': ''}
+        form = self.form_class(data=form_data, user=self.user)
+        self.assertTrue(form.is_valid())
+        self.assertFalse(form.has_error('recommended'))
+
+
 # class TaggedTraitMultipleFromTagFormTest(TestCase):
 #     form_class = forms.TaggedTraitMultipleFromTagForm
 # 

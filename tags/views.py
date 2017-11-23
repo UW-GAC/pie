@@ -61,6 +61,46 @@ class TaggedTraitCreate(LoginRequiredMixin, GroupRequiredMixin, TaggableStudiesR
         return mark_safe(msg)
 
 
+class TaggedTraitCreateByTag(LoginRequiredMixin, GroupRequiredMixin, TaggableStudiesRequiredMixin, UserFormKwargsMixin,
+                             FormMessagesMixin, FormView):
+    """Form view class for tagging a trait with a specific tag."""
+
+    form_class = forms.TaggedTraitByTagForm
+    form_invalid_message = TAGGING_ERROR_MESSAGE
+    template_name = 'tags/taggedtrait_form.html'
+    group_required = [u"phenotype_taggers", ]
+    raise_exception = True
+    redirect_unauthenticated_users = True
+
+    def dispatch(self, request, *args, **kwargs):
+        self.tag = get_object_or_404(models.Tag, pk=kwargs.get('pk'))
+        return super(TaggedTraitCreateByTag, self).dispatch(request, *args, **kwargs)
+
+    def form_valid(self, form):
+        """Create a TaggedTrait object for the trait given, with a specific tag."""
+        tagged_trait = models.TaggedTrait(
+            tag=self.tag, trait=form.cleaned_data['trait'], creator=self.request.user,
+            recommended=form.cleaned_data['recommended'])
+        tagged_trait.full_clean()
+        tagged_trait.save()
+        # Save the traits so you can use them in the form valid message.
+        self.trait = form.cleaned_data['trait']
+        return super(TaggedTraitCreateByTag, self).form_valid(form)
+
+    def get_context_data(self, **kwargs):
+        context = super(TaggedTraitCreateByTag, self).get_context_data(**kwargs)
+        context['tag'] = self.tag
+        return context
+
+    def get_success_url(self):
+        return self.tag.get_absolute_url()
+
+    def get_form_valid_message(self):
+        msg = 'Phenotype <a href="{}">{}</a> tagged as {}'.format(
+            self.trait.get_absolute_url(), self.trait.i_trait_name, self.tag.title)
+        return mark_safe(msg)
+
+
 class ManyTaggedTraitsCreate(LoginRequiredMixin, GroupRequiredMixin, TaggableStudiesRequiredMixin, UserFormKwargsMixin,
                              FormMessagesMixin, FormView):
     """Form view class for tagging multiple traits with one tag."""
