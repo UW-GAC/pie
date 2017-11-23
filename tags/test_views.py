@@ -2,6 +2,7 @@
 
 from faker import Faker
 
+from django.contrib.auth.models import Group
 from django.core.urlresolvers import reverse
 
 from core.utils import LoginRequiredTestCase, PhenotypeTaggerLoginTestCase, UserLoginTestCase
@@ -107,6 +108,30 @@ class TaggedTraitCreateTest(PhenotypeTaggerLoginTestCase):
         new_object = models.TaggedTrait.objects.latest('pk')
         self.assertEqual(self.user, new_object.creator)
 
+    def test_fails_with_other_study_trait(self):
+        """Tagging a trait fails when the trait is not in the user's taggable_studies'."""
+        study2 = StudyFactory.create()
+        trait2 = SourceTraitFactory.create(source_dataset__source_study_version__study=study2)
+        response = self.client.post(self.get_url(), {'trait': trait2.pk, 'tag': self.tag.pk, 'recommended': False})
+        # They have taggable studies and they're in the phenotype_taggers group, so view is still accessible.
+        self.assertEqual(response.status_code, 200)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertTrue('Oops!' in str(messages[0]))
+
+    def test_forbidden_non_taggers(self):
+        """View returns 403 code when the user is not in phenotype_taggers."""
+        phenotype_taggers = Group.objects.get(name='phenotype_taggers')
+        self.user.groups.remove(phenotype_taggers)
+        response = self.client.get(self.get_url())
+        self.assertEqual(response.status_code, 403)
+
+    def test_forbidden_empty_taggable_studies(self):
+        """View returns 403 code when the user has no taggable_studies."""
+        self.user.userdata_set.first().taggable_studies.remove(self.trait.source_dataset.source_study_version.study)
+        response = self.client.get(self.get_url())
+        self.assertEqual(response.status_code, 403)
+
 
 class TaggedTraitCreateByTagTest(PhenotypeTaggerLoginTestCase):
 
@@ -174,6 +199,30 @@ class TaggedTraitCreateByTagTest(PhenotypeTaggerLoginTestCase):
                                     {'trait': self.trait.pk, 'recommended': False})
         new_object = models.TaggedTrait.objects.latest('pk')
         self.assertEqual(self.user, new_object.creator)
+
+    def test_fails_with_other_study_trait(self):
+        """Tagging a trait fails when the trait is not in the user's taggable_studies'."""
+        study2 = StudyFactory.create()
+        trait2 = SourceTraitFactory.create(source_dataset__source_study_version__study=study2)
+        response = self.client.post(self.get_url(self.tag.pk), {'trait': trait2.pk, 'recommended': False})
+        # They have taggable studies and they're in the phenotype_taggers group, so view is still accessible.
+        self.assertEqual(response.status_code, 200)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertTrue('Oops!' in str(messages[0]))
+
+    def test_forbidden_non_taggers(self):
+        """View returns 403 code when the user is not in phenotype_taggers."""
+        phenotype_taggers = Group.objects.get(name='phenotype_taggers')
+        self.user.groups.remove(phenotype_taggers)
+        response = self.client.get(self.get_url(self.tag.pk))
+        self.assertEqual(response.status_code, 403)
+
+    def test_forbidden_empty_taggable_studies(self):
+        """View returns 403 code when the user has no taggable_studies."""
+        self.user.userdata_set.first().taggable_studies.remove(self.trait.source_dataset.source_study_version.study)
+        response = self.client.get(self.get_url(self.tag.pk))
+        self.assertEqual(response.status_code, 403)
 
 
 class ManyTaggedTraitsCreateTest(PhenotypeTaggerLoginTestCase):
@@ -279,6 +328,31 @@ class ManyTaggedTraitsCreateTest(PhenotypeTaggerLoginTestCase):
         new_object = models.TaggedTrait.objects.latest('pk')
         self.assertEqual(self.user, new_object.creator)
 
+    def test_fails_with_other_study_traits(self):
+        """Tagging a trait fails when the trait is not in the user's taggable_studies'."""
+        study2 = StudyFactory.create()
+        traits2 = SourceTraitFactory.create_batch(5, source_dataset__source_study_version__study=study2)
+        response = self.client.post(self.get_url(),
+                                    {'traits': [str(x.pk) for x in traits2], 'tag': self.tag.pk, 'recommended': False})
+        # They have taggable studies and they're in the phenotype_taggers group, so view is still accessible.
+        self.assertEqual(response.status_code, 200)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertTrue('Oops!' in str(messages[0]))
+
+    def test_forbidden_non_taggers(self):
+        """View returns 403 code when the user is not in phenotype_taggers."""
+        phenotype_taggers = Group.objects.get(name='phenotype_taggers')
+        self.user.groups.remove(phenotype_taggers)
+        response = self.client.get(self.get_url())
+        self.assertEqual(response.status_code, 403)
+
+    def test_forbidden_empty_taggable_studies(self):
+        """View returns 403 code when the user has no taggable_studies."""
+        self.user.userdata_set.first().taggable_studies.remove(self.traits[0].source_dataset.source_study_version.study)
+        response = self.client.get(self.get_url())
+        self.assertEqual(response.status_code, 403)
+
 
 class ManyTaggedTraitsCreateByTagTest(PhenotypeTaggerLoginTestCase):
 
@@ -379,6 +453,31 @@ class ManyTaggedTraitsCreateByTagTest(PhenotypeTaggerLoginTestCase):
                                     {'traits': [str(self.traits[0].pk)], 'recommended': False})
         new_object = models.TaggedTrait.objects.latest('pk')
         self.assertEqual(self.user, new_object.creator)
+
+    def test_fails_with_other_study_traits(self):
+        """Tagging a trait fails when the trait is not in the user's taggable_studies'."""
+        study2 = StudyFactory.create()
+        traits2 = SourceTraitFactory.create_batch(5, source_dataset__source_study_version__study=study2)
+        response = self.client.post(self.get_url(self.tag.pk),
+                                    {'traits': [str(x.pk) for x in traits2], 'tag': self.tag.pk, 'recommended': False})
+        # They have taggable studies and they're in the phenotype_taggers group, so view is still accessible.
+        self.assertEqual(response.status_code, 200)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertTrue('Oops!' in str(messages[0]))
+
+    def test_forbidden_non_taggers(self):
+        """View returns 403 code when the user is not in phenotype_taggers."""
+        phenotype_taggers = Group.objects.get(name='phenotype_taggers')
+        self.user.groups.remove(phenotype_taggers)
+        response = self.client.get(self.get_url(self.tag.pk))
+        self.assertEqual(response.status_code, 403)
+
+    def test_forbidden_empty_taggable_studies(self):
+        """View returns 403 code when the user has no taggable_studies."""
+        self.user.userdata_set.first().taggable_studies.remove(self.traits[0].source_dataset.source_study_version.study)
+        response = self.client.get(self.get_url(self.tag.pk))
+        self.assertEqual(response.status_code, 403)
 
 
 class TagsLoginRequiredTestCase(LoginRequiredTestCase):
