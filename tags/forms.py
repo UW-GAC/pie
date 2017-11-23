@@ -108,7 +108,7 @@ class TaggedTraitByTagForm(forms.Form):
 
 
 class ManyTaggedTraitsForm(forms.Form):
-    """Form for creating TaggedTrait objects."""
+    """Form for creating many TaggedTrait objects."""
 
     title = 'Tag phenotypes'
     traits = forms.ModelMultipleChoiceField(
@@ -147,30 +147,45 @@ class ManyTaggedTraitsForm(forms.Form):
         self.helper.layout.append(button_save)
 
 
-# class ManyTaggedTraitsFromTagForm(forms.Form):
-#     """Form for creating TaggedTrait objects from a specific Tag object."""
-# 
-#     title = 'Tag phenotypes'
-#     traits = forms.ModelMultipleChoiceField(
-#         queryset=SourceTrait.objects.all(),
-#         required=True,
-#         widget=autocomplete.ModelSelect2Multiple(url='trait_browser:source:autocomplete'),
-#         help_text='Select one or more phenotypes.')
-#     # Set required=False for recommended - otherwise it will be required to be checked, which disallows False values.
-#     # Submitting an empty value for this field sets the field to False.
-#     recommended = forms.BooleanField(required=False)
-# 
-#     def __init__(self, *args, **kwargs):
-#         super(TaggedTraitMultipleFromTagForm, self).__init__(*args, **kwargs)
-#         self.helper = FormHelper(self)
-#         self.helper.form_class = 'form-horizontal'
-#         self.helper.label_class = 'col-sm-2'
-#         self.helper.field_class = 'col-sm-6'
-#         self.helper.form_method = 'post'
-#         button_save = generate_button_html('submit', 'Save', btn_type='submit', css_class='btn-primary')
-#         self.helper.layout.append(button_save)
-# 
-# 
+class ManyTaggedTraitsByTagForm(forms.Form):
+    """Form for creating many TaggedTrait objects for a specific tag."""
+
+    title = 'Tag phenotypes'
+    traits = forms.ModelMultipleChoiceField(
+        queryset=SourceTrait.objects.all(),
+        required=True,
+        widget=autocomplete.ModelSelect2Multiple(url='trait_browser:source:taggable-autocomplete'),
+        help_text='Select one or more phenotypes.')
+    # Set required=False for recommended - otherwise it will be required to be checked, which disallows False values.
+    # Submitting an empty value for this field sets the field to False.
+    recommended = forms.BooleanField(required=False)
+
+    def __init__(self, *args, **kwargs):
+        # Get the user and remove it from kwargs (b/c/ of UserFormKwargsMixin on the view.)
+        self.user = kwargs.pop('user')
+        # Call super here to set up all of the fields.
+        super(ManyTaggedTraitsByTagForm, self).__init__(*args, **kwargs)
+        # Filter the queryset of traits by the user's taggable studies, and only non-deprecated.
+        studies = list(UserData.objects.get(user=self.user).taggable_studies.all())
+        if len(studies) == 1:
+            self.title += ' for study {} ({})'.format(studies[0].phs, studies[0].i_study_name)
+        else:
+            study_string = '; '.join(['{} ({})'.format(x.phs, x.i_study_name) for x in studies])
+            self.title += ' for studies ' + study_string
+        self.fields['traits'].queryset = SourceTrait.objects.filter(
+            source_dataset__source_study_version__study__in=studies,
+            source_dataset__source_study_version__i_is_deprecated=False
+        )
+        # Form formatting and add a submit button.
+        self.helper = FormHelper(self)
+        self.helper.form_class = 'form-horizontal'
+        self.helper.label_class = 'col-sm-2'
+        self.helper.field_class = 'col-sm-6'
+        self.helper.form_method = 'post'
+        button_save = generate_button_html('submit', 'Save', btn_type='submit', css_class='btn-primary')
+        self.helper.layout.append(button_save)
+
+
 class TagSpecificTraitForm(forms.Form):
     """Form for creating TaggedTrait objects from a specific SourceTrait object."""
 

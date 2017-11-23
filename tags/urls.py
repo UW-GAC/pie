@@ -15,7 +15,7 @@ add_one_patterns = [
 
 add_many_patterns = [
     url(r'^$', views.ManyTaggedTraitsCreate.as_view(), name='main'),
-    # url(r'^(?P<pk>\d+)/$', views.  .as_view(), name='by-tag'),
+    url(r'^(?P<pk>\d+)/$', views.ManyTaggedTraitsCreateByTag.as_view(), name='by-tag'),
 ]
 
 tag_patterns = [
