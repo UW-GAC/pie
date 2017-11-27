@@ -43,6 +43,35 @@ class TagDetailTest(UserLoginTestCase):
         self.assertTrue('tag' in context)
         self.assertIsInstance(context['tag'], models.Tag)
 
+    def test_no_tagging_button(self):
+        """Regular user does not see a button to add tags on this detail page."""
+        response = self.client.get(self.get_url(self.tag.pk))
+        self.assertNotContains(response, 'Tag phenotypes as "{}"'.format(self.tag.title))
+
+
+class TagDetailPhenotypeTaggerTest(PhenotypeTaggerLoginTestCase):
+
+    def setUp(self):
+        super(TagDetailPhenotypeTaggerTest, self).setUp()
+        self.trait = SourceTraitFactory.create()
+        self.tag = factories.TagFactory.create()
+        UserData.objects.create(user=self.user)
+        self.user.refresh_from_db()
+        self.user.userdata_set.first().taggable_studies.add(self.trait.source_dataset.source_study_version.study)
+
+    def get_url(self, *args):
+        return reverse('tags:tag:detail', args=args)
+
+    def test_view_success_code(self):
+        """View returns successful response code."""
+        response = self.client.get(self.get_url(self.tag.pk))
+        self.assertEqual(response.status_code, 200)
+
+    def test_has_tagging_button(self):
+        """A phenotype tagger does see a button to add tags on this detail page."""
+        response = self.client.get(self.get_url(self.tag.pk))
+        self.assertContains(response, 'Tag phenotypes as "{}"'.format(self.tag.title))
+
 
 class TaggedTraitCreateTest(PhenotypeTaggerLoginTestCase):
 

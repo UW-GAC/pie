@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load core_tags %}
 
 {% block head_title %}
      | {{ tag.lower_title }} details
@@ -15,8 +16,12 @@
             <dt>Instructions</dt><dd>{{ tag.instructions }}</dd>
             <dt>N tagged</dt><dd>{{ tag.traits.count }}</dd>
         </dl>
-        <p><a href="#" class="btn btn-primary" role="button">Tag phenotypes as "{{ tag.title }}"</a></p>
-        {# <p><a href="{% url 'tags:add-many:tag' pk=tag.pk %}" class="btn btn-primary" role="button">Tag phenotypes as "{{ tag.title }}"</a></p>#}
+        {% if request.user|has_group:"phenotype_taggers" or request.user.is_staff %}
+            <p>
+                <a href="{% url 'tags:add-many:by-tag' pk=tag.pk %}" class="btn btn-primary" role="button">
+                Tag phenotypes as "{{ tag.title }}"</a>
+            </p>
+        {% endif %}
         
         <div class="panel panel-default">
             <div class="panel-heading"><h4 class="panel-title">Tagged phenotypes</h4></div>
