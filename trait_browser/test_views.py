@@ -3,8 +3,9 @@
 from copy import copy
 import re
 
-from django.test import TestCase
+from django.contrib.auth.models import Group
 from django.core.urlresolvers import reverse
+from django.test import TestCase
 
 from core.utils import UserLoginTestCase, LoginRequiredTestCase, PhenotypeTaggerLoginTestCase, get_autocomplete_view_ids
 from profiles.models import Search, UserData
@@ -638,12 +639,6 @@ class TaggableStudyFilteredSourceTraitPHVAutocompleteTestCase(PhenotypeTaggerLog
         response = self.client.get(self.get_url())
         self.assertEqual(response.status_code, 200)
 
-    def test_view_with_invalid_pk(self):
-        """View returns 404 response code when the user has no taggable studies."""
-        self.user.userdata_set.first().taggable_studies.remove(self.study)
-        response = self.client.get(self.get_url())
-        self.assertEqual(response.status_code, 404)
-
     def test_returns_all_traits(self):
         """Queryset returns all of the traits with no query (when there are 10, which is the page limit)."""
         url = self.get_url()
@@ -709,6 +704,19 @@ class TaggableStudyFilteredSourceTraitPHVAutocompleteTestCase(PhenotypeTaggerLog
         self.assertIn(query_trait.pk, returned_pks)
         self.assertNotIn(self.source_traits[2].pk, returned_pks)
 
+    def test_forbidden_non_taggers(self):
+        """View returns 403 code when the user is not in phenotype_taggers."""
+        phenotype_taggers = Group.objects.get(name='phenotype_taggers')
+        self.user.groups.remove(phenotype_taggers)
+        response = self.client.get(self.get_url())
+        self.assertEqual(response.status_code, 403)
+
+    def test_forbidden_empty_taggable_studies(self):
+        """View returns 403 code when the user has no taggable_studies."""
+        self.user.userdata_set.first().taggable_studies.remove(self.study)
+        response = self.client.get(self.get_url())
+        self.assertEqual(response.status_code, 403)
+
 
 class HarmonizedTraitFlavorNameAutocompleteViewTest(UserLoginTestCase):
     """Autocomplete view works as expected."""
@@ -742,8 +750,12 @@ class SourceTraitTaggingTest(PhenotypeTaggerLoginTestCase):
 
     def setUp(self):
         super(SourceTraitTaggingTest, self).setUp()
-        self.trait = factories.SourceTraitFactory.create()
+        self.study = factories.StudyFactory.create()
+        self.trait = factories.SourceTraitFactory.create(source_dataset__source_study_version__study=self.study)
         self.tag = TagFactory.create()
+        UserData.objects.create(user=self.user)
+        self.user.refresh_from_db()
+        self.user.userdata_set.first().taggable_studies.add(self.study)
 
     def get_url(self, *args):
         """Get the url for the view this class is supposed to test."""
@@ -805,3 +817,25 @@ class SourceTraitTaggingTest(PhenotypeTaggerLoginTestCase):
                                     {'tag': self.tag.pk, 'recommended': False})
         new_object = TaggedTrait.objects.latest('pk')
         self.assertEqual(self.user, new_object.creator)
+
+    def test_forbidden_non_taggers(self):
+        """View returns 403 code when the user is not in phenotype_taggers."""
+        phenotype_taggers = Group.objects.get(name='phenotype_taggers')
+        self.user.groups.remove(phenotype_taggers)
+        response = self.client.get(self.get_url(self.trait.pk))
+        self.assertEqual(response.status_code, 403)
+
+    def test_forbidden_empty_taggable_studies(self):
+        """View returns 403 code when the user has no taggable_studies."""
+        self.user.userdata_set.first().taggable_studies.remove(self.study)
+        response = self.client.get(self.get_url(self.trait.pk))
+        self.assertEqual(response.status_code, 403)
+
+    def test_forbidden_trait_not_in_taggable_studies(self):
+        """View returns 403 code when the trait is not in the user's taggable_studies."""
+        # Remove the study linked to the trait, but add another study so that taggable_studies is not empty.
+        self.user.userdata_set.first().taggable_studies.remove(self.study)
+        another_study = factories.StudyFactory.create()
+        self.user.userdata_set.first().taggable_studies.add(another_study)
+        response = self.client.get(self.get_url(self.trait.pk))
+        self.assertEqual(response.status_code, 403)

@@ -8,7 +8,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.utils.safestring import mark_safe
 from django.views.generic import DetailView, FormView
 
-from braces.views import FormMessagesMixin, GroupRequiredMixin, LoginRequiredMixin
+from braces.views import FormMessagesMixin, GroupRequiredMixin, LoginRequiredMixin, UserPassesTestMixin
 from dal import autocomplete
 from django_tables2 import RequestConfig, SingleTableMixin
 from urllib.parse import parse_qs
@@ -16,7 +16,7 @@ from urllib.parse import parse_qs
 import profiles.models
 from tags.forms import TagSpecificTraitForm
 from tags.models import TaggedTrait
-from tags.views import TAGGING_ERROR_MESSAGE
+from tags.views import TAGGING_ERROR_MESSAGE, TaggableStudiesRequiredMixin
 from . import models
 from . import tables
 from . import forms
@@ -63,7 +63,7 @@ class HarmonizedTraitSetVersionDetail(LoginRequiredMixin, FormMessagesMixin, Det
     template_name = 'trait_browser/harmonized_trait_set_version_detail.html'
 
 
-class SourceTraitTagging(LoginRequiredMixin, GroupRequiredMixin, FormMessagesMixin, FormView):
+class SourceTraitTagging(LoginRequiredMixin, GroupRequiredMixin, UserPassesTestMixin, FormMessagesMixin, FormView):
     """Form view class for tagging a specific source trait."""
 
     form_class = TagSpecificTraitForm
@@ -92,6 +92,10 @@ class SourceTraitTagging(LoginRequiredMixin, GroupRequiredMixin, FormMessagesMix
         # Save the tag for use in the success url.
         self.tag = form.cleaned_data['tag']
         return super(SourceTraitTagging, self).form_valid(form)
+
+    def test_func(self, user):
+        user_studies = list(user.userdata_set.first().taggable_studies.all())
+        return self.trait.source_dataset.source_study_version.study in user_studies
 
     def get_success_url(self):
         return self.trait.get_absolute_url()
@@ -279,17 +283,19 @@ class SourceTraitPHVAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySe
         return retrieved
 
 
-class TaggableStudyFilteredSourceTraitPHVAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
+class TaggableStudyFilteredSourceTraitPHVAutocomplete(LoginRequiredMixin, GroupRequiredMixin, TaggableStudiesRequiredMixin, autocomplete.Select2QuerySetView):
     """View for auto-completing SourceTraits by phv in a specific study.
 
     Used with django-autocomplete-light package. Autocomplete by dbGaP accession.
     Only include latest version.
     """
 
+    group_required = [u"phenotype_taggers", ]
+    raise_exception = True
+    redirect_unauthenticated_users = True
+
     def get_queryset(self):
         studies = self.request.user.userdata_set.first().taggable_studies.all()
-        if len(studies) < 1:
-            raise Http404('User has no taggable studies.')
         retrieved = models.SourceTrait.objects.filter(
             source_dataset__source_study_version__study__in=list(studies),
             source_dataset__source_study_version__i_is_deprecated=False
