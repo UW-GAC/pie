@@ -54,6 +54,12 @@ class SourceTraitDetail(LoginRequiredMixin, DetailView):
     context_object_name = 'source_trait'
     template_name = 'trait_browser/source_trait_detail.html'
 
+    def get_context_data(self, **kwargs):
+        context = super(SourceTraitDetail, self).get_context_data(**kwargs)
+        user_studies = list(self.request.user.userdata_set.first().taggable_studies.all())
+        context['user_is_study_tagger'] = self.object.source_dataset.source_study_version.study in user_studies
+        return context
+
 
 class HarmonizedTraitSetVersionDetail(LoginRequiredMixin, FormMessagesMixin, DetailView):
     """Detail view class for HarmonizedTraitSetVersions. Inherits from django.views.generic.DetailView."""

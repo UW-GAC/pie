@@ -116,6 +116,40 @@ class HarmonizedSearchTestCase(TestCase):
         self.assertNotIn(st_nonmatch, search1)
 
 
+class SourceTraitDetailTest(UserLoginTestCase):
+
+    def setUp(self):
+        super(SourceTraitDetailTest, self).setUp()
+        UserData.objects.create(user=self.user)
+        self.trait = factories.SourceTraitFactory.create()
+
+    def get_url(self, *args):
+        return reverse('trait_browser:source:detail', args=args)
+
+    def test_view_success_code(self):
+        """View returns successful response code."""
+        response = self.client.get(self.get_url(self.trait.pk))
+        self.assertEqual(response.status_code, 200)
+
+    def test_view_with_invalid_pk(self):
+        """View returns 404 response code when the pk doesn't exist."""
+        response = self.client.get(self.get_url(self.trait.pk + 1))
+        self.assertEqual(response.status_code, 404)
+
+    def test_context_data(self):
+        """View has appropriate data in the context."""
+        response = self.client.get(self.get_url(self.trait.pk))
+        context = response.context
+        self.assertTrue('source_trait' in context)
+        self.assertTrue('user_is_study_tagger' in context)
+        self.assertIsInstance(context['source_trait'], models.SourceTrait)
+
+    def test_no_tagging_button(self):
+        """Regular user does not see a button to add tags on this detail page."""
+        response = self.client.get(self.get_url(self.trait.pk))
+        self.assertNotContains(response, 'Tag this phenotype')
+
+
 class SourceTraitViewsTestCase(UserLoginTestCase):
     """Unit tests for the SourceTrait views."""
 
@@ -154,21 +188,6 @@ class SourceTraitViewsTestCase(UserLoginTestCase):
         self.assertEqual(response.status_code, 200)
         # Does the source trait table object have n_traits rows?
         self.assertEqual(len(response.context['trait_table'].rows), n_traits)
-
-    def test_source_trait_detail_valid(self):
-        """Tests that the SourceTrait detail page returns 200 with a valid pk."""
-        trait = factories.SourceTraitFactory.create()
-        # Test that the page works with a valid pk.
-        url = reverse('trait_browser:source:detail', args=[trait.i_trait_id])
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, 200)
-
-    def test_source_trait_detail_invalid(self):
-        """Tests that the SourceTrait detail page returns 404 with an invalid pk."""
-        # No valid SourceTraits exist here.
-        url = reverse('trait_browser:source:detail', args=[10])
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, 404)
 
     def test_source_trait_absolute_url(self):
         """Tests the get_absolute_url() method of the SourceTrait object returns a 200 as a response."""
