@@ -10,12 +10,20 @@
 {% block content %}
     <h1>
         {{ form.title }}
+        <p><small>{{ form.subtitle }}
         {% if tag %}
-            as {{ tag.title }}
+            with the <mark>{{ tag.title }}</mark> tag
+        {% endif %}
+        </small></p>
+{% comment %}
+        {% if tag %}
+            
         {% elif trait %}
             {{ trait.i_trait_name }}
         {% endif %}
+{% endcomment %}
     </h1>
+    <p>{{ form.subtitle2 }}</p>
     
     {% include '_messages.html' %}
     {% crispy form %}

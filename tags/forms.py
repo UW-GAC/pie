@@ -1,6 +1,7 @@
 """Form classes for the tags app."""
 
 from django import forms
+from django.utils.safestring import mark_safe
 
 from braces.forms import UserKwargModelFormMixin
 from crispy_forms.helper import FormHelper
@@ -27,6 +28,7 @@ class TaggedTraitForm(forms.ModelForm):
     """Form for creating a single TaggedTrait object."""
 
     title = 'Tag a phenotype'
+    subtitle = 'Label a phenotype with the selected tag'
     trait = forms.ModelChoiceField(queryset=SourceTrait.objects.all(),
                                    required=True,
                                    label='Phenotype',
@@ -51,10 +53,16 @@ class TaggedTraitForm(forms.ModelForm):
         # Filter the queryset of traits by the user's taggable studies, and only non-deprecated.
         studies = list(UserData.objects.get(user=self.user).taggable_studies.all())
         if len(studies) == 1:
-            self.title += ' for study {} ({})'.format(studies[0].phs, studies[0].i_study_name)
+            self.subtitle2 = 'You can tag phenotypes from the study {} ({})'.format(studies[0].i_study_name, studies[0].phs)
         else:
-            study_string = '; '.join(['{} ({})'.format(x.phs, x.i_study_name) for x in studies])
-            self.title += ' for studies ' + study_string
+            self.subtitle2 = 'You can tag phenotypes from the following studies:'
+            for study in studies:
+                self.subtitle2 += """
+                <ul>
+                    <li>{} ({})</li>
+                </ul>
+                """.format(study.i_study_name, study.phs)
+            self.subtitle2 = mark_safe(self.subtitle2)
         self.fields['trait'].queryset = SourceTrait.objects.filter(
             source_dataset__source_study_version__study__in=studies,
             source_dataset__source_study_version__i_is_deprecated=False
@@ -73,6 +81,7 @@ class TaggedTraitByTagForm(forms.Form):
     """Form for creating a single TaggedTrait object with a specific tag."""
 
     title = 'Tag a phenotype'
+    subtitle = 'Label a phenotype'
     trait = forms.ModelChoiceField(
         queryset=SourceTrait.objects.all(),
         required=True,
@@ -91,10 +100,16 @@ class TaggedTraitByTagForm(forms.Form):
         # Filter the queryset of traits by the user's taggable studies, and only non-deprecated.
         studies = list(UserData.objects.get(user=self.user).taggable_studies.all())
         if len(studies) == 1:
-            self.title += ' for study {} ({})'.format(studies[0].phs, studies[0].i_study_name)
+            self.subtitle2 = 'You can tag phenotypes from the study {} ({})'.format(studies[0].i_study_name, studies[0].phs)
         else:
-            study_string = '; '.join(['{} ({})'.format(x.phs, x.i_study_name) for x in studies])
-            self.title += ' for studies ' + study_string
+            self.subtitle2 = 'You can tag phenotypes from the following studies:'
+            for study in studies:
+                self.subtitle2 += """
+                <ul>
+                    <li>{} ({})</li>
+                </ul>
+                """.format(study.i_study_name, study.phs)
+            self.subtitle2 = mark_safe(self.subtitle2)
         self.fields['trait'].queryset = SourceTrait.objects.filter(
             source_dataset__source_study_version__study__in=studies,
             source_dataset__source_study_version__i_is_deprecated=False
@@ -113,6 +128,7 @@ class ManyTaggedTraitsForm(forms.Form):
     """Form for creating many TaggedTrait objects."""
 
     title = 'Tag phenotypes'
+    subtitle = 'Label phenotypes with the selected tag'
     tag = forms.ModelChoiceField(queryset=models.Tag.objects.all(), required=True)
     traits = forms.ModelMultipleChoiceField(
         queryset=SourceTrait.objects.all(),
@@ -135,10 +151,16 @@ class ManyTaggedTraitsForm(forms.Form):
         # Filter the queryset of traits by the user's taggable studies, and only non-deprecated.
         studies = list(UserData.objects.get(user=self.user).taggable_studies.all())
         if len(studies) == 1:
-            self.title += ' for study {} ({})'.format(studies[0].phs, studies[0].i_study_name)
+            self.subtitle2 = 'You can tag phenotypes from the study {} ({})'.format(studies[0].i_study_name, studies[0].phs)
         else:
-            study_string = '; '.join(['{} ({})'.format(x.phs, x.i_study_name) for x in studies])
-            self.title += ' for studies ' + study_string
+            self.subtitle2 = 'You can tag phenotypes from the following studies:'
+            for study in studies:
+                self.subtitle2 += """
+                <ul>
+                    <li>{} ({})</li>
+                </ul>
+                """.format(study.i_study_name, study.phs)
+            self.subtitle2 = mark_safe(self.subtitle2)
         self.fields['traits'].queryset = SourceTrait.objects.filter(
             source_dataset__source_study_version__study__in=studies,
             source_dataset__source_study_version__i_is_deprecated=False
@@ -174,6 +196,7 @@ class ManyTaggedTraitsByTagForm(forms.Form):
     """Form for creating many TaggedTrait objects for a specific tag."""
 
     title = 'Tag phenotypes'
+    subtitle = 'Label phenotypes'
     traits = forms.ModelMultipleChoiceField(
         queryset=SourceTrait.objects.all(),
         required=False,
@@ -195,10 +218,16 @@ class ManyTaggedTraitsByTagForm(forms.Form):
         # Filter the queryset of traits by the user's taggable studies, and only non-deprecated.
         studies = list(UserData.objects.get(user=self.user).taggable_studies.all())
         if len(studies) == 1:
-            self.title += ' for study {} ({})'.format(studies[0].phs, studies[0].i_study_name)
+            self.subtitle2 = 'You can tag phenotypes from the study {} ({})'.format(studies[0].i_study_name, studies[0].phs)
         else:
-            study_string = '; '.join(['{} ({})'.format(x.phs, x.i_study_name) for x in studies])
-            self.title += ' for studies ' + study_string
+            self.subtitle2 = 'You can tag phenotypes from the following studies:'
+            for study in studies:
+                self.subtitle2 += """
+                <ul>
+                    <li>{} ({})</li>
+                </ul>
+                """.format(study.i_study_name, study.phs)
+            self.subtitle2 = mark_safe(self.subtitle2)
         self.fields['traits'].queryset = SourceTrait.objects.filter(
             source_dataset__source_study_version__study__in=studies,
             source_dataset__source_study_version__i_is_deprecated=False
@@ -234,6 +263,7 @@ class TagSpecificTraitForm(forms.Form):
     """Form for creating TaggedTrait objects from a specific SourceTrait object."""
 
     title = 'Tag the phenotype'
+    subtitle = ''
     tag = forms.ModelChoiceField(queryset=models.Tag.objects.all(), required=True)
     # Set required=False for recommended - otherwise it will be required to be checked, which disallows False values.
     # Submitting an empty value for this field sets the field to False.
