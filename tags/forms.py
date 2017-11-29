@@ -113,6 +113,7 @@ class ManyTaggedTraitsForm(forms.Form):
     """Form for creating many TaggedTrait objects."""
 
     title = 'Tag phenotypes'
+    tag = forms.ModelChoiceField(queryset=models.Tag.objects.all(), required=True)
     traits = forms.ModelMultipleChoiceField(
         queryset=SourceTrait.objects.all(),
         required=False,
@@ -125,7 +126,6 @@ class ManyTaggedTraitsForm(forms.Form):
         label='Recommended phenotype(s)',
         widget=autocomplete.ModelSelect2Multiple(url='trait_browser:source:taggable-autocomplete'),
         help_text='Select one or more phenotypes.')
-    tag = forms.ModelChoiceField(queryset=models.Tag.objects.all(), required=True)
 
     def __init__(self, *args, **kwargs):
         # Get the user and remove it from kwargs (b/c/ of UserFormKwargsMixin on the view.)
