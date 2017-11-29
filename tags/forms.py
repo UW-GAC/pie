@@ -29,6 +29,7 @@ class TaggedTraitForm(forms.ModelForm):
     title = 'Tag a phenotype'
     trait = forms.ModelChoiceField(queryset=SourceTrait.objects.all(),
                                    required=True,
+                                   label='Phenotype',
                                    widget=autocomplete.ModelSelect2(url='trait_browser:source:taggable-autocomplete'))
     # Set required=False for recommended - otherwise it will be required to be checked, which disallows False values.
     # Submitting an empty value for this field sets the field to False.
@@ -75,6 +76,7 @@ class TaggedTraitByTagForm(forms.Form):
     trait = forms.ModelChoiceField(
         queryset=SourceTrait.objects.all(),
         required=True,
+        label='Phenotype',
         widget=autocomplete.ModelSelect2(url='trait_browser:source:taggable-autocomplete'),
         help_text='Select one or more phenotypes.')
     # Set required=False for recommended - otherwise it will be required to be checked, which disallows False values.
@@ -114,11 +116,13 @@ class ManyTaggedTraitsForm(forms.Form):
     traits = forms.ModelMultipleChoiceField(
         queryset=SourceTrait.objects.all(),
         required=False,
+        label='Phenotype(s)',
         widget=autocomplete.ModelSelect2Multiple(url='trait_browser:source:taggable-autocomplete'),
         help_text='Select one or more phenotypes.')
     recommended_traits = forms.ModelMultipleChoiceField(
         queryset=SourceTrait.objects.all(),
         required=False,
+        label='Recommended phenotype(s)',
         widget=autocomplete.ModelSelect2Multiple(url='trait_browser:source:taggable-autocomplete'),
         help_text='Select one or more phenotypes.')
     tag = forms.ModelChoiceField(queryset=models.Tag.objects.all(), required=True)
@@ -173,11 +177,13 @@ class ManyTaggedTraitsByTagForm(forms.Form):
     traits = forms.ModelMultipleChoiceField(
         queryset=SourceTrait.objects.all(),
         required=False,
+        label='Phenotype(s)',
         widget=autocomplete.ModelSelect2Multiple(url='trait_browser:source:taggable-autocomplete'),
         help_text='Select one or more phenotypes.')
     recommended_traits = forms.ModelMultipleChoiceField(
         queryset=SourceTrait.objects.all(),
         required=False,
+        label='Recommended phenotype(s)',
         widget=autocomplete.ModelSelect2Multiple(url='trait_browser:source:taggable-autocomplete'),
         help_text='Select one or more phenotypes.')
 
