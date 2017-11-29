@@ -117,13 +117,19 @@ class ManyTaggedTraitsCreate(LoginRequiredMixin, GroupRequiredMixin, TaggableStu
         for trait in form.cleaned_data['traits']:
             tagged_trait = models.TaggedTrait(
                 tag=form.cleaned_data['tag'], trait=trait, creator=self.request.user,
-                recommended=form.cleaned_data['recommended'])
+                recommended=False)
+            tagged_trait.full_clean()
+            tagged_trait.save()
+        for trait in form.cleaned_data['recommended_traits']:
+            tagged_trait = models.TaggedTrait(
+                tag=form.cleaned_data['tag'], trait=trait, creator=self.request.user,
+                recommended=True)
             tagged_trait.full_clean()
             tagged_trait.save()
         # Save the tag object so that you can use it in get_success_url.
         self.tag = form.cleaned_data['tag']
         # Save the traits so you can use them in the form valid message.
-        self.traits = form.cleaned_data['traits']
+        self.traits = list(form.cleaned_data['traits']) + list(form.cleaned_data['recommended_traits'])
         return super(ManyTaggedTraitsCreate, self).form_valid(form)
 
     def get_success_url(self):
@@ -157,11 +163,17 @@ class ManyTaggedTraitsCreateByTag(LoginRequiredMixin, GroupRequiredMixin, Taggab
         for trait in form.cleaned_data['traits']:
             tagged_trait = models.TaggedTrait(
                 tag=self.tag, trait=trait, creator=self.request.user,
-                recommended=form.cleaned_data['recommended'])
+                recommended=False)
+            tagged_trait.full_clean()
+            tagged_trait.save()
+        for trait in form.cleaned_data['recommended_traits']:
+            tagged_trait = models.TaggedTrait(
+                tag=self.tag, trait=trait, creator=self.request.user,
+                recommended=True)
             tagged_trait.full_clean()
             tagged_trait.save()
         # Save the traits so you can use them in the form valid message.
-        self.traits = form.cleaned_data['traits']
+        self.traits = list(form.cleaned_data['traits']) + list(form.cleaned_data['recommended_traits'])
         return super(ManyTaggedTraitsCreateByTag, self).form_valid(form)
 
     def get_context_data(self, **kwargs):

@@ -9,6 +9,7 @@ from core.utils import LoginRequiredTestCase, PhenotypeTaggerLoginTestCase, User
 from core.factories import UserFactory
 from profiles.models import UserData
 from trait_browser.factories import SourceTraitFactory, StudyFactory
+from trait_browser.models import SourceTrait
 from . import factories
 from . import forms
 from . import models
@@ -280,22 +281,39 @@ class ManyTaggedTraitsCreateTest(PhenotypeTaggerLoginTestCase):
         context = response.context
         self.assertTrue('form' in context)
 
-    def test_creates_new_object(self):
+    def test_creates_single_trait(self):
         """Posting valid data to the form correctly tags a single trait."""
-        # Check on redirection to detail page, M2M links, and creation message.
-        response = self.client.post(self.get_url(),
-                                    {'traits': [str(self.traits[0].pk)],
-                                     'tag': self.tag.pk, 'recommended': False})
+        this_trait = self.traits[0]
+        form_data = {'traits': [this_trait.pk], 'recommended_traits': [],
+                     'tag': self.tag.pk}
+        response = self.client.post(self.get_url(), form_data)
+        # Correctly goes to the tag's detail page and shows a success message.
         self.assertRedirects(response, self.tag.get_absolute_url())
-        new_object = models.TaggedTrait.objects.latest('pk')
-        self.assertIsInstance(new_object, models.TaggedTrait)
-        self.assertEqual(new_object.tag, self.tag)
-        self.assertEqual(new_object.trait, self.traits[0])
-        self.assertIn(self.traits[0], self.tag.traits.all())
-        self.assertIn(self.tag, self.traits[0].tag_set.all())
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
         self.assertFalse('Oops!' in str(messages[0]))
+        # Correctly creates a tagged_trait for each trait.
+        tagged_trait = models.TaggedTrait.objects.get(trait=this_trait, tag=self.tag)
+        self.assertIn(this_trait, self.tag.traits.all())
+        self.assertIn(self.tag, this_trait.tag_set.all())
+        self.assertFalse(tagged_trait.recommended)
+
+    def test_creates_single_recommended_trait(self):
+        """Posting valid data to the form correctly tags a single recommended trait."""
+        this_trait = self.traits[0]
+        form_data = {'traits': [], 'recommended_traits': [this_trait.pk],
+                     'tag': self.tag.pk}
+        response = self.client.post(self.get_url(), form_data)
+        # Correctly goes to the tag's detail page and shows a success message.
+        self.assertRedirects(response, self.tag.get_absolute_url())
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertFalse('Oops!' in str(messages[0]))
+        # Correctly creates a tagged_trait for each trait.
+        tagged_trait = models.TaggedTrait.objects.get(trait=this_trait, tag=self.tag)
+        self.assertIn(this_trait, self.tag.traits.all())
+        self.assertIn(self.tag, this_trait.tag_set.all())
+        self.assertTrue(tagged_trait.recommended)
 
     def test_creates_two_new_objects(self):
         """Posting valid data to the form correctly tags two traits."""
@@ -317,43 +335,52 @@ class ManyTaggedTraitsCreateTest(PhenotypeTaggerLoginTestCase):
 
     def test_creates_all_new_objects(self):
         """Posting valid data to the form correctly tags all of the traits listed."""
-        # Check on redirection to detail page, M2M links, and creation message.
-        response = self.client.post(self.get_url(),
-                                    {'traits': [str(t.pk) for t in self.traits],
-                                     'tag': self.tag.pk, 'recommended': False})
+        form_data = {'traits': [x.pk for x in self.traits[0:5]], 'recommended_traits': [x.pk for x in self.traits[5:]],
+                     'tag': self.tag.pk}
+        response = self.client.post(self.get_url(), form_data)
+        # Correctly goes to the tag's detail page and shows a success message.
         self.assertRedirects(response, self.tag.get_absolute_url())
-        for trait in self.traits:
-            self.assertIn(trait, self.tag.traits.all())
-            self.assertIn(self.tag, trait.tag_set.all())
-        new_objects = models.TaggedTrait.objects.all()
-        for tt in new_objects:
-            self.assertEqual(tt.tag, self.tag)
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
         self.assertFalse('Oops!' in str(messages[0]))
+        # Correctly creates a tagged_trait for each trait.
+        for trait_pk in form_data['traits']:
+            trait = SourceTrait.objects.get(pk=trait_pk)
+            tagged_trait = models.TaggedTrait.objects.get(trait__pk=trait_pk, tag=self.tag)
+            self.assertIn(trait, self.tag.traits.all())
+            self.assertIn(self.tag, trait.tag_set.all())
+            self.assertFalse(tagged_trait.recommended)
+        # Correctly creates a tagged_trait with recommended = True for each trait in recommended_traits.
+        for trait_pk in form_data['recommended_traits']:
+            trait = SourceTrait.objects.get(pk=trait_pk)
+            tagged_trait = models.TaggedTrait.objects.get(trait__pk=trait_pk, tag=self.tag)
+            self.assertIn(trait, self.tag.traits.all())
+            self.assertIn(self.tag, trait.tag_set.all())
+            self.assertTrue(tagged_trait.recommended)
 
     def test_invalid_form_message(self):
         """Posting invalid data results in a message about the invalidity."""
-        response = self.client.post(self.get_url(), {'traits': '', 'tag': self.tag.pk, 'recommended': False})
+        response = self.client.post(self.get_url(), {'traits': '', 'recommended_traits': [], 'tag': self.tag.pk})
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
         self.assertTrue('Oops!' in str(messages[0]))
 
-    def test_post_blank_trait(self):
+    def test_post_blank_all_traits(self):
         """Posting bad data to the form doesn't tag the trait and shows a form error."""
-        response = self.client.post(self.get_url(), {'traits': '', 'tag': self.tag.pk, 'recommended': False})
+        response = self.client.post(self.get_url(), {'traits': [], 'recommended_traits': [], 'tag': self.tag.pk})
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
         self.assertTrue('Oops!' in str(messages[0]))
         form = response.context['form']
         self.assertTrue(form.has_error('traits'))
+        self.assertTrue(form.has_error('recommended_traits'))
         self.assertNotIn(self.tag, self.traits[0].tag_set.all())
 
     def test_adds_user(self):
         """When a trait is successfully tagged, it has the appropriate creator."""
         response = self.client.post(self.get_url(),
-                                    {'traits': [str(self.traits[0].pk)],
-                                     'tag': self.tag.pk, 'recommended': False})
+                                    {'traits': [str(self.traits[0].pk)], 'recommended_traits': [],
+                                     'tag': self.tag.pk})
         new_object = models.TaggedTrait.objects.latest('pk')
         self.assertEqual(self.user, new_object.creator)
 
@@ -362,7 +389,8 @@ class ManyTaggedTraitsCreateTest(PhenotypeTaggerLoginTestCase):
         study2 = StudyFactory.create()
         traits2 = SourceTraitFactory.create_batch(5, source_dataset__source_study_version__study=study2)
         response = self.client.post(self.get_url(),
-                                    {'traits': [str(x.pk) for x in traits2], 'tag': self.tag.pk, 'recommended': False})
+                                    {'traits': [str(x.pk) for x in traits2], 'tag': self.tag.pk,
+                                     'recommended_traits': []})
         # They have taggable studies and they're in the phenotype_taggers group, so view is still accessible.
         self.assertEqual(response.status_code, 200)
         messages = list(response.wsgi_request._messages)

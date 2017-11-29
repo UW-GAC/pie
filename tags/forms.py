@@ -113,13 +113,15 @@ class ManyTaggedTraitsForm(forms.Form):
     title = 'Tag phenotypes'
     traits = forms.ModelMultipleChoiceField(
         queryset=SourceTrait.objects.all(),
-        required=True,
+        required=False,
+        widget=autocomplete.ModelSelect2Multiple(url='trait_browser:source:taggable-autocomplete'),
+        help_text='Select one or more phenotypes.')
+    recommended_traits = forms.ModelMultipleChoiceField(
+        queryset=SourceTrait.objects.all(),
+        required=False,
         widget=autocomplete.ModelSelect2Multiple(url='trait_browser:source:taggable-autocomplete'),
         help_text='Select one or more phenotypes.')
     tag = forms.ModelChoiceField(queryset=models.Tag.objects.all(), required=True)
-    # Set required=False for recommended - otherwise it will be required to be checked, which disallows False values.
-    # Submitting an empty value for this field sets the field to False.
-    recommended = forms.BooleanField(required=False)
 
     def __init__(self, *args, **kwargs):
         # Get the user and remove it from kwargs (b/c/ of UserFormKwargsMixin on the view.)
@@ -137,6 +139,10 @@ class ManyTaggedTraitsForm(forms.Form):
             source_dataset__source_study_version__study__in=studies,
             source_dataset__source_study_version__i_is_deprecated=False
         )
+        self.fields['recommended_traits'].queryset = SourceTrait.objects.filter(
+            source_dataset__source_study_version__study__in=studies,
+            source_dataset__source_study_version__i_is_deprecated=False
+        )
         # Form formatting and add a submit button.
         self.helper = FormHelper(self)
         self.helper.form_class = 'form-horizontal'
@@ -146,6 +152,19 @@ class ManyTaggedTraitsForm(forms.Form):
         button_save = generate_button_html('submit', 'Save', btn_type='submit', css_class='btn-primary')
         self.helper.layout.append(button_save)
 
+    def clean(self):
+        """Custom cleaning to check that at least one trait is selected."""
+        cleaned_data = super(ManyTaggedTraitsForm, self).clean()
+        traits = cleaned_data.get('traits', [])
+        recommended_traits = cleaned_data.get('recommended_traits', [])
+        if len(traits) == 0 and len(recommended_traits) == 0:
+            traits_error = forms.ValidationError(
+                u"""You must specify at least one phenotype in the 'phenotypes' or 'recommended phenotypes' field."""
+            )
+            self.add_error('traits', traits_error)
+            self.add_error('recommended_traits', traits_error)
+        return cleaned_data
+
 
 class ManyTaggedTraitsByTagForm(forms.Form):
     """Form for creating many TaggedTrait objects for a specific tag."""
@@ -153,12 +172,14 @@ class ManyTaggedTraitsByTagForm(forms.Form):
     title = 'Tag phenotypes'
     traits = forms.ModelMultipleChoiceField(
         queryset=SourceTrait.objects.all(),
-        required=True,
+        required=False,
         widget=autocomplete.ModelSelect2Multiple(url='trait_browser:source:taggable-autocomplete'),
         help_text='Select one or more phenotypes.')
-    # Set required=False for recommended - otherwise it will be required to be checked, which disallows False values.
-    # Submitting an empty value for this field sets the field to False.
-    recommended = forms.BooleanField(required=False)
+    recommended_traits = forms.ModelMultipleChoiceField(
+        queryset=SourceTrait.objects.all(),
+        required=False,
+        widget=autocomplete.ModelSelect2Multiple(url='trait_browser:source:taggable-autocomplete'),
+        help_text='Select one or more phenotypes.')
 
     def __init__(self, *args, **kwargs):
         # Get the user and remove it from kwargs (b/c/ of UserFormKwargsMixin on the view.)
@@ -176,6 +197,10 @@ class ManyTaggedTraitsByTagForm(forms.Form):
             source_dataset__source_study_version__study__in=studies,
             source_dataset__source_study_version__i_is_deprecated=False
         )
+        self.fields['recommended_traits'].queryset = SourceTrait.objects.filter(
+            source_dataset__source_study_version__study__in=studies,
+            source_dataset__source_study_version__i_is_deprecated=False
+        )
         # Form formatting and add a submit button.
         self.helper = FormHelper(self)
         self.helper.form_class = 'form-horizontal'
@@ -184,6 +209,19 @@ class ManyTaggedTraitsByTagForm(forms.Form):
         self.helper.form_method = 'post'
         button_save = generate_button_html('submit', 'Save', btn_type='submit', css_class='btn-primary')
         self.helper.layout.append(button_save)
+
+    def clean(self):
+        """Custom cleaning to check that at least one trait is selected."""
+        cleaned_data = super(ManyTaggedTraitsByTagForm, self).clean()
+        traits = cleaned_data.get('traits', [])
+        recommended_traits = cleaned_data.get('recommended_traits', [])
+        if len(traits) == 0 and len(recommended_traits) == 0:
+            traits_error = forms.ValidationError(
+                u"""You must specify at least one phenotype in the 'phenotypes' or 'recommended phenotypes' field."""
+            )
+            self.add_error('traits', traits_error)
+            self.add_error('recommended_traits', traits_error)
+        return cleaned_data
 
 
 class TagSpecificTraitForm(forms.Form):
