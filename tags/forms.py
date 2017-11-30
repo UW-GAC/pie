@@ -263,7 +263,8 @@ class TagSpecificTraitForm(forms.Form):
     """Form for creating TaggedTrait objects from a specific SourceTrait object."""
 
     title = 'Tag the phenotype'
-    subtitle = ''
+    subtitle = 'Select a tag to label the phenotype'
+    subtitle2 = ''
     tag = forms.ModelChoiceField(queryset=models.Tag.objects.all(), required=True)
     # Set required=False for recommended - otherwise it will be required to be checked, which disallows False values.
     # Submitting an empty value for this field sets the field to False.
@@ -271,6 +272,7 @@ class TagSpecificTraitForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         super(TagSpecificTraitForm, self).__init__(*args, **kwargs)
+        # Form formatting and add a submit button.
         self.helper = FormHelper(self)
         self.helper.form_class = 'form-horizontal'
         self.helper.label_class = 'col-sm-2'
