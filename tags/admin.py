@@ -24,7 +24,7 @@ class TaggedTraitAdmin(admin.ModelAdmin):
     """Admin class for TaggedTrait objects."""
 
     list_display = ('tag', 'trait', 'recommended', 'creator', 'created', 'modified', )
-    list_filter = ('tag', 'trait', 'creator', 'recommended', )
+    list_filter = ('tag', 'creator', 'recommended', )
     search_fields = ('tag', 'trait', )
 
     def save_model(self, request, obj, form, change):
