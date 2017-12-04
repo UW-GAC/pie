@@ -5,7 +5,6 @@ from django.core.urlresolvers import reverse
 from django.db import models
 
 from core.models import TimeStampedModel
-from trait_browser.models import SourceTrait
 
 
 class Tag(TimeStampedModel):
@@ -17,7 +16,7 @@ class Tag(TimeStampedModel):
     description = models.TextField()
     instructions = models.TextField()
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, blank=True)
-    traits = models.ManyToManyField(SourceTrait, through='TaggedTrait')
+    traits = models.ManyToManyField('trait_browser.SourceTrait', through='TaggedTrait')
 
     class Meta:
         verbose_name = 'phenotype tag'
@@ -42,7 +41,7 @@ class Tag(TimeStampedModel):
 class TaggedTrait(TimeStampedModel):
     """Intermediate model for connecting Tags and SourceTraits."""
 
-    trait = models.ForeignKey(SourceTrait)
+    trait = models.ForeignKey('trait_browser.SourceTrait')
     tag = models.ForeignKey(Tag)
     recommended = models.BooleanField()
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, blank=True)

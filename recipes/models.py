@@ -6,7 +6,6 @@ from django.core.validators import RegexValidator
 from django.db import models
 
 from core.models import TimeStampedModel
-from trait_browser.models import SourceTrait, HarmonizedTrait
 
 
 validate_alphanumeric_underscore = RegexValidator(regex=r'^[0-9a-zA-Z_]*$',
@@ -30,10 +29,10 @@ class UnitRecipe(TimeStampedModel):
         (OTHER, 'other'),
     )
 
-    age_variables = models.ManyToManyField(SourceTrait, related_name='units_as_age_trait', blank=True)
-    batch_variables = models.ManyToManyField(SourceTrait, related_name='units_as_batch_trait', blank=True)
-    phenotype_variables = models.ManyToManyField(SourceTrait, related_name='units_as_phenotype_trait', blank=True)
-    harmonized_phenotype_variables = models.ManyToManyField(HarmonizedTrait, related_name='units_as_phenotype_trait',
+    age_variables = models.ManyToManyField('trait_browser.SourceTrait', related_name='units_as_age_trait', blank=True)
+    batch_variables = models.ManyToManyField('trait_browser.SourceTrait', related_name='units_as_batch_trait', blank=True)
+    phenotype_variables = models.ManyToManyField('trait_browser.SourceTrait', related_name='units_as_phenotype_trait', blank=True)
+    harmonized_phenotype_variables = models.ManyToManyField('trait_browser.HarmonizedTrait', related_name='units_as_phenotype_trait',
                                                             blank=True)
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='units_created_by')
     last_modifier = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='units_last_modified_by')
