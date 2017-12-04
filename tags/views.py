@@ -3,13 +3,15 @@
 from django.core.urlresolvers import reverse
 from django.shortcuts import get_object_or_404
 from django.utils.safestring import mark_safe
-from django.views.generic import CreateView, DetailView, FormView, UpdateView
+from django.views.generic import CreateView, DetailView, FormView, ListView, UpdateView
 
 from braces.views import LoginRequiredMixin, FormMessagesMixin, GroupRequiredMixin, UserFormKwargsMixin, UserPassesTestMixin
+from django_tables2 import SingleTableMixin
 
 from trait_browser.models import Study
 from . import forms
 from . import models
+from . import tables
 
 
 TAGGING_ERROR_MESSAGE = 'Oops! Tagging a phenotype was not successful.'
@@ -27,6 +29,13 @@ class TagDetail(LoginRequiredMixin, DetailView):
         context = super(TagDetail, self).get_context_data(**kwargs)
         # context['trait_counts_by_study'] = self.object.traits.annotate(n=Count('source_dataset__global_study'))
         return context
+
+
+class TagList(LoginRequiredMixin, SingleTableMixin, ListView):
+
+    model = models.Tag
+    table_class = tables.TagTable
+    context_table_name = 'tag_table'
 
 
 class TaggableStudiesRequiredMixin(UserPassesTestMixin):

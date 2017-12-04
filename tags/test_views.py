@@ -13,6 +13,7 @@ from trait_browser.models import SourceTrait
 from . import factories
 from . import forms
 from . import models
+from . import tables
 from . import views
 
 fake = Faker()
@@ -48,6 +49,28 @@ class TagDetailTest(UserLoginTestCase):
         """Regular user does not see a button to add tags on this detail page."""
         response = self.client.get(self.get_url(self.tag.pk))
         self.assertNotContains(response, 'Tag phenotypes as "{}"'.format(self.tag.title))
+
+
+class TagListTest(UserLoginTestCase):
+
+    def setUp(self):
+        super(TagListTest, self).setUp()
+        self.tags = factories.TagFactory.create_batch(20)
+
+    def get_url(self, *args):
+        return reverse('tags:list')
+
+    def test_view_success_code(self):
+        """View returns successful response code."""
+        response = self.client.get(self.get_url())
+        self.assertEqual(response.status_code, 200)
+
+    def test_context_data(self):
+        """View has appropriate data in the context."""
+        response = self.client.get(self.get_url())
+        context = response.context
+        self.assertTrue('tag_table' in context)
+        self.assertIsInstance(context['tag_table'], tables.TagTable)
 
 
 class TagDetailPhenotypeTaggerTest(PhenotypeTaggerLoginTestCase):

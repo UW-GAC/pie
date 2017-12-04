@@ -26,4 +26,5 @@ urlpatterns = [
     url(r'^(?P<pk>\d+)/', include(tag_patterns, namespace='tag')),
     url(r'^add-to-phenotype/', include(add_one_patterns, namespace='add-one')),
     url(r'^add-to-many-phenotypes/', include(add_many_patterns, namespace='add-many')),
+    url(r'^list', views.TagList.as_view(), name='list'),
 ]
