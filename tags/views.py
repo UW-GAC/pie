@@ -38,6 +38,14 @@ class TagList(LoginRequiredMixin, SingleTableMixin, ListView):
     context_table_name = 'tag_table'
 
 
+class StudyTaggedTraitList(LoginRequiredMixin, SingleTableMixin, ListView):
+
+    model = Study
+    table_class = tables.StudyTaggedTraitTable
+    context_table_name = 'study_table'
+    template_name = 'tags/studytaggedtrait_list.html'
+
+
 class TaggableStudiesRequiredMixin(UserPassesTestMixin):
     """Mixin requiring that the user have 1 or more taggable studies designated."""
 
