@@ -46,6 +46,23 @@ class StudyTaggedTraitList(LoginRequiredMixin, SingleTableMixin, ListView):
     template_name = 'tags/studytaggedtrait_list.html'
 
 
+class TaggedTraitByStudyList(LoginRequiredMixin, SingleTableMixin, ListView):
+
+    model = models.TaggedTrait
+    table_class = tables.TaggedTraitTable
+    context_table_name = 'tagged_trait_table'
+    template_name = 'tags/taggedtrait_list.html'
+
+    def get_table_data(self):
+        self.study = get_object_or_404(Study, pk=self.kwargs['pk'])
+        return self.study.get_tagged_traits()
+
+    def get_context_data(self, *args, **kwargs):
+        context = super(TaggedTraitByStudyList, self).get_context_data(*args, **kwargs)
+        context['study'] = self.study
+        return context
+
+
 class TaggableStudiesRequiredMixin(UserPassesTestMixin):
     """Mixin requiring that the user have 1 or more taggable studies designated."""
 

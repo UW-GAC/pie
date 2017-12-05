@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+
+{% load render_table from django_tables2 %}
+
+{% block head_title %}
+     | {{ page_title }}
+{% endblock %}
+
+{% block content %}
+    <h2>Phenotypes tagged in {{ study.i_study_name }}</h2>
+    <p>Some helpful information here about what the tags are.</p>
+    {% render_table tagged_trait_table %}
+{% endblock %}

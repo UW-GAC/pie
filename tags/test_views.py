@@ -51,28 +51,6 @@ class TagDetailTest(UserLoginTestCase):
         self.assertNotContains(response, 'Tag phenotypes as "{}"'.format(self.tag.title))
 
 
-class TagListTest(UserLoginTestCase):
-
-    def setUp(self):
-        super(TagListTest, self).setUp()
-        self.tags = factories.TagFactory.create_batch(20)
-
-    def get_url(self, *args):
-        return reverse('tags:list')
-
-    def test_view_success_code(self):
-        """View returns successful response code."""
-        response = self.client.get(self.get_url())
-        self.assertEqual(response.status_code, 200)
-
-    def test_context_data(self):
-        """View has appropriate data in the context."""
-        response = self.client.get(self.get_url())
-        context = response.context
-        self.assertTrue('tag_table' in context)
-        self.assertIsInstance(context['tag_table'], tables.TagTable)
-
-
 class TagDetailPhenotypeTaggerTest(PhenotypeTaggerLoginTestCase):
 
     def setUp(self):
@@ -95,6 +73,81 @@ class TagDetailPhenotypeTaggerTest(PhenotypeTaggerLoginTestCase):
         """A phenotype tagger does see a button to add tags on this detail page."""
         response = self.client.get(self.get_url(self.tag.pk))
         self.assertContains(response, 'Tag phenotypes as "{}"'.format(self.tag.title))
+
+
+class TagListTest(UserLoginTestCase):
+
+    def setUp(self):
+        super(TagListTest, self).setUp()
+        self.tags = factories.TagFactory.create_batch(20)
+
+    def get_url(self, *args):
+        return reverse('tags:list')
+
+    def test_view_success_code(self):
+        """View returns successful response code."""
+        response = self.client.get(self.get_url())
+        self.assertEqual(response.status_code, 200)
+
+    def test_context_data(self):
+        """View has appropriate data in the context."""
+        response = self.client.get(self.get_url())
+        context = response.context
+        self.assertTrue('tag_table' in context)
+        self.assertIsInstance(context['tag_table'], tables.TagTable)
+
+
+class StudyTaggedTraitListTest(UserLoginTestCase):
+
+    def setUp(self):
+        super(StudyTaggedTraitListTest, self).setUp()
+        self.tagged_traits = factories.TaggedTraitFactory.create_batch(20)
+
+    def get_url(self, *args):
+        return reverse('tags:tagged-traits:by-study')
+
+    def test_view_success_code(self):
+        """View returns successful response code."""
+        response = self.client.get(self.get_url())
+        self.assertEqual(response.status_code, 200)
+
+    def test_context_data(self):
+        """View has appropriate data in the context."""
+        response = self.client.get(self.get_url())
+        context = response.context
+        self.assertTrue('study_table' in context)
+        self.assertIsInstance(context['study_table'], tables.StudyTaggedTraitTable)
+
+
+class TaggedTraitByStudyListTest(UserLoginTestCase):
+
+    def setUp(self):
+        super(TaggedTraitByStudyListTest, self).setUp()
+        self.study = StudyFactory.create()
+        self.tagged_traits = factories.TaggedTraitFactory.create_batch(
+            10, trait__source_dataset__source_study_version__study=self.study)
+
+    def get_url(self, *args):
+        return reverse('trait_browser:source:study:tagged', args=args)
+
+    def test_view_success_code(self):
+        """View returns successful response code."""
+        response = self.client.get(self.get_url(self.study.pk))
+        self.assertEqual(response.status_code, 200)
+
+    def test_view_with_invalid_pk(self):
+        """View returns 404 response code when the pk doesn't exist."""
+        response = self.client.get(self.get_url(self.study.pk + 1))
+        self.assertEqual(response.status_code, 404)
+
+    def test_context_data(self):
+        """View has appropriate data in the context."""
+        response = self.client.get(self.get_url(self.study.pk))
+        context = response.context
+        self.assertIn('study', context)
+        self.assertIn('tagged_trait_table', context)
+        self.assertIsInstance(context['tagged_trait_table'], tables.TaggedTraitTable)
+        self.assertEqual(context['study'], self.study)
 
 
 class TaggedTraitCreateTest(PhenotypeTaggerLoginTestCase):
