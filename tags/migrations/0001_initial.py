@@ -16,14 +16,14 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='Tag',
             fields=[
-                ('id', models.AutoField(primary_key=True, verbose_name='ID', serialize=False, auto_created=True)),
+                ('id', models.AutoField(verbose_name='ID', serialize=False, primary_key=True, auto_created=True)),
                 ('created', models.DateTimeField(auto_now_add=True)),
                 ('modified', models.DateTimeField(auto_now=True)),
                 ('title', models.CharField(max_length=255)),
                 ('lower_title', models.CharField(max_length=255, blank=True, unique=True)),
                 ('description', models.TextField()),
                 ('instructions', models.TextField()),
-                ('creator', models.ForeignKey(to=settings.AUTH_USER_MODEL, blank=True)),
+                ('creator', models.ForeignKey(blank=True, to=settings.AUTH_USER_MODEL)),
             ],
             options={
                 'verbose_name': 'phenotype tag',
@@ -32,21 +32,22 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='TaggedTrait',
             fields=[
-                ('id', models.AutoField(primary_key=True, verbose_name='ID', serialize=False, auto_created=True)),
+                ('id', models.AutoField(verbose_name='ID', serialize=False, primary_key=True, auto_created=True)),
                 ('created', models.DateTimeField(auto_now_add=True)),
                 ('modified', models.DateTimeField(auto_now=True)),
                 ('recommended', models.BooleanField()),
-                ('creator', models.ForeignKey(to=settings.AUTH_USER_MODEL, blank=True)),
+                ('creator', models.ForeignKey(blank=True, to=settings.AUTH_USER_MODEL)),
                 ('tag', models.ForeignKey(to='tags.Tag')),
                 ('trait', models.ForeignKey(to='trait_browser.SourceTrait')),
             ],
-            options={
-                'abstract': False,
-            },
         ),
         migrations.AddField(
             model_name='tag',
             name='traits',
-            field=models.ManyToManyField(to='trait_browser.SourceTrait', through='tags.TaggedTrait'),
+            field=models.ManyToManyField(through='tags.TaggedTrait', to='trait_browser.SourceTrait'),
+        ),
+        migrations.AlterUniqueTogether(
+            name='taggedtrait',
+            unique_together=set([('trait', 'tag')]),
         ),
     ]

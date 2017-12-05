@@ -46,6 +46,9 @@ class TaggedTrait(TimeStampedModel):
     recommended = models.BooleanField()
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, blank=True)
 
+    class Meta:
+        unique_together = (('trait', 'tag'), )
+
     def __str__(self):
         """Pretty printing."""
         return 'Trait {} tagged {}'.format(self.trait.i_trait_name, self.tag.lower_title)
