@@ -5,7 +5,7 @@ from django.test import TestCase
 
 from core.factories import UserFactory
 # from core.utils import UserLoginTestCase
-from trait_browser.factories import SourceTraitFactory
+from trait_browser.factories import SourceTraitFactory, StudyFactory
 from . import factories
 from . import models
 
@@ -59,6 +59,78 @@ class TagTest(TestCase):
         tagged_trait = models.TaggedTrait(trait=trait, tag=tag, creator=self.user, recommended=True)
         tagged_trait.save()
         self.assertIn(trait, tag.traits.all())
+
+
+class StudyTaggedTraitsTest(TestCase):
+
+    def setUp(self):
+        self.study = StudyFactory.create()
+        self.tagged_traits = factories.TaggedTraitFactory.create_batch(
+            10, trait__source_dataset__source_study_version__study=self.study)
+
+    def test_get_tagged_traits(self):
+        """Returns the correct set of tagged traits for a study."""
+        self.assertEqual(list(self.study.get_tagged_traits()), self.tagged_traits)
+
+    def test_get_tagged_traits_empty(self):
+        """Returns an empty queryset when a study has no tagged traits."""
+        models.TaggedTrait.objects.all().delete()
+        self.assertEqual(list(self.study.get_tagged_traits()), [])
+
+    def test_get_tagged_traits_two_studies(self):
+        """Returns the correct set of tagged traits for a study, when other studies and tagged traits exist."""
+        another_study = StudyFactory.create()
+        more_tagged_traits = factories.TaggedTraitFactory.create_batch(
+            10, trait__source_dataset__source_study_version__study=another_study)
+        self.assertEqual(list(self.study.get_tagged_traits()), self.tagged_traits)
+        self.assertEqual(list(another_study.get_tagged_traits()), more_tagged_traits)
+
+    def test_get_tagged_trait_count(self):
+        """Returns the correct number of tagged traits for a study."""
+        self.assertEqual(self.study.get_tagged_trait_count(), len(self.tagged_traits))
+
+    def test_get_tagged_trait_count_empty(self):
+        """Returns 0 when a study has no tagged traits."""
+        models.TaggedTrait.objects.all().delete()
+        self.assertEqual(self.study.get_tagged_trait_count(), 0)
+
+    def test_get_tagged_trait_count_two_studies(self):
+        """Returns the correct set of tagged traits for a study, when other studies and tagged traits exist."""
+        another_study = StudyFactory.create()
+        more_tagged_traits = factories.TaggedTraitFactory.create_batch(
+            10, trait__source_dataset__source_study_version__study=another_study)
+        self.assertEqual(self.study.get_tagged_trait_count(), len(self.tagged_traits))
+        self.assertEqual(another_study.get_tagged_trait_count(), len(more_tagged_traits))
+
+    def test_get_tag_count(self):
+        """Returns the correct number of tags for a study."""
+        self.assertEqual(self.study.get_tag_count(), models.Tag.objects.all().count())
+
+    def test_get_tag_count_none(self):
+        """Returns the correct number of tags for a study when there are none."""
+        models.TaggedTrait.objects.all().delete()
+        self.assertEqual(self.study.get_tag_count(), 0)
+
+    def test_get_tag_count_no_tags(self):
+        """Returns the correct number of tags for a study when there are none."""
+        models.TaggedTrait.objects.all().delete()
+        models.Tag.objects.all().delete()
+        self.assertEqual(self.study.get_tag_count(), 0)
+
+    def test_get_tag_count_two_studies(self):
+        """Returns the correct number of tags for a study."""
+        another_study = StudyFactory.create()
+        more_tagged_traits = factories.TaggedTraitFactory.create_batch(
+            10, trait__source_dataset__source_study_version__study=another_study)
+        self.assertEqual(self.study.get_tag_count(),
+                         models.Tag.objects.filter(
+                         traits__source_dataset__source_study_version__study=self.study).distinct().count()
+                         )
+        self.assertEqual(another_study.get_tag_count(),
+                         models.Tag.objects.filter(
+                         traits__source_dataset__source_study_version__study=another_study).distinct().count()
+                         )
+
 
 
 class TaggedTraitTest(TestCase):
