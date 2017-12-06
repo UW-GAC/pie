@@ -15,6 +15,7 @@ def profile(request):
     user_harmonization_recipes = recipes.models.HarmonizationRecipe.objects.filter(
         creator=request.user).order_by('-modified')
     harmonization_recipe_table = recipes.tables.HarmonizationRecipeTable(user_harmonization_recipes)
+
     if request.method == "POST":
         # remove saved searches
         if 'search_type' in request.POST:
@@ -23,8 +24,10 @@ def profile(request):
                 saved_search = models.SavedSearchMeta.objects.get(search_id=search_id)
                 saved_search.active = False
                 saved_search.save()
+
     savedsource = tables.SourceSearchTable(build_usersearches(request.user.id, 'source'), request=request)
     savedharmonized = tables.HarmonizedSearchTable(build_usersearches(request.user.id, 'harmonized'), request=request)
+
     return render(
         request,
         'profiles/profile.html',

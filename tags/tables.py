@@ -78,3 +78,25 @@ class TaggedTraitTable(tables.Table):
         attrs = {'class': 'table table-striped table-bordered table-hover', 'style': 'width: auto;'}
         template = 'bootstrap_tables2.html'
         order_by = ('tag', )
+
+
+class UserTaggedTraitTable(tables.Table):
+    """Table for displaying TaggedTraits on a user's profile page.
+
+    Displays user information that is not displayed in the plain old TaggedTraitTable.
+    """
+
+    recommended = BootstrapBooleanColumn(accessor='recommended')
+    trait = tables.LinkColumn(
+        'trait_browser:source:detail', args=[tables.utils.A('trait.pk')], verbose_name='Phenotype',
+        text=lambda record: record.trait.i_trait_name, orderable=True)
+    tag = tables.LinkColumn(
+        'tags:tag:detail', args=[tables.utils.A('tag.pk')], verbose_name='Tag',
+        text=lambda record: record.tag.title, orderable=True)
+
+    class Meta:
+        model = models.TaggedTrait
+        fields = ('trait', 'tag', 'recommended', 'created', 'modified', )
+        attrs = {'class': 'table table-striped table-bordered table-hover', 'style': 'width: auto;'}
+        template = 'bootstrap_tables2.html'
+        order_by = ('tag', )
