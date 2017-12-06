@@ -15,7 +15,7 @@ from urllib.parse import parse_qs
 
 import profiles.models
 from tags.forms import TagSpecificTraitForm
-from tags.models import TaggedTrait
+from tags.models import Tag, TaggedTrait
 from tags.views import TAGGING_ERROR_MESSAGE, TaggableStudiesRequiredMixin
 from . import models
 from . import tables
@@ -58,6 +58,7 @@ class SourceTraitDetail(LoginRequiredMixin, DetailView):
         context = super(SourceTraitDetail, self).get_context_data(**kwargs)
         user_studies = list(self.request.user.userdata_set.first().taggable_studies.all())
         context['user_is_study_tagger'] = self.object.source_dataset.source_study_version.study in user_studies
+        context['tags'] = list(Tag.objects.filter(traits=self.object))
         return context
 
 

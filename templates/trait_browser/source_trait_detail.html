@@ -17,26 +17,43 @@
             <h3 class="panel-title">Phenotype name: {{ source_trait.i_trait_name }}</h3>
         </div>
         <div class="panel-body">
-            {% if request.user|has_group:"phenotype_taggers" %}
-                {% if user_is_study_tagger %}
-                    <p><a href="{% url 'trait_browser:source:tagging' pk=source_trait.pk %}" class="btn btn-primary" role="button">
-                        Tag this phenotype</a></p>
-                {% endif %}
-            {% elif request.user.is_staff %} 
-                <p><a href="{% url 'trait_browser:source:tagging' pk=source_trait.pk %}" class="btn btn-primary" role="button">
-                    Tag this phenotype</a></p>
-            {% endif %}
-            
             <dl class="dl-horizontal">
                 <dt>Study</dt> <dd><a href="{{ source_trait.source_dataset.source_study_version.study.get_absolute_url }}">{{ source_trait.source_dataset.source_study_version.study.i_study_name }}</a></dd>
                 <dt>Phenotype description</dt> <dd>{{ source_trait.i_description }}</dd>
                 <dt>Data type</dt> <dd>{{ source_trait.i_detected_type }}</dd>
                 <dt>Dataset</dt> <dd><a href="{{ source_trait.source_dataset.get_absolute_url }}">{{ source_trait.source_dataset.pht_version_string }}</a></dd>
                 <dt>Dataset description</dt>
-                    {% if source_trait.source_dataset.i_dbgap_description != '' %}
-                      <dd>{{ source_trait.source_dataset.i_dbgap_description }}</dd>
+                    <dd>
+                        {% if source_trait.source_dataset.i_dbgap_description != '' %}
+                          {{ source_trait.source_dataset.i_dbgap_description }}
+                        {% endif %}
+                    </dd>
+                <dt>Phenotype tag(s)</dt> 
+                    <dd>
+                        {% for tag in tags %}
+                            <a href="{{ tag.get_absolute_url }}" class="btn btn-default btn-xs" role="button">{{ tag.title }}</a>
+                        {% endfor %}
+                    </dd>
+
+                {% if request.user|has_group:"phenotype_taggers" %}
+                    {% if user_is_study_tagger %}
+                        </dl>
+                        <dl class="dl-horizontal">
+                        <dt></dt>
+                        <dd>
+                        <a href="{% url 'trait_browser:source:tagging' pk=source_trait.pk %}" class="btn btn-primary btn-md" role="button">Tag this phenotype</a>
+                        </dd>
                     {% endif %}
+                {% elif request.user.is_staff %} 
+                    </dl>
+                    <dl class="dl-horizontal">
+                    <dt></dt>
+                    <dd>
+                    <a href="{% url 'trait_browser:source:tagging' pk=source_trait.pk %}" class="btn btn-primary btn-md" role="button">Tag this phenotype</a>
+                    </dd>
+                {% endif %}
             </dl>
+
 
             {% if source_trait.sourcetraitencodedvalue_set.all %}
                 <table class="table table-nonfluid table-condensed table-sm">

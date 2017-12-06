@@ -140,14 +140,47 @@ class SourceTraitDetailTest(UserLoginTestCase):
         """View has appropriate data in the context."""
         response = self.client.get(self.get_url(self.trait.pk))
         context = response.context
-        self.assertTrue('source_trait' in context)
-        self.assertTrue('user_is_study_tagger' in context)
-        self.assertIsInstance(context['source_trait'], models.SourceTrait)
+        self.assertIn('source_trait', context)
+        self.assertEqual(context['source_trait'], self.trait)
+        self.assertIn('tags', context)
+        self.assertEqual(context['tags'], [])
+        self.assertIn('user_is_study_tagger', context)
+        self.assertFalse(context['user_is_study_tagger'])
 
     def test_no_tagging_button(self):
         """Regular user does not see a button to add tags on this detail page."""
         response = self.client.get(self.get_url(self.trait.pk))
         self.assertNotContains(response, 'Tag this phenotype')
+
+
+class SourceTraitDetailPhenotypeTaggerTest(PhenotypeTaggerLoginTestCase):
+
+    def setUp(self):
+        super(SourceTraitDetailPhenotypeTaggerTest, self).setUp()
+        self.trait = factories.SourceTraitFactory.create()
+        self.tag = TagFactory.create()
+        UserData.objects.create(user=self.user)
+        self.user.refresh_from_db()
+        self.user.userdata_set.first().taggable_studies.add(self.trait.source_dataset.source_study_version.study)
+
+    def get_url(self, *args):
+        return reverse('trait_browser:source:detail', args=args)
+
+    def test_view_success_code(self):
+        """View returns successful response code."""
+        response = self.client.get(self.get_url(self.trait.pk))
+        self.assertEqual(response.status_code, 200)
+
+    def test_has_tagging_button(self):
+        """A phenotype tagger does see a button to add tags on this detail page."""
+        response = self.client.get(self.get_url(self.trait.pk))
+        self.assertContains(response, 'Tag this phenotype')
+
+    def test_user_is_study_tagger_true(self):
+        """user_is_study_tagger is true in the view's context."""
+        response = self.client.get(self.get_url(self.trait.pk))
+        context = response.context
+        self.assertTrue(context['user_is_study_tagger'])
 
 
 class SourceTraitViewsTestCase(UserLoginTestCase):

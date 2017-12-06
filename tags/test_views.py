@@ -42,8 +42,8 @@ class TagDetailTest(UserLoginTestCase):
         """View has appropriate data in the context."""
         response = self.client.get(self.get_url(self.tag.pk))
         context = response.context
-        self.assertTrue('tag' in context)
-        self.assertIsInstance(context['tag'], models.Tag)
+        self.assertIn('tag', context)
+        self.assertEqual(context['tag'], self.tag)
 
     def test_no_tagging_button(self):
         """Regular user does not see a button to add tags on this detail page."""
