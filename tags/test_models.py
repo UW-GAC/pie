@@ -1,5 +1,6 @@
 """Tests of models for the tags app."""
 
+from django.core.exceptions import ValidationError
 from django.db.utils import IntegrityError
 from django.test import TestCase
 
@@ -132,7 +133,6 @@ class StudyTaggedTraitsTest(TestCase):
                          )
 
 
-
 class TaggedTraitTest(TestCase):
     model = models.TaggedTrait
     model_factory = factories.TaggedTraitFactory
@@ -160,8 +160,9 @@ class TaggedTraitTest(TestCase):
         instance = self.model_factory.create()
         self.assertIsInstance(instance.__str__(), str)
 
-    # def test_get_absolute_url(self):
-    #     """get_absolute_url function doesn't fail."""
-    #     instance = self.model_factory.create()
-    #     url = instance.get_absolute_url()
-    #     # Just test that this function works.
+    def test_unique_together(self):
+        """Adding the same tag and trait combination doesn't work."""
+        tagged_trait = factories.TaggedTraitFactory.create(tag=self.tag, trait=self.trait)
+        duplicate = factories.TaggedTraitFactory.build(tag=self.tag, trait=self.trait)
+        with self.assertRaises(ValidationError):
+            duplicate.full_clean()
