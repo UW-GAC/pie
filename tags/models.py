@@ -47,6 +47,7 @@ class TaggedTrait(TimeStampedModel):
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, blank=True)
 
     class Meta:
+        verbose_name = 'tagged phenotype'
         unique_together = (('trait', 'tag'), )
 
     def __str__(self):

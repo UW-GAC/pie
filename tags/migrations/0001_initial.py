@@ -8,8 +8,8 @@ from django.conf import settings
 class Migration(migrations.Migration):
 
     dependencies = [
-        migrations.swappable_dependency(settings.AUTH_USER_MODEL),
         ('trait_browser', '0006_major_schema_changes_including_harmonized_trait_set_version'),
+        migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
@@ -20,7 +20,7 @@ class Migration(migrations.Migration):
                 ('created', models.DateTimeField(auto_now_add=True)),
                 ('modified', models.DateTimeField(auto_now=True)),
                 ('title', models.CharField(max_length=255)),
-                ('lower_title', models.CharField(max_length=255, blank=True, unique=True)),
+                ('lower_title', models.CharField(blank=True, max_length=255, unique=True)),
                 ('description', models.TextField()),
                 ('instructions', models.TextField()),
                 ('creator', models.ForeignKey(blank=True, to=settings.AUTH_USER_MODEL)),
@@ -40,6 +40,9 @@ class Migration(migrations.Migration):
                 ('tag', models.ForeignKey(to='tags.Tag')),
                 ('trait', models.ForeignKey(to='trait_browser.SourceTrait')),
             ],
+            options={
+                'verbose_name': 'tagged phenotype',
+            },
         ),
         migrations.AddField(
             model_name='tag',
