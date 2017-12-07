@@ -44,6 +44,8 @@ class TagDetailTest(UserLoginTestCase):
         context = response.context
         self.assertIn('tag', context)
         self.assertEqual(context['tag'], self.tag)
+        self.assertIn('tagged_trait_table', context)
+        self.assertIsInstance(context['tagged_trait_table'], tables.TagDetailTraitTable)
 
     def test_no_tagging_button(self):
         """Regular user does not see a button to add tags on this detail page."""

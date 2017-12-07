@@ -1,6 +1,7 @@
 """View functions and classes for the tags app."""
 
 from django.core.urlresolvers import reverse
+from django.db.models import Count
 from django.shortcuts import get_object_or_404
 from django.utils.safestring import mark_safe
 from django.views.generic import CreateView, DetailView, FormView, ListView, UpdateView
@@ -18,16 +19,27 @@ TAGGING_ERROR_MESSAGE = 'Oops! Tagging a phenotype was not successful.'
 TAGGING_MULTIPLE_ERROR_MESSAGE = 'Oops! Tagging phenotypes was not successful.'
 
 
-class TagDetail(LoginRequiredMixin, DetailView):
+class TagDetail(LoginRequiredMixin, SingleTableMixin, DetailView):
     """Detail view class for Tag."""
 
     model = models.Tag
     context_object_name = 'tag'
     template_name = 'tags/tag_detail.html'
+    table_class = tables.TagDetailTraitTable
+    context_table_name = 'tagged_trait_table'
+
+    def get_table_data(self):
+        return models.TaggedTrait.objects.filter(tag=self.object)
 
     def get_context_data(self, **kwargs):
         context = super(TagDetail, self).get_context_data(**kwargs)
-        # context['trait_counts_by_study'] = self.object.traits.annotate(n=Count('source_dataset__global_study'))
+        # study_counts = self.object.traits.values(
+        #     'source_dataset__source_study_version__study').annotate(
+        #     total=Count('source_dataset__source_study_version__study')).order_by()
+        # study_names = [get_object_or_404(Study, pk=d['source_dataset__source_study_version__study']).i_study_name
+        #                for d in study_counts]
+        # totals = [d['total'] for d in study_counts]
+        # context['study_counts'] = zip(study_names, totals)
         return context
 
 

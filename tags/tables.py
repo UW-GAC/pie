@@ -80,6 +80,23 @@ class TaggedTraitTable(tables.Table):
         order_by = ('tag', )
 
 
+class TagDetailTraitTable(tables.Table):
+    """Table for displaying TaggedTraits on the TagDetail page."""
+
+    recommended = BootstrapBooleanColumn(accessor='recommended')
+    trait = tables.LinkColumn(
+        'trait_browser:source:detail', args=[tables.utils.A('trait.pk')], verbose_name='Phenotype',
+        text=lambda record: record.trait.i_trait_name, orderable=True)
+    study = tables.Column(accessor='trait.source_dataset.source_study_version.study.i_study_name')
+
+    class Meta:
+        model = models.TaggedTrait
+        fields = ('trait', 'study', 'recommended', )
+        attrs = {'class': 'table table-striped table-bordered table-hover', 'style': 'width: auto;'}
+        template = 'bootstrap_tables2.html'
+        order_by = ('study', )
+
+
 class UserTaggedTraitTable(tables.Table):
     """Table for displaying TaggedTraits on a user's profile page.
 

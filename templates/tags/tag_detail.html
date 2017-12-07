@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load core_tags %}
+{% load render_table from django_tables2 %}
 
 {% block head_title %}
      | {{ tag.lower_title }} details
@@ -11,22 +12,24 @@
         <h2><small>Phenotype tag</small> {{ tag.title }}</h2>
         
         {% include '_messages.html' %}
+
+        {% if request.user|has_group:"phenotype_taggers" or request.user.is_staff %}
+            <p>
+                <a href="{% url 'tags:add-many:by-tag' pk=tag.pk %}" class="btn btn-primary btn-md" role="button">
+                Tag phenotypes as "{{ tag.title }}"</a>
+            </p>
+        {% endif %}
+
         <dl class="dl-horizontal">
             <dt>Description</dt><dd>{{ tag.description }}</dd>
             <dt>Instructions</dt><dd>{{ tag.instructions }}</dd>
             <dt>N tagged</dt><dd>{{ tag.traits.count }}</dd>
         </dl>
-        {% if request.user|has_group:"phenotype_taggers" or request.user.is_staff %}
-            <p>
-                <a href="{% url 'tags:add-many:by-tag' pk=tag.pk %}" class="btn btn-primary" role="button">
-                Tag phenotypes as "{{ tag.title }}"</a>
-            </p>
-        {% endif %}
         
         <div class="panel panel-default">
             <div class="panel-heading"><h4 class="panel-title">Tagged phenotypes</h4></div>
             <div class="panel-body">
-                Show the count of tagged variables by study here.
+                {% render_table tagged_trait_table %}
            </div>
        </div>
     
