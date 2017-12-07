@@ -9,7 +9,7 @@ from . import tables
 
 @login_required
 def profile(request):
-    page_title = 'profile'
+    page_title = 'My profile'
     user_unit_recipes = recipes.models.UnitRecipe.objects.filter(creator=request.user).order_by('-modified')
     unit_recipe_table = recipes.tables.UnitRecipeTable(user_unit_recipes)
     user_harmonization_recipes = recipes.models.HarmonizationRecipe.objects.filter(
