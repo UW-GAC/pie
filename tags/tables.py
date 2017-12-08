@@ -115,14 +115,17 @@ class TagDetailTraitTable(tables.Table):
     trait = tables.LinkColumn(
         'trait_browser:source:detail', args=[tables.utils.A('trait.pk')], verbose_name='Phenotype',
         text=lambda record: record.trait.i_trait_name, orderable=True)
-    study = tables.Column(accessor='trait.source_dataset.source_study_version.study.i_study_name')
+    study = tables.LinkColumn('trait_browser:source:study:tagged',
+                              verbose_name='Study',
+                              args=[tables.utils.A('trait.source_dataset.source_study_version.study.pk')],
+                              text=lambda record: record.trait.source_dataset.source_study_version.study.i_study_name,
+                              orderable=True)
 
     class Meta:
         model = models.TaggedTrait
-        fields = ('trait', 'study', 'recommended', )
+        fields = ('trait', 'recommended', )
         attrs = {'class': 'table table-striped table-bordered table-hover', 'style': 'width: auto;'}
         template = 'bootstrap_tables2.html'
-        order_by = ('study', )
 
 
 class UserTaggedTraitTable(tables.Table):
