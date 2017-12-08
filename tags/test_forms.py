@@ -187,6 +187,15 @@ class ManyTaggedTraitsFormTest(TestCase):
         for trait in traits2:
             self.assertNotIn(trait, form.fields['traits'].queryset)
 
+    def test_invalid_repeated_trait(self):
+        """Form is invalid with a trait repeated in the 'traits' and 'recommended_traits' fields."""
+        form_data = {'traits': [self.traits[0].pk], 'recommended_traits': [self.traits[0].pk],
+                     'tag': self.tag.pk}
+        form = self.form_class(data=form_data, user=self.user)
+        self.assertFalse(form.is_valid())
+        self.assertTrue(form.has_error('traits'))
+        self.assertTrue(form.has_error('recommended_traits'))
+
 
 class ManyTaggedTraitsByTagFormTest(TestCase):
     form_class = forms.ManyTaggedTraitsByTagForm
@@ -251,6 +260,14 @@ class ManyTaggedTraitsByTagFormTest(TestCase):
             self.assertIn(trait, form.fields['traits'].queryset)
         for trait in traits2:
             self.assertNotIn(trait, form.fields['traits'].queryset)
+
+    def test_invalid_repeated_trait(self):
+        """Form is invalid with a trait repeated in the 'traits' and 'recommended_traits' fields."""
+        form_data = {'traits': [self.traits[0].pk], 'recommended_traits': [self.traits[0].pk]}
+        form = self.form_class(data=form_data, user=self.user)
+        self.assertFalse(form.is_valid())
+        self.assertTrue(form.has_error('traits'))
+        self.assertTrue(form.has_error('recommended_traits'))
 
 
 class TagSpecificTraitFormTest(TestCase):

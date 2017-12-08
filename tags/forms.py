@@ -189,6 +189,12 @@ class ManyTaggedTraitsForm(forms.Form):
             )
             self.add_error('traits', traits_error)
             self.add_error('recommended_traits', traits_error)
+        if len(set(traits) & set(recommended_traits)) > 0:
+            repeat_error = forms.ValidationError(
+                u"""You cannot repeat a phenotype in both the 'phenotypes' and 'recommended phenotypes' field."""
+            )
+            self.add_error('traits', repeat_error)
+            self.add_error('recommended_traits', repeat_error)
         return cleaned_data
 
 
@@ -256,6 +262,12 @@ class ManyTaggedTraitsByTagForm(forms.Form):
             )
             self.add_error('traits', traits_error)
             self.add_error('recommended_traits', traits_error)
+        if len(set(traits) & set(recommended_traits)) > 0:
+            repeat_error = forms.ValidationError(
+                u"""You cannot repeat a phenotype in both the 'phenotypes' and 'recommended phenotypes' field."""
+            )
+            self.add_error('traits', repeat_error)
+            self.add_error('recommended_traits', repeat_error)
         return cleaned_data
 
 

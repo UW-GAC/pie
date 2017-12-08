@@ -475,6 +475,16 @@ class ManyTaggedTraitsCreateTest(PhenotypeTaggerLoginTestCase):
         self.assertEqual(len(messages), 1)
         self.assertTrue('Oops!' in str(messages[0]))
 
+    def test_fails_with_repeated_trait(self):
+        """Tagging traits fails when a trait is repeated in 'traits' and 'recommended_traits'."""
+        response = self.client.post(self.get_url(),
+                                    {'traits': [self.traits[0].pk], 'tag': self.tag.pk,
+                                     'recommended_traits': [self.traits[0].pk]})
+        self.assertEqual(response.status_code, 200)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertTrue('Oops!' in str(messages[0]))
+
     def test_forbidden_non_taggers(self):
         """View returns 403 code when the user is not in phenotype_taggers."""
         phenotype_taggers = Group.objects.get(name='phenotype_taggers')
@@ -596,6 +606,15 @@ class ManyTaggedTraitsCreateByTagTest(PhenotypeTaggerLoginTestCase):
         response = self.client.post(self.get_url(self.tag.pk),
                                     {'traits': [str(x.pk) for x in traits2], 'tag': self.tag.pk, 'recommended': False})
         # They have taggable studies and they're in the phenotype_taggers group, so view is still accessible.
+        self.assertEqual(response.status_code, 200)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertTrue('Oops!' in str(messages[0]))
+
+    def test_fails_with_repeated_trait(self):
+        """Tagging traits fails when a trait is repeated in 'traits' and 'recommended_traits'."""
+        response = self.client.post(self.get_url(self.tag.pk),
+                                    {'traits': [self.traits[0].pk], 'recommended_traits': [self.traits[0].pk]})
         self.assertEqual(response.status_code, 200)
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
