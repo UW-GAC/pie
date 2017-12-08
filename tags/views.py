@@ -61,12 +61,19 @@ class StudyTaggedTraitList(LoginRequiredMixin, SingleTableMixin, ListView):
 class TaggedTraitByStudyList(LoginRequiredMixin, SingleTableMixin, ListView):
 
     model = models.TaggedTrait
-    table_class = tables.TaggedTraitTable
     context_table_name = 'tagged_trait_table'
     template_name = 'tags/taggedtrait_list.html'
 
-    def get_table_data(self):
+    def get_table_class(self):
+        """Determine whether to use tagged trait table with delete buttons or not."""
         self.study = get_object_or_404(Study, pk=self.kwargs['pk'])
+        if self.request.user.groups.filter(name='phenotype_taggers').exists() and (
+                self.study in self.request.user.userdata_set.first().taggable_studies.all()):
+            return tables.TaggedTraitTableWithDelete
+        else:
+            return tables.TaggedTraitTable
+
+    def get_table_data(self):
         return self.study.get_tagged_traits()
 
     def get_context_data(self, *args, **kwargs):

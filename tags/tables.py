@@ -9,6 +9,13 @@ from trait_browser.models import Study
 from . import models
 
 
+DELETE_BUTTON_TEMPLATE = """
+<a class="btn btn-xs btn-danger" href="{% url 'tags:tagged-traits:delete' record.pk %}" role="button">
+    <span class="glyphicon glyphicon-remove" aria-hidden="true"></span> Delete
+</a>
+"""
+
+
 class BootstrapBooleanColumn(tables.BooleanColumn):
     """django-tables2 column class for nice display of boolean values with glyphicons.
 
@@ -80,6 +87,27 @@ class TaggedTraitTable(tables.Table):
         order_by = ('tag', )
 
 
+class TaggedTraitTableWithDelete(tables.Table):
+    """Table for displaying TaggedTraits with delete buttons."""
+
+    recommended = BootstrapBooleanColumn(accessor='recommended')
+    trait = tables.LinkColumn(
+        'trait_browser:source:detail', args=[tables.utils.A('trait.pk')], verbose_name='Phenotype',
+        text=lambda record: record.trait.i_trait_name, orderable=True)
+    tag = tables.LinkColumn(
+        'tags:tag:detail', args=[tables.utils.A('tag.pk')], verbose_name='Tag',
+        text=lambda record: record.tag.title, orderable=True)
+    delete = tables.TemplateColumn(verbose_name='', orderable=False,
+                                   template_code=DELETE_BUTTON_TEMPLATE)
+
+    class Meta:
+        model = models.TaggedTrait
+        fields = ('trait', 'tag', 'recommended', 'delete', )
+        attrs = {'class': 'table table-striped table-bordered table-hover', 'style': 'width: auto;'}
+        template = 'bootstrap_tables2.html'
+        order_by = ('tag', )
+
+
 class TagDetailTraitTable(tables.Table):
     """Table for displaying TaggedTraits on the TagDetail page."""
 
@@ -110,6 +138,7 @@ class UserTaggedTraitTable(tables.Table):
     tag = tables.LinkColumn(
         'tags:tag:detail', args=[tables.utils.A('tag.pk')], verbose_name='Tag',
         text=lambda record: record.tag.title, orderable=True)
+    # TODO: add delete buttons.
 
     class Meta:
         model = models.TaggedTrait

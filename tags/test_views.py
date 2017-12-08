@@ -148,8 +148,52 @@ class TaggedTraitByStudyListTest(UserLoginTestCase):
         context = response.context
         self.assertIn('study', context)
         self.assertIn('tagged_trait_table', context)
-        self.assertIsInstance(context['tagged_trait_table'], tables.TaggedTraitTable)
         self.assertEqual(context['study'], self.study)
+
+    def test_table_class(self):
+        """For non-taggers, the tagged trait table class does not have delete buttons."""
+        response = self.client.get(self.get_url(self.study.pk))
+        context = response.context
+        self.assertIsInstance(context['tagged_trait_table'], tables.TaggedTraitTable)
+
+
+class TaggedTraitByStudyListPhenotypeTaggerTest(PhenotypeTaggerLoginTestCase):
+
+    def setUp(self):
+        super(TaggedTraitByStudyListPhenotypeTaggerTest, self).setUp()
+        self.study = StudyFactory.create()
+        self.tagged_traits = factories.TaggedTraitFactory.create_batch(
+            10, trait__source_dataset__source_study_version__study=self.study)
+        UserData.objects.create(user=self.user)
+        self.user.refresh_from_db()
+        self.user.userdata_set.first().taggable_studies.add(self.study)
+
+    def get_url(self, *args):
+        return reverse('trait_browser:source:study:tagged', args=args)
+
+    def test_view_success_code(self):
+        """View returns successful response code."""
+        response = self.client.get(self.get_url(self.study.pk))
+        self.assertEqual(response.status_code, 200)
+
+    def test_view_with_invalid_pk(self):
+        """View returns 404 response code when the pk doesn't exist."""
+        response = self.client.get(self.get_url(self.study.pk + 1))
+        self.assertEqual(response.status_code, 404)
+
+    def test_context_data(self):
+        """View has appropriate data in the context."""
+        response = self.client.get(self.get_url(self.study.pk))
+        context = response.context
+        self.assertIn('study', context)
+        self.assertIn('tagged_trait_table', context)
+        self.assertEqual(context['study'], self.study)
+
+    def test_table_class(self):
+        """For taggers, the tagged trait table class has delete buttons."""
+        response = self.client.get(self.get_url(self.study.pk))
+        context = response.context
+        self.assertIsInstance(context['tagged_trait_table'], tables.TaggedTraitTableWithDelete)
 
 
 class TaggedTraitCreateTest(PhenotypeTaggerLoginTestCase):
