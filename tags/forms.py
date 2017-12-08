@@ -24,6 +24,17 @@ def generate_button_html(name, value, btn_type="submit", css_class="btn-primary"
     return button_html
 
 
+class TagAdminForm(forms.ModelForm):
+    """Custom form for the Tag admin page."""
+
+    class Meta:
+        model = models.Tag
+        fields = ('title', 'description', 'instructions', )
+        help_texts = {'title': 'A short, unique title.',
+                      'description': 'A detailed description of the phenotype concept described by this tag.',
+                      'instructions': 'Very detailed instructions for which traits fit with this tag.', }
+
+
 class TaggedTraitForm(forms.ModelForm):
     """Form for creating a single TaggedTrait object."""
 
@@ -75,6 +86,25 @@ class TaggedTraitForm(forms.ModelForm):
         self.helper.form_method = 'post'
         button_save = generate_button_html('submit', 'Save', btn_type='submit', css_class='btn-primary')
         self.helper.layout.append(button_save)
+
+
+class TaggedTraitAdminForm(forms.ModelForm):
+    """Custom form for the TaggedTrait admin pages."""
+
+    trait = forms.ModelChoiceField(
+        queryset=SourceTrait.objects.filter(source_dataset__source_study_version__i_is_deprecated=False),
+        required=True, label='Phenotype',
+        widget=autocomplete.ModelSelect2(url='trait_browser:source:autocomplete'))
+    # Set required=False for recommended - otherwise it will be required to be checked, which disallows False values.
+    # Submitting an empty value for this field sets the field to False.
+    recommended = forms.BooleanField(required=False)
+
+    class Meta:
+        model = models.TaggedTrait
+        fields = ('tag', 'trait', 'recommended', )
+        help_texts = {'trait': 'Select a phenotype.',
+                      'recommended': 'Is this the phenotype you recommend to use for harmonizing the tag concept?',
+                      }
 
 
 class TaggedTraitByTagForm(forms.Form):
