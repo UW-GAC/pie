@@ -292,7 +292,7 @@ class AdminTestCase(SeleniumTestCase):
         time.sleep(1)
         self.go_back()
 
-        self.selenium.find_element_by_link_text('Tagged traits').click()
+        self.selenium.find_element_by_link_text('Tagged phenotypes').click()
         time.sleep(1)
         self.go_back()
 
