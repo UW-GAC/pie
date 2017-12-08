@@ -4,7 +4,7 @@ from django.core.urlresolvers import reverse
 from django.db.models import Count
 from django.shortcuts import get_object_or_404
 from django.utils.safestring import mark_safe
-from django.views.generic import CreateView, DetailView, FormView, ListView, UpdateView
+from django.views.generic import CreateView, DetailView, DeleteView, FormView, ListView, UpdateView
 
 from braces.views import LoginRequiredMixin, FormMessagesMixin, GroupRequiredMixin, UserFormKwargsMixin, UserPassesTestMixin
 from django_tables2 import SingleTableMixin
@@ -80,6 +80,27 @@ class TaggableStudiesRequiredMixin(UserPassesTestMixin):
 
     def test_func(self, user):
         return user.userdata_set.first().taggable_studies.count() > 0
+
+
+class TaggedTraitDelete(LoginRequiredMixin, GroupRequiredMixin, TaggableStudiesRequiredMixin, FormMessagesMixin,
+                        DeleteView):
+    """Delete view class for TaggedTrait objects."""
+
+    model = models.TaggedTrait
+    context_object_name = 'tagged_trait'
+    group_required = [u"phenotype_taggers", ]
+    raise_exception = True
+    redirect_unauthenticated_users = True
+
+    def get_success_url(self):
+        return reverse('trait_browser:source:study:tagged',
+                       args=[self.object.trait.source_dataset.source_study_version.study.pk])
+
+    def get_form_valid_message(self):
+        msg = 'Tag <a href="{}">{}</a> has been removed from phenotype <a href="{}">{}</a>'.format(
+            self.object.tag.get_absolute_url(), self.object.tag.title,
+            self.object.trait.get_absolute_url(), self.object.trait.i_trait_name)
+        return mark_safe(msg)
 
 
 class TaggedTraitCreate(LoginRequiredMixin, GroupRequiredMixin, TaggableStudiesRequiredMixin, UserFormKwargsMixin,

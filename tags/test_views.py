@@ -241,6 +241,80 @@ class TaggedTraitCreateTest(PhenotypeTaggerLoginTestCase):
         self.assertEqual(response.status_code, 403)
 
 
+class TaggedTraitDeleteTest(PhenotypeTaggerLoginTestCase):
+
+    def setUp(self):
+        super(TaggedTraitDeleteTest, self).setUp()
+        self.trait = SourceTraitFactory.create()
+        self.tag = factories.TagFactory.create()
+        UserData.objects.create(user=self.user)
+        self.user.refresh_from_db()
+        self.user.userdata_set.first().taggable_studies.add(self.trait.source_dataset.source_study_version.study)
+        self.tagged_trait = models.TaggedTrait.objects.create(
+            trait=self.trait, tag=self.tag, creator=self.user, recommended=False)
+
+    def get_url(self, *args):
+        """Get the url for the view this class is supposed to test."""
+        return reverse('tags:tagged-traits:delete', args=args)
+
+    def test_view_success_code(self):
+        """View returns successful response code."""
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        self.assertEqual(response.status_code, 200)
+
+    def test_view_with_invalid_pk(self):
+        """View returns 404 response code when the pk doesn't exist."""
+        response = self.client.get(self.get_url(self.tagged_trait.pk + 1))
+        self.assertEqual(response.status_code, 404)
+
+    def test_context_data(self):
+        """View has appropriate data in the context."""
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        context = response.context
+        self.assertIn('tagged_trait', context)
+        self.assertEqual(context['tagged_trait'], self.tagged_trait)
+
+    def test_deletes_object(self):
+        """Posting 'submit' to the form correctly deletes the tagged_trait."""
+        response = self.client.post(self.get_url(self.tagged_trait.pk), {'submit': ''})
+        self.assertRedirects(response, reverse('trait_browser:source:study:tagged',
+                                               args=[self.trait.source_dataset.source_study_version.study.pk]))
+        with self.assertRaises(models.TaggedTrait.DoesNotExist):
+            self.tagged_trait.refresh_from_db()
+        self.assertEqual(models.TaggedTrait.objects.count(), 0)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertFalse('Oops!' in str(messages[0]))
+
+    def test_post_anything_deletes_object(self):
+        """Posting anything at all, even an empty dict, deletes the object."""
+        # Is this really the behavior I want? I'm not sure...
+        # Sounds like it might be:
+        # https://stackoverflow.com/questions/17678689/how-to-add-a-cancel-button-to-deleteview-in-django
+        response = self.client.post(self.get_url(self.tagged_trait.pk), {})
+        self.assertRedirects(response, reverse('trait_browser:source:study:tagged',
+                                               args=[self.trait.source_dataset.source_study_version.study.pk]))
+        with self.assertRaises(models.TaggedTrait.DoesNotExist):
+            self.tagged_trait.refresh_from_db()
+        self.assertEqual(models.TaggedTrait.objects.count(), 0)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertFalse('Oops!' in str(messages[0]))
+
+    def test_forbidden_non_taggers(self):
+        """View returns 403 code when the user is not in phenotype_taggers."""
+        phenotype_taggers = Group.objects.get(name='phenotype_taggers')
+        self.user.groups.remove(phenotype_taggers)
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        self.assertEqual(response.status_code, 403)
+
+    def test_forbidden_wrong_taggable_studies(self):
+        """View returns 403 code when the user has no taggable_studies."""
+        self.user.userdata_set.first().taggable_studies.remove(self.trait.source_dataset.source_study_version.study)
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        self.assertEqual(response.status_code, 403)
+
+
 class TaggedTraitCreateByTagTest(PhenotypeTaggerLoginTestCase):
 
     def setUp(self):
