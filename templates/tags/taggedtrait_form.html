@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+{% load staticfiles %}
+{% load static %}
+
+{% block head_title %}
+    | {{ form.title }}
+{% endblock %}
+
+{% block content %}
+    <h1>
+        {{ form.title }}
+        {% if trait %}
+            <small><mark>{{ trait.i_trait_name }}</mark></small>
+        {% endif %}
+        
+        <p><small>{{ form.subtitle }}
+        {% if tag %}
+            with the <mark>{{ tag.title }}</mark> tag
+        {% endif %}
+        </small></p>
+    </h1>
+    <p>{{ form.subtitle2 }}</p>
+    {% if trait %}
+        <p>Phenotype {{ trait.i_trait_name }}, variable <a href="{{ trait.dbgap_variable_link }}">{{ trait.variable_accession }}</a>
+           from dataset <a href="{{ trait.dbgap_dataset_link }}">{{ trait.dataset_accession }}</a></p>
+    {% endif %}
+    
+    {% include '_messages.html' %}
+    {% crispy form %}
+{% endblock %}
+
+{% block footer %}
+    <!-- script for django-autocomplete-light -->
+    <script type="text/javascript" src="{% static 'admin/js/vendor/jquery/jquery.js' %}"></script>
+    {{ form.media }}
+
+{% endblock %}

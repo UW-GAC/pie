@@ -59,6 +59,7 @@
 # +--------------------------------------------+
 
 
+from django.apps import apps
 from django.db import models
 from django.core.urlresolvers import reverse
 
@@ -173,6 +174,20 @@ class Study(SourceDBTimeStampedModel):
         """Get html for study's name linking to study detail page."""
         url_text = "{{% url 'trait_browser:source:study:detail' pk={} %}} ".format(self.pk)
         return URL_HTML.format(url=url_text, name=self.i_study_name)
+
+    def get_tag_count(self):
+        """Return a count of the number of tags for which traits are tagged in this study."""
+        return apps.get_model('tags', 'Tag').objects.filter(
+            traits__source_dataset__source_study_version__study=self).distinct().count()
+
+    def get_tagged_traits(self):
+        """Return a queryset of the TaggedTraits from this study."""
+        return apps.get_model('tags', 'TaggedTrait').objects.filter(
+            trait__source_dataset__source_study_version__study=self)
+
+    def get_tagged_trait_count(self):
+        """Return the count of traits that have been tagged in this study."""
+        return self.get_tagged_traits().distinct().count()
 
 
 class SourceStudyVersion(SourceDBTimeStampedModel):

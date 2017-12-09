@@ -33,7 +33,7 @@ class SourceTraitTable(tables.Table):
         model = models.SourceTrait
         fields = ('i_trait_name', 'i_description', 'study_name', )
         attrs = {'class': 'table table-striped table-bordered table-hover table-condensed'}
-        template = 'trait_browser/bootstrap_tables2.html'
+        template = 'bootstrap_tables2.html'
         order_by = ('dbGaP_dataset', 'dbGaP_variable', )
 
 
@@ -55,7 +55,7 @@ class HarmonizedTraitTable(tables.Table):
         model = models.HarmonizedTrait
         fields = ('trait_flavor_name', 'i_description', )
         attrs = {'class': 'table table-striped table-bordered table-hover table-condensed'}
-        template = 'trait_browser/bootstrap_tables2.html'
+        template = 'bootstrap_tables2.html'
         order_by = ('trait_flavor_name', )
 
 
@@ -76,5 +76,5 @@ class StudyTable(tables.Table):
         model = models.Study
         fields = ('i_study_name', )
         attrs = {'class': 'table table-striped table-hover table-bordered', 'style': 'width: auto;'}
-        template = 'trait_browser/bootstrap_tables2.html'
+        template = 'bootstrap_tables2.html'
         order_by = ('i_study_name', )

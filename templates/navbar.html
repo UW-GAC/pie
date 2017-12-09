@@ -44,6 +44,24 @@
           </ul>
         </li>
         
+        <!--    Phenotype Tagging dropdown    -->
+        <li class="dropdown">
+          <a href="{% url 'tags:list' %}" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false"> Phenotype tags<span class="caret"></span></a>
+          <ul class="dropdown-menu">
+            <li>
+              <a href="{% url 'tags:list' %}"><span class="glyphicon glyphicon-list"></span> View all tags</a>
+            </li>
+            <li>
+              <a href="{% url 'tags:tagged-traits:by-study' %}"><span class="glyphicon glyphicon-list"></span> Browse tagged traits by study</a>
+            </li>
+            {% if request.user|has_group:"phenotype_taggers" or request.user.is_staff %}
+                <li>
+                  <a href="{% url 'tags:add-many:main' %}"><span class="glyphicon glyphicon-tag"></span> Tag phenotypes</a>
+                </li>
+            {% endif %}
+          </ul>
+        </li>
+        
         {% if request.user|has_group:"recipe_submitters" or request.user.is_staff %}
             <!--    Harmonization Recipes dropdown    -->
             <li class="dropdown">

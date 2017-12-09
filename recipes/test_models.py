@@ -27,6 +27,13 @@ class UnitRecipeTestCase(TestCase):
         self.assertIsInstance(unit_recipe.created, datetime)
         self.assertIsInstance(unit_recipe.modified, datetime)
 
+    def test_unique_together(self):
+        """Adding the same name and creator combination doesn't work."""
+        unit_recipe = factories.UnitRecipeFactory.create()
+        duplicate = factories.UnitRecipeFactory.build(name=unit_recipe.name, creator=unit_recipe.creator)
+        with self.assertRaises(ValidationError):
+            duplicate.full_clean()
+
 
 class HarmonizationRecipeTestCase(TestCase):
 
@@ -75,3 +82,11 @@ class HarmonizationRecipeTestCase(TestCase):
         harmonization_recipe = factories.HarmonizationRecipeFactory.build(encoded_values='1- blue\r\n2- red')
         with self.assertRaises(ValidationError):
             harmonization_recipe.full_clean()
+
+    def test_unique_together(self):
+        """Adding the same name and creator combination doesn't work."""
+        harmonization_recipe = factories.HarmonizationRecipeFactory.create()
+        duplicate = factories.HarmonizationRecipeFactory.build(
+            name=harmonization_recipe.name, creator=harmonization_recipe.creator)
+        with self.assertRaises(ValidationError):
+            duplicate.full_clean()

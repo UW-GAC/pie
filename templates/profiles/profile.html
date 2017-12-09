@@ -35,6 +35,10 @@
               <li role="presentation"><a href="#unitrecipes" role="tab" data-toggle="tab">Unit Recipes</a></li>
               <li role="presentation"><a href="#harmonizationrecipes" role="tab" data-toggle="tab">Harmonization Recipes</a></li>
           {% endif %}
+
+          {% if request.user|has_group:"phenotype_taggers" or request.user.is_staff %}
+              <li role="presentation"><a href="#tagged_phenotypes" role="tab" data-toggle="tab">My Tagged Phenotypes</a></li>
+          {% endif %}
           
         </ul>
 
@@ -79,7 +83,13 @@
                   {% render_table harmonization_recipe_table %}
               </div>
           {% endif %}
-         
+
+          {% if request.user|has_group:"phenotype_taggers" or request.user.is_staff %}
+              <div role="tabpanel" class="tab-pane fade" id="tagged_phenotypes">
+                  Table here later...
+              </div>
+          {% endif %}
+
         </div>
       </div>
 

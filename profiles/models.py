@@ -3,8 +3,6 @@ from django.db import models
 from django.utils.http import urlencode
 from django.core.urlresolvers import reverse
 
-from trait_browser.models import Study
-
 
 class TimeStampedModel(models.Model):
     """Abstract base class model with autoupdating 'created' and 'modified' fields."""
@@ -20,7 +18,7 @@ class Search(TimeStampedModel):
     """Model for searches that anyone has ever searched for."""
 
     param_text = models.CharField(max_length=100, db_index=True, null=False)
-    param_studies = models.ManyToManyField(Study)
+    param_studies = models.ManyToManyField('trait_browser.Study')
     search_count = models.IntegerField(default=1)
     search_type = models.CharField(max_length=25, null=False)
 
@@ -57,6 +55,7 @@ class UserData(TimeStampedModel):
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL)
     saved_searches = models.ManyToManyField(Search, through="SavedSearchMeta")
+    taggable_studies = models.ManyToManyField('trait_browser.Study')
 
 
 class SavedSearchMeta(TimeStampedModel):

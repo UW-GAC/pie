@@ -2,8 +2,9 @@
 
 from datetime import datetime
 
-from django.test import TestCase
+from django.core.exceptions import ValidationError
 from django.core.urlresolvers import reverse
+from django.test import TestCase
 
 from . import factories
 from . import models
@@ -380,6 +381,15 @@ class HarmonizedTraitTestCase(TestCase):
         """get_name_link_html returns a string."""
         trait = factories.HarmonizedTraitFactory.create()
         self.assertIsInstance(trait.get_name_link_html(), str)
+
+    def test_unique_together(self):
+        """Adding the same trait name and hts version combination doesn't work."""
+        harmonized_trait = factories.HarmonizedTraitFactory.create()
+        duplicate = factories.HarmonizedTraitFactory.build(
+            i_trait_name=harmonized_trait.i_trait_name,
+            harmonized_trait_set_version=harmonized_trait.harmonized_trait_set_version)
+        with self.assertRaises(ValidationError):
+            duplicate.full_clean()
 
 
 class SourceTraitEncodedValueTestCase(TestCase):

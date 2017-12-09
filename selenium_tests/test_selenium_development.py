@@ -9,7 +9,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.staticfiles.testing import StaticLiveServerTestCase
 from django.core.urlresolvers import reverse
 
-from core.factories import build_test_db
+from core.build_test_db import build_test_db
 import trait_browser.models
 import trait_browser.factories
 import trait_browser.views
@@ -189,7 +189,7 @@ class HomeTestCase(SeleniumTestCase):
 
 class AdminTestCase(SeleniumTestCase):
 
-    def test_admin(self):
+    def test_trait_browser_admin(self):
         # Open web browser and navigate to admin page.
         self.get_reverse('admin:index')
         body = self.selenium.find_element_by_tag_name('body')
@@ -202,7 +202,15 @@ class AdminTestCase(SeleniumTestCase):
         self.selenium.find_element_by_class_name('btn-primary').click()
         time.sleep(1)
         # Navigate to each of the admin model interfaces in turn.
+        self.selenium.find_element_by_link_text('Allowed update reasons').click()
+        time.sleep(1)
+        self.go_back()
+
         self.selenium.find_element_by_link_text('GlobalStudies').click()
+        time.sleep(1)
+        self.go_back()
+
+        self.selenium.find_element_by_link_text('Harmonization units').click()
         time.sleep(1)
         self.go_back()
 
@@ -211,6 +219,10 @@ class AdminTestCase(SeleniumTestCase):
         self.go_back()
 
         self.selenium.find_element_by_link_text('Harmonized trait sets').click()
+        time.sleep(1)
+        self.go_back()
+
+        self.selenium.find_element_by_link_text('Harmonized trait set versions').click()
         time.sleep(1)
         self.go_back()
 
@@ -239,6 +251,48 @@ class AdminTestCase(SeleniumTestCase):
         self.go_back()
 
         self.selenium.find_element_by_link_text('Subcohorts').click()
+        time.sleep(1)
+        self.go_back()
+
+    def test_recipes_admin(self):
+        # Open web browser and navigate to admin page.
+        self.get_reverse('admin:index')
+        body = self.selenium.find_element_by_tag_name('body')
+        self.assertIn('administration', body.text)
+        # Log in to the admin interface.
+        username = self.selenium.find_element_by_id('id_username')
+        password = self.selenium.find_element_by_id('id_password')
+        username.send_keys(self.superuser.email)
+        password.send_keys(self.superuser_password)
+        self.selenium.find_element_by_class_name('btn-primary').click()
+        time.sleep(1)
+        # Navigate to each of the admin model interfaces in turn.
+        self.selenium.find_element_by_link_text('Harmonization unit recipes').click()
+        time.sleep(1)
+        self.go_back()
+
+        self.selenium.find_element_by_link_text('Harmonization recipes').click()
+        time.sleep(1)
+        self.go_back()
+
+    def test_tags_admin(self):
+        # Open web browser and navigate to admin page.
+        self.get_reverse('admin:index')
+        body = self.selenium.find_element_by_tag_name('body')
+        self.assertIn('administration', body.text)
+        # Log in to the admin interface.
+        username = self.selenium.find_element_by_id('id_username')
+        password = self.selenium.find_element_by_id('id_password')
+        username.send_keys(self.superuser.email)
+        password.send_keys(self.superuser_password)
+        self.selenium.find_element_by_class_name('btn-primary').click()
+        time.sleep(1)
+        # Navigate to each of the admin model interfaces in turn.
+        self.selenium.find_element_by_link_text('Phenotype tags').click()
+        time.sleep(1)
+        self.go_back()
+
+        self.selenium.find_element_by_link_text('Tagged phenotypes').click()
         time.sleep(1)
         self.go_back()
 
