@@ -5,16 +5,14 @@ from faker import Faker
 from django.contrib.auth.models import Group
 from django.core.urlresolvers import reverse
 
-from core.utils import LoginRequiredTestCase, PhenotypeTaggerLoginTestCase, UserLoginTestCase, get_autocomplete_view_ids
-from core.factories import UserFactory
+from core.utils import (LoginRequiredTestCase, PhenotypeTaggerLoginTestCase, UserLoginTestCase,
+                        get_autocomplete_view_ids)
 from profiles.models import UserData
 from trait_browser.factories import SourceTraitFactory, StudyFactory
 from trait_browser.models import SourceTrait
 from . import factories
-from . import forms
 from . import models
 from . import tables
-from . import views
 
 fake = Faker()
 
@@ -612,7 +610,8 @@ class ManyTaggedTraitsCreateTest(PhenotypeTaggerLoginTestCase):
 
     def test_forbidden_empty_taggable_studies(self):
         """View returns 403 code when the user has no taggable_studies."""
-        self.user.userdata_set.first().taggable_studies.remove(self.traits[0].source_dataset.source_study_version.study)
+        self.user.userdata_set.first().taggable_studies.remove(
+            self.traits[0].source_dataset.source_study_version.study)
         response = self.client.get(self.get_url())
         self.assertEqual(response.status_code, 403)
 
@@ -647,7 +646,7 @@ class ManyTaggedTraitsCreateByTagTest(PhenotypeTaggerLoginTestCase):
         """Posting valid data to the form correctly tags a single trait."""
         # Check on redirection to detail page, M2M links, and creation message.
         response = self.client.post(self.get_url(self.tag.pk),
-                                    {'traits': [str(self.traits[0].pk)],'recommended': False})
+                                    {'traits': [str(self.traits[0].pk)], 'recommended': False})
         self.assertRedirects(response, self.tag.get_absolute_url())
         new_object = models.TaggedTrait.objects.latest('pk')
         self.assertIsInstance(new_object, models.TaggedTrait)
@@ -695,7 +694,7 @@ class ManyTaggedTraitsCreateByTagTest(PhenotypeTaggerLoginTestCase):
 
     def test_invalid_form_message(self):
         """Posting invalid data results in a message about the invalidity."""
-        response = self.client.post(self.get_url(self.tag.pk), {'traits': '','recommended': False})
+        response = self.client.post(self.get_url(self.tag.pk), {'traits': '', 'recommended': False})
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
         self.assertTrue('Oops!' in str(messages[0]))
@@ -747,7 +746,8 @@ class ManyTaggedTraitsCreateByTagTest(PhenotypeTaggerLoginTestCase):
 
     def test_forbidden_empty_taggable_studies(self):
         """View returns 403 code when the user has no taggable_studies."""
-        self.user.userdata_set.first().taggable_studies.remove(self.traits[0].source_dataset.source_study_version.study)
+        self.user.userdata_set.first().taggable_studies.remove(
+            self.traits[0].source_dataset.source_study_version.study)
         response = self.client.get(self.get_url(self.tag.pk))
         self.assertEqual(response.status_code, 403)
 

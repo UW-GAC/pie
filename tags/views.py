@@ -1,12 +1,12 @@
 """View functions and classes for the tags app."""
 
 from django.core.urlresolvers import reverse
-from django.db.models import Count
 from django.shortcuts import get_object_or_404
 from django.utils.safestring import mark_safe
-from django.views.generic import CreateView, DetailView, DeleteView, FormView, ListView, UpdateView
+from django.views.generic import CreateView, DetailView, DeleteView, FormView, ListView
 
-from braces.views import LoginRequiredMixin, FormMessagesMixin, GroupRequiredMixin, UserFormKwargsMixin, UserPassesTestMixin
+from braces.views import (FormMessagesMixin, GroupRequiredMixin, LoginRequiredMixin, UserFormKwargsMixin,
+                          UserPassesTestMixin)
 from dal import autocomplete
 from django_tables2 import SingleTableMixin
 

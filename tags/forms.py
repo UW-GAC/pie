@@ -3,14 +3,13 @@
 from django import forms
 from django.utils.safestring import mark_safe
 
-from braces.forms import UserKwargModelFormMixin
 from crispy_forms.helper import FormHelper
-from crispy_forms.layout import ButtonHolder, Div, Layout, Fieldset, HTML, Submit
+from crispy_forms.layout import HTML
 from dal import autocomplete
 
 from . import models
 from profiles.models import UserData
-from trait_browser.models import SourceTrait, Study
+from trait_browser.models import SourceTrait
 
 
 def generate_button_html(name, value, btn_type="submit", css_class="btn-primary"):
@@ -66,7 +65,8 @@ class TaggedTraitForm(forms.ModelForm):
         # Filter the queryset of traits by the user's taggable studies, and only non-deprecated.
         studies = list(UserData.objects.get(user=self.user).taggable_studies.all())
         if len(studies) == 1:
-            self.subtitle2 = 'You can tag phenotypes from the study {} ({})'.format(studies[0].i_study_name, studies[0].phs)
+            self.subtitle2 = 'You can tag phenotypes from the study {} ({})'.format(
+                studies[0].i_study_name, studies[0].phs)
         else:
             self.subtitle2 = 'You can tag phenotypes from the following studies:'
             for study in studies:
@@ -134,7 +134,8 @@ class TaggedTraitByTagForm(forms.Form):
         # Filter the queryset of traits by the user's taggable studies, and only non-deprecated.
         studies = list(UserData.objects.get(user=self.user).taggable_studies.all())
         if len(studies) == 1:
-            self.subtitle2 = 'You can tag phenotypes from the study {} ({})'.format(studies[0].i_study_name, studies[0].phs)
+            self.subtitle2 = 'You can tag phenotypes from the study {} ({})'.format(
+                studies[0].i_study_name, studies[0].phs)
         else:
             self.subtitle2 = 'You can tag phenotypes from the following studies:'
             for study in studies:
@@ -186,7 +187,8 @@ class ManyTaggedTraitsForm(forms.Form):
         # Filter the queryset of traits by the user's taggable studies, and only non-deprecated.
         studies = list(UserData.objects.get(user=self.user).taggable_studies.all())
         if len(studies) == 1:
-            self.subtitle2 = 'You can tag phenotypes from the study {} ({})'.format(studies[0].i_study_name, studies[0].phs)
+            self.subtitle2 = 'You can tag phenotypes from the study {} ({})'.format(
+                studies[0].i_study_name, studies[0].phs)
         else:
             self.subtitle2 = 'You can tag phenotypes from the following studies:'
             for study in studies:
@@ -259,7 +261,8 @@ class ManyTaggedTraitsByTagForm(forms.Form):
         # Filter the queryset of traits by the user's taggable studies, and only non-deprecated.
         studies = list(UserData.objects.get(user=self.user).taggable_studies.all())
         if len(studies) == 1:
-            self.subtitle2 = 'You can tag phenotypes from the study {} ({})'.format(studies[0].i_study_name, studies[0].phs)
+            self.subtitle2 = 'You can tag phenotypes from the study {} ({})'.format(
+                studies[0].i_study_name, studies[0].phs)
         else:
             self.subtitle2 = 'You can tag phenotypes from the following studies:'
             for study in studies:

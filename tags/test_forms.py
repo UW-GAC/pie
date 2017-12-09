@@ -6,10 +6,8 @@ from django.test import TestCase
 from core.factories import UserFactory
 from profiles.models import UserData
 from trait_browser.factories import SourceTraitFactory, StudyFactory
-from trait_browser.models import SourceTrait
 from . import forms
 from . import factories
-from . import models
 
 
 class TaggedTraitFormTest(TestCase):
