@@ -34,4 +34,5 @@ urlpatterns = [
     url(r'^add-to-many-phenotypes/', include(add_many_patterns, namespace='add-many')),
     url(r'^tagged/', include(tagged_trait_patterns, namespace='tagged-traits')),
     url(r'^list', views.TagList.as_view(), name='list'),
+    url(r'^autocomplete/$', views.TagAutocomplete.as_view(), name='autocomplete'),
 ]

@@ -5,7 +5,7 @@ from faker import Faker
 from django.contrib.auth.models import Group
 from django.core.urlresolvers import reverse
 
-from core.utils import LoginRequiredTestCase, PhenotypeTaggerLoginTestCase, UserLoginTestCase
+from core.utils import LoginRequiredTestCase, PhenotypeTaggerLoginTestCase, UserLoginTestCase, get_autocomplete_view_ids
 from core.factories import UserFactory
 from profiles.models import UserData
 from trait_browser.factories import SourceTraitFactory, StudyFactory
@@ -757,3 +757,58 @@ class TagsLoginRequiredTestCase(LoginRequiredTestCase):
     def test_recipes_login_required(self):
         """All recipes urls redirect to login page if no user is logged in."""
         self.assert_redirect_all_urls('tags')
+
+
+class TagAutocompleteTest(UserLoginTestCase):
+    """Autocomplete view works as expected."""
+
+    def setUp(self):
+        super(TagAutocompleteTest, self).setUp()
+        self.tags = factories.TagFactory.create_batch(10)
+
+    def get_url(self, *args):
+        return reverse('tags:autocomplete')
+
+    def test_view_success_code(self):
+        """View returns successful response code."""
+        response = self.client.get(self.get_url())
+        self.assertEqual(response.status_code, 200)
+
+    def test_returns_all_traits(self):
+        """Queryset returns all of the tags with no query (when there are 10, which is the page limit)."""
+        url = self.get_url()
+        response = self.client.get(url)
+        pks = get_autocomplete_view_ids(response)
+        self.assertEqual(sorted([tag.pk for tag in self.tags]), sorted(pks))
+
+    def test_proper_tag_in_queryset(self):
+        """Queryset returns only the proper tag by title."""
+        tag = self.tags[0]
+        response = self.client.get(self.get_url(), {'q': tag.title})
+        pks = get_autocomplete_view_ids(response)
+        self.assertTrue(len(pks) == 1)
+        self.assertEqual(tag.pk, pks[0])
+
+    def test_proper_tag_in_queryset_upper_case(self):
+        """Queryset returns only the proper tag by title when query is in upper case."""
+        tag = self.tags[0]
+        response = self.client.get(self.get_url(), {'q': tag.title.upper()})
+        pks = get_autocomplete_view_ids(response)
+        self.assertTrue(len(pks) == 1)
+        self.assertEqual(tag.pk, pks[0])
+
+    def test_proper_tag_in_queryset_lower_case(self):
+        """Queryset returns only the proper tag by title when query is in lower case."""
+        tag = self.tags[0]
+        response = self.client.get(self.get_url(), {'q': tag.title.lower()})
+        pks = get_autocomplete_view_ids(response)
+        self.assertTrue(len(pks) == 1)
+        self.assertEqual(tag.pk, pks[0])
+
+    def test_proper_tag_in_queryset_partial_query(self):
+        """The results contain the desired trait when a single letter is used for the query."""
+        tag = self.tags[0]
+        response = self.client.get(self.get_url(), {'q': tag.title[0]})
+        pks = get_autocomplete_view_ids(response)
+        self.assertTrue(len(pks) >= 1)
+        self.assertIn(tag.pk, pks)

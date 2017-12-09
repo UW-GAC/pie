@@ -7,6 +7,7 @@ from django.utils.safestring import mark_safe
 from django.views.generic import CreateView, DetailView, DeleteView, FormView, ListView, UpdateView
 
 from braces.views import LoginRequiredMixin, FormMessagesMixin, GroupRequiredMixin, UserFormKwargsMixin, UserPassesTestMixin
+from dal import autocomplete
 from django_tables2 import SingleTableMixin
 
 from trait_browser.models import Study
@@ -264,3 +265,13 @@ class ManyTaggedTraitsCreateByTag(LoginRequiredMixin, GroupRequiredMixin, Taggab
             msg += 'Phenotype <a href="{}">{}</a> tagged as {} <br>'.format(
                 trait.get_absolute_url(), trait.i_trait_name, self.tag.title)
         return mark_safe(msg)
+
+
+class TagAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
+    """View for autocompleting tag model choice fields by title in a form. Case-insensitive."""
+
+    def get_queryset(self):
+        retrieved = models.Tag.objects.all()
+        if self.q:
+            retrieved = retrieved.filter(lower_title__iregex=r'^{}'.format(self.q))
+        return retrieved

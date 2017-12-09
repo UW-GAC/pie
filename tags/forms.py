@@ -40,6 +40,8 @@ class TaggedTraitForm(forms.ModelForm):
 
     title = 'Tag a phenotype'
     subtitle = 'Label a phenotype with the selected tag'
+    tag = forms.ModelChoiceField(queryset=models.Tag.objects.all(),
+                                 widget=autocomplete.ModelSelect2(url='tags:autocomplete'))
     trait = forms.ModelChoiceField(queryset=SourceTrait.objects.all(),
                                    required=True,
                                    label='Phenotype',
@@ -91,6 +93,8 @@ class TaggedTraitForm(forms.ModelForm):
 class TaggedTraitAdminForm(forms.ModelForm):
     """Custom form for the TaggedTrait admin pages."""
 
+    tag = forms.ModelChoiceField(queryset=models.Tag.objects.all(),
+                                 widget=autocomplete.ModelSelect2(url='tags:autocomplete'))
     trait = forms.ModelChoiceField(
         queryset=SourceTrait.objects.filter(source_dataset__source_study_version__i_is_deprecated=False),
         required=True, label='Phenotype',
@@ -159,7 +163,8 @@ class ManyTaggedTraitsForm(forms.Form):
 
     title = 'Tag phenotypes'
     subtitle = 'Label phenotypes with the selected tag'
-    tag = forms.ModelChoiceField(queryset=models.Tag.objects.all(), required=True)
+    tag = forms.ModelChoiceField(queryset=models.Tag.objects.all(),
+                                 widget=autocomplete.ModelSelect2(url='tags:autocomplete'))
     traits = forms.ModelMultipleChoiceField(
         queryset=SourceTrait.objects.all(),
         required=False,
@@ -307,7 +312,8 @@ class TagSpecificTraitForm(forms.Form):
     title = 'Tag the phenotype'
     subtitle = 'Select a tag to label the phenotype'
     subtitle2 = ''
-    tag = forms.ModelChoiceField(queryset=models.Tag.objects.all(), required=True)
+    tag = forms.ModelChoiceField(queryset=models.Tag.objects.all(),
+                                 widget=autocomplete.ModelSelect2(url='tags:autocomplete'))
     # Set required=False for recommended - otherwise it will be required to be checked, which disallows False values.
     # Submitting an empty value for this field sets the field to False.
     recommended = forms.BooleanField(required=False)
