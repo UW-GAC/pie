@@ -41,7 +41,7 @@ class RemoveSearchTestCase(UserLoginTestCase):
         study = [x[0] for x in search.param_studies.values_list('i_accession')][0]
         search_string = 'text={}&study={}'.format(text, study)
         self.client.post(save_url, {'trait_type': search_type, 'search_params': search_string})
-        searches = models.SavedSearchMeta.objects.filter(user_data__user_id=self.user.id, active=True)
+        searches = models.SavedSearchMeta.objects.filter(profile__user_id=self.user.id, active=True)
         remove_url = reverse('profiles:profile')
         self.client.post(remove_url, {'search_type': search_type, 'search_id': search.id})
         self.assertEqual(searches.count(), 0)

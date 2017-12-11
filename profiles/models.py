@@ -50,7 +50,7 @@ class Search(TimeStampedModel):
         verbose_name_plural = 'searches'
 
 
-class UserData(TimeStampedModel):
+class Profile(TimeStampedModel):
     """Model to hold data related to the User model."""
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL)
@@ -62,5 +62,5 @@ class SavedSearchMeta(TimeStampedModel):
     """M2M through model for saved searches."""
 
     search = models.ForeignKey(Search)
-    user_data = models.ForeignKey(UserData)
+    profile = models.ForeignKey(Profile)
     active = models.BooleanField(default=True)

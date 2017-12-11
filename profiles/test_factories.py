@@ -11,29 +11,29 @@ from trait_browser.models import Study
 
 class SearchModelTestCase(TestCase):
 
-    def test_user_data_factory_build(self):
+    def test_profile_factory_build(self):
         """A Search instance is returned by factories.SearchFactory.build()."""
         search = factories.SearchFactory.build()
         self.assertIsInstance(search, models.Search)
 
-    def test_user_data_factory_create(self):
+    def test_profile_factory_create(self):
         """A Search instance is returned by factories.SearchFactory.create()."""
         search = factories.SearchFactory.create()
         self.assertIsInstance(search, models.Search)
 
-    def test_user_data_factory_build_batch(self):
+    def test_profile_factory_build_batch(self):
         """A Search instance is returned by factories.SearchFactory.build_batch()."""
         searches = factories.SearchFactory.build_batch(5)
         for rec in searches:
             self.assertIsInstance(rec, models.Search)
 
-    def test_user_data_factory_create_batch(self):
+    def test_profile_factory_create_batch(self):
         """A Search instance is returned by factories.SearchFactory.create_batch()."""
         searches = factories.SearchFactory.create_batch(5)
         for rec in searches:
             self.assertIsInstance(rec, models.Search)
 
-    def test_user_data_factory_create_with_studies(self):
+    def test_profile_factory_create_with_studies(self):
         """A Search instance is returned by factories.SearchFactory.create() with checked studies."""
         for i in range(3):
             StudyFactory.create()
@@ -42,29 +42,29 @@ class SearchModelTestCase(TestCase):
         self.assertIsInstance(search, models.Search)
 
 
-class UserDataModelTestCase(TestCase):
+class ProfileModelTestCase(TestCase):
 
-    def test_user_data_factory_build(self):
-        """A UserData instance is returned by factories.UserDataFactory.build()."""
-        user_data = factories.UserDataFactory.build()
-        self.assertIsInstance(user_data, models.UserData)
+    def test_profile_factory_build(self):
+        """A Profile instance is returned by factories.ProfileFactory.build()."""
+        profile = factories.ProfileFactory.build()
+        self.assertIsInstance(profile, models.Profile)
 
-    def test_user_data_factory_create(self):
-        """A UserData instance is returned by factories.UserDataFactory.create()."""
-        user_data = factories.UserDataFactory.create()
-        self.assertIsInstance(user_data, models.UserData)
+    def test_profile_factory_create(self):
+        """A Profile instance is returned by factories.ProfileFactory.create()."""
+        profile = factories.ProfileFactory.create()
+        self.assertIsInstance(profile, models.Profile)
 
-    def test_user_data_factory_build_batch(self):
-        """A UserData instance is returned by factories.UserDataFactory.build_batch()."""
-        user_data = factories.UserDataFactory.build_batch(5)
-        for rec in user_data:
-            self.assertIsInstance(rec, models.UserData)
+    def test_profile_factory_build_batch(self):
+        """A Profile instance is returned by factories.ProfileFactory.build_batch()."""
+        profile = factories.ProfileFactory.build_batch(5)
+        for rec in profile:
+            self.assertIsInstance(rec, models.Profile)
 
-    def test_user_data_factory_create_batch(self):
-        """A UserData instance is returned by factories.UserDataFactory.create_batch()."""
-        user_data = factories.UserDataFactory.create_batch(5)
-        for rec in user_data:
-            self.assertIsInstance(rec, models.UserData)
+    def test_profile_factory_create_batch(self):
+        """A Profile instance is returned by factories.ProfileFactory.create_batch()."""
+        profile = factories.ProfileFactory.create_batch(5)
+        for rec in profile:
+            self.assertIsInstance(rec, models.Profile)
 
 
 class SavedSearchMetaModelTestCase(TestCase):

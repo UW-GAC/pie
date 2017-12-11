@@ -4,7 +4,7 @@ from django.contrib.auth.models import Group
 from django.test import TestCase
 
 from core.factories import UserFactory
-from profiles.models import UserData
+from profiles.models import Profile
 from trait_browser.factories import SourceTraitFactory, StudyFactory
 from . import forms
 from . import factories
@@ -20,9 +20,9 @@ class TaggedTraitFormTest(TestCase):
         self.user = UserFactory.create()
         phenotype_taggers = Group.objects.get(name='phenotype_taggers')
         self.user.groups.add(phenotype_taggers)
-        UserData.objects.create(user=self.user)
+        Profile.objects.create(user=self.user)
         self.user.refresh_from_db()
-        self.user.userdata_set.first().taggable_studies.add(self.trait.source_dataset.source_study_version.study)
+        self.user.profile_set.first().taggable_studies.add(self.trait.source_dataset.source_study_version.study)
 
     def test_valid(self):
         """Form is valid with all necessary input."""
@@ -77,9 +77,9 @@ class TaggedTraitByTagFormTest(TestCase):
         self.user = UserFactory.create()
         phenotype_taggers = Group.objects.get(name='phenotype_taggers')
         self.user.groups.add(phenotype_taggers)
-        UserData.objects.create(user=self.user)
+        Profile.objects.create(user=self.user)
         self.user.refresh_from_db()
-        self.user.userdata_set.first().taggable_studies.add(self.trait.source_dataset.source_study_version.study)
+        self.user.profile_set.first().taggable_studies.add(self.trait.source_dataset.source_study_version.study)
 
     def test_valid(self):
         """Form is valid with all necessary input."""
@@ -128,9 +128,9 @@ class ManyTaggedTraitsFormTest(TestCase):
         self.user = UserFactory.create()
         phenotype_taggers = Group.objects.get(name='phenotype_taggers')
         self.user.groups.add(phenotype_taggers)
-        UserData.objects.create(user=self.user)
+        Profile.objects.create(user=self.user)
         self.user.refresh_from_db()
-        self.user.userdata_set.first().taggable_studies.add(study)
+        self.user.profile_set.first().taggable_studies.add(study)
 
     def test_valid(self):
         """Form is valid with all necessary input."""
@@ -206,9 +206,9 @@ class ManyTaggedTraitsByTagFormTest(TestCase):
         self.user = UserFactory.create()
         phenotype_taggers = Group.objects.get(name='phenotype_taggers')
         self.user.groups.add(phenotype_taggers)
-        UserData.objects.create(user=self.user)
+        Profile.objects.create(user=self.user)
         self.user.refresh_from_db()
-        self.user.userdata_set.first().taggable_studies.add(study)
+        self.user.profile_set.first().taggable_studies.add(study)
 
     def test_valid(self):
         """Form is valid with all necessary input."""

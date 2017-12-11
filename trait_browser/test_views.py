@@ -8,7 +8,7 @@ from django.core.urlresolvers import reverse
 from django.test import TestCase
 
 from core.utils import UserLoginTestCase, LoginRequiredTestCase, PhenotypeTaggerLoginTestCase, get_autocomplete_view_ids
-from profiles.models import Search, UserData
+from profiles.models import Search, Profile
 from tags.models import TaggedTrait
 from tags.factories import TagFactory
 from . import models
@@ -120,7 +120,7 @@ class SourceTraitDetailTest(UserLoginTestCase):
 
     def setUp(self):
         super(SourceTraitDetailTest, self).setUp()
-        UserData.objects.create(user=self.user)
+        Profile.objects.create(user=self.user)
         self.trait = factories.SourceTraitFactory.create()
 
     def get_url(self, *args):
@@ -159,9 +159,9 @@ class SourceTraitDetailPhenotypeTaggerTest(PhenotypeTaggerLoginTestCase):
         super(SourceTraitDetailPhenotypeTaggerTest, self).setUp()
         self.trait = factories.SourceTraitFactory.create()
         self.tag = TagFactory.create()
-        UserData.objects.create(user=self.user)
+        Profile.objects.create(user=self.user)
         self.user.refresh_from_db()
-        self.user.userdata_set.first().taggable_studies.add(self.trait.source_dataset.source_study_version.study)
+        self.user.profile_set.first().taggable_studies.add(self.trait.source_dataset.source_study_version.study)
 
     def get_url(self, *args):
         return reverse('trait_browser:source:detail', args=args)
@@ -471,7 +471,7 @@ class SourceTraitSearchViewTestCase(UserLoginTestCase):
         response = self.client.post(post_url, {'trait_type': search_type, 'search_params': search_string})
         self.assertEqual(response.status_code, 302)
         # Ensure saved search exists for the user.
-        user_searches = UserData.objects.get(user_id=self.user.id).saved_searches.all()
+        user_searches = Profile.objects.get(user_id=self.user.id).saved_searches.all()
         search = Search.objects.get(param_text=text, search_type='source')
         self.assertIn(search, user_searches)
 
@@ -679,9 +679,9 @@ class TaggableStudyFilteredSourceTraitPHVAutocompleteTestCase(PhenotypeTaggerLog
         self.source_study_version = factories.SourceStudyVersionFactory.create(study=self.study)
         self.source_dataset = factories.SourceDatasetFactory.create(source_study_version=self.source_study_version)
         self.source_traits = factories.SourceTraitFactory.create_batch(8, source_dataset=self.source_dataset)
-        UserData.objects.create(user=self.user)
+        Profile.objects.create(user=self.user)
         self.user.refresh_from_db()
-        self.user.userdata_set.first().taggable_studies.add(self.study)
+        self.user.profile_set.first().taggable_studies.add(self.study)
 
     def get_url(self, *args):
         return reverse('trait_browser:source:taggable-autocomplete')
@@ -765,7 +765,7 @@ class TaggableStudyFilteredSourceTraitPHVAutocompleteTestCase(PhenotypeTaggerLog
 
     def test_forbidden_empty_taggable_studies(self):
         """View returns 403 code when the user has no taggable_studies."""
-        self.user.userdata_set.first().taggable_studies.remove(self.study)
+        self.user.profile_set.first().taggable_studies.remove(self.study)
         response = self.client.get(self.get_url())
         self.assertEqual(response.status_code, 403)
 
@@ -805,9 +805,9 @@ class SourceTraitTaggingTest(PhenotypeTaggerLoginTestCase):
         self.study = factories.StudyFactory.create()
         self.trait = factories.SourceTraitFactory.create(source_dataset__source_study_version__study=self.study)
         self.tag = TagFactory.create()
-        UserData.objects.create(user=self.user)
+        Profile.objects.create(user=self.user)
         self.user.refresh_from_db()
-        self.user.userdata_set.first().taggable_studies.add(self.study)
+        self.user.profile_set.first().taggable_studies.add(self.study)
 
     def get_url(self, *args):
         """Get the url for the view this class is supposed to test."""
@@ -879,15 +879,15 @@ class SourceTraitTaggingTest(PhenotypeTaggerLoginTestCase):
 
     def test_forbidden_empty_taggable_studies(self):
         """View returns 403 code when the user has no taggable_studies."""
-        self.user.userdata_set.first().taggable_studies.remove(self.study)
+        self.user.profile_set.first().taggable_studies.remove(self.study)
         response = self.client.get(self.get_url(self.trait.pk))
         self.assertEqual(response.status_code, 403)
 
     def test_forbidden_trait_not_in_taggable_studies(self):
         """View returns 403 code when the trait is not in the user's taggable_studies."""
         # Remove the study linked to the trait, but add another study so that taggable_studies is not empty.
-        self.user.userdata_set.first().taggable_studies.remove(self.study)
+        self.user.profile_set.first().taggable_studies.remove(self.study)
         another_study = factories.StudyFactory.create()
-        self.user.userdata_set.first().taggable_studies.add(another_study)
+        self.user.profile_set.first().taggable_studies.add(another_study)
         response = self.client.get(self.get_url(self.trait.pk))
         self.assertEqual(response.status_code, 403)

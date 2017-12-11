@@ -56,7 +56,7 @@ class SourceTraitDetail(LoginRequiredMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super(SourceTraitDetail, self).get_context_data(**kwargs)
-        user_studies = list(self.request.user.userdata_set.first().taggable_studies.all())
+        user_studies = list(self.request.user.profile_set.first().taggable_studies.all())
         context['user_is_study_tagger'] = self.object.source_dataset.source_study_version.study in user_studies
         context['tags'] = list(Tag.objects.filter(traits=self.object))
         return context
@@ -101,7 +101,7 @@ class SourceTraitTagging(LoginRequiredMixin, GroupRequiredMixin, UserPassesTestM
         return super(SourceTraitTagging, self).form_valid(form)
 
     def test_func(self, user):
-        user_studies = list(user.userdata_set.first().taggable_studies.all())
+        user_studies = list(user.profile_set.first().taggable_studies.all())
         return self.trait.source_dataset.source_study_version.study in user_studies
 
     def get_success_url(self):
@@ -264,7 +264,7 @@ def trait_search(request, trait_type):
             for study in study_pks:
                 search_record.param_studies.add(study)
         # Check to see if user has this saved already.
-        if profiles.models.UserData.objects.all().filter(user=request.user.id,
+        if profiles.models.Profile.objects.all().filter(user=request.user.id,
                                                          saved_searches=search_record.id).exists():
             savedSearchCheck = True
         else:
@@ -302,7 +302,7 @@ class TaggableStudyFilteredSourceTraitPHVAutocomplete(LoginRequiredMixin, GroupR
     redirect_unauthenticated_users = True
 
     def get_queryset(self):
-        studies = self.request.user.userdata_set.first().taggable_studies.all()
+        studies = self.request.user.profile_set.first().taggable_studies.all()
         retrieved = models.SourceTrait.objects.filter(
             source_dataset__source_study_version__study__in=list(studies),
             source_dataset__source_study_version__i_is_deprecated=False
@@ -341,12 +341,12 @@ def save_search_to_profile(request):
         # Studies are stored as a list of strings, sorted by applying int on each element.
         studies = params['study'] if 'study' in params else []
         search_record = check_search_existence(text, trait_type, studies=studies)
-        user_data_record, new_record = profiles.models.UserData.objects.get_or_create(user_id=request.user.id)
+        profile_record, new_record = profiles.models.Profile.objects.get_or_create(user_id=request.user.id)
         # Save the user search.
         # user_id can be the actual value, saved_search_id has to be the model instance for some reason.
-        user_data, new_record = profiles.models.SavedSearchMeta.objects.get_or_create(
-            user_data_id=user_data_record.id, search_id=search_record.id)
-        user_data.save()
+        profile, new_record = profiles.models.SavedSearchMeta.objects.get_or_create(
+            profile_id=profile_record.id, search_id=search_record.id)
+        profile.save()
         search_url = '?'.join([reverse(':'.join(['trait_browser', trait_type, 'search'])), query_string])
         return redirect(search_url)
 

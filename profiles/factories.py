@@ -24,9 +24,9 @@ class SearchFactory(factory.DjangoModelFactory):
                 self.param_studies.add(study)
 
 
-class UserDataFactory(factory.DjangoModelFactory):
+class ProfileFactory(factory.DjangoModelFactory):
     class Meta:
-        model = models.UserData
+        model = models.Profile
 
     user = factory.SubFactory(UserFactory)
 
@@ -43,5 +43,5 @@ class SavedSearchMetaFactory(factory.DjangoModelFactory):
     class Meta:
         model = models.SavedSearchMeta
 
-    user_data = factory.SubFactory(UserDataFactory)
+    profile = factory.SubFactory(ProfileFactory)
     search = factory.SubFactory(SearchFactory)
