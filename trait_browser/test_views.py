@@ -7,7 +7,8 @@ from django.contrib.auth.models import Group
 from django.core.urlresolvers import reverse
 from django.test import TestCase
 
-from core.utils import UserLoginTestCase, LoginRequiredTestCase, PhenotypeTaggerLoginTestCase, get_autocomplete_view_ids
+from core.utils import (LoginRequiredTestCase, PhenotypeTaggerLoginTestCase, UserLoginTestCase,
+                        get_autocomplete_view_ids)
 from profiles.models import Search, Profile
 from tags.models import TaggedTrait
 from tags.factories import TagFactory
@@ -120,7 +121,6 @@ class SourceTraitDetailTest(UserLoginTestCase):
 
     def setUp(self):
         super(SourceTraitDetailTest, self).setUp()
-        Profile.objects.create(user=self.user)
         self.trait = factories.SourceTraitFactory.create()
 
     def get_url(self, *args):
@@ -157,11 +157,9 @@ class SourceTraitDetailPhenotypeTaggerTest(PhenotypeTaggerLoginTestCase):
 
     def setUp(self):
         super(SourceTraitDetailPhenotypeTaggerTest, self).setUp()
-        self.trait = factories.SourceTraitFactory.create()
+        self.trait = factories.SourceTraitFactory.create(source_dataset__source_study_version__study=self.study)
         self.tag = TagFactory.create()
-        Profile.objects.create(user=self.user)
         self.user.refresh_from_db()
-        self.user.profile.taggable_studies.add(self.trait.source_dataset.source_study_version.study)
 
     def get_url(self, *args):
         return reverse('trait_browser:source:detail', args=args)
@@ -675,13 +673,10 @@ class TaggableStudyFilteredSourceTraitPHVAutocompleteTestCase(PhenotypeTaggerLog
 
     def setUp(self):
         super(TaggableStudyFilteredSourceTraitPHVAutocompleteTestCase, self).setUp()
-        self.study = factories.StudyFactory.create()
         self.source_study_version = factories.SourceStudyVersionFactory.create(study=self.study)
         self.source_dataset = factories.SourceDatasetFactory.create(source_study_version=self.source_study_version)
         self.source_traits = factories.SourceTraitFactory.create_batch(8, source_dataset=self.source_dataset)
-        Profile.objects.create(user=self.user)
         self.user.refresh_from_db()
-        self.user.profile.taggable_studies.add(self.study)
 
     def get_url(self, *args):
         return reverse('trait_browser:source:taggable-autocomplete')
@@ -802,12 +797,9 @@ class SourceTraitTaggingTest(PhenotypeTaggerLoginTestCase):
 
     def setUp(self):
         super(SourceTraitTaggingTest, self).setUp()
-        self.study = factories.StudyFactory.create()
         self.trait = factories.SourceTraitFactory.create(source_dataset__source_study_version__study=self.study)
         self.tag = TagFactory.create()
-        Profile.objects.create(user=self.user)
         self.user.refresh_from_db()
-        self.user.profile.taggable_studies.add(self.study)
 
     def get_url(self, *args):
         """Get the url for the view this class is supposed to test."""

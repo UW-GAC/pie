@@ -4,7 +4,6 @@ from django.contrib.auth.models import Group
 from django.test import TestCase
 
 from core.factories import UserFactory
-from profiles.models import Profile
 from trait_browser.factories import SourceTraitFactory, StudyFactory
 from . import forms
 from . import factories
@@ -20,7 +19,6 @@ class TaggedTraitFormTest(TestCase):
         self.user = UserFactory.create()
         phenotype_taggers = Group.objects.get(name='phenotype_taggers')
         self.user.groups.add(phenotype_taggers)
-        Profile.objects.create(user=self.user)
         self.user.refresh_from_db()
         self.user.profile.taggable_studies.add(self.trait.source_dataset.source_study_version.study)
 
@@ -77,7 +75,6 @@ class TaggedTraitByTagFormTest(TestCase):
         self.user = UserFactory.create()
         phenotype_taggers = Group.objects.get(name='phenotype_taggers')
         self.user.groups.add(phenotype_taggers)
-        Profile.objects.create(user=self.user)
         self.user.refresh_from_db()
         self.user.profile.taggable_studies.add(self.trait.source_dataset.source_study_version.study)
 
@@ -128,7 +125,6 @@ class ManyTaggedTraitsFormTest(TestCase):
         self.user = UserFactory.create()
         phenotype_taggers = Group.objects.get(name='phenotype_taggers')
         self.user.groups.add(phenotype_taggers)
-        Profile.objects.create(user=self.user)
         self.user.refresh_from_db()
         self.user.profile.taggable_studies.add(study)
 
@@ -206,7 +202,6 @@ class ManyTaggedTraitsByTagFormTest(TestCase):
         self.user = UserFactory.create()
         phenotype_taggers = Group.objects.get(name='phenotype_taggers')
         self.user.groups.add(phenotype_taggers)
-        Profile.objects.create(user=self.user)
         self.user.refresh_from_db()
         self.user.profile.taggable_studies.add(study)
 

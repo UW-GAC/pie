@@ -2,6 +2,7 @@ from datetime import datetime
 
 from django.test import TestCase
 
+from core.factories import UserFactory
 from trait_browser.factories import StudyFactory
 from . import factories
 from . import models
@@ -10,7 +11,7 @@ from . import models
 class SearchTestCase(TestCase):
 
     def test_model_saving(self):
-        """Test that you can save a UnitRecipe object."""
+        """Test that you can save a Search object."""
         search = factories.SearchFactory.create()
         self.assertIsInstance(models.Search.objects.get(pk=search.pk), models.Search)
 
@@ -29,44 +30,50 @@ class SearchTestCase(TestCase):
 class ProfileTestCase(TestCase):
 
     def test_model_saving(self):
-        """Test that you can save a UnitRecipe object."""
-        profile = factories.ProfileFactory.create()
-        self.assertIsInstance(models.Profile.objects.get(pk=profile.pk), models.Profile)
+        """Test that you can save a Profile object."""
+        user = UserFactory.create()
+        self.assertIsInstance(user.profile, models.Profile)
 
     def test_printing(self):
         """Test the custom __str__ method."""
-        profile = factories.ProfileFactory.build()
-        self.assertIsInstance(profile.__str__(), str)
+        user = UserFactory.create()
+        self.assertIsInstance(user.profile.__str__(), str)
 
     def test_timestamps_added(self):
         """Test that timestamps are added."""
-        profile = factories.ProfileFactory.create()
-        self.assertIsInstance(profile.created, datetime)
-        self.assertIsInstance(profile.modified, datetime)
+        user = UserFactory.create()
+        self.assertIsInstance(user.profile.created, datetime)
+        self.assertIsInstance(user.profile.modified, datetime)
 
     def test_adding_taggable_studies(self):
         """Studies can be added properly to the user's taggable_studies."""
-        profile = factories.ProfileFactory.create()
+        user = UserFactory.create()
         studies = StudyFactory.create_batch(2)
-        profile.taggable_studies.add(*studies)
+        user.profile.taggable_studies.add(*studies)
         for st in studies:
-            self.assertIn(st, profile.taggable_studies.all())
+            self.assertIn(st, user.profile.taggable_studies.all())
 
 
 class SavedSearchMetaTestCase(TestCase):
 
     def test_model_saving(self):
-        """Test that you can save a UnitRecipe object."""
-        saved_search = factories.SavedSearchMetaFactory.create()
+        """Test that you can save a SavedSearchMeta object."""
+        user = UserFactory.create()
+        search = factories.SearchFactory.create()
+        saved_search = models.SavedSearchMeta.objects.create(profile=user.profile, search=search)
         self.assertIsInstance(models.SavedSearchMeta.objects.get(pk=saved_search.pk), models.SavedSearchMeta)
 
     def test_printing(self):
         """Test the custom __str__ method."""
-        saved_search = factories.SavedSearchMetaFactory.build()
+        user = UserFactory.create()
+        search = factories.SearchFactory.create()
+        saved_search = models.SavedSearchMeta.objects.create(profile=user.profile, search=search)
         self.assertIsInstance(saved_search.__str__(), str)
 
     def test_timestamps_added(self):
         """Test that timestamps are added."""
-        saved_search = factories.SavedSearchMetaFactory.create()
+        user = UserFactory.create()
+        search = factories.SearchFactory.create()
+        saved_search = models.SavedSearchMeta.objects.create(profile=user.profile, search=search)
         self.assertIsInstance(saved_search.created, datetime)
         self.assertIsInstance(saved_search.modified, datetime)
