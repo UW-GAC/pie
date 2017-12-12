@@ -3,15 +3,7 @@ from django.db import models
 from django.utils.http import urlencode
 from django.core.urlresolvers import reverse
 
-
-class TimeStampedModel(models.Model):
-    """Abstract base class model with autoupdating 'created' and 'modified' fields."""
-
-    created = models.DateTimeField(auto_now_add=True)
-    modified = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        abstract = True
+from core.models import TimeStampedModel
 
 
 class Search(TimeStampedModel):
