@@ -22,7 +22,7 @@ class TaggedTraitFormTest(TestCase):
         self.user.groups.add(phenotype_taggers)
         Profile.objects.create(user=self.user)
         self.user.refresh_from_db()
-        self.user.profile_set.first().taggable_studies.add(self.trait.source_dataset.source_study_version.study)
+        self.user.profile.taggable_studies.add(self.trait.source_dataset.source_study_version.study)
 
     def test_valid(self):
         """Form is valid with all necessary input."""
@@ -79,7 +79,7 @@ class TaggedTraitByTagFormTest(TestCase):
         self.user.groups.add(phenotype_taggers)
         Profile.objects.create(user=self.user)
         self.user.refresh_from_db()
-        self.user.profile_set.first().taggable_studies.add(self.trait.source_dataset.source_study_version.study)
+        self.user.profile.taggable_studies.add(self.trait.source_dataset.source_study_version.study)
 
     def test_valid(self):
         """Form is valid with all necessary input."""
@@ -130,7 +130,7 @@ class ManyTaggedTraitsFormTest(TestCase):
         self.user.groups.add(phenotype_taggers)
         Profile.objects.create(user=self.user)
         self.user.refresh_from_db()
-        self.user.profile_set.first().taggable_studies.add(study)
+        self.user.profile.taggable_studies.add(study)
 
     def test_valid(self):
         """Form is valid with all necessary input."""
@@ -208,7 +208,7 @@ class ManyTaggedTraitsByTagFormTest(TestCase):
         self.user.groups.add(phenotype_taggers)
         Profile.objects.create(user=self.user)
         self.user.refresh_from_db()
-        self.user.profile_set.first().taggable_studies.add(study)
+        self.user.profile.taggable_studies.add(study)
 
     def test_valid(self):
         """Form is valid with all necessary input."""

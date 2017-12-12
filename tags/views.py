@@ -69,7 +69,7 @@ class TaggedTraitByStudyList(LoginRequiredMixin, SingleTableMixin, ListView):
         """Determine whether to use tagged trait table with delete buttons or not."""
         self.study = get_object_or_404(Study, pk=self.kwargs['pk'])
         if self.request.user.groups.filter(name='phenotype_taggers').exists() and (
-                self.study in self.request.user.profile_set.first().taggable_studies.all()):
+                self.study in self.request.user.profile.taggable_studies.all()):
             return tables.TaggedTraitTableWithDelete
         else:
             return tables.TaggedTraitTable
@@ -87,7 +87,7 @@ class TaggableStudiesRequiredMixin(UserPassesTestMixin):
     """Mixin requiring that the user have 1 or more taggable studies designated."""
 
     def test_func(self, user):
-        return user.profile_set.first().taggable_studies.count() > 0
+        return user.profile.taggable_studies.count() > 0
 
 
 class TaggedTraitDelete(LoginRequiredMixin, GroupRequiredMixin, TaggableStudiesRequiredMixin, FormMessagesMixin,

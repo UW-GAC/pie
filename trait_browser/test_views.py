@@ -161,7 +161,7 @@ class SourceTraitDetailPhenotypeTaggerTest(PhenotypeTaggerLoginTestCase):
         self.tag = TagFactory.create()
         Profile.objects.create(user=self.user)
         self.user.refresh_from_db()
-        self.user.profile_set.first().taggable_studies.add(self.trait.source_dataset.source_study_version.study)
+        self.user.profile.taggable_studies.add(self.trait.source_dataset.source_study_version.study)
 
     def get_url(self, *args):
         return reverse('trait_browser:source:detail', args=args)
@@ -681,7 +681,7 @@ class TaggableStudyFilteredSourceTraitPHVAutocompleteTestCase(PhenotypeTaggerLog
         self.source_traits = factories.SourceTraitFactory.create_batch(8, source_dataset=self.source_dataset)
         Profile.objects.create(user=self.user)
         self.user.refresh_from_db()
-        self.user.profile_set.first().taggable_studies.add(self.study)
+        self.user.profile.taggable_studies.add(self.study)
 
     def get_url(self, *args):
         return reverse('trait_browser:source:taggable-autocomplete')
@@ -765,7 +765,7 @@ class TaggableStudyFilteredSourceTraitPHVAutocompleteTestCase(PhenotypeTaggerLog
 
     def test_forbidden_empty_taggable_studies(self):
         """View returns 403 code when the user has no taggable_studies."""
-        self.user.profile_set.first().taggable_studies.remove(self.study)
+        self.user.profile.taggable_studies.remove(self.study)
         response = self.client.get(self.get_url())
         self.assertEqual(response.status_code, 403)
 
@@ -807,7 +807,7 @@ class SourceTraitTaggingTest(PhenotypeTaggerLoginTestCase):
         self.tag = TagFactory.create()
         Profile.objects.create(user=self.user)
         self.user.refresh_from_db()
-        self.user.profile_set.first().taggable_studies.add(self.study)
+        self.user.profile.taggable_studies.add(self.study)
 
     def get_url(self, *args):
         """Get the url for the view this class is supposed to test."""
@@ -879,15 +879,15 @@ class SourceTraitTaggingTest(PhenotypeTaggerLoginTestCase):
 
     def test_forbidden_empty_taggable_studies(self):
         """View returns 403 code when the user has no taggable_studies."""
-        self.user.profile_set.first().taggable_studies.remove(self.study)
+        self.user.profile.taggable_studies.remove(self.study)
         response = self.client.get(self.get_url(self.trait.pk))
         self.assertEqual(response.status_code, 403)
 
     def test_forbidden_trait_not_in_taggable_studies(self):
         """View returns 403 code when the trait is not in the user's taggable_studies."""
         # Remove the study linked to the trait, but add another study so that taggable_studies is not empty.
-        self.user.profile_set.first().taggable_studies.remove(self.study)
+        self.user.profile.taggable_studies.remove(self.study)
         another_study = factories.StudyFactory.create()
-        self.user.profile_set.first().taggable_studies.add(another_study)
+        self.user.profile.taggable_studies.add(another_study)
         response = self.client.get(self.get_url(self.trait.pk))
         self.assertEqual(response.status_code, 403)

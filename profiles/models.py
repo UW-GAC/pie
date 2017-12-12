@@ -53,7 +53,7 @@ class Search(TimeStampedModel):
 class Profile(TimeStampedModel):
     """Model to hold data related to the User model."""
 
-    user = models.ForeignKey(settings.AUTH_USER_MODEL)
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     saved_searches = models.ManyToManyField(Search, through="SavedSearchMeta")
     taggable_studies = models.ManyToManyField('trait_browser.Study')
 
