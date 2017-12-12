@@ -51,6 +51,10 @@ class Profile(TimeStampedModel):
     saved_searches = models.ManyToManyField(Search, through="SavedSearchMeta")
     taggable_studies = models.ManyToManyField('trait_browser.Study')
 
+    def __str__(self):
+        """Pretty printing for Profile objects."""
+        return 'Profile for user {}'.format(self.user.email)
+
 
 # Taken from post about how to extend the Django user model.
 # https://simpleisbetterthancomplex.com/tutorial/2016/07/22/how-to-extend-django-user-model.html#onetoone
