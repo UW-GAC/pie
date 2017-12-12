@@ -8,7 +8,6 @@ from crispy_forms.layout import HTML
 from dal import autocomplete
 
 from . import models
-from profiles.models import Profile
 from trait_browser.models import SourceTrait
 
 
@@ -63,7 +62,7 @@ class TaggedTraitForm(forms.ModelForm):
         # Call super here to set up all of the fields.
         super(TaggedTraitForm, self).__init__(*args, **kwargs)
         # Filter the queryset of traits by the user's taggable studies, and only non-deprecated.
-        studies = list(Profile.objects.get(user=self.user).taggable_studies.all())
+        studies = list(self.user.profile.taggable_studies.all())
         if len(studies) == 1:
             self.subtitle2 = 'You can tag phenotypes from the study {} ({})'.format(
                 studies[0].i_study_name, studies[0].phs)
@@ -132,7 +131,7 @@ class TaggedTraitByTagForm(forms.Form):
         # Call super here to set up all of the fields.
         super(TaggedTraitByTagForm, self).__init__(*args, **kwargs)
         # Filter the queryset of traits by the user's taggable studies, and only non-deprecated.
-        studies = list(Profile.objects.get(user=self.user).taggable_studies.all())
+        studies = list(self.user.profile.taggable_studies.all())
         if len(studies) == 1:
             self.subtitle2 = 'You can tag phenotypes from the study {} ({})'.format(
                 studies[0].i_study_name, studies[0].phs)
@@ -185,7 +184,7 @@ class ManyTaggedTraitsForm(forms.Form):
         # Call super here to set up all of the fields.
         super(ManyTaggedTraitsForm, self).__init__(*args, **kwargs)
         # Filter the queryset of traits by the user's taggable studies, and only non-deprecated.
-        studies = list(Profile.objects.get(user=self.user).taggable_studies.all())
+        studies = list(self.user.profile.taggable_studies.all())
         if len(studies) == 1:
             self.subtitle2 = 'You can tag phenotypes from the study {} ({})'.format(
                 studies[0].i_study_name, studies[0].phs)
@@ -259,7 +258,7 @@ class ManyTaggedTraitsByTagForm(forms.Form):
         # Call super here to set up all of the fields.
         super(ManyTaggedTraitsByTagForm, self).__init__(*args, **kwargs)
         # Filter the queryset of traits by the user's taggable studies, and only non-deprecated.
-        studies = list(Profile.objects.get(user=self.user).taggable_studies.all())
+        studies = list(self.user.profile.taggable_studies.all())
         if len(studies) == 1:
             self.subtitle2 = 'You can tag phenotypes from the study {} ({})'.format(
                 studies[0].i_study_name, studies[0].phs)
