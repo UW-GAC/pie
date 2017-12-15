@@ -35,8 +35,8 @@
                         {% endfor %}
                     </dd>
 
-                {% if request.user|has_group:"phenotype_taggers" %}
-                    {% if user_is_study_tagger %}
+                {% if perms.tags.add_taggedtrait %}
+                    {% if user_is_study_tagger or request.user.is_staff %}
                         </dl>
                         <dl class="dl-horizontal">
                         <dt></dt>
@@ -44,13 +44,6 @@
                         <a href="{% url 'trait_browser:source:tagging' pk=source_trait.pk %}" class="btn btn-primary btn-md" role="button">Tag this phenotype</a>
                         </dd>
                     {% endif %}
-                {% elif request.user.is_staff %} 
-                    </dl>
-                    <dl class="dl-horizontal">
-                    <dt></dt>
-                    <dd>
-                    <a href="{% url 'trait_browser:source:tagging' pk=source_trait.pk %}" class="btn btn-primary btn-md" role="button">Tag this phenotype</a>
-                    </dd>
                 {% endif %}
             </dl>
 

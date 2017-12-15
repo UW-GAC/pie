@@ -36,7 +36,7 @@
               <li role="presentation"><a href="#harmonizationrecipes" role="tab" data-toggle="tab">Harmonization Recipes</a></li>
           {% endif %}
 
-          {% if request.user|has_group:"phenotype_taggers" or request.user.is_staff %}
+          {% if perms.tags.add_taggedtrait %}
               <li role="presentation"><a href="#tagged_phenotypes" role="tab" data-toggle="tab">My Tagged Phenotypes</a></li>
           {% endif %}
           
@@ -84,7 +84,7 @@
               </div>
           {% endif %}
 
-          {% if request.user|has_group:"phenotype_taggers" or request.user.is_staff %}
+          {% if perms.tags.add_taggedtrait %}
               <div role="tabpanel" class="tab-pane fade" id="tagged_phenotypes">
                   Table here later...
               </div>

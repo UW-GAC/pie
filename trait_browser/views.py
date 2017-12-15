@@ -8,7 +8,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.utils.safestring import mark_safe
 from django.views.generic import DetailView, FormView
 
-from braces.views import FormMessagesMixin, GroupRequiredMixin, LoginRequiredMixin, UserPassesTestMixin
+from braces.views import FormMessagesMixin, LoginRequiredMixin, PermissionRequiredMixin, UserPassesTestMixin
 from dal import autocomplete
 from django_tables2 import RequestConfig, SingleTableMixin
 from urllib.parse import parse_qs
@@ -70,13 +70,13 @@ class HarmonizedTraitSetVersionDetail(LoginRequiredMixin, FormMessagesMixin, Det
     template_name = 'trait_browser/harmonized_trait_set_version_detail.html'
 
 
-class SourceTraitTagging(LoginRequiredMixin, GroupRequiredMixin, UserPassesTestMixin, FormMessagesMixin, FormView):
+class SourceTraitTagging(LoginRequiredMixin, PermissionRequiredMixin, UserPassesTestMixin, FormMessagesMixin, FormView):
     """Form view class for tagging a specific source trait."""
 
     form_class = TagSpecificTraitForm
     form_invalid_message = TAGGING_ERROR_MESSAGE
     template_name = 'tags/taggedtrait_form.html'
-    group_required = [u"phenotype_taggers", ]
+    permission_required = 'tags.add_taggedtrait'
     raise_exception = True
     redirect_unauthenticated_users = True
 
@@ -290,23 +290,27 @@ class SourceTraitPHVAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySe
         return retrieved
 
 
-class TaggableStudyFilteredSourceTraitPHVAutocomplete(LoginRequiredMixin, GroupRequiredMixin, TaggableStudiesRequiredMixin, autocomplete.Select2QuerySetView):
+class TaggableStudyFilteredSourceTraitPHVAutocomplete(LoginRequiredMixin, TaggableStudiesRequiredMixin, autocomplete.Select2QuerySetView):
     """View for auto-completing SourceTraits by phv in a specific study.
 
     Used with django-autocomplete-light package. Autocomplete by dbGaP accession.
     Only include latest version.
     """
 
-    group_required = [u"phenotype_taggers", ]
     raise_exception = True
     redirect_unauthenticated_users = True
 
     def get_queryset(self):
-        studies = self.request.user.profile.taggable_studies.all()
-        retrieved = models.SourceTrait.objects.filter(
-            source_dataset__source_study_version__study__in=list(studies),
-            source_dataset__source_study_version__i_is_deprecated=False
-        )
+        if self.request.user.is_staff:
+            retrieved = models.SourceTrait.objects.filter(
+                source_dataset__source_study_version__i_is_deprecated=False
+            )
+        else:
+            studies = self.request.user.profile.taggable_studies.all()
+            retrieved = models.SourceTrait.objects.filter(
+                source_dataset__source_study_version__study__in=list(studies),
+                source_dataset__source_study_version__i_is_deprecated=False
+            )
         if self.q:
             retrieved = retrieved.filter(i_dbgap_variable_accession__regex=r'^{}'.format(self.q))
         return retrieved

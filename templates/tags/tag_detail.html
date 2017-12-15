@@ -13,7 +13,7 @@
         
         {% include '_messages.html' %}
 
-        {% if request.user|has_group:"phenotype_taggers" or request.user.is_staff %}
+        {% if perms.tags.add_taggedtrait %}
             <p>
                 <a href="{% url 'tags:add-many:by-tag' pk=tag.pk %}" class="btn btn-primary btn-md" role="button">
                 Tag phenotypes as "{{ tag.title }}"</a>
