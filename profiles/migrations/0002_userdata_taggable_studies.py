@@ -9,6 +9,7 @@ class Migration(migrations.Migration):
     dependencies = [
         ('trait_browser', '0006_major_schema_changes_including_harmonized_trait_set_version'),
         ('profiles', '0001_initial'),
+        ('tags', '0001_initial')
     ]
 
     operations = [
