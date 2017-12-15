@@ -101,8 +101,11 @@ class SourceTraitTagging(LoginRequiredMixin, PermissionRequiredMixin, UserPasses
         return super(SourceTraitTagging, self).form_valid(form)
 
     def test_func(self, user):
-        user_studies = list(user.profile.taggable_studies.all())
-        return self.trait.source_dataset.source_study_version.study in user_studies
+        if user.is_staff:
+            return True
+        else:
+            user_studies = list(user.profile.taggable_studies.all())
+            return self.trait.source_dataset.source_study_version.study in user_studies
 
     def get_success_url(self):
         return self.trait.get_absolute_url()
