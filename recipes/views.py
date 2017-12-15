@@ -2,8 +2,8 @@
 
 from django.views.generic import DetailView, CreateView, UpdateView
 
-from braces.views import LoginRequiredMixin, UserFormKwargsMixin, FormMessagesMixin, GroupRequiredMixin
-
+from braces.views import (FormMessagesMixin, GroupRequiredMixin, LoginRequiredMixin, PermissionRequiredMixin,
+                          UserFormKwargsMixin, )
 import trait_browser.tables
 from . import tables
 from . import forms
@@ -21,11 +21,13 @@ class OwnerQuerysetMixin(object):
 
     def get_queryset(self):
         queryset = super(OwnerQuerysetMixin, self).get_queryset()
+        if self.request.user.is_staff:
+            return queryset
         queryset = queryset.filter(creator=self.request.user)
         return queryset
 
 
-class CreateUnitRecipe(LoginRequiredMixin, GroupRequiredMixin, UserFormKwargsMixin, FormMessagesMixin, CreateView):
+class CreateUnitRecipe(LoginRequiredMixin, PermissionRequiredMixin, UserFormKwargsMixin, FormMessagesMixin, CreateView):
     """Create form view class for UnitRecipe creation, used with UnitRecipeModelForm.
 
     LoginRequiredMixin - requires user to be logged in to access this view
@@ -37,7 +39,7 @@ class CreateUnitRecipe(LoginRequiredMixin, GroupRequiredMixin, UserFormKwargsMix
     form_class = forms.UnitRecipeForm
     template_name = 'recipes/recipe_form.html'
     form_invalid_message = unit_invalid_message
-    group_required = [u"dcc_analysts", u"dcc_developers", u"recipe_submitters"]
+    permission_required = 'recipes.add_unitrecipe'
     raise_exception = True
     redirect_unauthenticated_users = True
 
@@ -55,7 +57,7 @@ class CreateUnitRecipe(LoginRequiredMixin, GroupRequiredMixin, UserFormKwargsMix
         return formattable_valid_message.format(models.UnitRecipe._meta.verbose_name, self.object.name, 'create')
 
 
-class CreateHarmonizationRecipe(LoginRequiredMixin, GroupRequiredMixin, UserFormKwargsMixin, FormMessagesMixin,
+class CreateHarmonizationRecipe(LoginRequiredMixin, PermissionRequiredMixin, UserFormKwargsMixin, FormMessagesMixin,
                                 CreateView):
     """Create form view class for HarmonizationRecipe creation, used with HarmonizationRecipeModelForm.
 
@@ -68,7 +70,7 @@ class CreateHarmonizationRecipe(LoginRequiredMixin, GroupRequiredMixin, UserForm
     form_class = forms.HarmonizationRecipeForm
     template_name = 'recipes/recipe_form.html'
     form_invalid_message = harmonization_invalid_message
-    group_required = [u"dcc_analysts", u"dcc_developers", u"recipe_submitters"]
+    permission_required = 'recipes.add_harmonizationrecipe'
     raise_exception = True
     redirect_unauthenticated_users = True
 
@@ -87,7 +89,7 @@ class CreateHarmonizationRecipe(LoginRequiredMixin, GroupRequiredMixin, UserForm
             models.HarmonizationRecipe._meta.verbose_name.title(), self.object.name, 'create')
 
 
-class UpdateUnitRecipe(LoginRequiredMixin, GroupRequiredMixin, OwnerQuerysetMixin, UserFormKwargsMixin,
+class UpdateUnitRecipe(LoginRequiredMixin, PermissionRequiredMixin, OwnerQuerysetMixin, UserFormKwargsMixin,
                        FormMessagesMixin, UpdateView):
     """Update form view class for UnitRecipe editing, used with UnitRecipeModelForm.
 
@@ -102,7 +104,7 @@ class UpdateUnitRecipe(LoginRequiredMixin, GroupRequiredMixin, OwnerQuerysetMixi
     form_class = forms.UnitRecipeForm
     template_name = 'recipes/recipe_form.html'
     form_invalid_message = unit_invalid_message
-    group_required = [u"dcc_analysts", u"dcc_developers", u"recipe_submitters"]
+    permission_required = 'recipes.change_unitrecipe'
     raise_exception = True
     redirect_unauthenticated_users = True
 
@@ -120,7 +122,7 @@ class UpdateUnitRecipe(LoginRequiredMixin, GroupRequiredMixin, OwnerQuerysetMixi
         return formattable_valid_message.format(models.UnitRecipe._meta.verbose_name.title(), self.object.name, 'save')
 
 
-class UpdateHarmonizationRecipe(LoginRequiredMixin, GroupRequiredMixin, OwnerQuerysetMixin, UserFormKwargsMixin,
+class UpdateHarmonizationRecipe(LoginRequiredMixin, PermissionRequiredMixin, OwnerQuerysetMixin, UserFormKwargsMixin,
                                 FormMessagesMixin, UpdateView):
     """Update form view class for HarmonizationRecipe editing, used with HarmonizationRecipeModelForm.
 
@@ -135,7 +137,7 @@ class UpdateHarmonizationRecipe(LoginRequiredMixin, GroupRequiredMixin, OwnerQue
     form_class = forms.HarmonizationRecipeForm
     template_name = 'recipes/recipe_form.html'
     form_invalid_message = harmonization_invalid_message
-    group_required = [u"dcc_analysts", u"dcc_developers", u"recipe_submitters"]
+    permission_required = 'recipes.change_harmonizationrecipe'
     raise_exception = True
     redirect_unauthenticated_users = True
 

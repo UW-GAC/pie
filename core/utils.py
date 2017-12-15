@@ -146,6 +146,9 @@ class SuperuserLoginTestCase(TestCase):
         self.client = Client()
         self.user_password = factories.USER_FACTORY_PASSWORD
         self.user = factories.SuperUserFactory.create()
+        self.user.is_staff = True
+        self.user.save()
+        self.user.refresh_from_db()
         self.client.login(username=self.user.email, password=self.user_password)
 
 
