@@ -1,17 +1,22 @@
 """View functions and classes for the trait_browser app."""
 
-from django.shortcuts import render, get_object_or_404, redirect
+from django.contrib.auth.decorators import login_required
 from django.core.urlresolvers import reverse
 from django.db.models import Q    # Allows complex queries when searching.
-from django.views.generic import DetailView
-from django.contrib.auth.decorators import login_required
+from django.http import Http404
+from django.shortcuts import render, get_object_or_404, redirect
+from django.utils.safestring import mark_safe
+from django.views.generic import DetailView, FormView
 
-from braces.views import LoginRequiredMixin
+from braces.views import FormMessagesMixin, LoginRequiredMixin, PermissionRequiredMixin, UserPassesTestMixin
 from dal import autocomplete
 from django_tables2 import RequestConfig, SingleTableMixin
 from urllib.parse import parse_qs
 
 import profiles.models
+from tags.forms import TagSpecificTraitForm
+from tags.models import Tag, TaggedTrait
+from tags.views import TAGGING_ERROR_MESSAGE, TaggableStudiesRequiredMixin
 from . import models
 from . import tables
 from . import forms
@@ -49,13 +54,66 @@ class SourceTraitDetail(LoginRequiredMixin, DetailView):
     context_object_name = 'source_trait'
     template_name = 'trait_browser/source_trait_detail.html'
 
+    def get_context_data(self, **kwargs):
+        context = super(SourceTraitDetail, self).get_context_data(**kwargs)
+        user_studies = list(self.request.user.profile.taggable_studies.all())
+        context['user_is_study_tagger'] = self.object.source_dataset.source_study_version.study in user_studies
+        context['tags'] = list(Tag.objects.filter(traits=self.object))
+        return context
 
-class HarmonizedTraitSetVersionDetail(LoginRequiredMixin, DetailView):
+
+class HarmonizedTraitSetVersionDetail(LoginRequiredMixin, FormMessagesMixin, DetailView):
     """Detail view class for HarmonizedTraitSetVersions. Inherits from django.views.generic.DetailView."""
 
     model = models.HarmonizedTraitSetVersion
     context_object_name = 'harmonized_trait_set_version'
     template_name = 'trait_browser/harmonized_trait_set_version_detail.html'
+
+
+class SourceTraitTagging(LoginRequiredMixin, PermissionRequiredMixin, UserPassesTestMixin, FormMessagesMixin, FormView):
+    """Form view class for tagging a specific source trait."""
+
+    form_class = TagSpecificTraitForm
+    form_invalid_message = TAGGING_ERROR_MESSAGE
+    template_name = 'tags/taggedtrait_form.html'
+    permission_required = 'tags.add_taggedtrait'
+    raise_exception = True
+    redirect_unauthenticated_users = True
+
+    def dispatch(self, request, *args, **kwargs):
+        self.trait = get_object_or_404(models.SourceTrait, pk=kwargs.get('pk'))
+        return super(SourceTraitTagging, self).dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super(SourceTraitTagging, self).get_context_data(**kwargs)
+        context['trait'] = self.trait
+        return context
+
+    def form_valid(self, form):
+        """Create a TaggedTrait object for the trait and tag specified."""
+        tagged_trait = TaggedTrait(
+            tag=form.cleaned_data['tag'], trait=self.trait, creator=self.request.user,
+            recommended=form.cleaned_data['recommended'])
+        tagged_trait.full_clean()
+        tagged_trait.save()
+        # Save the tag for use in the success url.
+        self.tag = form.cleaned_data['tag']
+        return super(SourceTraitTagging, self).form_valid(form)
+
+    def test_func(self, user):
+        if user.is_staff:
+            return True
+        else:
+            user_studies = list(user.profile.taggable_studies.all())
+            return self.trait.source_dataset.source_study_version.study in user_studies
+
+    def get_success_url(self):
+        return self.trait.get_absolute_url()
+
+    def get_form_valid_message(self):
+        msg = 'Phenotype {} tagged as <a href="{}">{}</a>'.format(
+            self.trait.i_trait_name, self.tag.get_absolute_url(), self.tag.title)
+        return mark_safe(msg)
 
 
 @login_required
@@ -209,7 +267,7 @@ def trait_search(request, trait_type):
             for study in study_pks:
                 search_record.param_studies.add(study)
         # Check to see if user has this saved already.
-        if profiles.models.UserData.objects.all().filter(user=request.user.id,
+        if profiles.models.Profile.objects.all().filter(user=request.user.id,
                                                          saved_searches=search_record.id).exists():
             savedSearchCheck = True
         else:
@@ -230,6 +288,32 @@ class SourceTraitPHVAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySe
 
     def get_queryset(self):
         retrieved = models.SourceTrait.objects.filter(source_dataset__source_study_version__i_is_deprecated=False)
+        if self.q:
+            retrieved = retrieved.filter(i_dbgap_variable_accession__regex=r'^{}'.format(self.q))
+        return retrieved
+
+
+class TaggableStudyFilteredSourceTraitPHVAutocomplete(LoginRequiredMixin, TaggableStudiesRequiredMixin, autocomplete.Select2QuerySetView):
+    """View for auto-completing SourceTraits by phv in a specific study.
+
+    Used with django-autocomplete-light package. Autocomplete by dbGaP accession.
+    Only include latest version.
+    """
+
+    raise_exception = True
+    redirect_unauthenticated_users = True
+
+    def get_queryset(self):
+        if self.request.user.is_staff:
+            retrieved = models.SourceTrait.objects.filter(
+                source_dataset__source_study_version__i_is_deprecated=False
+            )
+        else:
+            studies = self.request.user.profile.taggable_studies.all()
+            retrieved = models.SourceTrait.objects.filter(
+                source_dataset__source_study_version__study__in=list(studies),
+                source_dataset__source_study_version__i_is_deprecated=False
+            )
         if self.q:
             retrieved = retrieved.filter(i_dbgap_variable_accession__regex=r'^{}'.format(self.q))
         return retrieved
@@ -264,12 +348,12 @@ def save_search_to_profile(request):
         # Studies are stored as a list of strings, sorted by applying int on each element.
         studies = params['study'] if 'study' in params else []
         search_record = check_search_existence(text, trait_type, studies=studies)
-        user_data_record, new_record = profiles.models.UserData.objects.get_or_create(user_id=request.user.id)
+        profile_record, new_record = profiles.models.Profile.objects.get_or_create(user_id=request.user.id)
         # Save the user search.
         # user_id can be the actual value, saved_search_id has to be the model instance for some reason.
-        user_data, new_record = profiles.models.SavedSearchMeta.objects.get_or_create(
-            user_data_id=user_data_record.id, search_id=search_record.id)
-        user_data.save()
+        profile, new_record = profiles.models.SavedSearchMeta.objects.get_or_create(
+            profile_id=profile_record.id, search_id=search_record.id)
+        profile.save()
         search_url = '?'.join([reverse(':'.join(['trait_browser', trait_type, 'search'])), query_string])
         return redirect(search_url)
 

@@ -171,6 +171,7 @@ INSTALLED_APPS = (
     'core',    # Code used across the project, and data migrations for built-in apps (e.g. sites).
     'profiles',    # Handles profile data for users interacting with the site.
     'recipes',
+    'tags',
 )
 
 

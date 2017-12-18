@@ -1,26 +1,18 @@
 from django.conf import settings
-from django.db import models
-from django.utils.http import urlencode
 from django.core.urlresolvers import reverse
+from django.db import models
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+from django.utils.http import urlencode
 
-from trait_browser.models import Study
-
-
-class TimeStampedModel(models.Model):
-    """Abstract base class model with autoupdating 'created' and 'modified' fields."""
-
-    created = models.DateTimeField(auto_now_add=True)
-    modified = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        abstract = True
+from core.models import TimeStampedModel
 
 
 class Search(TimeStampedModel):
     """Model for searches that anyone has ever searched for."""
 
     param_text = models.CharField(max_length=100, db_index=True, null=False)
-    param_studies = models.ManyToManyField(Study)
+    param_studies = models.ManyToManyField('trait_browser.Study')
     search_count = models.IntegerField(default=1)
     search_type = models.CharField(max_length=25, null=False)
 
@@ -52,16 +44,34 @@ class Search(TimeStampedModel):
         verbose_name_plural = 'searches'
 
 
-class UserData(TimeStampedModel):
+class Profile(TimeStampedModel):
     """Model to hold data related to the User model."""
 
-    user = models.ForeignKey(settings.AUTH_USER_MODEL)
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     saved_searches = models.ManyToManyField(Search, through="SavedSearchMeta")
+    taggable_studies = models.ManyToManyField('trait_browser.Study')
+
+    def __str__(self):
+        """Pretty printing for Profile objects."""
+        return 'Profile for user {}'.format(self.user.email)
+
+
+# Taken from post about how to extend the Django user model.
+# https://simpleisbetterthancomplex.com/tutorial/2016/07/22/how-to-extend-django-user-model.html#onetoone
+@receiver(post_save, sender=settings.AUTH_USER_MODEL)
+def create_user_profile(sender, instance, created, **kwargs):
+    if created:
+        Profile.objects.create(user=instance)
+
+
+@receiver(post_save, sender=settings.AUTH_USER_MODEL)
+def save_user_profile(sender, instance, **kwargs):
+    instance.profile.save()
 
 
 class SavedSearchMeta(TimeStampedModel):
     """M2M through model for saved searches."""
 
     search = models.ForeignKey(Search)
-    user_data = models.ForeignKey(UserData)
+    profile = models.ForeignKey(Profile)
     active = models.BooleanField(default=True)

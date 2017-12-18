@@ -21,16 +21,21 @@ from django.views.generic import TemplateView  # For static pages.
 
 
 urlpatterns = [
-    url(r'^$', TemplateView.as_view(template_name="home.html"), name='home'),    # Static home page.
+    # Non-app custom pages.
+    url(r'^$', TemplateView.as_view(template_name="home.html"), name='home'),
     url(r'^about/$', TemplateView.as_view(template_name="about.html"), name='about'),
     url(r'^contact/$', TemplateView.as_view(template_name="contact.html"), name='contact'),
+    # Django-provided apps.
     url(r'^pages/', include('django.contrib.flatpages.urls')),  # Flat pages.
     url(r'^admin/', include(admin.site.urls)),  # Admin interface.
-    url(r'^phenotypes/', include('trait_browser.urls', namespace='trait_browser')),  # Trait browser app.
-    url('^', include('django.contrib.auth.urls')),  # Authentication views.
-    url(r'^profile/', include('profiles.urls', namespace='profiles')),  # Relating to user accounts.
-    url(r'^recipe/', include('recipes.urls', namespace='recipes')),  # Recipes app.
+    url(r'^', include('django.contrib.auth.urls')),  # Authentication views.
+    # 3rd-party apps.
     url(r'^auth/', include('authtools.urls')),
+    # Custom apps.
+    url(r'^phenotypes/', include('trait_browser.urls', namespace='trait_browser')),
+    url(r'^profiles/', include('profiles.urls', namespace='profiles')),
+    url(r'^recipes/', include('recipes.urls', namespace='recipes')),
+    url(r'^tags/', include('tags.urls', namespace='tags')),
 ]
 
 # Include URLs for django-debug-toolbar if DEBUG=True

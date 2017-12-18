@@ -30,12 +30,12 @@ INTERNAL_IPS = ('127.0.0.1', )
 # DATABASE SETTINGS
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.normpath(os.path.join(SITE_ROOT, 'site_db.sqlite3')),  # noqa: F405
-        'USER': '',
-        'PASSWORD': '',
-        'HOST': '',
-        'PORT': '',
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': get_env_variable('DB_NAME'),  # noqa: F405
+        'USER': get_env_variable('DB_USER'),  # noqa: F405
+        'PASSWORD': get_env_variable('DB_PASS'),  # noqa: F405
+        'HOST': get_env_variable('DB_HOST'),  # noqa: F405
+        'PORT': get_env_variable('DB_PORT'),  # noqa: F405
         'ATOMIC_REQUESTS': True,
     }
 }

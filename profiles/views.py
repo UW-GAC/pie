@@ -9,12 +9,13 @@ from . import tables
 
 @login_required
 def profile(request):
-    page_title = 'profile'
+    page_title = 'My profile'
     user_unit_recipes = recipes.models.UnitRecipe.objects.filter(creator=request.user).order_by('-modified')
     unit_recipe_table = recipes.tables.UnitRecipeTable(user_unit_recipes)
     user_harmonization_recipes = recipes.models.HarmonizationRecipe.objects.filter(
         creator=request.user).order_by('-modified')
     harmonization_recipe_table = recipes.tables.HarmonizationRecipeTable(user_harmonization_recipes)
+
     if request.method == "POST":
         # remove saved searches
         if 'search_type' in request.POST:
@@ -23,8 +24,10 @@ def profile(request):
                 saved_search = models.SavedSearchMeta.objects.get(search_id=search_id)
                 saved_search.active = False
                 saved_search.save()
+
     savedsource = tables.SourceSearchTable(build_usersearches(request.user.id, 'source'), request=request)
     savedharmonized = tables.HarmonizedSearchTable(build_usersearches(request.user.id, 'harmonized'), request=request)
+
     return render(
         request,
         'profiles/profile.html',
@@ -36,7 +39,7 @@ def profile(request):
 def build_usersearches(user_id, search_type):
     """Return a list of dictionaries for building user's saved searches."""
     searches = models.Search.objects.select_related().filter(
-        userdata__user_id=user_id,
+        profile__user_id=user_id,
         search_type=search_type,
         savedsearchmeta__active=True)
     data = [

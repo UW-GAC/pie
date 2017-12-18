@@ -5,7 +5,6 @@ from django.core.urlresolvers import reverse
 
 import core.utils
 from core.factories import UserFactory, SuperUserFactory, USER_FACTORY_PASSWORD
-from recipes.urls import urlpatterns
 from trait_browser.factories import SourceTraitFactory
 
 from . import factories
@@ -100,26 +99,26 @@ class UnitRecipeViewsTestCase(core.utils.RecipeSubmitterLoginTestCase):
         self.client.login(username=submitter.email, password=USER_FACTORY_PASSWORD)
         response = self.client.get(url)
         self.assertEqual(response.status_code, 404)
-        # A dcc_analyst cannot view the page.
-        analyst = UserFactory.create()
+        # A dcc_analyst can view the page.
+        analyst = UserFactory.create(is_staff=True)
         analyst.groups.add(Group.objects.get(name='dcc_analysts'))
         self.client.logout()
         self.client.login(username=analyst.email, password=USER_FACTORY_PASSWORD)
         response = self.client.get(url)
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.status_code, 200)
         # A dcc_developer cannot view the page.
-        developer = UserFactory.create()
+        developer = UserFactory.create(is_staff=True)
         developer.groups.add(Group.objects.get(name='dcc_developers'))
         self.client.logout()
         self.client.login(username=developer.email, password=USER_FACTORY_PASSWORD)
         response = self.client.get(url)
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.status_code, 200)
         # A superuser cannot view the page.
-        superuser = SuperUserFactory.create()
+        superuser = SuperUserFactory.create(is_staff=True)
         self.client.logout()
         self.client.login(username=superuser.email, password=USER_FACTORY_PASSWORD)
         response = self.client.get(url)
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.status_code, 200)
 
     def test_update_unit_recipe_cannot_edit_other_user_recipes(self):
         """A user cannot access UpdateUnitRecipe view for another user's saved unit recipe."""
@@ -135,25 +134,25 @@ class UnitRecipeViewsTestCase(core.utils.RecipeSubmitterLoginTestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 404)
         # A dcc_analyst cannot view the page.
-        analyst = UserFactory.create()
+        analyst = UserFactory.create(is_staff=True)
         analyst.groups.add(Group.objects.get(name='dcc_analysts'))
         self.client.logout()
         self.client.login(username=analyst.email, password=USER_FACTORY_PASSWORD)
         response = self.client.get(url)
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.status_code, 200)
         # A dcc_developer cannot view the page.
-        developer = UserFactory.create()
+        developer = UserFactory.create(is_staff=True)
         developer.groups.add(Group.objects.get(name='dcc_developers'))
         self.client.logout()
         self.client.login(username=developer.email, password=USER_FACTORY_PASSWORD)
         response = self.client.get(url)
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.status_code, 200)
         # A superuser cannot view the page.
-        superuser = SuperUserFactory.create()
+        superuser = SuperUserFactory.create(is_staff=True)
         self.client.logout()
         self.client.login(username=superuser.email, password=USER_FACTORY_PASSWORD)
         response = self.client.get(url)
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.status_code, 200)
 
 
 class HarmonizationRecipeViewsTestCase(core.utils.RecipeSubmitterLoginTestCase):
@@ -240,26 +239,26 @@ class HarmonizationRecipeViewsTestCase(core.utils.RecipeSubmitterLoginTestCase):
         self.client.login(username=submitter.email, password=USER_FACTORY_PASSWORD)
         response = self.client.get(url)
         self.assertEqual(response.status_code, 404)
-        # A dcc_analyst cannot view the page.
-        analyst = UserFactory.create()
+        # A dcc_analyst can view the page.
+        analyst = UserFactory.create(is_staff=True)
         analyst.groups.add(Group.objects.get(name='dcc_analysts'))
         self.client.logout()
         self.client.login(username=analyst.email, password=USER_FACTORY_PASSWORD)
         response = self.client.get(url)
-        self.assertEqual(response.status_code, 404)
-        # A dcc_developer cannot view the page.
-        developer = UserFactory.create()
+        self.assertEqual(response.status_code, 200)
+        # A dcc_developer can view the page.
+        developer = UserFactory.create(is_staff=True)
         developer.groups.add(Group.objects.get(name='dcc_developers'))
         self.client.logout()
         self.client.login(username=developer.email, password=USER_FACTORY_PASSWORD)
         response = self.client.get(url)
-        self.assertEqual(response.status_code, 404)
-        # A superuser cannot view the page.
-        superuser = SuperUserFactory.create()
+        self.assertEqual(response.status_code, 200)
+        # A superuser can view the page.
+        superuser = SuperUserFactory.create(is_staff=True)
         self.client.logout()
         self.client.login(username=superuser.email, password=USER_FACTORY_PASSWORD)
         response = self.client.get(url)
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.status_code, 200)
 
     def test_update_harmonization_recipe_cannot_edit_other_user_recipes(self):
         """A user cannot access UpdateHarmonizationRecipe view for another user's saved unit recipe."""
@@ -274,26 +273,26 @@ class HarmonizationRecipeViewsTestCase(core.utils.RecipeSubmitterLoginTestCase):
         self.client.login(username=submitter.email, password=USER_FACTORY_PASSWORD)
         response = self.client.get(url)
         self.assertEqual(response.status_code, 404)
-        # A dcc_analyst cannot view the page.
-        analyst = UserFactory.create()
+        # A dcc_analyst can view the page.
+        analyst = UserFactory.create(is_staff=True)
         analyst.groups.add(Group.objects.get(name='dcc_analysts'))
         self.client.logout()
         self.client.login(username=analyst.email, password=USER_FACTORY_PASSWORD)
         response = self.client.get(url)
-        self.assertEqual(response.status_code, 404)
-        # A dcc_developer cannot view the page.
-        developer = UserFactory.create()
+        self.assertEqual(response.status_code, 200)
+        # A dcc_developer can view the page.
+        developer = UserFactory.create(is_staff=True)
         developer.groups.add(Group.objects.get(name='dcc_developers'))
         self.client.logout()
         self.client.login(username=developer.email, password=USER_FACTORY_PASSWORD)
         response = self.client.get(url)
-        self.assertEqual(response.status_code, 404)
-        # A superuser cannot view the page.
-        superuser = SuperUserFactory.create()
+        self.assertEqual(response.status_code, 200)
+        # A superuser can view the page.
+        superuser = SuperUserFactory.create(is_staff=True)
         self.client.logout()
         self.client.login(username=superuser.email, password=USER_FACTORY_PASSWORD)
         response = self.client.get(url)
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.status_code, 200)
 
 
 class GrouplessUserRecipeViewsTest(core.utils.UserLoginTestCase):
@@ -576,4 +575,4 @@ class RecipesLoginRequiredTestCase(core.utils.LoginRequiredTestCase):
 
     def test_recipes_login_required(self):
         """All recipes urls redirect to login page if no user is logged in."""
-        self.assert_redirect_all_urls(urlpatterns, 'recipe')
+        self.assert_redirect_all_urls('recipes')

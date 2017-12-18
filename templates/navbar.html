@@ -1,5 +1,4 @@
 {% load staticfiles %}
-{% load core_tags %}
 
 <nav class="navbar navbar-inverse navbar-fixed-top">
   <div class="container">
@@ -44,7 +43,25 @@
           </ul>
         </li>
         
-        {% if request.user|has_group:"recipe_submitters" or request.user.is_staff %}
+        <!--    Phenotype Tagging dropdown    -->
+        <li class="dropdown">
+          <a href="{% url 'tags:list' %}" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false"> Phenotype tags<span class="caret"></span></a>
+          <ul class="dropdown-menu">
+            <li>
+              <a href="{% url 'tags:list' %}"><span class="glyphicon glyphicon-list"></span> View all tags</a>
+            </li>
+            <li>
+              <a href="{% url 'tags:tagged-traits:by-study' %}"><span class="glyphicon glyphicon-list"></span> Browse tagged phenotypes by study</a>
+            </li>
+            {% if perms.tags.add_taggedtrait %}
+                <li>
+                  <a href="{% url 'tags:add-many:main' %}"><span class="glyphicon glyphicon-tag"></span> Tag phenotypes</a>
+                </li>
+            {% endif %}
+          </ul>
+        </li>
+        
+        {% if perms.recipes.add_unitrecipe %}
             <!--    Harmonization Recipes dropdown    -->
             <li class="dropdown">
               <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Harmonization recipes <span class="caret"></span></a>
