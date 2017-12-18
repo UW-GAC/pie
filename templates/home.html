@@ -1,6 +1,5 @@
 {% extends 'base.html' %}
 {% load staticfiles %}
-{% load core_tags %}
 
 {% block content %}
 
@@ -22,7 +21,7 @@
 
 <div class="row">
   
-  {% if request.user|has_group:"recipe_submitters" != True and request.user.is_staff != True %}
+  {% if perms.recipes.add_unitrecipe != True %}
     <div class="col-md-2 text-center action-home">
     </div>
   {% endif %}
@@ -36,7 +35,7 @@
     </a>
   </div>
 
-  {% if request.user|has_group:"recipe_submitters" or request.user.is_staff %}
+  {% if perms.recipes.add_unitrecipe %}
     <div class="col-md-4 text-center action-home">
         <a href="{% url 'recipes:unit:create' %}">
         <h2>Submit a harmonization recipe</h2>
@@ -54,7 +53,7 @@
     </a>
   </div>
 
-  {% if request.user|has_group:"recipe_submitters" != True and request.user.is_staff != True %}
+  {% if perms.recipes.add_unitrecipe != True %}
     <div class="col-md-2 text-center action-home">
     </div>
   {% endif %}

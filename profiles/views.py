@@ -39,7 +39,7 @@ def profile(request):
 def build_usersearches(user_id, search_type):
     """Return a list of dictionaries for building user's saved searches."""
     searches = models.Search.objects.select_related().filter(
-        userdata__user_id=user_id,
+        profile__user_id=user_id,
         search_type=search_type,
         savedsearchmeta__active=True)
     data = [

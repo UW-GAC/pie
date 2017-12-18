@@ -5,7 +5,7 @@ from django.shortcuts import get_object_or_404
 from django.utils.safestring import mark_safe
 from django.views.generic import CreateView, DetailView, DeleteView, FormView, ListView
 
-from braces.views import (FormMessagesMixin, GroupRequiredMixin, LoginRequiredMixin, UserFormKwargsMixin,
+from braces.views import (FormMessagesMixin, LoginRequiredMixin, PermissionRequiredMixin, UserFormKwargsMixin,
                           UserPassesTestMixin)
 from dal import autocomplete
 from django_tables2 import SingleTableMixin
@@ -69,7 +69,7 @@ class TaggedTraitByStudyList(LoginRequiredMixin, SingleTableMixin, ListView):
         """Determine whether to use tagged trait table with delete buttons or not."""
         self.study = get_object_or_404(Study, pk=self.kwargs['pk'])
         if self.request.user.groups.filter(name='phenotype_taggers').exists() and (
-                self.study in self.request.user.userdata_set.first().taggable_studies.all()):
+                self.study in self.request.user.profile.taggable_studies.all()):
             return tables.TaggedTraitTableWithDelete
         else:
             return tables.TaggedTraitTable
@@ -84,19 +84,19 @@ class TaggedTraitByStudyList(LoginRequiredMixin, SingleTableMixin, ListView):
 
 
 class TaggableStudiesRequiredMixin(UserPassesTestMixin):
-    """Mixin requiring that the user have 1 or more taggable studies designated."""
+    """Mixin requiring that the user have 1 or more taggable studies designated, or be staff."""
 
     def test_func(self, user):
-        return user.userdata_set.first().taggable_studies.count() > 0
+        return user.profile.taggable_studies.count() > 0 or user.is_staff
 
 
-class TaggedTraitDelete(LoginRequiredMixin, GroupRequiredMixin, TaggableStudiesRequiredMixin, FormMessagesMixin,
+class TaggedTraitDelete(LoginRequiredMixin, PermissionRequiredMixin, TaggableStudiesRequiredMixin, FormMessagesMixin,
                         DeleteView):
     """Delete view class for TaggedTrait objects."""
 
     model = models.TaggedTrait
     context_object_name = 'tagged_trait'
-    group_required = [u"phenotype_taggers", ]
+    permission_required = 'tags.delete_taggedtrait'
     raise_exception = True
     redirect_unauthenticated_users = True
 
@@ -111,14 +111,14 @@ class TaggedTraitDelete(LoginRequiredMixin, GroupRequiredMixin, TaggableStudiesR
         return mark_safe(msg)
 
 
-class TaggedTraitCreate(LoginRequiredMixin, GroupRequiredMixin, TaggableStudiesRequiredMixin, UserFormKwargsMixin,
+class TaggedTraitCreate(LoginRequiredMixin, PermissionRequiredMixin, TaggableStudiesRequiredMixin, UserFormKwargsMixin,
                         FormMessagesMixin, CreateView):
     """Create view class for TaggedTrait objects."""
 
     model = models.TaggedTrait
     form_class = forms.TaggedTraitForm
     form_invalid_message = TAGGING_ERROR_MESSAGE
-    group_required = [u"phenotype_taggers", ]
+    permission_required = 'tags.add_taggedtrait'
     raise_exception = True
     redirect_unauthenticated_users = True
 
@@ -136,14 +136,14 @@ class TaggedTraitCreate(LoginRequiredMixin, GroupRequiredMixin, TaggableStudiesR
         return mark_safe(msg)
 
 
-class TaggedTraitCreateByTag(LoginRequiredMixin, GroupRequiredMixin, TaggableStudiesRequiredMixin, UserFormKwargsMixin,
+class TaggedTraitCreateByTag(LoginRequiredMixin, PermissionRequiredMixin, TaggableStudiesRequiredMixin, UserFormKwargsMixin,
                              FormMessagesMixin, FormView):
     """Form view class for tagging a trait with a specific tag."""
 
     form_class = forms.TaggedTraitByTagForm
     form_invalid_message = TAGGING_ERROR_MESSAGE
     template_name = 'tags/taggedtrait_form.html'
-    group_required = [u"phenotype_taggers", ]
+    permission_required = 'tags.add_taggedtrait'
     raise_exception = True
     redirect_unauthenticated_users = True
 
@@ -176,14 +176,14 @@ class TaggedTraitCreateByTag(LoginRequiredMixin, GroupRequiredMixin, TaggableStu
         return mark_safe(msg)
 
 
-class ManyTaggedTraitsCreate(LoginRequiredMixin, GroupRequiredMixin, TaggableStudiesRequiredMixin, UserFormKwargsMixin,
+class ManyTaggedTraitsCreate(LoginRequiredMixin, PermissionRequiredMixin, TaggableStudiesRequiredMixin, UserFormKwargsMixin,
                              FormMessagesMixin, FormView):
     """Form view class for tagging multiple traits with one tag."""
 
     form_class = forms.ManyTaggedTraitsForm
     form_invalid_message = TAGGING_MULTIPLE_ERROR_MESSAGE
     template_name = 'tags/taggedtrait_form.html'
-    group_required = [u"phenotype_taggers", ]
+    permission_required = 'tags.add_taggedtrait'
     raise_exception = True
     redirect_unauthenticated_users = True
 
@@ -218,14 +218,14 @@ class ManyTaggedTraitsCreate(LoginRequiredMixin, GroupRequiredMixin, TaggableStu
         return mark_safe(msg)
 
 
-class ManyTaggedTraitsCreateByTag(LoginRequiredMixin, GroupRequiredMixin, TaggableStudiesRequiredMixin,
+class ManyTaggedTraitsCreateByTag(LoginRequiredMixin, PermissionRequiredMixin, TaggableStudiesRequiredMixin,
                                   UserFormKwargsMixin, FormMessagesMixin, FormView):
     """Form view class for tagging multiple traits with a specific tag."""
 
     form_class = forms.ManyTaggedTraitsByTagForm
     form_invalid_message = TAGGING_MULTIPLE_ERROR_MESSAGE
     template_name = 'tags/taggedtrait_form.html'
-    group_required = [u"phenotype_taggers", ]
+    permission_required = 'tags.add_taggedtrait'
     raise_exception = True
     redirect_unauthenticated_users = True
 

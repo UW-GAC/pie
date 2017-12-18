@@ -1,7 +1,6 @@
 {% extends 'base.html' %}
 {% load staticfiles %}
 {% load render_table from django_tables2 %}
-{% load core_tags %}
 
 {% block head_title %}
      | {{ page_title }}
@@ -31,12 +30,12 @@
             </ul>
           </li>
           
-          {% if request.user|has_group:"recipe_submitters" or request.user.is_staff %}
+          {% if perms.recipes.add_unitrecipe %}
               <li role="presentation"><a href="#unitrecipes" role="tab" data-toggle="tab">Unit Recipes</a></li>
               <li role="presentation"><a href="#harmonizationrecipes" role="tab" data-toggle="tab">Harmonization Recipes</a></li>
           {% endif %}
 
-          {% if request.user|has_group:"phenotype_taggers" or request.user.is_staff %}
+          {% if perms.tags.add_taggedtrait %}
               <li role="presentation"><a href="#tagged_phenotypes" role="tab" data-toggle="tab">My Tagged Phenotypes</a></li>
           {% endif %}
           
@@ -74,7 +73,7 @@
             </div>
           </div>
           
-          {% if request.user|has_group:"recipe_submitters" or request.user.is_staff %}
+          {% if perms.recipes.add_unitrecipe %}
               <div role="tabpanel" class="tab-pane fade" id="unitrecipes">
                   {% render_table unit_recipe_table %}
               </div>
@@ -84,7 +83,7 @@
               </div>
           {% endif %}
 
-          {% if request.user|has_group:"phenotype_taggers" or request.user.is_staff %}
+          {% if perms.tags.add_taggedtrait %}
               <div role="tabpanel" class="tab-pane fade" id="tagged_phenotypes">
                   Table here later...
               </div>

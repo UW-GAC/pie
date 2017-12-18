@@ -14,6 +14,7 @@ from django.test import TestCase, Client
 
 from .build_test_db import build_test_db
 from . import factories
+from trait_browser.factories import StudyFactory
 
 User = get_user_model()
 
@@ -127,6 +128,8 @@ class PhenotypeTaggerLoginTestCase(TestCase):
         self.user = factories.UserFactory.create()
         phenotype_taggers = Group.objects.get(name='phenotype_taggers')
         self.user.groups.add(phenotype_taggers)
+        self.study = StudyFactory.create()
+        self.user.profile.taggable_studies.add(self.study)
         self.user.refresh_from_db()
         self.client.login(username=self.user.email, password=self.user_password)
 
@@ -143,6 +146,9 @@ class SuperuserLoginTestCase(TestCase):
         self.client = Client()
         self.user_password = factories.USER_FACTORY_PASSWORD
         self.user = factories.SuperUserFactory.create()
+        self.user.is_staff = True
+        self.user.save()
+        self.user.refresh_from_db()
         self.client.login(username=self.user.email, password=self.user_password)
 
 

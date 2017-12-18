@@ -8,7 +8,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.utils.safestring import mark_safe
 from django.views.generic import DetailView, FormView
 
-from braces.views import FormMessagesMixin, GroupRequiredMixin, LoginRequiredMixin, UserPassesTestMixin
+from braces.views import FormMessagesMixin, LoginRequiredMixin, PermissionRequiredMixin, UserPassesTestMixin
 from dal import autocomplete
 from django_tables2 import RequestConfig, SingleTableMixin
 from urllib.parse import parse_qs
@@ -56,7 +56,7 @@ class SourceTraitDetail(LoginRequiredMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super(SourceTraitDetail, self).get_context_data(**kwargs)
-        user_studies = list(self.request.user.userdata_set.first().taggable_studies.all())
+        user_studies = list(self.request.user.profile.taggable_studies.all())
         context['user_is_study_tagger'] = self.object.source_dataset.source_study_version.study in user_studies
         context['tags'] = list(Tag.objects.filter(traits=self.object))
         return context
@@ -70,13 +70,13 @@ class HarmonizedTraitSetVersionDetail(LoginRequiredMixin, FormMessagesMixin, Det
     template_name = 'trait_browser/harmonized_trait_set_version_detail.html'
 
 
-class SourceTraitTagging(LoginRequiredMixin, GroupRequiredMixin, UserPassesTestMixin, FormMessagesMixin, FormView):
+class SourceTraitTagging(LoginRequiredMixin, PermissionRequiredMixin, UserPassesTestMixin, FormMessagesMixin, FormView):
     """Form view class for tagging a specific source trait."""
 
     form_class = TagSpecificTraitForm
     form_invalid_message = TAGGING_ERROR_MESSAGE
     template_name = 'tags/taggedtrait_form.html'
-    group_required = [u"phenotype_taggers", ]
+    permission_required = 'tags.add_taggedtrait'
     raise_exception = True
     redirect_unauthenticated_users = True
 
@@ -101,8 +101,11 @@ class SourceTraitTagging(LoginRequiredMixin, GroupRequiredMixin, UserPassesTestM
         return super(SourceTraitTagging, self).form_valid(form)
 
     def test_func(self, user):
-        user_studies = list(user.userdata_set.first().taggable_studies.all())
-        return self.trait.source_dataset.source_study_version.study in user_studies
+        if user.is_staff:
+            return True
+        else:
+            user_studies = list(user.profile.taggable_studies.all())
+            return self.trait.source_dataset.source_study_version.study in user_studies
 
     def get_success_url(self):
         return self.trait.get_absolute_url()
@@ -264,7 +267,7 @@ def trait_search(request, trait_type):
             for study in study_pks:
                 search_record.param_studies.add(study)
         # Check to see if user has this saved already.
-        if profiles.models.UserData.objects.all().filter(user=request.user.id,
+        if profiles.models.Profile.objects.all().filter(user=request.user.id,
                                                          saved_searches=search_record.id).exists():
             savedSearchCheck = True
         else:
@@ -290,23 +293,27 @@ class SourceTraitPHVAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySe
         return retrieved
 
 
-class TaggableStudyFilteredSourceTraitPHVAutocomplete(LoginRequiredMixin, GroupRequiredMixin, TaggableStudiesRequiredMixin, autocomplete.Select2QuerySetView):
+class TaggableStudyFilteredSourceTraitPHVAutocomplete(LoginRequiredMixin, TaggableStudiesRequiredMixin, autocomplete.Select2QuerySetView):
     """View for auto-completing SourceTraits by phv in a specific study.
 
     Used with django-autocomplete-light package. Autocomplete by dbGaP accession.
     Only include latest version.
     """
 
-    group_required = [u"phenotype_taggers", ]
     raise_exception = True
     redirect_unauthenticated_users = True
 
     def get_queryset(self):
-        studies = self.request.user.userdata_set.first().taggable_studies.all()
-        retrieved = models.SourceTrait.objects.filter(
-            source_dataset__source_study_version__study__in=list(studies),
-            source_dataset__source_study_version__i_is_deprecated=False
-        )
+        if self.request.user.is_staff:
+            retrieved = models.SourceTrait.objects.filter(
+                source_dataset__source_study_version__i_is_deprecated=False
+            )
+        else:
+            studies = self.request.user.profile.taggable_studies.all()
+            retrieved = models.SourceTrait.objects.filter(
+                source_dataset__source_study_version__study__in=list(studies),
+                source_dataset__source_study_version__i_is_deprecated=False
+            )
         if self.q:
             retrieved = retrieved.filter(i_dbgap_variable_accession__regex=r'^{}'.format(self.q))
         return retrieved
@@ -341,12 +348,12 @@ def save_search_to_profile(request):
         # Studies are stored as a list of strings, sorted by applying int on each element.
         studies = params['study'] if 'study' in params else []
         search_record = check_search_existence(text, trait_type, studies=studies)
-        user_data_record, new_record = profiles.models.UserData.objects.get_or_create(user_id=request.user.id)
+        profile_record, new_record = profiles.models.Profile.objects.get_or_create(user_id=request.user.id)
         # Save the user search.
         # user_id can be the actual value, saved_search_id has to be the model instance for some reason.
-        user_data, new_record = profiles.models.SavedSearchMeta.objects.get_or_create(
-            user_data_id=user_data_record.id, search_id=search_record.id)
-        user_data.save()
+        profile, new_record = profiles.models.SavedSearchMeta.objects.get_or_create(
+            profile_id=profile_record.id, search_id=search_record.id)
+        profile.save()
         search_url = '?'.join([reverse(':'.join(['trait_browser', trait_type, 'search'])), query_string])
         return redirect(search_url)
 

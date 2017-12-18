@@ -296,6 +296,25 @@ class AdminTestCase(SeleniumTestCase):
         time.sleep(1)
         self.go_back()
 
+    def test_profiles_admin(self):
+        # Open web browser and navigate to admin page.
+        self.get_reverse('admin:index')
+        body = self.selenium.find_element_by_tag_name('body')
+        self.assertIn('administration', body.text)
+        # Log in to the admin interface.
+        username = self.selenium.find_element_by_id('id_username')
+        password = self.selenium.find_element_by_id('id_password')
+        username.send_keys(self.superuser.email)
+        password.send_keys(self.superuser_password)
+        self.selenium.find_element_by_class_name('btn-primary').click()
+        time.sleep(1)
+        # Navigate to each of the admin model interfaces in turn.
+        self.selenium.find_element_by_link_text('Profiles').click()
+        time.sleep(1)
+        self.selenium.find_element_by_link_text('Profiles').click()
+        time.sleep(1)
+        self.go_back()
+
 
 class SourceTraitSearchTestCase(UserAutoLoginSeleniumTestCase):
 

@@ -5,6 +5,7 @@ from django.test import TestCase
 
 from . import factories
 from .build_test_db import build_test_db
+from profiles.models import Profile
 import trait_browser.models
 
 
@@ -34,6 +35,12 @@ class UserFactoryTestCase(TestCase):
         users = factories.UserFactory.create_batch(5)
         for one in users:
             self.assertIsInstance(one, User)
+
+    def test_profile_created(self):
+        """Creating a user automatically creates an associated Profile."""
+        users = factories.UserFactory.create_batch(5)
+        for one in users:
+            self.assertIsInstance(one.profile, Profile)
 
 
 class SuperUserFactoryTestCase(TestCase):
