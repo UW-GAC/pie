@@ -24,6 +24,48 @@ from .views import TABLE_PER_PAGE, search
 # will preclude any subsequent assertions
 
 
+class SourceDatasetDetailTest(UserLoginTestCase):
+    """Unit tests for the SourceDataset views."""
+
+    def setUp(self):
+        super(SourceDatasetDetailTest, self).setUp()
+        self.dataset = factories.SourceDatasetFactory.create()
+        self.source_traits = factories.SourceTraitFactory.create_batch(10, source_dataset=self.dataset)
+
+    def get_url(self, *args):
+        return reverse('trait_browser:source:dataset', args=args)
+
+    def test_absolute_url(self):
+        """get_absolute_url returns a 200 as a response."""
+        response = self.client.get(self.dataset.get_absolute_url())
+        self.assertEqual(response.status_code, 200)
+
+    def test_view_success_code(self):
+        """View returns successful response code."""
+        response = self.client.get(self.get_url(self.dataset.pk))
+        self.assertEqual(response.status_code, 200)
+
+    def test_view_with_invalid_pk(self):
+        """View returns 404 response code when the pk doesn't exist."""
+        response = self.client.get(self.get_url(self.dataset.pk + 1))
+        self.assertEqual(response.status_code, 404)
+
+    def test_context_data(self):
+        """View has appropriate data in the context."""
+        response = self.client.get(self.get_url(self.dataset.pk))
+        context = response.context
+        self.assertIn('source_dataset', context)
+        self.assertEqual(context['source_dataset'], self.dataset)
+        self.assertIn('trait_table', context)
+        self.assertIsInstance(context['trait_table'], tables.SourceTraitTable)
+        self.assertIn('phs', context)
+        self.assertIn('phs_link', context)
+        self.assertIn('pht_link', context)
+
+
+
+
+
 class SourceSearchTestCase(TestCase):
 
     def test_search_source_trait_name_exact(self):
@@ -472,17 +514,6 @@ class SourceTraitSearchViewTestCase(UserLoginTestCase):
         user_searches = Profile.objects.get(user_id=self.user.id).saved_searches.all()
         search = Search.objects.get(param_text=text, search_type='source')
         self.assertIn(search, user_searches)
-
-
-class SourceDatasetViewTest(UserLoginTestCase):
-    """Unit tests for the SourceDataset views."""
-
-    def test_source_dataset_absolute_url(self):
-        """Tests the get_absolute_url() method of the SourceDataset object returns a 200 as a response."""
-        dataset = factories.SourceDatasetFactory.create()
-        source_traits = factories.SourceTraitFactory.create_batch(10, source_dataset=dataset)
-        response = self.client.get(dataset.get_absolute_url())
-        self.assertEqual(response.status_code, 200)
 
 
 class HarmonizedTraitViewsTestCase(UserLoginTestCase):
