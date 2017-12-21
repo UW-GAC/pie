@@ -63,6 +63,44 @@ class SourceDatasetDetailTest(UserLoginTestCase):
         self.assertIn('pht_link', context)
 
 
+class SourceTraitDetailTest(UserLoginTestCase):
+
+    def setUp(self):
+        super(SourceTraitDetailTest, self).setUp()
+        self.trait = factories.SourceTraitFactory.create()
+
+    def get_url(self, *args):
+        return reverse('trait_browser:source:detail', args=args)
+
+    def test_view_success_code(self):
+        """View returns successful response code."""
+        response = self.client.get(self.get_url(self.trait.pk))
+        self.assertEqual(response.status_code, 200)
+
+    def test_view_with_invalid_pk(self):
+        """View returns 404 response code when the pk doesn't exist."""
+        response = self.client.get(self.get_url(self.trait.pk + 1))
+        self.assertEqual(response.status_code, 404)
+
+    def test_context_data(self):
+        """View has appropriate data in the context."""
+        response = self.client.get(self.get_url(self.trait.pk))
+        context = response.context
+        self.assertIn('source_trait', context)
+        self.assertEqual(context['source_trait'], self.trait)
+        self.assertIn('tags', context)
+        self.assertEqual(context['tags'], [])
+        self.assertIn('user_is_study_tagger', context)
+        self.assertFalse(context['user_is_study_tagger'])
+
+    def test_no_tagging_button(self):
+        """Regular user does not see a button to add tags on this detail page."""
+        response = self.client.get(self.get_url(self.trait.pk))
+        self.assertNotContains(response, 'Tag this phenotype')
+
+
+
+
 
 
 
@@ -157,42 +195,6 @@ class HarmonizedSearchTestCase(TestCase):
         # Check that the matching trait is found, but the non-match is not.
         self.assertIn(st_match, search1)
         self.assertNotIn(st_nonmatch, search1)
-
-
-class SourceTraitDetailTest(UserLoginTestCase):
-
-    def setUp(self):
-        super(SourceTraitDetailTest, self).setUp()
-        self.trait = factories.SourceTraitFactory.create()
-
-    def get_url(self, *args):
-        return reverse('trait_browser:source:detail', args=args)
-
-    def test_view_success_code(self):
-        """View returns successful response code."""
-        response = self.client.get(self.get_url(self.trait.pk))
-        self.assertEqual(response.status_code, 200)
-
-    def test_view_with_invalid_pk(self):
-        """View returns 404 response code when the pk doesn't exist."""
-        response = self.client.get(self.get_url(self.trait.pk + 1))
-        self.assertEqual(response.status_code, 404)
-
-    def test_context_data(self):
-        """View has appropriate data in the context."""
-        response = self.client.get(self.get_url(self.trait.pk))
-        context = response.context
-        self.assertIn('source_trait', context)
-        self.assertEqual(context['source_trait'], self.trait)
-        self.assertIn('tags', context)
-        self.assertEqual(context['tags'], [])
-        self.assertIn('user_is_study_tagger', context)
-        self.assertFalse(context['user_is_study_tagger'])
-
-    def test_no_tagging_button(self):
-        """Regular user does not see a button to add tags on this detail page."""
-        response = self.client.get(self.get_url(self.trait.pk))
-        self.assertNotContains(response, 'Tag this phenotype')
 
 
 class SourceTraitDetailPhenotypeTaggerTest(PhenotypeTaggerLoginTestCase):
