@@ -99,6 +99,39 @@ class SourceTraitDetailTest(UserLoginTestCase):
         self.assertNotContains(response, 'Tag this phenotype')
 
 
+class HarmonizedTraitSetVersionDetailTest(UserLoginTestCase):
+    """Unit tests for the HarmonizedTraitSet views."""
+
+    def setUp(self):
+        super(HarmonizedTraitSetVersionDetailTest, self).setUp()
+        self.htsv = factories.HarmonizedTraitSetVersionFactory.create()
+        self.htraits = factories.HarmonizedTraitFactory.create_batch(10, harmonized_trait_set_version=self.htsv)
+
+    def get_url(self, *args):
+        return reverse('trait_browser:harmonized:detail', args=args)
+
+    def test_absolute_url(self):
+        """get_absolute_url returns a 200 as a response."""
+        response = self.client.get(self.htsv.get_absolute_url())
+        self.assertEqual(response.status_code, 200)
+
+    def test_view_success_code(self):
+        """View returns successful response code."""
+        response = self.client.get(self.get_url(self.htsv.pk))
+        self.assertEqual(response.status_code, 200)
+
+    def test_view_with_invalid_pk(self):
+        """View returns 404 response code when the pk doesn't exist."""
+        response = self.client.get(self.get_url(self.htsv.pk + 1))
+        self.assertEqual(response.status_code, 404)
+
+    def test_context_data(self):
+        """View has appropriate data in the context."""
+        response = self.client.get(self.get_url(self.htsv.pk))
+        context = response.context
+        self.assertIn('harmonized_trait_set_version', context)
+        self.assertEqual(context['harmonized_trait_set_version'], self.htsv)
+
 
 
 
@@ -585,16 +618,6 @@ class HarmonizedTraitViewsTestCase(UserLoginTestCase):
         response = self.client.get(url)
         with self.assertRaises(KeyError):
             response.context['search_url']
-
-
-class HarmonizedTraitSetVersionViewsTest(UserLoginTestCase):
-    """Unit tests for the HarmonizedTraitSet views."""
-
-    def test_harmonized_trait_set_absolute_url(self):
-        """get_absolute_url() returns a 200 as a response."""
-        instance = factories.HarmonizedTraitSetVersionFactory.create()
-        response = self.client.get(instance.get_absolute_url())
-        self.assertEqual(response.status_code, 200)
 
 
 class HarmonizedTraitSearchViewTestCase(UserLoginTestCase):
