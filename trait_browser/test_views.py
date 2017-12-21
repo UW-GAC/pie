@@ -477,6 +477,37 @@ class StudyDetailTest(UserLoginTestCase):
         self.assertEqual(len(table.rows), 0)
 
 
+class StudyListTest(UserLoginTestCase):
+    """Unit tests for the StudyList view."""
+
+    def setUp(self):
+        super(StudyListTest, self).setUp()
+        self.studies = factories.StudyFactory.create_batch(10)
+
+    def get_url(self, *args):
+        return reverse('trait_browser:source:study:list')
+
+    def test_view_success_code(self):
+        """View returns successful response code."""
+        response = self.client.get(self.get_url())
+        self.assertEqual(response.status_code, 200)
+
+    def test_context_data(self):
+        """View has appropriate data in the context."""
+        response = self.client.get(self.get_url())
+        context = response.context
+        self.assertIn('study_table', context)
+        self.assertIsInstance(context['study_table'], tables.StudyTable)
+
+    def test_table_has_no_rows(self):
+        """When there are no studies, there are no rows in the table, but the view still works."""
+        models.Study.objects.all().delete()
+        response = self.client.get(self.get_url())
+        context = response.context
+        table = context['study_table']
+        self.assertEqual(len(table.rows), 0)
+
+
 
 
 
