@@ -409,6 +409,76 @@ class HarmonizedTraitListTest(UserLoginTestCase):
         self.assertEqual(len(table.rows), 0)
 
 
+class StudyDetailTest(UserLoginTestCase):
+    """Unit tests for the StudyDetail view."""
+
+    def setUp(self):
+        super(StudyDetailTest, self).setUp()
+        self.study = factories.StudyFactory.create()
+        self.source_traits = factories.SourceTraitFactory.create_batch(
+            10, source_dataset__source_study_version__i_is_deprecated=False,
+            source_dataset__source_study_version__study=self.study)
+
+    def get_url(self, *args):
+        return reverse('trait_browser:source:study:detail', args=args)
+
+    def test_view_success_code(self):
+        """View returns successful response code."""
+        response = self.client.get(self.get_url(self.study.pk))
+        self.assertEqual(response.status_code, 200)
+
+    def test_view_with_invalid_pk(self):
+        """View returns 404 response code when the pk doesn't exist."""
+        response = self.client.get(self.get_url(self.study.pk + 1))
+        self.assertEqual(response.status_code, 404)
+
+    def test_context_data(self):
+        """View has appropriate data in the context."""
+        response = self.client.get(self.get_url(self.study.pk))
+        context = response.context
+        self.assertIn('study', context)
+        self.assertEqual(context['study'], self.study)
+        self.assertIn('study_trait_table', context)
+        self.assertIsInstance(context['study_trait_table'], tables.SourceTraitTable)
+
+    def test_no_deprecated_traits_in_table(self):
+        """No deprecated traits are shown in the table."""
+        deprecated_traits = factories.SourceTraitFactory.create_batch(
+            10, source_dataset__source_study_version__i_is_deprecated=True,
+            source_dataset__source_study_version__study=self.study)
+        response = self.client.get(self.get_url(self.study.pk))
+        context = response.context
+        table = context['study_trait_table']
+        for trait in deprecated_traits:
+            self.assertNotIn(trait, table.data)
+        for trait in self.source_traits:
+            self.assertIn(trait, table.data)
+
+    def test_no_other_study_traits_in_table(self):
+        """No traits from other studies are shown in the table."""
+        other_study = factories.StudyFactory.create()
+        other_traits = factories.SourceTraitFactory.create_batch(
+            10, source_dataset__source_study_version__i_is_deprecated=False,
+            source_dataset__source_study_version__study=other_study)
+        response = self.client.get(self.get_url(self.study.pk))
+        context = response.context
+        table = context['study_trait_table']
+        for trait in other_traits:
+            self.assertNotIn(trait, table.data)
+        for trait in self.source_traits:
+            self.assertIn(trait, table.data)
+
+    def test_table_has_no_rows(self):
+        """When there are no source traits, there are no rows in the table, but the view still works."""
+        models.SourceTrait.objects.all().delete()
+        response = self.client.get(self.get_url(self.study.pk))
+        context = response.context
+        table = context['study_trait_table']
+        self.assertEqual(len(table.rows), 0)
+
+
+
+
 
 class SourceSearchTestCase(TestCase):
 
