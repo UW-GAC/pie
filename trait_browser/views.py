@@ -3,7 +3,6 @@
 from django.contrib.auth.decorators import login_required
 from django.core.urlresolvers import reverse
 from django.db.models import Q    # Allows complex queries when searching.
-from django.http import Http404
 from django.shortcuts import render, get_object_or_404, redirect
 from django.utils.safestring import mark_safe
 from django.views.generic import DetailView, FormView, ListView
@@ -70,7 +69,8 @@ class HarmonizedTraitSetVersionDetail(LoginRequiredMixin, FormMessagesMixin, Det
     template_name = 'trait_browser/harmonized_trait_set_version_detail.html'
 
 
-class SourceTraitTagging(LoginRequiredMixin, PermissionRequiredMixin, UserPassesTestMixin, FormMessagesMixin, FormView):
+class SourceTraitTagging(LoginRequiredMixin, PermissionRequiredMixin, UserPassesTestMixin, FormMessagesMixin,
+                         FormView):
     """Form view class for tagging a specific source trait."""
 
     form_class = TagSpecificTraitForm
@@ -158,6 +158,62 @@ class StudyList(LoginRequiredMixin, SingleTableMixin, ListView):
     table_class = tables.StudyTable
     context_table_name = 'study_table'
     table_pagination = {'per_page': TABLE_PER_PAGE}
+
+
+class SourceTraitPHVAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
+    """View for returning querysets that allow auto-completing SourceTrait-based form fields.
+
+    Used with django-autocomplete-light package. Autocomplete by dbGaP accession.
+    Only include latest version.
+    """
+
+    def get_queryset(self):
+        retrieved = models.SourceTrait.objects.filter(source_dataset__source_study_version__i_is_deprecated=False)
+        if self.q:
+            retrieved = retrieved.filter(i_dbgap_variable_accession__regex=r'^{}'.format(self.q))
+        return retrieved
+
+
+class TaggableStudyFilteredSourceTraitPHVAutocomplete(LoginRequiredMixin, TaggableStudiesRequiredMixin,
+                                                      autocomplete.Select2QuerySetView):
+    """View for auto-completing SourceTraits by phv in a specific study.
+
+    Used with django-autocomplete-light package. Autocomplete by dbGaP accession.
+    Only include latest version.
+    """
+
+    raise_exception = True
+    redirect_unauthenticated_users = True
+
+    def get_queryset(self):
+        if self.request.user.is_staff:
+            retrieved = models.SourceTrait.objects.filter(
+                source_dataset__source_study_version__i_is_deprecated=False
+            )
+        else:
+            studies = self.request.user.profile.taggable_studies.all()
+            retrieved = models.SourceTrait.objects.filter(
+                source_dataset__source_study_version__study__in=list(studies),
+                source_dataset__source_study_version__i_is_deprecated=False
+            )
+        if self.q:
+            retrieved = retrieved.filter(i_dbgap_variable_accession__regex=r'^{}'.format(self.q))
+        return retrieved
+
+
+class HarmonizedTraitFlavorNameAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
+    """View for returning querysets that allow auto-completing HarmonizedTrait form fields with trait_flavor_name.
+
+    Used with django-autocomplete-light package. Autocomplete by trait_flavor_name.
+    Only include latest version.
+    """
+
+    def get_queryset(self):
+        # TODO: Will need to filter to the latest version, once this is implemented.
+        retrieved = models.HarmonizedTrait.objects.all()
+        if self.q:
+            retrieved = retrieved.filter(trait_flavor_name__regex=r'^{}'.format(self.q))
+        return retrieved
 
 
 def search(text_query, trait_type, study_pks=[]):
@@ -250,61 +306,6 @@ def trait_search(request, trait_type):
     else:
         page_data['results'] = False
     return render(request, 'trait_browser/search.html', page_data)
-
-
-class SourceTraitPHVAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
-    """View for returning querysets that allow auto-completing SourceTrait-based form fields.
-
-    Used with django-autocomplete-light package. Autocomplete by dbGaP accession.
-    Only include latest version.
-    """
-
-    def get_queryset(self):
-        retrieved = models.SourceTrait.objects.filter(source_dataset__source_study_version__i_is_deprecated=False)
-        if self.q:
-            retrieved = retrieved.filter(i_dbgap_variable_accession__regex=r'^{}'.format(self.q))
-        return retrieved
-
-
-class TaggableStudyFilteredSourceTraitPHVAutocomplete(LoginRequiredMixin, TaggableStudiesRequiredMixin, autocomplete.Select2QuerySetView):
-    """View for auto-completing SourceTraits by phv in a specific study.
-
-    Used with django-autocomplete-light package. Autocomplete by dbGaP accession.
-    Only include latest version.
-    """
-
-    raise_exception = True
-    redirect_unauthenticated_users = True
-
-    def get_queryset(self):
-        if self.request.user.is_staff:
-            retrieved = models.SourceTrait.objects.filter(
-                source_dataset__source_study_version__i_is_deprecated=False
-            )
-        else:
-            studies = self.request.user.profile.taggable_studies.all()
-            retrieved = models.SourceTrait.objects.filter(
-                source_dataset__source_study_version__study__in=list(studies),
-                source_dataset__source_study_version__i_is_deprecated=False
-            )
-        if self.q:
-            retrieved = retrieved.filter(i_dbgap_variable_accession__regex=r'^{}'.format(self.q))
-        return retrieved
-
-
-class HarmonizedTraitFlavorNameAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
-    """View for returning querysets that allow auto-completing HarmonizedTrait form fields with trait_flavor_name.
-
-    Used with django-autocomplete-light package. Autocomplete by trait_flavor_name.
-    Only include latest version.
-    """
-
-    def get_queryset(self):
-        # TODO: Will need to filter to the latest version, once this is implemented.
-        retrieved = models.HarmonizedTrait.objects.all()
-        if self.q:
-            retrieved = retrieved.filter(trait_flavor_name__regex=r'^{}'.format(self.q))
-        return retrieved
 
 
 @login_required
