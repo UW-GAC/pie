@@ -321,6 +321,49 @@ class DCCAnalystSourceTraitTaggingTest(DCCAnalystLoginTestCase):
         self.assertEqual(response.status_code, 200)
 
 
+class SourceTraitListTest(UserLoginTestCase):
+    """Unit tests for the SourceTraitList view."""
+
+    def setUp(self):
+        super(SourceTraitListTest, self).setUp()
+        self.source_traits = factories.SourceTraitFactory.create_batch(
+            10, source_dataset__source_study_version__i_is_deprecated=False)
+
+    def get_url(self, *args):
+        return reverse('trait_browser:source:all')
+
+    def test_view_success_code(self):
+        """View returns successful response code."""
+        response = self.client.get(self.get_url())
+        self.assertEqual(response.status_code, 200)
+
+    def test_context_data(self):
+        """View has appropriate data in the context."""
+        response = self.client.get(self.get_url())
+        context = response.context
+        self.assertIn('source_trait_table', context)
+        self.assertIsInstance(context['source_trait_table'], tables.SourceTraitTable)
+
+    def test_no_deprecated_traits_in_table(self):
+        """No deprecated traits are shown in the table."""
+        deprecated_traits = factories.SourceTraitFactory.create_batch(
+            10, source_dataset__source_study_version__i_is_deprecated=True)
+        response = self.client.get(self.get_url())
+        context = response.context
+        table = context['source_trait_table']
+        for trait in deprecated_traits:
+            self.assertNotIn(trait, table.data)
+        for trait in self.source_traits:
+            self.assertIn(trait, table.data)
+
+    def test_table_has_no_rows(self):
+        """When there are no source traits, there are no rows in the table, but the view still works."""
+        models.SourceTrait.objects.all().delete()
+        response = self.client.get(self.get_url())
+        context = response.context
+        table = context['source_trait_table']
+        self.assertEqual(len(table.rows), 0)
+
 
 
 
@@ -443,60 +486,6 @@ class SourceTraitDetailPhenotypeTaggerTest(PhenotypeTaggerLoginTestCase):
         response = self.client.get(self.get_url(self.trait.pk))
         context = response.context
         self.assertTrue(context['user_is_study_tagger'])
-
-
-class SourceTraitViewsTestCase(UserLoginTestCase):
-    """Unit tests for the SourceTrait views."""
-
-    def test_source_trait_table_empty(self):
-        """Without any SourceTraits, returns 200 code and the SourceTraitTable object has no rows."""
-        # No valid SourceTraits exist here.
-        url = reverse('trait_browser:source:all')
-        response = self.client.get(url)
-        # Does the URL work?
-        self.assertEqual(response.status_code, 200)
-        # Is trait_table a SourceTraitTable object?
-        self.assertIsInstance(response.context['trait_table'], tables.SourceTraitTable)
-        # Does the source trait table object have 0 rows?
-        self.assertEqual(len(response.context['trait_table'].rows), 0)
-
-    def test_source_trait_table_one_page(self):
-        """Tests that the source_trait_table view works with fewer rows than will require a second page."""
-        # Make less than one page of SourceTraits.
-        n_traits = TABLE_PER_PAGE - 2
-        factories.SourceTraitFactory.create_batch(n_traits)
-        url = reverse('trait_browser:source:all')
-        response = self.client.get(url)
-        # Does the URL work?
-        self.assertEqual(response.status_code, 200)
-        # Does the source trait table object have n_traits rows?
-        self.assertEqual(len(response.context['trait_table'].rows), n_traits)
-
-    def test_source_trait_table_two_pages(self):
-        """Tests that the source_trait_table view works with two pages' worth of rows."""
-        # Make less than one page of SourceTraits.
-        n_traits = TABLE_PER_PAGE * 2
-        factories.SourceTraitFactory.create_batch(n_traits)
-        url = reverse('trait_browser:source:all')
-        response = self.client.get(url)
-        # Does the URL work?
-        self.assertEqual(response.status_code, 200)
-        # Does the source trait table object have n_traits rows?
-        self.assertEqual(len(response.context['trait_table'].rows), n_traits)
-
-    def test_source_trait_absolute_url(self):
-        """Tests the get_absolute_url() method of the SourceTrait object returns a 200 as a response."""
-        trait = factories.SourceTraitFactory.create()
-        response = self.client.get(trait.get_absolute_url())
-        self.assertEqual(response.status_code, 200)
-
-    def test_source_trait_no_search_url(self):
-        """Tests that the search_url is not in the response context."""
-        # search_url should not be in this view
-        url = reverse('trait_browser:source:all')
-        response = self.client.get(url)
-        with self.assertRaises(KeyError):
-            response.context['search_url']
 
 
 class StudySourceTableViewsTestCase(UserLoginTestCase):
