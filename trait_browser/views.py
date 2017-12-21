@@ -6,7 +6,7 @@ from django.db.models import Q    # Allows complex queries when searching.
 from django.http import Http404
 from django.shortcuts import render, get_object_or_404, redirect
 from django.utils.safestring import mark_safe
-from django.views.generic import DetailView, FormView
+from django.views.generic import DetailView, FormView, ListView
 
 from braces.views import FormMessagesMixin, LoginRequiredMixin, PermissionRequiredMixin, UserPassesTestMixin
 from dal import autocomplete
@@ -116,75 +116,48 @@ class SourceTraitTagging(LoginRequiredMixin, PermissionRequiredMixin, UserPasses
         return mark_safe(msg)
 
 
-@login_required
-def trait_table(request, trait_type):
-    """Table view for SourceTrait and HarmonizedTrait objects.
+class SourceTraitList(LoginRequiredMixin, SingleTableMixin, ListView):
 
-    This view uses Django-tables2 to display a pretty table of the traits
-    in the database for browsing.
-    """
-    if trait_type == 'harmonized':
-        table_title = 'DCC-harmonized phenotypes currently available'
-        page_title = 'Harmonized phenotypes'
-        trait_table = tables.HarmonizedTraitTable(models.HarmonizedTrait.objects.all())
-    elif trait_type == 'source':
-        table_title = 'Source phenotypes currently available'
-        page_title = 'Source phenotypes'
-        trait_table = tables.SourceTraitTable(
-            models.SourceTrait.objects.exclude(source_dataset__source_study_version__i_is_deprecated=True))
-    # If you're going to change this later to some kind of filtered list (e.g. only the most
-    # recent version of each trait), then you should wrap the SourceTrait.filter() in get_list_or_404
+    model = models.SourceTrait
+    table_class = tables.SourceTraitTable
+    context_table_name = 'source_trait_table'
+    table_pagination = {'per_page': TABLE_PER_PAGE}
 
-    # RequestConfig seems to be necessary for sorting to work.
-    RequestConfig(request, paginate={'per_page': TABLE_PER_PAGE}).configure(trait_table)
-    return render(
-        request,
-        'trait_browser/trait_table.html',
-        {'trait_table': trait_table, 'table_title': table_title, 'page_title': page_title, 'trait_type': trait_type}
-    )
+    def get_table_data(self):
+        return models.SourceTrait.objects.exclude(source_dataset__source_study_version__i_is_deprecated=True)
 
 
-@login_required
-def source_study_detail(request, pk):
-    """Table view for a table of SourceTraits for a single study.
+class HarmonizedTraitList(LoginRequiredMixin, SingleTableMixin, ListView):
 
-    This view uses Django-tables2 to display a pretty table of the SourceTraits
-    in the database for browsing, within a single study.
-    """
-    this_study = get_object_or_404(models.Study, i_accession=pk)
-    table_title = 'Source phenotypes currently available in {}'.format(this_study.i_study_name)
-    page_title = 'phs{:6} source phenotypes'.format(this_study.phs)
-    trait_table = tables.SourceTraitTable(models.SourceTrait.objects.exclude(
-        source_dataset__source_study_version__i_is_deprecated=True).filter(
-        source_dataset__source_study_version__study__i_accession=pk))
-    # If you're going to change this later to some kind of filtered list (e.g. only the most
-    # recent version of each trait), then you should wrap the SourceTrait.filter() in get_list_or_404
-    # RequestConfig seems to be necessary for sorting to work.
-    RequestConfig(request, paginate={'per_page': TABLE_PER_PAGE}).configure(trait_table)
-    return render(
-        request, 'trait_browser/trait_table.html',
-        {'trait_table': trait_table, 'table_title': table_title, 'page_title': page_title, 'trait_type': 'source',
-         'search_url': this_study.get_search_url()}
-    )
+    model = models.HarmonizedTrait
+    table_class = tables.HarmonizedTraitTable
+    context_table_name = 'harmonized_trait_table'
+    table_pagination = {'per_page': TABLE_PER_PAGE}
+
+    def get_table_data(self):
+        return models.HarmonizedTrait.objects.exclude(harmonized_trait_set_version__i_is_deprecated=True)
 
 
-@login_required
-def source_study_list(request):
-    """Table view for a table listing each of the studies, with links.
+class StudyDetail(LoginRequiredMixin, SingleTableMixin, DetailView):
 
-    This view uses Django-tables2 to display a pretty table of the Study
-    objects in the database for browsing. Study name links will take you
-    to a view of the source traits in a single study and dbGaP links will
-    take you to the latest dbGaP study information page.
-    """
-    table_title = 'Studies with available source phenotypes'
-    page_title = 'Browse source by study'
-    study_table = tables.StudyTable(models.Study.objects.all())
-    RequestConfig(request, paginate={'per_page': TABLE_PER_PAGE}).configure(study_table)
-    return render(
-        request, 'trait_browser/study_table.html',
-        {'study_table': study_table, 'table_title': table_title, 'page_title': page_title}
-    )
+    model = models.Study
+    context_object_name = 'study'
+    table_class = tables.SourceTraitTable
+    context_table_name = 'study_trait_table'
+    table_pagination = {'per_page': TABLE_PER_PAGE}
+
+    def get_table_data(self):
+        return models.SourceTrait.objects.exclude(
+            source_dataset__source_study_version__i_is_deprecated=True).filter(
+            source_dataset__source_study_version__study=self.object)
+
+
+class StudyList(LoginRequiredMixin, SingleTableMixin, ListView):
+
+    model = models.Study
+    table_class = tables.StudyTable
+    context_table_name = 'study_table'
+    table_pagination = {'per_page': TABLE_PER_PAGE}
 
 
 def search(text_query, trait_type, study_pks=[]):
