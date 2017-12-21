@@ -365,6 +365,49 @@ class SourceTraitListTest(UserLoginTestCase):
         self.assertEqual(len(table.rows), 0)
 
 
+class HarmonizedTraitListTest(UserLoginTestCase):
+    """Unit tests for the HarmonizedTraitList view."""
+
+    def setUp(self):
+        super(HarmonizedTraitListTest, self).setUp()
+        self.harmonized_traits = factories.HarmonizedTraitFactory.create_batch(
+            10, harmonized_trait_set_version__i_is_deprecated=False)
+
+    def get_url(self, *args):
+        return reverse('trait_browser:harmonized:all')
+
+    def test_view_success_code(self):
+        """View returns successful response code."""
+        response = self.client.get(self.get_url())
+        self.assertEqual(response.status_code, 200)
+
+    def test_context_data(self):
+        """View has appropriate data in the context."""
+        response = self.client.get(self.get_url())
+        context = response.context
+        self.assertIn('harmonized_trait_table', context)
+        self.assertIsInstance(context['harmonized_trait_table'], tables.HarmonizedTraitTable)
+
+    def test_no_deprecated_traits_in_table(self):
+        """No deprecated traits are shown in the table."""
+        deprecated_traits = factories.HarmonizedTraitFactory.create_batch(
+            10, harmonized_trait_set_version__i_is_deprecated=True)
+        response = self.client.get(self.get_url())
+        context = response.context
+        table = context['harmonized_trait_table']
+        for trait in deprecated_traits:
+            self.assertNotIn(trait, table.data)
+        for trait in self.harmonized_traits:
+            self.assertIn(trait, table.data)
+
+    def test_table_has_no_rows(self):
+        """When there are no harmonized traits, there are no rows in the table, but the view still works."""
+        models.HarmonizedTrait.objects.all().delete()
+        response = self.client.get(self.get_url())
+        context = response.context
+        table = context['harmonized_trait_table']
+        self.assertEqual(len(table.rows), 0)
+
 
 
 class SourceSearchTestCase(TestCase):
