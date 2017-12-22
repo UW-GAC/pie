@@ -19,7 +19,7 @@ study_patterns = [
 source_patterns = [
     url(r'^all/$', views.SourceTraitList.as_view(), name='all'),
     url(r'^dataset/(?P<pk>\d+)/$', views.SourceDatasetDetail.as_view(), name='dataset'),
-    url(r'^detail/(?P<pk>\d+)/$', views.SourceTraitDetail.as_view(), name='detail'),
+    url(r'^(?P<pk>\d+)/$', views.SourceTraitDetail.as_view(), name='detail'),
     url(r'^(?P<pk>\d+)/tagging/$', views.SourceTraitTagging.as_view(), name='tagging'),
     url(r'^search/$', views.trait_search, {'trait_type': 'source'}, name='search'),
     url(r'^autocomplete/$', views.SourceTraitPHVAutocomplete.as_view(), name='autocomplete'),
@@ -30,7 +30,7 @@ source_patterns = [
 
 harmonized_patterns = [
     url(r'^all/$', views.HarmonizedTraitList.as_view(), name='all'),
-    url(r'^detail/(?P<pk>\d+)/$', views.HarmonizedTraitSetVersionDetail.as_view(), name='detail'),
+    url(r'^(?P<pk>\d+)/$', views.HarmonizedTraitSetVersionDetail.as_view(), name='detail'),
     url(r'^search/$', views.trait_search, {'trait_type': 'harmonized'}, name='search'),
     url(r'^autocomplete/$', views.HarmonizedTraitFlavorNameAutocomplete.as_view(), name='autocomplete'),
 ]
