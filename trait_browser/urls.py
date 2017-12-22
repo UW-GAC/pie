@@ -20,7 +20,7 @@ source_patterns = [
     url(r'^all/$', views.SourceTraitList.as_view(), name='all'),
     url(r'^dataset/(?P<pk>\d+)/$', views.SourceDatasetDetail.as_view(), name='dataset'),
     url(r'^(?P<pk>\d+)/$', views.SourceTraitDetail.as_view(), name='detail'),
-    url(r'^(?P<pk>\d+)/tagging/$', views.SourceTraitTagging.as_view(), name='tagging'),
+    url(r'^(?P<pk>\d+)/add-tag/$', views.SourceTraitTagging.as_view(), name='tagging'),
     url(r'^search/$', views.trait_search, {'trait_type': 'source'}, name='search'),
     url(r'^autocomplete/$', views.SourceTraitPHVAutocomplete.as_view(), name='autocomplete'),
     url(r'^taggable-autocomplete/$', views.TaggableStudyFilteredSourceTraitPHVAutocomplete.as_view(),
