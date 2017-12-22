@@ -68,6 +68,7 @@ class StudyTable(tables.Table):
 
     i_study_name = tables.LinkColumn(
         'trait_browser:source:study:detail', args=[tables.utils.A('pk')], verbose_name='Study name', orderable=False)
+    trait_count = tables.Column(accessor='study', verbose_name='Phenotype count', orderable=False, empty_values=())
     dbGaP_accession = tables.TemplateColumn(
         orderable=False,
         template_code='<a target="_blank" href={{record.dbgap_latest_version_link}}>{{ record.phs }}</a>')
@@ -78,3 +79,9 @@ class StudyTable(tables.Table):
         attrs = {'class': 'table table-striped table-hover table-bordered', 'style': 'width: auto;'}
         template = 'bootstrap_tables2.html'
         order_by = ('i_study_name', )
+
+    def render_trait_count(self, record):
+        """Get the count of non-deprecated source traits for this study."""
+        return '{:,}'.format(models.SourceTrait.objects.filter(
+            source_dataset__source_study_version__study=record,
+            source_dataset__source_study_version__i_is_deprecated=False).count())
