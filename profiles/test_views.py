@@ -7,7 +7,7 @@ from . import models
 from . import factories
 from trait_browser.factories import StudyFactory
 
-from core.utils import UserLoginTestCase
+from core.utils import LoginRequiredTestCase, UserLoginTestCase
 
 
 class ProfileViewTestCase(UserLoginTestCase):
@@ -45,3 +45,10 @@ class RemoveSearchTestCase(UserLoginTestCase):
         remove_url = reverse('profiles:profile')
         self.client.post(remove_url, {'search_type': search_type, 'search_id': search.id})
         self.assertEqual(searches.count(), 0)
+
+
+class ProfilesLoginRequiredTestCase(LoginRequiredTestCase):
+
+    def test_profiles_login_required(self):
+        """All profiles urls redirect to login page if no user is logged in."""
+        self.assert_redirect_all_urls('profiles')
