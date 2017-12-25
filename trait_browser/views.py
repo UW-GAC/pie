@@ -3,10 +3,9 @@
 from django.contrib.auth.decorators import login_required
 from django.core.urlresolvers import reverse
 from django.db.models import Q    # Allows complex queries when searching.
-from django.http import Http404
 from django.shortcuts import render, get_object_or_404, redirect
 from django.utils.safestring import mark_safe
-from django.views.generic import DetailView, FormView
+from django.views.generic import DetailView, FormView, ListView
 
 from braces.views import FormMessagesMixin, LoginRequiredMixin, PermissionRequiredMixin, UserPassesTestMixin
 from dal import autocomplete
@@ -70,7 +69,8 @@ class HarmonizedTraitSetVersionDetail(LoginRequiredMixin, FormMessagesMixin, Det
     template_name = 'trait_browser/harmonized_trait_set_version_detail.html'
 
 
-class SourceTraitTagging(LoginRequiredMixin, PermissionRequiredMixin, UserPassesTestMixin, FormMessagesMixin, FormView):
+class SourceTraitTagging(LoginRequiredMixin, PermissionRequiredMixin, UserPassesTestMixin, FormMessagesMixin,
+                         FormView):
     """Form view class for tagging a specific source trait."""
 
     form_class = TagSpecificTraitForm
@@ -116,75 +116,104 @@ class SourceTraitTagging(LoginRequiredMixin, PermissionRequiredMixin, UserPasses
         return mark_safe(msg)
 
 
-@login_required
-def trait_table(request, trait_type):
-    """Table view for SourceTrait and HarmonizedTrait objects.
+class SourceTraitList(LoginRequiredMixin, SingleTableMixin, ListView):
 
-    This view uses Django-tables2 to display a pretty table of the traits
-    in the database for browsing.
+    model = models.SourceTrait
+    table_class = tables.SourceTraitTable
+    context_table_name = 'source_trait_table'
+    table_pagination = {'per_page': TABLE_PER_PAGE}
+
+    def get_table_data(self):
+        return models.SourceTrait.objects.exclude(source_dataset__source_study_version__i_is_deprecated=True)
+
+
+class HarmonizedTraitList(LoginRequiredMixin, SingleTableMixin, ListView):
+
+    model = models.HarmonizedTrait
+    table_class = tables.HarmonizedTraitTable
+    context_table_name = 'harmonized_trait_table'
+    table_pagination = {'per_page': TABLE_PER_PAGE}
+
+    def get_table_data(self):
+        return models.HarmonizedTrait.objects.exclude(harmonized_trait_set_version__i_is_deprecated=True)
+
+
+class StudyDetail(LoginRequiredMixin, SingleTableMixin, DetailView):
+
+    model = models.Study
+    context_object_name = 'study'
+    table_class = tables.SourceTraitTable
+    context_table_name = 'study_trait_table'
+    table_pagination = {'per_page': TABLE_PER_PAGE}
+
+    def get_table_data(self):
+        return models.SourceTrait.objects.exclude(
+            source_dataset__source_study_version__i_is_deprecated=True).filter(
+            source_dataset__source_study_version__study=self.object)
+
+
+class StudyList(LoginRequiredMixin, SingleTableMixin, ListView):
+
+    model = models.Study
+    table_class = tables.StudyTable
+    context_table_name = 'study_table'
+    table_pagination = {'per_page': TABLE_PER_PAGE}
+
+
+class SourceTraitPHVAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
+    """View for returning querysets that allow auto-completing SourceTrait-based form fields.
+
+    Used with django-autocomplete-light package. Autocomplete by dbGaP accession.
+    Only include latest version.
     """
-    if trait_type == 'harmonized':
-        table_title = 'DCC-harmonized phenotypes currently available'
-        page_title = 'Harmonized phenotypes'
-        trait_table = tables.HarmonizedTraitTable(models.HarmonizedTrait.objects.all())
-    elif trait_type == 'source':
-        table_title = 'Source phenotypes currently available'
-        page_title = 'Source phenotypes'
-        trait_table = tables.SourceTraitTable(
-            models.SourceTrait.objects.exclude(source_dataset__source_study_version__i_is_deprecated=True))
-    # If you're going to change this later to some kind of filtered list (e.g. only the most
-    # recent version of each trait), then you should wrap the SourceTrait.filter() in get_list_or_404
 
-    # RequestConfig seems to be necessary for sorting to work.
-    RequestConfig(request, paginate={'per_page': TABLE_PER_PAGE}).configure(trait_table)
-    return render(
-        request,
-        'trait_browser/trait_table.html',
-        {'trait_table': trait_table, 'table_title': table_title, 'page_title': page_title, 'trait_type': trait_type}
-    )
+    def get_queryset(self):
+        retrieved = models.SourceTrait.objects.filter(source_dataset__source_study_version__i_is_deprecated=False)
+        if self.q:
+            retrieved = retrieved.filter(i_dbgap_variable_accession__regex=r'^{}'.format(self.q))
+        return retrieved
 
 
-@login_required
-def source_study_detail(request, pk):
-    """Table view for a table of SourceTraits for a single study.
+class TaggableStudyFilteredSourceTraitPHVAutocomplete(LoginRequiredMixin, TaggableStudiesRequiredMixin,
+                                                      autocomplete.Select2QuerySetView):
+    """View for auto-completing SourceTraits by phv in a specific study.
 
-    This view uses Django-tables2 to display a pretty table of the SourceTraits
-    in the database for browsing, within a single study.
+    Used with django-autocomplete-light package. Autocomplete by dbGaP accession.
+    Only include latest version.
     """
-    this_study = get_object_or_404(models.Study, i_accession=pk)
-    table_title = 'Source phenotypes currently available in {}'.format(this_study.i_study_name)
-    page_title = 'phs{:6} source phenotypes'.format(this_study.phs)
-    trait_table = tables.SourceTraitTable(models.SourceTrait.objects.exclude(
-        source_dataset__source_study_version__i_is_deprecated=True).filter(
-        source_dataset__source_study_version__study__i_accession=pk))
-    # If you're going to change this later to some kind of filtered list (e.g. only the most
-    # recent version of each trait), then you should wrap the SourceTrait.filter() in get_list_or_404
-    # RequestConfig seems to be necessary for sorting to work.
-    RequestConfig(request, paginate={'per_page': TABLE_PER_PAGE}).configure(trait_table)
-    return render(
-        request, 'trait_browser/trait_table.html',
-        {'trait_table': trait_table, 'table_title': table_title, 'page_title': page_title, 'trait_type': 'source',
-         'search_url': this_study.get_search_url()}
-    )
+
+    raise_exception = True
+    redirect_unauthenticated_users = True
+
+    def get_queryset(self):
+        if self.request.user.is_staff:
+            retrieved = models.SourceTrait.objects.filter(
+                source_dataset__source_study_version__i_is_deprecated=False
+            )
+        else:
+            studies = self.request.user.profile.taggable_studies.all()
+            retrieved = models.SourceTrait.objects.filter(
+                source_dataset__source_study_version__study__in=list(studies),
+                source_dataset__source_study_version__i_is_deprecated=False
+            )
+        if self.q:
+            retrieved = retrieved.filter(i_dbgap_variable_accession__regex=r'^{}'.format(self.q))
+        return retrieved
 
 
-@login_required
-def source_study_list(request):
-    """Table view for a table listing each of the studies, with links.
+class HarmonizedTraitFlavorNameAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
+    """View for returning querysets that allow auto-completing HarmonizedTrait form fields with trait_flavor_name.
 
-    This view uses Django-tables2 to display a pretty table of the Study
-    objects in the database for browsing. Study name links will take you
-    to a view of the source traits in a single study and dbGaP links will
-    take you to the latest dbGaP study information page.
+    Used with django-autocomplete-light package. Autocomplete by trait_flavor_name.
+    Only include latest version.
     """
-    table_title = 'Studies with available source phenotypes'
-    page_title = 'Browse source by study'
-    study_table = tables.StudyTable(models.Study.objects.all())
-    RequestConfig(request, paginate={'per_page': TABLE_PER_PAGE}).configure(study_table)
-    return render(
-        request, 'trait_browser/study_table.html',
-        {'study_table': study_table, 'table_title': table_title, 'page_title': page_title}
-    )
+
+    def get_queryset(self):
+        # TODO: Will need to filter to the latest version, once this is implemented.
+        retrieved = models.HarmonizedTrait.objects.all()
+        if self.q:
+            retrieved = retrieved.filter(trait_flavor_name__regex=r'^{}'.format(self.q))
+        return retrieved
 
 
 def search(text_query, trait_type, study_pks=[]):
@@ -277,61 +306,6 @@ def trait_search(request, trait_type):
     else:
         page_data['results'] = False
     return render(request, 'trait_browser/search.html', page_data)
-
-
-class SourceTraitPHVAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
-    """View for returning querysets that allow auto-completing SourceTrait-based form fields.
-
-    Used with django-autocomplete-light package. Autocomplete by dbGaP accession.
-    Only include latest version.
-    """
-
-    def get_queryset(self):
-        retrieved = models.SourceTrait.objects.filter(source_dataset__source_study_version__i_is_deprecated=False)
-        if self.q:
-            retrieved = retrieved.filter(i_dbgap_variable_accession__regex=r'^{}'.format(self.q))
-        return retrieved
-
-
-class TaggableStudyFilteredSourceTraitPHVAutocomplete(LoginRequiredMixin, TaggableStudiesRequiredMixin, autocomplete.Select2QuerySetView):
-    """View for auto-completing SourceTraits by phv in a specific study.
-
-    Used with django-autocomplete-light package. Autocomplete by dbGaP accession.
-    Only include latest version.
-    """
-
-    raise_exception = True
-    redirect_unauthenticated_users = True
-
-    def get_queryset(self):
-        if self.request.user.is_staff:
-            retrieved = models.SourceTrait.objects.filter(
-                source_dataset__source_study_version__i_is_deprecated=False
-            )
-        else:
-            studies = self.request.user.profile.taggable_studies.all()
-            retrieved = models.SourceTrait.objects.filter(
-                source_dataset__source_study_version__study__in=list(studies),
-                source_dataset__source_study_version__i_is_deprecated=False
-            )
-        if self.q:
-            retrieved = retrieved.filter(i_dbgap_variable_accession__regex=r'^{}'.format(self.q))
-        return retrieved
-
-
-class HarmonizedTraitFlavorNameAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
-    """View for returning querysets that allow auto-completing HarmonizedTrait form fields with trait_flavor_name.
-
-    Used with django-autocomplete-light package. Autocomplete by trait_flavor_name.
-    Only include latest version.
-    """
-
-    def get_queryset(self):
-        # TODO: Will need to filter to the latest version, once this is implemented.
-        retrieved = models.HarmonizedTrait.objects.all()
-        if self.q:
-            retrieved = retrieved.filter(trait_flavor_name__regex=r'^{}'.format(self.q))
-        return retrieved
 
 
 @login_required
