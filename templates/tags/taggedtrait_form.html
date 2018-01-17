@@ -16,14 +16,14 @@
         
         <p><small>{{ form.subtitle }}
         {% if tag %}
-            with the <mark>{{ tag.title }}</mark> tag
+            the <mark>{{ tag.title }}</mark> tag to
         {% endif %}
         </small></p>
     </h1>
     <p>{{ form.subtitle2 }}</p>
     {% if trait %}
-        <p>Phenotype {{ trait.i_trait_name }}, variable <a href="{{ trait.dbgap_variable_link }}">{{ trait.variable_accession }}</a>
-           from dataset <a href="{{ trait.dbgap_dataset_link }}">{{ trait.dataset_accession }}</a></p>
+        <p>dbGaP phenotype variable <a href="{{ trait.dbgap_variable_link }}">{{ trait.variable_accession }}</a>
+            ({{ trait.i_trait_name }}) from dataset <a href="{{ trait.dbgap_dataset_link }}">{{ trait.dataset_accession }}</a></p>
     {% endif %}
     
     {% include '_messages.html' %}

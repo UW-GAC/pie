@@ -36,8 +36,8 @@ class TagAdminForm(forms.ModelForm):
 class TaggedTraitForm(forms.ModelForm):
     """Form for creating a single TaggedTrait object."""
 
-    title = 'Tag a phenotype'
-    subtitle = 'Label a phenotype with the selected tag'
+    title = 'Apply a tag to a phenotype'
+    subtitle = 'Select a tag and a dbGaP phenotype variable to apply it to'
     tag = forms.ModelChoiceField(queryset=models.Tag.objects.all(),
                                  widget=autocomplete.ModelSelect2(url='tags:autocomplete'))
     trait = forms.ModelChoiceField(queryset=SourceTrait.objects.all(),
@@ -67,10 +67,10 @@ class TaggedTraitForm(forms.ModelForm):
         else:
             studies = list(self.user.profile.taggable_studies.all())
         if len(studies) == 1:
-            self.subtitle2 = 'You can tag phenotypes from the study {} ({})'.format(
+            self.subtitle2 = 'You can apply tags to phenotypes from the study {} ({})'.format(
                 studies[0].i_study_name, studies[0].phs)
         else:
-            self.subtitle2 = 'You can tag phenotypes from the following studies:'
+            self.subtitle2 = 'You can apply tags to phenotypes from the following studies:'
             for study in studies:
                 self.subtitle2 += """
                 <ul>
@@ -116,8 +116,8 @@ class TaggedTraitAdminForm(forms.ModelForm):
 class TaggedTraitByTagForm(forms.Form):
     """Form for creating a single TaggedTrait object with a specific tag."""
 
-    title = 'Tag a phenotype'
-    subtitle = 'Label a phenotype'
+    title = 'Apply this tag to a phenotype'
+    subtitle = 'Select a dbGaP phenotype variable to apply'
     trait = forms.ModelChoiceField(
         queryset=SourceTrait.objects.all(),
         required=True,
@@ -139,10 +139,10 @@ class TaggedTraitByTagForm(forms.Form):
         else:
             studies = list(self.user.profile.taggable_studies.all())
         if len(studies) == 1:
-            self.subtitle2 = 'You can tag phenotypes from the study {} ({})'.format(
+            self.subtitle2 = 'You can apply tags to phenotypes from the study {} ({})'.format(
                 studies[0].i_study_name, studies[0].phs)
         else:
-            self.subtitle2 = 'You can tag phenotypes from the following studies:'
+            self.subtitle2 = 'You can apply tags to phenotypes from the following studies:'
             for study in studies:
                 self.subtitle2 += """
                 <ul>
@@ -167,8 +167,8 @@ class TaggedTraitByTagForm(forms.Form):
 class ManyTaggedTraitsForm(forms.Form):
     """Form for creating many TaggedTrait objects."""
 
-    title = 'Tag phenotypes'
-    subtitle = 'Label phenotypes with the selected tag'
+    title = 'Apply a tag to multiple phenotypes'
+    subtitle = 'Select a tag and one or more dbGaP phenotype variables to apply it to'
     tag = forms.ModelChoiceField(queryset=models.Tag.objects.all(),
                                  widget=autocomplete.ModelSelect2(url='tags:autocomplete'))
     traits = forms.ModelMultipleChoiceField(
@@ -195,10 +195,10 @@ class ManyTaggedTraitsForm(forms.Form):
         else:
             studies = list(self.user.profile.taggable_studies.all())
         if len(studies) == 1:
-            self.subtitle2 = 'You can tag phenotypes from the study {} ({})'.format(
+            self.subtitle2 = 'You can apply tags to phenotypes from the study {} ({})'.format(
                 studies[0].i_study_name, studies[0].phs)
         else:
-            self.subtitle2 = 'You can tag phenotypes from the following studies:'
+            self.subtitle2 = 'You can apply tags to phenotypes from the following studies:'
             for study in studies:
                 self.subtitle2 += """
                 <ul>
@@ -246,8 +246,8 @@ class ManyTaggedTraitsForm(forms.Form):
 class ManyTaggedTraitsByTagForm(forms.Form):
     """Form for creating many TaggedTrait objects for a specific tag."""
 
-    title = 'Tag phenotypes'
-    subtitle = 'Label phenotypes'
+    title = 'Apply this tag to multiple phenotypes'
+    subtitle = 'Select one or more dbGaP phenotype variables to apply'
     traits = forms.ModelMultipleChoiceField(
         queryset=SourceTrait.objects.all(),
         required=False,
@@ -272,10 +272,10 @@ class ManyTaggedTraitsByTagForm(forms.Form):
         else:
             studies = list(self.user.profile.taggable_studies.all())
         if len(studies) == 1:
-            self.subtitle2 = 'You can tag phenotypes from the study {} ({})'.format(
+            self.subtitle2 = 'You can apply tags to phenotypes from the study {} ({})'.format(
                 studies[0].i_study_name, studies[0].phs)
         else:
-            self.subtitle2 = 'You can tag phenotypes from the following studies:'
+            self.subtitle2 = 'You can apply tags to phenotypes from the following studies:'
             for study in studies:
                 self.subtitle2 += """
                 <ul>
@@ -323,8 +323,8 @@ class ManyTaggedTraitsByTagForm(forms.Form):
 class TagSpecificTraitForm(forms.Form):
     """Form for creating TaggedTrait objects from a specific SourceTrait object."""
 
-    title = 'Tag the phenotype'
-    subtitle = 'Select a tag to label the phenotype'
+    title = 'Apply a tag to this phenotype'
+    subtitle = 'Select a tag to apply to this dbGaP phenotype variable'
     subtitle2 = ''
     tag = forms.ModelChoiceField(queryset=models.Tag.objects.all(),
                                  widget=autocomplete.ModelSelect2(url='tags:autocomplete'))
