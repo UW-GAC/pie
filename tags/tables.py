@@ -39,12 +39,12 @@ class TagTable(tables.Table):
 
     title = tables.LinkColumn('tags:tag:detail', args=[tables.utils.A('pk')], verbose_name='Tag')
     number_tagged_traits = tables.Column(
-        accessor='traits.count', verbose_name='Number of phenotypes tagged', orderable=False)
+        accessor='traits.count', verbose_name='Number of dbGaP phenotype variables with this tag', orderable=False)
     # TODO: Add column for the number of studies tagged.
 
     class Meta:
         model = models.Tag
-        fields = ('title', )
+        fields = ('title', 'description', )
         attrs = {'class': 'table table-striped table-bordered table-hover'}
         template = 'bootstrap_tables2.html'
         order_by = ('title', )
@@ -58,7 +58,7 @@ class StudyTaggedTraitTable(tables.Table):
     number_tags = tables.Column(
         accessor='get_tag_count', verbose_name='Number of tags', orderable=False)
     number_traits = tables.Column(
-        accessor='get_tagged_trait_count', verbose_name='Number of traits tagged', orderable=False)
+        accessor='get_tagged_trait_count', verbose_name='Number of dbGaP phenotype variables with a tag', orderable=False)
 
     class Meta:
         model = Study
