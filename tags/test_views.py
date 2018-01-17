@@ -6,7 +6,7 @@ from django.contrib.auth.models import Group
 from django.core.urlresolvers import reverse
 
 from core.utils import (LoginRequiredTestCase, PhenotypeTaggerLoginTestCase, UserLoginTestCase,
-                        get_autocomplete_view_ids)
+                        DCCAnalystLoginTestCase, get_autocomplete_view_ids)
 from profiles.models import Profile
 from trait_browser.factories import SourceTraitFactory, StudyFactory
 from trait_browser.models import SourceTrait
@@ -161,6 +161,43 @@ class TaggedTraitByStudyListPhenotypeTaggerTest(PhenotypeTaggerLoginTestCase):
             10, trait__source_dataset__source_study_version__study=self.study)
         self.user.refresh_from_db()
         self.user.profile.taggable_studies.add(self.study)
+
+    def get_url(self, *args):
+        return reverse('trait_browser:source:study:tagged', args=args)
+
+    def test_view_success_code(self):
+        """View returns successful response code."""
+        response = self.client.get(self.get_url(self.study.pk))
+        self.assertEqual(response.status_code, 200)
+
+    def test_view_with_invalid_pk(self):
+        """View returns 404 response code when the pk doesn't exist."""
+        response = self.client.get(self.get_url(self.study.pk + 1))
+        self.assertEqual(response.status_code, 404)
+
+    def test_context_data(self):
+        """View has appropriate data in the context."""
+        response = self.client.get(self.get_url(self.study.pk))
+        context = response.context
+        self.assertIn('study', context)
+        self.assertIn('tagged_trait_table', context)
+        self.assertEqual(context['study'], self.study)
+
+    def test_table_class(self):
+        """For taggers, the tagged trait table class has delete buttons."""
+        response = self.client.get(self.get_url(self.study.pk))
+        context = response.context
+        self.assertIsInstance(context['tagged_trait_table'], tables.TaggedTraitTableWithDelete)
+
+
+class TaggedTraitByStudyListDCCAnalystTest(DCCAnalystLoginTestCase):
+
+    def setUp(self):
+        super(TaggedTraitByStudyListDCCAnalystTest, self).setUp()
+        self.study = StudyFactory.create()
+        self.tagged_traits = factories.TaggedTraitFactory.create_batch(
+            10, trait__source_dataset__source_study_version__study=self.study)
+        self.user.refresh_from_db()
 
     def get_url(self, *args):
         return reverse('trait_browser:source:study:tagged', args=args)
