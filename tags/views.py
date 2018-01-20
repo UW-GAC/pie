@@ -167,6 +167,12 @@ class TaggedTraitCreateByTag(LoginRequiredMixin, PermissionRequiredMixin, Taggab
         context['tag'] = self.tag
         return context
 
+    def get_form_kwargs(self):
+        kwargs = super(TaggedTraitCreateByTag, self).get_form_kwargs()
+        kwargs['tag_pk'] = self.kwargs['pk']
+        get_object_or_404(models.Tag, pk=kwargs['tag_pk'])
+        return kwargs
+
     def get_success_url(self):
         return self.tag.get_absolute_url()
 
@@ -255,6 +261,12 @@ class ManyTaggedTraitsCreateByTag(LoginRequiredMixin, PermissionRequiredMixin, T
         context = super(ManyTaggedTraitsCreateByTag, self).get_context_data(**kwargs)
         context['tag'] = self.tag
         return context
+
+    def get_form_kwargs(self):
+        kwargs = super(ManyTaggedTraitsCreateByTag, self).get_form_kwargs()
+        kwargs['tag_pk'] = self.kwargs['pk']
+        get_object_or_404(models.Tag, pk=kwargs['tag_pk'])
+        return kwargs
 
     def get_success_url(self):
         return self.tag.get_absolute_url()

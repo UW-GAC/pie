@@ -102,7 +102,7 @@ class TaggedTraitTableWithDelete(tables.Table):
 
     class Meta:
         model = models.TaggedTrait
-        fields = ('trait', 'tag', 'recommended', 'delete', )
+        fields = ('trait', 'tag', 'recommended', )
         attrs = {'class': 'table table-striped table-bordered table-hover', 'style': 'width: auto;'}
         template = 'bootstrap_tables2.html'
         order_by = ('tag', )

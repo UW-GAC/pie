@@ -1,6 +1,7 @@
 """Form classes for the tags app."""
 
 from django import forms
+from django.shortcuts import get_object_or_404
 from django.utils.safestring import mark_safe
 
 from crispy_forms.helper import FormHelper
@@ -9,6 +10,16 @@ from dal import autocomplete
 
 from . import models
 from trait_browser.models import SourceTrait, Study
+
+
+EXISTING_TAGGED_TRAIT_ERROR_STRING = u"""The tag {tag_name} has already been applied to dbGaP phenotype variable {phv}
+                                         ({trait_name}). Select a different phenotype and try again.."""
+MISSING_TRAITS_ERROR = forms.ValidationError(
+    u"""You must specify at least one phenotype in the 'phenotypes' or 'recommended phenotypes' field."""
+)
+REPEATED_TRAIT_ERROR = forms.ValidationError(
+    u"""You cannot repeat a phenotype in both the 'phenotypes' and 'recommended phenotypes' field."""
+)
 
 
 def generate_button_html(name, value, btn_type="submit", css_class="btn-primary"):
@@ -91,6 +102,20 @@ class TaggedTraitForm(forms.ModelForm):
         button_save = generate_button_html('submit', 'Save', btn_type='submit', css_class='btn-primary')
         self.helper.layout.append(button_save)
 
+    def clean(self):
+        """Custom cleaning to check that traits aren't already tagged."""
+        cleaned_data = super(TaggedTraitForm, self).clean()
+        trait = cleaned_data.get('trait')
+        tag = cleaned_data.get('tag')
+        if tag is not None and trait is not None:
+            if trait in tag.traits.all():
+                already_tagged_error = forms.ValidationError(
+                    EXISTING_TAGGED_TRAIT_ERROR_STRING.format(
+                        tag_name=tag.title, phv=trait.variable_accession, trait_name=trait.i_trait_name)
+                )
+                self.add_error('trait', already_tagged_error)
+        return cleaned_data
+
 
 class TaggedTraitAdminForm(forms.ModelForm):
     """Custom form for the TaggedTrait admin pages."""
@@ -112,12 +137,25 @@ class TaggedTraitAdminForm(forms.ModelForm):
                       'recommended': 'Is this the phenotype you recommend to use for harmonizing the tag concept?',
                       }
 
+    def clean(self):
+        """Custom cleaning to check that the trait isn't already tagged."""
+        cleaned_data = super(TaggedTraitAdminForm, self).clean()
+        trait = cleaned_data.get('trait')
+        tag = cleaned_data.get('tag')
+        if tag is not None and trait is not None:
+            if trait in tag.traits.all():
+                already_tagged_error = forms.ValidationError(
+                    EXISTING_TAGGED_TRAIT_ERROR_STRING.format(
+                        tag_name=tag.title, phv=trait.variable_accession, trait_name=trait.i_trait_name)
+                )
+                self.add_error('trait', already_tagged_error)
+        return cleaned_data
+
 
 class TaggedTraitByTagForm(forms.Form):
     """Form for creating a single TaggedTrait object with a specific tag."""
 
     title = 'Apply this tag to a phenotype'
-    subtitle = 'Select a dbGaP phenotype variable to apply'
     trait = forms.ModelChoiceField(
         queryset=SourceTrait.objects.all(),
         required=True,
@@ -131,6 +169,8 @@ class TaggedTraitByTagForm(forms.Form):
     def __init__(self, *args, **kwargs):
         # Get the user and remove it from kwargs (b/c/ of UserFormKwargsMixin on the view.)
         self.user = kwargs.pop('user')
+        tag_pk = kwargs.pop('tag_pk')
+        self.tag = get_object_or_404(models.Tag, pk=tag_pk)
         # Call super here to set up all of the fields.
         super(TaggedTraitByTagForm, self).__init__(*args, **kwargs)
         # Filter the queryset of traits by the user's taggable studies, and only non-deprecated.
@@ -138,6 +178,8 @@ class TaggedTraitByTagForm(forms.Form):
             studies = list(Study.objects.all())
         else:
             studies = list(self.user.profile.taggable_studies.all())
+        self.subtitle = mark_safe(
+            'Select a dbGaP phenotype variable to apply the <mark>{}</mark> tag to'.format(self.tag.title))
         if len(studies) == 1:
             self.subtitle2 = 'You can apply tags to phenotypes from the study {} ({})'.format(
                 studies[0].i_study_name, studies[0].phs)
@@ -162,6 +204,19 @@ class TaggedTraitByTagForm(forms.Form):
         self.helper.form_method = 'post'
         button_save = generate_button_html('submit', 'Save', btn_type='submit', css_class='btn-primary')
         self.helper.layout.append(button_save)
+
+    def clean(self):
+        """Custom cleaning to check that traits aren't already tagged."""
+        cleaned_data = super(TaggedTraitByTagForm, self).clean()
+        trait = cleaned_data.get('trait')
+        if trait is not None:
+            if trait in self.tag.traits.all():
+                already_tagged_error = forms.ValidationError(
+                    EXISTING_TAGGED_TRAIT_ERROR_STRING.format(
+                        tag_name=self.tag.title, phv=trait.variable_accession, trait_name=trait.i_trait_name)
+                )
+                self.add_error('trait', already_tagged_error)
+        return cleaned_data
 
 
 class ManyTaggedTraitsForm(forms.Form):
@@ -224,22 +279,32 @@ class ManyTaggedTraitsForm(forms.Form):
         self.helper.layout.append(button_save)
 
     def clean(self):
-        """Custom cleaning to check that at least one trait is selected."""
+        """Custom cleaning to check that at least one trait is selected, and traits aren't already tagged."""
         cleaned_data = super(ManyTaggedTraitsForm, self).clean()
         traits = cleaned_data.get('traits', [])
         recommended_traits = cleaned_data.get('recommended_traits', [])
+        tag = cleaned_data.get('tag')
+        if tag is not None:
+            for trait in traits:
+                if trait in tag.traits.all():
+                    already_tagged_error = forms.ValidationError(
+                        EXISTING_TAGGED_TRAIT_ERROR_STRING.format(
+                            tag_name=tag.title, phv=trait.variable_accession, trait_name=trait.i_trait_name)
+                    )
+                    self.add_error('traits', already_tagged_error)
+            for trait in recommended_traits:
+                if trait in tag.traits.all():
+                    already_tagged_error = forms.ValidationError(
+                        EXISTING_TAGGED_TRAIT_ERROR_STRING.format(
+                            tag_name=tag.title, phv=trait.variable_accession, trait_name=trait.i_trait_name)
+                    )
+                    self.add_error('recommended_traits', already_tagged_error)
         if len(traits) == 0 and len(recommended_traits) == 0:
-            traits_error = forms.ValidationError(
-                u"""You must specify at least one phenotype in the 'phenotypes' or 'recommended phenotypes' field."""
-            )
-            self.add_error('traits', traits_error)
-            self.add_error('recommended_traits', traits_error)
+            self.add_error('traits', MISSING_TRAITS_ERROR)
+            self.add_error('recommended_traits', MISSING_TRAITS_ERROR)
         if len(set(traits) & set(recommended_traits)) > 0:
-            repeat_error = forms.ValidationError(
-                u"""You cannot repeat a phenotype in both the 'phenotypes' and 'recommended phenotypes' field."""
-            )
-            self.add_error('traits', repeat_error)
-            self.add_error('recommended_traits', repeat_error)
+            self.add_error('traits', REPEATED_TRAIT_ERROR)
+            self.add_error('recommended_traits', REPEATED_TRAIT_ERROR)
         return cleaned_data
 
 
@@ -247,7 +312,6 @@ class ManyTaggedTraitsByTagForm(forms.Form):
     """Form for creating many TaggedTrait objects for a specific tag."""
 
     title = 'Apply this tag to multiple phenotypes'
-    subtitle = 'Select one or more dbGaP phenotype variables to apply'
     traits = forms.ModelMultipleChoiceField(
         queryset=SourceTrait.objects.all(),
         required=False,
@@ -264,6 +328,8 @@ class ManyTaggedTraitsByTagForm(forms.Form):
     def __init__(self, *args, **kwargs):
         # Get the user and remove it from kwargs (b/c/ of UserFormKwargsMixin on the view.)
         self.user = kwargs.pop('user')
+        tag_pk = kwargs.pop('tag_pk')
+        self.tag = get_object_or_404(models.Tag, pk=tag_pk)
         # Call super here to set up all of the fields.
         super(ManyTaggedTraitsByTagForm, self).__init__(*args, **kwargs)
         # Filter the queryset of traits by the user's taggable studies, and only non-deprecated.
@@ -271,6 +337,8 @@ class ManyTaggedTraitsByTagForm(forms.Form):
             studies = list(Study.objects.all())
         else:
             studies = list(self.user.profile.taggable_studies.all())
+        self.subtitle = mark_safe(
+            'Select a dbGaP phenotype variable to apply the <mark>{}</mark> tag to'.format(self.tag.title))
         if len(studies) == 1:
             self.subtitle2 = 'You can apply tags to phenotypes from the study {} ({})'.format(
                 studies[0].i_study_name, studies[0].phs)
@@ -301,22 +369,30 @@ class ManyTaggedTraitsByTagForm(forms.Form):
         self.helper.layout.append(button_save)
 
     def clean(self):
-        """Custom cleaning to check that at least one trait is selected."""
+        """Custom cleaning to check that at least one trait is selected, and traits aren't already tagged."""
         cleaned_data = super(ManyTaggedTraitsByTagForm, self).clean()
         traits = cleaned_data.get('traits', [])
         recommended_traits = cleaned_data.get('recommended_traits', [])
+        for trait in traits:
+            if trait in self.tag.traits.all():
+                already_tagged_error = forms.ValidationError(
+                    EXISTING_TAGGED_TRAIT_ERROR_STRING.format(
+                        tag_name=self.tag.title, phv=trait.variable_accession, trait_name=trait.i_trait_name)
+                )
+                self.add_error('traits', already_tagged_error)
+        for trait in recommended_traits:
+            if trait in self.tag.traits.all():
+                already_tagged_error = forms.ValidationError(
+                    EXISTING_TAGGED_TRAIT_ERROR_STRING.format(
+                        tag_name=self.tag.title, phv=trait.variable_accession, trait_name=trait.i_trait_name)
+                )
+                self.add_error('recommended_traits', already_tagged_error)
         if len(traits) == 0 and len(recommended_traits) == 0:
-            traits_error = forms.ValidationError(
-                u"""You must specify at least one phenotype in the 'phenotypes' or 'recommended phenotypes' field."""
-            )
-            self.add_error('traits', traits_error)
-            self.add_error('recommended_traits', traits_error)
+            self.add_error('traits', MISSING_TRAITS_ERROR)
+            self.add_error('recommended_traits', MISSING_TRAITS_ERROR)
         if len(set(traits) & set(recommended_traits)) > 0:
-            repeat_error = forms.ValidationError(
-                u"""You cannot repeat a phenotype in both the 'phenotypes' and 'recommended phenotypes' field."""
-            )
-            self.add_error('traits', repeat_error)
-            self.add_error('recommended_traits', repeat_error)
+            self.add_error('traits', REPEATED_TRAIT_ERROR)
+            self.add_error('recommended_traits', REPEATED_TRAIT_ERROR)
         return cleaned_data
 
 
