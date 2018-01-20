@@ -257,7 +257,11 @@ def trait_search(request, trait_type):
     # Create a form instance with data from the request.
     FormClass = forms.SourceTraitCrispySearchForm if trait_type == 'source' else forms.HarmonizedTraitCrispySearchForm
     form = FormClass(request.GET)
-    page_data = {'form': form, 'trait_type': trait_type, }
+    if trait_type == 'source':
+        trait_type_name = 'study'
+    else:
+        trait_type_name = trait_type
+    page_data = {'form': form, 'trait_type': trait_type, 'trait_type_name': trait_type_name, }
     # If there was no data entered, show the empty form.
     if request.GET.get('text', None) is None:
         form = FormClass()
@@ -297,7 +301,7 @@ def trait_search(request, trait_type):
                 search_record.param_studies.add(study)
         # Check to see if user has this saved already.
         if profiles.models.Profile.objects.all().filter(user=request.user.id,
-                                                         saved_searches=search_record.id).exists():
+                                                        saved_searches=search_record.id).exists():
             savedSearchCheck = True
         else:
             savedSearchCheck = False
