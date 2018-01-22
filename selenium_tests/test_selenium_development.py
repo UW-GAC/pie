@@ -169,19 +169,19 @@ class HomeTestCase(SeleniumTestCase):
         navbar = self.selenium.find_element_by_class_name('navbar')
         self.assertIsNotNone(navbar)
         # Click on the Source phenotypes dropdown menu.
-        self.selenium.find_element_by_link_text('Source phenotypes').click()
+        self.selenium.find_element_by_link_text('Study phenotypes').click()
         time.sleep(1)
 
         self.selenium.find_element_by_link_text('View all').click()
         time.sleep(1)
         self.go_back()
 
-        self.selenium.find_element_by_link_text('Source phenotypes').click()
+        self.selenium.find_element_by_link_text('Study phenotypes').click()
         self.selenium.find_element_by_link_text('Browse by study').click()
         time.sleep(1)
         self.go_back()
 
-        self.selenium.find_element_by_link_text('Source phenotypes').click()
+        self.selenium.find_element_by_link_text('Study phenotypes').click()
         self.selenium.find_element_by_link_text('Search').click()
         time.sleep(1)
         self.go_back()

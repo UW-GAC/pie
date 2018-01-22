@@ -39,12 +39,12 @@ class TagTable(tables.Table):
 
     title = tables.LinkColumn('tags:tag:detail', args=[tables.utils.A('pk')], verbose_name='Tag')
     number_tagged_traits = tables.Column(
-        accessor='traits.count', verbose_name='Number of phenotypes tagged', orderable=False)
+        accessor='traits.count', verbose_name='Number of dbGaP phenotype variables with this tag', orderable=False)
     # TODO: Add column for the number of studies tagged.
 
     class Meta:
         model = models.Tag
-        fields = ('title', )
+        fields = ('title', 'description', )
         attrs = {'class': 'table table-striped table-bordered table-hover'}
         template = 'bootstrap_tables2.html'
         order_by = ('title', )
@@ -58,7 +58,8 @@ class StudyTaggedTraitTable(tables.Table):
     number_tags = tables.Column(
         accessor='get_tag_count', verbose_name='Number of tags', orderable=False)
     number_traits = tables.Column(
-        accessor='get_tagged_trait_count', verbose_name='Number of traits tagged', orderable=False)
+        accessor='get_tagged_trait_count', orderable=False,
+        verbose_name='Number of dbGaP phenotype variables with a tag')
 
     class Meta:
         model = Study
@@ -71,7 +72,6 @@ class StudyTaggedTraitTable(tables.Table):
 class TaggedTraitTable(tables.Table):
     """Table for displaying TaggedTraits."""
 
-    recommended = BootstrapBooleanColumn(accessor='recommended')
     trait = tables.LinkColumn(
         'trait_browser:source:detail', args=[tables.utils.A('trait.pk')], verbose_name='Phenotype',
         text=lambda record: record.trait.i_trait_name, orderable=True)
@@ -81,7 +81,7 @@ class TaggedTraitTable(tables.Table):
 
     class Meta:
         model = models.TaggedTrait
-        fields = ('trait', 'tag', 'recommended', )
+        fields = ('trait', 'tag', )
         attrs = {'class': 'table table-striped table-bordered table-hover', 'style': 'width: auto;'}
         template = 'bootstrap_tables2.html'
         order_by = ('tag', )
@@ -90,7 +90,6 @@ class TaggedTraitTable(tables.Table):
 class TaggedTraitTableWithDelete(tables.Table):
     """Table for displaying TaggedTraits with delete buttons."""
 
-    recommended = BootstrapBooleanColumn(accessor='recommended')
     trait = tables.LinkColumn(
         'trait_browser:source:detail', args=[tables.utils.A('trait.pk')], verbose_name='Phenotype',
         text=lambda record: record.trait.i_trait_name, orderable=True)
@@ -102,7 +101,7 @@ class TaggedTraitTableWithDelete(tables.Table):
 
     class Meta:
         model = models.TaggedTrait
-        fields = ('trait', 'tag', 'recommended', 'delete', )
+        fields = ('trait', 'tag', )
         attrs = {'class': 'table table-striped table-bordered table-hover', 'style': 'width: auto;'}
         template = 'bootstrap_tables2.html'
         order_by = ('tag', )
@@ -111,7 +110,6 @@ class TaggedTraitTableWithDelete(tables.Table):
 class TagDetailTraitTable(tables.Table):
     """Table for displaying TaggedTraits on the TagDetail page."""
 
-    recommended = BootstrapBooleanColumn(accessor='recommended')
     trait = tables.LinkColumn(
         'trait_browser:source:detail', args=[tables.utils.A('trait.pk')], verbose_name='Phenotype',
         text=lambda record: record.trait.i_trait_name, orderable=True)
@@ -119,11 +117,11 @@ class TagDetailTraitTable(tables.Table):
                               verbose_name='Study',
                               args=[tables.utils.A('trait.source_dataset.source_study_version.study.pk')],
                               text=lambda record: record.trait.source_dataset.source_study_version.study.i_study_name,
-                              orderable=True)
+                              orderable=False)
 
     class Meta:
         model = models.TaggedTrait
-        fields = ('trait', 'recommended', )
+        fields = ('trait', )
         attrs = {'class': 'table table-striped table-bordered table-hover', 'style': 'width: auto;'}
         template = 'bootstrap_tables2.html'
 
@@ -134,7 +132,6 @@ class UserTaggedTraitTable(tables.Table):
     Displays user information that is not displayed in the plain old TaggedTraitTable.
     """
 
-    recommended = BootstrapBooleanColumn(accessor='recommended')
     trait = tables.LinkColumn(
         'trait_browser:source:detail', args=[tables.utils.A('trait.pk')], verbose_name='Phenotype',
         text=lambda record: record.trait.i_trait_name, orderable=True)
@@ -145,7 +142,7 @@ class UserTaggedTraitTable(tables.Table):
 
     class Meta:
         model = models.TaggedTrait
-        fields = ('trait', 'tag', 'recommended', 'created', 'modified', )
+        fields = ('trait', 'tag', 'created', 'modified', )
         attrs = {'class': 'table table-striped table-bordered table-hover', 'style': 'width: auto;'}
         template = 'bootstrap_tables2.html'
         order_by = ('tag', )

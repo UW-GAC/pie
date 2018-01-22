@@ -4,11 +4,11 @@
 {% load render_table from django_tables2 %}
 
 {% block head_title %}
-     | Search {{ trait_type }} traits
+     | Search {{ trait_type_name }} phenotypes
 {% endblock %}
 
 {% block content %}
-    <h1>Search {{ trait_type }} phenotypes</h1>
+    <h1>Search {{ trait_type_name }} phenotypes</h1>
         {% crispy form %}
     
     <!-- Embed the New Search button inside of a form and some divs just like

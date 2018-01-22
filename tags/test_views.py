@@ -6,7 +6,7 @@ from django.contrib.auth.models import Group
 from django.core.urlresolvers import reverse
 
 from core.utils import (LoginRequiredTestCase, PhenotypeTaggerLoginTestCase, UserLoginTestCase,
-                        get_autocomplete_view_ids)
+                        DCCAnalystLoginTestCase, get_autocomplete_view_ids)
 from profiles.models import Profile
 from trait_browser.factories import SourceTraitFactory, StudyFactory
 from trait_browser.models import SourceTrait
@@ -190,6 +190,43 @@ class TaggedTraitByStudyListPhenotypeTaggerTest(PhenotypeTaggerLoginTestCase):
         self.assertIsInstance(context['tagged_trait_table'], tables.TaggedTraitTableWithDelete)
 
 
+class TaggedTraitByStudyListDCCAnalystTest(DCCAnalystLoginTestCase):
+
+    def setUp(self):
+        super(TaggedTraitByStudyListDCCAnalystTest, self).setUp()
+        self.study = StudyFactory.create()
+        self.tagged_traits = factories.TaggedTraitFactory.create_batch(
+            10, trait__source_dataset__source_study_version__study=self.study)
+        self.user.refresh_from_db()
+
+    def get_url(self, *args):
+        return reverse('trait_browser:source:study:tagged', args=args)
+
+    def test_view_success_code(self):
+        """View returns successful response code."""
+        response = self.client.get(self.get_url(self.study.pk))
+        self.assertEqual(response.status_code, 200)
+
+    def test_view_with_invalid_pk(self):
+        """View returns 404 response code when the pk doesn't exist."""
+        response = self.client.get(self.get_url(self.study.pk + 1))
+        self.assertEqual(response.status_code, 404)
+
+    def test_context_data(self):
+        """View has appropriate data in the context."""
+        response = self.client.get(self.get_url(self.study.pk))
+        context = response.context
+        self.assertIn('study', context)
+        self.assertIn('tagged_trait_table', context)
+        self.assertEqual(context['study'], self.study)
+
+    def test_table_class(self):
+        """For taggers, the tagged trait table class has delete buttons."""
+        response = self.client.get(self.get_url(self.study.pk))
+        context = response.context
+        self.assertIsInstance(context['tagged_trait_table'], tables.TaggedTraitTableWithDelete)
+
+
 class TaggedTraitCreateTest(PhenotypeTaggerLoginTestCase):
 
     def setUp(self):
@@ -258,6 +295,15 @@ class TaggedTraitCreateTest(PhenotypeTaggerLoginTestCase):
         trait2 = SourceTraitFactory.create(source_dataset__source_study_version__study=study2)
         response = self.client.post(self.get_url(), {'trait': trait2.pk, 'tag': self.tag.pk, 'recommended': False})
         # They have taggable studies and they're in the phenotype_taggers group, so view is still accessible.
+        self.assertEqual(response.status_code, 200)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertTrue('Oops!' in str(messages[0]))
+
+    def test_fails_when_trait_is_already_tagged(self):
+        """Tagging a trait fails when the trait has already been tagged with this tag."""
+        tagged_trait = factories.TaggedTraitFactory.create(tag=self.tag, trait=self.trait)
+        response = self.client.post(self.get_url(), {'trait': self.trait.pk, 'tag': self.tag.pk, 'recommended': False})
         self.assertEqual(response.status_code, 200)
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
@@ -420,6 +466,15 @@ class TaggedTraitCreateByTagTest(PhenotypeTaggerLoginTestCase):
         trait2 = SourceTraitFactory.create(source_dataset__source_study_version__study=study2)
         response = self.client.post(self.get_url(self.tag.pk), {'trait': trait2.pk, 'recommended': False})
         # They have taggable studies and they're in the phenotype_taggers group, so view is still accessible.
+        self.assertEqual(response.status_code, 200)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertTrue('Oops!' in str(messages[0]))
+
+    def test_fails_when_trait_is_already_tagged(self):
+        """Tagging a trait fails when the trait has already been tagged with this tag."""
+        tagged_trait = factories.TaggedTraitFactory.create(tag=self.tag, trait=self.trait)
+        response = self.client.post(self.get_url(self.tag.pk), {'trait': self.trait.pk, 'recommended': False})
         self.assertEqual(response.status_code, 200)
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
@@ -588,6 +643,29 @@ class ManyTaggedTraitsCreateTest(PhenotypeTaggerLoginTestCase):
         self.assertEqual(len(messages), 1)
         self.assertTrue('Oops!' in str(messages[0]))
 
+    def test_fails_when_one_trait_is_already_tagged(self):
+        """Tagging traits fails when a selected trait is already tagged with the tag."""
+        already_tagged = factories.TaggedTraitFactory.create(tag=self.tag, trait=self.traits[0])
+        response = self.client.post(self.get_url(),
+                                    {'traits': [t.pk for t in self.traits[0:5]], 'tag': self.tag.pk,
+                                     'recommended_traits': [self.traits[-1].pk]})
+        self.assertEqual(response.status_code, 200)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertTrue('Oops!' in str(messages[0]))
+
+    def test_fails_when_two_traits_are_already_tagged(self):
+        """Tagging traits fails when two selected traits are already tagged with the tag."""
+        already_tagged = factories.TaggedTraitFactory.create(tag=self.tag, trait=self.traits[0])
+        already_tagged2 = factories.TaggedTraitFactory.create(tag=self.tag, trait=self.traits[1])
+        response = self.client.post(self.get_url(),
+                                    {'traits': [t.pk for t in self.traits[0:5]], 'tag': self.tag.pk,
+                                     'recommended_traits': [self.traits[-1].pk]})
+        self.assertEqual(response.status_code, 200)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertTrue('Oops!' in str(messages[0]))
+
     def test_forbidden_non_taggers(self):
         """View returns 403 code when the user is not in phenotype_taggers."""
         phenotype_taggers = Group.objects.get(name='phenotype_taggers')
@@ -716,6 +794,29 @@ class ManyTaggedTraitsCreateByTagTest(PhenotypeTaggerLoginTestCase):
         """Tagging traits fails when a trait is repeated in 'traits' and 'recommended_traits'."""
         response = self.client.post(self.get_url(self.tag.pk),
                                     {'traits': [self.traits[0].pk], 'recommended_traits': [self.traits[0].pk]})
+        self.assertEqual(response.status_code, 200)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertTrue('Oops!' in str(messages[0]))
+
+    def test_fails_when_one_trait_is_already_tagged(self):
+        """Tagging traits fails when a selected trait is already tagged with the tag."""
+        already_tagged = factories.TaggedTraitFactory.create(tag=self.tag, trait=self.traits[0])
+        response = self.client.post(self.get_url(self.tag.pk),
+                                    {'traits': [t.pk for t in self.traits[0:5]],
+                                     'recommended_traits': [self.traits[-1].pk]})
+        self.assertEqual(response.status_code, 200)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertTrue('Oops!' in str(messages[0]))
+
+    def test_fails_when_two_traits_are_already_tagged(self):
+        """Tagging traits fails when two selected traits are already tagged with the tag."""
+        already_tagged = factories.TaggedTraitFactory.create(tag=self.tag, trait=self.traits[0])
+        already_tagged2 = factories.TaggedTraitFactory.create(tag=self.tag, trait=self.traits[1])
+        response = self.client.post(self.get_url(self.tag.pk),
+                                    {'traits': [t.pk for t in self.traits[0:5]],
+                                     'recommended_traits': [self.traits[-1].pk]})
         self.assertEqual(response.status_code, 200)
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)

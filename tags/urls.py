@@ -5,6 +5,7 @@ urls will show up under /tag.
 """
 
 from django.conf.urls import include, url
+from django.views.generic import TemplateView
 
 from . import views
 
@@ -35,4 +36,5 @@ urlpatterns = [
     url(r'^tagged/', include(tagged_trait_patterns, namespace='tagged-traits')),
     url(r'^all/$', views.TagList.as_view(), name='list'),
     url(r'^autocomplete/$', views.TagAutocomplete.as_view(), name='autocomplete'),
+    url(r'^how-to/$', TemplateView.as_view(template_name="tags/how-to.html"), name='how-to'),
 ]
