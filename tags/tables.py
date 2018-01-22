@@ -58,7 +58,8 @@ class StudyTaggedTraitTable(tables.Table):
     number_tags = tables.Column(
         accessor='get_tag_count', verbose_name='Number of tags', orderable=False)
     number_traits = tables.Column(
-        accessor='get_tagged_trait_count', verbose_name='Number of dbGaP phenotype variables with a tag', orderable=False)
+        accessor='get_tagged_trait_count', orderable=False,
+        verbose_name='Number of dbGaP phenotype variables with a tag')
 
     class Meta:
         model = Study
@@ -119,7 +120,7 @@ class TagDetailTraitTable(tables.Table):
                               verbose_name='Study',
                               args=[tables.utils.A('trait.source_dataset.source_study_version.study.pk')],
                               text=lambda record: record.trait.source_dataset.source_study_version.study.i_study_name,
-                              orderable=True)
+                              orderable=False)
 
     class Meta:
         model = models.TaggedTrait
