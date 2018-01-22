@@ -20,6 +20,9 @@ MISSING_TRAITS_ERROR = forms.ValidationError(
 REPEATED_TRAIT_ERROR = forms.ValidationError(
     u"""You cannot repeat a phenotype in both the 'phenotypes' and 'recommended phenotypes' field."""
 )
+LOWER_TITLE_EXISTS_ERROR = forms.ValidationError(
+    u"""A tag with the same (case-insensitive) title already exists."""
+)
 
 
 def generate_button_html(name, value, btn_type="submit", css_class="btn-primary"):
@@ -42,6 +45,15 @@ class TagAdminForm(forms.ModelForm):
         help_texts = {'title': 'A short, unique title.',
                       'description': 'A detailed description of the phenotype concept described by this tag.',
                       'instructions': 'Very detailed instructions for which traits fit with this tag.', }
+
+    def clean(self):
+        """Custom cleaning to enforce uniqueness of lower_title before it's saved."""
+        cleaned_data = super(TagAdminForm, self).clean()
+        title = cleaned_data.get('title')
+        if title is not None:
+            lower_title = title.lower()
+            if models.Tag.objects.filter(lower_title=lower_title).exists():
+                self.add_error('title', LOWER_TITLE_EXISTS_ERROR)
 
 
 class TaggedTraitForm(forms.ModelForm):

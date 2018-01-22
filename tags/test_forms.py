@@ -47,6 +47,15 @@ class TagAdminFormTest(TestCase):
         self.assertFalse(form.is_valid())
         self.assertTrue(form.has_error('instructions'))
 
+    def test_invalid_nonunique_lower_title(self):
+        """Form is invalid if the title results in a non-unique lower_title."""
+        tag = factories.TagFactory.create()
+        form_data = {'title': tag.title.upper(), 'description': tag.description,
+                     'instructions': tag.instructions}
+        form = self.form_class(data=form_data)
+        self.assertFalse(form.is_valid())
+        self.assertTrue(form.has_error('title'))
+
 
 class TaggedTraitFormTest(TestCase):
     form_class = forms.TaggedTraitForm
