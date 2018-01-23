@@ -153,9 +153,7 @@ class TaggedTraitCreateByTag(LoginRequiredMixin, PermissionRequiredMixin, Taggab
 
     def form_valid(self, form):
         """Create a TaggedTrait object for the trait given, with a specific tag."""
-        tagged_trait = models.TaggedTrait(
-            tag=self.tag, trait=form.cleaned_data['trait'], creator=self.request.user,
-            recommended=form.cleaned_data['recommended'])
+        tagged_trait = models.TaggedTrait(tag=self.tag, trait=form.cleaned_data['trait'], creator=self.request.user)
         tagged_trait.full_clean()
         tagged_trait.save()
         # Save the traits so you can use them in the form valid message.
@@ -196,21 +194,13 @@ class ManyTaggedTraitsCreate(LoginRequiredMixin, PermissionRequiredMixin, Taggab
     def form_valid(self, form):
         """Create a TaggedTrait object for each trait given."""
         for trait in form.cleaned_data['traits']:
-            tagged_trait = models.TaggedTrait(
-                tag=form.cleaned_data['tag'], trait=trait, creator=self.request.user,
-                recommended=False)
-            tagged_trait.full_clean()
-            tagged_trait.save()
-        for trait in form.cleaned_data['recommended_traits']:
-            tagged_trait = models.TaggedTrait(
-                tag=form.cleaned_data['tag'], trait=trait, creator=self.request.user,
-                recommended=True)
+            tagged_trait = models.TaggedTrait(tag=form.cleaned_data['tag'], trait=trait, creator=self.request.user)
             tagged_trait.full_clean()
             tagged_trait.save()
         # Save the tag object so that you can use it in get_success_url.
         self.tag = form.cleaned_data['tag']
         # Save the traits so you can use them in the form valid message.
-        self.traits = list(form.cleaned_data['traits']) + list(form.cleaned_data['recommended_traits'])
+        self.traits = list(form.cleaned_data['traits'])
         return super(ManyTaggedTraitsCreate, self).form_valid(form)
 
     def get_success_url(self):
@@ -242,19 +232,11 @@ class ManyTaggedTraitsCreateByTag(LoginRequiredMixin, PermissionRequiredMixin, T
     def form_valid(self, form):
         """Create a TaggedTrait object for each trait given."""
         for trait in form.cleaned_data['traits']:
-            tagged_trait = models.TaggedTrait(
-                tag=self.tag, trait=trait, creator=self.request.user,
-                recommended=False)
-            tagged_trait.full_clean()
-            tagged_trait.save()
-        for trait in form.cleaned_data['recommended_traits']:
-            tagged_trait = models.TaggedTrait(
-                tag=self.tag, trait=trait, creator=self.request.user,
-                recommended=True)
+            tagged_trait = models.TaggedTrait(tag=self.tag, trait=trait, creator=self.request.user)
             tagged_trait.full_clean()
             tagged_trait.save()
         # Save the traits so you can use them in the form valid message.
-        self.traits = list(form.cleaned_data['traits']) + list(form.cleaned_data['recommended_traits'])
+        self.traits = list(form.cleaned_data['traits'])
         return super(ManyTaggedTraitsCreateByTag, self).form_valid(form)
 
     def get_context_data(self, **kwargs):

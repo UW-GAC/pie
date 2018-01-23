@@ -43,7 +43,6 @@ class TaggedTrait(TimeStampedModel):
 
     trait = models.ForeignKey('trait_browser.SourceTrait')
     tag = models.ForeignKey(Tag)
-    recommended = models.BooleanField()
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, blank=True)
 
     class Meta:

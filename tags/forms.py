@@ -14,12 +14,6 @@ from trait_browser.models import SourceTrait, Study
 
 EXISTING_TAGGED_TRAIT_ERROR_STRING = u"""The tag {tag_name} has already been applied to dbGaP phenotype variable {phv}
                                          ({trait_name}). Select a different phenotype and try again.."""
-MISSING_TRAITS_ERROR = forms.ValidationError(
-    u"""You must specify at least one phenotype in the 'phenotypes' or 'recommended phenotypes' field."""
-)
-REPEATED_TRAIT_ERROR = forms.ValidationError(
-    u"""You cannot repeat a phenotype in both the 'phenotypes' and 'recommended phenotypes' field."""
-)
 LOWER_TITLE_EXISTS_ERROR = forms.ValidationError(
     u"""A tag with the same (case-insensitive) title already exists."""
 )
@@ -73,15 +67,12 @@ class TaggedTraitForm(forms.ModelForm):
     trait = forms.ModelChoiceField(queryset=SourceTrait.objects.all(),
                                    required=True,
                                    label='Phenotype',
-    # Set required=False for recommended - otherwise it will be required to be checked, which disallows False values.
-    # Submitting an empty value for this field sets the field to False.
-    recommended = forms.BooleanField(required=False)
                                    widget=autocomplete.ModelSelect2(url='trait_browser:source:taggable-autocomplete'),
                                    help_text=TRAIT_HELP)
 
     class Meta:
         model = models.TaggedTrait
-        fields = ('tag', 'trait', 'recommended', )
+        fields = ('tag', 'trait', )
 
     def __init__(self, *args, **kwargs):
         """Override __init__ to make the form study-specific."""
@@ -143,13 +134,10 @@ class TaggedTraitAdminForm(forms.ModelForm):
         queryset=SourceTrait.objects.filter(source_dataset__source_study_version__i_is_deprecated=False),
         required=True, label='Phenotype',
         widget=autocomplete.ModelSelect2(url='trait_browser:source:autocomplete'))
-    # Set required=False for recommended - otherwise it will be required to be checked, which disallows False values.
-    # Submitting an empty value for this field sets the field to False.
-    recommended = forms.BooleanField(required=False)
 
     class Meta:
         model = models.TaggedTrait
-        fields = ('tag', 'trait', 'recommended', )
+        fields = ('tag', 'trait', )
 
     def clean(self):
         """Custom cleaning to check that the trait isn't already tagged."""
@@ -175,9 +163,6 @@ class TaggedTraitByTagForm(forms.Form):
         required=True,
         label='Phenotype',
         widget=autocomplete.ModelSelect2(url='trait_browser:source:taggable-autocomplete'),
-    # Set required=False for recommended - otherwise it will be required to be checked, which disallows False values.
-    # Submitting an empty value for this field sets the field to False.
-    recommended = forms.BooleanField(required=False)
         help_text=TRAIT_HELP)
 
     def __init__(self, *args, **kwargs):
@@ -243,15 +228,9 @@ class ManyTaggedTraitsForm(forms.Form):
                                  help_text=TAG_HELP)
     traits = forms.ModelMultipleChoiceField(
         queryset=SourceTrait.objects.all(),
-        required=False,
+        required=True,
         label='Phenotype(s)',
         widget=autocomplete.ModelSelect2Multiple(url='trait_browser:source:taggable-autocomplete'),
-    recommended_traits = forms.ModelMultipleChoiceField(
-        queryset=SourceTrait.objects.all(),
-        required=False,
-        label='Recommended phenotype(s)',
-        widget=autocomplete.ModelSelect2Multiple(url='trait_browser:source:taggable-autocomplete'),
-        help_text='Select one or more phenotypes.')
         help_text=MANY_TRAITS_HELP)
 
     def __init__(self, *args, **kwargs):
@@ -280,10 +259,6 @@ class ManyTaggedTraitsForm(forms.Form):
             source_dataset__source_study_version__study__in=studies,
             source_dataset__source_study_version__i_is_deprecated=False
         )
-        self.fields['recommended_traits'].queryset = SourceTrait.objects.filter(
-            source_dataset__source_study_version__study__in=studies,
-            source_dataset__source_study_version__i_is_deprecated=False
-        )
         # Form formatting and add a submit button.
         self.helper = FormHelper(self)
         self.helper.form_class = 'form-horizontal'
@@ -294,10 +269,9 @@ class ManyTaggedTraitsForm(forms.Form):
         self.helper.layout.append(button_save)
 
     def clean(self):
-        """Custom cleaning to check that at least one trait is selected, and traits aren't already tagged."""
+        """Custom cleaning to check that traits aren't already tagged."""
         cleaned_data = super(ManyTaggedTraitsForm, self).clean()
         traits = cleaned_data.get('traits', [])
-        recommended_traits = cleaned_data.get('recommended_traits', [])
         tag = cleaned_data.get('tag')
         if tag is not None:
             for trait in traits:
@@ -307,19 +281,6 @@ class ManyTaggedTraitsForm(forms.Form):
                             tag_name=tag.title, phv=trait.variable_accession, trait_name=trait.i_trait_name)
                     )
                     self.add_error('traits', already_tagged_error)
-            for trait in recommended_traits:
-                if trait in tag.traits.all():
-                    already_tagged_error = forms.ValidationError(
-                        EXISTING_TAGGED_TRAIT_ERROR_STRING.format(
-                            tag_name=tag.title, phv=trait.variable_accession, trait_name=trait.i_trait_name)
-                    )
-                    self.add_error('recommended_traits', already_tagged_error)
-        if len(traits) == 0 and len(recommended_traits) == 0:
-            self.add_error('traits', MISSING_TRAITS_ERROR)
-            self.add_error('recommended_traits', MISSING_TRAITS_ERROR)
-        if len(set(traits) & set(recommended_traits)) > 0:
-            self.add_error('traits', REPEATED_TRAIT_ERROR)
-            self.add_error('recommended_traits', REPEATED_TRAIT_ERROR)
         return cleaned_data
 
 
@@ -329,15 +290,9 @@ class ManyTaggedTraitsByTagForm(forms.Form):
     title = 'Apply this tag to multiple phenotypes'
     traits = forms.ModelMultipleChoiceField(
         queryset=SourceTrait.objects.all(),
-        required=False,
+        required=True,
         label='Phenotype(s)',
         widget=autocomplete.ModelSelect2Multiple(url='trait_browser:source:taggable-autocomplete'),
-    recommended_traits = forms.ModelMultipleChoiceField(
-        queryset=SourceTrait.objects.all(),
-        required=False,
-        label='Recommended phenotype(s)',
-        widget=autocomplete.ModelSelect2Multiple(url='trait_browser:source:taggable-autocomplete'),
-        help_text='Select one or more phenotypes.')
         help_text=MANY_TRAITS_HELP)
 
     def __init__(self, *args, **kwargs):
@@ -370,10 +325,6 @@ class ManyTaggedTraitsByTagForm(forms.Form):
             source_dataset__source_study_version__study__in=studies,
             source_dataset__source_study_version__i_is_deprecated=False
         )
-        self.fields['recommended_traits'].queryset = SourceTrait.objects.filter(
-            source_dataset__source_study_version__study__in=studies,
-            source_dataset__source_study_version__i_is_deprecated=False
-        )
         # Form formatting and add a submit button.
         self.helper = FormHelper(self)
         self.helper.form_class = 'form-horizontal'
@@ -384,10 +335,9 @@ class ManyTaggedTraitsByTagForm(forms.Form):
         self.helper.layout.append(button_save)
 
     def clean(self):
-        """Custom cleaning to check that at least one trait is selected, and traits aren't already tagged."""
+        """Custom cleaning to check that traits aren't already tagged."""
         cleaned_data = super(ManyTaggedTraitsByTagForm, self).clean()
         traits = cleaned_data.get('traits', [])
-        recommended_traits = cleaned_data.get('recommended_traits', [])
         for trait in traits:
             if trait in self.tag.traits.all():
                 already_tagged_error = forms.ValidationError(
@@ -395,19 +345,6 @@ class ManyTaggedTraitsByTagForm(forms.Form):
                         tag_name=self.tag.title, phv=trait.variable_accession, trait_name=trait.i_trait_name)
                 )
                 self.add_error('traits', already_tagged_error)
-        for trait in recommended_traits:
-            if trait in self.tag.traits.all():
-                already_tagged_error = forms.ValidationError(
-                    EXISTING_TAGGED_TRAIT_ERROR_STRING.format(
-                        tag_name=self.tag.title, phv=trait.variable_accession, trait_name=trait.i_trait_name)
-                )
-                self.add_error('recommended_traits', already_tagged_error)
-        if len(traits) == 0 and len(recommended_traits) == 0:
-            self.add_error('traits', MISSING_TRAITS_ERROR)
-            self.add_error('recommended_traits', MISSING_TRAITS_ERROR)
-        if len(set(traits) & set(recommended_traits)) > 0:
-            self.add_error('traits', REPEATED_TRAIT_ERROR)
-            self.add_error('recommended_traits', REPEATED_TRAIT_ERROR)
         return cleaned_data
 
 
@@ -418,9 +355,6 @@ class TagSpecificTraitForm(forms.Form):
     subtitle = 'Select a tag to apply to this dbGaP phenotype variable'
     subtitle2 = ''
     tag = forms.ModelChoiceField(queryset=models.Tag.objects.all(),
-    # Set required=False for recommended - otherwise it will be required to be checked, which disallows False values.
-    # Submitting an empty value for this field sets the field to False.
-    recommended = forms.BooleanField(required=False)
                                  widget=autocomplete.ModelSelect2(url='tags:autocomplete'),
                                  help_text=TAG_HELP)
 

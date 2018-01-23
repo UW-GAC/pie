@@ -57,7 +57,7 @@ class TagTest(TestCase):
         """Creating the M2M TaggedTrait object adds a trait to tag.traits manager."""
         trait = SourceTraitFactory.create()
         tag = factories.TagFactory.create()
-        tagged_trait = models.TaggedTrait(trait=trait, tag=tag, creator=self.user, recommended=True)
+        tagged_trait = models.TaggedTrait(trait=trait, tag=tag, creator=self.user)
         tagged_trait.save()
         self.assertIn(trait, tag.traits.all())
 
@@ -141,7 +141,7 @@ class TaggedTraitTest(TestCase):
         self.user = UserFactory.create()
         self.tag = factories.TagFactory.create()
         self.trait = SourceTraitFactory.create()
-        self.model_args = {'trait': self.trait, 'tag': self.tag, 'creator': self.user, 'recommended': False}
+        self.model_args = {'trait': self.trait, 'tag': self.tag, 'creator': self.user}
 
     def test_model_saving(self):
         """Creation using the model constructor and .save() works."""

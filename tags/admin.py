@@ -24,8 +24,8 @@ class TagAdmin(admin.ModelAdmin):
 class TaggedTraitAdmin(admin.ModelAdmin):
     """Admin class for TaggedTrait objects."""
 
-    list_display = ('tag', 'trait', 'recommended', 'creator', 'created', 'modified', )
-    list_filter = ('tag', 'creator', 'recommended', )
+    list_display = ('tag', 'trait', 'creator', 'created', 'modified', )
+    list_filter = ('tag', 'creator', )
     search_fields = ('tag', 'trait', )
     form = forms.TaggedTraitAdminForm
 
