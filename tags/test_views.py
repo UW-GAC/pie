@@ -253,7 +253,7 @@ class TaggedTraitCreateTest(PhenotypeTaggerLoginTestCase):
     def test_creates_new_object(self):
         """Posting valid data to the form correctly tags a trait."""
         # Check on redirection to detail page, M2M links, and creation message.
-        response = self.client.post(self.get_url(), {'trait': self.trait.pk, 'tag': self.tag.pk, 'recommended': False})
+        response = self.client.post(self.get_url(), {'trait': self.trait.pk, 'tag': self.tag.pk, })
         new_object = models.TaggedTrait.objects.latest('pk')
         self.assertIsInstance(new_object, models.TaggedTrait)
         self.assertRedirects(response, reverse('tags:tag:detail', args=[new_object.tag.pk]))
@@ -267,14 +267,14 @@ class TaggedTraitCreateTest(PhenotypeTaggerLoginTestCase):
 
     def test_invalid_form_message(self):
         """Posting invalid data results in a message about the invalidity."""
-        response = self.client.post(self.get_url(), {'trait': '', 'tag': self.tag.pk, 'recommended': False})
+        response = self.client.post(self.get_url(), {'trait': '', 'tag': self.tag.pk, })
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
         self.assertTrue('Oops!' in str(messages[0]))
 
     def test_post_blank_trait(self):
         """Posting bad data to the form doesn't tag the trait and shows a form error."""
-        response = self.client.post(self.get_url(), {'trait': '', 'tag': self.tag.pk, 'recommended': False})
+        response = self.client.post(self.get_url(), {'trait': '', 'tag': self.tag.pk, })
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
         self.assertTrue('Oops!' in str(messages[0]))
@@ -285,7 +285,7 @@ class TaggedTraitCreateTest(PhenotypeTaggerLoginTestCase):
     def test_adds_user(self):
         """When a trait is successfully tagged, it has the appropriate creator."""
         response = self.client.post(self.get_url(),
-                                    {'trait': self.trait.pk, 'tag': self.tag.pk, 'recommended': False})
+                                    {'trait': self.trait.pk, 'tag': self.tag.pk, })
         new_object = models.TaggedTrait.objects.latest('pk')
         self.assertEqual(self.user, new_object.creator)
 
@@ -293,7 +293,7 @@ class TaggedTraitCreateTest(PhenotypeTaggerLoginTestCase):
         """Tagging a trait fails when the trait is not in the user's taggable_studies'."""
         study2 = StudyFactory.create()
         trait2 = SourceTraitFactory.create(source_dataset__source_study_version__study=study2)
-        response = self.client.post(self.get_url(), {'trait': trait2.pk, 'tag': self.tag.pk, 'recommended': False})
+        response = self.client.post(self.get_url(), {'trait': trait2.pk, 'tag': self.tag.pk, })
         # They have taggable studies and they're in the phenotype_taggers group, so view is still accessible.
         self.assertEqual(response.status_code, 200)
         messages = list(response.wsgi_request._messages)
@@ -303,7 +303,7 @@ class TaggedTraitCreateTest(PhenotypeTaggerLoginTestCase):
     def test_fails_when_trait_is_already_tagged(self):
         """Tagging a trait fails when the trait has already been tagged with this tag."""
         tagged_trait = factories.TaggedTraitFactory.create(tag=self.tag, trait=self.trait)
-        response = self.client.post(self.get_url(), {'trait': self.trait.pk, 'tag': self.tag.pk, 'recommended': False})
+        response = self.client.post(self.get_url(), {'trait': self.trait.pk, 'tag': self.tag.pk, })
         self.assertEqual(response.status_code, 200)
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
@@ -330,8 +330,7 @@ class TaggedTraitDeleteTest(PhenotypeTaggerLoginTestCase):
         self.trait = SourceTraitFactory.create(source_dataset__source_study_version__study=self.study)
         self.tag = factories.TagFactory.create()
         self.user.refresh_from_db()
-        self.tagged_trait = models.TaggedTrait.objects.create(
-            trait=self.trait, tag=self.tag, creator=self.user, recommended=False)
+        self.tagged_trait = models.TaggedTrait.objects.create(trait=self.trait, tag=self.tag, creator=self.user)
 
     def get_url(self, *args):
         """Get the url for the view this class is supposed to test."""
@@ -423,7 +422,7 @@ class TaggedTraitCreateByTagTest(PhenotypeTaggerLoginTestCase):
     def test_creates_new_object(self):
         """Posting valid data to the form correctly tags a single trait."""
         # Check on redirection to detail page, M2M links, and creation message.
-        form_data = {'trait': self.trait.pk, 'recommended': False}
+        form_data = {'trait': self.trait.pk, }
         response = self.client.post(self.get_url(self.tag.pk), form_data)
         self.assertRedirects(response, self.tag.get_absolute_url())
         new_object = models.TaggedTrait.objects.latest('pk')
@@ -438,14 +437,14 @@ class TaggedTraitCreateByTagTest(PhenotypeTaggerLoginTestCase):
 
     def test_invalid_form_message(self):
         """Posting invalid data results in a message about the invalidity."""
-        response = self.client.post(self.get_url(self.tag.pk), {'trait': '', 'recommended': False})
+        response = self.client.post(self.get_url(self.tag.pk), {'trait': '', })
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
         self.assertTrue('Oops!' in str(messages[0]))
 
     def test_post_blank_trait(self):
         """Posting bad data to the form doesn't tag the trait and shows a form error."""
-        response = self.client.post(self.get_url(self.tag.pk), {'trait': '', 'recommended': False})
+        response = self.client.post(self.get_url(self.tag.pk), {'trait': '', })
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
         self.assertTrue('Oops!' in str(messages[0]))
@@ -456,7 +455,7 @@ class TaggedTraitCreateByTagTest(PhenotypeTaggerLoginTestCase):
     def test_adds_user(self):
         """When a trait is successfully tagged, it has the appropriate creator."""
         response = self.client.post(self.get_url(self.tag.pk),
-                                    {'trait': self.trait.pk, 'recommended': False})
+                                    {'trait': self.trait.pk, })
         new_object = models.TaggedTrait.objects.latest('pk')
         self.assertEqual(self.user, new_object.creator)
 
@@ -464,7 +463,7 @@ class TaggedTraitCreateByTagTest(PhenotypeTaggerLoginTestCase):
         """Tagging a trait fails when the trait is not in the user's taggable_studies'."""
         study2 = StudyFactory.create()
         trait2 = SourceTraitFactory.create(source_dataset__source_study_version__study=study2)
-        response = self.client.post(self.get_url(self.tag.pk), {'trait': trait2.pk, 'recommended': False})
+        response = self.client.post(self.get_url(self.tag.pk), {'trait': trait2.pk, })
         # They have taggable studies and they're in the phenotype_taggers group, so view is still accessible.
         self.assertEqual(response.status_code, 200)
         messages = list(response.wsgi_request._messages)
@@ -474,7 +473,7 @@ class TaggedTraitCreateByTagTest(PhenotypeTaggerLoginTestCase):
     def test_fails_when_trait_is_already_tagged(self):
         """Tagging a trait fails when the trait has already been tagged with this tag."""
         tagged_trait = factories.TaggedTraitFactory.create(tag=self.tag, trait=self.trait)
-        response = self.client.post(self.get_url(self.tag.pk), {'trait': self.trait.pk, 'recommended': False})
+        response = self.client.post(self.get_url(self.tag.pk), {'trait': self.trait.pk, })
         self.assertEqual(response.status_code, 200)
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
@@ -520,8 +519,7 @@ class ManyTaggedTraitsCreateTest(PhenotypeTaggerLoginTestCase):
     def test_creates_single_trait(self):
         """Posting valid data to the form correctly tags a single trait."""
         this_trait = self.traits[0]
-        form_data = {'traits': [this_trait.pk], 'recommended_traits': [],
-                     'tag': self.tag.pk}
+        form_data = {'traits': [this_trait.pk], 'tag': self.tag.pk}
         response = self.client.post(self.get_url(), form_data)
         # Correctly goes to the tag's detail page and shows a success message.
         self.assertRedirects(response, self.tag.get_absolute_url())
@@ -532,32 +530,13 @@ class ManyTaggedTraitsCreateTest(PhenotypeTaggerLoginTestCase):
         tagged_trait = models.TaggedTrait.objects.get(trait=this_trait, tag=self.tag)
         self.assertIn(this_trait, self.tag.traits.all())
         self.assertIn(self.tag, this_trait.tag_set.all())
-        self.assertFalse(tagged_trait.recommended)
-
-    def test_creates_single_recommended_trait(self):
-        """Posting valid data to the form correctly tags a single recommended trait."""
-        this_trait = self.traits[0]
-        form_data = {'traits': [], 'recommended_traits': [this_trait.pk],
-                     'tag': self.tag.pk}
-        response = self.client.post(self.get_url(), form_data)
-        # Correctly goes to the tag's detail page and shows a success message.
-        self.assertRedirects(response, self.tag.get_absolute_url())
-        messages = list(response.wsgi_request._messages)
-        self.assertEqual(len(messages), 1)
-        self.assertFalse('Oops!' in str(messages[0]))
-        # Correctly creates a tagged_trait for each trait.
-        tagged_trait = models.TaggedTrait.objects.get(trait=this_trait, tag=self.tag)
-        self.assertIn(this_trait, self.tag.traits.all())
-        self.assertIn(self.tag, this_trait.tag_set.all())
-        self.assertTrue(tagged_trait.recommended)
 
     def test_creates_two_new_objects(self):
         """Posting valid data to the form correctly tags two traits."""
         # Check on redirection to detail page, M2M links, and creation message.
         some_traits = self.traits[:2]
         response = self.client.post(self.get_url(),
-                                    {'traits': [str(t.pk) for t in some_traits],
-                                     'tag': self.tag.pk, 'recommended': False})
+                                    {'traits': [str(t.pk) for t in some_traits], 'tag': self.tag.pk})
         self.assertRedirects(response, self.tag.get_absolute_url())
         for trait in some_traits:
             self.assertIn(trait, self.tag.traits.all())
@@ -571,8 +550,7 @@ class ManyTaggedTraitsCreateTest(PhenotypeTaggerLoginTestCase):
 
     def test_creates_all_new_objects(self):
         """Posting valid data to the form correctly tags all of the traits listed."""
-        form_data = {'traits': [x.pk for x in self.traits[0:5]], 'recommended_traits': [x.pk for x in self.traits[5:]],
-                     'tag': self.tag.pk}
+        form_data = {'traits': [x.pk for x in self.traits[0:5]], 'tag': self.tag.pk}
         response = self.client.post(self.get_url(), form_data)
         # Correctly goes to the tag's detail page and shows a success message.
         self.assertRedirects(response, self.tag.get_absolute_url())
@@ -585,38 +563,28 @@ class ManyTaggedTraitsCreateTest(PhenotypeTaggerLoginTestCase):
             tagged_trait = models.TaggedTrait.objects.get(trait__pk=trait_pk, tag=self.tag)
             self.assertIn(trait, self.tag.traits.all())
             self.assertIn(self.tag, trait.tag_set.all())
-            self.assertFalse(tagged_trait.recommended)
-        # Correctly creates a tagged_trait with recommended = True for each trait in recommended_traits.
-        for trait_pk in form_data['recommended_traits']:
-            trait = SourceTrait.objects.get(pk=trait_pk)
-            tagged_trait = models.TaggedTrait.objects.get(trait__pk=trait_pk, tag=self.tag)
-            self.assertIn(trait, self.tag.traits.all())
-            self.assertIn(self.tag, trait.tag_set.all())
-            self.assertTrue(tagged_trait.recommended)
 
     def test_invalid_form_message(self):
         """Posting invalid data results in a message about the invalidity."""
-        response = self.client.post(self.get_url(), {'traits': '', 'recommended_traits': [], 'tag': self.tag.pk})
+        response = self.client.post(self.get_url(), {'traits': '', 'tag': self.tag.pk})
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
         self.assertTrue('Oops!' in str(messages[0]))
 
     def test_post_blank_all_traits(self):
         """Posting bad data to the form doesn't tag the trait and shows a form error."""
-        response = self.client.post(self.get_url(), {'traits': [], 'recommended_traits': [], 'tag': self.tag.pk})
+        response = self.client.post(self.get_url(), {'traits': [], 'tag': self.tag.pk})
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
         self.assertTrue('Oops!' in str(messages[0]))
         form = response.context['form']
         self.assertTrue(form.has_error('traits'))
-        self.assertTrue(form.has_error('recommended_traits'))
         self.assertNotIn(self.tag, self.traits[0].tag_set.all())
 
     def test_adds_user(self):
         """When a trait is successfully tagged, it has the appropriate creator."""
         response = self.client.post(self.get_url(),
-                                    {'traits': [str(self.traits[0].pk)], 'recommended_traits': [],
-                                     'tag': self.tag.pk})
+                                    {'traits': [str(self.traits[0].pk)], 'tag': self.tag.pk})
         new_object = models.TaggedTrait.objects.latest('pk')
         self.assertEqual(self.user, new_object.creator)
 
@@ -625,19 +593,8 @@ class ManyTaggedTraitsCreateTest(PhenotypeTaggerLoginTestCase):
         study2 = StudyFactory.create()
         traits2 = SourceTraitFactory.create_batch(5, source_dataset__source_study_version__study=study2)
         response = self.client.post(self.get_url(),
-                                    {'traits': [str(x.pk) for x in traits2], 'tag': self.tag.pk,
-                                     'recommended_traits': []})
+                                    {'traits': [str(x.pk) for x in traits2], 'tag': self.tag.pk, })
         # They have taggable studies and they're in the phenotype_taggers group, so view is still accessible.
-        self.assertEqual(response.status_code, 200)
-        messages = list(response.wsgi_request._messages)
-        self.assertEqual(len(messages), 1)
-        self.assertTrue('Oops!' in str(messages[0]))
-
-    def test_fails_with_repeated_trait(self):
-        """Tagging traits fails when a trait is repeated in 'traits' and 'recommended_traits'."""
-        response = self.client.post(self.get_url(),
-                                    {'traits': [self.traits[0].pk], 'tag': self.tag.pk,
-                                     'recommended_traits': [self.traits[0].pk]})
         self.assertEqual(response.status_code, 200)
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
@@ -647,20 +604,7 @@ class ManyTaggedTraitsCreateTest(PhenotypeTaggerLoginTestCase):
         """Tagging traits fails when a selected trait is already tagged with the tag."""
         already_tagged = factories.TaggedTraitFactory.create(tag=self.tag, trait=self.traits[0])
         response = self.client.post(self.get_url(),
-                                    {'traits': [t.pk for t in self.traits[0:5]], 'tag': self.tag.pk,
-                                     'recommended_traits': [self.traits[-1].pk]})
-        self.assertEqual(response.status_code, 200)
-        messages = list(response.wsgi_request._messages)
-        self.assertEqual(len(messages), 1)
-        self.assertTrue('Oops!' in str(messages[0]))
-
-    def test_fails_when_two_traits_are_already_tagged(self):
-        """Tagging traits fails when two selected traits are already tagged with the tag."""
-        already_tagged = factories.TaggedTraitFactory.create(tag=self.tag, trait=self.traits[0])
-        already_tagged2 = factories.TaggedTraitFactory.create(tag=self.tag, trait=self.traits[1])
-        response = self.client.post(self.get_url(),
-                                    {'traits': [t.pk for t in self.traits[0:5]], 'tag': self.tag.pk,
-                                     'recommended_traits': [self.traits[-1].pk]})
+                                    {'traits': [t.pk for t in self.traits[0:5]], 'tag': self.tag.pk, })
         self.assertEqual(response.status_code, 200)
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
@@ -707,8 +651,7 @@ class ManyTaggedTraitsCreateByTagTest(PhenotypeTaggerLoginTestCase):
     def test_creates_new_object(self):
         """Posting valid data to the form correctly tags a single trait."""
         # Check on redirection to detail page, M2M links, and creation message.
-        response = self.client.post(self.get_url(self.tag.pk),
-                                    {'traits': [str(self.traits[0].pk)], 'recommended': False})
+        response = self.client.post(self.get_url(self.tag.pk), {'traits': [str(self.traits[0].pk)]})
         self.assertRedirects(response, self.tag.get_absolute_url())
         new_object = models.TaggedTrait.objects.latest('pk')
         self.assertIsInstance(new_object, models.TaggedTrait)
@@ -724,8 +667,7 @@ class ManyTaggedTraitsCreateByTagTest(PhenotypeTaggerLoginTestCase):
         """Posting valid data to the form correctly tags two traits."""
         # Check on redirection to detail page, M2M links, and creation message.
         some_traits = self.traits[:2]
-        response = self.client.post(self.get_url(self.tag.pk),
-                                    {'traits': [str(t.pk) for t in some_traits], 'recommended': False})
+        response = self.client.post(self.get_url(self.tag.pk), {'traits': [str(t.pk) for t in some_traits]})
         self.assertRedirects(response, self.tag.get_absolute_url())
         for trait in some_traits:
             self.assertIn(trait, self.tag.traits.all())
@@ -741,8 +683,7 @@ class ManyTaggedTraitsCreateByTagTest(PhenotypeTaggerLoginTestCase):
         """Posting valid data to the form correctly tags all of the traits listed."""
         # Check on redirection to detail page, M2M links, and creation message.
         response = self.client.post(self.get_url(self.tag.pk),
-                                    {'traits': [str(t.pk) for t in self.traits],
-                                     'tag': self.tag.pk, 'recommended': False})
+                                    {'traits': [str(t.pk) for t in self.traits], 'tag': self.tag.pk, })
         self.assertRedirects(response, self.tag.get_absolute_url())
         for trait in self.traits:
             self.assertIn(trait, self.tag.traits.all())
@@ -756,14 +697,14 @@ class ManyTaggedTraitsCreateByTagTest(PhenotypeTaggerLoginTestCase):
 
     def test_invalid_form_message(self):
         """Posting invalid data results in a message about the invalidity."""
-        response = self.client.post(self.get_url(self.tag.pk), {'traits': '', 'recommended': False})
+        response = self.client.post(self.get_url(self.tag.pk), {'traits': '', })
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
         self.assertTrue('Oops!' in str(messages[0]))
 
     def test_post_blank_trait(self):
         """Posting bad data to the form doesn't tag the trait and shows a form error."""
-        response = self.client.post(self.get_url(self.tag.pk), {'traits': '', 'recommended': False})
+        response = self.client.post(self.get_url(self.tag.pk), {'traits': '', })
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
         self.assertTrue('Oops!' in str(messages[0]))
@@ -774,7 +715,7 @@ class ManyTaggedTraitsCreateByTagTest(PhenotypeTaggerLoginTestCase):
     def test_adds_user(self):
         """When a trait is successfully tagged, it has the appropriate creator."""
         response = self.client.post(self.get_url(self.tag.pk),
-                                    {'traits': [str(self.traits[0].pk)], 'recommended': False})
+                                    {'traits': [str(self.traits[0].pk)], })
         new_object = models.TaggedTrait.objects.latest('pk')
         self.assertEqual(self.user, new_object.creator)
 
@@ -783,17 +724,8 @@ class ManyTaggedTraitsCreateByTagTest(PhenotypeTaggerLoginTestCase):
         study2 = StudyFactory.create()
         traits2 = SourceTraitFactory.create_batch(5, source_dataset__source_study_version__study=study2)
         response = self.client.post(self.get_url(self.tag.pk),
-                                    {'traits': [str(x.pk) for x in traits2], 'tag': self.tag.pk, 'recommended': False})
+                                    {'traits': [str(x.pk) for x in traits2], 'tag': self.tag.pk, })
         # They have taggable studies and they're in the phenotype_taggers group, so view is still accessible.
-        self.assertEqual(response.status_code, 200)
-        messages = list(response.wsgi_request._messages)
-        self.assertEqual(len(messages), 1)
-        self.assertTrue('Oops!' in str(messages[0]))
-
-    def test_fails_with_repeated_trait(self):
-        """Tagging traits fails when a trait is repeated in 'traits' and 'recommended_traits'."""
-        response = self.client.post(self.get_url(self.tag.pk),
-                                    {'traits': [self.traits[0].pk], 'recommended_traits': [self.traits[0].pk]})
         self.assertEqual(response.status_code, 200)
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
@@ -803,8 +735,7 @@ class ManyTaggedTraitsCreateByTagTest(PhenotypeTaggerLoginTestCase):
         """Tagging traits fails when a selected trait is already tagged with the tag."""
         already_tagged = factories.TaggedTraitFactory.create(tag=self.tag, trait=self.traits[0])
         response = self.client.post(self.get_url(self.tag.pk),
-                                    {'traits': [t.pk for t in self.traits[0:5]],
-                                     'recommended_traits': [self.traits[-1].pk]})
+                                    {'traits': [t.pk for t in self.traits[0:5]], })
         self.assertEqual(response.status_code, 200)
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
@@ -815,8 +746,7 @@ class ManyTaggedTraitsCreateByTagTest(PhenotypeTaggerLoginTestCase):
         already_tagged = factories.TaggedTraitFactory.create(tag=self.tag, trait=self.traits[0])
         already_tagged2 = factories.TaggedTraitFactory.create(tag=self.tag, trait=self.traits[1])
         response = self.client.post(self.get_url(self.tag.pk),
-                                    {'traits': [t.pk for t in self.traits[0:5]],
-                                     'recommended_traits': [self.traits[-1].pk]})
+                                    {'traits': [t.pk for t in self.traits[0:5]], })
         self.assertEqual(response.status_code, 200)
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)

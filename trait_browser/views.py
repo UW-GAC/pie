@@ -91,9 +91,7 @@ class SourceTraitTagging(LoginRequiredMixin, PermissionRequiredMixin, UserPasses
 
     def form_valid(self, form):
         """Create a TaggedTrait object for the trait and tag specified."""
-        tagged_trait = TaggedTrait(
-            tag=form.cleaned_data['tag'], trait=self.trait, creator=self.request.user,
-            recommended=form.cleaned_data['recommended'])
+        tagged_trait = TaggedTrait(tag=form.cleaned_data['tag'], trait=self.trait, creator=self.request.user)
         tagged_trait.full_clean()
         tagged_trait.save()
         # Save the tag for use in the success url.
