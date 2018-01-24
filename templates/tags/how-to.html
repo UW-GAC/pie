@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+{% load staticfiles %}
+
+{% block content %}
+
+<h1>Help with phenotype tagging</h1>
+
+<!-- Demo -->
+<div class="panel panel-default">
+    <div class="panel-heading"><h3 class='panel-title'>Demonstration video</h3></div>
+    <div class="panel-body">
+        Coming soon...
+    </div>
+</div>
+
+<!-- How to apply tags -->
+<div class="panel panel-default">
+    <div class="panel-heading"><h3 class='panel-title'>
+        <a href="#howto-collapse" data-toggle="collapse" aria-expanded="false" aria-controls="#howto-collapse">How to apply tags</a>
+    </h3></div>
+    <div class="panel-collapse collapse" id="howto-collapse">
+        <ul class="list-group" id="how-to">
+            <li class="list-group-item">
+                <h5 data-toggle="collapse" data-target="#howto-one" data-parent="#how-to" aria-expanded="false" aria-controls="howto-one">From a study phenotype’s detail page</h5>
+                <div id="howto-one" class="collapse">
+                Instructions here...
+                </div>
+            </li>
+            <li class="list-group-item">
+                <h5 class="list-group-heading" data-toggle="collapse" data-target="#howto-two" data-parent="#how-to" aria-expanded="false" aria-controls="howto-two">From the “Tag phenotypes” form</h5>
+                <div id="howto-two" class="collapse">
+                Instructions here...
+                </div>
+            </li>
+            <li class="list-group-item">
+                <h5 class="list-group-heading" data-toggle="collapse" data-target="#howto-three" data-parent="#how-to" aria-expanded="false" aria-controls="howto-three">From a tag’s detail page</h5>
+                <div id="howto-three" class="collapse">
+                Instructions here...
+                </div>
+            </li>
+        </ul>
+    </div>
+</div>
+
+<!-- Guidelines -->
+<div class="panel panel-default">
+    <div class="panel-heading"><h3 class='panel-title'>
+        <a href="#guidelines-collapse" data-toggle='collapse' aria-expanded="false" aria-controls="guidelines-collapase">General guidelines for tagging</a>
+    </h3></div>
+    <div class="panel-collapse collapse" id="guidelines-collapse">
+        <div class="panel-body">
+            <ul>
+                <li>Item 1</li>
+                <li>Item 2</li>
+                <li>Item 3</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- Terminology -->
+<div class="panel panel-default">
+    <div class="panel-heading"><h3 class='panel-title'>
+        <a href="#terms-collapse" data-toggle="collapse" aria-expanded="false" aria-controls="terms-collapse">Terminology</a>
+    </h3></div>
+    <div class="panel-collapse collapse" id="terms-collapse">
+        <ul class="list-group" id="terms">
+            <li class="list-group-item">
+                <h5 data-toggle="collapse" data-target="#item-one" data-parent="#terms" aria-expanded="false" aria-controls="item-one">Tag</h5>
+                <div id="item-one" class="collapse">
+                Definition here...
+                </div>
+            </li>
+            <li class="list-group-item">
+                <h5 class="list-group-heading" data-toggle="collapse" data-target="#terms-two" data-parent="#terms" aria-expanded="false" aria-controls="terms-two">Tagged phenotype</h5>
+                <div id="terms-two" class="collapse">
+                Definition here...
+                </div>
+            </li>
+            <li class="list-group-item">
+                <h5 class="list-group-heading" data-toggle="collapse" data-target="#terms-three" data-parent="#terms" aria-expanded="false" aria-controls="terms-three">Tag description</h5>
+                <div id="terms-three" class="collapse">
+                Definition here...
+                </div>
+            </li>
+            <li class="list-group-item">
+                <h5 class="list-group-heading" data-toggle="collapse" data-target="#terms-four" data-parent="#terms" aria-expanded="false" aria-controls="terms-four">Tag instructions</h5>
+                <div id="terms-four" class="collapse">
+                Definition here...
+                </div>
+            </li>
+        </ul>
+    </div>
+</div>
+
+<!-- Contact -->
+<div class="panel panel-default">
+    <div class="panel-heading"><h3 class='panel-title'>
+        <a href="#contact-collapse" data-toggle='collapse' aria-expanded="false" aria-controls="contact-collapase">Additional questions</a>
+    </h3></div>
+    <div class="panel-collapse collapse" id="contact-collapse">
+        <div class="panel-body">
+            <p>If you have further questions that aren’t addressed by the above instructions, email dccpheno@uw.edu</p>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

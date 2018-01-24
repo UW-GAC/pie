@@ -91,9 +91,7 @@ class SourceTraitTagging(LoginRequiredMixin, PermissionRequiredMixin, UserPasses
 
     def form_valid(self, form):
         """Create a TaggedTrait object for the trait and tag specified."""
-        tagged_trait = TaggedTrait(
-            tag=form.cleaned_data['tag'], trait=self.trait, creator=self.request.user,
-            recommended=form.cleaned_data['recommended'])
+        tagged_trait = TaggedTrait(tag=form.cleaned_data['tag'], trait=self.trait, creator=self.request.user)
         tagged_trait.full_clean()
         tagged_trait.save()
         # Save the tag for use in the success url.
@@ -257,7 +255,11 @@ def trait_search(request, trait_type):
     # Create a form instance with data from the request.
     FormClass = forms.SourceTraitCrispySearchForm if trait_type == 'source' else forms.HarmonizedTraitCrispySearchForm
     form = FormClass(request.GET)
-    page_data = {'form': form, 'trait_type': trait_type, }
+    if trait_type == 'source':
+        trait_type_name = 'study'
+    else:
+        trait_type_name = trait_type
+    page_data = {'form': form, 'trait_type': trait_type, 'trait_type_name': trait_type_name, }
     # If there was no data entered, show the empty form.
     if request.GET.get('text', None) is None:
         form = FormClass()
@@ -297,7 +299,7 @@ def trait_search(request, trait_type):
                 search_record.param_studies.add(study)
         # Check to see if user has this saved already.
         if profiles.models.Profile.objects.all().filter(user=request.user.id,
-                                                         saved_searches=search_record.id).exists():
+                                                        saved_searches=search_record.id).exists():
             savedSearchCheck = True
         else:
             savedSearchCheck = False

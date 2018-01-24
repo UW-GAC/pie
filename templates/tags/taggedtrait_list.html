@@ -9,6 +9,5 @@
 {% block content %}
     {% include '_messages.html' %}
     <h2>Phenotypes tagged in {{ study.i_study_name }}</h2>
-    <p>Some helpful information here about what the tags are.</p>
     {% render_table tagged_trait_table %}
 {% endblock %}

@@ -16,8 +16,8 @@ from . import models
 from . import tables
 
 
-TAGGING_ERROR_MESSAGE = 'Oops! Tagging a phenotype was not successful.'
-TAGGING_MULTIPLE_ERROR_MESSAGE = 'Oops! Tagging phenotypes was not successful.'
+TAGGING_ERROR_MESSAGE = 'Oops! Applying the tag to a dbGaP phenotype variable failed.'
+TAGGING_MULTIPLE_ERROR_MESSAGE = 'Oops! Applying the tag to dbGaP phenotype variables failed.'
 
 
 class TagDetail(LoginRequiredMixin, SingleTableMixin, DetailView):
@@ -68,8 +68,8 @@ class TaggedTraitByStudyList(LoginRequiredMixin, SingleTableMixin, ListView):
     def get_table_class(self):
         """Determine whether to use tagged trait table with delete buttons or not."""
         self.study = get_object_or_404(Study, pk=self.kwargs['pk'])
-        if self.request.user.groups.filter(name='phenotype_taggers').exists() and (
-                self.study in self.request.user.profile.taggable_studies.all()):
+        if self.request.user.is_staff or (self.request.user.groups.filter(name='phenotype_taggers').exists() and (
+                                  self.study in self.request.user.profile.taggable_studies.all())):
             return tables.TaggedTraitTableWithDelete
         else:
             return tables.TaggedTraitTable
@@ -105,7 +105,7 @@ class TaggedTraitDelete(LoginRequiredMixin, PermissionRequiredMixin, TaggableStu
                        args=[self.object.trait.source_dataset.source_study_version.study.pk])
 
     def get_form_valid_message(self):
-        msg = 'Tag <a href="{}">{}</a> has been removed from phenotype <a href="{}">{}</a>'.format(
+        msg = 'Tag <a href="{}">{}</a> has been removed from dbGaP phenotype variable <a href="{}">{}</a>'.format(
             self.object.tag.get_absolute_url(), self.object.tag.title,
             self.object.trait.get_absolute_url(), self.object.trait.i_trait_name)
         return mark_safe(msg)
@@ -131,8 +131,8 @@ class TaggedTraitCreate(LoginRequiredMixin, PermissionRequiredMixin, TaggableStu
         return self.object.tag.get_absolute_url()
 
     def get_form_valid_message(self):
-        msg = 'Phenotype <a href="{}">{}</a> tagged as {}'.format(
-            self.object.trait.get_absolute_url(), self.object.trait.i_trait_name, self.object.tag.title)
+        msg = 'Tag {} has been applied to dbGaP phenotype variable <a href="{}">{}</a>'.format(
+            self.object.tag.title, self.object.trait.get_absolute_url(), self.object.trait.i_trait_name)
         return mark_safe(msg)
 
 
@@ -153,9 +153,7 @@ class TaggedTraitCreateByTag(LoginRequiredMixin, PermissionRequiredMixin, Taggab
 
     def form_valid(self, form):
         """Create a TaggedTrait object for the trait given, with a specific tag."""
-        tagged_trait = models.TaggedTrait(
-            tag=self.tag, trait=form.cleaned_data['trait'], creator=self.request.user,
-            recommended=form.cleaned_data['recommended'])
+        tagged_trait = models.TaggedTrait(tag=self.tag, trait=form.cleaned_data['trait'], creator=self.request.user)
         tagged_trait.full_clean()
         tagged_trait.save()
         # Save the traits so you can use them in the form valid message.
@@ -167,12 +165,18 @@ class TaggedTraitCreateByTag(LoginRequiredMixin, PermissionRequiredMixin, Taggab
         context['tag'] = self.tag
         return context
 
+    def get_form_kwargs(self):
+        kwargs = super(TaggedTraitCreateByTag, self).get_form_kwargs()
+        kwargs['tag_pk'] = self.kwargs['pk']
+        get_object_or_404(models.Tag, pk=kwargs['tag_pk'])
+        return kwargs
+
     def get_success_url(self):
         return self.tag.get_absolute_url()
 
     def get_form_valid_message(self):
-        msg = 'Phenotype <a href="{}">{}</a> tagged as {}'.format(
-            self.trait.get_absolute_url(), self.trait.i_trait_name, self.tag.title)
+        msg = 'Tag {} has been applied to dbGaP phenotype variable <a href="{}">{}</a>'.format(
+            self.tag.title, self.trait.get_absolute_url(), self.trait.i_trait_name)
         return mark_safe(msg)
 
 
@@ -190,21 +194,13 @@ class ManyTaggedTraitsCreate(LoginRequiredMixin, PermissionRequiredMixin, Taggab
     def form_valid(self, form):
         """Create a TaggedTrait object for each trait given."""
         for trait in form.cleaned_data['traits']:
-            tagged_trait = models.TaggedTrait(
-                tag=form.cleaned_data['tag'], trait=trait, creator=self.request.user,
-                recommended=False)
-            tagged_trait.full_clean()
-            tagged_trait.save()
-        for trait in form.cleaned_data['recommended_traits']:
-            tagged_trait = models.TaggedTrait(
-                tag=form.cleaned_data['tag'], trait=trait, creator=self.request.user,
-                recommended=True)
+            tagged_trait = models.TaggedTrait(tag=form.cleaned_data['tag'], trait=trait, creator=self.request.user)
             tagged_trait.full_clean()
             tagged_trait.save()
         # Save the tag object so that you can use it in get_success_url.
         self.tag = form.cleaned_data['tag']
         # Save the traits so you can use them in the form valid message.
-        self.traits = list(form.cleaned_data['traits']) + list(form.cleaned_data['recommended_traits'])
+        self.traits = list(form.cleaned_data['traits'])
         return super(ManyTaggedTraitsCreate, self).form_valid(form)
 
     def get_success_url(self):
@@ -213,8 +209,8 @@ class ManyTaggedTraitsCreate(LoginRequiredMixin, PermissionRequiredMixin, Taggab
     def get_form_valid_message(self):
         msg = ''
         for trait in self.traits:
-            msg += 'Phenotype <a href="{}">{}</a> tagged as {} <br>'.format(
-                trait.get_absolute_url(), trait.i_trait_name, self.tag.title)
+            msg += 'Tag {} has been applied to dbGaP phenotype variable <a href="{}">{}</a> <br>'.format(
+                self.tag.title, trait.get_absolute_url(), trait.i_trait_name)
         return mark_safe(msg)
 
 
@@ -236,19 +232,11 @@ class ManyTaggedTraitsCreateByTag(LoginRequiredMixin, PermissionRequiredMixin, T
     def form_valid(self, form):
         """Create a TaggedTrait object for each trait given."""
         for trait in form.cleaned_data['traits']:
-            tagged_trait = models.TaggedTrait(
-                tag=self.tag, trait=trait, creator=self.request.user,
-                recommended=False)
-            tagged_trait.full_clean()
-            tagged_trait.save()
-        for trait in form.cleaned_data['recommended_traits']:
-            tagged_trait = models.TaggedTrait(
-                tag=self.tag, trait=trait, creator=self.request.user,
-                recommended=True)
+            tagged_trait = models.TaggedTrait(tag=self.tag, trait=trait, creator=self.request.user)
             tagged_trait.full_clean()
             tagged_trait.save()
         # Save the traits so you can use them in the form valid message.
-        self.traits = list(form.cleaned_data['traits']) + list(form.cleaned_data['recommended_traits'])
+        self.traits = list(form.cleaned_data['traits'])
         return super(ManyTaggedTraitsCreateByTag, self).form_valid(form)
 
     def get_context_data(self, **kwargs):
@@ -256,14 +244,20 @@ class ManyTaggedTraitsCreateByTag(LoginRequiredMixin, PermissionRequiredMixin, T
         context['tag'] = self.tag
         return context
 
+    def get_form_kwargs(self):
+        kwargs = super(ManyTaggedTraitsCreateByTag, self).get_form_kwargs()
+        kwargs['tag_pk'] = self.kwargs['pk']
+        get_object_or_404(models.Tag, pk=kwargs['tag_pk'])
+        return kwargs
+
     def get_success_url(self):
         return self.tag.get_absolute_url()
 
     def get_form_valid_message(self):
         msg = ''
         for trait in self.traits:
-            msg += 'Phenotype <a href="{}">{}</a> tagged as {} <br>'.format(
-                trait.get_absolute_url(), trait.i_trait_name, self.tag.title)
+            msg += 'Tag {} has been applied to dbGaP phenotype variable <a href="{}">{}</a> <br>'.format(
+                self.tag.title, trait.get_absolute_url(), trait.i_trait_name)
         return mark_safe(msg)
 
 
