@@ -330,7 +330,7 @@ def save_search_to_profile(request):
         profile, new_record = profiles.models.SavedSearchMeta.objects.get_or_create(
             profile_id=profile_record.id, search_id=search_record.id)
         profile.save()
-        search_url = '?'.join([reverse(':'.join(['trait_browser', trait_type, 'search'])), query_string])
+        search_url = '?'.join([reverse(':'.join(['trait_browser', trait_type, 'traits', 'search'])), query_string])
         return redirect(search_url)
 
 

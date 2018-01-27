@@ -15,7 +15,7 @@ class SourceTraitTable(tables.Table):
 
     # Set custom column values that need extra settings.
     i_trait_name = tables.LinkColumn(
-        'trait_browser:source:detail', args=[tables.utils.A('pk')], verbose_name='Phenotype name')
+        'trait_browser:source:traits:detail', args=[tables.utils.A('pk')], verbose_name='Phenotype name')
     i_description = tables.Column('Phenotype description', orderable=False)
     # Get the name from the Study linked to this trait.
     study_name = tables.Column('Study name', accessor='source_dataset.source_study_version.study.i_study_name')
@@ -47,7 +47,7 @@ class HarmonizedTraitTable(tables.Table):
 
     # Set custom column values that need extra settings.
     trait_flavor_name = tables.LinkColumn(
-        'trait_browser:harmonized:detail', args=[tables.utils.A('harmonized_trait_set_version.pk')],
+        'trait_browser:harmonized:traits:detail', args=[tables.utils.A('harmonized_trait_set_version.pk')],
         verbose_name='Phenotype name')
     i_description = tables.Column('Phenotype description', orderable=False)
 
@@ -67,7 +67,7 @@ class StudyTable(tables.Table):
     """
 
     i_study_name = tables.LinkColumn(
-        'trait_browser:source:study:detail', args=[tables.utils.A('pk')], verbose_name='Study name', orderable=False)
+        'trait_browser:source:studies:detail:detail', args=[tables.utils.A('pk')], verbose_name='Study name', orderable=False)
     trait_count = tables.Column(accessor='study', verbose_name='Phenotype count', orderable=False, empty_values=())
     dbGaP_accession = tables.TemplateColumn(
         orderable=False,

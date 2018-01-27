@@ -67,7 +67,7 @@ class TaggedTraitForm(forms.ModelForm):
     trait = forms.ModelChoiceField(queryset=SourceTrait.objects.all(),
                                    required=True,
                                    label='Phenotype',
-                                   widget=autocomplete.ModelSelect2(url='trait_browser:source:taggable-autocomplete'),
+                                   widget=autocomplete.ModelSelect2(url='trait_browser:source:traits:autocomplete:taggable:by-phv'),
                                    help_text=TRAIT_HELP)
 
     class Meta:
@@ -133,7 +133,7 @@ class TaggedTraitAdminForm(forms.ModelForm):
     trait = forms.ModelChoiceField(
         queryset=SourceTrait.objects.filter(source_dataset__source_study_version__i_is_deprecated=False),
         required=True, label='Phenotype',
-        widget=autocomplete.ModelSelect2(url='trait_browser:source:autocomplete'))
+        widget=autocomplete.ModelSelect2(url='trait_browser:source:traits:autocomplete:by-phv'))
 
     class Meta:
         model = models.TaggedTrait
@@ -162,7 +162,7 @@ class TaggedTraitByTagForm(forms.Form):
         queryset=SourceTrait.objects.all(),
         required=True,
         label='Phenotype',
-        widget=autocomplete.ModelSelect2(url='trait_browser:source:taggable-autocomplete'),
+        widget=autocomplete.ModelSelect2(url='trait_browser:source:traits:autocomplete:taggable:by-phv'),
         help_text=TRAIT_HELP)
 
     def __init__(self, *args, **kwargs):
@@ -230,7 +230,7 @@ class ManyTaggedTraitsForm(forms.Form):
         queryset=SourceTrait.objects.all(),
         required=True,
         label='Phenotype(s)',
-        widget=autocomplete.ModelSelect2Multiple(url='trait_browser:source:taggable-autocomplete'),
+        widget=autocomplete.ModelSelect2Multiple(url='trait_browser:source:traits:autocomplete:taggable:by-phv'),
         help_text=MANY_TRAITS_HELP)
 
     def __init__(self, *args, **kwargs):
@@ -292,7 +292,7 @@ class ManyTaggedTraitsByTagForm(forms.Form):
         queryset=SourceTrait.objects.all(),
         required=True,
         label='Phenotype(s)',
-        widget=autocomplete.ModelSelect2Multiple(url='trait_browser:source:taggable-autocomplete'),
+        widget=autocomplete.ModelSelect2Multiple(url='trait_browser:source:traits:autocomplete:taggable:by-phv'),
         help_text=MANY_TRAITS_HELP)
 
     def __init__(self, *args, **kwargs):

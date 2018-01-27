@@ -126,7 +126,7 @@ class TaggedTraitByStudyListTest(UserLoginTestCase):
             10, trait__source_dataset__source_study_version__study=self.study)
 
     def get_url(self, *args):
-        return reverse('trait_browser:source:study:tagged', args=args)
+        return reverse('trait_browser:source:studies:detail:tagged', args=args)
 
     def test_view_success_code(self):
         """View returns successful response code."""
@@ -163,7 +163,7 @@ class TaggedTraitByStudyListPhenotypeTaggerTest(PhenotypeTaggerLoginTestCase):
         self.user.profile.taggable_studies.add(self.study)
 
     def get_url(self, *args):
-        return reverse('trait_browser:source:study:tagged', args=args)
+        return reverse('trait_browser:source:studies:detail:tagged', args=args)
 
     def test_view_success_code(self):
         """View returns successful response code."""
@@ -200,7 +200,7 @@ class TaggedTraitByStudyListDCCAnalystTest(DCCAnalystLoginTestCase):
         self.user.refresh_from_db()
 
     def get_url(self, *args):
-        return reverse('trait_browser:source:study:tagged', args=args)
+        return reverse('trait_browser:source:studies:detail:tagged', args=args)
 
     def test_view_success_code(self):
         """View returns successful response code."""
@@ -356,7 +356,7 @@ class TaggedTraitDeleteTest(PhenotypeTaggerLoginTestCase):
     def test_deletes_object(self):
         """Posting 'submit' to the form correctly deletes the tagged_trait."""
         response = self.client.post(self.get_url(self.tagged_trait.pk), {'submit': ''})
-        self.assertRedirects(response, reverse('trait_browser:source:study:tagged',
+        self.assertRedirects(response, reverse('trait_browser:source:studies:detail:tagged',
                                                args=[self.trait.source_dataset.source_study_version.study.pk]))
         with self.assertRaises(models.TaggedTrait.DoesNotExist):
             self.tagged_trait.refresh_from_db()
@@ -371,7 +371,7 @@ class TaggedTraitDeleteTest(PhenotypeTaggerLoginTestCase):
         # Sounds like it might be:
         # https://stackoverflow.com/questions/17678689/how-to-add-a-cancel-button-to-deleteview-in-django
         response = self.client.post(self.get_url(self.tagged_trait.pk), {})
-        self.assertRedirects(response, reverse('trait_browser:source:study:tagged',
+        self.assertRedirects(response, reverse('trait_browser:source:studies:detail:tagged',
                                                args=[self.trait.source_dataset.source_study_version.study.pk]))
         with self.assertRaises(models.TaggedTrait.DoesNotExist):
             self.tagged_trait.refresh_from_db()

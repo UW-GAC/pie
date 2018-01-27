@@ -20,9 +20,9 @@
             </div>
             <div class="controls col-sm-10">
                 {% if trait_type == 'source' %}
-                    <a href="{% url 'trait_browser:source:search' %}" class="btn btn-default" role="button">New Search</a>
+                    <a href="{% url 'trait_browser:source:traits:search' %}" class="btn btn-default" role="button">New Search</a>
                 {% elif trait_type == 'harmonized' %}
-                    <a href="{% url 'trait_browser:harmonized:search' %}" class="btn btn-default" role="button">New Search</a>
+                    <a href="{% url 'trait_browser:harmonized:traits:search' %}" class="btn btn-default" role="button">New Search</a>
                 {% endif %}
             </div>
         </div>
