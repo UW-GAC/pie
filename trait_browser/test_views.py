@@ -63,6 +63,57 @@ class SourceDatasetDetailTest(UserLoginTestCase):
         self.assertIn('pht_link', context)
 
 
+class SourceDatasetListTest(UserLoginTestCase):
+    """Unit tests for the SourceDataset views."""
+
+    def setUp(self):
+        super(SourceDatasetListTest, self).setUp()
+        self.datasets = factories.SourceDatasetFactory.create_batch(10)
+        for ds in self.datasets:
+            factories.SourceTraitFactory.create_batch(10, source_dataset=ds)
+
+    def get_url(self, *args):
+        return reverse('trait_browser:source:datasets:list')
+
+    def test_view_success_code(self):
+        """View returns successful response code."""
+        response = self.client.get(self.get_url())
+        self.assertEqual(response.status_code, 200)
+
+    def test_context_data(self):
+        """View has appropriate data in the context."""
+        response = self.client.get(self.get_url())
+        context = response.context
+        self.assertIn('source_dataset_table', context)
+        for ds in self.datasets:
+            self.assertIn(ds, context['source_dataset_table'].data)
+        self.assertIsInstance(context['source_dataset_table'], tables.SourceDatasetTable)
+
+    def test_no_deprecated_traits_in_table(self):
+        """No deprecated datasets are shown in the table."""
+        # Set the ssv for three datasets to deprecated.
+        for ds in self.datasets[1:3]:
+            ssv = ds.source_study_version
+            ssv.i_is_deprecated = True
+            ssv.save()
+        response = self.client.get(self.get_url())
+        context = response.context
+        table = context['source_dataset_table']
+        for ds in self.datasets:
+            if ds.source_study_version.i_is_deprecated:
+                self.assertNotIn(ds, table.data)
+            else:
+                self.assertIn(ds, table.data)
+
+    def test_table_has_no_rows(self):
+        """When there are no datasets, there are no rows in the table, but the view still works."""
+        models.SourceDataset.objects.all().delete()
+        response = self.client.get(self.get_url())
+        context = response.context
+        table = context['source_dataset_table']
+        self.assertEqual(len(table.rows), 0)
+
+
 class SourceTraitDetailTest(UserLoginTestCase):
 
     def setUp(self):

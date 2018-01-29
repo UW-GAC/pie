@@ -33,7 +33,7 @@ source_trait_patterns = [
 
 source_dataset_patterns = [
     url(r'^(?P<pk>\d+)/$', views.SourceDatasetDetail.as_view(), name='detail'),
-    # list
+    url(r'^list/$', views.SourceDatasetList.as_view(), name='list')
     # search
     # include autocomplete?
 ]

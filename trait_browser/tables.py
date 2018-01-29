@@ -5,6 +5,55 @@ import django_tables2 as tables
 from . import models
 
 
+class StudyTable(tables.Table):
+    """Class for tables2 handling of Study objects for nice table display.
+
+    This class extends the django_tables2.Table class for use with Study
+    objects. It is used for the Browse by Study page.
+    """
+
+    i_study_name = tables.LinkColumn(
+        'trait_browser:source:studies:detail:detail', args=[tables.utils.A('pk')], verbose_name='Study name', orderable=False)
+    trait_count = tables.Column(accessor='study', verbose_name='Phenotype count', orderable=False, empty_values=())
+    dbGaP_accession = tables.TemplateColumn(
+        orderable=False,
+        template_code='<a target="_blank" href={{record.dbgap_latest_version_link}}>{{ record.phs }}</a>')
+
+    class Meta:
+        model = models.Study
+        fields = ('i_study_name', )
+        attrs = {'class': 'table table-striped table-hover table-bordered', 'style': 'width: auto;'}
+        template = 'bootstrap_tables2.html'
+        order_by = ('i_study_name', )
+
+    def render_trait_count(self, record):
+        """Get the count of non-deprecated source traits for this study."""
+        return '{:,}'.format(models.SourceTrait.objects.filter(
+            source_dataset__source_study_version__study=record,
+            source_dataset__source_study_version__i_is_deprecated=False).count())
+
+
+class SourceDatasetTable(tables.Table):
+    """Class for table of source datasets for listview."""
+
+    study_phs = tables.LinkColumn(
+        'trait_browser:source:studies:detail:detail', args=[tables.utils.A('source_study_version.study.pk')],
+        text=lambda record: record.source_study_version.study.i_study_name, verbose_name='Study', orderable=False)
+    pht_version_string = tables.Column(verbose_name='dbGaP dataset accession')
+    i_dbgap_description = tables.Column(verbose_name='dbGaP dataset description', orderable=False)
+    trait_count = tables.Column(verbose_name='Variable count', orderable=False, empty_values=())
+
+    class Meta:
+        model = models.SourceDataset
+        fields = ('study_phs', 'pht_version_string', 'i_dbgap_description', 'trait_count', )
+        attrs = {'class': 'table table-striped table-hover table-bordered', 'style': 'width: auto;'}
+        template = 'bootstrap_tables2.html'
+        order_by = ('study_phs')
+
+    def render_trait_count(self, record):
+        return '{:,}'.format(record.sourcetrait_set.count())
+
+
 class SourceTraitTable(tables.Table):
     """Class for tables2 handling of SourceTrait objects for nice table display.
 
@@ -57,31 +106,3 @@ class HarmonizedTraitTable(tables.Table):
         attrs = {'class': 'table table-striped table-bordered table-hover table-condensed'}
         template = 'bootstrap_tables2.html'
         order_by = ('trait_flavor_name', )
-
-
-class StudyTable(tables.Table):
-    """Class for tables2 handling of Study objects for nice table display.
-
-    This class extends the django_tables2.Table class for use with Study
-    objects. It is used for the Browse by Study page.
-    """
-
-    i_study_name = tables.LinkColumn(
-        'trait_browser:source:studies:detail:detail', args=[tables.utils.A('pk')], verbose_name='Study name', orderable=False)
-    trait_count = tables.Column(accessor='study', verbose_name='Phenotype count', orderable=False, empty_values=())
-    dbGaP_accession = tables.TemplateColumn(
-        orderable=False,
-        template_code='<a target="_blank" href={{record.dbgap_latest_version_link}}>{{ record.phs }}</a>')
-
-    class Meta:
-        model = models.Study
-        fields = ('i_study_name', )
-        attrs = {'class': 'table table-striped table-hover table-bordered', 'style': 'width: auto;'}
-        template = 'bootstrap_tables2.html'
-        order_by = ('i_study_name', )
-
-    def render_trait_count(self, record):
-        """Get the count of non-deprecated source traits for this study."""
-        return '{:,}'.format(models.SourceTrait.objects.filter(
-            source_dataset__source_study_version__study=record,
-            source_dataset__source_study_version__i_is_deprecated=False).count())

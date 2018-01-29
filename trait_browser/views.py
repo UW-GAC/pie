@@ -9,7 +9,7 @@ from django.views.generic import DetailView, FormView, ListView
 
 from braces.views import FormMessagesMixin, LoginRequiredMixin, PermissionRequiredMixin, UserPassesTestMixin
 from dal import autocomplete
-from django_tables2 import RequestConfig, SingleTableMixin
+from django_tables2 import RequestConfig, SingleTableMixin, SingleTableView
 from urllib.parse import parse_qs
 
 import profiles.models
@@ -44,6 +44,18 @@ class SourceDatasetDetail(LoginRequiredMixin, SingleTableMixin, DetailView):
         context['phs_link'] = trait.dbgap_study_link
         context['pht_link'] = trait.dbgap_dataset_link
         return context
+
+
+class SourceDatasetList(LoginRequiredMixin, SingleTableView):
+    """List view class for SourceDatasets (unfiltered)."""
+
+    model = models.SourceDataset
+    context_table_name = 'source_dataset_table'
+    table_class = tables.SourceDatasetTable
+    table_pagination = {'per_page': TABLE_PER_PAGE}
+
+    def get_table_data(self):
+        return models.SourceDataset.objects.exclude(source_study_version__i_is_deprecated=True)
 
 
 class SourceTraitDetail(LoginRequiredMixin, DetailView):
