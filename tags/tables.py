@@ -54,7 +54,8 @@ class StudyTaggedTraitTable(tables.Table):
     """Table for displaying studies with tagged traits and totals."""
 
     i_study_name = tables.LinkColumn(
-        'trait_browser:source:studies:detail:tagged', args=[tables.utils.A('pk')], verbose_name='Study name', orderable=False)
+        'trait_browser:source:studies:detail:tagged', args=[tables.utils.A('pk')], verbose_name='Study name',
+        orderable=False)
     number_tags = tables.Column(
         accessor='get_tag_count', verbose_name='Number of tags', orderable=False)
     number_traits = tables.Column(
