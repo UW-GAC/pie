@@ -31,7 +31,7 @@ class SourceDatasetDetail(LoginRequiredMixin, SingleTableMixin, DetailView):
     model = models.SourceDataset
     context_object_name = 'source_dataset'
     context_table_name = 'trait_table'
-    table_class = tables.SourceTraitTable
+    table_class = tables.SourceTraitDatasetTable
     table_pagination = {'per_page': TABLE_PER_PAGE}
 
     def get_table_data(self):
@@ -43,6 +43,7 @@ class SourceDatasetDetail(LoginRequiredMixin, SingleTableMixin, DetailView):
         context['phs'] = trait.study_accession
         context['phs_link'] = trait.dbgap_study_link
         context['pht_link'] = trait.dbgap_dataset_link
+        context['trait_count'] = '{:,}'.format(self.object.sourcetrait_set.count())
         return context
 
 
@@ -129,7 +130,7 @@ class SourceTraitTagging(LoginRequiredMixin, PermissionRequiredMixin, UserPasses
 class SourceTraitList(LoginRequiredMixin, SingleTableMixin, ListView):
 
     model = models.SourceTrait
-    table_class = tables.SourceTraitTable
+    table_class = tables.SourceTraitTableFull
     context_table_name = 'source_trait_table'
     table_pagination = {'per_page': TABLE_PER_PAGE}
 
@@ -152,7 +153,7 @@ class StudyDetail(LoginRequiredMixin, SingleTableMixin, DetailView):
 
     model = models.Study
     context_object_name = 'study'
-    table_class = tables.SourceTraitTable
+    table_class = tables.SourceTraitStudyTable
     context_table_name = 'study_trait_table'
     table_pagination = {'per_page': TABLE_PER_PAGE}
 
@@ -288,7 +289,7 @@ def trait_search(request, trait_type):
         study_pks = form.cleaned_data.get('study', []) if 'study' in form.cleaned_data else []
         # Search text.
         traits = search(query, trait_type, study_pks)
-        TraitTableClass = tables.SourceTraitTable if trait_type == 'source' else tables.HarmonizedTraitTable
+        TraitTableClass = tables.SourceTraitTableFull if trait_type == 'source' else tables.HarmonizedTraitTable
         trait_table = TraitTableClass(traits)
         RequestConfig(request, paginate={'per_page': TABLE_PER_PAGE}).configure(trait_table)
         # Show the search results.

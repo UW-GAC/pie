@@ -57,18 +57,25 @@ class SourceDatasetTable(tables.Table):
 
 
 class SourceTraitTable(tables.Table):
-    """Class for tables2 handling of SourceTrait objects for nice table display.
-
-    Django-tables2 enables pretty display of tables of data on django pages with
-    builtin sorting and table layout. This class extends the tables.Table class
-    for use with SourceTrait objects.
-    """
 
     # Set custom column values that need extra settings.
     i_trait_name = tables.LinkColumn(
         'trait_browser:source:traits:detail', args=[tables.utils.A('pk')], verbose_name='Phenotype name')
     i_description = tables.Column('Phenotype description', orderable=False)
-    # Get the name from the Study linked to this trait.
+    dbGaP_variable = tables.TemplateColumn(
+        orderable=False,
+        template_code='<a target="_blank" href={{ record.dbgap_variable_link }}>{{ record.variable_accession }}</a>')
+
+    class Meta:
+        model = models.SourceTrait
+        fields = ('i_trait_name', 'i_description', )
+        attrs = {'class': 'table table-striped table-bordered table-hover table-condensed'}
+        template = 'bootstrap_tables2.html'
+
+
+class SourceTraitTableFull(SourceTraitTable):
+    """Table for source traits with all information."""
+
     study_name = tables.Column('Study name', accessor='source_dataset.source_study_version.study.i_study_name')
     dbGaP_study = tables.TemplateColumn(
         orderable=False,
@@ -76,15 +83,28 @@ class SourceTraitTable(tables.Table):
     dbGaP_dataset = tables.TemplateColumn(
         orderable=False,
         template_code='<a target="_blank" href={{ record.dbgap_dataset_link }}>{{ record.dataset_accession }}</a>')
-    dbGaP_variable = tables.TemplateColumn(
-        orderable=False,
-        template_code='<a target="_blank" href={{ record.dbgap_variable_link }}>{{ record.variable_accession }}</a>')
 
-    class Meta:
-        model = models.SourceTrait
-        fields = ('i_trait_name', 'i_description', 'study_name', )
-        attrs = {'class': 'table table-striped table-bordered table-hover table-condensed'}
-        template = 'bootstrap_tables2.html'
+    class Meta(SourceTraitTable.Meta):
+        order_by = ('dbGaP_dataset', 'dbGaP_variable', )
+
+
+class SourceTraitStudyTable(SourceTraitTable):
+    """Table for displaying SourceTraits that are restricted to one study (e.g. in study views)."""
+
+    dbGaP_dataset = tables.TemplateColumn(
+        orderable=False,
+        template_code='<a target="_blank" href={{ record.dbgap_dataset_link }}>{{ record.dataset_accession }}</a>')
+
+    class Meta(SourceTraitTable.Meta):
+        order_by = ('dbGaP_dataset', 'dbGaP_variable', )
+
+
+class SourceTraitDatasetTable(tables.Table):
+    """Table for displaying SourceTraits that are restricted to one dataset (e.g. in dataset views)."""
+
+    study_name = tables.Column('Study name', accessor='source_dataset.source_study_version.study.i_study_name')
+
+    class Meta(SourceTraitTable.Meta):
         order_by = ('dbGaP_dataset', 'dbGaP_variable', )
 
 

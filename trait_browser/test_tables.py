@@ -123,6 +123,52 @@ class SourceTraitTableTest(TestCase):
         )
 
 
+class SourceTraitStudyTableTest(TestCase):
+
+    model = models.SourceTrait
+    model_factory = factories.SourceTraitFactory
+    table_class = tables.SourceTraitStudyTable
+
+    def test_row_count(self):
+        """Table has expected number of rows."""
+        things = self.model_factory.create_batch(20)
+        table = self.table_class(things)
+        self.assertEqual(self.model.objects.count(), len(table.rows))
+
+    def test_trait_name(self):
+        """Trait name column value is as expected."""
+        things = self.model_factory.create_batch(20)
+        table = self.table_class(things)
+        row = table.rows[0]
+        self.assertIn(
+            row.record.i_trait_name,
+            row.get_cell_value('i_trait_name')
+        )
+
+
+class SourceTraitDatasetTableTest(TestCase):
+
+    model = models.SourceTrait
+    model_factory = factories.SourceTraitFactory
+    table_class = tables.SourceTraitDatasetTable
+
+    def test_row_count(self):
+        """Table has expected number of rows."""
+        things = self.model_factory.create_batch(20)
+        table = self.table_class(things)
+        self.assertEqual(self.model.objects.count(), len(table.rows))
+
+    def test_trait_name(self):
+        """Trait name column value is as expected."""
+        things = self.model_factory.create_batch(20)
+        table = self.table_class(things)
+        row = table.rows[0]
+        self.assertIn(
+            row.record.i_trait_name,
+            row.get_cell_value('i_trait_name')
+        )
+
+
 class HarmonizedTraitTableTest(TestCase):
 
     model = models.HarmonizedTrait

@@ -57,10 +57,11 @@ class SourceDatasetDetailTest(UserLoginTestCase):
         self.assertIn('source_dataset', context)
         self.assertEqual(context['source_dataset'], self.dataset)
         self.assertIn('trait_table', context)
-        self.assertIsInstance(context['trait_table'], tables.SourceTraitTable)
+        self.assertIsInstance(context['trait_table'], tables.SourceTraitDatasetTable)
         self.assertIn('phs', context)
         self.assertIn('phs_link', context)
         self.assertIn('pht_link', context)
+        self.assertIn('trait_count', context)
 
 
 class SourceDatasetListTest(UserLoginTestCase):
@@ -421,7 +422,7 @@ class SourceTraitListTest(UserLoginTestCase):
         response = self.client.get(self.get_url())
         context = response.context
         self.assertIn('source_trait_table', context)
-        self.assertIsInstance(context['source_trait_table'], tables.SourceTraitTable)
+        self.assertIsInstance(context['source_trait_table'], tables.SourceTraitTableFull)
 
     def test_no_deprecated_traits_in_table(self):
         """No deprecated traits are shown in the table."""
@@ -518,7 +519,7 @@ class StudyDetailTest(UserLoginTestCase):
         self.assertIn('study', context)
         self.assertEqual(context['study'], self.study)
         self.assertIn('study_trait_table', context)
-        self.assertIsInstance(context['study_trait_table'], tables.SourceTraitTable)
+        self.assertIsInstance(context['study_trait_table'], tables.SourceTraitStudyTable)
 
     def test_no_deprecated_traits_in_table(self):
         """No deprecated traits are shown in the table."""
@@ -623,8 +624,8 @@ class StudySourceTableViewsTestCase(UserLoginTestCase):
         response = self.client.get(url)
         # Does the URL work?
         self.assertEqual(response.status_code, 200)
-        # Is trait_table a SourceTraitTable object?
-        self.assertIsInstance(response.context['study_trait_table'], tables.SourceTraitTable)
+        # Is trait_table a SourceTraitTableFull object?
+        self.assertIsInstance(response.context['study_trait_table'], tables.SourceTraitStudyTable)
         # Does the source trait table object have correct number of rows?
         self.assertEqual(len(response.context['study_trait_table'].rows), n_traits)
 
@@ -639,8 +640,8 @@ class StudySourceTableViewsTestCase(UserLoginTestCase):
         response = self.client.get(url)
         # Does the URL work?
         self.assertEqual(response.status_code, 200)
-        # Is trait_table a SourceTraitTable object?
-        self.assertIsInstance(response.context['study_trait_table'], tables.SourceTraitTable)
+        # Is trait_table a SourceTraitTableFull object?
+        self.assertIsInstance(response.context['study_trait_table'], tables.SourceTraitStudyTable)
         # Does the source trait table object have correct number of rows?
         self.assertEqual(len(response.context['study_trait_table'].rows), n_traits)
 
@@ -653,8 +654,8 @@ class StudySourceTableViewsTestCase(UserLoginTestCase):
         response = self.client.get(url)
         # Does the URL work?
         self.assertEqual(response.status_code, 200)
-        # Is trait_table a SourceTraitTable object?
-        self.assertIsInstance(response.context['study_trait_table'], tables.SourceTraitTable)
+        # Is trait_table a SourceTraitTableFull object?
+        self.assertIsInstance(response.context['study_trait_table'], tables.SourceTraitStudyTable)
         # Does the source trait table object have correct number of rows?
         self.assertEqual(len(response.context['study_trait_table'].rows), n_traits)
 
@@ -1004,7 +1005,7 @@ class SourceTraitSearchViewTestCase(UserLoginTestCase):
         response = self.client.get(url, {'text': 'asdfghjkl'})
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.context['results'])
-        self.assertIsInstance(response.context['trait_table'], tables.SourceTraitTable)
+        self.assertIsInstance(response.context['trait_table'], tables.SourceTraitTableFull)
         self.assertEqual(len(response.context['trait_table'].rows), 1)
 
     def test_source_trait_search_with_no_results(self):
@@ -1014,7 +1015,7 @@ class SourceTraitSearchViewTestCase(UserLoginTestCase):
         response = self.client.get(url, {'text': 'asdfghjkl'})
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.context['results'])
-        self.assertIsInstance(response.context['trait_table'], tables.SourceTraitTable)
+        self.assertIsInstance(response.context['trait_table'], tables.SourceTraitTableFull)
         self.assertEqual(len(response.context['trait_table'].rows), 0)
 
     def test_source_trait_search_with_no_search_text_entered(self):
@@ -1038,7 +1039,7 @@ class SourceTraitSearchViewTestCase(UserLoginTestCase):
                                          'study': [good_trait.source_dataset.source_study_version.study.i_accession]})
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.context['results'])
-        self.assertIsInstance(response.context['trait_table'], tables.SourceTraitTable)
+        self.assertIsInstance(response.context['trait_table'], tables.SourceTraitTableFull)
         self.assertEqual(len(response.context['trait_table'].rows), 1)
 
     def test_source_trait_search_with_no_results_and_study_filter(self):
@@ -1050,7 +1051,7 @@ class SourceTraitSearchViewTestCase(UserLoginTestCase):
                                          'study': [traits[0].source_dataset.source_study_version.study.i_accession]})
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.context['results'])
-        self.assertIsInstance(response.context['trait_table'], tables.SourceTraitTable)
+        self.assertIsInstance(response.context['trait_table'], tables.SourceTraitTableFull)
         self.assertEqual(len(response.context['trait_table'].rows), 0)
 
     def test_source_trait_search_with_no_search_text_entered_and_study_filter(self):
