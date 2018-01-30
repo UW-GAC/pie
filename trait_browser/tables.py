@@ -37,7 +37,7 @@ class StudyTable(tables.Table):
 class SourceDatasetTable(tables.Table):
     """Class for table of source datasets for listview."""
 
-    study_phs = tables.LinkColumn(
+    study = tables.LinkColumn(
         'trait_browser:source:studies:detail:detail', args=[tables.utils.A('source_study_version.study.pk')],
         text=lambda record: record.source_study_version.study.i_study_name, verbose_name='Study', orderable=False)
     pht_version_string = tables.LinkColumn(
@@ -47,7 +47,7 @@ class SourceDatasetTable(tables.Table):
 
     class Meta:
         model = models.SourceDataset
-        fields = ('study_phs', 'pht_version_string', 'i_dbgap_description', 'trait_count', )
+        fields = ('study', 'pht_version_string', 'i_dbgap_description', 'trait_count', )
         attrs = {'class': 'table table-striped table-hover table-bordered', 'style': 'width: auto;'}
         template = 'bootstrap_tables2.html'
         order_by = ('study_phs')
@@ -67,8 +67,8 @@ class SourceTraitTable(tables.Table):
         template_code='<a target="_blank" href={{ record.dbgap_variable_link }}>{{ record.variable_accession }}</a>')
 
     class Meta:
+        fields = ('i_trait_name', 'i_description', 'dbGaP_variable', )
         model = models.SourceTrait
-        fields = ('i_trait_name', 'i_description', )
         attrs = {'class': 'table table-striped table-bordered table-hover table-condensed'}
         template = 'bootstrap_tables2.html'
 
@@ -76,7 +76,16 @@ class SourceTraitTable(tables.Table):
 class SourceTraitTableFull(SourceTraitTable):
     """Table for source traits with all information."""
 
-    study_name = tables.Column('Study name', accessor='source_dataset.source_study_version.study.i_study_name')
+    study = tables.LinkColumn(
+        'trait_browser:source:studies:detail:detail',
+        args=[tables.utils.A('source_dataset.source_study_version.study.pk')],
+        text=lambda record: record.source_dataset.source_study_version.study.i_study_name,
+        verbose_name='Study', orderable=False)
+    dataset = tables.LinkColumn(
+        'trait_browser:source:datasets:detail',
+        args=[tables.utils.A('source_dataset.pk')],
+        text=lambda record: record.source_dataset.pht_version_string,
+        verbose_name='Dataset', orderable=False)
     dbGaP_study = tables.TemplateColumn(
         orderable=False,
         template_code='<a target="_blank" href={{ record.dbgap_study_link }}>{{ record.study_accession }}</a>')
@@ -85,26 +94,38 @@ class SourceTraitTableFull(SourceTraitTable):
         template_code='<a target="_blank" href={{ record.dbgap_dataset_link }}>{{ record.dataset_accession }}</a>')
 
     class Meta(SourceTraitTable.Meta):
+        fields = ('i_trait_name', 'i_description', 'dataset', 'study', 'dbGaP_study', 'dbGaP_dataset', 'dbGaP_variable', )
         order_by = ('dbGaP_dataset', 'dbGaP_variable', )
 
 
 class SourceTraitStudyTable(SourceTraitTable):
     """Table for displaying SourceTraits that are restricted to one study (e.g. in study views)."""
 
+    dataset = tables.LinkColumn(
+        'trait_browser:source:datasets:detail',
+        args=[tables.utils.A('source_dataset.pk')],
+        text=lambda record: record.source_dataset.pht_version_string,
+        verbose_name='Dataset', orderable=False)
     dbGaP_dataset = tables.TemplateColumn(
         orderable=False,
         template_code='<a target="_blank" href={{ record.dbgap_dataset_link }}>{{ record.dataset_accession }}</a>')
 
     class Meta(SourceTraitTable.Meta):
+        fields = ('i_trait_name', 'i_description', 'dataset', 'dbGaP_dataset', 'dbGaP_variable', )
         order_by = ('dbGaP_dataset', 'dbGaP_variable', )
 
 
-class SourceTraitDatasetTable(tables.Table):
+class SourceTraitDatasetTable(SourceTraitTable):
     """Table for displaying SourceTraits that are restricted to one dataset (e.g. in dataset views)."""
 
-    study_name = tables.Column('Study name', accessor='source_dataset.source_study_version.study.i_study_name')
+    study = tables.LinkColumn(
+        'trait_browser:source:studies:detail:detail',
+        args=[tables.utils.A('source_dataset.source_study_version.study.pk')],
+        text=lambda record: record.source_dataset.source_study_version.study.i_study_name,
+        verbose_name='Study', orderable=False)
 
     class Meta(SourceTraitTable.Meta):
+        fields = ('i_trait_name', 'i_description', 'study', 'dbGaP_variable')
         order_by = ('dbGaP_dataset', 'dbGaP_variable', )
 
 
