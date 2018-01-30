@@ -13,7 +13,8 @@ class StudyTable(tables.Table):
     """
 
     i_study_name = tables.LinkColumn(
-        'trait_browser:source:studies:detail:detail', args=[tables.utils.A('pk')], verbose_name='Study name', orderable=False)
+        'trait_browser:source:studies:detail:detail', args=[tables.utils.A('pk')], verbose_name='Study name',
+        orderable=False)
     trait_count = tables.Column(accessor='study', verbose_name='Phenotype count', orderable=False, empty_values=())
     dbGaP_accession = tables.TemplateColumn(
         orderable=False,
@@ -39,7 +40,8 @@ class SourceDatasetTable(tables.Table):
     study_phs = tables.LinkColumn(
         'trait_browser:source:studies:detail:detail', args=[tables.utils.A('source_study_version.study.pk')],
         text=lambda record: record.source_study_version.study.i_study_name, verbose_name='Study', orderable=False)
-    pht_version_string = tables.Column(verbose_name='dbGaP dataset accession')
+    pht_version_string = tables.LinkColumn(
+        'trait_browser:source:datasets:detail', args=[tables.utils.A('pk')], verbose_name='dbGaP dataset accession')
     i_dbgap_description = tables.Column(verbose_name='dbGaP dataset description', orderable=False)
     trait_count = tables.Column(verbose_name='Variable count', orderable=False, empty_values=())
 
