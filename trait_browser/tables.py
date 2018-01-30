@@ -35,25 +35,34 @@ class StudyTable(tables.Table):
 
 
 class SourceDatasetTable(tables.Table):
-    """Class for table of source datasets for listview."""
+    """Class for table of source datasets for inheritance."""
 
-    study = tables.LinkColumn(
-        'trait_browser:source:studies:detail:detail', args=[tables.utils.A('source_study_version.study.pk')],
-        text=lambda record: record.source_study_version.study.i_study_name, verbose_name='Study', orderable=False)
-    pht_version_string = tables.LinkColumn(
-        'trait_browser:source:datasets:detail', args=[tables.utils.A('pk')], verbose_name='dbGaP dataset accession')
+    dataset_name = tables.LinkColumn(
+        'trait_browser:source:datasets:detail', args=[tables.utils.A('pk')], verbose_name='dbGaP dataset accession',
+        text=lambda record: record.pht_version_string)
     i_dbgap_description = tables.Column(verbose_name='dbGaP dataset description', orderable=False)
     trait_count = tables.Column(verbose_name='Variable count', orderable=False, empty_values=())
 
     class Meta:
         model = models.SourceDataset
-        fields = ('study', 'pht_version_string', 'i_dbgap_description', 'trait_count', )
+        fields = ('dataset_name', 'i_dbgap_description', 'trait_count', )
         attrs = {'class': 'table table-striped table-hover table-bordered', 'style': 'width: auto;'}
         template = 'bootstrap_tables2.html'
-        order_by = ('study_phs')
 
     def render_trait_count(self, record):
         return '{:,}'.format(record.sourcetrait_set.count())
+
+
+class SourceDatasetTableFull(SourceDatasetTable):
+    """Class for table of source datasets for listview."""
+
+    study = tables.LinkColumn(
+        'trait_browser:source:studies:detail:detail', args=[tables.utils.A('source_study_version.study.pk')],
+        text=lambda record: record.source_study_version.study.i_study_name, verbose_name='Study', orderable=False)
+
+    class Meta(SourceDatasetTable.Meta):
+        fields = ('study', 'dataset_name', 'i_dbgap_description', 'trait_count', )
+        order_by = ('study')
 
 
 class SourceTraitTable(tables.Table):
@@ -94,7 +103,8 @@ class SourceTraitTableFull(SourceTraitTable):
         template_code='<a target="_blank" href={{ record.dbgap_dataset_link }}>{{ record.dataset_accession }}</a>')
 
     class Meta(SourceTraitTable.Meta):
-        fields = ('i_trait_name', 'i_description', 'dataset', 'study', 'dbGaP_study', 'dbGaP_dataset', 'dbGaP_variable', )
+        fields = (
+            'i_trait_name', 'i_description', 'dataset', 'study', 'dbGaP_study', 'dbGaP_dataset', 'dbGaP_variable', )
         order_by = ('dbGaP_dataset', 'dbGaP_variable', )
 
 

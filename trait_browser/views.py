@@ -149,18 +149,36 @@ class HarmonizedTraitList(LoginRequiredMixin, SingleTableMixin, ListView):
         return models.HarmonizedTrait.objects.exclude(harmonized_trait_set_version__i_is_deprecated=True)
 
 
-class StudyDetail(LoginRequiredMixin, SingleTableMixin, DetailView):
+class StudyDetail(LoginRequiredMixin, DetailView):
 
     model = models.Study
     context_object_name = 'study'
-    table_class = tables.SourceTraitStudyTable
-    context_table_name = 'study_trait_table'
-    table_pagination = {'per_page': TABLE_PER_PAGE}
 
-    def get_table_data(self):
-        return models.SourceTrait.objects.exclude(
+    # Could not use SingleTableMixin because I need two tables.
+    # Could not use MultiTableMixin because it doesn't (as far as I can tell) support getting table data based
+    # on self.object.
+    # Instead, I just manually made the tables in get_context_data and had to do the pagination manually as well
+    # based on the source code for SingleTableMixin.get_table and MultiTableMixin.get_context_data.
+    def get_context_data(self, **kwargs):
+        context = super(StudyDetail, self).get_context_data(**kwargs)
+        # Make tables for (non-deprecated) source traits and source datasets from this study.
+        traits = models.SourceTrait.objects.exclude(
             source_dataset__source_study_version__i_is_deprecated=True).filter(
             source_dataset__source_study_version__study=self.object)
+        trait_table = tables.SourceTraitStudyTable(traits)
+        datasets = models.SourceDataset.objects.exclude(
+            source_study_version__i_is_deprecated=True).filter(
+            source_study_version__study=self.object)
+        dataset_table = tables.SourceDatasetTable(datasets)
+        # Paginate the tables.
+        RequestConfig(self.request, paginate={'per_page': TABLE_PER_PAGE / 2}).configure(trait_table)
+        RequestConfig(self.request, paginate={'per_page': TABLE_PER_PAGE / 3}).configure(dataset_table)
+        context['study_trait_table'] = trait_table
+        context['study_dataset_table'] = dataset_table
+        context['trait_count'] = '{:,}'.format(traits.count())
+        context['dataset_count'] = '{:,}'.format(datasets.count())
+        context['phs_link'] = traits[0].dbgap_study_link
+        return context
 
 
 class StudyList(LoginRequiredMixin, SingleTableMixin, ListView):
