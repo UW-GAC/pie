@@ -104,7 +104,6 @@ class StudySourceDatasetList(LoginRequiredMixin, SingleTableMixin, DetailView):
 class SourceDatasetDetail(LoginRequiredMixin, SingleTableMixin, DetailView):
     """Detail view class for SourceDatasets. Displays the dataset's source traits in a table."""
 
-    template_name = 'trait_browser/source_dataset_detail.html'
     model = models.SourceDataset
     context_object_name = 'source_dataset'
     context_table_name = 'trait_table'
@@ -141,7 +140,6 @@ class HarmonizedTraitSetVersionDetail(LoginRequiredMixin, FormMessagesMixin, Det
 
     model = models.HarmonizedTraitSetVersion
     context_object_name = 'harmonized_trait_set_version'
-    template_name = 'trait_browser/harmonized_trait_set_version_detail.html'
 
 
 class SourceTraitDetail(LoginRequiredMixin, DetailView):
@@ -149,7 +147,6 @@ class SourceTraitDetail(LoginRequiredMixin, DetailView):
 
     model = models.SourceTrait
     context_object_name = 'source_trait'
-    template_name = 'trait_browser/source_trait_detail.html'
 
     def get_context_data(self, **kwargs):
         context = super(SourceTraitDetail, self).get_context_data(**kwargs)
