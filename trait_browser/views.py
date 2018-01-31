@@ -154,30 +154,67 @@ class StudyDetail(LoginRequiredMixin, DetailView):
     model = models.Study
     context_object_name = 'study'
 
-    # Could not use SingleTableMixin because I need two tables.
-    # Could not use MultiTableMixin because it doesn't (as far as I can tell) support getting table data based
-    # on self.object.
-    # Instead, I just manually made the tables in get_context_data and had to do the pagination manually as well
-    # based on the source code for SingleTableMixin.get_table and MultiTableMixin.get_context_data.
     def get_context_data(self, **kwargs):
         context = super(StudyDetail, self).get_context_data(**kwargs)
-        # Make tables for (non-deprecated) source traits and source datasets from this study.
         traits = models.SourceTrait.objects.exclude(
             source_dataset__source_study_version__i_is_deprecated=True).filter(
             source_dataset__source_study_version__study=self.object)
-        trait_table = tables.SourceTraitStudyTable(traits)
-        datasets = models.SourceDataset.objects.exclude(
+        trait_count = traits.count()
+        dataset_count = models.SourceDataset.objects.exclude(
+            source_study_version__i_is_deprecated=True).filter(
+            source_study_version__study=self.object).count()
+        context['trait_count'] = '{:,}'.format(trait_count)
+        context['dataset_count'] = '{:,}'.format(dataset_count)
+        context['phs_link'] = traits[0].dbgap_study_link
+        context['phs'] = traits[0].study_accession
+        return context
+
+
+class StudySourceTraitList(LoginRequiredMixin, SingleTableMixin, DetailView):
+    """."""
+
+    template_name = 'trait_browser/study_sourcetrait_list.html'
+    model = models.Study
+    context_object_name = 'study'
+    context_table_name = 'source_trait_table'
+    table_class = tables.SourceTraitStudyTable
+    table_pagination = {'per_page': TABLE_PER_PAGE}
+
+    def get_table_data(self):
+        return models.SourceTrait.objects.exclude(
+            source_dataset__source_study_version__i_is_deprecated=True).filter(
+            source_dataset__source_study_version__study=self.object)
+
+    def get_context_data(self, **kwargs):
+        context = super(StudySourceTraitList, self).get_context_data(**kwargs)
+        traits = context['source_trait_table'].data
+        context['trait_count'] = '{:,}'.format(len(traits))
+        context['phs_link'] = traits[0].dbgap_study_link
+        context['phs'] = traits[0].study_accession
+        return context
+
+
+class StudySourceDatasetList(LoginRequiredMixin, SingleTableMixin, DetailView):
+    """."""
+
+    template_name = 'trait_browser/study_sourcedataset_list.html'
+    model = models.Study
+    context_object_name = 'study'
+    context_table_name = 'source_dataset_table'
+    table_class = tables.SourceDatasetTable
+    table_pagination = {'per_page': TABLE_PER_PAGE}
+
+    def get_table_data(self):
+        return models.SourceDataset.objects.exclude(
             source_study_version__i_is_deprecated=True).filter(
             source_study_version__study=self.object)
-        dataset_table = tables.SourceDatasetTable(datasets)
-        # Paginate the tables.
-        RequestConfig(self.request, paginate={'per_page': TABLE_PER_PAGE / 2}).configure(trait_table)
-        RequestConfig(self.request, paginate={'per_page': TABLE_PER_PAGE / 3}).configure(dataset_table)
-        context['study_trait_table'] = trait_table
-        context['study_dataset_table'] = dataset_table
-        context['trait_count'] = '{:,}'.format(traits.count())
-        context['dataset_count'] = '{:,}'.format(datasets.count())
-        context['phs_link'] = traits[0].dbgap_study_link
+
+    def get_context_data(self, **kwargs):
+        context = super(StudySourceDatasetList, self).get_context_data(**kwargs)
+        datasets = context['source_dataset_table'].data
+        context['dataset_count'] = '{:,}'.format(len(datasets))
+        context['phs_link'] = datasets[0].sourcetrait_set.first().dbgap_study_link
+        context['phs'] = datasets[0].sourcetrait_set.first().study_accession
         return context
 
 

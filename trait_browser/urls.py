@@ -40,9 +40,9 @@ source_dataset_patterns = [
 
 source_study_detail_patterns = [
     url(r'^tagged/$', TaggedTraitByStudyList.as_view(), name='tagged'),
+    url(r'^variables/$', views.StudySourceTraitList.as_view(), name='variables'),
+    url(r'^datasets/$', views.StudySourceDatasetList.as_view(), name='datasets'),
     url(r'^$', views.StudyDetail.as_view(), name='detail'),
-    # variable list
-    # dataset list
 ]
 
 source_study_patterns = [
