@@ -24,131 +24,6 @@ from . import forms
 TABLE_PER_PAGE = 50    # Setting for per_page rows for all table views.
 
 
-class SourceDatasetDetail(LoginRequiredMixin, SingleTableMixin, DetailView):
-    """Detail view class for SourceDatasets. Displays the dataset's source traits in a table."""
-
-    template_name = 'trait_browser/source_dataset_detail.html'
-    model = models.SourceDataset
-    context_object_name = 'source_dataset'
-    context_table_name = 'trait_table'
-    table_class = tables.SourceTraitDatasetTable
-    table_pagination = {'per_page': TABLE_PER_PAGE}
-
-    def get_table_data(self):
-        return self.object.sourcetrait_set.all().order_by('i_dbgap_variable_accession')
-
-    def get_context_data(self, **kwargs):
-        context = super(SourceDatasetDetail, self).get_context_data(**kwargs)
-        trait = self.object.sourcetrait_set.first()
-        context['phs'] = trait.study_accession
-        context['phs_link'] = trait.dbgap_study_link
-        context['pht_link'] = trait.dbgap_dataset_link
-        context['trait_count'] = '{:,}'.format(self.object.sourcetrait_set.count())
-        return context
-
-
-class SourceDatasetList(LoginRequiredMixin, SingleTableView):
-    """List view class for SourceDatasets (unfiltered)."""
-
-    model = models.SourceDataset
-    context_table_name = 'source_dataset_table'
-    table_class = tables.SourceDatasetTable
-    table_pagination = {'per_page': TABLE_PER_PAGE}
-
-    def get_table_data(self):
-        return models.SourceDataset.objects.exclude(source_study_version__i_is_deprecated=True)
-
-
-class SourceTraitDetail(LoginRequiredMixin, DetailView):
-    """Detail view class for SourceTraits. Inherits from django.views.generic.DetailView."""
-
-    model = models.SourceTrait
-    context_object_name = 'source_trait'
-    template_name = 'trait_browser/source_trait_detail.html'
-
-    def get_context_data(self, **kwargs):
-        context = super(SourceTraitDetail, self).get_context_data(**kwargs)
-        user_studies = list(self.request.user.profile.taggable_studies.all())
-        context['user_is_study_tagger'] = self.object.source_dataset.source_study_version.study in user_studies
-        context['tags'] = list(Tag.objects.filter(traits=self.object))
-        return context
-
-
-class HarmonizedTraitSetVersionDetail(LoginRequiredMixin, FormMessagesMixin, DetailView):
-    """Detail view class for HarmonizedTraitSetVersions. Inherits from django.views.generic.DetailView."""
-
-    model = models.HarmonizedTraitSetVersion
-    context_object_name = 'harmonized_trait_set_version'
-    template_name = 'trait_browser/harmonized_trait_set_version_detail.html'
-
-
-class SourceTraitTagging(LoginRequiredMixin, PermissionRequiredMixin, UserPassesTestMixin, FormMessagesMixin,
-                         FormView):
-    """Form view class for tagging a specific source trait."""
-
-    form_class = TagSpecificTraitForm
-    form_invalid_message = TAGGING_ERROR_MESSAGE
-    template_name = 'tags/taggedtrait_form.html'
-    permission_required = 'tags.add_taggedtrait'
-    raise_exception = True
-    redirect_unauthenticated_users = True
-
-    def dispatch(self, request, *args, **kwargs):
-        self.trait = get_object_or_404(models.SourceTrait, pk=kwargs.get('pk'))
-        return super(SourceTraitTagging, self).dispatch(request, *args, **kwargs)
-
-    def get_context_data(self, **kwargs):
-        context = super(SourceTraitTagging, self).get_context_data(**kwargs)
-        context['trait'] = self.trait
-        return context
-
-    def form_valid(self, form):
-        """Create a TaggedTrait object for the trait and tag specified."""
-        tagged_trait = TaggedTrait(tag=form.cleaned_data['tag'], trait=self.trait, creator=self.request.user)
-        tagged_trait.full_clean()
-        tagged_trait.save()
-        # Save the tag for use in the success url.
-        self.tag = form.cleaned_data['tag']
-        return super(SourceTraitTagging, self).form_valid(form)
-
-    def test_func(self, user):
-        if user.is_staff:
-            return True
-        else:
-            user_studies = list(user.profile.taggable_studies.all())
-            return self.trait.source_dataset.source_study_version.study in user_studies
-
-    def get_success_url(self):
-        return self.trait.get_absolute_url()
-
-    def get_form_valid_message(self):
-        msg = 'Phenotype {} tagged as <a href="{}">{}</a>'.format(
-            self.trait.i_trait_name, self.tag.get_absolute_url(), self.tag.title)
-        return mark_safe(msg)
-
-
-class SourceTraitList(LoginRequiredMixin, SingleTableMixin, ListView):
-
-    model = models.SourceTrait
-    table_class = tables.SourceTraitTableFull
-    context_table_name = 'source_trait_table'
-    table_pagination = {'per_page': TABLE_PER_PAGE}
-
-    def get_table_data(self):
-        return models.SourceTrait.objects.exclude(source_dataset__source_study_version__i_is_deprecated=True)
-
-
-class HarmonizedTraitList(LoginRequiredMixin, SingleTableMixin, ListView):
-
-    model = models.HarmonizedTrait
-    table_class = tables.HarmonizedTraitTable
-    context_table_name = 'harmonized_trait_table'
-    table_pagination = {'per_page': TABLE_PER_PAGE}
-
-    def get_table_data(self):
-        return models.HarmonizedTrait.objects.exclude(harmonized_trait_set_version__i_is_deprecated=True)
-
-
 class StudyDetail(LoginRequiredMixin, DetailView):
 
     model = models.Study
@@ -168,6 +43,14 @@ class StudyDetail(LoginRequiredMixin, DetailView):
         context['phs_link'] = traits[0].dbgap_study_link
         context['phs'] = traits[0].study_accession
         return context
+
+
+class StudyList(LoginRequiredMixin, SingleTableMixin, ListView):
+
+    model = models.Study
+    table_class = tables.StudyTable
+    context_table_name = 'study_table'
+    table_pagination = {'per_page': TABLE_PER_PAGE}
 
 
 class StudySourceTraitList(LoginRequiredMixin, SingleTableMixin, DetailView):
@@ -218,12 +101,118 @@ class StudySourceDatasetList(LoginRequiredMixin, SingleTableMixin, DetailView):
         return context
 
 
-class StudyList(LoginRequiredMixin, SingleTableMixin, ListView):
+class SourceDatasetDetail(LoginRequiredMixin, SingleTableMixin, DetailView):
+    """Detail view class for SourceDatasets. Displays the dataset's source traits in a table."""
 
-    model = models.Study
-    table_class = tables.StudyTable
-    context_table_name = 'study_table'
+    template_name = 'trait_browser/source_dataset_detail.html'
+    model = models.SourceDataset
+    context_object_name = 'source_dataset'
+    context_table_name = 'trait_table'
+    table_class = tables.SourceTraitDatasetTable
     table_pagination = {'per_page': TABLE_PER_PAGE}
+
+    def get_table_data(self):
+        return self.object.sourcetrait_set.all().order_by('i_dbgap_variable_accession')
+
+    def get_context_data(self, **kwargs):
+        context = super(SourceDatasetDetail, self).get_context_data(**kwargs)
+        trait = self.object.sourcetrait_set.first()
+        context['phs'] = trait.study_accession
+        context['phs_link'] = trait.dbgap_study_link
+        context['pht_link'] = trait.dbgap_dataset_link
+        context['trait_count'] = '{:,}'.format(self.object.sourcetrait_set.count())
+        return context
+
+
+class SourceDatasetList(LoginRequiredMixin, SingleTableView):
+    """List view class for SourceDatasets (unfiltered)."""
+
+    model = models.SourceDataset
+    context_table_name = 'source_dataset_table'
+    table_class = tables.SourceDatasetTable
+    table_pagination = {'per_page': TABLE_PER_PAGE}
+
+    def get_table_data(self):
+        return models.SourceDataset.objects.exclude(source_study_version__i_is_deprecated=True)
+
+
+class HarmonizedTraitSetVersionDetail(LoginRequiredMixin, FormMessagesMixin, DetailView):
+    """Detail view class for HarmonizedTraitSetVersions. Inherits from django.views.generic.DetailView."""
+
+    model = models.HarmonizedTraitSetVersion
+    context_object_name = 'harmonized_trait_set_version'
+    template_name = 'trait_browser/harmonized_trait_set_version_detail.html'
+
+
+class SourceTraitDetail(LoginRequiredMixin, DetailView):
+    """Detail view class for SourceTraits. Inherits from django.views.generic.DetailView."""
+
+    model = models.SourceTrait
+    context_object_name = 'source_trait'
+    template_name = 'trait_browser/source_trait_detail.html'
+
+    def get_context_data(self, **kwargs):
+        context = super(SourceTraitDetail, self).get_context_data(**kwargs)
+        user_studies = list(self.request.user.profile.taggable_studies.all())
+        context['user_is_study_tagger'] = self.object.source_dataset.source_study_version.study in user_studies
+        context['tags'] = list(Tag.objects.filter(traits=self.object))
+        return context
+
+
+class SourceTraitList(LoginRequiredMixin, SingleTableMixin, ListView):
+
+    model = models.SourceTrait
+    table_class = tables.SourceTraitTableFull
+    context_table_name = 'source_trait_table'
+    table_pagination = {'per_page': TABLE_PER_PAGE}
+
+    def get_table_data(self):
+        return models.SourceTrait.objects.exclude(source_dataset__source_study_version__i_is_deprecated=True)
+
+
+class SourceTraitTagging(LoginRequiredMixin, PermissionRequiredMixin, UserPassesTestMixin, FormMessagesMixin,
+                         FormView):
+    """Form view class for tagging a specific source trait."""
+
+    form_class = TagSpecificTraitForm
+    form_invalid_message = TAGGING_ERROR_MESSAGE
+    template_name = 'tags/taggedtrait_form.html'
+    permission_required = 'tags.add_taggedtrait'
+    raise_exception = True
+    redirect_unauthenticated_users = True
+
+    def dispatch(self, request, *args, **kwargs):
+        self.trait = get_object_or_404(models.SourceTrait, pk=kwargs.get('pk'))
+        return super(SourceTraitTagging, self).dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super(SourceTraitTagging, self).get_context_data(**kwargs)
+        context['trait'] = self.trait
+        return context
+
+    def form_valid(self, form):
+        """Create a TaggedTrait object for the trait and tag specified."""
+        tagged_trait = TaggedTrait(tag=form.cleaned_data['tag'], trait=self.trait, creator=self.request.user)
+        tagged_trait.full_clean()
+        tagged_trait.save()
+        # Save the tag for use in the success url.
+        self.tag = form.cleaned_data['tag']
+        return super(SourceTraitTagging, self).form_valid(form)
+
+    def test_func(self, user):
+        if user.is_staff:
+            return True
+        else:
+            user_studies = list(user.profile.taggable_studies.all())
+            return self.trait.source_dataset.source_study_version.study in user_studies
+
+    def get_success_url(self):
+        return self.trait.get_absolute_url()
+
+    def get_form_valid_message(self):
+        msg = 'Phenotype {} tagged as <a href="{}">{}</a>'.format(
+            self.trait.i_trait_name, self.tag.get_absolute_url(), self.tag.title)
+        return mark_safe(msg)
 
 
 class SourceTraitPHVAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
@@ -265,6 +254,17 @@ class TaggableStudyFilteredSourceTraitPHVAutocomplete(LoginRequiredMixin, Taggab
         if self.q:
             retrieved = retrieved.filter(i_dbgap_variable_accession__regex=r'^{}'.format(self.q))
         return retrieved
+
+
+class HarmonizedTraitList(LoginRequiredMixin, SingleTableMixin, ListView):
+
+    model = models.HarmonizedTrait
+    table_class = tables.HarmonizedTraitTable
+    context_table_name = 'harmonized_trait_table'
+    table_pagination = {'per_page': TABLE_PER_PAGE}
+
+    def get_table_data(self):
+        return models.HarmonizedTrait.objects.exclude(harmonized_trait_set_version__i_is_deprecated=True)
 
 
 class HarmonizedTraitFlavorNameAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):

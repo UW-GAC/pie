@@ -24,6 +24,195 @@ from .views import TABLE_PER_PAGE, search
 # will preclude any subsequent assertions
 
 
+class StudyDetailTest(UserLoginTestCase):
+    """Unit tests for the StudyDetail view."""
+
+    def setUp(self):
+        super(StudyDetailTest, self).setUp()
+        self.study = factories.StudyFactory.create()
+        self.source_traits = factories.SourceTraitFactory.create_batch(
+            10, source_dataset__source_study_version__i_is_deprecated=False,
+            source_dataset__source_study_version__study=self.study)
+
+    def get_url(self, *args):
+        return reverse('trait_browser:source:studies:detail:detail', args=args)
+
+    def test_view_success_code(self):
+        """View returns successful response code."""
+        response = self.client.get(self.get_url(self.study.pk))
+        self.assertEqual(response.status_code, 200)
+
+    def test_view_with_invalid_pk(self):
+        """View returns 404 response code when the pk doesn't exist."""
+        response = self.client.get(self.get_url(self.study.pk + 1))
+        self.assertEqual(response.status_code, 404)
+
+    def test_context_data(self):
+        """View has appropriate data in the context."""
+        response = self.client.get(self.get_url(self.study.pk))
+        context = response.context
+        self.assertIn('study', context)
+        self.assertEqual(context['study'], self.study)
+        self.assertIn('study_trait_table', context)
+        self.assertIsInstance(context['study_trait_table'], tables.SourceTraitStudyTable)
+
+    def test_no_deprecated_traits_in_table(self):
+        """No deprecated traits are shown in the table."""
+        deprecated_traits = factories.SourceTraitFactory.create_batch(
+            10, source_dataset__source_study_version__i_is_deprecated=True,
+            source_dataset__source_study_version__study=self.study)
+        response = self.client.get(self.get_url(self.study.pk))
+        context = response.context
+        table = context['study_trait_table']
+        for trait in deprecated_traits:
+            self.assertNotIn(trait, table.data)
+        for trait in self.source_traits:
+            self.assertIn(trait, table.data)
+
+    def test_no_other_study_traits_in_table(self):
+        """No traits from other studies are shown in the table."""
+        other_study = factories.StudyFactory.create()
+        other_traits = factories.SourceTraitFactory.create_batch(
+            10, source_dataset__source_study_version__i_is_deprecated=False,
+            source_dataset__source_study_version__study=other_study)
+        response = self.client.get(self.get_url(self.study.pk))
+        context = response.context
+        table = context['study_trait_table']
+        for trait in other_traits:
+            self.assertNotIn(trait, table.data)
+        for trait in self.source_traits:
+            self.assertIn(trait, table.data)
+
+    def test_table_has_no_rows(self):
+        """When there are no source traits, there are no rows in the table, but the view still works."""
+        models.SourceTrait.objects.all().delete()
+        response = self.client.get(self.get_url(self.study.pk))
+        context = response.context
+        table = context['study_trait_table']
+        self.assertEqual(len(table.rows), 0)
+
+
+class StudyListTest(UserLoginTestCase):
+    """Unit tests for the StudyList view."""
+
+    def setUp(self):
+        super(StudyListTest, self).setUp()
+        self.studies = factories.StudyFactory.create_batch(10)
+
+    def get_url(self, *args):
+        return reverse('trait_browser:source:studies:list')
+
+    def test_view_success_code(self):
+        """View returns successful response code."""
+        response = self.client.get(self.get_url())
+        self.assertEqual(response.status_code, 200)
+
+    def test_context_data(self):
+        """View has appropriate data in the context."""
+        response = self.client.get(self.get_url())
+        context = response.context
+        self.assertIn('study_table', context)
+        self.assertIsInstance(context['study_table'], tables.StudyTable)
+
+    def test_table_has_no_rows(self):
+        """When there are no studies, there are no rows in the table, but the view still works."""
+        models.Study.objects.all().delete()
+        response = self.client.get(self.get_url())
+        context = response.context
+        table = context['study_table']
+        self.assertEqual(len(table.rows), 0)
+
+
+class StudySourceTraitListTest(UserLoginTestCase):
+    pass
+
+
+class StudySourceDatasetListTest(UserLoginTestCase):
+    pass
+
+
+class StudySourceTableViewsTestCase(UserLoginTestCase):
+    """Unit tests for the SourceTrait by Study views."""
+
+    def test_study_source_table_one_page(self):
+        """Tests that the study_source_table view works with fewer rows than will require a second page."""
+        # Make less than one page of Studies.
+        n_studies = TABLE_PER_PAGE - 2
+        factories.StudyFactory.create_batch(n_studies)
+        url = reverse('trait_browser:source:studies:list')
+        response = self.client.get(url)
+        # Does the URL work?
+        self.assertEqual(response.status_code, 200)
+        # Does the study table object have n_studies rows?
+        self.assertEqual(len(response.context['study_table'].rows), n_studies)
+
+    def test_study_source_table_two_pages(self):
+        """Tests that the study_source_table view works with two pages' worth of rows."""
+        # Make less than one page of Studies.
+        n_studies = TABLE_PER_PAGE * 2
+        factories.StudyFactory.create_batch(n_studies)
+        url = reverse('trait_browser:source:studies:list')
+        response = self.client.get(url)
+        # Does the URL work?
+        self.assertEqual(response.status_code, 200)
+        # Does the study source table object have n_studies rows?
+        self.assertEqual(len(response.context['study_table'].rows), n_studies)
+
+    def test_study_source_trait_table_one_page(self):
+        """Source trait table has correct number of rows with only one page of results."""
+        n_traits = TABLE_PER_PAGE - 2
+        this_study = factories.StudyFactory.create()
+        factories.SourceTraitFactory.create_batch(n_traits, source_dataset__source_study_version__study=this_study)
+        url = reverse('trait_browser:source:studies:detail:detail', args=[this_study.i_accession])
+        response = self.client.get(url)
+        # Does the URL work?
+        self.assertEqual(response.status_code, 200)
+        # Is trait_table a SourceTraitTableFull object?
+        self.assertIsInstance(response.context['study_trait_table'], tables.SourceTraitStudyTable)
+        # Does the source trait table object have correct number of rows?
+        self.assertEqual(len(response.context['study_trait_table'].rows), n_traits)
+
+    def test_study_source_trait_table_one_page_plus_other_study(self):
+        """Table has correct number of rows with one page of results, even when there's another study."""
+        n_traits = TABLE_PER_PAGE - 2
+        this_study = factories.StudyFactory.create()
+        factories.SourceTraitFactory.create_batch(n_traits, source_dataset__source_study_version__study=this_study)
+        other_study = factories.StudyFactory.create()
+        factories.SourceTraitFactory.create_batch(n_traits, source_dataset__source_study_version__study=other_study)
+        url = reverse('trait_browser:source:studies:detail:detail', args=[this_study.i_accession])
+        response = self.client.get(url)
+        # Does the URL work?
+        self.assertEqual(response.status_code, 200)
+        # Is trait_table a SourceTraitTableFull object?
+        self.assertIsInstance(response.context['study_trait_table'], tables.SourceTraitStudyTable)
+        # Does the source trait table object have correct number of rows?
+        self.assertEqual(len(response.context['study_trait_table'].rows), n_traits)
+
+    def test_study_source_trait_table_two_pages(self):
+        """Table has correct number of rows when there are two pages of SourceTrait results."""
+        n_traits = TABLE_PER_PAGE * 2
+        this_study = factories.StudyFactory.create()
+        factories.SourceTraitFactory.create_batch(n_traits, source_dataset__source_study_version__study=this_study)
+        url = reverse('trait_browser:source:studies:detail:detail', args=[this_study.i_accession])
+        response = self.client.get(url)
+        # Does the URL work?
+        self.assertEqual(response.status_code, 200)
+        # Is trait_table a SourceTraitTableFull object?
+        self.assertIsInstance(response.context['study_trait_table'], tables.SourceTraitStudyTable)
+        # Does the source trait table object have correct number of rows?
+        self.assertEqual(len(response.context['study_trait_table'].rows), n_traits)
+
+    def test_study_source_get_search_url_response(self):
+        """Tests that the get_search_url method returns a valid and correct url for a given study."""
+        this_study = factories.StudyFactory.create()
+        url = this_study.get_search_url()
+        response = self.client.get(url)
+        # url should work
+        self.assertEqual(response.status_code, 200)
+        # url should be using correct i_accession value as checked box
+        self.assertEqual(response.context['form'].initial['study'], str(this_study.i_accession))
+
+
 class SourceDatasetDetailTest(UserLoginTestCase):
     """Unit tests for the SourceDataset views."""
 
@@ -115,6 +304,40 @@ class SourceDatasetListTest(UserLoginTestCase):
         self.assertEqual(len(table.rows), 0)
 
 
+class HarmonizedTraitSetVersionDetailTest(UserLoginTestCase):
+    """Unit tests for the HarmonizedTraitSet views."""
+
+    def setUp(self):
+        super(HarmonizedTraitSetVersionDetailTest, self).setUp()
+        self.htsv = factories.HarmonizedTraitSetVersionFactory.create()
+        self.htraits = factories.HarmonizedTraitFactory.create_batch(2, harmonized_trait_set_version=self.htsv)
+
+    def get_url(self, *args):
+        return reverse('trait_browser:harmonized:traits:detail', args=args)
+
+    def test_absolute_url(self):
+        """get_absolute_url returns a 200 as a response."""
+        response = self.client.get(self.htsv.get_absolute_url())
+        self.assertEqual(response.status_code, 200)
+
+    def test_view_success_code(self):
+        """View returns successful response code."""
+        response = self.client.get(self.get_url(self.htsv.pk))
+        self.assertEqual(response.status_code, 200)
+
+    def test_view_with_invalid_pk(self):
+        """View returns 404 response code when the pk doesn't exist."""
+        response = self.client.get(self.get_url(self.htsv.pk + 1))
+        self.assertEqual(response.status_code, 404)
+
+    def test_context_data(self):
+        """View has appropriate data in the context."""
+        response = self.client.get(self.get_url(self.htsv.pk))
+        context = response.context
+        self.assertIn('harmonized_trait_set_version', context)
+        self.assertEqual(context['harmonized_trait_set_version'], self.htsv)
+
+
 class SourceTraitDetailTest(UserLoginTestCase):
 
     def setUp(self):
@@ -179,38 +402,48 @@ class SourceTraitDetailPhenotypeTaggerTest(PhenotypeTaggerLoginTestCase):
         self.assertTrue(context['user_is_study_tagger'])
 
 
-class HarmonizedTraitSetVersionDetailTest(UserLoginTestCase):
-    """Unit tests for the HarmonizedTraitSet views."""
+class SourceTraitListTest(UserLoginTestCase):
+    """Unit tests for the SourceTraitList view."""
 
     def setUp(self):
-        super(HarmonizedTraitSetVersionDetailTest, self).setUp()
-        self.htsv = factories.HarmonizedTraitSetVersionFactory.create()
-        self.htraits = factories.HarmonizedTraitFactory.create_batch(2, harmonized_trait_set_version=self.htsv)
+        super(SourceTraitListTest, self).setUp()
+        self.source_traits = factories.SourceTraitFactory.create_batch(
+            10, source_dataset__source_study_version__i_is_deprecated=False)
 
     def get_url(self, *args):
-        return reverse('trait_browser:harmonized:traits:detail', args=args)
-
-    def test_absolute_url(self):
-        """get_absolute_url returns a 200 as a response."""
-        response = self.client.get(self.htsv.get_absolute_url())
-        self.assertEqual(response.status_code, 200)
+        return reverse('trait_browser:source:traits:list')
 
     def test_view_success_code(self):
         """View returns successful response code."""
-        response = self.client.get(self.get_url(self.htsv.pk))
+        response = self.client.get(self.get_url())
         self.assertEqual(response.status_code, 200)
-
-    def test_view_with_invalid_pk(self):
-        """View returns 404 response code when the pk doesn't exist."""
-        response = self.client.get(self.get_url(self.htsv.pk + 1))
-        self.assertEqual(response.status_code, 404)
 
     def test_context_data(self):
         """View has appropriate data in the context."""
-        response = self.client.get(self.get_url(self.htsv.pk))
+        response = self.client.get(self.get_url())
         context = response.context
-        self.assertIn('harmonized_trait_set_version', context)
-        self.assertEqual(context['harmonized_trait_set_version'], self.htsv)
+        self.assertIn('source_trait_table', context)
+        self.assertIsInstance(context['source_trait_table'], tables.SourceTraitTableFull)
+
+    def test_no_deprecated_traits_in_table(self):
+        """No deprecated traits are shown in the table."""
+        deprecated_traits = factories.SourceTraitFactory.create_batch(
+            10, source_dataset__source_study_version__i_is_deprecated=True)
+        response = self.client.get(self.get_url())
+        context = response.context
+        table = context['source_trait_table']
+        for trait in deprecated_traits:
+            self.assertNotIn(trait, table.data)
+        for trait in self.source_traits:
+            self.assertIn(trait, table.data)
+
+    def test_table_has_no_rows(self):
+        """When there are no source traits, there are no rows in the table, but the view still works."""
+        models.SourceTrait.objects.all().delete()
+        response = self.client.get(self.get_url())
+        context = response.context
+        table = context['source_trait_table']
+        self.assertEqual(len(table.rows), 0)
 
 
 class PhenotypeTaggerSourceTraitTaggingTest(PhenotypeTaggerLoginTestCase):
@@ -399,275 +632,6 @@ class DCCAnalystSourceTraitTaggingTest(DCCAnalystLoginTestCase):
         self.user.profile.taggable_studies.add(another_study)
         response = self.client.get(self.get_url(self.trait.pk))
         self.assertEqual(response.status_code, 200)
-
-
-class SourceTraitListTest(UserLoginTestCase):
-    """Unit tests for the SourceTraitList view."""
-
-    def setUp(self):
-        super(SourceTraitListTest, self).setUp()
-        self.source_traits = factories.SourceTraitFactory.create_batch(
-            10, source_dataset__source_study_version__i_is_deprecated=False)
-
-    def get_url(self, *args):
-        return reverse('trait_browser:source:traits:list')
-
-    def test_view_success_code(self):
-        """View returns successful response code."""
-        response = self.client.get(self.get_url())
-        self.assertEqual(response.status_code, 200)
-
-    def test_context_data(self):
-        """View has appropriate data in the context."""
-        response = self.client.get(self.get_url())
-        context = response.context
-        self.assertIn('source_trait_table', context)
-        self.assertIsInstance(context['source_trait_table'], tables.SourceTraitTableFull)
-
-    def test_no_deprecated_traits_in_table(self):
-        """No deprecated traits are shown in the table."""
-        deprecated_traits = factories.SourceTraitFactory.create_batch(
-            10, source_dataset__source_study_version__i_is_deprecated=True)
-        response = self.client.get(self.get_url())
-        context = response.context
-        table = context['source_trait_table']
-        for trait in deprecated_traits:
-            self.assertNotIn(trait, table.data)
-        for trait in self.source_traits:
-            self.assertIn(trait, table.data)
-
-    def test_table_has_no_rows(self):
-        """When there are no source traits, there are no rows in the table, but the view still works."""
-        models.SourceTrait.objects.all().delete()
-        response = self.client.get(self.get_url())
-        context = response.context
-        table = context['source_trait_table']
-        self.assertEqual(len(table.rows), 0)
-
-
-class HarmonizedTraitListTest(UserLoginTestCase):
-    """Unit tests for the HarmonizedTraitList view."""
-
-    def setUp(self):
-        super(HarmonizedTraitListTest, self).setUp()
-        self.harmonized_traits = factories.HarmonizedTraitFactory.create_batch(
-            10, harmonized_trait_set_version__i_is_deprecated=False)
-
-    def get_url(self, *args):
-        return reverse('trait_browser:harmonized:traits:list')
-
-    def test_view_success_code(self):
-        """View returns successful response code."""
-        response = self.client.get(self.get_url())
-        self.assertEqual(response.status_code, 200)
-
-    def test_context_data(self):
-        """View has appropriate data in the context."""
-        response = self.client.get(self.get_url())
-        context = response.context
-        self.assertIn('harmonized_trait_table', context)
-        self.assertIsInstance(context['harmonized_trait_table'], tables.HarmonizedTraitTable)
-
-    def test_no_deprecated_traits_in_table(self):
-        """No deprecated traits are shown in the table."""
-        deprecated_traits = factories.HarmonizedTraitFactory.create_batch(
-            10, harmonized_trait_set_version__i_is_deprecated=True)
-        response = self.client.get(self.get_url())
-        context = response.context
-        table = context['harmonized_trait_table']
-        for trait in deprecated_traits:
-            self.assertNotIn(trait, table.data)
-        for trait in self.harmonized_traits:
-            self.assertIn(trait, table.data)
-
-    def test_table_has_no_rows(self):
-        """When there are no harmonized traits, there are no rows in the table, but the view still works."""
-        models.HarmonizedTrait.objects.all().delete()
-        response = self.client.get(self.get_url())
-        context = response.context
-        table = context['harmonized_trait_table']
-        self.assertEqual(len(table.rows), 0)
-
-
-class StudyDetailTest(UserLoginTestCase):
-    """Unit tests for the StudyDetail view."""
-
-    def setUp(self):
-        super(StudyDetailTest, self).setUp()
-        self.study = factories.StudyFactory.create()
-        self.source_traits = factories.SourceTraitFactory.create_batch(
-            10, source_dataset__source_study_version__i_is_deprecated=False,
-            source_dataset__source_study_version__study=self.study)
-
-    def get_url(self, *args):
-        return reverse('trait_browser:source:studies:detail:detail', args=args)
-
-    def test_view_success_code(self):
-        """View returns successful response code."""
-        response = self.client.get(self.get_url(self.study.pk))
-        self.assertEqual(response.status_code, 200)
-
-    def test_view_with_invalid_pk(self):
-        """View returns 404 response code when the pk doesn't exist."""
-        response = self.client.get(self.get_url(self.study.pk + 1))
-        self.assertEqual(response.status_code, 404)
-
-    def test_context_data(self):
-        """View has appropriate data in the context."""
-        response = self.client.get(self.get_url(self.study.pk))
-        context = response.context
-        self.assertIn('study', context)
-        self.assertEqual(context['study'], self.study)
-        self.assertIn('study_trait_table', context)
-        self.assertIsInstance(context['study_trait_table'], tables.SourceTraitStudyTable)
-
-    def test_no_deprecated_traits_in_table(self):
-        """No deprecated traits are shown in the table."""
-        deprecated_traits = factories.SourceTraitFactory.create_batch(
-            10, source_dataset__source_study_version__i_is_deprecated=True,
-            source_dataset__source_study_version__study=self.study)
-        response = self.client.get(self.get_url(self.study.pk))
-        context = response.context
-        table = context['study_trait_table']
-        for trait in deprecated_traits:
-            self.assertNotIn(trait, table.data)
-        for trait in self.source_traits:
-            self.assertIn(trait, table.data)
-
-    def test_no_other_study_traits_in_table(self):
-        """No traits from other studies are shown in the table."""
-        other_study = factories.StudyFactory.create()
-        other_traits = factories.SourceTraitFactory.create_batch(
-            10, source_dataset__source_study_version__i_is_deprecated=False,
-            source_dataset__source_study_version__study=other_study)
-        response = self.client.get(self.get_url(self.study.pk))
-        context = response.context
-        table = context['study_trait_table']
-        for trait in other_traits:
-            self.assertNotIn(trait, table.data)
-        for trait in self.source_traits:
-            self.assertIn(trait, table.data)
-
-    def test_table_has_no_rows(self):
-        """When there are no source traits, there are no rows in the table, but the view still works."""
-        models.SourceTrait.objects.all().delete()
-        response = self.client.get(self.get_url(self.study.pk))
-        context = response.context
-        table = context['study_trait_table']
-        self.assertEqual(len(table.rows), 0)
-
-
-class StudyListTest(UserLoginTestCase):
-    """Unit tests for the StudyList view."""
-
-    def setUp(self):
-        super(StudyListTest, self).setUp()
-        self.studies = factories.StudyFactory.create_batch(10)
-
-    def get_url(self, *args):
-        return reverse('trait_browser:source:studies:list')
-
-    def test_view_success_code(self):
-        """View returns successful response code."""
-        response = self.client.get(self.get_url())
-        self.assertEqual(response.status_code, 200)
-
-    def test_context_data(self):
-        """View has appropriate data in the context."""
-        response = self.client.get(self.get_url())
-        context = response.context
-        self.assertIn('study_table', context)
-        self.assertIsInstance(context['study_table'], tables.StudyTable)
-
-    def test_table_has_no_rows(self):
-        """When there are no studies, there are no rows in the table, but the view still works."""
-        models.Study.objects.all().delete()
-        response = self.client.get(self.get_url())
-        context = response.context
-        table = context['study_table']
-        self.assertEqual(len(table.rows), 0)
-
-
-class StudySourceTableViewsTestCase(UserLoginTestCase):
-    """Unit tests for the SourceTrait by Study views."""
-
-    def test_study_source_table_one_page(self):
-        """Tests that the study_source_table view works with fewer rows than will require a second page."""
-        # Make less than one page of Studies.
-        n_studies = TABLE_PER_PAGE - 2
-        factories.StudyFactory.create_batch(n_studies)
-        url = reverse('trait_browser:source:studies:list')
-        response = self.client.get(url)
-        # Does the URL work?
-        self.assertEqual(response.status_code, 200)
-        # Does the study table object have n_studies rows?
-        self.assertEqual(len(response.context['study_table'].rows), n_studies)
-
-    def test_study_source_table_two_pages(self):
-        """Tests that the study_source_table view works with two pages' worth of rows."""
-        # Make less than one page of Studies.
-        n_studies = TABLE_PER_PAGE * 2
-        factories.StudyFactory.create_batch(n_studies)
-        url = reverse('trait_browser:source:studies:list')
-        response = self.client.get(url)
-        # Does the URL work?
-        self.assertEqual(response.status_code, 200)
-        # Does the study source table object have n_studies rows?
-        self.assertEqual(len(response.context['study_table'].rows), n_studies)
-
-    def test_study_source_trait_table_one_page(self):
-        """Source trait table has correct number of rows with only one page of results."""
-        n_traits = TABLE_PER_PAGE - 2
-        this_study = factories.StudyFactory.create()
-        factories.SourceTraitFactory.create_batch(n_traits, source_dataset__source_study_version__study=this_study)
-        url = reverse('trait_browser:source:studies:detail:detail', args=[this_study.i_accession])
-        response = self.client.get(url)
-        # Does the URL work?
-        self.assertEqual(response.status_code, 200)
-        # Is trait_table a SourceTraitTableFull object?
-        self.assertIsInstance(response.context['study_trait_table'], tables.SourceTraitStudyTable)
-        # Does the source trait table object have correct number of rows?
-        self.assertEqual(len(response.context['study_trait_table'].rows), n_traits)
-
-    def test_study_source_trait_table_one_page_plus_other_study(self):
-        """Table has correct number of rows with one page of results, even when there's another study."""
-        n_traits = TABLE_PER_PAGE - 2
-        this_study = factories.StudyFactory.create()
-        factories.SourceTraitFactory.create_batch(n_traits, source_dataset__source_study_version__study=this_study)
-        other_study = factories.StudyFactory.create()
-        factories.SourceTraitFactory.create_batch(n_traits, source_dataset__source_study_version__study=other_study)
-        url = reverse('trait_browser:source:studies:detail:detail', args=[this_study.i_accession])
-        response = self.client.get(url)
-        # Does the URL work?
-        self.assertEqual(response.status_code, 200)
-        # Is trait_table a SourceTraitTableFull object?
-        self.assertIsInstance(response.context['study_trait_table'], tables.SourceTraitStudyTable)
-        # Does the source trait table object have correct number of rows?
-        self.assertEqual(len(response.context['study_trait_table'].rows), n_traits)
-
-    def test_study_source_trait_table_two_pages(self):
-        """Table has correct number of rows when there are two pages of SourceTrait results."""
-        n_traits = TABLE_PER_PAGE * 2
-        this_study = factories.StudyFactory.create()
-        factories.SourceTraitFactory.create_batch(n_traits, source_dataset__source_study_version__study=this_study)
-        url = reverse('trait_browser:source:studies:detail:detail', args=[this_study.i_accession])
-        response = self.client.get(url)
-        # Does the URL work?
-        self.assertEqual(response.status_code, 200)
-        # Is trait_table a SourceTraitTableFull object?
-        self.assertIsInstance(response.context['study_trait_table'], tables.SourceTraitStudyTable)
-        # Does the source trait table object have correct number of rows?
-        self.assertEqual(len(response.context['study_trait_table'].rows), n_traits)
-
-    def test_study_source_get_search_url_response(self):
-        """Tests that the get_search_url method returns a valid and correct url for a given study."""
-        this_study = factories.StudyFactory.create()
-        url = this_study.get_search_url()
-        response = self.client.get(url)
-        # url should work
-        self.assertEqual(response.status_code, 200)
-        # url should be using correct i_accession value as checked box
-        self.assertEqual(response.context['form'].initial['study'], str(this_study.i_accession))
 
 
 class SourceTraitPHVAutocompleteTestCase(UserLoginTestCase):
@@ -911,6 +875,50 @@ class DCCAnalystTaggableStudyFilteredSourceTraitPHVAutocompleteTestCase(DCCAnaly
         self.assertEqual(response.status_code, 403)
 
 
+class HarmonizedTraitListTest(UserLoginTestCase):
+    """Unit tests for the HarmonizedTraitList view."""
+
+    def setUp(self):
+        super(HarmonizedTraitListTest, self).setUp()
+        self.harmonized_traits = factories.HarmonizedTraitFactory.create_batch(
+            10, harmonized_trait_set_version__i_is_deprecated=False)
+
+    def get_url(self, *args):
+        return reverse('trait_browser:harmonized:traits:list')
+
+    def test_view_success_code(self):
+        """View returns successful response code."""
+        response = self.client.get(self.get_url())
+        self.assertEqual(response.status_code, 200)
+
+    def test_context_data(self):
+        """View has appropriate data in the context."""
+        response = self.client.get(self.get_url())
+        context = response.context
+        self.assertIn('harmonized_trait_table', context)
+        self.assertIsInstance(context['harmonized_trait_table'], tables.HarmonizedTraitTable)
+
+    def test_no_deprecated_traits_in_table(self):
+        """No deprecated traits are shown in the table."""
+        deprecated_traits = factories.HarmonizedTraitFactory.create_batch(
+            10, harmonized_trait_set_version__i_is_deprecated=True)
+        response = self.client.get(self.get_url())
+        context = response.context
+        table = context['harmonized_trait_table']
+        for trait in deprecated_traits:
+            self.assertNotIn(trait, table.data)
+        for trait in self.harmonized_traits:
+            self.assertIn(trait, table.data)
+
+    def test_table_has_no_rows(self):
+        """When there are no harmonized traits, there are no rows in the table, but the view still works."""
+        models.HarmonizedTrait.objects.all().delete()
+        response = self.client.get(self.get_url())
+        context = response.context
+        table = context['harmonized_trait_table']
+        self.assertEqual(len(table.rows), 0)
+
+
 class HarmonizedTraitFlavorNameAutocompleteViewTest(UserLoginTestCase):
     """Autocomplete view works as expected."""
 
@@ -939,6 +947,7 @@ class HarmonizedTraitFlavorNameAutocompleteViewTest(UserLoginTestCase):
         self.assertEqual(names_in_content[0], ht1.trait_flavor_name)
 
 
+# Tests of searching. Will probably be replaced/majorly rewritten after search is redesigned.
 class SourceSearchTestCase(TestCase):
 
     def test_search_source_trait_name_exact(self):
@@ -1200,6 +1209,7 @@ class HarmonizedTraitSearchViewTestCase(UserLoginTestCase):
         self.assertIsInstance(Search.objects.get(param_text=text, search_count=1, search_type=search_type), Search)
 
 
+# Test of the login-required for each URL in the app.
 class TraitBrowserLoginRequiredTestCase(LoginRequiredTestCase):
 
     def test_trait_browser_login_required(self):
