@@ -979,6 +979,18 @@ class SourceTraitNameAutocompleteTest(UserLoginTestCase):
         for name_trait in traits_with_name:
             self.assertIn(name_trait.pk, returned_pks)
 
+    def test_case_insensitive(self):
+        """Queryset returns the proper source trait when the case of the search term doesn't match."""
+        query_trait = self.source_traits[0]
+        url = self.get_url()
+        response = self.client.get(url, {'q': query_trait.i_trait_name.upper()})
+        returned_pks = get_autocomplete_view_ids(response)
+        # Get traits that have the same trait name, to account for how small the word lists for faker are.
+        traits_with_name = models.SourceTrait.objects.filter(i_trait_name=query_trait.i_trait_name)
+        self.assertEqual(len(returned_pks), len(traits_with_name))
+        for name_trait in traits_with_name:
+            self.assertIn(name_trait.pk, returned_pks)
+
 
 class PhenotypeTaggerTaggableStudyFilteredSourceTraitNameAutocompleteTestCase(PhenotypeTaggerLoginTestCase):
     """Autocomplete view works as expected."""
@@ -1053,7 +1065,7 @@ class PhenotypeTaggerTaggableStudyFilteredSourceTraitNameAutocompleteTestCase(Ph
         for trait in self.source_traits:
             self.assertIn(trait.i_trait_id, returned_pks)
 
-    def test_proper_phv_in_queryset(self):
+    def test_proper_name_only_in_queryset(self):
         """Queryset returns only the proper phv number."""
         query_trait = self.source_traits[0]
         url = self.get_url(self.study.pk)
@@ -1070,6 +1082,18 @@ class PhenotypeTaggerTaggableStudyFilteredSourceTraitNameAutocompleteTestCase(Ph
         self.user.profile.taggable_studies.remove(self.study)
         response = self.client.get(self.get_url())
         self.assertEqual(response.status_code, 403)
+
+    def test_case_insensitive(self):
+        """Queryset returns the proper source trait when the case of the search term is wrong."""
+        query_trait = self.source_traits[0]
+        url = self.get_url(self.study.pk)
+        response = self.client.get(url, {'q': query_trait.i_trait_name.upper()})
+        returned_pks = get_autocomplete_view_ids(response)
+        # Get traits that have the same trait name, to account for how small the word lists for faker are.
+        traits_with_name = models.SourceTrait.objects.filter(i_trait_name=query_trait.i_trait_name)
+        self.assertEqual(len(returned_pks), len(traits_with_name))
+        for name_trait in traits_with_name:
+            self.assertIn(name_trait.pk, returned_pks)
 
 
 class DCCAnalystTaggableStudyFilteredSourceTraitNameAutocompleteTestCase(DCCAnalystLoginTestCase):
@@ -1149,7 +1173,7 @@ class DCCAnalystTaggableStudyFilteredSourceTraitNameAutocompleteTestCase(DCCAnal
         for trait in self.source_traits:
             self.assertIn(trait.i_trait_id, returned_pks)
 
-    def test_proper_phv_in_queryset(self):
+    def test_proper_name_only_in_queryset(self):
         """Queryset returns only the proper phv number."""
         query_trait = self.source_traits[0]
         url = self.get_url(self.study.pk)
@@ -1174,6 +1198,18 @@ class DCCAnalystTaggableStudyFilteredSourceTraitNameAutocompleteTestCase(DCCAnal
         self.user.refresh_from_db()
         response = self.client.get(self.get_url())
         self.assertEqual(response.status_code, 403)
+
+    def test_case_insensitive(self):
+        """Queryset returns the proper source trait when the case of the search term is wrong."""
+        query_trait = self.source_traits[0]
+        url = self.get_url(self.study.pk)
+        response = self.client.get(url, {'q': query_trait.i_trait_name.upper()})
+        returned_pks = get_autocomplete_view_ids(response)
+        # Get traits that have the same trait name, to account for how small the word lists for faker are.
+        traits_with_name = models.SourceTrait.objects.filter(i_trait_name=query_trait.i_trait_name)
+        self.assertEqual(len(returned_pks), len(traits_with_name))
+        for name_trait in traits_with_name:
+            self.assertIn(name_trait.pk, returned_pks)
 
 
 class HarmonizedTraitListTest(UserLoginTestCase):
