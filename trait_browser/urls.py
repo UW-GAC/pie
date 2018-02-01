@@ -20,7 +20,7 @@ source_trait_autocomplete_taggable_patterns = [
 source_trait_autocomplete_patterns = [
     url(r'^taggable/', include(source_trait_autocomplete_taggable_patterns, namespace='taggable')),
     url(r'^by-phv/$', views.SourceTraitPHVAutocomplete.as_view(), name='by-phv'),
-    # by-name
+    url(r'^by-name/$', views.SourceTraitNameAutocomplete.as_view(), name='by-name'),
 ]
 
 source_trait_patterns = [

@@ -915,6 +915,71 @@ class DCCAnalystTaggableStudyFilteredSourceTraitPHVAutocompleteTestCase(DCCAnaly
         self.assertEqual(response.status_code, 403)
 
 
+class SourceTraitNameAutocompleteTest(UserLoginTestCase):
+    """Autocomplete view works as expected."""
+
+    def setUp(self):
+        super(SourceTraitNameAutocompleteTest, self).setUp()
+        # Create 10 source traits from the same dataset, with non-deprecated ssv of version 2.
+        self.source_traits = factories.SourceTraitFactory.create_batch(
+            10, source_dataset__i_id=6, source_dataset__source_study_version__i_version=2,
+            source_dataset__source_study_version__i_is_deprecated=False)
+
+    def get_url(self, *args):
+        return reverse('trait_browser:source:traits:autocomplete:by-name')
+
+    def test_view_success_code(self):
+        """View returns successful response code."""
+        response = self.client.get(self.get_url())
+        self.assertEqual(response.status_code, 200)
+
+    def test_returns_all_traits(self):
+        """Queryset returns all of the traits with no query (when there are 10, which is the page limit)."""
+        url = self.get_url()
+        response = self.client.get(url)
+        pks = get_autocomplete_view_ids(response)
+        self.assertEqual(sorted([trait.pk for trait in self.source_traits]), sorted(pks))
+
+    def test_no_deprecated_traits_in_queryset(self):
+        """Queryset returns only the latest version of traits with the same trait name."""
+        # Create an older, deprecated version of an existing source trait.
+        trait = self.source_traits[0]
+        # Make a new copy of the source study version, and decrement the version number.
+        ssv2 = copy(trait.source_dataset.source_study_version)
+        ssv2.i_version -= 1
+        ssv2.i_id += 1
+        ssv2.i_is_deprecated = True
+        ssv2.save()
+        # Make a new copy of the dataset, linked to older ssv.
+        ds2 = copy(trait.source_dataset)
+        ds2.i_id += 1
+        ds2.source_study_version = ssv2
+        ds2.save()
+        # Copy the source trait and link it to the older dataset.
+        trait2 = copy(trait)
+        trait2.source_dataset = ds2
+        trait2.i_trait_id += 1
+        trait2.save()
+        # Get results from the autocomplete view and make sure only the new version is found.
+        url = self.get_url()
+        response = self.client.get(url, {'q': trait.i_trait_name})
+        pks = get_autocomplete_view_ids(response)
+        self.assertIn(trait.pk, pks)
+        self.assertNotIn(trait2.pk, pks)
+
+    def test_proper_name_only_in_queryset(self):
+        """Queryset returns only the proper phv number."""
+        query_trait = self.source_traits[0]
+        url = self.get_url()
+        response = self.client.get(url, {'q': query_trait.i_trait_name})
+        returned_pks = get_autocomplete_view_ids(response)
+        # Get traits that have the same trait name, to account for how small the word lists for faker are.
+        traits_with_name = models.SourceTrait.objects.filter(i_trait_name=query_trait.i_trait_name)
+        self.assertEqual(len(returned_pks), len(traits_with_name))
+        for name_trait in traits_with_name:
+            self.assertIn(name_trait.pk, returned_pks)
+
+
 class HarmonizedTraitListTest(UserLoginTestCase):
     """Unit tests for the HarmonizedTraitList view."""
 

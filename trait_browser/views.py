@@ -253,6 +253,16 @@ class TaggableStudyFilteredSourceTraitPHVAutocomplete(LoginRequiredMixin, Taggab
         return retrieved
 
 
+class SourceTraitNameAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
+    """Auto-complete source trait objects in a form field by i_trait_name."""
+
+    def get_queryset(self):
+        retrieved = models.SourceTrait.objects.filter(source_dataset__source_study_version__i_is_deprecated=False)
+        if self.q:
+            retrieved = retrieved.filter(i_trait_name__regex=r'^{}'.format(self.q))
+        return retrieved
+
+
 class HarmonizedTraitList(LoginRequiredMixin, SingleTableMixin, ListView):
 
     model = models.HarmonizedTrait
