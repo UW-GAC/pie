@@ -660,53 +660,67 @@ class DCCAnalystSourceTraitTaggingTest(DCCAnalystLoginTestCase):
         self.assertEqual(response.status_code, 200)
 
 
-class SourceTraitPHVAutocompleteTestCase(UserLoginTestCase):
+class SourceTraitPHVAutocompleteTest(UserLoginTestCase):
     """Autocomplete view works as expected."""
+
+    def setUp(self):
+        super(SourceTraitPHVAutocompleteTest, self).setUp()
+        # Create 10 source traits from the same dataset, with non-deprecated ssv of version 2.
+        self.source_traits = factories.SourceTraitFactory.create_batch(
+            10, source_dataset__i_id=6, source_dataset__source_study_version__i_version=2,
+            source_dataset__source_study_version__i_is_deprecated=False)
+
+    def get_url(self, *args):
+        return reverse('trait_browser:source:traits:autocomplete:by-phv')
+
+    def test_view_success_code(self):
+        """View returns successful response code."""
+        response = self.client.get(self.get_url())
+        self.assertEqual(response.status_code, 200)
+
+    def test_returns_all_traits(self):
+        """Queryset returns all of the traits with no query (when there are 10, which is the page limit)."""
+        url = self.get_url()
+        response = self.client.get(url)
+        pks = get_autocomplete_view_ids(response)
+        self.assertEqual(sorted([trait.pk for trait in self.source_traits]), sorted(pks))
 
     def test_no_deprecated_traits_in_queryset(self):
         """Queryset returns only the latest version of a trait."""
-        # Create a source trait with linked source dataset and source study version.
-        source_trait = factories.SourceTraitFactory.create(
-            i_trait_id=5, source_dataset__i_id=6, i_dbgap_variable_accession=60,
-            source_dataset__source_study_version__i_id=5)
-        ds = source_trait.source_dataset
-        ssv = source_trait.source_dataset.source_study_version
-        # Copy the source study version and increment it.
-        ssv2 = copy(ssv)
-        ssv2.i_version += 1
+        # Create an older, deprecated version of an existing source trait.
+        trait = self.source_traits[0]
+        # Make a new copy of the source study version, and decrement the version number.
+        ssv2 = copy(trait.source_dataset.source_study_version)
+        ssv2.i_version -= 1
         ssv2.i_id += 1
+        ssv2.i_is_deprecated = True
         ssv2.save()
-        # Make the old ssv deprecated.
-        ssv.i_is_deprecated = True
-        ssv.save()
-        # Copy the source dataset and increment it. Link it to the new ssv.
-        ds2 = copy(ds)
+        # Make a new copy of the dataset, linked to older ssv.
+        ds2 = copy(trait.source_dataset)
         ds2.i_id += 1
         ds2.source_study_version = ssv2
         ds2.save()
-        # Copy the source trait and increment it. Link it to the new source dataset.
-        source_trait2 = copy(source_trait)
-        source_trait2.source_dataset = ds2
-        source_trait2.i_trait_id += 1
-        source_trait2.save()
+        # Copy the source trait and link it to the older dataset.
+        trait2 = copy(trait)
+        trait2.source_dataset = ds2
+        trait2.i_trait_id += 1
+        trait2.save()
         # Get results from the autocomplete view and make sure only the new version is found.
-        url = reverse('trait_browser:source:traits:autocomplete:by-phv')
-        response = self.client.get(url, {'q': source_trait2.i_dbgap_variable_accession})
-        id_re = re.compile(r'"id": (\d+)')
-        ids_in_content = [match[0] for match in id_re.findall(str(response.content))]
-        self.assertTrue(len(ids_in_content) == 1)
-        self.assertTrue(str(source_trait2.i_trait_id) in ids_in_content)
+        url = self.get_url()
+        response = self.client.get(url, {'q': trait2.i_dbgap_variable_accession})
+        pks = get_autocomplete_view_ids(response)
+        self.assertIn(self.source_traits[0].pk, pks)
+        self.assertNotIn(trait2.pk, pks)
 
     def test_proper_phv_in_queryset(self):
         """Queryset returns only the proper phv number."""
-        source_traits = factories.SourceTraitFactory.create_batch(10)
-        st1 = source_traits[0]
-        url = reverse('trait_browser:source:traits:autocomplete:by-phv')
-        response = self.client.get(url, {'q': st1.i_dbgap_variable_accession})
-        phv_re = re.compile(r'phv\d{8}')
-        phvs_in_content = [match for match in phv_re.findall(str(response.content))]
-        self.assertTrue(len(phvs_in_content) == 1)
-        self.assertTrue('phv{:08d}'.format(st1.i_dbgap_variable_accession) in phvs_in_content)
+        query_trait = self.source_traits[0]
+        url = self.get_url()
+        response = self.client.get(url, {'q': query_trait.i_dbgap_variable_accession})
+        returned_pks = get_autocomplete_view_ids(response)
+        self.assertEqual(len(returned_pks), 1)
+        self.assertIn(query_trait.pk, returned_pks)
+        self.assertNotIn(self.source_traits[2].pk, returned_pks)
 
 
 class PhenotypeTaggerTaggableStudyFilteredSourceTraitPHVAutocompleteTestCase(PhenotypeTaggerLoginTestCase):
