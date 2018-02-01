@@ -14,7 +14,8 @@ from . import views
 source_trait_autocomplete_taggable_patterns = [
     url(r'^by-phv/$', views.TaggableStudyFilteredSourceTraitPHVAutocomplete.as_view(),
         name='by-phv'),
-    # by name
+    url(r'^by-name/$', views.TaggableStudyFilteredSourceTraitNameAutocomplete.as_view(),
+        name='by-name'),
 ]
 
 source_trait_autocomplete_patterns = [

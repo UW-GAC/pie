@@ -263,6 +263,29 @@ class SourceTraitNameAutocomplete(LoginRequiredMixin, autocomplete.Select2QueryS
         return retrieved
 
 
+class TaggableStudyFilteredSourceTraitNameAutocomplete(LoginRequiredMixin, TaggableStudiesRequiredMixin,
+                                                       autocomplete.Select2QuerySetView):
+    """Auto-complete source trait objects in a form field by i_trait_name, with restrictions."""
+
+    raise_exception = True
+    redirect_unauthenticated_users = True
+
+    def get_queryset(self):
+        if self.request.user.is_staff:
+            retrieved = models.SourceTrait.objects.filter(
+                source_dataset__source_study_version__i_is_deprecated=False
+            )
+        else:
+            studies = self.request.user.profile.taggable_studies.all()
+            retrieved = models.SourceTrait.objects.filter(
+                source_dataset__source_study_version__study__in=list(studies),
+                source_dataset__source_study_version__i_is_deprecated=False
+            )
+        if self.q:
+            retrieved = retrieved.filter(i_trait_name__regex=r'^{}'.format(self.q))
+        return retrieved
+
+
 class HarmonizedTraitList(LoginRequiredMixin, SingleTableMixin, ListView):
 
     model = models.HarmonizedTrait
