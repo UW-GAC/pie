@@ -3,13 +3,13 @@
 
 
 {% block head_title %}
-     | {{ study.i_study_name }} details
+     | {{ study.i_study_name }} datasets
 {% endblock %}
 
 {% block content %}
     <div class="well">
     
-    <h2>{{ study.i_study_name }} <small>dbGaP study details</small></h2>
+    <h2>{{ study.i_study_name }} <small>dbGaP study datasets</small></h2>
 
     <div class="panel panel-info">
         <div class="panel-heading">
@@ -23,15 +23,8 @@
                 <dd>{{ study.phs }}</dd>
                 <dt>Dataset count</dt>
                 <dd>{{ dataset_count }}</dd>
-                <dt>Variable count</dt>
-                <dd>{{ trait_count }}</dd>
             </dl>
 
-            <p><a class="btn btn-primary" href="{% url 'trait_browser:source:studies:detail:variables' study.pk %}" role="button"><span class="glyphicon glyphicon-th-large" aria-hidden="true">
-            </span> View all variables</a></p>
-            <p><a class="btn btn-primary" href="{% url 'trait_browser:source:studies:detail:datasets' study.pk %}" role="button"><span class="glyphicon glyphicon-th-list" aria-hidden="true">
-            </span> View all datasets</a></p>
-            
         </div>
     </div>
 
@@ -43,6 +36,13 @@
             </dl>
             <p>A study's data collection forms and and related documents can be found on dbGaP.</p>
             <p><mark>Please keep in mind that dbGaP data summaries might include many subjects who were not included in TOPMed sequencing.</mark></p>
+        </div>
+    </div>
+
+    <div class="panel panel-default">
+        <div class="panel-heading"><h4 class="panel-title">dbGaP phenotype datasets in study</h4></div>
+        <div class="panel-body">
+            {% render_table source_dataset_table %}
         </div>
     </div>
 

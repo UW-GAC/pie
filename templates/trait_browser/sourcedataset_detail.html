@@ -3,35 +3,28 @@
 
 
 {% block head_title %}
-     | {{ study.i_study_name }} details
+     | {{ source_dataset.pht_version_string }} details
 {% endblock %}
 
 {% block content %}
     <div class="well">
     
-    <h2>{{ study.i_study_name }} <small>dbGaP study details</small></h2>
+    <h2>{{ source_dataset.pht_version_string }} <small>dbGaP dataset details</small></h2>
 
     <div class="panel panel-info">
         <div class="panel-heading">
-            <h3 class="panel-title">Study: {{ study.i_study_name }}</h3>
+            <h3 class="panel-title">Dataset: {{ source_dataset.pht_version_string }}</h3>
         </div>
         <div class="panel-body">
-            <p><a class="btn btn-primary btn-lg" href="{{ study.get_search_url }}" role="button"><span class="glyphicon glyphicon-search" aria-hidden="true">
-            </span> Search variables from this study</a></p>
             <dl class="dl-horizontal">
-                <dt>dbGaP accession</dt>
-                <dd>{{ study.phs }}</dd>
-                <dt>Dataset count</dt>
-                <dd>{{ dataset_count }}</dd>
+                <dt>Study</dt>
+                <dd><a href="{{ source_dataset.source_study_version.study.get_absolute_url }}">{{ source_dataset.source_study_version.study.i_study_name }}</a></dd>
+                <dt>Dataset description</dt>
+                <dd>{{ source_dataset.i_dbgap_description }}</dd>
                 <dt>Variable count</dt>
                 <dd>{{ trait_count }}</dd>
             </dl>
 
-            <p><a class="btn btn-primary" href="{% url 'trait_browser:source:studies:detail:variables' study.pk %}" role="button"><span class="glyphicon glyphicon-th-large" aria-hidden="true">
-            </span> View all variables</a></p>
-            <p><a class="btn btn-primary" href="{% url 'trait_browser:source:studies:detail:datasets' study.pk %}" role="button"><span class="glyphicon glyphicon-th-list" aria-hidden="true">
-            </span> View all datasets</a></p>
-            
         </div>
     </div>
 
@@ -39,10 +32,18 @@
         <div class="panel-heading"><h4 class="panel-title">Links to dbGaP information</h4></div>
         <div class="panel-body">
             <dl class="dl-horizontal">
+                <dt>Dataset</dt> <dd><a target="_blank" href="{{ pht_link }}">{{source_dataset.pht_version_string}}</a></dd>
                 <dt>Study</dt> <dd><a target="_blank" href="{{ phs_link }}">{{ phs }}</a></dd>
             </dl>
             <p>A study's data collection forms and and related documents can be found on dbGaP.</p>
             <p><mark>Please keep in mind that dbGaP data summaries might include many subjects who were not included in TOPMed sequencing.</mark></p>
+        </div>
+    </div>
+
+    <div class="panel panel-default">
+        <div class="panel-heading"><h4 class="panel-title">dbGaP phenotype variables in dataset</h4></div>
+        <div class="panel-body">
+            {% render_table trait_table %}    
         </div>
     </div>
 

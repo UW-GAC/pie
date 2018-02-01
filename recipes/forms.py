@@ -133,11 +133,11 @@ class UnitRecipeForm(UserKwargModelFormMixin, UnitRecipeCleanMixin, forms.ModelF
         fields = ('name', 'harmonized_phenotype_variables', 'age_variables', 'batch_variables', 'phenotype_variables',
                   'type', 'instructions', )
         widgets = {
-            'age_variables': autocomplete.ModelSelect2Multiple(url='trait_browser:source:autocomplete'),
-            'batch_variables': autocomplete.ModelSelect2Multiple(url='trait_browser:source:autocomplete'),
-            'phenotype_variables': autocomplete.ModelSelect2Multiple(url='trait_browser:source:autocomplete'),
+            'age_variables': autocomplete.ModelSelect2Multiple(url='trait_browser:source:traits:autocomplete:by-phv'),
+            'batch_variables': autocomplete.ModelSelect2Multiple(url='trait_browser:source:traits:autocomplete:by-phv'),
+            'phenotype_variables': autocomplete.ModelSelect2Multiple(url='trait_browser:source:traits:autocomplete:by-phv'),
             'harmonized_phenotype_variables': autocomplete.ModelSelect2Multiple(
-                url='trait_browser:harmonized:autocomplete'),
+                url='trait_browser:harmonized:traits:autocomplete:by-name'),
         }
         help_texts = {
             'name': """A unique and informative name for the harmonization unit.""",
@@ -176,9 +176,9 @@ class UnitRecipeAdminForm(UnitRecipeCleanMixin, forms.ModelForm):
         model = models.UnitRecipe
         fields = ('name', 'age_variables', 'batch_variables', 'phenotype_variables', 'type', 'instructions', )
         widgets = {
-            'age_variables': autocomplete.ModelSelect2Multiple(url='trait_browser:source:autocomplete'),
-            'batch_variables': autocomplete.ModelSelect2Multiple(url='trait_browser:source:autocomplete'),
-            'phenotype_variables': autocomplete.ModelSelect2Multiple(url='trait_browser:source:autocomplete'),
+            'age_variables': autocomplete.ModelSelect2Multiple(url='trait_browser:source:traits:autocomplete:by-phv'),
+            'batch_variables': autocomplete.ModelSelect2Multiple(url='trait_browser:source:traits:autocomplete:by-phv'),
+            'phenotype_variables': autocomplete.ModelSelect2Multiple(url='trait_browser:source:traits:autocomplete:by-phv'),
         }
         help_texts = {
             'name': """A unique and informative name for the harmonization unit.""",

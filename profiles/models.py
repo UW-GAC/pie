@@ -23,7 +23,7 @@ class Search(TimeStampedModel):
         as such we need to build our own urls with query strings here.
         https://code.djangoproject.com/ticket/25582
         """
-        search_url = reverse(':'.join(['trait_browser', self.search_type, 'search']))
+        search_url = reverse(':'.join(['trait_browser', self.search_type, 'traits', 'search']))
         query_string_dict = {
             'text': self.param_text,
             'study': [x[0] for x in self.param_studies.values_list('i_accession')]

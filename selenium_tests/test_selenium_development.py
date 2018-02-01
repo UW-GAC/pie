@@ -321,7 +321,7 @@ class SourceTraitSearchTestCase(UserAutoLoginSeleniumTestCase):
     def setUp(self):
         super(SourceTraitSearchTestCase, self).setUp()
         # Open the Search page.
-        self.get_reverse('trait_browser:source:search')
+        self.get_reverse('trait_browser:source:traits:search')
         time.sleep(1)
 
     def run_search(self, search_string, study_list=None):
@@ -392,7 +392,7 @@ class TablePageTestCase(UserAutoLoginSeleniumTestCase):
     def test_source_all_table(self):
         """Run check_table_view on the All source traits table page. Check the link for a source trait detail page."""
         total_source_traits = trait_browser.models.SourceTrait.objects.count()
-        self.get_reverse('trait_browser:source:all')
+        self.get_reverse('trait_browser:source:traits:list')
         # Expect 2 extra rows here because of the table containing the upper right buttons.
         self.check_table_view(expected_rows=total_source_traits + 2)
         # Check the detail page for the first listed SourceTrait.
@@ -403,7 +403,7 @@ class TablePageTestCase(UserAutoLoginSeleniumTestCase):
     def test_source_study_list_table(self):
         """Run check_table_view on the Browse by study table page. Follow the link for one study."""
         study_count = trait_browser.models.Study.objects.count()
-        self.get_reverse('trait_browser:source:study:list')
+        self.get_reverse('trait_browser:source:studies:list')
         self.check_table_view(expected_rows=study_count)
         # Check the page for the first listed Study.
         study_name = trait_browser.models.Study.objects.all().order_by('i_study_name')[0].i_study_name
@@ -417,6 +417,6 @@ class TablePageTestCase(UserAutoLoginSeleniumTestCase):
         study = trait_browser.models.Study.objects.all()[0]
         trait_count = trait_browser.models.SourceTrait.objects.filter(
             source_dataset__source_study_version__study=study).all().count()
-        self.get_reverse('trait_browser:source:study:detail', study.pk)
+        self.get_reverse('trait_browser:source:studies:detail:detail', study.pk)
         # Expect 2 extra rows here because of the table containing the upper right buttons.
         self.check_table_view(expected_rows=trait_count + 2)

@@ -15,7 +15,7 @@
     <form action="{% url 'tags:tagged-traits:delete' pk=tagged_trait.pk %}" method="POST">
         {% csrf_token %}
         <input type="submit" class="btn btn-danger" value="Yes, delete." />
-        <a href="{% url 'trait_browser:source:study:tagged' pk=tagged_trait.trait.source_dataset.source_study_version.study.pk %}" class="btn btn-default" role="button">
+        <a href="{% url 'trait_browser:source:studies:detail:tagged' pk=tagged_trait.trait.source_dataset.source_study_version.study.pk %}" class="btn btn-default" role="button">
         No, cancel.</a>
     </form>
 

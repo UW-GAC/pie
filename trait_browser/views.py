@@ -9,7 +9,7 @@ from django.views.generic import DetailView, FormView, ListView
 
 from braces.views import FormMessagesMixin, LoginRequiredMixin, PermissionRequiredMixin, UserPassesTestMixin
 from dal import autocomplete
-from django_tables2 import RequestConfig, SingleTableMixin
+from django_tables2 import RequestConfig, SingleTableMixin, SingleTableView
 from urllib.parse import parse_qs
 
 import profiles.models
@@ -24,14 +24,90 @@ from . import forms
 TABLE_PER_PAGE = 50    # Setting for per_page rows for all table views.
 
 
+class StudyDetail(LoginRequiredMixin, DetailView):
+
+    model = models.Study
+    context_object_name = 'study'
+
+    def get_context_data(self, **kwargs):
+        context = super(StudyDetail, self).get_context_data(**kwargs)
+        traits = models.SourceTrait.objects.exclude(
+            source_dataset__source_study_version__i_is_deprecated=True).filter(
+            source_dataset__source_study_version__study=self.object)
+        trait_count = traits.count()
+        dataset_count = models.SourceDataset.objects.exclude(
+            source_study_version__i_is_deprecated=True).filter(
+            source_study_version__study=self.object).count()
+        context['trait_count'] = '{:,}'.format(trait_count)
+        context['dataset_count'] = '{:,}'.format(dataset_count)
+        context['phs_link'] = traits[0].dbgap_study_link
+        context['phs'] = traits[0].study_accession
+        return context
+
+
+class StudyList(LoginRequiredMixin, SingleTableMixin, ListView):
+
+    model = models.Study
+    table_class = tables.StudyTable
+    context_table_name = 'study_table'
+    table_pagination = {'per_page': TABLE_PER_PAGE}
+
+
+class StudySourceTraitList(LoginRequiredMixin, SingleTableMixin, DetailView):
+    """."""
+
+    template_name = 'trait_browser/study_sourcetrait_list.html'
+    model = models.Study
+    context_object_name = 'study'
+    context_table_name = 'source_trait_table'
+    table_class = tables.SourceTraitStudyTable
+    table_pagination = {'per_page': TABLE_PER_PAGE}
+
+    def get_table_data(self):
+        return models.SourceTrait.objects.exclude(
+            source_dataset__source_study_version__i_is_deprecated=True).filter(
+            source_dataset__source_study_version__study=self.object)
+
+    def get_context_data(self, **kwargs):
+        context = super(StudySourceTraitList, self).get_context_data(**kwargs)
+        traits = context['source_trait_table'].data
+        context['trait_count'] = '{:,}'.format(len(traits))
+        context['phs_link'] = traits[0].dbgap_study_link
+        context['phs'] = traits[0].study_accession
+        return context
+
+
+class StudySourceDatasetList(LoginRequiredMixin, SingleTableMixin, DetailView):
+    """."""
+
+    template_name = 'trait_browser/study_sourcedataset_list.html'
+    model = models.Study
+    context_object_name = 'study'
+    context_table_name = 'source_dataset_table'
+    table_class = tables.SourceDatasetTable
+    table_pagination = {'per_page': TABLE_PER_PAGE}
+
+    def get_table_data(self):
+        return models.SourceDataset.objects.exclude(
+            source_study_version__i_is_deprecated=True).filter(
+            source_study_version__study=self.object)
+
+    def get_context_data(self, **kwargs):
+        context = super(StudySourceDatasetList, self).get_context_data(**kwargs)
+        datasets = context['source_dataset_table'].data
+        context['dataset_count'] = '{:,}'.format(len(datasets))
+        context['phs_link'] = datasets[0].sourcetrait_set.first().dbgap_study_link
+        context['phs'] = datasets[0].sourcetrait_set.first().study_accession
+        return context
+
+
 class SourceDatasetDetail(LoginRequiredMixin, SingleTableMixin, DetailView):
     """Detail view class for SourceDatasets. Displays the dataset's source traits in a table."""
 
-    template_name = 'trait_browser/source_dataset_detail.html'
     model = models.SourceDataset
     context_object_name = 'source_dataset'
     context_table_name = 'trait_table'
-    table_class = tables.SourceTraitTable
+    table_class = tables.SourceTraitDatasetTable
     table_pagination = {'per_page': TABLE_PER_PAGE}
 
     def get_table_data(self):
@@ -43,7 +119,27 @@ class SourceDatasetDetail(LoginRequiredMixin, SingleTableMixin, DetailView):
         context['phs'] = trait.study_accession
         context['phs_link'] = trait.dbgap_study_link
         context['pht_link'] = trait.dbgap_dataset_link
+        context['trait_count'] = '{:,}'.format(self.object.sourcetrait_set.count())
         return context
+
+
+class SourceDatasetList(LoginRequiredMixin, SingleTableView):
+    """List view class for SourceDatasets (unfiltered)."""
+
+    model = models.SourceDataset
+    context_table_name = 'source_dataset_table'
+    table_class = tables.SourceDatasetTable
+    table_pagination = {'per_page': TABLE_PER_PAGE}
+
+    def get_table_data(self):
+        return models.SourceDataset.objects.exclude(source_study_version__i_is_deprecated=True)
+
+
+class HarmonizedTraitSetVersionDetail(LoginRequiredMixin, FormMessagesMixin, DetailView):
+    """Detail view class for HarmonizedTraitSetVersions. Inherits from django.views.generic.DetailView."""
+
+    model = models.HarmonizedTraitSetVersion
+    context_object_name = 'harmonized_trait_set_version'
 
 
 class SourceTraitDetail(LoginRequiredMixin, DetailView):
@@ -51,7 +147,6 @@ class SourceTraitDetail(LoginRequiredMixin, DetailView):
 
     model = models.SourceTrait
     context_object_name = 'source_trait'
-    template_name = 'trait_browser/source_trait_detail.html'
 
     def get_context_data(self, **kwargs):
         context = super(SourceTraitDetail, self).get_context_data(**kwargs)
@@ -61,12 +156,15 @@ class SourceTraitDetail(LoginRequiredMixin, DetailView):
         return context
 
 
-class HarmonizedTraitSetVersionDetail(LoginRequiredMixin, FormMessagesMixin, DetailView):
-    """Detail view class for HarmonizedTraitSetVersions. Inherits from django.views.generic.DetailView."""
+class SourceTraitList(LoginRequiredMixin, SingleTableMixin, ListView):
 
-    model = models.HarmonizedTraitSetVersion
-    context_object_name = 'harmonized_trait_set_version'
-    template_name = 'trait_browser/harmonized_trait_set_version_detail.html'
+    model = models.SourceTrait
+    table_class = tables.SourceTraitTableFull
+    context_table_name = 'source_trait_table'
+    table_pagination = {'per_page': TABLE_PER_PAGE}
+
+    def get_table_data(self):
+        return models.SourceTrait.objects.exclude(source_dataset__source_study_version__i_is_deprecated=True)
 
 
 class SourceTraitTagging(LoginRequiredMixin, PermissionRequiredMixin, UserPassesTestMixin, FormMessagesMixin,
@@ -114,50 +212,6 @@ class SourceTraitTagging(LoginRequiredMixin, PermissionRequiredMixin, UserPasses
         return mark_safe(msg)
 
 
-class SourceTraitList(LoginRequiredMixin, SingleTableMixin, ListView):
-
-    model = models.SourceTrait
-    table_class = tables.SourceTraitTable
-    context_table_name = 'source_trait_table'
-    table_pagination = {'per_page': TABLE_PER_PAGE}
-
-    def get_table_data(self):
-        return models.SourceTrait.objects.exclude(source_dataset__source_study_version__i_is_deprecated=True)
-
-
-class HarmonizedTraitList(LoginRequiredMixin, SingleTableMixin, ListView):
-
-    model = models.HarmonizedTrait
-    table_class = tables.HarmonizedTraitTable
-    context_table_name = 'harmonized_trait_table'
-    table_pagination = {'per_page': TABLE_PER_PAGE}
-
-    def get_table_data(self):
-        return models.HarmonizedTrait.objects.exclude(harmonized_trait_set_version__i_is_deprecated=True)
-
-
-class StudyDetail(LoginRequiredMixin, SingleTableMixin, DetailView):
-
-    model = models.Study
-    context_object_name = 'study'
-    table_class = tables.SourceTraitTable
-    context_table_name = 'study_trait_table'
-    table_pagination = {'per_page': TABLE_PER_PAGE}
-
-    def get_table_data(self):
-        return models.SourceTrait.objects.exclude(
-            source_dataset__source_study_version__i_is_deprecated=True).filter(
-            source_dataset__source_study_version__study=self.object)
-
-
-class StudyList(LoginRequiredMixin, SingleTableMixin, ListView):
-
-    model = models.Study
-    table_class = tables.StudyTable
-    context_table_name = 'study_table'
-    table_pagination = {'per_page': TABLE_PER_PAGE}
-
-
 class SourceTraitPHVAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
     """View for returning querysets that allow auto-completing SourceTrait-based form fields.
 
@@ -197,6 +251,17 @@ class TaggableStudyFilteredSourceTraitPHVAutocomplete(LoginRequiredMixin, Taggab
         if self.q:
             retrieved = retrieved.filter(i_dbgap_variable_accession__regex=r'^{}'.format(self.q))
         return retrieved
+
+
+class HarmonizedTraitList(LoginRequiredMixin, SingleTableMixin, ListView):
+
+    model = models.HarmonizedTrait
+    table_class = tables.HarmonizedTraitTable
+    context_table_name = 'harmonized_trait_table'
+    table_pagination = {'per_page': TABLE_PER_PAGE}
+
+    def get_table_data(self):
+        return models.HarmonizedTrait.objects.exclude(harmonized_trait_set_version__i_is_deprecated=True)
 
 
 class HarmonizedTraitFlavorNameAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
@@ -276,7 +341,7 @@ def trait_search(request, trait_type):
         study_pks = form.cleaned_data.get('study', []) if 'study' in form.cleaned_data else []
         # Search text.
         traits = search(query, trait_type, study_pks)
-        TraitTableClass = tables.SourceTraitTable if trait_type == 'source' else tables.HarmonizedTraitTable
+        TraitTableClass = tables.SourceTraitTableFull if trait_type == 'source' else tables.HarmonizedTraitTable
         trait_table = TraitTableClass(traits)
         RequestConfig(request, paginate={'per_page': TABLE_PER_PAGE}).configure(trait_table)
         # Show the search results.
@@ -330,7 +395,7 @@ def save_search_to_profile(request):
         profile, new_record = profiles.models.SavedSearchMeta.objects.get_or_create(
             profile_id=profile_record.id, search_id=search_record.id)
         profile.save()
-        search_url = '?'.join([reverse(':'.join(['trait_browser', trait_type, 'search'])), query_string])
+        search_url = '?'.join([reverse(':'.join(['trait_browser', trait_type, 'traits', 'search'])), query_string])
         return redirect(search_url)
 
 
