@@ -284,6 +284,52 @@ class TaggableStudyFilteredSourceTraitNameAutocomplete(LoginRequiredMixin, Tagga
         return retrieved
 
 
+class SourceTraitNameOrPHVAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
+    """Auto-complete source traits in a form field by i_trait_name OR phv (with leading zeros or not)."""
+
+    def get_queryset(self):
+        retrieved = models.SourceTrait.objects.filter(source_dataset__source_study_version__i_is_deprecated=False)
+        if self.q:
+            # I checked that none of the source trait names are all digits (as of 2/5/2018).
+            if self.q.lower().startswith('phv') or self.q.isdigit():
+                # User can input a phv in several ways, e.g. 'phv597', '597', '00000597', or 'phv00000597'.
+                # Get rid of the phv and any leading zeros.
+                phv_digits = self.q.replace('phv', '').lstrip('0')
+                retrieved = retrieved.filter(i_dbgap_variable_accession__regex=r'^{}'.format(phv_digits))
+            else:
+                retrieved = retrieved.filter(i_trait_name__iregex=r'^{}'.format(self.q))
+        return retrieved
+
+
+class TaggableStudyFilteredSourceTraitNameOrPHVAutocomplete(LoginRequiredMixin, TaggableStudiesRequiredMixin,
+                                                            autocomplete.Select2QuerySetView):
+    """Autocomplete source traits in form by i_trait_name OR phv (with leading zeros or not) with tag restrictions."""
+
+    raise_exception = True
+    redirect_unauthenticated_users = True
+
+    def get_queryset(self):
+        if self.request.user.is_staff:
+            retrieved = models.SourceTrait.objects.filter(
+                source_dataset__source_study_version__i_is_deprecated=False
+            )
+        else:
+            studies = self.request.user.profile.taggable_studies.all()
+            retrieved = models.SourceTrait.objects.filter(
+                source_dataset__source_study_version__study__in=list(studies),
+                source_dataset__source_study_version__i_is_deprecated=False
+            )
+        # I checked that none of the source trait names are all digits (as of 2/5/2018).
+        if self.q.lower().startswith('phv') or self.q.isdigit():
+            # User can input a phv in several ways, e.g. 'phv597', '597', '00000597', or 'phv00000597'.
+            # Get rid of the phv and any leading zeros.
+            phv_digits = self.q.replace('phv', '').lstrip('0')
+            retrieved = retrieved.filter(i_dbgap_variable_accession__regex=r'^{}'.format(phv_digits))
+        else:
+            retrieved = retrieved.filter(i_trait_name__iregex=r'^{}'.format(self.q))
+        return retrieved
+
+
 class HarmonizedTraitList(LoginRequiredMixin, SingleTableMixin, ListView):
 
     model = models.HarmonizedTrait

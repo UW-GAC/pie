@@ -16,12 +16,15 @@ source_trait_autocomplete_taggable_patterns = [
         name='by-phv'),
     url(r'^by-name/$', views.TaggableStudyFilteredSourceTraitNameAutocomplete.as_view(),
         name='by-name'),
+    url(r'^by-name-or-phv/$', views.TaggableStudyFilteredSourceTraitNameOrPHVAutocomplete.as_view(),
+        name='by-name-or-phv'),
 ]
 
 source_trait_autocomplete_patterns = [
     url(r'^taggable/', include(source_trait_autocomplete_taggable_patterns, namespace='taggable')),
     url(r'^by-phv/$', views.SourceTraitPHVAutocomplete.as_view(), name='by-phv'),
     url(r'^by-name/$', views.SourceTraitNameAutocomplete.as_view(), name='by-name'),
+    url(r'^by-name-or-phv/$', views.SourceTraitNameOrPHVAutocomplete.as_view(), name='by-name-or-phv'),
 ]
 
 source_trait_patterns = [
