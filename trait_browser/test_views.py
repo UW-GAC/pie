@@ -201,7 +201,7 @@ class StudySourceDatasetListTest(UserLoginTestCase):
     #     self.assertEqual(len(table.rows), 0)
 
 
-class StudySourceTableViewsTestCase(UserLoginTestCase):
+class StudySourceTableViewsTest(UserLoginTestCase):
     """Unit tests for the SourceTrait by Study views."""
 
     def test_study_source_table_one_page(self):
@@ -757,11 +757,11 @@ class SourceTraitPHVAutocompleteTest(UserLoginTestCase):
         self.assertNotIn(self.source_traits[2].pk, returned_pks)
 
 
-class PhenotypeTaggerTaggableStudyFilteredSourceTraitPHVAutocompleteTestCase(PhenotypeTaggerLoginTestCase):
+class PhenotypeTaggerTaggableStudyFilteredSourceTraitPHVAutocompleteTest(PhenotypeTaggerLoginTestCase):
     """Autocomplete view works as expected."""
 
     def setUp(self):
-        super(PhenotypeTaggerTaggableStudyFilteredSourceTraitPHVAutocompleteTestCase, self).setUp()
+        super(PhenotypeTaggerTaggableStudyFilteredSourceTraitPHVAutocompleteTest, self).setUp()
         self.source_study_version = factories.SourceStudyVersionFactory.create(study=self.study)
         self.source_dataset = factories.SourceDatasetFactory.create(source_study_version=self.source_study_version)
         self.source_traits = factories.SourceTraitFactory.create_batch(8, source_dataset=self.source_dataset)
@@ -881,11 +881,11 @@ class PhenotypeTaggerTaggableStudyFilteredSourceTraitPHVAutocompleteTestCase(Phe
         self.assertNotIn(self.source_traits[2].pk, returned_pks)
 
 
-class DCCAnalystTaggableStudyFilteredSourceTraitPHVAutocompleteTestCase(DCCAnalystLoginTestCase):
+class DCCAnalystTaggableStudyFilteredSourceTraitPHVAutocompleteTest(DCCAnalystLoginTestCase):
     """Autocomplete view works as expected."""
 
     def setUp(self):
-        super(DCCAnalystTaggableStudyFilteredSourceTraitPHVAutocompleteTestCase, self).setUp()
+        super(DCCAnalystTaggableStudyFilteredSourceTraitPHVAutocompleteTest, self).setUp()
         self.study = factories.StudyFactory.create()
         self.source_study_version = factories.SourceStudyVersionFactory.create(study=self.study)
         self.source_dataset = factories.SourceDatasetFactory.create(source_study_version=self.source_study_version)
@@ -1094,11 +1094,11 @@ class SourceTraitNameAutocompleteTest(UserLoginTestCase):
             self.assertIn(name_trait.pk, returned_pks)
 
 
-class PhenotypeTaggerTaggableStudyFilteredSourceTraitNameAutocompleteTestCase(PhenotypeTaggerLoginTestCase):
+class PhenotypeTaggerTaggableStudyFilteredSourceTraitNameAutocompleteTest(PhenotypeTaggerLoginTestCase):
     """Autocomplete view works as expected."""
 
     def setUp(self):
-        super(PhenotypeTaggerTaggableStudyFilteredSourceTraitNameAutocompleteTestCase, self).setUp()
+        super(PhenotypeTaggerTaggableStudyFilteredSourceTraitNameAutocompleteTest, self).setUp()
         self.source_study_version = factories.SourceStudyVersionFactory.create(study=self.study)
         self.source_dataset = factories.SourceDatasetFactory.create(source_study_version=self.source_study_version)
         self.source_traits = factories.SourceTraitFactory.create_batch(8, source_dataset=self.source_dataset)
@@ -1198,11 +1198,11 @@ class PhenotypeTaggerTaggableStudyFilteredSourceTraitNameAutocompleteTestCase(Ph
         self.assertEqual(response.status_code, 403)
 
 
-class DCCAnalystTaggableStudyFilteredSourceTraitNameAutocompleteTestCase(DCCAnalystLoginTestCase):
+class DCCAnalystTaggableStudyFilteredSourceTraitNameAutocompleteTest(DCCAnalystLoginTestCase):
     """Autocomplete view works as expected."""
 
     def setUp(self):
-        super(DCCAnalystTaggableStudyFilteredSourceTraitNameAutocompleteTestCase, self).setUp()
+        super(DCCAnalystTaggableStudyFilteredSourceTraitNameAutocompleteTest, self).setUp()
         self.study = factories.StudyFactory.create()
         self.source_study_version = factories.SourceStudyVersionFactory.create(study=self.study)
         self.source_dataset = factories.SourceDatasetFactory.create(source_study_version=self.source_study_version)
@@ -1387,7 +1387,7 @@ class HarmonizedTraitFlavorNameAutocompleteViewTest(UserLoginTestCase):
 
 
 # Tests of searching. Will probably be replaced/majorly rewritten after search is redesigned.
-class SourceSearchTestCase(TestCase):
+class SourceSearchTest(TestCase):
 
     def test_search_source_trait_name_exact(self):
         """Finds an exact match in the SourceTrait name field, but doesn't find a non-match."""
@@ -1441,7 +1441,7 @@ class SourceSearchTestCase(TestCase):
         self.assertNotIn(st_nonmatch, search1)
 
 
-class SourceTraitSearchViewTestCase(UserLoginTestCase):
+class SourceTraitSearchViewTest(UserLoginTestCase):
 
     def test_source_trait_search_with_valid_results(self):
         """Returns 200 code and correct number of search results when valid results exist."""
@@ -1561,7 +1561,7 @@ class SourceTraitSearchViewTestCase(UserLoginTestCase):
         self.assertIn(search, user_searches)
 
 
-class HarmonizedSearchTestCase(TestCase):
+class HarmonizedSearchTest(TestCase):
 
     def test_search_harmonized_trait_name_exact(self):
         """Finds an exact match in the HarmonizedTrait name field, but doesn't find a non-match."""
@@ -1600,7 +1600,7 @@ class HarmonizedSearchTestCase(TestCase):
         self.assertNotIn(st_nonmatch, search1)
 
 
-class HarmonizedTraitSearchViewTestCase(UserLoginTestCase):
+class HarmonizedTraitSearchViewTest(UserLoginTestCase):
 
     def test_harmonized_trait_search_with_valid_results(self):
         """Returns 200 code and correct number of results when only 1 result exists."""
@@ -1649,7 +1649,7 @@ class HarmonizedTraitSearchViewTestCase(UserLoginTestCase):
 
 
 # Test of the login-required for each URL in the app.
-class TraitBrowserLoginRequiredTestCase(LoginRequiredTestCase):
+class TraitBrowserLoginRequiredTest(LoginRequiredTestCase):
 
     def test_trait_browser_login_required(self):
         """All trait_browser urls redirect to login page if no user is logged in."""
