@@ -712,11 +712,45 @@ class SourceTraitPHVAutocompleteTest(UserLoginTestCase):
         self.assertIn(self.source_traits[0].pk, pks)
         self.assertNotIn(trait2.pk, pks)
 
-    def test_correct_trait_found_by_phv_non_zero_digits(self):
+    def test_correct_trait_found_by_phv_non_zero_digits_only(self):
         """Queryset returns only the correct source trait when found by whole phv non-zero digits."""
         query_trait = self.source_traits[0]
         url = self.get_url()
-        response = self.client.get(url, {'q': query_trait.i_dbgap_variable_accession})
+        q = query_trait.i_dbgap_variable_accession
+        response = self.client.get(url, {'q': q})
+        returned_pks = get_autocomplete_view_ids(response)
+        self.assertEqual(len(returned_pks), 1)
+        self.assertIn(query_trait.pk, returned_pks)
+        self.assertNotIn(self.source_traits[2].pk, returned_pks)
+
+    def test_correct_trait_found_by_phv_non_zero_digits_only_and_phv(self):
+        """Queryset returns only the correct source trait when found by whole phv non-zero digits with 'phv'."""
+        query_trait = self.source_traits[0]
+        url = self.get_url()
+        q = 'phv' + str(query_trait.i_dbgap_variable_accession)
+        response = self.client.get(url, {'q': q})
+        returned_pks = get_autocomplete_view_ids(response)
+        self.assertEqual(len(returned_pks), 1)
+        self.assertIn(query_trait.pk, returned_pks)
+        self.assertNotIn(self.source_traits[2].pk, returned_pks)
+
+    def test_correct_trait_found_by_phv_with_zero_digits_only(self):
+        """Queryset returns only the correct source trait when found by whole phv digits, including zeros."""
+        query_trait = self.source_traits[0]
+        url = self.get_url()
+        q = '{:08}'.format(query_trait.i_dbgap_variable_accession)
+        response = self.client.get(url, {'q': q})
+        returned_pks = get_autocomplete_view_ids(response)
+        self.assertEqual(len(returned_pks), 1)
+        self.assertIn(query_trait.pk, returned_pks)
+        self.assertNotIn(self.source_traits[2].pk, returned_pks)
+
+    def test_correct_trait_found_by_phv_with_zero_digits_only_and_phv(self):
+        """Queryset returns only correct source trait when found by whole phv digits including zeros, with 'phv'."""
+        query_trait = self.source_traits[0]
+        url = self.get_url()
+        q = 'phv' + '{:08}'.format(query_trait.i_dbgap_variable_accession)
+        response = self.client.get(url, {'q': q})
         returned_pks = get_autocomplete_view_ids(response)
         self.assertEqual(len(returned_pks), 1)
         self.assertIn(query_trait.pk, returned_pks)
@@ -796,21 +830,55 @@ class PhenotypeTaggerTaggableStudyFilteredSourceTraitPHVAutocompleteTestCase(Phe
         for trait in self.source_traits:
             self.assertIn(trait.i_trait_id, returned_pks)
 
-    def test_correct_trait_found_by_phv_non_zero_digits(self):
-        """Queryset returns only the correct source trait when found by whole phv non-zero digits."""
-        query_trait = self.source_traits[0]
-        url = self.get_url(self.study.pk)
-        response = self.client.get(url, {'q': query_trait.i_dbgap_variable_accession})
-        returned_pks = get_autocomplete_view_ids(response)
-        self.assertEqual(len(returned_pks), 1)
-        self.assertIn(query_trait.pk, returned_pks)
-        self.assertNotIn(self.source_traits[2].pk, returned_pks)
-
     def test_forbidden_empty_taggable_studies(self):
         """View returns 403 code when the user has no taggable_studies."""
         self.user.profile.taggable_studies.remove(self.study)
         response = self.client.get(self.get_url())
         self.assertEqual(response.status_code, 403)
+
+    def test_correct_trait_found_by_phv_non_zero_digits_only(self):
+        """Queryset returns only the correct source trait when found by whole phv non-zero digits."""
+        query_trait = self.source_traits[0]
+        url = self.get_url()
+        q = query_trait.i_dbgap_variable_accession
+        response = self.client.get(url, {'q': q})
+        returned_pks = get_autocomplete_view_ids(response)
+        self.assertEqual(len(returned_pks), 1)
+        self.assertIn(query_trait.pk, returned_pks)
+        self.assertNotIn(self.source_traits[2].pk, returned_pks)
+
+    def test_correct_trait_found_by_phv_non_zero_digits_only_and_phv(self):
+        """Queryset returns only the correct source trait when found by whole phv non-zero digits with 'phv'."""
+        query_trait = self.source_traits[0]
+        url = self.get_url()
+        q = 'phv' + str(query_trait.i_dbgap_variable_accession)
+        response = self.client.get(url, {'q': q})
+        returned_pks = get_autocomplete_view_ids(response)
+        self.assertEqual(len(returned_pks), 1)
+        self.assertIn(query_trait.pk, returned_pks)
+        self.assertNotIn(self.source_traits[2].pk, returned_pks)
+
+    def test_correct_trait_found_by_phv_with_zero_digits_only(self):
+        """Queryset returns only the correct source trait when found by whole phv digits, including zeros."""
+        query_trait = self.source_traits[0]
+        url = self.get_url()
+        q = '{:08}'.format(query_trait.i_dbgap_variable_accession)
+        response = self.client.get(url, {'q': q})
+        returned_pks = get_autocomplete_view_ids(response)
+        self.assertEqual(len(returned_pks), 1)
+        self.assertIn(query_trait.pk, returned_pks)
+        self.assertNotIn(self.source_traits[2].pk, returned_pks)
+
+    def test_correct_trait_found_by_phv_with_zero_digits_only_and_phv(self):
+        """Queryset returns only correct source trait when found by whole phv digits including zeros, with 'phv'."""
+        query_trait = self.source_traits[0]
+        url = self.get_url()
+        q = 'phv' + '{:08}'.format(query_trait.i_dbgap_variable_accession)
+        response = self.client.get(url, {'q': q})
+        returned_pks = get_autocomplete_view_ids(response)
+        self.assertEqual(len(returned_pks), 1)
+        self.assertIn(query_trait.pk, returned_pks)
+        self.assertNotIn(self.source_traits[2].pk, returned_pks)
 
 
 class DCCAnalystTaggableStudyFilteredSourceTraitPHVAutocompleteTestCase(DCCAnalystLoginTestCase):
@@ -890,16 +958,6 @@ class DCCAnalystTaggableStudyFilteredSourceTraitPHVAutocompleteTestCase(DCCAnaly
         for trait in self.source_traits:
             self.assertIn(trait.i_trait_id, returned_pks)
 
-    def test_correct_trait_found_by_phv_non_zero_digits(self):
-        """Queryset returns only the correct source trait when found by whole phv non-zero digits."""
-        query_trait = self.source_traits[0]
-        url = self.get_url(self.study.pk)
-        response = self.client.get(url, {'q': query_trait.i_dbgap_variable_accession})
-        returned_pks = get_autocomplete_view_ids(response)
-        self.assertEqual(len(returned_pks), 1)
-        self.assertIn(query_trait.pk, returned_pks)
-        self.assertNotIn(self.source_traits[2].pk, returned_pks)
-
     def test_with_empty_taggable_studies(self):
         """View returns 200 code when the user has no taggable_studies."""
         self.user.profile.taggable_studies.remove(self.study)
@@ -913,6 +971,50 @@ class DCCAnalystTaggableStudyFilteredSourceTraitPHVAutocompleteTestCase(DCCAnaly
         self.user.refresh_from_db()
         response = self.client.get(self.get_url())
         self.assertEqual(response.status_code, 403)
+
+    def test_correct_trait_found_by_phv_non_zero_digits_only(self):
+        """Queryset returns only the correct source trait when found by whole phv non-zero digits."""
+        query_trait = self.source_traits[0]
+        url = self.get_url()
+        q = query_trait.i_dbgap_variable_accession
+        response = self.client.get(url, {'q': q})
+        returned_pks = get_autocomplete_view_ids(response)
+        self.assertEqual(len(returned_pks), 1)
+        self.assertIn(query_trait.pk, returned_pks)
+        self.assertNotIn(self.source_traits[2].pk, returned_pks)
+
+    def test_correct_trait_found_by_phv_non_zero_digits_only_and_phv(self):
+        """Queryset returns only the correct source trait when found by whole phv non-zero digits with 'phv'."""
+        query_trait = self.source_traits[0]
+        url = self.get_url()
+        q = 'phv' + str(query_trait.i_dbgap_variable_accession)
+        response = self.client.get(url, {'q': q})
+        returned_pks = get_autocomplete_view_ids(response)
+        self.assertEqual(len(returned_pks), 1)
+        self.assertIn(query_trait.pk, returned_pks)
+        self.assertNotIn(self.source_traits[2].pk, returned_pks)
+
+    def test_correct_trait_found_by_phv_with_zero_digits_only(self):
+        """Queryset returns only the correct source trait when found by whole phv digits, including zeros."""
+        query_trait = self.source_traits[0]
+        url = self.get_url()
+        q = '{:08}'.format(query_trait.i_dbgap_variable_accession)
+        response = self.client.get(url, {'q': q})
+        returned_pks = get_autocomplete_view_ids(response)
+        self.assertEqual(len(returned_pks), 1)
+        self.assertIn(query_trait.pk, returned_pks)
+        self.assertNotIn(self.source_traits[2].pk, returned_pks)
+
+    def test_correct_trait_found_by_phv_with_zero_digits_only_and_phv(self):
+        """Queryset returns only correct source trait when found by whole phv digits including zeros, with 'phv'."""
+        query_trait = self.source_traits[0]
+        url = self.get_url()
+        q = 'phv' + '{:08}'.format(query_trait.i_dbgap_variable_accession)
+        response = self.client.get(url, {'q': q})
+        returned_pks = get_autocomplete_view_ids(response)
+        self.assertEqual(len(returned_pks), 1)
+        self.assertIn(query_trait.pk, returned_pks)
+        self.assertNotIn(self.source_traits[2].pk, returned_pks)
 
 
 class SourceTraitNameAutocompleteTest(UserLoginTestCase):

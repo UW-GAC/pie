@@ -213,26 +213,21 @@ class SourceTraitTagging(LoginRequiredMixin, PermissionRequiredMixin, UserPasses
 
 
 class SourceTraitPHVAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
-    """View for returning querysets that allow auto-completing SourceTrait-based form fields.
-
-    Used with django-autocomplete-light package. Autocomplete by dbGaP accession.
-    Only include latest version.
-    """
+    """Auto-complete source traits in a form field by i_trait_name."""
 
     def get_queryset(self):
         retrieved = models.SourceTrait.objects.filter(source_dataset__source_study_version__i_is_deprecated=False)
         if self.q:
-            retrieved = retrieved.filter(i_dbgap_variable_accession__regex=r'^{}'.format(self.q))
+            # User can input a phv in several ways, e.g. 'phv597', '597', '00000597', or 'phv00000597'.
+            # Get rid of the phv and any leading zeros.
+            phv_digits = self.q.replace('phv', '').lstrip('0')
+            retrieved = retrieved.filter(i_dbgap_variable_accession__regex=r'^{}'.format(phv_digits))
         return retrieved
 
 
 class TaggableStudyFilteredSourceTraitPHVAutocomplete(LoginRequiredMixin, TaggableStudiesRequiredMixin,
                                                       autocomplete.Select2QuerySetView):
-    """View for auto-completing SourceTraits by phv in a specific study.
-
-    Used with django-autocomplete-light package. Autocomplete by dbGaP accession.
-    Only include latest version.
-    """
+    """Auto-complete source traits in a form field by i_trait_name, with tagging restrictions."""
 
     raise_exception = True
     redirect_unauthenticated_users = True
@@ -249,12 +244,15 @@ class TaggableStudyFilteredSourceTraitPHVAutocomplete(LoginRequiredMixin, Taggab
                 source_dataset__source_study_version__i_is_deprecated=False
             )
         if self.q:
-            retrieved = retrieved.filter(i_dbgap_variable_accession__regex=r'^{}'.format(self.q))
+            # User can input a phv in several ways, e.g. 'phv597', '597', '00000597', or 'phv00000597'.
+            # Get rid of the phv and any leading zeros.
+            phv_digits = self.q.replace('phv', '').lstrip('0')
+            retrieved = retrieved.filter(i_dbgap_variable_accession__regex=r'^{}'.format(phv_digits))
         return retrieved
 
 
 class SourceTraitNameAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
-    """Auto-complete source trait objects in a form field by i_trait_name."""
+    """Auto-complete source traits in a form field by i_trait_name."""
 
     def get_queryset(self):
         retrieved = models.SourceTrait.objects.filter(source_dataset__source_study_version__i_is_deprecated=False)
@@ -265,7 +263,7 @@ class SourceTraitNameAutocomplete(LoginRequiredMixin, autocomplete.Select2QueryS
 
 class TaggableStudyFilteredSourceTraitNameAutocomplete(LoginRequiredMixin, TaggableStudiesRequiredMixin,
                                                        autocomplete.Select2QuerySetView):
-    """Auto-complete source trait objects in a form field by i_trait_name, with restrictions."""
+    """Auto-complete source traits in a form field by i_trait_name, with tagging restrictions."""
 
     raise_exception = True
     redirect_unauthenticated_users = True
