@@ -219,9 +219,14 @@ class SourceTraitPHVAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySe
         retrieved = models.SourceTrait.objects.filter(source_dataset__source_study_version__i_is_deprecated=False)
         if self.q:
             # User can input a phv in several ways, e.g. 'phv597', '597', '00000597', or 'phv00000597'.
-            # Get rid of the phv and any leading zeros.
-            phv_digits = self.q.replace('phv', '').lstrip('0')
-            retrieved = retrieved.filter(i_dbgap_variable_accession__regex=r'^{}'.format(phv_digits))
+            # Get rid of the phv.
+            phv_digits = self.q.replace('phv', '')
+            # Search against the phv string if user started the query with leading zeros.
+            if phv_digits.startswith('0'):
+                retrieved = retrieved.filter(variable_accession__regex=r'^{}'.format('phv' + phv_digits))
+            # Search against the phv digits if user started the query with non-zero digits.
+            else:
+                retrieved = retrieved.filter(i_dbgap_variable_accession__regex=r'^{}'.format(phv_digits))
         return retrieved
 
 
@@ -245,9 +250,14 @@ class TaggableStudyFilteredSourceTraitPHVAutocomplete(LoginRequiredMixin, Taggab
             )
         if self.q:
             # User can input a phv in several ways, e.g. 'phv597', '597', '00000597', or 'phv00000597'.
-            # Get rid of the phv and any leading zeros.
-            phv_digits = self.q.replace('phv', '').lstrip('0')
-            retrieved = retrieved.filter(i_dbgap_variable_accession__regex=r'^{}'.format(phv_digits))
+            # Get rid of the phv.
+            phv_digits = self.q.replace('phv', '')
+            # Search against the phv string if user started the query with leading zeros.
+            if phv_digits.startswith('0'):
+                retrieved = retrieved.filter(variable_accession__regex=r'^{}'.format('phv' + phv_digits))
+            # Search against the phv digits if user started the query with non-zero digits.
+            else:
+                retrieved = retrieved.filter(i_dbgap_variable_accession__regex=r'^{}'.format(phv_digits))
         return retrieved
 
 
@@ -293,9 +303,14 @@ class SourceTraitNameOrPHVAutocomplete(LoginRequiredMixin, autocomplete.Select2Q
             # I checked that none of the source trait names are all digits (as of 2/5/2018).
             if self.q.lower().startswith('phv') or self.q.isdigit():
                 # User can input a phv in several ways, e.g. 'phv597', '597', '00000597', or 'phv00000597'.
-                # Get rid of the phv and any leading zeros.
-                phv_digits = self.q.replace('phv', '').lstrip('0')
-                retrieved = retrieved.filter(i_dbgap_variable_accession__regex=r'^{}'.format(phv_digits))
+                # Get rid of the phv.
+                phv_digits = self.q.replace('phv', '')
+                # Search against the phv string if user started the query with leading zeros.
+                if phv_digits.startswith('0'):
+                    retrieved = retrieved.filter(variable_accession__regex=r'^{}'.format('phv' + phv_digits))
+                # Search against the phv digits if user started the query with non-zero digits.
+                else:
+                    retrieved = retrieved.filter(i_dbgap_variable_accession__regex=r'^{}'.format(phv_digits))
             else:
                 retrieved = retrieved.filter(i_trait_name__iregex=r'^{}'.format(self.q))
         return retrieved
@@ -322,9 +337,14 @@ class TaggableStudyFilteredSourceTraitNameOrPHVAutocomplete(LoginRequiredMixin, 
         # I checked that none of the source trait names are all digits (as of 2/5/2018).
         if self.q.lower().startswith('phv') or self.q.isdigit():
             # User can input a phv in several ways, e.g. 'phv597', '597', '00000597', or 'phv00000597'.
-            # Get rid of the phv and any leading zeros.
-            phv_digits = self.q.replace('phv', '').lstrip('0')
-            retrieved = retrieved.filter(i_dbgap_variable_accession__regex=r'^{}'.format(phv_digits))
+            # Get rid of the phv.
+            phv_digits = self.q.replace('phv', '')
+            # Search against the phv string if user started the query with leading zeros.
+            if phv_digits.startswith('0'):
+                retrieved = retrieved.filter(variable_accession__regex=r'^{}'.format('phv' + phv_digits))
+            # Search against the phv digits if user started the query with non-zero digits.
+            else:
+                retrieved = retrieved.filter(i_dbgap_variable_accession__regex=r'^{}'.format(phv_digits))
         else:
             retrieved = retrieved.filter(i_trait_name__iregex=r'^{}'.format(self.q))
         return retrieved
