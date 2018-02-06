@@ -660,15 +660,33 @@ class DCCAnalystSourceTraitTaggingTest(DCCAnalystLoginTestCase):
         self.assertEqual(response.status_code, 200)
 
 
+TEST_PHVS = (5, 50, 500, 50000000, 55, 555, 55555555, 52, 520, 5200, )
+TEST_PHV_QUERIES = {'5': (5, 50, 500, 50000000, 55, 555, 55555555, 52, 520, 5200, ),
+                    '05': (),
+                    '000005': (500, 555, 520, ),
+                    '00000005': (5, ),
+                    '52': (52, 520, 5200, ),
+                    '052': (),
+                    '000052': (5200, ),
+                    '0000052': (520, ),
+                    '55555555': (55555555, ),
+                    '0': (5, 50, 500, 55, 555, 52, 520, 5200, ),
+                    }
+
+
 class SourceTraitPHVAutocompleteTest(UserLoginTestCase):
     """Autocomplete view works as expected."""
 
     def setUp(self):
         super(SourceTraitPHVAutocompleteTest, self).setUp()
         # Create 10 source traits from the same dataset, with non-deprecated ssv of version 2.
-        self.source_traits = factories.SourceTraitFactory.create_batch(
-            10, source_dataset__i_id=6, source_dataset__source_study_version__i_version=2,
-            source_dataset__source_study_version__i_is_deprecated=False)
+        self.source_traits = []
+        for phv in TEST_PHVS:
+            self.source_traits.append(factories.SourceTraitFactory.create(
+                source_dataset__i_id=6, source_dataset__source_study_version__i_version=2,
+                source_dataset__source_study_version__i_is_deprecated=False,
+                i_dbgap_variable_accession=phv)
+            )
 
     def get_url(self, *args):
         return reverse('trait_browser:source:traits:autocomplete:by-phv')
@@ -712,49 +730,35 @@ class SourceTraitPHVAutocompleteTest(UserLoginTestCase):
         self.assertIn(self.source_traits[0].pk, pks)
         self.assertNotIn(trait2.pk, pks)
 
-    def test_correct_trait_found_by_phv_non_zero_digits_only(self):
-        """Queryset returns only the correct source trait when found by whole phv non-zero digits."""
-        query_trait = self.source_traits[0]
+    def test_phv_test_queries_without_phv_in_string(self):
+        """Returns only the correct source trait for each of the TEST_PHV_QUERIES when 'phv' is not in query string."""
         url = self.get_url()
-        q = query_trait.i_dbgap_variable_accession
-        response = self.client.get(url, {'q': q})
-        returned_pks = get_autocomplete_view_ids(response)
-        self.assertEqual(len(returned_pks), 1)
-        self.assertIn(query_trait.pk, returned_pks)
-        self.assertNotIn(self.source_traits[2].pk, returned_pks)
+        for query in TEST_PHV_QUERIES:
+            response = self.client.get(url, {'q': query})
+            returned_pks = get_autocomplete_view_ids(response)
+            expected_matches = TEST_PHV_QUERIES[query]
+            # Make sure number of matches is as expected.
+            self.assertEqual(len(returned_pks), len(expected_matches))
+            # Make sure the matches that are found are the ones expected.
+            for expected_phv in expected_matches:
+                expected_pk = models.SourceTrait.objects.get(i_dbgap_variable_accession=expected_phv).pk
+                self.assertIn(expected_pk, returned_pks,
+                              msg="Could not find expected phv {} with query '{}'".format(expected_phv, query))
 
-    def test_correct_trait_found_by_phv_non_zero_digits_only_and_phv(self):
-        """Queryset returns only the correct source trait when found by whole phv non-zero digits with 'phv'."""
-        query_trait = self.source_traits[0]
+    def test_phv_test_queries_with_phv_in_string(self):
+        """Returns only the correct source trait for each of the TEST_PHV_QUERIES when 'phv' is in query string."""
         url = self.get_url()
-        q = 'phv' + str(query_trait.i_dbgap_variable_accession)
-        response = self.client.get(url, {'q': q})
-        returned_pks = get_autocomplete_view_ids(response)
-        self.assertEqual(len(returned_pks), 1)
-        self.assertIn(query_trait.pk, returned_pks)
-        self.assertNotIn(self.source_traits[2].pk, returned_pks)
-
-    def test_correct_trait_found_by_phv_with_zero_digits_only(self):
-        """Queryset returns only the correct source trait when found by whole phv digits, including zeros."""
-        query_trait = self.source_traits[0]
-        url = self.get_url()
-        q = '{:08}'.format(query_trait.i_dbgap_variable_accession)
-        response = self.client.get(url, {'q': q})
-        returned_pks = get_autocomplete_view_ids(response)
-        self.assertEqual(len(returned_pks), 1)
-        self.assertIn(query_trait.pk, returned_pks)
-        self.assertNotIn(self.source_traits[2].pk, returned_pks)
-
-    def test_correct_trait_found_by_phv_with_zero_digits_only_and_phv(self):
-        """Queryset returns only correct source trait when found by whole phv digits including zeros, with 'phv'."""
-        query_trait = self.source_traits[0]
-        url = self.get_url()
-        q = 'phv' + '{:08}'.format(query_trait.i_dbgap_variable_accession)
-        response = self.client.get(url, {'q': q})
-        returned_pks = get_autocomplete_view_ids(response)
-        self.assertEqual(len(returned_pks), 1)
-        self.assertIn(query_trait.pk, returned_pks)
-        self.assertNotIn(self.source_traits[2].pk, returned_pks)
+        for query in TEST_PHV_QUERIES:
+            response = self.client.get(url, {'q': 'phv' + query})
+            returned_pks = get_autocomplete_view_ids(response)
+            expected_matches = TEST_PHV_QUERIES[query]
+            # Make sure number of matches is as expected.
+            self.assertEqual(len(returned_pks), len(expected_matches))
+            # Make sure the matches that are found are the ones expected.
+            for expected_phv in expected_matches:
+                expected_pk = models.SourceTrait.objects.get(i_dbgap_variable_accession=expected_phv).pk
+                self.assertIn(expected_pk, returned_pks,
+                              msg="Could not find expected phv {} with query '{}'".format(expected_phv, query))
 
 
 class PhenotypeTaggerTaggableStudyFilteredSourceTraitPHVAutocompleteTest(PhenotypeTaggerLoginTestCase):
@@ -764,7 +768,11 @@ class PhenotypeTaggerTaggableStudyFilteredSourceTraitPHVAutocompleteTest(Phenoty
         super(PhenotypeTaggerTaggableStudyFilteredSourceTraitPHVAutocompleteTest, self).setUp()
         self.source_study_version = factories.SourceStudyVersionFactory.create(study=self.study)
         self.source_dataset = factories.SourceDatasetFactory.create(source_study_version=self.source_study_version)
-        self.source_traits = factories.SourceTraitFactory.create_batch(8, source_dataset=self.source_dataset)
+        # Create 10 source traits from the same dataset, with non-deprecated ssv of version 2.
+        self.source_traits = []
+        for phv in TEST_PHVS:
+            self.source_traits.append(factories.SourceTraitFactory.create(
+                source_dataset=self.source_dataset, i_dbgap_variable_accession=phv))
         self.user.refresh_from_db()
 
     def get_url(self, *args):
@@ -817,14 +825,19 @@ class PhenotypeTaggerTaggableStudyFilteredSourceTraitPHVAutocompleteTest(Phenoty
 
     def test_other_study_not_in_queryset(self):
         """Queryset returns only traits from the user's taggable studies."""
+        # Delete all but five source traits, so that there are 5 from each study.
+        models.SourceTrait.objects.exclude(i_dbgap_variable_accession__in=TEST_PHVS[:5]).delete()
+        self.source_traits = list(models.SourceTrait.objects.all())
         study2 = factories.StudyFactory.create()
         source_traits2 = factories.SourceTraitFactory.create_batch(
-            8, source_dataset__source_study_version__study=study2)
+            5, source_dataset__source_study_version__study=study2)
         # Get results from the autocomplete view and make sure only the correct study is found.
         url = self.get_url(self.study.pk)
         response = self.client.get(url)
         returned_pks = get_autocomplete_view_ids(response)
-        self.assertEqual(len(returned_pks), len(source_traits2))
+        # Make sure that there's only one page of results.
+        self.assertTrue(models.SourceTrait.objects.all().count() <= 10)
+        self.assertEqual(len(returned_pks), len(self.source_traits))
         for trait in source_traits2:
             self.assertNotIn(trait.i_trait_id, returned_pks)
         for trait in self.source_traits:
@@ -836,49 +849,35 @@ class PhenotypeTaggerTaggableStudyFilteredSourceTraitPHVAutocompleteTest(Phenoty
         response = self.client.get(self.get_url())
         self.assertEqual(response.status_code, 403)
 
-    def test_correct_trait_found_by_phv_non_zero_digits_only(self):
-        """Queryset returns only the correct source trait when found by whole phv non-zero digits."""
-        query_trait = self.source_traits[0]
+    def test_phv_test_queries_without_phv_in_string(self):
+        """Returns only the correct source trait for each of the TEST_PHV_QUERIES when 'phv' is not in query string."""
         url = self.get_url()
-        q = query_trait.i_dbgap_variable_accession
-        response = self.client.get(url, {'q': q})
-        returned_pks = get_autocomplete_view_ids(response)
-        self.assertEqual(len(returned_pks), 1)
-        self.assertIn(query_trait.pk, returned_pks)
-        self.assertNotIn(self.source_traits[2].pk, returned_pks)
+        for query in TEST_PHV_QUERIES:
+            response = self.client.get(url, {'q': query})
+            returned_pks = get_autocomplete_view_ids(response)
+            expected_matches = TEST_PHV_QUERIES[query]
+            # Make sure number of matches is as expected.
+            self.assertEqual(len(returned_pks), len(expected_matches))
+            # Make sure the matches that are found are the ones expected.
+            for expected_phv in expected_matches:
+                expected_pk = models.SourceTrait.objects.get(i_dbgap_variable_accession=expected_phv).pk
+                self.assertIn(expected_pk, returned_pks,
+                              msg="Could not find expected phv {} with query '{}'".format(expected_phv, query))
 
-    def test_correct_trait_found_by_phv_non_zero_digits_only_and_phv(self):
-        """Queryset returns only the correct source trait when found by whole phv non-zero digits with 'phv'."""
-        query_trait = self.source_traits[0]
+    def test_phv_test_queries_with_phv_in_string(self):
+        """Returns only the correct source trait for each of the TEST_PHV_QUERIES when 'phv' is in query string."""
         url = self.get_url()
-        q = 'phv' + str(query_trait.i_dbgap_variable_accession)
-        response = self.client.get(url, {'q': q})
-        returned_pks = get_autocomplete_view_ids(response)
-        self.assertEqual(len(returned_pks), 1)
-        self.assertIn(query_trait.pk, returned_pks)
-        self.assertNotIn(self.source_traits[2].pk, returned_pks)
-
-    def test_correct_trait_found_by_phv_with_zero_digits_only(self):
-        """Queryset returns only the correct source trait when found by whole phv digits, including zeros."""
-        query_trait = self.source_traits[0]
-        url = self.get_url()
-        q = '{:08}'.format(query_trait.i_dbgap_variable_accession)
-        response = self.client.get(url, {'q': q})
-        returned_pks = get_autocomplete_view_ids(response)
-        self.assertEqual(len(returned_pks), 1)
-        self.assertIn(query_trait.pk, returned_pks)
-        self.assertNotIn(self.source_traits[2].pk, returned_pks)
-
-    def test_correct_trait_found_by_phv_with_zero_digits_only_and_phv(self):
-        """Queryset returns only correct source trait when found by whole phv digits including zeros, with 'phv'."""
-        query_trait = self.source_traits[0]
-        url = self.get_url()
-        q = 'phv' + '{:08}'.format(query_trait.i_dbgap_variable_accession)
-        response = self.client.get(url, {'q': q})
-        returned_pks = get_autocomplete_view_ids(response)
-        self.assertEqual(len(returned_pks), 1)
-        self.assertIn(query_trait.pk, returned_pks)
-        self.assertNotIn(self.source_traits[2].pk, returned_pks)
+        for query in TEST_PHV_QUERIES:
+            response = self.client.get(url, {'q': 'phv' + query})
+            returned_pks = get_autocomplete_view_ids(response)
+            expected_matches = TEST_PHV_QUERIES[query]
+            # Make sure number of matches is as expected.
+            self.assertEqual(len(returned_pks), len(expected_matches))
+            # Make sure the matches that are found are the ones expected.
+            for expected_phv in expected_matches:
+                expected_pk = models.SourceTrait.objects.get(i_dbgap_variable_accession=expected_phv).pk
+                self.assertIn(expected_pk, returned_pks,
+                              msg="Could not find expected phv {} with query '{}'".format(expected_phv, query))
 
 
 class DCCAnalystTaggableStudyFilteredSourceTraitPHVAutocompleteTest(DCCAnalystLoginTestCase):
@@ -889,7 +888,11 @@ class DCCAnalystTaggableStudyFilteredSourceTraitPHVAutocompleteTest(DCCAnalystLo
         self.study = factories.StudyFactory.create()
         self.source_study_version = factories.SourceStudyVersionFactory.create(study=self.study)
         self.source_dataset = factories.SourceDatasetFactory.create(source_study_version=self.source_study_version)
-        self.source_traits = factories.SourceTraitFactory.create_batch(5, source_dataset=self.source_dataset)
+        # Create 10 source traits from the same dataset, with non-deprecated ssv of version 2.
+        self.source_traits = []
+        for phv in TEST_PHVS:
+            self.source_traits.append(factories.SourceTraitFactory.create(
+                source_dataset=self.source_dataset, i_dbgap_variable_accession=phv))
         self.user.refresh_from_db()
 
     def get_url(self, *args):
@@ -942,6 +945,9 @@ class DCCAnalystTaggableStudyFilteredSourceTraitPHVAutocompleteTest(DCCAnalystLo
 
     def test_other_study_not_in_queryset(self):
         """Queryset returns traits from all studies."""
+        # Delete all but five source traits, so that there are 5 from each study.
+        models.SourceTrait.objects.exclude(i_dbgap_variable_accession__in=TEST_PHVS[:5]).delete()
+        self.source_traits = list(models.SourceTrait.objects.all())
         study2 = factories.StudyFactory.create()
         source_traits2 = factories.SourceTraitFactory.create_batch(
             5, source_dataset__source_study_version__study=study2)
@@ -949,10 +955,9 @@ class DCCAnalystTaggableStudyFilteredSourceTraitPHVAutocompleteTest(DCCAnalystLo
         url = self.get_url(self.study.pk)
         response = self.client.get(url)
         returned_pks = get_autocomplete_view_ids(response)
-        self.assertEqual(
-            len(returned_pks),
-            models.SourceTrait.objects.filter(source_dataset__source_study_version__i_is_deprecated=False).count()
-        )
+        # Make sure that there's only one page of results.
+        self.assertTrue(models.SourceTrait.objects.all().count() <= 10)
+        self.assertEqual(len(returned_pks), models.SourceTrait.objects.all().count())
         for trait in source_traits2:
             self.assertIn(trait.i_trait_id, returned_pks)
         for trait in self.source_traits:
@@ -972,49 +977,35 @@ class DCCAnalystTaggableStudyFilteredSourceTraitPHVAutocompleteTest(DCCAnalystLo
         response = self.client.get(self.get_url())
         self.assertEqual(response.status_code, 403)
 
-    def test_correct_trait_found_by_phv_non_zero_digits_only(self):
-        """Queryset returns only the correct source trait when found by whole phv non-zero digits."""
-        query_trait = self.source_traits[0]
+    def test_phv_test_queries_without_phv_in_string(self):
+        """Returns only the correct source trait for each of the TEST_PHV_QUERIES when 'phv' is not in query string."""
         url = self.get_url()
-        q = query_trait.i_dbgap_variable_accession
-        response = self.client.get(url, {'q': q})
-        returned_pks = get_autocomplete_view_ids(response)
-        self.assertEqual(len(returned_pks), 1)
-        self.assertIn(query_trait.pk, returned_pks)
-        self.assertNotIn(self.source_traits[2].pk, returned_pks)
+        for query in TEST_PHV_QUERIES:
+            response = self.client.get(url, {'q': query})
+            returned_pks = get_autocomplete_view_ids(response)
+            expected_matches = TEST_PHV_QUERIES[query]
+            # Make sure number of matches is as expected.
+            self.assertEqual(len(returned_pks), len(expected_matches))
+            # Make sure the matches that are found are the ones expected.
+            for expected_phv in expected_matches:
+                expected_pk = models.SourceTrait.objects.get(i_dbgap_variable_accession=expected_phv).pk
+                self.assertIn(expected_pk, returned_pks,
+                              msg="Could not find expected phv {} with query '{}'".format(expected_phv, query))
 
-    def test_correct_trait_found_by_phv_non_zero_digits_only_and_phv(self):
-        """Queryset returns only the correct source trait when found by whole phv non-zero digits with 'phv'."""
-        query_trait = self.source_traits[0]
+    def test_phv_test_queries_with_phv_in_string(self):
+        """Returns only the correct source trait for each of the TEST_PHV_QUERIES when 'phv' is in query string."""
         url = self.get_url()
-        q = 'phv' + str(query_trait.i_dbgap_variable_accession)
-        response = self.client.get(url, {'q': q})
-        returned_pks = get_autocomplete_view_ids(response)
-        self.assertEqual(len(returned_pks), 1)
-        self.assertIn(query_trait.pk, returned_pks)
-        self.assertNotIn(self.source_traits[2].pk, returned_pks)
-
-    def test_correct_trait_found_by_phv_with_zero_digits_only(self):
-        """Queryset returns only the correct source trait when found by whole phv digits, including zeros."""
-        query_trait = self.source_traits[0]
-        url = self.get_url()
-        q = '{:08}'.format(query_trait.i_dbgap_variable_accession)
-        response = self.client.get(url, {'q': q})
-        returned_pks = get_autocomplete_view_ids(response)
-        self.assertEqual(len(returned_pks), 1)
-        self.assertIn(query_trait.pk, returned_pks)
-        self.assertNotIn(self.source_traits[2].pk, returned_pks)
-
-    def test_correct_trait_found_by_phv_with_zero_digits_only_and_phv(self):
-        """Queryset returns only correct source trait when found by whole phv digits including zeros, with 'phv'."""
-        query_trait = self.source_traits[0]
-        url = self.get_url()
-        q = 'phv' + '{:08}'.format(query_trait.i_dbgap_variable_accession)
-        response = self.client.get(url, {'q': q})
-        returned_pks = get_autocomplete_view_ids(response)
-        self.assertEqual(len(returned_pks), 1)
-        self.assertIn(query_trait.pk, returned_pks)
-        self.assertNotIn(self.source_traits[2].pk, returned_pks)
+        for query in TEST_PHV_QUERIES:
+            response = self.client.get(url, {'q': 'phv' + query})
+            returned_pks = get_autocomplete_view_ids(response)
+            expected_matches = TEST_PHV_QUERIES[query]
+            # Make sure number of matches is as expected.
+            self.assertEqual(len(returned_pks), len(expected_matches))
+            # Make sure the matches that are found are the ones expected.
+            for expected_phv in expected_matches:
+                expected_pk = models.SourceTrait.objects.get(i_dbgap_variable_accession=expected_phv).pk
+                self.assertIn(expected_pk, returned_pks,
+                              msg="Could not find expected phv {} with query '{}'".format(expected_phv, query))
 
 
 class SourceTraitNameAutocompleteTest(UserLoginTestCase):
@@ -1320,9 +1311,13 @@ class SourceTraitNameOrPHVAutocompleteTest(UserLoginTestCase):
     def setUp(self):
         super(SourceTraitNameOrPHVAutocompleteTest, self).setUp()
         # Create 10 source traits from the same dataset, with non-deprecated ssv of version 2.
-        self.source_traits = factories.SourceTraitFactory.create_batch(
-            10, source_dataset__i_id=6, source_dataset__source_study_version__i_version=2,
-            source_dataset__source_study_version__i_is_deprecated=False)
+        self.source_traits = []
+        for phv in TEST_PHVS:
+            self.source_traits.append(factories.SourceTraitFactory.create(
+                source_dataset__i_id=6, source_dataset__source_study_version__i_version=2,
+                source_dataset__source_study_version__i_is_deprecated=False,
+                i_dbgap_variable_accession=phv)
+            )
 
     def get_url(self, *args):
         return reverse('trait_browser:source:traits:autocomplete:by-name-or-phv')
@@ -1390,49 +1385,35 @@ class SourceTraitNameOrPHVAutocompleteTest(UserLoginTestCase):
         for name_trait in traits_with_name:
             self.assertIn(name_trait.pk, returned_pks)
 
-    def test_correct_trait_found_by_phv_non_zero_digits_only(self):
-        """Queryset returns only the correct source trait when found by whole phv non-zero digits."""
-        query_trait = self.source_traits[0]
+    def test_phv_test_queries_without_phv_in_string(self):
+        """Returns only the correct source trait for each of the TEST_PHV_QUERIES when 'phv' is not in query string."""
         url = self.get_url()
-        q = query_trait.i_dbgap_variable_accession
-        response = self.client.get(url, {'q': q})
-        returned_pks = get_autocomplete_view_ids(response)
-        self.assertEqual(len(returned_pks), 1)
-        self.assertIn(query_trait.pk, returned_pks)
-        self.assertNotIn(self.source_traits[2].pk, returned_pks)
+        for query in TEST_PHV_QUERIES:
+            response = self.client.get(url, {'q': query})
+            returned_pks = get_autocomplete_view_ids(response)
+            expected_matches = TEST_PHV_QUERIES[query]
+            # Make sure number of matches is as expected.
+            self.assertEqual(len(returned_pks), len(expected_matches))
+            # Make sure the matches that are found are the ones expected.
+            for expected_phv in expected_matches:
+                expected_pk = models.SourceTrait.objects.get(i_dbgap_variable_accession=expected_phv).pk
+                self.assertIn(expected_pk, returned_pks,
+                              msg="Could not find expected phv {} with query '{}'".format(expected_phv, query))
 
-    def test_correct_trait_found_by_phv_non_zero_digits_only_and_phv(self):
-        """Queryset returns only the correct source trait when found by whole phv non-zero digits with 'phv'."""
-        query_trait = self.source_traits[0]
+    def test_phv_test_queries_with_phv_in_string(self):
+        """Returns only the correct source trait for each of the TEST_PHV_QUERIES when 'phv' is in query string."""
         url = self.get_url()
-        q = 'phv' + str(query_trait.i_dbgap_variable_accession)
-        response = self.client.get(url, {'q': q})
-        returned_pks = get_autocomplete_view_ids(response)
-        self.assertEqual(len(returned_pks), 1)
-        self.assertIn(query_trait.pk, returned_pks)
-        self.assertNotIn(self.source_traits[2].pk, returned_pks)
-
-    def test_correct_trait_found_by_phv_with_zero_digits_only(self):
-        """Queryset returns only the correct source trait when found by whole phv digits, including zeros."""
-        query_trait = self.source_traits[0]
-        url = self.get_url()
-        q = '{:08}'.format(query_trait.i_dbgap_variable_accession)
-        response = self.client.get(url, {'q': q})
-        returned_pks = get_autocomplete_view_ids(response)
-        self.assertEqual(len(returned_pks), 1)
-        self.assertIn(query_trait.pk, returned_pks)
-        self.assertNotIn(self.source_traits[2].pk, returned_pks)
-
-    def test_correct_trait_found_by_phv_with_zero_digits_only_and_phv(self):
-        """Queryset returns only correct source trait when found by whole phv digits including zeros, with 'phv'."""
-        query_trait = self.source_traits[0]
-        url = self.get_url()
-        q = 'phv' + '{:08}'.format(query_trait.i_dbgap_variable_accession)
-        response = self.client.get(url, {'q': q})
-        returned_pks = get_autocomplete_view_ids(response)
-        self.assertEqual(len(returned_pks), 1)
-        self.assertIn(query_trait.pk, returned_pks)
-        self.assertNotIn(self.source_traits[2].pk, returned_pks)
+        for query in TEST_PHV_QUERIES:
+            response = self.client.get(url, {'q': 'phv' + query})
+            returned_pks = get_autocomplete_view_ids(response)
+            expected_matches = TEST_PHV_QUERIES[query]
+            # Make sure number of matches is as expected.
+            self.assertEqual(len(returned_pks), len(expected_matches))
+            # Make sure the matches that are found are the ones expected.
+            for expected_phv in expected_matches:
+                expected_pk = models.SourceTrait.objects.get(i_dbgap_variable_accession=expected_phv).pk
+                self.assertIn(expected_pk, returned_pks,
+                              msg="Could not find expected phv {} with query '{}'".format(expected_phv, query))
 
 
 class PhenotypeTaggerTaggableStudyFilteredSourceTraitNameOrPHVAutocompleteTest(PhenotypeTaggerLoginTestCase):
@@ -1442,7 +1423,11 @@ class PhenotypeTaggerTaggableStudyFilteredSourceTraitNameOrPHVAutocompleteTest(P
         super(PhenotypeTaggerTaggableStudyFilteredSourceTraitNameOrPHVAutocompleteTest, self).setUp()
         self.source_study_version = factories.SourceStudyVersionFactory.create(study=self.study)
         self.source_dataset = factories.SourceDatasetFactory.create(source_study_version=self.source_study_version)
-        self.source_traits = factories.SourceTraitFactory.create_batch(8, source_dataset=self.source_dataset)
+        # Create 10 source traits from the same dataset, with non-deprecated ssv of version 2.
+        self.source_traits = []
+        for phv in TEST_PHVS:
+            self.source_traits.append(factories.SourceTraitFactory.create(
+                source_dataset=self.source_dataset, i_dbgap_variable_accession=phv))
         self.user.refresh_from_db()
 
     def get_url(self, *args):
@@ -1495,14 +1480,19 @@ class PhenotypeTaggerTaggableStudyFilteredSourceTraitNameOrPHVAutocompleteTest(P
 
     def test_other_study_not_in_queryset(self):
         """Queryset returns only traits from the user's taggable studies."""
+        # Delete all but five source traits, so that there are 5 from each study.
+        models.SourceTrait.objects.exclude(i_dbgap_variable_accession__in=TEST_PHVS[:5]).delete()
+        self.source_traits = list(models.SourceTrait.objects.all())
         study2 = factories.StudyFactory.create()
         source_traits2 = factories.SourceTraitFactory.create_batch(
-            8, source_dataset__source_study_version__study=study2)
+            5, source_dataset__source_study_version__study=study2)
         # Get results from the autocomplete view and make sure only the correct study is found.
         url = self.get_url(self.study.pk)
         response = self.client.get(url)
         returned_pks = get_autocomplete_view_ids(response)
-        self.assertEqual(len(returned_pks), len(source_traits2))
+        # Make sure that there's only one page of results.
+        self.assertTrue(models.SourceTrait.objects.all().count() <= 10)
+        self.assertEqual(len(returned_pks), len(self.source_traits))
         for trait in source_traits2:
             self.assertNotIn(trait.i_trait_id, returned_pks)
         for trait in self.source_traits:
@@ -1538,49 +1528,35 @@ class PhenotypeTaggerTaggableStudyFilteredSourceTraitNameOrPHVAutocompleteTest(P
         response = self.client.get(self.get_url())
         self.assertEqual(response.status_code, 403)
 
-    def test_correct_trait_found_by_phv_non_zero_digits_only(self):
-        """Queryset returns only the correct source trait when found by whole phv non-zero digits."""
-        query_trait = self.source_traits[0]
+    def test_phv_test_queries_without_phv_in_string(self):
+        """Returns only the correct source trait for each of the TEST_PHV_QUERIES when 'phv' is not in query string."""
         url = self.get_url()
-        q = query_trait.i_dbgap_variable_accession
-        response = self.client.get(url, {'q': q})
-        returned_pks = get_autocomplete_view_ids(response)
-        self.assertEqual(len(returned_pks), 1)
-        self.assertIn(query_trait.pk, returned_pks)
-        self.assertNotIn(self.source_traits[2].pk, returned_pks)
+        for query in TEST_PHV_QUERIES:
+            response = self.client.get(url, {'q': query})
+            returned_pks = get_autocomplete_view_ids(response)
+            expected_matches = TEST_PHV_QUERIES[query]
+            # Make sure number of matches is as expected.
+            self.assertEqual(len(returned_pks), len(expected_matches))
+            # Make sure the matches that are found are the ones expected.
+            for expected_phv in expected_matches:
+                expected_pk = models.SourceTrait.objects.get(i_dbgap_variable_accession=expected_phv).pk
+                self.assertIn(expected_pk, returned_pks,
+                              msg="Could not find expected phv {} with query '{}'".format(expected_phv, query))
 
-    def test_correct_trait_found_by_phv_non_zero_digits_only_and_phv(self):
-        """Queryset returns only the correct source trait when found by whole phv non-zero digits with 'phv'."""
-        query_trait = self.source_traits[0]
+    def test_phv_test_queries_with_phv_in_string(self):
+        """Returns only the correct source trait for each of the TEST_PHV_QUERIES when 'phv' is in query string."""
         url = self.get_url()
-        q = 'phv' + str(query_trait.i_dbgap_variable_accession)
-        response = self.client.get(url, {'q': q})
-        returned_pks = get_autocomplete_view_ids(response)
-        self.assertEqual(len(returned_pks), 1)
-        self.assertIn(query_trait.pk, returned_pks)
-        self.assertNotIn(self.source_traits[2].pk, returned_pks)
-
-    def test_correct_trait_found_by_phv_with_zero_digits_only(self):
-        """Queryset returns only the correct source trait when found by whole phv digits, including zeros."""
-        query_trait = self.source_traits[0]
-        url = self.get_url()
-        q = '{:08}'.format(query_trait.i_dbgap_variable_accession)
-        response = self.client.get(url, {'q': q})
-        returned_pks = get_autocomplete_view_ids(response)
-        self.assertEqual(len(returned_pks), 1)
-        self.assertIn(query_trait.pk, returned_pks)
-        self.assertNotIn(self.source_traits[2].pk, returned_pks)
-
-    def test_correct_trait_found_by_phv_with_zero_digits_only_and_phv(self):
-        """Queryset returns only correct source trait when found by whole phv digits including zeros, with 'phv'."""
-        query_trait = self.source_traits[0]
-        url = self.get_url()
-        q = 'phv' + '{:08}'.format(query_trait.i_dbgap_variable_accession)
-        response = self.client.get(url, {'q': q})
-        returned_pks = get_autocomplete_view_ids(response)
-        self.assertEqual(len(returned_pks), 1)
-        self.assertIn(query_trait.pk, returned_pks)
-        self.assertNotIn(self.source_traits[2].pk, returned_pks)
+        for query in TEST_PHV_QUERIES:
+            response = self.client.get(url, {'q': 'phv' + query})
+            returned_pks = get_autocomplete_view_ids(response)
+            expected_matches = TEST_PHV_QUERIES[query]
+            # Make sure number of matches is as expected.
+            self.assertEqual(len(returned_pks), len(expected_matches))
+            # Make sure the matches that are found are the ones expected.
+            for expected_phv in expected_matches:
+                expected_pk = models.SourceTrait.objects.get(i_dbgap_variable_accession=expected_phv).pk
+                self.assertIn(expected_pk, returned_pks,
+                              msg="Could not find expected phv {} with query '{}'".format(expected_phv, query))
 
 
 class DCCAnalystTaggableStudyFilteredSourceTraitNameOrPHVAutocompleteTest(DCCAnalystLoginTestCase):
@@ -1591,7 +1567,11 @@ class DCCAnalystTaggableStudyFilteredSourceTraitNameOrPHVAutocompleteTest(DCCAna
         self.study = factories.StudyFactory.create()
         self.source_study_version = factories.SourceStudyVersionFactory.create(study=self.study)
         self.source_dataset = factories.SourceDatasetFactory.create(source_study_version=self.source_study_version)
-        self.source_traits = factories.SourceTraitFactory.create_batch(5, source_dataset=self.source_dataset)
+        # Create 10 source traits from the same dataset, with non-deprecated ssv of version 2.
+        self.source_traits = []
+        for phv in TEST_PHVS:
+            self.source_traits.append(factories.SourceTraitFactory.create(
+                source_dataset=self.source_dataset, i_dbgap_variable_accession=phv))
         self.user.refresh_from_db()
 
     def get_url(self, *args):
@@ -1642,8 +1622,11 @@ class DCCAnalystTaggableStudyFilteredSourceTraitNameOrPHVAutocompleteTest(DCCAna
         for trait in self.source_traits:
             self.assertNotIn(trait.i_trait_id, returned_pks)
 
-    def test_other_study_not_in_queryset(self):
+    def test_other_study_in_queryset(self):
         """Queryset returns traits from all studies."""
+        # Delete all but five source traits, so that there are 5 from each study.
+        models.SourceTrait.objects.exclude(i_dbgap_variable_accession__in=TEST_PHVS[:5]).delete()
+        self.source_traits = list(models.SourceTrait.objects.all())
         study2 = factories.StudyFactory.create()
         source_traits2 = factories.SourceTraitFactory.create_batch(
             5, source_dataset__source_study_version__study=study2)
@@ -1651,10 +1634,9 @@ class DCCAnalystTaggableStudyFilteredSourceTraitNameOrPHVAutocompleteTest(DCCAna
         url = self.get_url(self.study.pk)
         response = self.client.get(url)
         returned_pks = get_autocomplete_view_ids(response)
-        self.assertEqual(
-            len(returned_pks),
-            models.SourceTrait.objects.filter(source_dataset__source_study_version__i_is_deprecated=False).count()
-        )
+        # Make sure that there's only one page of results.
+        self.assertTrue(models.SourceTrait.objects.all().count() <= 10)
+        self.assertEqual(len(returned_pks), models.SourceTrait.objects.all().count())
         for trait in source_traits2:
             self.assertIn(trait.i_trait_id, returned_pks)
         for trait in self.source_traits:
@@ -1698,49 +1680,35 @@ class DCCAnalystTaggableStudyFilteredSourceTraitNameOrPHVAutocompleteTest(DCCAna
         response = self.client.get(self.get_url())
         self.assertEqual(response.status_code, 403)
 
-    def test_correct_trait_found_by_phv_non_zero_digits_only(self):
-        """Queryset returns only the correct source trait when found by whole phv non-zero digits."""
-        query_trait = self.source_traits[0]
+    def test_phv_test_queries_without_phv_in_string(self):
+        """Returns only the correct source trait for each of the TEST_PHV_QUERIES when 'phv' is not in query string."""
         url = self.get_url()
-        q = query_trait.i_dbgap_variable_accession
-        response = self.client.get(url, {'q': q})
-        returned_pks = get_autocomplete_view_ids(response)
-        self.assertEqual(len(returned_pks), 1)
-        self.assertIn(query_trait.pk, returned_pks)
-        self.assertNotIn(self.source_traits[2].pk, returned_pks)
+        for query in TEST_PHV_QUERIES:
+            response = self.client.get(url, {'q': query})
+            returned_pks = get_autocomplete_view_ids(response)
+            expected_matches = TEST_PHV_QUERIES[query]
+            # Make sure number of matches is as expected.
+            self.assertEqual(len(returned_pks), len(expected_matches))
+            # Make sure the matches that are found are the ones expected.
+            for expected_phv in expected_matches:
+                expected_pk = models.SourceTrait.objects.get(i_dbgap_variable_accession=expected_phv).pk
+                self.assertIn(expected_pk, returned_pks,
+                              msg="Could not find expected phv {} with query '{}'".format(expected_phv, query))
 
-    def test_correct_trait_found_by_phv_non_zero_digits_only_and_phv(self):
-        """Queryset returns only the correct source trait when found by whole phv non-zero digits with 'phv'."""
-        query_trait = self.source_traits[0]
+    def test_phv_test_queries_with_phv_in_string(self):
+        """Returns only the correct source trait for each of the TEST_PHV_QUERIES when 'phv' is in query string."""
         url = self.get_url()
-        q = 'phv' + str(query_trait.i_dbgap_variable_accession)
-        response = self.client.get(url, {'q': q})
-        returned_pks = get_autocomplete_view_ids(response)
-        self.assertEqual(len(returned_pks), 1)
-        self.assertIn(query_trait.pk, returned_pks)
-        self.assertNotIn(self.source_traits[2].pk, returned_pks)
-
-    def test_correct_trait_found_by_phv_with_zero_digits_only(self):
-        """Queryset returns only the correct source trait when found by whole phv digits, including zeros."""
-        query_trait = self.source_traits[0]
-        url = self.get_url()
-        q = '{:08}'.format(query_trait.i_dbgap_variable_accession)
-        response = self.client.get(url, {'q': q})
-        returned_pks = get_autocomplete_view_ids(response)
-        self.assertEqual(len(returned_pks), 1)
-        self.assertIn(query_trait.pk, returned_pks)
-        self.assertNotIn(self.source_traits[2].pk, returned_pks)
-
-    def test_correct_trait_found_by_phv_with_zero_digits_only_and_phv(self):
-        """Queryset returns only correct source trait when found by whole phv digits including zeros, with 'phv'."""
-        query_trait = self.source_traits[0]
-        url = self.get_url()
-        q = 'phv' + '{:08}'.format(query_trait.i_dbgap_variable_accession)
-        response = self.client.get(url, {'q': q})
-        returned_pks = get_autocomplete_view_ids(response)
-        self.assertEqual(len(returned_pks), 1)
-        self.assertIn(query_trait.pk, returned_pks)
-        self.assertNotIn(self.source_traits[2].pk, returned_pks)
+        for query in TEST_PHV_QUERIES:
+            response = self.client.get(url, {'q': 'phv' + query})
+            returned_pks = get_autocomplete_view_ids(response)
+            expected_matches = TEST_PHV_QUERIES[query]
+            # Make sure number of matches is as expected.
+            self.assertEqual(len(returned_pks), len(expected_matches))
+            # Make sure the matches that are found are the ones expected.
+            for expected_phv in expected_matches:
+                expected_pk = models.SourceTrait.objects.get(i_dbgap_variable_accession=expected_phv).pk
+                self.assertIn(expected_pk, returned_pks,
+                              msg="Could not find expected phv {} with query '{}'".format(expected_phv, query))
 
 
 class HarmonizedTraitListTest(UserLoginTestCase):
