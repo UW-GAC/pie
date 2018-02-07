@@ -400,10 +400,10 @@ def search(text_query, trait_type, study_pks=[]):
             traits = models.SourceTrait.objects.filter(source_dataset__source_study_version__study__pk__in=study_pks)
         # Then exclude deprecated study versions and search text.
         traits = traits.exclude(source_dataset__source_study_version__i_is_deprecated=True).filter(
-            Q(i_description__contains=text_query) | Q(i_trait_name__contains=text_query))
+            Q(i_description__iregex=text_query) | Q(i_trait_name__iregex=text_query))
     elif trait_type == 'harmonized':
         traits = models.HarmonizedTrait.objects.filter(
-            Q(i_description__contains=text_query) | Q(i_trait_name__contains=text_query))
+            Q(i_description__iregex=text_query) | Q(i_trait_name__iregex=text_query))
     return(traits)
 
 

@@ -18,7 +18,7 @@ class SourceTraitCrispySearchForm(forms.Form):
 
     text = forms.CharField(
         label='search text', max_length=100,
-        help_text='Case sensitive. Searches within both phenotype names and descriptions.'
+        help_text='Case insensitive. Searches within both phenotype names and descriptions.'
     )
     helper = FormHelper()
     helper.form_class = 'form-horizontal'
@@ -53,7 +53,7 @@ class HarmonizedTraitCrispySearchForm(forms.Form):
 
     text = forms.CharField(
         label='search text', max_length=100,
-        help_text='Case sensitive. Searches within both phenotype names and descriptions.'
+        help_text='Case insensitive. Searches within both phenotype names and descriptions.'
     )
     helper = FormHelper()
     helper.form_class = 'form-horizontal'
