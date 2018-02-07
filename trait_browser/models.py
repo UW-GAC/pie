@@ -440,7 +440,9 @@ class SourceTrait(Trait):
 
     def __str__(self):
         """Pretty printing of SourceTrait objects."""
-        return '{} from dataset {} ({})'.format(self.variable_accession, self.dataset_accession, self.i_trait_name)
+        return '{trait_name} ({phv}): dataset {pht}'.format(trait_name=self.i_trait_name,
+                                                            phv=self.variable_accession,
+                                                            pht=self.dataset_accession)
 
     def save(self, *args, **kwargs):
         """Custom save method for default dbGaP accessions and links.
