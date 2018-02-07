@@ -1008,15 +1008,34 @@ class DCCAnalystTaggableStudyFilteredSourceTraitPHVAutocompleteTest(DCCAnalystLo
                               msg="Could not find expected phv {} with query '{}'".format(expected_phv, query))
 
 
+TEST_NAMES = ('abc', 'ABC', 'aBc', 'abc2', 'abc22', 'c225ab', 'abc_and_ABC', )
+TEST_NAME_QUERIES = {'a': ('abc', 'ABC', 'aBc', 'abc2', 'abc22', 'abc_and_ABC', ),
+                     'A': ('abc', 'ABC', 'aBc', 'abc2', 'abc22', 'abc_and_ABC', ),
+                     'ab': ('abc', 'ABC', 'aBc', 'abc2', 'abc22', 'abc_and_ABC', ),
+                     'aB': ('abc', 'ABC', 'aBc', 'abc2', 'abc22', 'abc_and_ABC', ),
+                     'abc2': ('abc2', 'abc22', ),
+                     'abc22': ('abc22', ),
+                     'c22': ('c225ab', ),
+                     'abc': ('abc', 'ABC', 'aBc', 'abc2', 'abc22', 'abc_and_ABC', ),
+                     'abc_': ('abc_and_ABC', ),
+                     '225': (),
+                     'very_long_string': (),
+                     }
+
+
 class SourceTraitNameAutocompleteTest(UserLoginTestCase):
     """Autocomplete view works as expected."""
 
     def setUp(self):
         super(SourceTraitNameAutocompleteTest, self).setUp()
         # Create 10 source traits from the same dataset, with non-deprecated ssv of version 2.
-        self.source_traits = factories.SourceTraitFactory.create_batch(
-            10, source_dataset__i_id=6, source_dataset__source_study_version__i_version=2,
-            source_dataset__source_study_version__i_is_deprecated=False)
+        self.source_traits = []
+        for name in TEST_NAMES:
+            self.source_traits.append(factories.SourceTraitFactory.create(
+                source_dataset__i_id=6, source_dataset__source_study_version__i_version=2,
+                source_dataset__source_study_version__i_is_deprecated=False,
+                i_trait_name=name)
+            )
 
     def get_url(self, *args):
         return reverse('trait_browser:source:traits:autocomplete:by-name')
@@ -1060,29 +1079,23 @@ class SourceTraitNameAutocompleteTest(UserLoginTestCase):
         self.assertIn(trait.pk, pks)
         self.assertNotIn(trait2.pk, pks)
 
-    def test_correct_trait_found_by_name(self):
-        """Queryset returns only the correct source trait when found by whole trait name."""
-        query_trait = self.source_traits[0]
+    def test_name_test_queries(self):
+        """Returns only the correct source trait for each of the TEST_NAME_QUERIES."""
         url = self.get_url()
-        response = self.client.get(url, {'q': query_trait.i_trait_name})
-        returned_pks = get_autocomplete_view_ids(response)
-        # Get traits that have the same trait name, to account for how small the word lists for faker are.
-        traits_with_name = models.SourceTrait.objects.filter(i_trait_name=query_trait.i_trait_name)
-        self.assertEqual(len(returned_pks), len(traits_with_name))
-        for name_trait in traits_with_name:
-            self.assertIn(name_trait.pk, returned_pks)
-
-    def test_correct_trait_found_by_case_insensitive_name(self):
-        """Queryset returns only the correct source trait when found by whole name, with mismatched case."""
-        query_trait = self.source_traits[0]
-        url = self.get_url()
-        response = self.client.get(url, {'q': query_trait.i_trait_name.upper()})
-        returned_pks = get_autocomplete_view_ids(response)
-        # Get traits that have the same trait name, to account for how small the word lists for faker are.
-        traits_with_name = models.SourceTrait.objects.filter(i_trait_name=query_trait.i_trait_name)
-        self.assertEqual(len(returned_pks), len(traits_with_name))
-        for name_trait in traits_with_name:
-            self.assertIn(name_trait.pk, returned_pks)
+        for query in TEST_NAME_QUERIES:
+            response = self.client.get(url, {'q': query})
+            returned_pks = get_autocomplete_view_ids(response)
+            expected_matches = TEST_NAME_QUERIES[query]
+            # Make sure number of matches is as expected.
+            self.assertEqual(len(returned_pks), len(expected_matches))
+            # Make sure the matches that are found are the ones expected.
+            for expected_name in expected_matches:
+                # This filter should only have one result, but I want to make sure.
+                name_queryset = models.SourceTrait.objects.filter(i_trait_name__regex=r'^{}$'.format(expected_name))
+                self.assertEqual(name_queryset.count(), 1)
+                expected_pk = name_queryset.first().pk
+                self.assertIn(expected_pk, returned_pks,
+                              msg="Could not find expected trait name {} with query '{}'".format(expected_name, query))
 
 
 class PhenotypeTaggerTaggableStudyFilteredSourceTraitNameAutocompleteTest(PhenotypeTaggerLoginTestCase):
@@ -1092,7 +1105,11 @@ class PhenotypeTaggerTaggableStudyFilteredSourceTraitNameAutocompleteTest(Phenot
         super(PhenotypeTaggerTaggableStudyFilteredSourceTraitNameAutocompleteTest, self).setUp()
         self.source_study_version = factories.SourceStudyVersionFactory.create(study=self.study)
         self.source_dataset = factories.SourceDatasetFactory.create(source_study_version=self.source_study_version)
-        self.source_traits = factories.SourceTraitFactory.create_batch(8, source_dataset=self.source_dataset)
+        # Create 10 source traits from the same dataset, with non-deprecated ssv of version 2.
+        self.source_traits = []
+        for name in TEST_NAMES:
+            self.source_traits.append(factories.SourceTraitFactory.create(
+                source_dataset=self.source_dataset, i_trait_name=name))
         self.user.refresh_from_db()
 
     def get_url(self, *args):
@@ -1145,48 +1162,47 @@ class PhenotypeTaggerTaggableStudyFilteredSourceTraitNameAutocompleteTest(Phenot
 
     def test_other_study_not_in_queryset(self):
         """Queryset returns only traits from the user's taggable studies."""
+        # Delete all source traits and make 5 new ones, so there are only 5 for study 1.
+        models.SourceTrait.objects.all().delete()
+        self.source_traits = factories.SourceTraitFactory.create_batch(5, source_dataset=self.source_dataset)
         study2 = factories.StudyFactory.create()
         source_traits2 = factories.SourceTraitFactory.create_batch(
-            8, source_dataset__source_study_version__study=study2)
+            5, source_dataset__source_study_version__study=study2)
         # Get results from the autocomplete view and make sure only the correct study is found.
         url = self.get_url(self.study.pk)
         response = self.client.get(url)
         returned_pks = get_autocomplete_view_ids(response)
-        self.assertEqual(len(returned_pks), len(source_traits2))
+        # Make sure that there's only one page of results.
+        self.assertTrue(models.SourceTrait.objects.all().count() <= 10)
+        self.assertEqual(len(returned_pks), len(self.source_traits))
         for trait in source_traits2:
             self.assertNotIn(trait.i_trait_id, returned_pks)
         for trait in self.source_traits:
             self.assertIn(trait.i_trait_id, returned_pks)
-
-    def test_correct_trait_found_by_name(self):
-        """Queryset returns only the correct source trait when found by whole trait name."""
-        query_trait = self.source_traits[0]
-        url = self.get_url(self.study.pk)
-        response = self.client.get(url, {'q': query_trait.i_trait_name})
-        returned_pks = get_autocomplete_view_ids(response)
-        # Get traits that have the same trait name, to account for how small the word lists for faker are.
-        traits_with_name = models.SourceTrait.objects.filter(i_trait_name=query_trait.i_trait_name)
-        self.assertEqual(len(returned_pks), len(traits_with_name))
-        for name_trait in traits_with_name:
-            self.assertIn(name_trait.pk, returned_pks)
-
-    def test_correct_trait_found_by_case_insensitive_name(self):
-        """Queryset returns only the correct source trait when found by whole name, with mismatched case."""
-        query_trait = self.source_traits[0]
-        url = self.get_url(self.study.pk)
-        response = self.client.get(url, {'q': query_trait.i_trait_name.upper()})
-        returned_pks = get_autocomplete_view_ids(response)
-        # Get traits that have the same trait name, to account for how small the word lists for faker are.
-        traits_with_name = models.SourceTrait.objects.filter(i_trait_name=query_trait.i_trait_name)
-        self.assertEqual(len(returned_pks), len(traits_with_name))
-        for name_trait in traits_with_name:
-            self.assertIn(name_trait.pk, returned_pks)
 
     def test_forbidden_empty_taggable_studies(self):
         """View returns 403 code when the user has no taggable_studies."""
         self.user.profile.taggable_studies.remove(self.study)
         response = self.client.get(self.get_url())
         self.assertEqual(response.status_code, 403)
+
+    def test_name_test_queries(self):
+        """Returns only the correct source trait for each of the TEST_NAME_QUERIES."""
+        url = self.get_url()
+        for query in TEST_NAME_QUERIES:
+            response = self.client.get(url, {'q': query})
+            returned_pks = get_autocomplete_view_ids(response)
+            expected_matches = TEST_NAME_QUERIES[query]
+            # Make sure number of matches is as expected.
+            self.assertEqual(len(returned_pks), len(expected_matches))
+            # Make sure the matches that are found are the ones expected.
+            for expected_name in expected_matches:
+                # This filter should only have one result, but I want to make sure.
+                name_queryset = models.SourceTrait.objects.filter(i_trait_name__regex=r'^{}$'.format(expected_name))
+                self.assertEqual(name_queryset.count(), 1)
+                expected_pk = name_queryset.first().pk
+                self.assertIn(expected_pk, returned_pks,
+                              msg="Could not find expected trait name {} with query '{}'".format(expected_name, query))
 
 
 class DCCAnalystTaggableStudyFilteredSourceTraitNameAutocompleteTest(DCCAnalystLoginTestCase):
@@ -1197,7 +1213,11 @@ class DCCAnalystTaggableStudyFilteredSourceTraitNameAutocompleteTest(DCCAnalystL
         self.study = factories.StudyFactory.create()
         self.source_study_version = factories.SourceStudyVersionFactory.create(study=self.study)
         self.source_dataset = factories.SourceDatasetFactory.create(source_study_version=self.source_study_version)
-        self.source_traits = factories.SourceTraitFactory.create_batch(5, source_dataset=self.source_dataset)
+        # Create 10 source traits from the same dataset, with non-deprecated ssv of version 2.
+        self.source_traits = []
+        for name in TEST_NAMES:
+            self.source_traits.append(factories.SourceTraitFactory.create(
+                source_dataset=self.source_dataset, i_trait_name=name))
         self.user.refresh_from_db()
 
     def get_url(self, *args):
@@ -1248,8 +1268,11 @@ class DCCAnalystTaggableStudyFilteredSourceTraitNameAutocompleteTest(DCCAnalystL
         for trait in self.source_traits:
             self.assertNotIn(trait.i_trait_id, returned_pks)
 
-    def test_other_study_not_in_queryset(self):
+    def test_other_study_in_queryset(self):
         """Queryset returns traits from all studies."""
+        # Delete all source traits and make 5 new ones, so there are only 5 for study 1.
+        models.SourceTrait.objects.all().delete()
+        self.source_traits = factories.SourceTraitFactory.create_batch(5, source_dataset=self.source_dataset)
         study2 = factories.StudyFactory.create()
         source_traits2 = factories.SourceTraitFactory.create_batch(
             5, source_dataset__source_study_version__study=study2)
@@ -1257,38 +1280,13 @@ class DCCAnalystTaggableStudyFilteredSourceTraitNameAutocompleteTest(DCCAnalystL
         url = self.get_url(self.study.pk)
         response = self.client.get(url)
         returned_pks = get_autocomplete_view_ids(response)
-        self.assertEqual(
-            len(returned_pks),
-            models.SourceTrait.objects.filter(source_dataset__source_study_version__i_is_deprecated=False).count()
-        )
+        # Make sure that there's only one page of results.
+        self.assertTrue(models.SourceTrait.objects.all().count() <= 10)
+        self.assertEqual(len(returned_pks), models.SourceTrait.objects.all().count())
         for trait in source_traits2:
             self.assertIn(trait.i_trait_id, returned_pks)
         for trait in self.source_traits:
             self.assertIn(trait.i_trait_id, returned_pks)
-
-    def test_correct_trait_found_by_name(self):
-        """Queryset returns only the correct source trait when found by whole trait name."""
-        query_trait = self.source_traits[0]
-        url = self.get_url(self.study.pk)
-        response = self.client.get(url, {'q': query_trait.i_trait_name})
-        returned_pks = get_autocomplete_view_ids(response)
-        # Get traits that have the same trait name, to account for how small the word lists for faker are.
-        traits_with_name = models.SourceTrait.objects.filter(i_trait_name=query_trait.i_trait_name)
-        self.assertEqual(len(returned_pks), len(traits_with_name))
-        for name_trait in traits_with_name:
-            self.assertIn(name_trait.pk, returned_pks)
-
-    def test_correct_trait_found_by_case_insensitive_name(self):
-        """Queryset returns only the correct source trait when found by whole name, with mismatched case."""
-        query_trait = self.source_traits[0]
-        url = self.get_url(self.study.pk)
-        response = self.client.get(url, {'q': query_trait.i_trait_name.upper()})
-        returned_pks = get_autocomplete_view_ids(response)
-        # Get traits that have the same trait name, to account for how small the word lists for faker are.
-        traits_with_name = models.SourceTrait.objects.filter(i_trait_name=query_trait.i_trait_name)
-        self.assertEqual(len(returned_pks), len(traits_with_name))
-        for name_trait in traits_with_name:
-            self.assertIn(name_trait.pk, returned_pks)
 
     def test_with_empty_taggable_studies(self):
         """View returns 200 code when the user has no taggable_studies."""
@@ -1303,6 +1301,24 @@ class DCCAnalystTaggableStudyFilteredSourceTraitNameAutocompleteTest(DCCAnalystL
         self.user.refresh_from_db()
         response = self.client.get(self.get_url())
         self.assertEqual(response.status_code, 403)
+
+    def test_name_test_queries(self):
+        """Returns only the correct source trait for each of the TEST_NAME_QUERIES."""
+        url = self.get_url()
+        for query in TEST_NAME_QUERIES:
+            response = self.client.get(url, {'q': query})
+            returned_pks = get_autocomplete_view_ids(response)
+            expected_matches = TEST_NAME_QUERIES[query]
+            # Make sure number of matches is as expected.
+            self.assertEqual(len(returned_pks), len(expected_matches))
+            # Make sure the matches that are found are the ones expected.
+            for expected_name in expected_matches:
+                # This filter should only have one result, but I want to make sure.
+                name_queryset = models.SourceTrait.objects.filter(i_trait_name__regex=r'^{}$'.format(expected_name))
+                self.assertEqual(name_queryset.count(), 1)
+                expected_pk = name_queryset.first().pk
+                self.assertIn(expected_pk, returned_pks,
+                              msg="Could not find expected trait name {} with query '{}'".format(expected_name, query))
 
 
 class SourceTraitNameOrPHVAutocompleteTest(UserLoginTestCase):
@@ -1414,6 +1430,33 @@ class SourceTraitNameOrPHVAutocompleteTest(UserLoginTestCase):
                 expected_pk = models.SourceTrait.objects.get(i_dbgap_variable_accession=expected_phv).pk
                 self.assertIn(expected_pk, returned_pks,
                               msg="Could not find expected phv {} with query '{}'".format(expected_phv, query))
+
+    def test_name_test_queries(self):
+        """Returns only the correct source trait for each of the TEST_NAME_QUERIES."""
+        models.SourceTrait.objects.all().delete()
+        # Create 10 source traits from the same dataset, with non-deprecated ssv of version 2.
+        self.source_traits = []
+        for name in TEST_NAMES:
+            self.source_traits.append(factories.SourceTraitFactory.create(
+                source_dataset__i_id=6, source_dataset__source_study_version__i_version=2,
+                source_dataset__source_study_version__i_is_deprecated=False,
+                i_trait_name=name)
+            )
+        url = self.get_url()
+        for query in TEST_NAME_QUERIES:
+            response = self.client.get(url, {'q': query})
+            returned_pks = get_autocomplete_view_ids(response)
+            expected_matches = TEST_NAME_QUERIES[query]
+            # Make sure number of matches is as expected.
+            self.assertEqual(len(returned_pks), len(expected_matches))
+            # Make sure the matches that are found are the ones expected.
+            for expected_name in expected_matches:
+                # This filter should only have one result, but I want to make sure.
+                name_queryset = models.SourceTrait.objects.filter(i_trait_name__regex=r'^{}$'.format(expected_name))
+                self.assertEqual(name_queryset.count(), 1)
+                expected_pk = name_queryset.first().pk
+                self.assertIn(expected_pk, returned_pks,
+                              msg="Could not find expected trait name {} with query '{}'".format(expected_name, query))
 
 
 class PhenotypeTaggerTaggableStudyFilteredSourceTraitNameOrPHVAutocompleteTest(PhenotypeTaggerLoginTestCase):
@@ -1557,6 +1600,31 @@ class PhenotypeTaggerTaggableStudyFilteredSourceTraitNameOrPHVAutocompleteTest(P
                 expected_pk = models.SourceTrait.objects.get(i_dbgap_variable_accession=expected_phv).pk
                 self.assertIn(expected_pk, returned_pks,
                               msg="Could not find expected phv {} with query '{}'".format(expected_phv, query))
+
+    def test_name_test_queries(self):
+        """Returns only the correct source trait for each of the TEST_NAME_QUERIES."""
+        models.SourceTrait.objects.all().delete()
+        # Create 10 source traits from the same dataset, with non-deprecated ssv of version 2.
+        self.source_traits = []
+        for name in TEST_NAMES:
+            self.source_traits.append(factories.SourceTraitFactory.create(
+                source_dataset=self.source_dataset, i_trait_name=name))
+        self.user.refresh_from_db()
+        url = self.get_url()
+        for query in TEST_NAME_QUERIES:
+            response = self.client.get(url, {'q': query})
+            returned_pks = get_autocomplete_view_ids(response)
+            expected_matches = TEST_NAME_QUERIES[query]
+            # Make sure number of matches is as expected.
+            self.assertEqual(len(returned_pks), len(expected_matches))
+            # Make sure the matches that are found are the ones expected.
+            for expected_name in expected_matches:
+                # This filter should only have one result, but I want to make sure.
+                name_queryset = models.SourceTrait.objects.filter(i_trait_name__regex=r'^{}$'.format(expected_name))
+                self.assertEqual(name_queryset.count(), 1)
+                expected_pk = name_queryset.first().pk
+                self.assertIn(expected_pk, returned_pks,
+                              msg="Could not find expected trait name {} with query '{}'".format(expected_name, query))
 
 
 class DCCAnalystTaggableStudyFilteredSourceTraitNameOrPHVAutocompleteTest(DCCAnalystLoginTestCase):
@@ -1709,6 +1777,31 @@ class DCCAnalystTaggableStudyFilteredSourceTraitNameOrPHVAutocompleteTest(DCCAna
                 expected_pk = models.SourceTrait.objects.get(i_dbgap_variable_accession=expected_phv).pk
                 self.assertIn(expected_pk, returned_pks,
                               msg="Could not find expected phv {} with query '{}'".format(expected_phv, query))
+
+    def test_name_test_queries(self):
+        """Returns only the correct source trait for each of the TEST_NAME_QUERIES."""
+        models.SourceTrait.objects.all().delete()
+        # Create 10 source traits from the same dataset, with non-deprecated ssv of version 2.
+        self.source_traits = []
+        for name in TEST_NAMES:
+            self.source_traits.append(factories.SourceTraitFactory.create(
+                source_dataset=self.source_dataset, i_trait_name=name))
+        self.user.refresh_from_db()
+        url = self.get_url()
+        for query in TEST_NAME_QUERIES:
+            response = self.client.get(url, {'q': query})
+            returned_pks = get_autocomplete_view_ids(response)
+            expected_matches = TEST_NAME_QUERIES[query]
+            # Make sure number of matches is as expected.
+            self.assertEqual(len(returned_pks), len(expected_matches))
+            # Make sure the matches that are found are the ones expected.
+            for expected_name in expected_matches:
+                # This filter should only have one result, but I want to make sure.
+                name_queryset = models.SourceTrait.objects.filter(i_trait_name__regex=r'^{}$'.format(expected_name))
+                self.assertEqual(name_queryset.count(), 1)
+                expected_pk = name_queryset.first().pk
+                self.assertIn(expected_pk, returned_pks,
+                              msg="Could not find expected trait name {} with query '{}'".format(expected_name, query))
 
 
 class HarmonizedTraitListTest(UserLoginTestCase):
