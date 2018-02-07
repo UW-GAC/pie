@@ -213,26 +213,26 @@ class SourceTraitTagging(LoginRequiredMixin, PermissionRequiredMixin, UserPasses
 
 
 class SourceTraitPHVAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
-    """View for returning querysets that allow auto-completing SourceTrait-based form fields.
-
-    Used with django-autocomplete-light package. Autocomplete by dbGaP accession.
-    Only include latest version.
-    """
+    """Auto-complete source traits in a form field by i_trait_name."""
 
     def get_queryset(self):
         retrieved = models.SourceTrait.objects.filter(source_dataset__source_study_version__i_is_deprecated=False)
         if self.q:
-            retrieved = retrieved.filter(i_dbgap_variable_accession__regex=r'^{}'.format(self.q))
+            # User can input a phv in several ways, e.g. 'phv597', '597', '00000597', or 'phv00000597'.
+            # Get rid of the phv.
+            phv_digits = self.q.replace('phv', '')
+            # Search against the phv string if user started the query with leading zeros.
+            if phv_digits.startswith('0'):
+                retrieved = retrieved.filter(variable_accession__regex=r'^{}'.format('phv' + phv_digits))
+            # Search against the phv digits if user started the query with non-zero digits.
+            else:
+                retrieved = retrieved.filter(i_dbgap_variable_accession__regex=r'^{}'.format(phv_digits))
         return retrieved
 
 
 class TaggableStudyFilteredSourceTraitPHVAutocomplete(LoginRequiredMixin, TaggableStudiesRequiredMixin,
                                                       autocomplete.Select2QuerySetView):
-    """View for auto-completing SourceTraits by phv in a specific study.
-
-    Used with django-autocomplete-light package. Autocomplete by dbGaP accession.
-    Only include latest version.
-    """
+    """Auto-complete source traits in a form field by i_trait_name, with tagging restrictions."""
 
     raise_exception = True
     redirect_unauthenticated_users = True
@@ -249,7 +249,104 @@ class TaggableStudyFilteredSourceTraitPHVAutocomplete(LoginRequiredMixin, Taggab
                 source_dataset__source_study_version__i_is_deprecated=False
             )
         if self.q:
-            retrieved = retrieved.filter(i_dbgap_variable_accession__regex=r'^{}'.format(self.q))
+            # User can input a phv in several ways, e.g. 'phv597', '597', '00000597', or 'phv00000597'.
+            # Get rid of the phv.
+            phv_digits = self.q.replace('phv', '')
+            # Search against the phv string if user started the query with leading zeros.
+            if phv_digits.startswith('0'):
+                retrieved = retrieved.filter(variable_accession__regex=r'^{}'.format('phv' + phv_digits))
+            # Search against the phv digits if user started the query with non-zero digits.
+            else:
+                retrieved = retrieved.filter(i_dbgap_variable_accession__regex=r'^{}'.format(phv_digits))
+        return retrieved
+
+
+class SourceTraitNameAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
+    """Auto-complete source traits in a form field by i_trait_name."""
+
+    def get_queryset(self):
+        retrieved = models.SourceTrait.objects.filter(source_dataset__source_study_version__i_is_deprecated=False)
+        if self.q:
+            retrieved = retrieved.filter(i_trait_name__iregex=r'^{}'.format(self.q))
+        return retrieved
+
+
+class TaggableStudyFilteredSourceTraitNameAutocomplete(LoginRequiredMixin, TaggableStudiesRequiredMixin,
+                                                       autocomplete.Select2QuerySetView):
+    """Auto-complete source traits in a form field by i_trait_name, with tagging restrictions."""
+
+    raise_exception = True
+    redirect_unauthenticated_users = True
+
+    def get_queryset(self):
+        if self.request.user.is_staff:
+            retrieved = models.SourceTrait.objects.filter(
+                source_dataset__source_study_version__i_is_deprecated=False
+            )
+        else:
+            studies = self.request.user.profile.taggable_studies.all()
+            retrieved = models.SourceTrait.objects.filter(
+                source_dataset__source_study_version__study__in=list(studies),
+                source_dataset__source_study_version__i_is_deprecated=False
+            )
+        if self.q:
+            retrieved = retrieved.filter(i_trait_name__iregex=r'^{}'.format(self.q))
+        return retrieved
+
+
+class SourceTraitNameOrPHVAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
+    """Auto-complete source traits in a form field by i_trait_name OR phv (with leading zeros or not)."""
+
+    def get_queryset(self):
+        retrieved = models.SourceTrait.objects.filter(source_dataset__source_study_version__i_is_deprecated=False)
+        if self.q:
+            # I checked that none of the source trait names are all digits (as of 2/5/2018).
+            if self.q.lower().startswith('phv') or self.q.isdigit():
+                # User can input a phv in several ways, e.g. 'phv597', '597', '00000597', or 'phv00000597'.
+                # Get rid of the phv.
+                phv_digits = self.q.replace('phv', '')
+                # Search against the phv string if user started the query with leading zeros.
+                if phv_digits.startswith('0'):
+                    retrieved = retrieved.filter(variable_accession__regex=r'^{}'.format('phv' + phv_digits))
+                # Search against the phv digits if user started the query with non-zero digits.
+                else:
+                    retrieved = retrieved.filter(i_dbgap_variable_accession__regex=r'^{}'.format(phv_digits))
+            else:
+                retrieved = retrieved.filter(i_trait_name__iregex=r'^{}'.format(self.q))
+        return retrieved
+
+
+class TaggableStudyFilteredSourceTraitNameOrPHVAutocomplete(LoginRequiredMixin, TaggableStudiesRequiredMixin,
+                                                            autocomplete.Select2QuerySetView):
+    """Autocomplete source traits in form by i_trait_name OR phv (with leading zeros or not) with tag restrictions."""
+
+    raise_exception = True
+    redirect_unauthenticated_users = True
+
+    def get_queryset(self):
+        if self.request.user.is_staff:
+            retrieved = models.SourceTrait.objects.filter(
+                source_dataset__source_study_version__i_is_deprecated=False
+            )
+        else:
+            studies = self.request.user.profile.taggable_studies.all()
+            retrieved = models.SourceTrait.objects.filter(
+                source_dataset__source_study_version__study__in=list(studies),
+                source_dataset__source_study_version__i_is_deprecated=False
+            )
+        # I checked that none of the source trait names are all digits (as of 2/5/2018).
+        if self.q.lower().startswith('phv') or self.q.isdigit():
+            # User can input a phv in several ways, e.g. 'phv597', '597', '00000597', or 'phv00000597'.
+            # Get rid of the phv.
+            phv_digits = self.q.replace('phv', '')
+            # Search against the phv string if user started the query with leading zeros.
+            if phv_digits.startswith('0'):
+                retrieved = retrieved.filter(variable_accession__regex=r'^{}'.format('phv' + phv_digits))
+            # Search against the phv digits if user started the query with non-zero digits.
+            else:
+                retrieved = retrieved.filter(i_dbgap_variable_accession__regex=r'^{}'.format(phv_digits))
+        else:
+            retrieved = retrieved.filter(i_trait_name__iregex=r'^{}'.format(self.q))
         return retrieved
 
 
