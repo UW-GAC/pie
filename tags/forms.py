@@ -19,10 +19,14 @@ LOWER_TITLE_EXISTS_ERROR = forms.ValidationError(
 )
 
 TAG_HELP = """Select a phenotype tag. Start typing the tag name to filter the list."""
-TRAIT_HELP = """Select a dbGaP phenotype variable. Start typing the dbGaP variable accession (phv) to filter the
-                list."""
-MANY_TRAITS_HELP = """Select one or more dbGaP phenotype variables. Start typing a dbGaP variable accession (phv) to
-                      filter the list."""
+TRAIT_HELP = """Select a dbGaP phenotype variable. Start typing the dbGaP variable accession (phv)
+                or variable name to filter the list (example: 'phv55555', '55555', or 'rdirem2p').
+                Note that variable names may not be unique.
+                """
+MANY_TRAITS_HELP = """Select one or more dbGaP phenotype variables. Start typing the dbGaP variable accession (phv)
+                or variable name to filter the list (example: 'phv55555', '55555', or 'rdirem2p').
+                Note that variable names may not be unique.
+                """
 
 
 def generate_button_html(name, value, btn_type="submit", css_class="btn-primary"):
