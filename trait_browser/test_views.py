@@ -2053,6 +2053,8 @@ class SourceTraitSearchViewTest(UserLoginTestCase):
 
 class HarmonizedSearchTest(TestCase):
 
+    # Note that there is currently no test to ensure that H. trait search does not return deprecated traits.
+
     def test_search_harmonized_trait_name_exact(self):
         """Finds an exact match in the HarmonizedTrait name field, but doesn't find a non-match."""
         st_match = factories.HarmonizedTraitFactory.create(i_trait_name='foo_bar', i_trait_id=1)
