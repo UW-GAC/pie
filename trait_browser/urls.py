@@ -84,5 +84,4 @@ harmonized_patterns = [
 urlpatterns = [
     url(r'^study-phenotypes/', include(source_patterns, namespace='source')),
     url(r'^harmonized-phenotypes/', include(harmonized_patterns, namespace='harmonized')),
-    url(r'^search/save/$', views.save_search_to_profile, name='save_search'),
 ]
