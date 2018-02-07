@@ -138,7 +138,7 @@ class HarmonizedTraitSetVersionFactory(SourceDBTimeStampMixin, factory.DjangoMod
     i_version = factory.Faker('random_int', min=1, max=10)
     i_git_commit_hash = factory.Faker('sha1')
     i_harmonized_by = factory.Faker('user_name')
-    i_is_deprecated = factory.Faker('boolean')
+    i_is_deprecated = False
 
     class Meta:
         model = models.HarmonizedTraitSetVersion

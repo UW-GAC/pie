@@ -2008,50 +2008,10 @@ class SourceTraitSearchViewTest(UserLoginTestCase):
         response = self.client.get(url)
         self.assertEqual(len(response.context['form'].initial), 0)
 
-    def test_source_search_is_saved(self):
-        """The search is saved after being submitted."""
-        search_type = 'source'
-        url = reverse('trait_browser:source:traits:search')
-        text = 'text'
-        response = self.client.get(url, {'text': text})
-        self.assertEqual(response.status_code, 200)
-        # Search exists and has the default search count of 1.
-        self.assertIsInstance(Search.objects.get(param_text=text, search_count=1, search_type=search_type), Search)
-
-    def test_source_search_with_study_is_saved(self):
-        """A source search with a study is saved after being submitted."""
-        search_type = 'source'
-        url = reverse('trait_browser:source:traits:search')
-        text = 'text'
-        study = factories.StudyFactory.create()
-        response = self.client.get(url, {'text': text, 'study': study.pk})
-        self.assertEqual(response.status_code, 200)
-        # search exists with appropriate text and study and has the default search count
-        search_with_study = Search.objects.get(
-            param_text=text, search_count=1, param_studies=study.pk, search_type=search_type)
-        self.assertIsInstance(search_with_study, Search)
-
-    def test_save_search_to_profile(self):
-        """A source search with a study is saved and can be saved to a profile."""
-        # Create a search.
-        search_type = 'source'
-        get_url = reverse('trait_browser:source:traits:search')
-        text = 'text'
-        study = factories.StudyFactory.create()
-        response = self.client.get(get_url, {'text': text, 'study': study.pk})
-        self.assertEqual(response.status_code, 200)
-        # Save the search.
-        post_url = reverse('trait_browser:save_search')
-        search_string = 'text={}&study={}'.format(text, study.pk)
-        response = self.client.post(post_url, {'trait_type': search_type, 'search_params': search_string})
-        self.assertEqual(response.status_code, 302)
-        # Ensure saved search exists for the user.
-        user_searches = Profile.objects.get(user_id=self.user.id).saved_searches.all()
-        search = Search.objects.get(param_text=text, search_type='source')
-        self.assertIn(search, user_searches)
-
 
 class HarmonizedSearchTest(TestCase):
+
+    # Note that there is currently no test to ensure that H. trait search does not return deprecated traits.
 
     def test_search_harmonized_trait_name_exact(self):
         """Finds an exact match in the HarmonizedTrait name field, but doesn't find a non-match."""
@@ -2126,16 +2086,6 @@ class HarmonizedTraitSearchViewTest(UserLoginTestCase):
         self.assertTrue(response.context['form'].is_bound)
         self.assertEqual(response.context['trait_type'], 'harmonized')
         self.assertIsInstance(response.context['form'], forms.HarmonizedTraitCrispySearchForm)
-
-    def test_harmonized_search_is_saved(self):
-        """Search for a harmonized trait is saved after submitting the search form."""
-        search_type = 'harmonized'
-        url = reverse('trait_browser:harmonized:traits:search'.format(search_type))
-        text = 'text'
-        response = self.client.get(url, {'text': text})
-        self.assertEqual(response.status_code, 200)
-        # Search exists and has the default search count of 1.
-        self.assertIsInstance(Search.objects.get(param_text=text, search_count=1, search_type=search_type), Search)
 
 
 # Test of the login-required for each URL in the app.

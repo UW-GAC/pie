@@ -48,29 +48,11 @@
         <div class="tab-content">
           <div role="tabpanel" class="tab-pane fade in active" id="phenotypes"><small>Coming soon...</small></div>
           <div role="tabpanel" class="tab-pane fade" id="save-harm-drop">
-            <div class="container">
-              <div class="row form-group">
-                <form method="post">
-                  {% csrf_token %}
-                  {% render_table savedharmonized %}
-                  <input type="hidden" name="search_type" value="harmonized">
-                  <button type='submit' class='btn btn-primary'>Remove Selected</button>
-                </form>
-              </div>
-            </div>
+            <div class="container"><small>Coming soon...</small></div>
           </div>
           
           <div role="tabpanel" class="tab-pane fade" id="save-source-drop">
-            <div class="container">
-              <div class="row form-group">
-                <form method="post">
-                  {% csrf_token %}
-                  {% render_table savedsource %}
-                  <input type="hidden" name="search_type" value="source">
-                  <button type="submit" class="btn btn-primary">Remove Selected</button>
-                </form>
-              </div>
-            </div>
+            <div class="container"><small>Coming soon...</small></div>
           </div>
           
           {% if perms.recipes.add_unitrecipe %}

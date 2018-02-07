@@ -400,10 +400,11 @@ def search(text_query, trait_type, study_pks=[]):
             traits = models.SourceTrait.objects.filter(source_dataset__source_study_version__study__pk__in=study_pks)
         # Then exclude deprecated study versions and search text.
         traits = traits.exclude(source_dataset__source_study_version__i_is_deprecated=True).filter(
-            Q(i_description__contains=text_query) | Q(i_trait_name__contains=text_query))
+            Q(i_description__iregex=text_query) | Q(i_trait_name__iregex=text_query))
     elif trait_type == 'harmonized':
-        traits = models.HarmonizedTrait.objects.filter(
-            Q(i_description__contains=text_query) | Q(i_trait_name__contains=text_query))
+        traits = models.HarmonizedTrait.objects.exclude(harmonized_trait_set_version__i_is_deprecated=True)
+        traits = traits.filter(
+            Q(i_description__iregex=text_query) | Q(i_trait_name__iregex=text_query))
     return(traits)
 
 
@@ -446,61 +447,7 @@ def trait_search(request, trait_type):
         page_data['query'] = query
         page_data['study_pks'] = study_pks
         page_data['results'] = True
-        # Find search if available
-        search_record = check_search_existence(query, trait_type, studies=study_pks)
-        # Update the count of the search, if it exists.
-        if search_record:
-            search_record.search_count += 1
-            search_record.save()
-        # Otherwise, create a record of the search.
-        else:
-            search_record = profiles.models.Search(param_text=query, search_type=trait_type)
-            # Create the record before trying to add the many-to-many relationship.
-            search_record.save()
-            for study in study_pks:
-                search_record.param_studies.add(study)
-        # Check to see if user has this saved already.
-        if profiles.models.Profile.objects.all().filter(user=request.user.id,
-                                                        saved_searches=search_record.id).exists():
-            savedSearchCheck = True
-        else:
-            savedSearchCheck = False
-        page_data['alreadySaved'] = savedSearchCheck
     # If the form data isn't valid, show the data to modify.
     else:
         page_data['results'] = False
     return render(request, 'trait_browser/search.html', page_data)
-
-
-@login_required
-def save_search_to_profile(request):
-    """Saves the user's search to their profile."""
-    if request.method == "POST":
-        # Parse search parameters from provided url.
-        trait_type = request.POST.get('trait_type')
-        query_string = request.POST.get('search_params')
-        params = parse_qs(query_string)
-        # Should be a list of one element.
-        text = params['text'][0]
-        # Studies from the requested search.
-        # Studies are stored as a list of strings, sorted by applying int on each element.
-        studies = params['study'] if 'study' in params else []
-        search_record = check_search_existence(text, trait_type, studies=studies)
-        profile_record, new_record = profiles.models.Profile.objects.get_or_create(user_id=request.user.id)
-        # Save the user search.
-        # user_id can be the actual value, saved_search_id has to be the model instance for some reason.
-        profile, new_record = profiles.models.SavedSearchMeta.objects.get_or_create(
-            profile_id=profile_record.id, search_id=search_record.id)
-        profile.save()
-        search_url = '?'.join([reverse(':'.join(['trait_browser', trait_type, 'traits', 'search'])), query_string])
-        return redirect(search_url)
-
-
-def check_search_existence(query, search_type, studies=[]):
-    """Returns the search record, otherwise None."""
-    searches = profiles.models.Search.objects.all().select_related()
-    searches = searches.filter(param_text=query, search_type=search_type)
-    for study in studies:
-        searches = searches.filter(param_studies=study)
-    search = searches[0] if searches.exists() else None
-    return search
