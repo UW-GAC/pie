@@ -9,7 +9,7 @@ from django.views.generic import DetailView, FormView, ListView
 
 from braces.views import FormMessagesMixin, LoginRequiredMixin, PermissionRequiredMixin, UserPassesTestMixin
 from dal import autocomplete
-from django_tables2 import RequestConfig, SingleTableMixin
+from django_tables2 import RequestConfig, SingleTableMixin, SingleTableView
 from urllib.parse import parse_qs
 
 import profiles.models
@@ -24,14 +24,90 @@ from . import forms
 TABLE_PER_PAGE = 50    # Setting for per_page rows for all table views.
 
 
+class StudyDetail(LoginRequiredMixin, DetailView):
+
+    model = models.Study
+    context_object_name = 'study'
+
+    def get_context_data(self, **kwargs):
+        context = super(StudyDetail, self).get_context_data(**kwargs)
+        traits = models.SourceTrait.objects.exclude(
+            source_dataset__source_study_version__i_is_deprecated=True).filter(
+            source_dataset__source_study_version__study=self.object)
+        trait_count = traits.count()
+        dataset_count = models.SourceDataset.objects.exclude(
+            source_study_version__i_is_deprecated=True).filter(
+            source_study_version__study=self.object).count()
+        context['trait_count'] = '{:,}'.format(trait_count)
+        context['dataset_count'] = '{:,}'.format(dataset_count)
+        context['phs_link'] = traits[0].dbgap_study_link
+        context['phs'] = traits[0].study_accession
+        return context
+
+
+class StudyList(LoginRequiredMixin, SingleTableMixin, ListView):
+
+    model = models.Study
+    table_class = tables.StudyTable
+    context_table_name = 'study_table'
+    table_pagination = {'per_page': TABLE_PER_PAGE}
+
+
+class StudySourceTraitList(LoginRequiredMixin, SingleTableMixin, DetailView):
+    """."""
+
+    template_name = 'trait_browser/study_sourcetrait_list.html'
+    model = models.Study
+    context_object_name = 'study'
+    context_table_name = 'source_trait_table'
+    table_class = tables.SourceTraitStudyTable
+    table_pagination = {'per_page': TABLE_PER_PAGE}
+
+    def get_table_data(self):
+        return models.SourceTrait.objects.exclude(
+            source_dataset__source_study_version__i_is_deprecated=True).filter(
+            source_dataset__source_study_version__study=self.object)
+
+    def get_context_data(self, **kwargs):
+        context = super(StudySourceTraitList, self).get_context_data(**kwargs)
+        traits = context['source_trait_table'].data
+        context['trait_count'] = '{:,}'.format(len(traits))
+        context['phs_link'] = traits[0].dbgap_study_link
+        context['phs'] = traits[0].study_accession
+        return context
+
+
+class StudySourceDatasetList(LoginRequiredMixin, SingleTableMixin, DetailView):
+    """."""
+
+    template_name = 'trait_browser/study_sourcedataset_list.html'
+    model = models.Study
+    context_object_name = 'study'
+    context_table_name = 'source_dataset_table'
+    table_class = tables.SourceDatasetTable
+    table_pagination = {'per_page': TABLE_PER_PAGE}
+
+    def get_table_data(self):
+        return models.SourceDataset.objects.exclude(
+            source_study_version__i_is_deprecated=True).filter(
+            source_study_version__study=self.object)
+
+    def get_context_data(self, **kwargs):
+        context = super(StudySourceDatasetList, self).get_context_data(**kwargs)
+        datasets = context['source_dataset_table'].data
+        context['dataset_count'] = '{:,}'.format(len(datasets))
+        context['phs_link'] = datasets[0].sourcetrait_set.first().dbgap_study_link
+        context['phs'] = datasets[0].sourcetrait_set.first().study_accession
+        return context
+
+
 class SourceDatasetDetail(LoginRequiredMixin, SingleTableMixin, DetailView):
     """Detail view class for SourceDatasets. Displays the dataset's source traits in a table."""
 
-    template_name = 'trait_browser/source_dataset_detail.html'
     model = models.SourceDataset
     context_object_name = 'source_dataset'
     context_table_name = 'trait_table'
-    table_class = tables.SourceTraitTable
+    table_class = tables.SourceTraitDatasetTable
     table_pagination = {'per_page': TABLE_PER_PAGE}
 
     def get_table_data(self):
@@ -43,7 +119,27 @@ class SourceDatasetDetail(LoginRequiredMixin, SingleTableMixin, DetailView):
         context['phs'] = trait.study_accession
         context['phs_link'] = trait.dbgap_study_link
         context['pht_link'] = trait.dbgap_dataset_link
+        context['trait_count'] = '{:,}'.format(self.object.sourcetrait_set.count())
         return context
+
+
+class SourceDatasetList(LoginRequiredMixin, SingleTableView):
+    """List view class for SourceDatasets (unfiltered)."""
+
+    model = models.SourceDataset
+    context_table_name = 'source_dataset_table'
+    table_class = tables.SourceDatasetTableFull
+    table_pagination = {'per_page': TABLE_PER_PAGE}
+
+    def get_table_data(self):
+        return models.SourceDataset.objects.exclude(source_study_version__i_is_deprecated=True)
+
+
+class HarmonizedTraitSetVersionDetail(LoginRequiredMixin, FormMessagesMixin, DetailView):
+    """Detail view class for HarmonizedTraitSetVersions. Inherits from django.views.generic.DetailView."""
+
+    model = models.HarmonizedTraitSetVersion
+    context_object_name = 'harmonized_trait_set_version'
 
 
 class SourceTraitDetail(LoginRequiredMixin, DetailView):
@@ -51,7 +147,6 @@ class SourceTraitDetail(LoginRequiredMixin, DetailView):
 
     model = models.SourceTrait
     context_object_name = 'source_trait'
-    template_name = 'trait_browser/source_trait_detail.html'
 
     def get_context_data(self, **kwargs):
         context = super(SourceTraitDetail, self).get_context_data(**kwargs)
@@ -61,12 +156,15 @@ class SourceTraitDetail(LoginRequiredMixin, DetailView):
         return context
 
 
-class HarmonizedTraitSetVersionDetail(LoginRequiredMixin, FormMessagesMixin, DetailView):
-    """Detail view class for HarmonizedTraitSetVersions. Inherits from django.views.generic.DetailView."""
+class SourceTraitList(LoginRequiredMixin, SingleTableMixin, ListView):
 
-    model = models.HarmonizedTraitSetVersion
-    context_object_name = 'harmonized_trait_set_version'
-    template_name = 'trait_browser/harmonized_trait_set_version_detail.html'
+    model = models.SourceTrait
+    table_class = tables.SourceTraitTableFull
+    context_table_name = 'source_trait_table'
+    table_pagination = {'per_page': TABLE_PER_PAGE}
+
+    def get_table_data(self):
+        return models.SourceTrait.objects.exclude(source_dataset__source_study_version__i_is_deprecated=True)
 
 
 class SourceTraitTagging(LoginRequiredMixin, PermissionRequiredMixin, UserPassesTestMixin, FormMessagesMixin,
@@ -114,71 +212,27 @@ class SourceTraitTagging(LoginRequiredMixin, PermissionRequiredMixin, UserPasses
         return mark_safe(msg)
 
 
-class SourceTraitList(LoginRequiredMixin, SingleTableMixin, ListView):
-
-    model = models.SourceTrait
-    table_class = tables.SourceTraitTable
-    context_table_name = 'source_trait_table'
-    table_pagination = {'per_page': TABLE_PER_PAGE}
-
-    def get_table_data(self):
-        return models.SourceTrait.objects.exclude(source_dataset__source_study_version__i_is_deprecated=True)
-
-
-class HarmonizedTraitList(LoginRequiredMixin, SingleTableMixin, ListView):
-
-    model = models.HarmonizedTrait
-    table_class = tables.HarmonizedTraitTable
-    context_table_name = 'harmonized_trait_table'
-    table_pagination = {'per_page': TABLE_PER_PAGE}
-
-    def get_table_data(self):
-        return models.HarmonizedTrait.objects.exclude(harmonized_trait_set_version__i_is_deprecated=True)
-
-
-class StudyDetail(LoginRequiredMixin, SingleTableMixin, DetailView):
-
-    model = models.Study
-    context_object_name = 'study'
-    table_class = tables.SourceTraitTable
-    context_table_name = 'study_trait_table'
-    table_pagination = {'per_page': TABLE_PER_PAGE}
-
-    def get_table_data(self):
-        return models.SourceTrait.objects.exclude(
-            source_dataset__source_study_version__i_is_deprecated=True).filter(
-            source_dataset__source_study_version__study=self.object)
-
-
-class StudyList(LoginRequiredMixin, SingleTableMixin, ListView):
-
-    model = models.Study
-    table_class = tables.StudyTable
-    context_table_name = 'study_table'
-    table_pagination = {'per_page': TABLE_PER_PAGE}
-
-
 class SourceTraitPHVAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
-    """View for returning querysets that allow auto-completing SourceTrait-based form fields.
-
-    Used with django-autocomplete-light package. Autocomplete by dbGaP accession.
-    Only include latest version.
-    """
+    """Auto-complete source traits in a form field by i_trait_name."""
 
     def get_queryset(self):
         retrieved = models.SourceTrait.objects.filter(source_dataset__source_study_version__i_is_deprecated=False)
         if self.q:
-            retrieved = retrieved.filter(i_dbgap_variable_accession__regex=r'^{}'.format(self.q))
+            # User can input a phv in several ways, e.g. 'phv597', '597', '00000597', or 'phv00000597'.
+            # Get rid of the phv.
+            phv_digits = self.q.replace('phv', '')
+            # Search against the phv string if user started the query with leading zeros.
+            if phv_digits.startswith('0'):
+                retrieved = retrieved.filter(variable_accession__regex=r'^{}'.format('phv' + phv_digits))
+            # Search against the phv digits if user started the query with non-zero digits.
+            else:
+                retrieved = retrieved.filter(i_dbgap_variable_accession__regex=r'^{}'.format(phv_digits))
         return retrieved
 
 
 class TaggableStudyFilteredSourceTraitPHVAutocomplete(LoginRequiredMixin, TaggableStudiesRequiredMixin,
                                                       autocomplete.Select2QuerySetView):
-    """View for auto-completing SourceTraits by phv in a specific study.
-
-    Used with django-autocomplete-light package. Autocomplete by dbGaP accession.
-    Only include latest version.
-    """
+    """Auto-complete source traits in a form field by i_trait_name, with tagging restrictions."""
 
     raise_exception = True
     redirect_unauthenticated_users = True
@@ -195,8 +249,116 @@ class TaggableStudyFilteredSourceTraitPHVAutocomplete(LoginRequiredMixin, Taggab
                 source_dataset__source_study_version__i_is_deprecated=False
             )
         if self.q:
-            retrieved = retrieved.filter(i_dbgap_variable_accession__regex=r'^{}'.format(self.q))
+            # User can input a phv in several ways, e.g. 'phv597', '597', '00000597', or 'phv00000597'.
+            # Get rid of the phv.
+            phv_digits = self.q.replace('phv', '')
+            # Search against the phv string if user started the query with leading zeros.
+            if phv_digits.startswith('0'):
+                retrieved = retrieved.filter(variable_accession__regex=r'^{}'.format('phv' + phv_digits))
+            # Search against the phv digits if user started the query with non-zero digits.
+            else:
+                retrieved = retrieved.filter(i_dbgap_variable_accession__regex=r'^{}'.format(phv_digits))
         return retrieved
+
+
+class SourceTraitNameAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
+    """Auto-complete source traits in a form field by i_trait_name."""
+
+    def get_queryset(self):
+        retrieved = models.SourceTrait.objects.filter(source_dataset__source_study_version__i_is_deprecated=False)
+        if self.q:
+            retrieved = retrieved.filter(i_trait_name__iregex=r'^{}'.format(self.q))
+        return retrieved
+
+
+class TaggableStudyFilteredSourceTraitNameAutocomplete(LoginRequiredMixin, TaggableStudiesRequiredMixin,
+                                                       autocomplete.Select2QuerySetView):
+    """Auto-complete source traits in a form field by i_trait_name, with tagging restrictions."""
+
+    raise_exception = True
+    redirect_unauthenticated_users = True
+
+    def get_queryset(self):
+        if self.request.user.is_staff:
+            retrieved = models.SourceTrait.objects.filter(
+                source_dataset__source_study_version__i_is_deprecated=False
+            )
+        else:
+            studies = self.request.user.profile.taggable_studies.all()
+            retrieved = models.SourceTrait.objects.filter(
+                source_dataset__source_study_version__study__in=list(studies),
+                source_dataset__source_study_version__i_is_deprecated=False
+            )
+        if self.q:
+            retrieved = retrieved.filter(i_trait_name__iregex=r'^{}'.format(self.q))
+        return retrieved
+
+
+class SourceTraitNameOrPHVAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
+    """Auto-complete source traits in a form field by i_trait_name OR phv (with leading zeros or not)."""
+
+    def get_queryset(self):
+        retrieved = models.SourceTrait.objects.filter(source_dataset__source_study_version__i_is_deprecated=False)
+        if self.q:
+            # I checked that none of the source trait names are all digits (as of 2/5/2018).
+            if self.q.lower().startswith('phv') or self.q.isdigit():
+                # User can input a phv in several ways, e.g. 'phv597', '597', '00000597', or 'phv00000597'.
+                # Get rid of the phv.
+                phv_digits = self.q.replace('phv', '')
+                # Search against the phv string if user started the query with leading zeros.
+                if phv_digits.startswith('0'):
+                    retrieved = retrieved.filter(variable_accession__regex=r'^{}'.format('phv' + phv_digits))
+                # Search against the phv digits if user started the query with non-zero digits.
+                else:
+                    retrieved = retrieved.filter(i_dbgap_variable_accession__regex=r'^{}'.format(phv_digits))
+            else:
+                retrieved = retrieved.filter(i_trait_name__iregex=r'^{}'.format(self.q))
+        return retrieved
+
+
+class TaggableStudyFilteredSourceTraitNameOrPHVAutocomplete(LoginRequiredMixin, TaggableStudiesRequiredMixin,
+                                                            autocomplete.Select2QuerySetView):
+    """Autocomplete source traits in form by i_trait_name OR phv (with leading zeros or not) with tag restrictions."""
+
+    raise_exception = True
+    redirect_unauthenticated_users = True
+
+    def get_queryset(self):
+        if self.request.user.is_staff:
+            retrieved = models.SourceTrait.objects.filter(
+                source_dataset__source_study_version__i_is_deprecated=False
+            )
+        else:
+            studies = self.request.user.profile.taggable_studies.all()
+            retrieved = models.SourceTrait.objects.filter(
+                source_dataset__source_study_version__study__in=list(studies),
+                source_dataset__source_study_version__i_is_deprecated=False
+            )
+        # I checked that none of the source trait names are all digits (as of 2/5/2018).
+        if self.q.lower().startswith('phv') or self.q.isdigit():
+            # User can input a phv in several ways, e.g. 'phv597', '597', '00000597', or 'phv00000597'.
+            # Get rid of the phv.
+            phv_digits = self.q.replace('phv', '')
+            # Search against the phv string if user started the query with leading zeros.
+            if phv_digits.startswith('0'):
+                retrieved = retrieved.filter(variable_accession__regex=r'^{}'.format('phv' + phv_digits))
+            # Search against the phv digits if user started the query with non-zero digits.
+            else:
+                retrieved = retrieved.filter(i_dbgap_variable_accession__regex=r'^{}'.format(phv_digits))
+        else:
+            retrieved = retrieved.filter(i_trait_name__iregex=r'^{}'.format(self.q))
+        return retrieved
+
+
+class HarmonizedTraitList(LoginRequiredMixin, SingleTableMixin, ListView):
+
+    model = models.HarmonizedTrait
+    table_class = tables.HarmonizedTraitTable
+    context_table_name = 'harmonized_trait_table'
+    table_pagination = {'per_page': TABLE_PER_PAGE}
+
+    def get_table_data(self):
+        return models.HarmonizedTrait.objects.exclude(harmonized_trait_set_version__i_is_deprecated=True)
 
 
 class HarmonizedTraitFlavorNameAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
@@ -238,10 +400,11 @@ def search(text_query, trait_type, study_pks=[]):
             traits = models.SourceTrait.objects.filter(source_dataset__source_study_version__study__pk__in=study_pks)
         # Then exclude deprecated study versions and search text.
         traits = traits.exclude(source_dataset__source_study_version__i_is_deprecated=True).filter(
-            Q(i_description__contains=text_query) | Q(i_trait_name__contains=text_query))
+            Q(i_description__iregex=text_query) | Q(i_trait_name__iregex=text_query))
     elif trait_type == 'harmonized':
-        traits = models.HarmonizedTrait.objects.filter(
-            Q(i_description__contains=text_query) | Q(i_trait_name__contains=text_query))
+        traits = models.HarmonizedTrait.objects.exclude(harmonized_trait_set_version__i_is_deprecated=True)
+        traits = traits.filter(
+            Q(i_description__iregex=text_query) | Q(i_trait_name__iregex=text_query))
     return(traits)
 
 
@@ -276,7 +439,7 @@ def trait_search(request, trait_type):
         study_pks = form.cleaned_data.get('study', []) if 'study' in form.cleaned_data else []
         # Search text.
         traits = search(query, trait_type, study_pks)
-        TraitTableClass = tables.SourceTraitTable if trait_type == 'source' else tables.HarmonizedTraitTable
+        TraitTableClass = tables.SourceTraitTableFull if trait_type == 'source' else tables.HarmonizedTraitTable
         trait_table = TraitTableClass(traits)
         RequestConfig(request, paginate={'per_page': TABLE_PER_PAGE}).configure(trait_table)
         # Show the search results.
@@ -284,61 +447,7 @@ def trait_search(request, trait_type):
         page_data['query'] = query
         page_data['study_pks'] = study_pks
         page_data['results'] = True
-        # Find search if available
-        search_record = check_search_existence(query, trait_type, studies=study_pks)
-        # Update the count of the search, if it exists.
-        if search_record:
-            search_record.search_count += 1
-            search_record.save()
-        # Otherwise, create a record of the search.
-        else:
-            search_record = profiles.models.Search(param_text=query, search_type=trait_type)
-            # Create the record before trying to add the many-to-many relationship.
-            search_record.save()
-            for study in study_pks:
-                search_record.param_studies.add(study)
-        # Check to see if user has this saved already.
-        if profiles.models.Profile.objects.all().filter(user=request.user.id,
-                                                        saved_searches=search_record.id).exists():
-            savedSearchCheck = True
-        else:
-            savedSearchCheck = False
-        page_data['alreadySaved'] = savedSearchCheck
     # If the form data isn't valid, show the data to modify.
     else:
         page_data['results'] = False
     return render(request, 'trait_browser/search.html', page_data)
-
-
-@login_required
-def save_search_to_profile(request):
-    """Saves the user's search to their profile."""
-    if request.method == "POST":
-        # Parse search parameters from provided url.
-        trait_type = request.POST.get('trait_type')
-        query_string = request.POST.get('search_params')
-        params = parse_qs(query_string)
-        # Should be a list of one element.
-        text = params['text'][0]
-        # Studies from the requested search.
-        # Studies are stored as a list of strings, sorted by applying int on each element.
-        studies = params['study'] if 'study' in params else []
-        search_record = check_search_existence(text, trait_type, studies=studies)
-        profile_record, new_record = profiles.models.Profile.objects.get_or_create(user_id=request.user.id)
-        # Save the user search.
-        # user_id can be the actual value, saved_search_id has to be the model instance for some reason.
-        profile, new_record = profiles.models.SavedSearchMeta.objects.get_or_create(
-            profile_id=profile_record.id, search_id=search_record.id)
-        profile.save()
-        search_url = '?'.join([reverse(':'.join(['trait_browser', trait_type, 'search'])), query_string])
-        return redirect(search_url)
-
-
-def check_search_existence(query, search_type, studies=[]):
-    """Returns the search record, otherwise None."""
-    searches = profiles.models.Search.objects.all().select_related()
-    searches = searches.filter(param_text=query, search_type=search_type)
-    for study in studies:
-        searches = searches.filter(param_studies=study)
-    search = searches[0] if searches.exists() else None
-    return search

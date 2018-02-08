@@ -101,7 +101,7 @@ class TaggedTraitDelete(LoginRequiredMixin, PermissionRequiredMixin, TaggableStu
     redirect_unauthenticated_users = True
 
     def get_success_url(self):
-        return reverse('trait_browser:source:study:tagged',
+        return reverse('trait_browser:source:studies:detail:tagged',
                        args=[self.object.trait.source_dataset.source_study_version.study.pk])
 
     def get_form_valid_message(self):

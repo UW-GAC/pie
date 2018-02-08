@@ -4,11 +4,11 @@
 {% load render_table from django_tables2 %}
 
 {% block head_title %}
-     | Search {{ trait_type_name }} phenotypes
+     | Search {{ trait_type_name }} phenotype variables
 {% endblock %}
 
 {% block content %}
-    <h1>Search {{ trait_type_name }} phenotypes</h1>
+    <h1>Search {{ trait_type_name }} phenotype variables</h1>
         {% crispy form %}
     
     <!-- Embed the New Search button inside of a form and some divs just like
@@ -20,9 +20,9 @@
             </div>
             <div class="controls col-sm-10">
                 {% if trait_type == 'source' %}
-                    <a href="{% url 'trait_browser:source:search' %}" class="btn btn-default" role="button">New Search</a>
+                    <a href="{% url 'trait_browser:source:traits:search' %}" class="btn btn-default" role="button">New Search</a>
                 {% elif trait_type == 'harmonized' %}
-                    <a href="{% url 'trait_browser:harmonized:search' %}" class="btn btn-default" role="button">New Search</a>
+                    <a href="{% url 'trait_browser:harmonized:traits:search' %}" class="btn btn-default" role="button">New Search</a>
                 {% endif %}
             </div>
         </div>
@@ -32,17 +32,6 @@
 
 
     {% if results %}
-    <form method="post" action="{% url 'trait_browser:save_search' %}">
-        {% csrf_token %}
-        {% if alreadySaved %}
-        <button id="save-search-btn" type="button" class="btn btn-info" disabled="True">Saved to profile</button>
-        {% else %}
-        <input type="hidden" name="search_params" value="{{ request.GET.urlencode }}">
-        <input type="hidden" name="trait_type" value="{{ trait_type }}">
-        <!-- type="submit" must appear first, apparently -->
-        <button type="submit" id="save-search-btn" type="button" class="btn btn-info">Save Search</button>
-        {% endif %}
-    </form>
     <div class="alert alert-info" role="alert">
         <strong><font size="4">{{ trait_table.rows|length }} phenotype{{ trait_table.rows|length|pluralize }} found</font></strong>
     </div>

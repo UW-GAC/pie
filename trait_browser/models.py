@@ -164,15 +164,15 @@ class Study(SourceDBTimeStampedModel):
 
     def get_absolute_url(self):
         """Gets the absolute URL of the detail page for a given Study instance."""
-        return reverse('trait_browser:source:study:detail', kwargs={'pk': self.pk})
+        return reverse('trait_browser:source:studies:detail:detail', kwargs={'pk': self.pk})
 
     def get_search_url(self):
         """Produce a url to initially populate checkboxes in the search page based on the study."""
-        return reverse('trait_browser:source:search') + '?study={}'.format(self.i_accession)
+        return reverse('trait_browser:source:traits:search') + '?study={}'.format(self.i_accession)
 
     def get_name_link_html(self):
         """Get html for study's name linking to study detail page."""
-        url_text = "{{% url 'trait_browser:source:study:detail' pk={} %}} ".format(self.pk)
+        url_text = "{{% url 'trait_browser:source:studies:detail:detail' pk={} %}} ".format(self.pk)
         return URL_HTML.format(url=url_text, name=self.i_study_name)
 
     def get_tag_count(self):
@@ -270,7 +270,7 @@ class SourceDataset(SourceDBTimeStampedModel):
 
     def get_absolute_url(self):
         """Gets the absolute URL of the detail page for a given SourceDataset instance."""
-        return reverse('trait_browser:source:dataset', kwargs={'pk': self.pk})
+        return reverse('trait_browser:source:datasets:detail', kwargs={'pk': self.pk})
 
 
 class HarmonizedTraitSet(SourceDBTimeStampedModel):
@@ -328,7 +328,7 @@ class HarmonizedTraitSetVersion(SourceDBTimeStampedModel):
 
     def get_absolute_url(self):
         """Gets the absolute URL of the detail page for a given HarmonizedTraitSet instance."""
-        return reverse('trait_browser:harmonized:detail', kwargs={'pk': self.pk})
+        return reverse('trait_browser:harmonized:traits:detail', kwargs={'pk': self.pk})
 
 
 class HarmonizationUnit(SourceDBTimeStampedModel):
@@ -440,7 +440,9 @@ class SourceTrait(Trait):
 
     def __str__(self):
         """Pretty printing of SourceTrait objects."""
-        return '{} from dataset {} ({})'.format(self.variable_accession, self.dataset_accession, self.i_trait_name)
+        return '{trait_name} ({phv}): dataset {pht}'.format(trait_name=self.i_trait_name,
+                                                            phv=self.variable_accession,
+                                                            pht=self.dataset_accession)
 
     def save(self, *args, **kwargs):
         """Custom save method for default dbGaP accessions and links.
@@ -507,11 +509,11 @@ class SourceTrait(Trait):
 
     def get_absolute_url(self):
         """Gets the absolute URL of the detail page for a given SourceTrait instance."""
-        return reverse('trait_browser:source:detail', kwargs={'pk': self.pk})
+        return reverse('trait_browser:source:traits:detail', kwargs={'pk': self.pk})
 
     def get_name_link_html(self):
         """Get html for the trait name linked to the trait's detail page, with description as popover."""
-        url_text = "{{% url 'trait_browser:source:detail' pk={} %}} ".format(self.pk)
+        url_text = "{{% url 'trait_browser:source:traits:detail' pk={} %}} ".format(self.pk)
         return POPOVER_URL_HTML.format(url=url_text, popover=self.i_description, name=self.i_trait_name)
 
 
@@ -575,7 +577,7 @@ class HarmonizedTrait(Trait):
 
     def get_name_link_html(self):
         """Get html for the trait name linked to the harmonized trait's detail page, with description as popover."""
-        url_text = "{{% url 'trait_browser:harmonized:detail' pk={} %}} ".format(self.pk)
+        url_text = "{{% url 'trait_browser:harmonized:traits:detail' pk={} %}} ".format(self.pk)
         return POPOVER_URL_HTML.format(url=url_text, popover=self.i_description, name=self.trait_flavor_name)
 
     def get_component_html(self, harmonization_unit):

@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% load render_table from django_tables2 %}
+
+
+{% block head_title %}
+     | {{ source_dataset.pht_version_string }} details
+{% endblock %}
+
+{% block content %}
+    <div class="well">
+    
+    <h2>{{ source_dataset.pht_version_string }} <small>dbGaP dataset details</small></h2>
+
+    <div class="panel panel-info">
+        <div class="panel-heading">
+            <h3 class="panel-title">Dataset: {{ source_dataset.pht_version_string }}</h3>
+        </div>
+        <div class="panel-body">
+            <dl class="dl-horizontal">
+                <dt>Study</dt>
+                <dd><a href="{{ source_dataset.source_study_version.study.get_absolute_url }}">{{ source_dataset.source_study_version.study.i_study_name }}</a></dd>
+                <dt>Dataset description</dt>
+                <dd>{{ source_dataset.i_dbgap_description }}</dd>
+                <dt>Variable count</dt>
+                <dd>{{ trait_count }}</dd>
+            </dl>
+
+        </div>
+    </div>
+
+    <div class="panel panel-default">
+        <div class="panel-heading"><h4 class="panel-title">Links to dbGaP information</h4></div>
+        <div class="panel-body">
+            <dl class="dl-horizontal">
+                <dt>Dataset</dt> <dd><a target="_blank" href="{{ pht_link }}">{{source_dataset.pht_version_string}}</a></dd>
+                <dt>Study</dt> <dd><a target="_blank" href="{{ phs_link }}">{{ phs }}</a></dd>
+            </dl>
+            <p>A study's data collection forms and and related documents can be found on dbGaP.</p>
+            <p><mark>Please keep in mind that dbGaP data summaries might include many subjects who were not included in TOPMed sequencing.</mark></p>
+        </div>
+    </div>
+
+    <div class="panel panel-default">
+        <div class="panel-heading"><h4 class="panel-title">dbGaP phenotype variables in dataset</h4></div>
+        <div class="panel-body">
+            {% render_table trait_table %}    
+        </div>
+    </div>
+
+    </div>
+    
+{% endblock %}

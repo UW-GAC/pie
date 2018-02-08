@@ -54,7 +54,8 @@ class StudyTaggedTraitTable(tables.Table):
     """Table for displaying studies with tagged traits and totals."""
 
     i_study_name = tables.LinkColumn(
-        'trait_browser:source:study:tagged', args=[tables.utils.A('pk')], verbose_name='Study name', orderable=False)
+        'trait_browser:source:studies:detail:tagged', args=[tables.utils.A('pk')], verbose_name='Study name',
+        orderable=False)
     number_tags = tables.Column(
         accessor='get_tag_count', verbose_name='Number of tags', orderable=False)
     number_traits = tables.Column(
@@ -73,7 +74,7 @@ class TaggedTraitTable(tables.Table):
     """Table for displaying TaggedTraits."""
 
     trait = tables.LinkColumn(
-        'trait_browser:source:detail', args=[tables.utils.A('trait.pk')], verbose_name='Phenotype',
+        'trait_browser:source:traits:detail', args=[tables.utils.A('trait.pk')], verbose_name='Phenotype',
         text=lambda record: record.trait.i_trait_name, orderable=True)
     tag = tables.LinkColumn(
         'tags:tag:detail', args=[tables.utils.A('tag.pk')], verbose_name='Tag',
@@ -91,7 +92,7 @@ class TaggedTraitTableWithDelete(tables.Table):
     """Table for displaying TaggedTraits with delete buttons."""
 
     trait = tables.LinkColumn(
-        'trait_browser:source:detail', args=[tables.utils.A('trait.pk')], verbose_name='Phenotype',
+        'trait_browser:source:traits:detail', args=[tables.utils.A('trait.pk')], verbose_name='Phenotype',
         text=lambda record: record.trait.i_trait_name, orderable=True)
     tag = tables.LinkColumn(
         'tags:tag:detail', args=[tables.utils.A('tag.pk')], verbose_name='Tag',
@@ -111,9 +112,9 @@ class TagDetailTraitTable(tables.Table):
     """Table for displaying TaggedTraits on the TagDetail page."""
 
     trait = tables.LinkColumn(
-        'trait_browser:source:detail', args=[tables.utils.A('trait.pk')], verbose_name='Phenotype',
+        'trait_browser:source:traits:detail', args=[tables.utils.A('trait.pk')], verbose_name='Phenotype',
         text=lambda record: record.trait.i_trait_name, orderable=True)
-    study = tables.LinkColumn('trait_browser:source:study:tagged',
+    study = tables.LinkColumn('trait_browser:source:studies:detail:tagged',
                               verbose_name='Study',
                               args=[tables.utils.A('trait.source_dataset.source_study_version.study.pk')],
                               text=lambda record: record.trait.source_dataset.source_study_version.study.i_study_name,
@@ -133,7 +134,7 @@ class UserTaggedTraitTable(tables.Table):
     """
 
     trait = tables.LinkColumn(
-        'trait_browser:source:detail', args=[tables.utils.A('trait.pk')], verbose_name='Phenotype',
+        'trait_browser:source:traits:detail', args=[tables.utils.A('trait.pk')], verbose_name='Phenotype',
         text=lambda record: record.trait.i_trait_name, orderable=True)
     tag = tables.LinkColumn(
         'tags:tag:detail', args=[tables.utils.A('tag.pk')], verbose_name='Tag',
