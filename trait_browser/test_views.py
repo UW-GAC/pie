@@ -303,7 +303,7 @@ class SourceDatasetListTest(UserLoginTestCase):
         self.assertIn('source_dataset_table', context)
         for ds in self.datasets:
             self.assertIn(ds, context['source_dataset_table'].data)
-        self.assertIsInstance(context['source_dataset_table'], tables.SourceDatasetTable)
+        self.assertIsInstance(context['source_dataset_table'], tables.SourceDatasetTableFull)
 
     def test_no_deprecated_traits_in_table(self):
         """No deprecated datasets are shown in the table."""

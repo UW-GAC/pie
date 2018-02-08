@@ -128,7 +128,7 @@ class SourceDatasetList(LoginRequiredMixin, SingleTableView):
 
     model = models.SourceDataset
     context_table_name = 'source_dataset_table'
-    table_class = tables.SourceDatasetTable
+    table_class = tables.SourceDatasetTableFull
     table_pagination = {'per_page': TABLE_PER_PAGE}
 
     def get_table_data(self):
