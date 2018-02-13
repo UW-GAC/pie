@@ -1012,7 +1012,7 @@ class Command(BaseCommand):
             parent_source_pk='harmonization_unit_id', child_model=models.SourceTrait,
             child_source_pk='component_trait_id', child_related_name='component_batch_traits',
             import_parent_pks=new_harmonization_unit_pks)
-        logger.info("Added {} component batch traits".format(len(new_component_source_trait_links_to_unit)))
+        logger.info("Added {} component batch traits".format(len(new_component_batch_trait_links_to_unit)))
 
         new_component_age_trait_links_to_unit = self._import_new_m2m_field(
             source_db=source_db, source_table='component_age_trait', parent_model=models.HarmonizationUnit,
@@ -1042,7 +1042,7 @@ class Command(BaseCommand):
             parent_source_pk='harmonized_trait_id', child_model=models.SourceTrait,
             child_source_pk='component_trait_id', child_related_name='component_batch_traits',
             import_parent_pks=new_harmonized_trait_pks)
-        logger.info("Added {} component batch traits".format(len(new_component_source_trait_links_to_trait)))
+        logger.info("Added {} component batch traits".format(len(new_component_batch_trait_links_to_trait)))
 
         new_harmonization_unit_harmonized_trait_links = self._import_new_m2m_field(
             source_db=source_db, query=HUNIT_QUERY, parent_model=models.HarmonizedTrait,
@@ -1159,9 +1159,9 @@ class Command(BaseCommand):
             parent_source_pk='harmonization_unit_id', child_model=models.SourceTrait,
             child_source_pk='component_trait_id', child_related_name='component_batch_traits', expected=False)
         logger.info("Update: added {} component batch traits".format(
-            len(updated_component_source_trait_links_to_unit['added'])))
+            len(updated_component_batch_trait_links_to_unit['added'])))
         logger.info("Update: removed {} component batch traits".format(
-            len(updated_component_source_trait_links_to_unit['removed'])))
+            len(updated_component_batch_trait_links_to_unit['removed'])))
 
         updated_component_age_trait_links_to_unit = self._update_m2m_field(
             source_db=source_db, source_table='component_age_trait', parent_model=models.HarmonizationUnit,
@@ -1197,9 +1197,9 @@ class Command(BaseCommand):
             parent_source_pk='harmonized_trait_id', child_model=models.SourceTrait,
             child_source_pk='component_trait_id', child_related_name='component_batch_traits', expected=False)
         logger.info("Update: added {} component batch traits".format(
-            len(updated_component_source_trait_links_to_trait['added'])))
+            len(updated_component_batch_trait_links_to_trait['added'])))
         logger.info("Update: removed {} component batch traits".format(
-            len(updated_component_source_trait_links_to_trait['removed'])))
+            len(updated_component_batch_trait_links_to_trait['removed'])))
 
         updated_harmonization_unit_harmonized_trait_links = self._update_m2m_field(
             source_db=source_db, query=HUNIT_QUERY, parent_model=models.HarmonizedTrait,
