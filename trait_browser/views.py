@@ -31,8 +31,7 @@ class StudyDetail(LoginRequiredMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super(StudyDetail, self).get_context_data(**kwargs)
-        traits = models.SourceTrait.objects.exclude(
-            source_dataset__source_study_version__i_is_deprecated=True).filter(
+        traits = models.SourceTrait.objects.current().filter(
             source_dataset__source_study_version__study=self.object)
         trait_count = traits.count()
         dataset_count = models.SourceDataset.objects.exclude(
@@ -64,8 +63,7 @@ class StudySourceTraitList(LoginRequiredMixin, SingleTableMixin, DetailView):
     table_pagination = {'per_page': TABLE_PER_PAGE}
 
     def get_table_data(self):
-        return models.SourceTrait.objects.exclude(
-            source_dataset__source_study_version__i_is_deprecated=True).filter(
+        return models.SourceTrait.objects.current().filter(
             source_dataset__source_study_version__study=self.object)
 
     def get_context_data(self, **kwargs):
@@ -164,7 +162,7 @@ class SourceTraitList(LoginRequiredMixin, SingleTableMixin, ListView):
     table_pagination = {'per_page': TABLE_PER_PAGE}
 
     def get_table_data(self):
-        return models.SourceTrait.objects.exclude(source_dataset__source_study_version__i_is_deprecated=True)
+        return models.SourceTrait.objects.current()
 
 
 class SourceTraitTagging(LoginRequiredMixin, PermissionRequiredMixin, UserPassesTestMixin, FormMessagesMixin,
@@ -216,7 +214,7 @@ class SourceTraitPHVAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySe
     """Auto-complete source traits in a form field by i_trait_name."""
 
     def get_queryset(self):
-        retrieved = models.SourceTrait.objects.filter(source_dataset__source_study_version__i_is_deprecated=False)
+        retrieved = models.SourceTrait.objects.current()
         if self.q:
             # User can input a phv in several ways, e.g. 'phv597', '597', '00000597', or 'phv00000597'.
             # Get rid of the phv.
@@ -239,14 +237,11 @@ class TaggableStudyFilteredSourceTraitPHVAutocomplete(LoginRequiredMixin, Taggab
 
     def get_queryset(self):
         if self.request.user.is_staff:
-            retrieved = models.SourceTrait.objects.filter(
-                source_dataset__source_study_version__i_is_deprecated=False
-            )
+            retrieved = models.SourceTrait.objects.current()
         else:
             studies = self.request.user.profile.taggable_studies.all()
-            retrieved = models.SourceTrait.objects.filter(
-                source_dataset__source_study_version__study__in=list(studies),
-                source_dataset__source_study_version__i_is_deprecated=False
+            retrieved = models.SourceTrait.objects.current().filter(
+                source_dataset__source_study_version__study__in=list(studies)
             )
         if self.q:
             # User can input a phv in several ways, e.g. 'phv597', '597', '00000597', or 'phv00000597'.
@@ -265,7 +260,7 @@ class SourceTraitNameAutocomplete(LoginRequiredMixin, autocomplete.Select2QueryS
     """Auto-complete source traits in a form field by i_trait_name."""
 
     def get_queryset(self):
-        retrieved = models.SourceTrait.objects.filter(source_dataset__source_study_version__i_is_deprecated=False)
+        retrieved = models.SourceTrait.objects.current()
         if self.q:
             retrieved = retrieved.filter(i_trait_name__iregex=r'^{}'.format(self.q))
         return retrieved
@@ -280,14 +275,11 @@ class TaggableStudyFilteredSourceTraitNameAutocomplete(LoginRequiredMixin, Tagga
 
     def get_queryset(self):
         if self.request.user.is_staff:
-            retrieved = models.SourceTrait.objects.filter(
-                source_dataset__source_study_version__i_is_deprecated=False
-            )
+            retrieved = models.SourceTrait.objects.current()
         else:
             studies = self.request.user.profile.taggable_studies.all()
-            retrieved = models.SourceTrait.objects.filter(
-                source_dataset__source_study_version__study__in=list(studies),
-                source_dataset__source_study_version__i_is_deprecated=False
+            retrieved = models.SourceTrait.objects.current().filter(
+                source_dataset__source_study_version__study__in=list(studies)
             )
         if self.q:
             retrieved = retrieved.filter(i_trait_name__iregex=r'^{}'.format(self.q))
@@ -298,7 +290,7 @@ class SourceTraitNameOrPHVAutocomplete(LoginRequiredMixin, autocomplete.Select2Q
     """Auto-complete source traits in a form field by i_trait_name OR phv (with leading zeros or not)."""
 
     def get_queryset(self):
-        retrieved = models.SourceTrait.objects.filter(source_dataset__source_study_version__i_is_deprecated=False)
+        retrieved = models.SourceTrait.objects.current()
         if self.q:
             # I checked that none of the source trait names are all digits (as of 2/5/2018).
             if self.q.lower().startswith('phv') or self.q.isdigit():
@@ -325,14 +317,11 @@ class TaggableStudyFilteredSourceTraitNameOrPHVAutocomplete(LoginRequiredMixin, 
 
     def get_queryset(self):
         if self.request.user.is_staff:
-            retrieved = models.SourceTrait.objects.filter(
-                source_dataset__source_study_version__i_is_deprecated=False
-            )
+            retrieved = models.SourceTrait.objects.current()
         else:
             studies = self.request.user.profile.taggable_studies.all()
-            retrieved = models.SourceTrait.objects.filter(
-                source_dataset__source_study_version__study__in=list(studies),
-                source_dataset__source_study_version__i_is_deprecated=False
+            retrieved = models.SourceTrait.objects.current().filter(
+                source_dataset__source_study_version__study__in=list(studies)
             )
         # I checked that none of the source trait names are all digits (as of 2/5/2018).
         if self.q.lower().startswith('phv') or self.q.isdigit():
@@ -394,13 +383,13 @@ def search(text_query, trait_type, study_pks=[]):
     # TODO: add try/except to catch invalid trait_type values.
     if trait_type == 'source':
         if (len(study_pks) == 0):
-            traits = models.SourceTrait.objects.all()
+            traits = models.SourceTrait.objects.current()
         # Filter by study.
         else:
-            traits = models.SourceTrait.objects.filter(source_dataset__source_study_version__study__pk__in=study_pks)
-        # Then exclude deprecated study versions and search text.
-        traits = traits.exclude(source_dataset__source_study_version__i_is_deprecated=True).filter(
-            Q(i_description__iregex=text_query) | Q(i_trait_name__iregex=text_query))
+            traits = models.SourceTrait.objects.current().filter(
+                source_dataset__source_study_version__study__pk__in=study_pks)
+        # Then search text.
+        traits = traits.filter(Q(i_description__iregex=text_query) | Q(i_trait_name__iregex=text_query))
     elif trait_type == 'harmonized':
         traits = models.HarmonizedTrait.objects.exclude(harmonized_trait_set_version__i_is_deprecated=True)
         traits = traits.filter(
