@@ -102,10 +102,8 @@ class TaggedTraitForm(forms.ModelForm):
                 </ul>
                 """.format(study.i_study_name, study.phs)
             self.subtitle2 = mark_safe(self.subtitle2)
-        self.fields['trait'].queryset = SourceTrait.objects.filter(
-            source_dataset__source_study_version__study__in=studies,
-            source_dataset__source_study_version__i_is_deprecated=False
-        )
+        self.fields['trait'].queryset = SourceTrait.objects.current().filter(
+            source_dataset__source_study_version__study__in=studies)
         # Form formatting and add a submit button.
         self.helper = FormHelper(self)
         self.helper.form_class = 'form-horizontal'
@@ -136,7 +134,7 @@ class TaggedTraitAdminForm(forms.ModelForm):
     tag = forms.ModelChoiceField(queryset=models.Tag.objects.all(),
                                  widget=autocomplete.ModelSelect2(url='tags:autocomplete'))
     trait = forms.ModelChoiceField(
-        queryset=SourceTrait.objects.filter(source_dataset__source_study_version__i_is_deprecated=False),
+        queryset=SourceTrait.objects.current().all(),
         required=True, label='Phenotype',
         widget=autocomplete.ModelSelect2(url='trait_browser:source:traits:autocomplete:by-name-or-phv'))
 
@@ -196,10 +194,8 @@ class TaggedTraitByTagForm(forms.Form):
                 </ul>
                 """.format(study.i_study_name, study.phs)
             self.subtitle2 = mark_safe(self.subtitle2)
-        self.fields['trait'].queryset = SourceTrait.objects.filter(
-            source_dataset__source_study_version__study__in=studies,
-            source_dataset__source_study_version__i_is_deprecated=False
-        )
+        self.fields['trait'].queryset = SourceTrait.objects.current().filter(
+            source_dataset__source_study_version__study__in=studies)
         # Form formatting and add a submit button.
         self.helper = FormHelper(self)
         self.helper.form_class = 'form-horizontal'
@@ -261,10 +257,8 @@ class ManyTaggedTraitsForm(forms.Form):
                 </ul>
                 """.format(study.i_study_name, study.phs)
             self.subtitle2 = mark_safe(self.subtitle2)
-        self.fields['traits'].queryset = SourceTrait.objects.filter(
-            source_dataset__source_study_version__study__in=studies,
-            source_dataset__source_study_version__i_is_deprecated=False
-        )
+        self.fields['traits'].queryset = SourceTrait.objects.current().filter(
+            source_dataset__source_study_version__study__in=studies)
         # Form formatting and add a submit button.
         self.helper = FormHelper(self)
         self.helper.form_class = 'form-horizontal'
@@ -328,10 +322,8 @@ class ManyTaggedTraitsByTagForm(forms.Form):
                 </ul>
                 """.format(study.i_study_name, study.phs)
             self.subtitle2 = mark_safe(self.subtitle2)
-        self.fields['traits'].queryset = SourceTrait.objects.filter(
-            source_dataset__source_study_version__study__in=studies,
-            source_dataset__source_study_version__i_is_deprecated=False
-        )
+        self.fields['traits'].queryset = SourceTrait.objects.current().filter(
+            source_dataset__source_study_version__study__in=studies)
         # Form formatting and add a submit button.
         self.helper = FormHelper(self)
         self.helper.form_class = 'form-horizontal'
