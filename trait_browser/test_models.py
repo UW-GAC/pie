@@ -307,6 +307,15 @@ class SourceTraitTestCase(TestCase):
         trait = factories.SourceTraitFactory.create()
         self.assertIsInstance(trait.get_name_link_html(), str)
 
+    def test_current_queryset_method(self):
+        """Test that SourceTrait.objects.current() does not return deprecated traits."""
+        current_trait = factories.SourceTraitFactory.create()
+        deprecated_trait = factories.SourceTraitFactory.create()
+        deprecated_trait.source_dataset.source_study_version.i_is_deprecated = True
+        deprecated_trait.source_dataset.source_study_version.save()
+        self.assertIn(current_trait, list(models.SourceTrait.objects.current()))
+        self.assertNotIn(deprecated_trait, list(models.SourceTrait.objects.current()))
+
 
 class HarmonizedTraitTestCase(TestCase):
 

@@ -67,6 +67,9 @@ from django.core.urlresolvers import reverse
 from core.models import TimeStampedModel
 
 
+from . import querysets
+
+
 INLINE_LIST_HTML = '\n'.join(
     ('<p><strong>{list_title}</strong>', '<ul class="list-inline">{list_elements}</ul>', '</p>'))
 LIST_ELEMENT_HTML = '<li>{element}</li>'
@@ -437,6 +440,9 @@ class SourceTrait(Trait):
     VARIABLE_URL = 'http://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/variable.cgi?study_id={}&phv={:08}'
     STUDY_URL = 'http://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id={}'
     DATASET_URL = 'http://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/dataset.cgi?study_id={}&pht={}'
+
+    # Managers/custom querysets.
+    objects = querysets.SourceTraitQuerySet.as_manager()
 
     def __str__(self):
         """Pretty printing of SourceTrait objects."""
