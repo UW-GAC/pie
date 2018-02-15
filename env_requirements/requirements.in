@@ -9,6 +9,7 @@ django-dbbackup
 django-debug-toolbar
 django-extensions
 django-tables2
+django-watson
 factory-boy
 flake8
 flake8-docstrings
