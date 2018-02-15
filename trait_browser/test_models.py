@@ -137,8 +137,8 @@ class SourceDatasetTestCase(TestCase):
         deprecated_dataset = factories.SourceDatasetFactory.create()
         deprecated_dataset.source_study_version.i_is_deprecated = True
         deprecated_dataset.source_study_version.save()
-        self.assertIn(current_dataset, list(models.SourceDataset.objects.current()))
-        self.assertNotIn(deprecated_dataset, list(models.SourceDataset.objects.current()))
+        self.assertIn(current_dataset, models.SourceDataset.objects.current())
+        self.assertNotIn(deprecated_dataset, models.SourceDataset.objects.current())
 
 
 class HarmonizedTraitSetTestCase(TestCase):
@@ -322,8 +322,8 @@ class SourceTraitTestCase(TestCase):
         deprecated_trait = factories.SourceTraitFactory.create()
         deprecated_trait.source_dataset.source_study_version.i_is_deprecated = True
         deprecated_trait.source_dataset.source_study_version.save()
-        self.assertIn(current_trait, list(models.SourceTrait.objects.current()))
-        self.assertNotIn(deprecated_trait, list(models.SourceTrait.objects.current()))
+        self.assertIn(current_trait, models.SourceTrait.objects.current())
+        self.assertNotIn(deprecated_trait, models.SourceTrait.objects.current())
 
 
 class HarmonizedTraitTestCase(TestCase):
@@ -415,8 +415,8 @@ class HarmonizedTraitTestCase(TestCase):
         deprecated_trait = factories.HarmonizedTraitFactory.create()
         deprecated_trait.harmonized_trait_set_version.i_is_deprecated = True
         deprecated_trait.harmonized_trait_set_version.save()
-        self.assertIn(current_trait, list(models.HarmonizedTrait.objects.current()))
-        self.assertNotIn(deprecated_trait, list(models.HarmonizedTrait.objects.current()))
+        self.assertIn(current_trait, models.HarmonizedTrait.objects.current())
+        self.assertNotIn(deprecated_trait, models.HarmonizedTrait.objects.current())
 
 
 class SourceTraitEncodedValueTestCase(TestCase):
