@@ -34,8 +34,7 @@ class StudyDetail(LoginRequiredMixin, DetailView):
         traits = models.SourceTrait.objects.current().filter(
             source_dataset__source_study_version__study=self.object)
         trait_count = traits.count()
-        dataset_count = models.SourceDataset.objects.exclude(
-            source_study_version__i_is_deprecated=True).filter(
+        dataset_count = models.SourceDataset.objects.current().filter(
             source_study_version__study=self.object).count()
         context['trait_count'] = '{:,}'.format(trait_count)
         context['dataset_count'] = '{:,}'.format(dataset_count)
@@ -86,8 +85,7 @@ class StudySourceDatasetList(LoginRequiredMixin, SingleTableMixin, DetailView):
     table_pagination = {'per_page': TABLE_PER_PAGE}
 
     def get_table_data(self):
-        return models.SourceDataset.objects.exclude(
-            source_study_version__i_is_deprecated=True).filter(
+        return models.SourceDataset.objects.current().filter(
             source_study_version__study=self.object)
 
     def get_context_data(self, **kwargs):
@@ -130,7 +128,7 @@ class SourceDatasetList(LoginRequiredMixin, SingleTableView):
     table_pagination = {'per_page': TABLE_PER_PAGE}
 
     def get_table_data(self):
-        return models.SourceDataset.objects.exclude(source_study_version__i_is_deprecated=True)
+        return models.SourceDataset.objects.current()
 
 
 class HarmonizedTraitSetVersionDetail(LoginRequiredMixin, FormMessagesMixin, DetailView):
