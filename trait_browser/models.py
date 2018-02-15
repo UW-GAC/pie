@@ -553,6 +553,9 @@ class HarmonizedTrait(Trait):
     # Created according to same rules as topmed_pheno.
     trait_flavor_name = models.CharField(max_length=150)
 
+    # Managers/custom querysets.
+    objects = querysets.HarmonizedTraitQuerySet.as_manager()
+
     class Meta:
         unique_together = (('harmonized_trait_set_version', 'i_trait_name'), )
 

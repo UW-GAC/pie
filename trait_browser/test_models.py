@@ -409,6 +409,15 @@ class HarmonizedTraitTestCase(TestCase):
         with self.assertRaises(ValidationError):
             duplicate.full_clean()
 
+    def test_current_queryset_method(self):
+        """Test that HarmonizedTrait.objects.current() does not return deprecated traits."""
+        current_trait = factories.HarmonizedTraitFactory.create()
+        deprecated_trait = factories.HarmonizedTraitFactory.create()
+        deprecated_trait.harmonized_trait_set_version.i_is_deprecated = True
+        deprecated_trait.harmonized_trait_set_version.save()
+        self.assertIn(current_trait, list(models.HarmonizedTrait.objects.current()))
+        self.assertNotIn(deprecated_trait, list(models.HarmonizedTrait.objects.current()))
+
 
 class SourceTraitEncodedValueTestCase(TestCase):
 
