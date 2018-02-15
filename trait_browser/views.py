@@ -345,7 +345,7 @@ class HarmonizedTraitList(LoginRequiredMixin, SingleTableMixin, ListView):
     table_pagination = {'per_page': TABLE_PER_PAGE}
 
     def get_table_data(self):
-        return models.HarmonizedTrait.objects.exclude(harmonized_trait_set_version__i_is_deprecated=True)
+        return models.HarmonizedTrait.objects.current()
 
 
 class HarmonizedTraitFlavorNameAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
@@ -389,7 +389,7 @@ def search(text_query, trait_type, study_pks=[]):
         # Then search text.
         traits = traits.filter(Q(i_description__iregex=text_query) | Q(i_trait_name__iregex=text_query))
     elif trait_type == 'harmonized':
-        traits = models.HarmonizedTrait.objects.exclude(harmonized_trait_set_version__i_is_deprecated=True)
+        traits = models.HarmonizedTrait.objects.current()
         traits = traits.filter(
             Q(i_description__iregex=text_query) | Q(i_trait_name__iregex=text_query))
     return(traits)
