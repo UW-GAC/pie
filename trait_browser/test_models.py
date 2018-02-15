@@ -131,6 +131,15 @@ class SourceDatasetTestCase(TestCase):
         source_dataset = factories.SourceDatasetFactory.create()
         self.assertRegex(source_dataset.pht_version_string, 'pht\d{6}\.v\d{1,5}.p\d{1,5}')
 
+    def test_current_queryset_method(self):
+        """Test that SourceDataset.objects.current() does not return deprecated traits."""
+        current_dataset = factories.SourceDatasetFactory.create()
+        deprecated_dataset = factories.SourceDatasetFactory.create()
+        deprecated_dataset.source_study_version.i_is_deprecated = True
+        deprecated_dataset.source_study_version.save()
+        self.assertIn(current_dataset, list(models.SourceDataset.objects.current()))
+        self.assertNotIn(deprecated_dataset, list(models.SourceDataset.objects.current()))
+
 
 class HarmonizedTraitSetTestCase(TestCase):
 

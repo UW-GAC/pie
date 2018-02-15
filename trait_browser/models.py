@@ -253,6 +253,9 @@ class SourceDataset(SourceDBTimeStampedModel):
     i_dbgap_date_created = models.DateTimeField('dbGaP date created', null=True, blank=True)
     pht_version_string = models.CharField(max_length=20)
 
+    # Managers/custom querysets.
+    objects = querysets.SourceDatasetQuerySet.as_manager()
+
     def __str__(self):
         """Pretty printing."""
         return 'dataset {} of study {}, id={}'.format(
