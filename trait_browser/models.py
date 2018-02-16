@@ -250,6 +250,8 @@ class SourceDataset(SourceDBTimeStampedModel):
     i_dbgap_description = models.TextField('dbGaP description', blank=True)
     i_dbgap_date_created = models.DateTimeField('dbGaP date created', null=True, blank=True)
     pht_version_string = models.CharField(max_length=20)
+    dbgap_filename = models.CharField(max_length=255, default='')
+    dataset_name = models.CharField(max_length=255, default='')
 
     # Managers/custom querysets.
     objects = querysets.SourceDatasetQuerySet.as_manager()
