@@ -65,8 +65,6 @@ from django.core.urlresolvers import reverse
 
 
 from core.models import TimeStampedModel
-
-
 from . import querysets
 
 
