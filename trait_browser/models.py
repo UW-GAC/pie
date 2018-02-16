@@ -65,6 +65,7 @@ from django.core.urlresolvers import reverse
 
 
 from core.models import TimeStampedModel
+from . import querysets
 
 
 INLINE_LIST_HTML = '\n'.join(
@@ -249,6 +250,9 @@ class SourceDataset(SourceDBTimeStampedModel):
     i_dbgap_description = models.TextField('dbGaP description', blank=True)
     i_dbgap_date_created = models.DateTimeField('dbGaP date created', null=True, blank=True)
     pht_version_string = models.CharField(max_length=20)
+
+    # Managers/custom querysets.
+    objects = querysets.SourceDatasetQuerySet.as_manager()
 
     def __str__(self):
         """Pretty printing."""
@@ -438,6 +442,9 @@ class SourceTrait(Trait):
     STUDY_URL = 'http://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id={}'
     DATASET_URL = 'http://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/dataset.cgi?study_id={}&pht={}'
 
+    # Managers/custom querysets.
+    objects = querysets.SourceTraitQuerySet.as_manager()
+
     def __str__(self):
         """Pretty printing of SourceTrait objects."""
         return '{trait_name} ({phv}): dataset {pht}'.format(trait_name=self.i_trait_name,
@@ -543,6 +550,9 @@ class HarmonizedTrait(Trait):
     harmonization_units = models.ManyToManyField(HarmonizationUnit)
     # Created according to same rules as topmed_pheno.
     trait_flavor_name = models.CharField(max_length=150)
+
+    # Managers/custom querysets.
+    objects = querysets.HarmonizedTraitQuerySet.as_manager()
 
     class Meta:
         unique_together = (('harmonized_trait_set_version', 'i_trait_name'), )

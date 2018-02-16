@@ -29,9 +29,8 @@ class StudyTable(tables.Table):
 
     def render_trait_count(self, record):
         """Get the count of non-deprecated source traits for this study."""
-        return '{:,}'.format(models.SourceTrait.objects.filter(
-            source_dataset__source_study_version__study=record,
-            source_dataset__source_study_version__i_is_deprecated=False).count())
+        return '{:,}'.format(models.SourceTrait.objects.current().filter(
+            source_dataset__source_study_version__study=record).count())
 
 
 class SourceDatasetTable(tables.Table):
