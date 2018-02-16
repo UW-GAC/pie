@@ -208,6 +208,14 @@ class SourceTraitTagging(LoginRequiredMixin, PermissionRequiredMixin, UserPasses
         return mark_safe(msg)
 
 
+from django.views.generic import TemplateView
+class SourceTraitSearch(TemplateView):
+
+    # NEEDS: LoginRequiredMixin
+    # May want: ListView; SearchMixin or SingleTableMixin; FormMessagesMixin (may need FormView)
+    template_name = 'trait_browser/sourcetrait_search.html'
+
+
 class SourceTraitPHVAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
     """Auto-complete source traits in a form field by i_trait_name."""
 

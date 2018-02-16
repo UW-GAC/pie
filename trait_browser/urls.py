@@ -33,6 +33,7 @@ source_trait_patterns = [
     url(r'^(?P<pk>\d+)/$', views.SourceTraitDetail.as_view(), name='detail'),
     url(r'^(?P<pk>\d+)/add-tag/$', views.SourceTraitTagging.as_view(), name='tagging'),
     url(r'^search/$', views.trait_search, {'trait_type': 'source'}, name='search'),
+    url(r'^watsonsearch/$', views.SourceTraitSearch.as_view(), name='watsonsearch'),
 ]
 
 source_dataset_patterns = [
