@@ -98,6 +98,9 @@ class SourceDatasetFactory(SourceDBTimeStampMixin, factory.DjangoModelFactory):
     i_is_subject_file = False
     i_study_subject_column = factory.Faker('pystr', max_chars=45)
     i_dbgap_date_created = factory.Faker('date_time_this_century', tzinfo=pytz.utc)
+    dbgap_filename = factory.Sequence(
+        lambda n: 'phs{:06}.v{}.pht{:06}.v{}.fake_dataset_name.data_dict.xml'.format(n, n, n, n))
+    dataset_name = factory.Faker('word')
 
     class Meta:
         model = models.SourceDataset
