@@ -76,36 +76,32 @@ class TaggedTraitTable(tables.Table):
     trait = tables.LinkColumn(
         'trait_browser:source:traits:detail', args=[tables.utils.A('trait.pk')], verbose_name='Phenotype',
         text=lambda record: record.trait.i_trait_name, orderable=True)
+    description = tables.Column('Phenotype description', accessor='trait.i_description', orderable=False)
+    dataset = tables.LinkColumn(
+        'trait_browser:source:datasets:detail', args=[tables.utils.A('trait.source_dataset.pk')],
+        verbose_name='Dataset name',
+        text=lambda record: record.trait.source_dataset.dataset_name, orderable=False)
     tag = tables.LinkColumn(
         'tags:tag:detail', args=[tables.utils.A('tag.pk')], verbose_name='Tag',
         text=lambda record: record.tag.title, orderable=True)
 
     class Meta:
         model = models.TaggedTrait
-        fields = ('trait', 'tag', )
+        fields = ('tag', 'trait', 'description', 'dataset', )
         attrs = {'class': 'table table-striped table-bordered table-hover', 'style': 'width: auto;'}
         template = 'bootstrap_tables2.html'
         order_by = ('tag', )
 
 
-class TaggedTraitTableWithDelete(tables.Table):
+class TaggedTraitTableWithDelete(TaggedTraitTable):
     """Table for displaying TaggedTraits with delete buttons."""
 
-    trait = tables.LinkColumn(
-        'trait_browser:source:traits:detail', args=[tables.utils.A('trait.pk')], verbose_name='Phenotype',
-        text=lambda record: record.trait.i_trait_name, orderable=True)
-    tag = tables.LinkColumn(
-        'tags:tag:detail', args=[tables.utils.A('tag.pk')], verbose_name='Tag',
-        text=lambda record: record.tag.title, orderable=True)
     delete = tables.TemplateColumn(verbose_name='', orderable=False,
                                    template_code=DELETE_BUTTON_TEMPLATE)
+    creator = tables.Column('Tagged by', accessor='creator.name')
 
-    class Meta:
-        model = models.TaggedTrait
-        fields = ('trait', 'tag', )
-        attrs = {'class': 'table table-striped table-bordered table-hover', 'style': 'width: auto;'}
-        template = 'bootstrap_tables2.html'
-        order_by = ('tag', )
+    class Meta(TaggedTraitTable.Meta):
+        fields = ('tag', 'trait', 'description', 'dataset', 'creator', 'delete',)
 
 
 class TagDetailTraitTable(tables.Table):
@@ -114,6 +110,11 @@ class TagDetailTraitTable(tables.Table):
     trait = tables.LinkColumn(
         'trait_browser:source:traits:detail', args=[tables.utils.A('trait.pk')], verbose_name='Phenotype',
         text=lambda record: record.trait.i_trait_name, orderable=True)
+    description = tables.Column('Phenotype description', accessor='trait.i_description', orderable=False)
+    dataset = tables.LinkColumn(
+        'trait_browser:source:datasets:detail', args=[tables.utils.A('trait.source_dataset.pk')],
+        verbose_name='Dataset name',
+        text=lambda record: record.trait.source_dataset.dataset_name, orderable=False)
     study = tables.LinkColumn('trait_browser:source:studies:detail:tagged',
                               verbose_name='Study',
                               args=[tables.utils.A('trait.source_dataset.source_study_version.study.pk')],
@@ -122,7 +123,7 @@ class TagDetailTraitTable(tables.Table):
 
     class Meta:
         model = models.TaggedTrait
-        fields = ('trait', )
+        fields = ('trait', 'description', 'dataset', 'study', )
         attrs = {'class': 'table table-striped table-bordered table-hover', 'style': 'width: auto;'}
         template = 'bootstrap_tables2.html'
 
