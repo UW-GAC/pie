@@ -9,6 +9,25 @@ from crispy_forms.bootstrap import FormActions, InlineCheckboxes
 from . import models
 
 
+class SourceTraitSearchForm(forms.Form):
+    """Form to handle django-watson searches for SourceTrait objects.
+
+    This form class is a Subclass of crispy_forms.Form. Crispy forms is a
+    Django app that improves upon the built in Django Form object.
+    """
+
+    q = forms.CharField(
+        label='search text', max_length=100,
+        help_text='Search within source variable descriptions.'
+    )
+
+    def __init__(self, *args, **kwargs):
+        super(SourceTraitSearchForm, self).__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.form_method = 'get'
+
+
+
 class SourceTraitCrispySearchForm(forms.Form):
     """Form to handle searching within SourceTrait objects.
 

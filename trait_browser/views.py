@@ -11,6 +11,7 @@ from braces.views import FormMessagesMixin, LoginRequiredMixin, PermissionRequir
 from dal import autocomplete
 from django_tables2 import RequestConfig, SingleTableMixin, SingleTableView
 from urllib.parse import parse_qs
+import watson.search as watson
 
 import profiles.models
 from tags.forms import TagSpecificTraitForm
@@ -208,12 +209,14 @@ class SourceTraitTagging(LoginRequiredMixin, PermissionRequiredMixin, UserPasses
         return mark_safe(msg)
 
 
-from django.views.generic import TemplateView
-class SourceTraitSearch(TemplateView):
+class SourceTraitSearch(FormView):
 
     # NEEDS: LoginRequiredMixin
     # May want: ListView; SearchMixin or SingleTableMixin; FormMessagesMixin (may need FormView)
+    # Possibly need to override the post method to call the get method?
+
     template_name = 'trait_browser/sourcetrait_search.html'
+    form_class = forms.SourceTraitSearchForm
 
 
 class SourceTraitPHVAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
