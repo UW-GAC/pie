@@ -9,7 +9,7 @@ from . import models
 class TagAdmin(admin.ModelAdmin):
     """Admin class for Tag objects."""
 
-    list_display = ('lower_title', 'creator', 'created', 'modified', )
+    list_display = ('title', 'lower_title', 'description', 'creator', 'created', 'modified', )
     list_filter = ('creator', )
     search_fields = ('lower_title', 'description', )
     form = forms.TagAdminForm
