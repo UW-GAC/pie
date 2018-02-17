@@ -10,4 +10,10 @@
 {% block content %}
     <h2>test</h2>
     {% crispy form %}
+
+    {% if q %}
+        <h3>Results</h3>
+        You searched for: {{ q }}
+    {% endif %}
+
 {% endblock %}

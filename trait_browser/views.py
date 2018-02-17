@@ -218,6 +218,17 @@ class SourceTraitSearch(FormView):
     template_name = 'trait_browser/sourcetrait_search.html'
     form_class = forms.SourceTraitSearchForm
 
+    def get(self, request, *args, **kwargs):
+        """Override get method for form and search processing."""
+        form_class = self.get_form_class()
+        form = form_class(request.GET)
+        context = self.get_context_data(form=form)
+        if form.is_valid():
+            query = form.cleaned_data.get('q', None)
+            context['q'] = query
+        return self.render_to_response(context)
+
+
 
 class SourceTraitPHVAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
     """Auto-complete source traits in a form field by i_trait_name."""
