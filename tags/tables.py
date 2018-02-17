@@ -11,7 +11,7 @@ from . import models
 
 DELETE_BUTTON_TEMPLATE = """
 <a class="btn btn-xs btn-danger" href="{% url 'tags:tagged-traits:delete' record.pk %}" role="button">
-    <span class="glyphicon glyphicon-remove" aria-hidden="true"></span> Delete
+    <span class="glyphicon glyphicon-remove" aria-hidden="true"></span> Remove tag
 </a>
 """
 
