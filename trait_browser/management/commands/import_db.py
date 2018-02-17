@@ -57,7 +57,14 @@ STRING_TYPES = FieldType.get_string_types() + [MYSQL_TYPES[ty] for ty in ('BLOB'
 
 # Regex for parsing the dataset name from the data dictionary file name.
 DATA_DICT_RE = compile(
-    r'^/projects/topmed/downloaded_data/dbGaP/released/(?P<phs_dir>phs\d{6})/(?P<version_dir>v\d+)/organized/(Subject|Phenotypes)/(?P<filename>(?P<dbgap_id>phs\d{6}\.v\d+?\.pht\d{6}\.v\d+?)\.(?P<base>.+?)\.data_dict(?P<extra>\w{0,}?)\.xml$)')
+    ''.join((
+        r'^/projects/topmed/downloaded_data/dbGaP/',
+        r'(released|prerelease)/(?P<phs_dir>phs\d{6})/(?P<version_dir>v\d+|\d{8})',
+        r'/organized/(Subject|Phenotypes)/',
+        r'(?P<filename>',
+        r'(?P<dbgap_id>phs\d{6}\.v\d+?\.pht\d{6}\.v\d+?)\.(?P<base>.+?)\.data_dict(?P<extra>\w{0,}?)\.xml$)',
+    ))
+)
 
 
 class Command(BaseCommand):
@@ -910,9 +917,15 @@ class Command(BaseCommand):
             dict_file = fixed_row['filename']
             dataset_id = fixed_row['dataset_id']
             # Parse the dataset name.
-            # print(dict_file, DATA_DICT_RE.match(dict_file), DATA_DICT_RE.match(dict_file).group('base'))
-            dataset_name = DATA_DICT_RE.match(dict_file).group('base')
-            filename = DATA_DICT_RE.match(dict_file).group('filename')
+            try:
+                dataset_name = DATA_DICT_RE.match(dict_file).group('base')
+                filename = DATA_DICT_RE.match(dict_file).group('filename')
+            except AttributeError:
+                logger.debug('Could not parse filename and dataset name from data dictionary {}; re match = {}'.format(
+                    dict_file, DATA_DICT_RE.match(dict_file)))
+                raise AttributeError
+            logger.debug('Found dataset name {} from filename {} for dataset with id {}.'.format(
+                dataset_name, filename, dataset_id))
             # Save the dataset name to the SourceDataset.
             source_dataset = models.SourceDataset.objects.get(pk=dataset_id)
             source_dataset.dbgap_filename = filename
