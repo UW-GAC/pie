@@ -69,7 +69,7 @@ class TaggedTraitByStudyList(LoginRequiredMixin, SingleTableMixin, ListView):
         """Determine whether to use tagged trait table with delete buttons or not."""
         self.study = get_object_or_404(Study, pk=self.kwargs['pk'])
         if self.request.user.is_staff or (self.request.user.groups.filter(name='phenotype_taggers').exists() and (
-                                  self.study in self.request.user.profile.taggable_studies.all())):
+                                          self.study in self.request.user.profile.taggable_studies.all())):
             return tables.TaggedTraitTableWithDelete
         else:
             return tables.TaggedTraitTable
@@ -136,8 +136,8 @@ class TaggedTraitCreate(LoginRequiredMixin, PermissionRequiredMixin, TaggableStu
         return mark_safe(msg)
 
 
-class TaggedTraitCreateByTag(LoginRequiredMixin, PermissionRequiredMixin, TaggableStudiesRequiredMixin, UserFormKwargsMixin,
-                             FormMessagesMixin, FormView):
+class TaggedTraitCreateByTag(LoginRequiredMixin, PermissionRequiredMixin, TaggableStudiesRequiredMixin,
+                             UserFormKwargsMixin, FormMessagesMixin, FormView):
     """Form view class for tagging a trait with a specific tag."""
 
     form_class = forms.TaggedTraitByTagForm
@@ -180,8 +180,8 @@ class TaggedTraitCreateByTag(LoginRequiredMixin, PermissionRequiredMixin, Taggab
         return mark_safe(msg)
 
 
-class ManyTaggedTraitsCreate(LoginRequiredMixin, PermissionRequiredMixin, TaggableStudiesRequiredMixin, UserFormKwargsMixin,
-                             FormMessagesMixin, FormView):
+class ManyTaggedTraitsCreate(LoginRequiredMixin, PermissionRequiredMixin, TaggableStudiesRequiredMixin,
+                             UserFormKwargsMixin, FormMessagesMixin, FormView):
     """Form view class for tagging multiple traits with one tag."""
 
     form_class = forms.ManyTaggedTraitsForm
