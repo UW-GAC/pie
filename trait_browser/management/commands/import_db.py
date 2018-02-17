@@ -16,7 +16,7 @@ Requires the CNF_PATH setting from the specified settings module.
 from datetime import datetime
 import logging
 import mysql.connector
-from re import compile, match, search
+from re import compile, search
 from sys import argv, stdout
 import pytz
 

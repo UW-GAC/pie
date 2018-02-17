@@ -13,7 +13,7 @@ This test module runs several unit tests and one integration test.
 from datetime import datetime, timedelta
 from os.path import exists, join
 from os import listdir, stat
-from re import compile, search
+from re import compile
 from shutil import rmtree
 from subprocess import call
 from tempfile import mkdtemp
