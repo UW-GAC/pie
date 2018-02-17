@@ -11,9 +11,9 @@
     <h2>test</h2>
     {% crispy form %}
 
-    {% if q %}
-        <h3>Results</h3>
-        You searched for: {{ q }}
+    {% if results_table %}
+        <h2>Results</h2>
+        {% render_table results_table %}
     {% endif %}
 
 {% endblock %}

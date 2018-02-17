@@ -225,7 +225,9 @@ class SourceTraitSearch(FormView):
         context = self.get_context_data(form=form)
         if form.is_valid():
             query = form.cleaned_data.get('q', None)
-            context['q'] = query
+            context['results_table'] = tables.SourceTraitTableFull(
+                watson.filter(models.SourceTrait, query)
+            )
         return self.render_to_response(context)
 
 
