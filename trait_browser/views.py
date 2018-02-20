@@ -209,7 +209,7 @@ class SourceTraitTagging(LoginRequiredMixin, PermissionRequiredMixin, UserPasses
         return mark_safe(msg)
 
 
-class SourceTraitSearch(FormView):
+class SourceTraitSearch(SingleTableMixin, FormView):
 
     # NEEDS: LoginRequiredMixin
     # May want: ListView; SearchMixin or SingleTableMixin; FormMessagesMixin (may need FormView)
@@ -217,17 +217,24 @@ class SourceTraitSearch(FormView):
 
     template_name = 'trait_browser/sourcetrait_search.html'
     form_class = forms.SourceTraitSearchForm
+    table_class = tables.SourceTraitTableFull
+    context_table_name = 'results_table'
 
     def get(self, request, *args, **kwargs):
         """Override get method for form and search processing."""
         form_class = self.get_form_class()
         form = form_class(request.GET)
-        context = self.get_context_data(form=form)
+        # Start a dictionary of additional items to add to context. We can't add
+        # to context directly because we have to set self.table_data before
+        # calling get_context_data.
+        new_kwargs = {'has_results': False}
+        self.table_data = models.SourceTrait.objects.none()
         if form.is_valid():
             query = form.cleaned_data.get('q', None)
-            context['results_table'] = tables.SourceTraitTableFull(
-                watson.filter(models.SourceTrait, query)
-            )
+            new_kwargs['has_results'] = True
+            self.table_data = watson.filter(models.SourceTrait, query)
+        context = self.get_context_data(form=form)
+        context.update(new_kwargs)
         return self.render_to_response(context)
 
 

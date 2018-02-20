@@ -11,7 +11,7 @@
     <h2>test</h2>
     {% crispy form %}
 
-    {% if results_table %}
+    {% if has_results %}
         <h2>Results</h2>
         {% render_table results_table %}
     {% endif %}
