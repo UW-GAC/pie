@@ -258,8 +258,8 @@ class SourceDataset(SourceDBTimeStampedModel):
 
     def __str__(self):
         """Pretty printing."""
-        return 'dataset {} of study {}, id={}'.format(
-            self.pht_version_string, self.source_study_version.study, self.i_id)
+        return 'dataset {} of study {}, id={}, pht={}'.format(
+            self.dataset_name, self.source_study_version.study, self.i_id, self.pht_version_string)
 
     def save(self, *args, **kwargs):
         """Custom save method for setting default dbGaP accession strings.
