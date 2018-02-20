@@ -7,4 +7,4 @@ from . import models
 
 def source_trait_search(query):
     """Search source traits."""
-    return watson.filter(models.SourceTrait, query)
+    return watson.filter(models.SourceTrait.objects.current(), query)
