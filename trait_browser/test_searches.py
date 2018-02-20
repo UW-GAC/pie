@@ -2,12 +2,22 @@
 
 from django.test import TestCase
 
+from watson.models import SearchEntry
+
 from . import models
 from . import factories
 from . import searches
 
 
 class SourceTraitSearchTest(TestCase):
+
+    def tearDown(self):
+        super(SourceTraitSearchTest, self).tearDown()
+        # Delete the search index records. Normally, django runs the TestCase
+        # tests in a transaction, but this doesn't work for the watson search
+        # records because they are stored in a MyISAM table, which doesn't use
+        # transactions.
+        SearchEntry.objects.all().delete()
 
     def test_works_with_no_traits(self):
         pass
