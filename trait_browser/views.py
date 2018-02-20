@@ -209,7 +209,7 @@ class SourceTraitTagging(LoginRequiredMixin, PermissionRequiredMixin, UserPasses
         return mark_safe(msg)
 
 
-class SourceTraitSearch(SingleTableMixin, FormView):
+class SourceTraitSearch(LoginRequiredMixin, SingleTableMixin, FormView):
 
     # NEEDS: LoginRequiredMixin
     # May want: ListView; SearchMixin or SingleTableMixin; FormMessagesMixin (may need FormView)
