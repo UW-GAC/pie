@@ -86,6 +86,13 @@ class SourceTraitSearchTest(TestCase):
         qs = searches.source_trait_search('lorem ipsum')
         self.assertQuerysetEqual(qs, [repr(trait)])
 
+    def test_description_finds_only_descriptions_with_all_search_terms_in_a_different_order(self):
+        """Tests that only traits whose descriptions contain all words in the search query but in a different order."""
+        factories.SourceTraitFactory(i_description='lorem other words')
+        trait = factories.SourceTraitFactory(i_description='lorem ipsum other words')
+        qs = searches.source_trait_search('ipsum lorem')
+        self.assertQuerysetEqual(qs, [repr(trait)])
+
     def test_description_stop_words(self):
         """Tests that traits whose descriptions contain common default stop words are found."""
         # However is a stopword in MySQL by default.
