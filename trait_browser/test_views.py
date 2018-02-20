@@ -10,12 +10,15 @@ from django.test import TestCase
 from core.utils import (DCCAnalystLoginTestCase, LoginRequiredTestCase, PhenotypeTaggerLoginTestCase, UserLoginTestCase,
                         get_autocomplete_view_ids)
 from profiles.models import Search, Profile
+from watson.models import SearchEntry
+
 from tags.models import TaggedTrait
 from tags.factories import TagFactory
 from . import models
 from . import factories
 from . import forms
 from . import tables
+from . import searches
 from .views import TABLE_PER_PAGE, search
 
 
@@ -1878,17 +1881,56 @@ class HarmonizedTraitFlavorNameAutocompleteViewTest(UserLoginTestCase):
 
 class SourceTraitSearchView(UserLoginTestCase):
 
+    def tearDown(self):
+        super(SourceTraitSearchView, self).tearDown()
+        # Delete the search index records. Normally, django runs the TestCase
+        # tests in a transaction, but this doesn't work for the watson search
+        # records because they are stored in a MyISAM table, which doesn't use
+        # transactions.
+        SearchEntry.objects.all().delete()
+
+    def get_url(self, *args):
+        return reverse('trait_browser:source:traits:watsonsearch')
+
     def test_view_success_code(self):
-        pass
+        """Tests that view returns successful response code."""
+        response = self.client.get(self.get_url())
+        self.assertEqual(response.status_code, 200)
 
     def test_context_data_with_empty_form(self):
-        pass
+        """Tests that view has the correct context upon initial load."""
+        response = self.client.get(self.get_url())
+        context = response.context
+        self.assertFalse(context['form'].is_bound)
+        self.assertFalse(context['has_results'])
+        self.assertIn('results_table', context)
+
+    def test_context_data_with_blank_form(self):
+        """Tests that view has the correct context upon invalid form submission."""
+        response = self.client.get(self.get_url(), {'q': ''})
+        context = response.context
+        self.assertTrue(context['form'].is_bound)
+        self.assertFalse(context['has_results'])
+        self.assertIn('results_table', context)
 
     def test_context_data_with_valid_search_and_no_results(self):
-        pass
+        """Tests that the view has correct context with a valid search but no results."""
+        response = self.client.get(self.get_url(), {'q': 'test'})
+        context = response.context
+        self.assertIn('form', context)
+        self.assertTrue(context['has_results'])
+        self.assertIsInstance(context['results_table'], tables.SourceTraitTableFull)
 
     def test_context_data_with_valid_search_and_some_results(self):
-        pass
+        """Tests that the view has correct context with a valid search and existing results."""
+        factories.SourceTraitFactory.create(i_description='lorem ipsum')
+        response = self.client.get(self.get_url(), {'q': 'lorem'})
+        qs = searches.source_trait_search('lorem')
+        context = response.context
+        self.assertIn('form', context)
+        self.assertTrue(context['has_results'])
+        self.assertIsInstance(context['results_table'], tables.SourceTraitTableFull)
+        self.assertQuerysetEqual(qs, [repr(x) for x in context['results_table'].data])
 
 
 # Tests of searching. Will probably be replaced/majorly rewritten after search is redesigned.
