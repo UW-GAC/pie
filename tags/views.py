@@ -16,6 +16,7 @@ from . import models
 from . import tables
 
 
+TABLE_PER_PAGE = 50    # Setting for per_page rows for all table views.
 TAGGING_ERROR_MESSAGE = 'Oops! Applying the tag to a dbGaP phenotype variable failed.'
 TAGGING_MULTIPLE_ERROR_MESSAGE = 'Oops! Applying the tag to dbGaP phenotype variables failed.'
 
@@ -28,6 +29,8 @@ class TagDetail(LoginRequiredMixin, SingleTableMixin, DetailView):
     template_name = 'tags/tag_detail.html'
     table_class = tables.TagDetailTraitTable
     context_table_name = 'tagged_trait_table'
+    table_pagination = {'per_page': TABLE_PER_PAGE}
+
 
     def get_table_data(self):
         return models.TaggedTrait.objects.filter(tag=self.object)
@@ -49,6 +52,7 @@ class TagList(LoginRequiredMixin, SingleTableMixin, ListView):
     model = models.Tag
     table_class = tables.TagTable
     context_table_name = 'tag_table'
+    table_pagination = {'per_page': TABLE_PER_PAGE}
 
 
 class StudyTaggedTraitList(LoginRequiredMixin, SingleTableMixin, ListView):
@@ -57,6 +61,7 @@ class StudyTaggedTraitList(LoginRequiredMixin, SingleTableMixin, ListView):
     table_class = tables.StudyTaggedTraitTable
     context_table_name = 'study_table'
     template_name = 'tags/studytaggedtrait_list.html'
+    table_pagination = {'per_page': TABLE_PER_PAGE}
 
 
 class TaggedTraitByStudyList(LoginRequiredMixin, SingleTableMixin, ListView):
@@ -64,6 +69,7 @@ class TaggedTraitByStudyList(LoginRequiredMixin, SingleTableMixin, ListView):
     model = models.TaggedTrait
     context_table_name = 'tagged_trait_table'
     template_name = 'tags/taggedtrait_list.html'
+    table_pagination = {'per_page': TABLE_PER_PAGE}
 
     def get_table_class(self):
         """Determine whether to use tagged trait table with delete buttons or not."""
