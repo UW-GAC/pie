@@ -10,13 +10,22 @@ from . import models
 class SourceTraitSearchFormTestCase(TestCase):
 
     def test_form_with_no_input_data(self):
-        pass
+        """Test that the form is not bound when it's not given input data."""
+        form = forms.SourceTraitSearchForm()
+        self.assertFalse(form.is_bound)
 
     def test_form_with_valid_text(self):
-        pass
+        """Test that the form is valid when given appropriate search text."""
+        input = {'q': 'some string'}
+        form = forms.SourceTraitSearchForm(input)
+        self.assertTrue(form.is_valid())
 
     def test_form_with_invalid_text(self):
-        pass
+        """Test that the form is not valid when given blank search text."""
+        input = {'q': ''}
+        form = forms.SourceTraitSearchForm(input)
+        self.assertFalse(form.is_valid())
+
 
 
 class SourceTraitCrispySearchFormTestCase(TestCase):
