@@ -11,7 +11,6 @@ from braces.views import FormMessagesMixin, LoginRequiredMixin, PermissionRequir
 from dal import autocomplete
 from django_tables2 import RequestConfig, SingleTableMixin, SingleTableView
 from urllib.parse import parse_qs
-import watson.search as watson
 
 import profiles.models
 from tags.forms import TagSpecificTraitForm
@@ -20,6 +19,7 @@ from tags.views import TAGGING_ERROR_MESSAGE, TaggableStudiesRequiredMixin
 from . import models
 from . import tables
 from . import forms
+from . import searches
 
 
 TABLE_PER_PAGE = 50    # Setting for per_page rows for all table views.
@@ -232,7 +232,7 @@ class SourceTraitSearch(LoginRequiredMixin, SingleTableMixin, FormView):
         if form.is_valid():
             query = form.cleaned_data.get('q', None)
             new_kwargs['has_results'] = True
-            self.table_data = watson.filter(models.SourceTrait, query)
+            self.table_data = searches.source_trait_search(query)
         context = self.get_context_data(form=form)
         context.update(new_kwargs)
         return self.render_to_response(context)
