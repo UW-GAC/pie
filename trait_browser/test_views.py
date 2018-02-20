@@ -1876,8 +1876,23 @@ class HarmonizedTraitFlavorNameAutocompleteViewTest(UserLoginTestCase):
         self.assertEqual(names_in_content[0], ht1.trait_flavor_name)
 
 
+class SourceTraitSearchView(UserLoginTestCase):
+
+    def test_view_success_code(self):
+        pass
+
+    def test_context_data_with_empty_form(self):
+        pass
+
+    def test_context_data_with_valid_search_and_no_results(self):
+        pass
+
+    def test_context_data_with_valid_search_and_some_results(self):
+        pass
+
+
 # Tests of searching. Will probably be replaced/majorly rewritten after search is redesigned.
-class SourceSearchTest(TestCase):
+class OldSourceSearchTest(TestCase):
 
     def test_search_source_trait_name_exact(self):
         """Finds an exact match in the SourceTrait name field, but doesn't find a non-match."""
@@ -1931,7 +1946,7 @@ class SourceSearchTest(TestCase):
         self.assertNotIn(st_nonmatch, search1)
 
 
-class SourceTraitSearchViewTest(UserLoginTestCase):
+class OldSourceTraitSearchViewTest(UserLoginTestCase):
 
     def test_source_trait_search_with_valid_results(self):
         """Returns 200 code and correct number of search results when valid results exist."""

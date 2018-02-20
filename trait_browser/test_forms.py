@@ -7,6 +7,18 @@ from . import forms
 from . import models
 
 
+class SourceTraitSearchFormTestCase(TestCase):
+
+    def test_form_with_no_input_data(self):
+        pass
+
+    def test_form_with_valid_text(self):
+        pass
+
+    def test_form_with_invalid_text(self):
+        pass
+
+
 class SourceTraitCrispySearchFormTestCase(TestCase):
 
     def test_form_with_valid_text_no_study(self):
