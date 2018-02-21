@@ -126,3 +126,13 @@ class SourceTraitSearchTest(ClearSearchIndexMixin, TestCase):
             i_description='other description')
         qs = searches.source_trait_search('lorem')
         self.assertEqual(len(qs), 0)
+
+    def test_description_can_include_a_number(self):
+        trait = factories.SourceTraitFactory.create(i_description='abcd123')
+        qs = searches.source_trait_search('abcd123')
+        self.assertQuerysetEqual(qs, [repr(trait)])
+
+    def test_description_can_be_only_numbers(self):
+        trait = factories.SourceTraitFactory.create(i_description='123456')
+        qs = searches.source_trait_search('123456')
+        self.assertQuerysetEqual(qs, [repr(trait)])
