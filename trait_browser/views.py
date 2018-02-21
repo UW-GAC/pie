@@ -223,7 +223,10 @@ class SourceTraitSearch(LoginRequiredMixin, SingleTableMixin, FormView):
     def get(self, request, *args, **kwargs):
         """Override get method for form and search processing."""
         form_class = self.get_form_class()
-        form = form_class(request.GET)
+        if request.GET:
+            form = form_class(request.GET)
+        else:
+            form = form_class()
         # Start a dictionary of additional items to add to context. We can't add
         # to context directly because we have to set self.table_data before
         # calling get_context_data.
