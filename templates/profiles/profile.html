@@ -28,7 +28,10 @@
             <div class="panel-body">
                 <ul class="nav nav-tabs" role="tablist">
                     {% if perms.tags.add_taggedtrait %}
-                        <li role="presentation" class="active"><a href="#tagged_phenotypes" role="tab" data-toggle="tab">My Tagged Phenotypes</a></li>
+                        <li role="presentation" class="active"><a href="#user_tagged_phenotypes" role="tab" data-toggle="tab">My Tagged Phenotypes</a></li>
+                        {% if all_taggedtraits_study_table_tuple %}
+                            <li role="presentation"><a href="#study_tagged_phenotypes" role="tab" data-toggle="tab">Tagged Phenotypes in My Studies</a></li>
+                        {% endif %}
                     {% endif %}
 
                     <li role="presentation"><a href="#phenotypes" role="tab" data-toggle="tab">Saved Phenotypes</a></li>
@@ -52,12 +55,20 @@
                 <div class="tab-content">
 
                     {% if perms.tags.add_taggedtrait %}
-                        <div role="tabpanel" class="tab-pane fade in active" id="tagged_phenotypes">
+                        <div role="tabpanel" class="tab-pane fade in active" id="user_tagged_phenotypes">
                             {% for study,taggedtrait_table in study_table_tuple %}
                                 <h4><a href="{{ study.get_absolute_url }}">{{ study.i_study_name }}</a></h4>
                                 {% render_table taggedtrait_table %}
                             {% endfor %}
                         </div>
+                        {% if all_taggedtraits_study_table_tuple %}
+                            <div role="tabpanel" class="tab-pane fade" id="study_tagged_phenotypes">
+                                {% for study,taggedtrait_table in all_taggedtraits_study_table_tuple %}
+                                    <h4><a href="{{ study.get_absolute_url }}">{{ study.i_study_name }}</a></h4>
+                                    {% render_table taggedtrait_table %}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
                     {% endif %}
 
                     <div role="tabpanel" class="tab-pane fade" id="phenotypes"><small>Coming soon...</small></div>
