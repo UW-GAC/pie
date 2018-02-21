@@ -1879,10 +1879,10 @@ class HarmonizedTraitFlavorNameAutocompleteViewTest(UserLoginTestCase):
         self.assertEqual(names_in_content[0], ht1.trait_flavor_name)
 
 
-class SourceTraitSearchView(UserLoginTestCase):
+class SourceTraitSearchViewTest(UserLoginTestCase):
 
     def tearDown(self):
-        super(SourceTraitSearchView, self).tearDown()
+        super(SourceTraitSearchViewTest, self).tearDown()
         # Delete the search index records. Normally, django runs the TestCase
         # tests in a transaction, but this doesn't work for the watson search
         # records because they are stored in a MyISAM table, which doesn't use
