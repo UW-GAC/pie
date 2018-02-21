@@ -219,6 +219,7 @@ class SourceTraitSearch(LoginRequiredMixin, SingleTableMixin, FormView):
     form_class = forms.SourceTraitSearchForm
     table_class = tables.SourceTraitTableFull
     context_table_name = 'results_table'
+    table_data = models.SourceTrait.objects.none()
 
     def get(self, request, *args, **kwargs):
         """Override get method for form and search processing."""
@@ -226,20 +227,24 @@ class SourceTraitSearch(LoginRequiredMixin, SingleTableMixin, FormView):
         if request.GET:
             form = form_class(request.GET)
         else:
-            form = form_class()
-        # Start a dictionary of additional items to add to context. We can't add
-        # to context directly because we have to set self.table_data before
-        # calling get_context_data.
-        new_kwargs = {'has_results': False}
-        self.table_data = models.SourceTrait.objects.none()
+            form = self.get_form(form_class)
+
         if form.is_valid():
-            query = form.cleaned_data.get('q', None)
-            new_kwargs['has_results'] = True
-            self.table_data = searches.source_trait_search(query)
+            return self.form_valid(form)
+        else:
+            return self.form_invalid(form)
+
+    def form_valid(self, form):
+        query = form.cleaned_data.get('q', None)
+        self.table_data = searches.source_trait_search(query)
         context = self.get_context_data(form=form)
-        context.update(new_kwargs)
+        context['has_results'] = True
         return self.render_to_response(context)
 
+    def form_invalid(self, form):
+        context = self.get_context_data(form=form)
+        context['has_results'] = False
+        return self.render_to_response(context)
 
 
 class SourceTraitPHVAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
