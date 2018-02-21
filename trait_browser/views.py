@@ -1,18 +1,15 @@
 """View functions and classes for the trait_browser app."""
 
 from django.contrib.auth.decorators import login_required
-from django.core.urlresolvers import reverse
 from django.db.models import Q    # Allows complex queries when searching.
-from django.shortcuts import render, get_object_or_404, redirect
+from django.shortcuts import render, get_object_or_404
 from django.utils.safestring import mark_safe
 from django.views.generic import DetailView, FormView, ListView
 
 from braces.views import FormMessagesMixin, LoginRequiredMixin, PermissionRequiredMixin, UserPassesTestMixin
 from dal import autocomplete
 from django_tables2 import RequestConfig, SingleTableMixin, SingleTableView
-from urllib.parse import parse_qs
 
-import profiles.models
 from tags.forms import TagSpecificTraitForm
 from tags.models import Tag, TaggedTrait
 from tags.views import TAGGING_ERROR_MESSAGE, TaggableStudiesRequiredMixin
