@@ -7,75 +7,82 @@
 {% endblock %}
 
 {% block content %}
-    <p><b>Email:</b> {{ user.email }}</p>
-    <p><b>Name:</b> {{ user.name }}</p>
-    <a href="{% url 'password_reset' %}" class="btn btn-primary" role="button">Reset password</a>
-
     <div class="container">
-      <div class="row form-group">
-        {% if request.user.is_staff %}
-        <a href="{% url 'admin:index' %}" class="btn btn-primary" role="button">PIE Administration</a>
-        {% endif %}
-      </div>
 
-      <div class="row">
-        <!-- Nav tabs -->
-        <ul class="nav nav-tabs" role="tablist">
-          <li role="presentation" class="active"><a href="#phenotypes" role="tab" data-toggle="tab">Saved Phenotypes</a></li>
-          <li role="presentation" class="dropdown">
-            <a href="#" class="dropdown-toggle" id="myTabDrop1" data-toggle="dropdown" aria-controls="myTabDrop1-contents" aria-expanded="false">Saved Searches <span class="caret"></span></a>
-            <ul class="dropdown-menu" aria-labelledby="myTabDrop1" id="myTabDrop1-contents">
-              <li><a href="#save-harm-drop" role="tab" id="saved-harmonized" data-toggle="tab" aria-controls="dropdown1">Harmonized</a></li>
-              <li><a href="#save-source-drop" role="tab" id="saved-source" data-toggle="tab" aria-controls="dropdown2">Study</a></li>
-            </ul>
-          </li>
-          
-          {% if perms.recipes.add_unitrecipe %}
-              <li role="presentation"><a href="#unitrecipes" role="tab" data-toggle="tab">Unit Recipes</a></li>
-              <li role="presentation"><a href="#harmonizationrecipes" role="tab" data-toggle="tab">Harmonization Recipes</a></li>
-          {% endif %}
+        <div class="panel panel-default">
+            <div class="panel-heading h3">My profile</div>
+            <div class="panel-body">
+                <p><b>Email:</b> {{ user.email }}</p>
+                <p><b>Name:</b> {{ user.name }}</p>
+                <p><a href="{% url 'password_reset' %}" class="btn btn-primary" role="button">Reset password</a></p>
+                <p>
+                    {% if request.user.is_staff %}
+                        <a href="{% url 'admin:index' %}" class="btn btn-primary" role="button">PIE Administration</a>
+                    {% endif %}
+                </p>
+            </div>
+        </div>
 
-          {% if perms.tags.add_taggedtrait %}
-              <li role="presentation"><a href="#tagged_phenotypes" role="tab" data-toggle="tab">My Tagged Phenotypes</a></li>
-          {% endif %}
-          
-        </ul>
+        <div class="panel panel-default">
+            <!-- Nav tabs -->
+            <div class="panel-body">
+                <ul class="nav nav-tabs" role="tablist">
+                    {% if perms.tags.add_taggedtrait %}
+                        <li role="presentation" class="active"><a href="#tagged_phenotypes" role="tab" data-toggle="tab">My Tagged Phenotypes</a></li>
+                    {% endif %}
 
-        <!-- Tab panes -->
-        <!-- Add space between tabs and content -->
-        <br>
-        
-        <div class="tab-content">
-          <div role="tabpanel" class="tab-pane fade in active" id="phenotypes"><small>Coming soon...</small></div>
-          <div role="tabpanel" class="tab-pane fade" id="save-harm-drop">
-            <div class="container"><small>Coming soon...</small></div>
-          </div>
-          
-          <div role="tabpanel" class="tab-pane fade" id="save-source-drop">
-            <div class="container"><small>Coming soon...</small></div>
-          </div>
-          
-          {% if perms.recipes.add_unitrecipe %}
-              <div role="tabpanel" class="tab-pane fade" id="unitrecipes">
-                  {% render_table unit_recipe_table %}
-              </div>
-              
-              <div role="tabpanel" class="tab-pane fade" id="harmonizationrecipes">
-                  {% render_table harmonization_recipe_table %}
-              </div>
-          {% endif %}
+                    <li role="presentation"><a href="#phenotypes" role="tab" data-toggle="tab">Saved Phenotypes</a></li>
+                    <li role="presentation" class="dropdown">
+                        <a href="#" class="dropdown-toggle" id="myTabDrop1" data-toggle="dropdown" aria-controls="myTabDrop1-contents" aria-expanded="false">Saved Searches <span class="caret"></span></a>
+                        <ul class="dropdown-menu" aria-labelledby="myTabDrop1" id="myTabDrop1-contents">
+                            <li><a href="#save-harm-drop" role="tab" id="saved-harmonized" data-toggle="tab" aria-controls="dropdown1">Harmonized</a></li>
+                            <li><a href="#save-source-drop" role="tab" id="saved-source" data-toggle="tab" aria-controls="dropdown2">Study</a></li>
+                        </ul>
+                    </li>
 
-          {% if perms.tags.add_taggedtrait %}
-              <div role="tabpanel" class="tab-pane fade" id="tagged_phenotypes">
-                  Table here later...
-              </div>
-          {% endif %}
+                    {% if perms.recipes.add_unitrecipe %}
+                    <li role="presentation"><a href="#unitrecipes" role="tab" data-toggle="tab">Unit Recipes</a></li>
+                    <li role="presentation"><a href="#harmonizationrecipes" role="tab" data-toggle="tab">Harmonization Recipes</a></li>
+                    {% endif %}
+                </ul>
+
+                <!-- Tab panes -->
+                <br><!-- Add space between tabs and content -->
+
+                <div class="tab-content">
+
+                    {% if perms.tags.add_taggedtrait %}
+                        <div role="tabpanel" class="tab-pane fade in active" id="tagged_phenotypes">
+                            {% for study,taggedtrait_table in study_table_tuple %}
+                                <h4><a href="{{ study.get_absolute_url }}">{{ study.i_study_name }}</a></h4>
+                                {% render_table taggedtrait_table %}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
+                    <div role="tabpanel" class="tab-pane fade" id="phenotypes"><small>Coming soon...</small></div>
+                    <div role="tabpanel" class="tab-pane fade" id="save-harm-drop">
+                        <div class="container"><small>Coming soon...</small></div>
+                    </div>
+
+                    <div role="tabpanel" class="tab-pane fade" id="save-source-drop">
+                        <div class="container"><small>Coming soon...</small></div>
+                    </div>
+
+                    {% if perms.recipes.add_unitrecipe %}
+                        <div role="tabpanel" class="tab-pane fade" id="unitrecipes">
+                            {% render_table unit_recipe_table %}
+                        </div>
+                        <div role="tabpanel" class="tab-pane fade" id="harmonizationrecipes">
+                            {% render_table harmonization_recipe_table %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
 
         </div>
-      </div>
-
     </div>
-{% endblock %}
+{% endblock content %}
 
 {% block custom_javascript %}
 <script src="{% static 'js/popover.js' %}"></script>

@@ -128,23 +128,14 @@ class TagDetailTraitTable(tables.Table):
         template = 'bootstrap_tables2.html'
 
 
-class UserTaggedTraitTable(tables.Table):
+class UserTaggedTraitTable(TaggedTraitTable):
     """Table for displaying TaggedTraits on a user's profile page.
 
     Displays user information that is not displayed in the plain old TaggedTraitTable.
     """
 
-    trait = tables.LinkColumn(
-        'trait_browser:source:traits:detail', args=[tables.utils.A('trait.pk')], verbose_name='Phenotype',
-        text=lambda record: record.trait.i_trait_name, orderable=True)
-    tag = tables.LinkColumn(
-        'tags:tag:detail', args=[tables.utils.A('tag.pk')], verbose_name='Tag',
-        text=lambda record: record.tag.title, orderable=True)
-    # TODO: add delete buttons.
+    delete = tables.TemplateColumn(verbose_name='', orderable=False,
+                                   template_code=DELETE_BUTTON_TEMPLATE)
 
-    class Meta:
-        model = models.TaggedTrait
-        fields = ('trait', 'tag', 'created', 'modified', )
-        attrs = {'class': 'table table-striped table-bordered table-hover', 'style': 'width: auto;'}
-        template = 'bootstrap_tables2.html'
-        order_by = ('tag', )
+    class Meta(TaggedTraitTableWithDelete.Meta):
+        fields = ('tag', 'trait', 'description', 'dataset', 'delete',)
