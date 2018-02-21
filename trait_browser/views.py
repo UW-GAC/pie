@@ -6,8 +6,9 @@ from django.db.models import Q    # Allows complex queries when searching.
 from django.shortcuts import render, get_object_or_404, redirect
 from django.utils.safestring import mark_safe
 from django.views.generic import DetailView, FormView, ListView
+from django.template.defaultfilters import pluralize    # Use pluralize in the views.
 
-from braces.views import FormMessagesMixin, LoginRequiredMixin, PermissionRequiredMixin, UserPassesTestMixin
+from braces.views import FormMessagesMixin, LoginRequiredMixin, MessageMixin, PermissionRequiredMixin, UserPassesTestMixin
 from dal import autocomplete
 from django_tables2 import RequestConfig, SingleTableMixin, SingleTableView
 from urllib.parse import parse_qs
@@ -209,7 +210,7 @@ class SourceTraitTagging(LoginRequiredMixin, PermissionRequiredMixin, UserPasses
         return mark_safe(msg)
 
 
-class SourceTraitSearch(LoginRequiredMixin, SingleTableMixin, FormView):
+class SourceTraitSearch(LoginRequiredMixin, SingleTableMixin, MessageMixin, FormView):
 
     # NEEDS: LoginRequiredMixin
     # May want: ListView; SearchMixin or SingleTableMixin; FormMessagesMixin (may need FormView)
@@ -236,9 +237,15 @@ class SourceTraitSearch(LoginRequiredMixin, SingleTableMixin, FormView):
 
     def form_valid(self, form):
         query = form.cleaned_data.get('q', None)
+        self.form_valid_message = 'form is valid'
         self.table_data = searches.source_trait_search(query)
         context = self.get_context_data(form=form)
         context['has_results'] = True
+        # Add an informational message about the number of results found.
+        msg = '{n} result{s} found.'.format(
+            n=self.table_data.count(),
+            s=pluralize(self.table_data.count()))
+        self.messages.info(msg, fail_silently=True)
         return self.render_to_response(context)
 
     def form_invalid(self, form):

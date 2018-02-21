@@ -1932,6 +1932,37 @@ class SourceTraitSearchViewTest(UserLoginTestCase):
         self.assertIsInstance(context['results_table'], tables.SourceTraitTableFull)
         self.assertQuerysetEqual(qs, [repr(x) for x in context['results_table'].data])
 
+    def test_context_data_no_messages_for_initial_load(self):
+        response = self.client.get(self.get_url())
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 0)
+
+    def test_context_data_no_messages_for_invalid_form(self):
+        response = self.client.get(self.get_url(), {'q': ''})
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 0)
+
+    def test_context_data_info_message_for_no_results(self):
+        response = self.client.get(self.get_url(), {'q': 'lorem'})
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertEqual(str(messages[0]), '0 results found.')
+
+    def test_context_data_info_message_for_one_result(self):
+        factories.SourceTraitFactory.create(i_description='lorem ipsum')
+        response = self.client.get(self.get_url(), {'q': 'lorem'})
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertEqual(str(messages[0]), '1 result found.')
+
+    def test_context_data_info_message_for_multiple_result(self):
+        factories.SourceTraitFactory.create(i_description='lorem ipsum')
+        factories.SourceTraitFactory.create(i_description='lorem ipsum 2')
+        response = self.client.get(self.get_url(), {'q': 'lorem'})
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertEqual(str(messages[0]), '2 results found.')
+
 
 # Tests of searching. Will probably be replaced/majorly rewritten after search is redesigned.
 class OldSourceSearchTest(TestCase):
