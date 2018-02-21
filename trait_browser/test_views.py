@@ -21,6 +21,7 @@ from . import tables
 from . import searches
 from .views import TABLE_PER_PAGE, search
 
+from .test_searches import ClearSearchIndexMixin
 
 # NB: The database is reset for each test method within a class!
 # NB: for test methods with multiple assertions, the first failed assert statement
@@ -1879,15 +1880,7 @@ class HarmonizedTraitFlavorNameAutocompleteViewTest(UserLoginTestCase):
         self.assertEqual(names_in_content[0], ht1.trait_flavor_name)
 
 
-class SourceTraitSearchViewTest(UserLoginTestCase):
-
-    def tearDown(self):
-        super(SourceTraitSearchViewTest, self).tearDown()
-        # Delete the search index records. Normally, django runs the TestCase
-        # tests in a transaction, but this doesn't work for the watson search
-        # records because they are stored in a MyISAM table, which doesn't use
-        # transactions.
-        SearchEntry.objects.all().delete()
+class SourceTraitSearchViewTest(ClearSearchIndexMixin, UserLoginTestCase):
 
     def get_url(self, *args):
         return reverse('trait_browser:source:traits:watsonsearch')

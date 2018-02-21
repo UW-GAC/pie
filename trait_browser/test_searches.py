@@ -9,15 +9,20 @@ from . import factories
 from . import searches
 
 
-class SourceTraitSearchTest(TestCase):
+class ClearSearchIndexMixin(object):
+    """Clear django-watson search index records in tests.
+
+    Normally, django runs the TestCase tests in a transaction, but this doesn't
+    work for the watson search records because they are stored in a MyISAM
+    table, which doesn't use transactions. The records in the table therefore
+    need to be cleared after each test.
+    """
 
     def tearDown(self):
-        super(SourceTraitSearchTest, self).tearDown()
-        # Delete the search index records. Normally, django runs the TestCase
-        # tests in a transaction, but this doesn't work for the watson search
-        # records because they are stored in a MyISAM table, which doesn't use
-        # transactions.
         SearchEntry.objects.all().delete()
+
+
+class SourceTraitSearchTest(ClearSearchIndexMixin, TestCase):
 
     def test_works_with_no_traits(self):
         """Tests that the search function works even if there are no source traits."""
