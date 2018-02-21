@@ -120,3 +120,9 @@ class SourceTraitSearchTest(ClearSearchIndexMixin, TestCase):
         trait_1.source_dataset.source_study_version.save()
         qs = searches.source_trait_search('lorem')
         self.assertEqual(len(qs), 0)
+
+    def test_description_does_not_also_match_trait_name(self):
+        factories.SourceTraitFactory.create(i_trait_name='lorem',
+            i_description='other description')
+        qs = searches.source_trait_search('lorem')
+        self.assertEqual(len(qs), 0)
