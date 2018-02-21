@@ -1963,6 +1963,26 @@ class SourceTraitSearchViewTest(UserLoginTestCase):
         self.assertEqual(len(messages), 1)
         self.assertEqual(str(messages[0]), '2 results found.')
 
+    def test_table_pagination(self):
+        n_traits = TABLE_PER_PAGE + 2
+        factories.SourceTraitFactory.create_batch(n_traits, i_description='lorem ipsum')
+        response = self.client.get(self.get_url(), {'q': 'lorem'})
+        context = response.context
+        self.assertIn('form', context)
+        self.assertTrue(context['has_results'])
+        self.assertIsInstance(context['results_table'], tables.SourceTraitTableFull)
+        self.assertEqual(len(context['results_table'].rows), n_traits)
+
+    def test_form_works_with_table_pagination_on_second_page(self):
+        n_traits = TABLE_PER_PAGE + 2
+        factories.SourceTraitFactory.create_batch(n_traits, i_description='lorem ipsum')
+        response = self.client.get(self.get_url(), {'q': 'lorem', 'page': 2})
+        context = response.context
+        self.assertIn('form', context)
+        self.assertTrue(context['has_results'])
+        self.assertIsInstance(context['results_table'], tables.SourceTraitTableFull)
+        self.assertEqual(len(context['results_table'].rows), n_traits)
+
 
 # Tests of searching. Will probably be replaced/majorly rewritten after search is redesigned.
 class OldSourceSearchTest(TestCase):
