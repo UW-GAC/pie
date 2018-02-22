@@ -23,8 +23,14 @@ class SourceTraitSearchForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         super(SourceTraitSearchForm, self).__init__(*args, **kwargs)
-        self.helper = FormHelper()
+        self.helper = FormHelper(self)
         self.helper.form_method = 'get'
+        # Add a submit button.
+        self.helper.layout.append(
+            FormActions(
+                Submit('submit', 'Search', css_class='btn-primary btn-disable'),
+            )
+        )
 
 
 
