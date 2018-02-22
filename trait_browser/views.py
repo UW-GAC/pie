@@ -246,10 +246,8 @@ class SourceTraitSearch(LoginRequiredMixin, SingleTableMixin, MessageMixin, Form
             return self.form_invalid(form)
 
     def form_valid(self, form):
-        q = form.cleaned_data.get('q', None)
-        studies = form.cleaned_data.get('studies', [])
         self.form_valid_message = 'form is valid'
-        self.table_data = searches.source_trait_search(q, studies=studies)
+        self.table_data = searches.source_trait_search(**form.cleaned_data)
         context = self.get_context_data(form=form)
         context['has_results'] = True
         # Add an informational message about the number of results found.
