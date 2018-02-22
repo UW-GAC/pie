@@ -1962,6 +1962,20 @@ class SourceTraitSearchViewTest(ClearSearchIndexMixin, UserLoginTestCase):
         self.assertIsInstance(context['results_table'], tables.SourceTraitTableFull)
         self.assertQuerysetEqual(qs, [repr(x) for x in context['results_table'].data])
 
+    def test_context_data_with_valid_search_and_a_specified_study(self):
+        """Tests that the view has correct context with a valid search and existing results if a study is selected."""
+        trait = factories.SourceTraitFactory.create(i_description='lorem ipsum')
+        study = trait.source_dataset.source_study_version.study
+        factories.SourceTraitFactory.create(i_description='lorem other')
+        response = self.client.get(self.get_url(), {'q': 'lorem',
+            'studies': [study.pk]})
+        qs = searches.source_trait_search('lorem', studies=[study.pk])
+        context = response.context
+        self.assertIn('form', context)
+        self.assertTrue(context['has_results'])
+        self.assertIsInstance(context['results_table'], tables.SourceTraitTableFull)
+        self.assertQuerysetEqual(qs, [repr(x) for x in context['results_table'].data])
+
     def test_context_data_no_messages_for_initial_load(self):
         response = self.client.get(self.get_url())
         messages = list(response.wsgi_request._messages)
