@@ -17,6 +17,8 @@ class SourceTraitSearchForm(forms.Form):
     Django app that improves upon the built in Django Form object.
     """
 
+    name = forms.CharField(label='variable name', max_length=100, required=False,
+        help_text='Search for exact source variable names.')
     q = forms.CharField(
         label='search text', max_length=100,
         help_text='Search within source variable descriptions.'

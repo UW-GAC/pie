@@ -66,6 +66,19 @@ class SourceTraitSearchFormTestCase(TestCase):
         form = forms.SourceTraitSearchForm(input)
         self.assertFalse(form.is_valid())
 
+    def test_form_valid_with_valid_text_and_trait_name(self):
+        """Test that the form is valid when given appropriate search text and a trait name."""
+        input = {'q': 'text', 'name': 'abc'}
+        form = forms.SourceTraitSearchForm(input)
+        self.assertTrue(form.is_valid())
+
+    def test_form_valid_with_valid_text_and_trait_name_and_study(self):
+        """Test that the form is valid when given appropriate search text, an existing study, and a trait name."""
+        study = factories.StudyFactory.create()
+        input = {'q': 'text', 'studies': [study.pk], 'name': 'abc'}
+        form = forms.SourceTraitSearchForm(input)
+        self.assertTrue(form.is_valid())
+
 
 class SourceTraitCrispySearchFormTestCase(TestCase):
 

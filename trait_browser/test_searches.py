@@ -158,3 +158,21 @@ class SourceTraitSearchTest(ClearSearchIndexMixin, TestCase):
         other_study = factories.StudyFactory.create()
         qs = searches.source_trait_search(q='lorem', studies=[other_study.pk])
         self.assertEqual(len(qs), 0)
+
+    def test_finds_only_exact_match_name(self):
+        trait = factories.SourceTraitFactory.create(i_trait_name='ipsum', i_description='lorem')
+        factories.SourceTraitFactory.create(i_trait_name='other', i_description='lorem')
+        qs = searches.source_trait_search(q='lorem', name='ipsum')
+        self.assertQuerysetEqual(qs, [repr(trait)])
+
+    def test_finds_only_exact_match_name_case_insensitive(self):
+        trait = factories.SourceTraitFactory.create(i_trait_name='IpSuM', i_description='lorem')
+        factories.SourceTraitFactory.create(i_trait_name='other', i_description='lorem')
+        qs = searches.source_trait_search(q='lorem', name='ipsum')
+        self.assertQuerysetEqual(qs, [repr(trait)])
+
+    def test_does_not_find_substring_name_match(self):
+        trait = factories.SourceTraitFactory.create(i_trait_name='ipsum', i_description='lorem')
+        factories.SourceTraitFactory.create(i_trait_name='other', i_description='lorem')
+        qs = searches.source_trait_search(q='lorem', name='ipsu')
+        self.assertEqual(len(qs), 0)
