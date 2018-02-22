@@ -5,6 +5,7 @@ from django import forms
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Layout, Submit, Field
 from crispy_forms.bootstrap import FormActions, InlineCheckboxes
+from dal import autocomplete
 
 from . import models
 
@@ -19,6 +20,14 @@ class SourceTraitSearchForm(forms.Form):
     q = forms.CharField(
         label='search text', max_length=100,
         help_text='Search within source variable descriptions.'
+    )
+    studies = forms.ModelMultipleChoiceField(
+        queryset=models.Study.objects.all(),
+        required=False,
+        label='Studies',
+        widget=autocomplete.ModelSelect2Multiple(
+            url='trait_browser:source:studies:autocomplete:by-name'),
+        help_text='Search within these studies.'
     )
 
     def __init__(self, *args, **kwargs):

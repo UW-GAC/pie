@@ -14,18 +14,57 @@ class SourceTraitSearchFormTestCase(TestCase):
         form = forms.SourceTraitSearchForm()
         self.assertFalse(form.is_bound)
 
-    def test_form_with_valid_text(self):
-        """Test that the form is valid when given appropriate search text."""
+    def test_form_with_valid_text_and_no_studies(self):
+        """Test that the form is valid when given appropriate search text and no studies."""
         input = {'q': 'some string'}
         form = forms.SourceTraitSearchForm(input)
         self.assertTrue(form.is_valid())
 
-    def test_form_with_invalid_text(self):
-        """Test that the form is not valid when given blank search text."""
+    def test_form_with_valid_text_and_one_study(self):
+        """Test that the form is valid when given appropriate search text and one study."""
+        study = factories.StudyFactory.create()
+        input = {'q': 'some string', 'studies': [study.pk]}
+        form = forms.SourceTraitSearchForm(input)
+        self.assertTrue(form.is_valid())
+
+    def test_form_with_valid_text_and_two_studies(self):
+        """Test that the form is valid when given appropriate search text and two studies."""
+        studies = factories.StudyFactory.create_batch(2)
+        input = {'q': 'some string', 'studies': [study.pk for study in studies]}
+        form = forms.SourceTraitSearchForm(input)
+        self.assertTrue(form.is_valid())
+
+    def test_form_with_invalid_text_and_no_studies(self):
+        """Test that the form is not valid when given blank search text and no studies."""
         input = {'q': ''}
         form = forms.SourceTraitSearchForm(input)
         self.assertFalse(form.is_valid())
 
+    def test_form_with_invalid_text_and_one_study(self):
+        """Test that the form is not valid when given appropriate search text and one study."""
+        study = factories.StudyFactory.create()
+        input = {'q': '', 'studies': [study.pk]}
+        form = forms.SourceTraitSearchForm(input)
+        self.assertFalse(form.is_valid())
+
+    def test_form_with_invalid_text_and_two_studies(self):
+        """Test that the form is not valid when given appropriate search text and two studies."""
+        studies = factories.StudyFactory.create_batch(2)
+        input = {'q': '', 'studies': [study.pk for study in studies]}
+        form = forms.SourceTraitSearchForm(input)
+        self.assertFalse(form.is_valid())
+
+    def test_form_invalid_with_valid_text_and_invalid_study(self):
+        """Test that the form is not valid when given appropriate search text and a non-existent study."""
+        input = {'q': 'text', 'studies': [1]}
+        form = forms.SourceTraitSearchForm(input)
+        self.assertFalse(form.is_valid())
+
+    def test_form_invalid_with_invalid_text_and_invalid_study(self):
+        """Test that the form is not valid when given blank search text and a non-existent study."""
+        input = {'q': '', 'studies': [1]}
+        form = forms.SourceTraitSearchForm(input)
+        self.assertFalse(form.is_valid())
 
 
 class SourceTraitCrispySearchFormTestCase(TestCase):
