@@ -1955,7 +1955,7 @@ class SourceTraitSearchViewTest(ClearSearchIndexMixin, UserLoginTestCase):
         """Tests that the view has correct context with a valid search and existing results."""
         factories.SourceTraitFactory.create(i_description='lorem ipsum')
         response = self.client.get(self.get_url(), {'q': 'lorem'})
-        qs = searches.source_trait_search('lorem')
+        qs = searches.source_trait_search(q='lorem')
         context = response.context
         self.assertIn('form', context)
         self.assertTrue(context['has_results'])
@@ -1969,7 +1969,7 @@ class SourceTraitSearchViewTest(ClearSearchIndexMixin, UserLoginTestCase):
         factories.SourceTraitFactory.create(i_description='lorem other')
         response = self.client.get(self.get_url(), {'q': 'lorem',
             'studies': [study.pk]})
-        qs = searches.source_trait_search('lorem', studies=[study.pk])
+        qs = searches.source_trait_search(q='lorem', studies=[study.pk])
         context = response.context
         self.assertIn('form', context)
         self.assertTrue(context['has_results'])
