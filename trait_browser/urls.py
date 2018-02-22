@@ -50,7 +50,12 @@ source_study_detail_patterns = [
     url(r'^$', views.StudyDetail.as_view(), name='detail'),
 ]
 
+source_study_autocomplete_patterns = [
+    url(r'^by-name/$', views.StudyNameAutocompleteByName.as_view(), name='by-name'),
+]
+
 source_study_patterns = [
+    url(r'^autocomplete/', include(source_study_autocomplete_patterns, namespace='autocomplete')),
     url(r'^list/$', views.StudyList.as_view(), name='list'),
     url(r'^(?P<pk>\d+)/', include(source_study_detail_patterns, namespace='detail')),
     # search

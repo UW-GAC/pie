@@ -243,6 +243,43 @@ class StudySourceTableViewsTest(UserLoginTestCase):
         self.assertEqual(response.context['form'].initial['study'], str(this_study.i_accession))
 
 
+class StudyNameAutocompleteByNameTest(UserLoginTestCase):
+
+    def get_url(self):
+        return reverse('trait_browser:source:studies:autocomplete:by-name')
+
+    def test_view_success_code(self):
+        """View returns successful response code."""
+        response = self.client.get(self.get_url())
+        self.assertEqual(response.status_code, 200)
+
+    def test_returns_all_studies_with_no_query(self):
+        studies = factories.StudyFactory.create_batch(10)
+        response = self.client.get(self.get_url())
+        pks = get_autocomplete_view_ids(response)
+        self.assertEqual(sorted([study.pk for study in studies]), sorted(pks))
+
+    def test_works_with_no_studies(self):
+        response = self.client.get(self.get_url())
+        pks = get_autocomplete_view_ids(response)
+        self.assertEqual(len(pks), 0)
+
+    def test_finds_one_matching_study(self):
+        factories.StudyFactory.create(i_study_name='other')
+        study = factories.StudyFactory.create(i_study_name='my study')
+        response = self.client.get(self.get_url(), {'q': 'stu'})
+        pks = get_autocomplete_view_ids(response)
+        self.assertEqual([study.pk], pks)
+
+    def test_finds_two_matching_studies(self):
+        factories.StudyFactory.create(i_study_name='other')
+        study_1 = factories.StudyFactory.create(i_study_name='my study')
+        study_2 = factories.StudyFactory.create(i_study_name='another sturgeon')
+        response = self.client.get(self.get_url(), {'q': 'stu'})
+        pks = get_autocomplete_view_ids(response)
+        self.assertEqual(sorted([study_1.pk, study_2.pk]), sorted(pks))
+
+
 class SourceDatasetDetailTest(UserLoginTestCase):
     """Unit tests for the SourceDataset views."""
 

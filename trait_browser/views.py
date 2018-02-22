@@ -99,6 +99,16 @@ class StudySourceDatasetList(LoginRequiredMixin, SingleTableMixin, DetailView):
         return context
 
 
+class StudyNameAutocompleteByName(LoginRequiredMixin, autocomplete.Select2QuerySetView):
+    """."""
+
+    def get_queryset(self):
+        retrieved = models.Study.objects.all()
+        if self.q:
+            retrieved = retrieved.filter(i_study_name__icontains=r'{}'.format(self.q))
+        return retrieved
+
+
 class SourceDatasetDetail(LoginRequiredMixin, SingleTableMixin, DetailView):
     """Detail view class for SourceDatasets. Displays the dataset's source traits in a table."""
 
