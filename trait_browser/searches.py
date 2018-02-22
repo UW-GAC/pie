@@ -5,6 +5,9 @@ import watson.search as watson
 from . import models
 
 
-def source_trait_search(query):
+def source_trait_search(query, studies=[]):
     """Search source traits."""
-    return watson.filter(models.SourceTrait.objects.current(), query)
+    qs = models.SourceTrait.objects.current()
+    if len(studies) > 0:
+        qs = qs.filter(source_dataset__source_study_version__study__in=studies)
+    return watson.filter(qs, query)

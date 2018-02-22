@@ -136,3 +136,25 @@ class SourceTraitSearchTest(ClearSearchIndexMixin, TestCase):
         trait = factories.SourceTraitFactory.create(i_description='123456')
         qs = searches.source_trait_search('123456')
         self.assertQuerysetEqual(qs, [repr(trait)])
+
+    def test_finds_description_in_one_specified_study(self):
+        trait = factories.SourceTraitFactory.create(i_description='lorem ipsum')
+        qs = searches.source_trait_search('lorem',
+            studies=[trait.source_dataset.source_study_version.study.pk])
+        self.assertQuerysetEqual(qs, [repr(trait)])
+
+    def test_finds_description_in_two_specified_studies(self):
+        trait_1 = factories.SourceTraitFactory.create(i_description='lorem ipsum')
+        trait_2 = factories.SourceTraitFactory.create(i_description='lorem other')
+        studies = [
+            trait_1.source_dataset.source_study_version.study.pk,
+            trait_2.source_dataset.source_study_version.study.pk
+        ]
+        qs = searches.source_trait_search('lorem', studies=studies)
+        self.assertQuerysetEqual(qs, [repr(trait_1), repr(trait_2)])
+
+    def test_does_not_find_description_in_other_study(self):
+        trait = factories.SourceTraitFactory.create(i_description='lorem ipsum')
+        other_study = factories.StudyFactory.create()
+        qs = searches.source_trait_search('lorem', studies=[other_study.pk])
+        self.assertEqual(len(qs), 0)
