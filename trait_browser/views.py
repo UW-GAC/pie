@@ -353,10 +353,9 @@ class HarmonizedTraitFlavorNameAutocomplete(LoginRequiredMixin, autocomplete.Sel
     """
 
     def get_queryset(self):
-        # TODO: Will need to filter to the latest version, once this is implemented.
-        retrieved = models.HarmonizedTrait.objects.all()
+        retrieved = models.HarmonizedTrait.objects.current()
         if self.q:
-            retrieved = retrieved.filter(trait_flavor_name__regex=r'^{}'.format(self.q))
+            retrieved = retrieved.filter(trait_flavor_name__iregex=r'^{}'.format(self.q))
         return retrieved
 
 
