@@ -17,10 +17,15 @@ class SourceTraitSearchForm(forms.Form):
     Django app that improves upon the built in Django Form object.
     """
 
-    name = forms.CharField(label='variable name', max_length=100, required=False,
+    name = forms.CharField(
+        label='variable name',
+        max_length=100,
+        required=False,
         help_text='Search for exact source variable names.')
     q = forms.CharField(
-        label='search text', max_length=100,
+        label='search text',
+        max_length=100,
+        required=False,
         help_text='Search within source variable descriptions.'
     )
     studies = forms.ModelMultipleChoiceField(
@@ -43,7 +48,12 @@ class SourceTraitSearchForm(forms.Form):
             )
         )
 
-
+    def clean(self):
+        cleaned_data = super(SourceTraitSearchForm, self).clean()
+        if not cleaned_data['name'] and not cleaned_data['q']:
+            raise forms.ValidationError(
+                'At least one field must be filled in.'
+            )
 
 class SourceTraitCrispySearchForm(forms.Form):
     """Form to handle searching within SourceTrait objects.

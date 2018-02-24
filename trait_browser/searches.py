@@ -12,4 +12,6 @@ def source_trait_search(q='', studies=[], name=''):
         qs = qs.filter(source_dataset__source_study_version__study__in=studies)
     if len(name) > 0:
         qs = qs.filter(i_trait_name__iexact=name)
-    return watson.filter(qs, q)
+    if len(q) > 0:
+        qs = watson.filter(qs, q)
+    return qs
