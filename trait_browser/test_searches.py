@@ -253,3 +253,12 @@ class SourceTraitSearchTest(ClearSearchIndexMixin, TestCase):
             source_dataset=dataset_2)
         qs = searches.source_trait_search()
         self.assertEqual(list(qs), [trait_2, trait_1])
+
+    def test_does_not_find_special_characters_in_description(self):
+        characters = ['\'', '%', '#', '<', '>', '=', '?', '-']
+        for character in characters:
+            description = "special{char}character".format(char=character)
+            trait = factories.SourceTraitFactory.create(i_trait_name=description)
+            qs = searches.source_trait_search(description=description)
+            msg = "found {char}".format(char=character)
+            self.assertNotIn(trait, qs, msg=msg)
