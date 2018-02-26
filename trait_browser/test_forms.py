@@ -16,40 +16,40 @@ class SourceTraitSearchFormTestCase(TestCase):
 
     def test_form_is_invalid_with_blank_name_and_description(self):
         study = factories.StudyFactory.create()
-        input = {'q': '', 'name': '', 'studies': [study.pk]}
+        input = {'description': '', 'name': '', 'studies': [study.pk]}
         form = forms.SourceTraitSearchForm(input)
         self.assertFalse(form.is_valid())
 
     def test_form_with_valid_description_and_no_studies(self):
         """Test that the form is valid when given appropriate search text and no studies."""
-        input = {'q': 'some string'}
+        input = {'description': 'some string'}
         form = forms.SourceTraitSearchForm(input)
         self.assertTrue(form.is_valid())
 
     def test_form_with_valid_description_and_one_study(self):
         """Test that the form is valid when given appropriate search text and one study."""
         study = factories.StudyFactory.create()
-        input = {'q': 'some string', 'studies': [study.pk]}
+        input = {'description': 'some string', 'studies': [study.pk]}
         form = forms.SourceTraitSearchForm(input)
         self.assertTrue(form.is_valid())
 
     def test_form_with_valid_description_and_two_studies(self):
         """Test that the form is valid when given appropriate search text and two studies."""
         studies = factories.StudyFactory.create_batch(2)
-        input = {'q': 'some string', 'studies': [study.pk for study in studies]}
+        input = {'description': 'some string', 'studies': [study.pk for study in studies]}
         form = forms.SourceTraitSearchForm(input)
         self.assertTrue(form.is_valid())
 
     def test_form_valid_with_valid_description_and_trait_name(self):
         """Test that the form is valid when given appropriate search text and a trait name."""
-        input = {'q': 'text', 'name': 'abc'}
+        input = {'description': 'text', 'name': 'abc'}
         form = forms.SourceTraitSearchForm(input)
         self.assertTrue(form.is_valid())
 
     def test_form_valid_with_valid_description_and_trait_name_and_study(self):
         """Test that the form is valid when given appropriate search text, an existing study, and a trait name."""
         study = factories.StudyFactory.create()
-        input = {'q': 'text', 'studies': [study.pk], 'name': 'abc'}
+        input = {'description': 'text', 'studies': [study.pk], 'name': 'abc'}
         form = forms.SourceTraitSearchForm(input)
         self.assertTrue(form.is_valid())
 

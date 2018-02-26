@@ -41,70 +41,70 @@ class SourceTraitSearchTest(ClearSearchIndexMixin, TestCase):
     def test_description_no_matches(self):
         """Tests that no results are found if the search query doesn't match the trait description."""
         trait = factories.SourceTraitFactory.create(i_description='lorem')
-        qs = searches.source_trait_search(q='foobar')
+        qs = searches.source_trait_search(description='foobar')
         self.assertQuerysetEqual(qs, [])
 
     def test_description_one_word_exact_match(self):
         """Tests that only a trait description that matches the search query is found."""
         factories.SourceTraitFactory.create(i_description='other trait')
         trait = factories.SourceTraitFactory.create(i_description='lorem')
-        qs = searches.source_trait_search(q='lorem')
+        qs = searches.source_trait_search(description='lorem')
         self.assertQuerysetEqual(qs, [repr(trait)])
 
     def test_description_one_word_substring_match(self):
         """Tests that traits with a description whose words begin with the search query are found."""
         factories.SourceTraitFactory.create(i_description='other trait')
         trait = factories.SourceTraitFactory.create(i_description='lorem')
-        qs = searches.source_trait_search(q='lore')
+        qs = searches.source_trait_search(description='lore')
         self.assertQuerysetEqual(qs, [repr(trait)])
 
     def test_description_one_word_substring_matches_beginning_of_word_only(self):
         """Tests that traits with a description whose words begin with the search query are found."""
         factories.SourceTraitFactory.create(i_description='other trait')
         trait = factories.SourceTraitFactory.create(i_description='lorem')
-        qs = searches.source_trait_search(q='orem')
+        qs = searches.source_trait_search(description='orem')
         self.assertEqual(qs.count(), 0)
 
     def test_description_one_word_substring_match_short_search(self):
         """Tests that traits with a description whose words begin with a (short) search query are found."""
         factories.SourceTraitFactory.create(i_description='other trait')
         trait = factories.SourceTraitFactory.create(i_description='lorem')
-        qs = searches.source_trait_search(q='lo')
+        qs = searches.source_trait_search(description='lo')
         self.assertQuerysetEqual(qs, [repr(trait)])
 
     def test_description_one_word_substring_match_short_word(self):
         """Tests that a short word in the description can be found."""
         factories.SourceTraitFactory.create(i_description='other trait')
         trait = factories.SourceTraitFactory.create(i_description='abc')
-        qs = searches.source_trait_search(q='abc')
+        qs = searches.source_trait_search(description='abc')
         self.assertQuerysetEqual(qs, [repr(trait)])
 
     def test_description_multiple_words_exact_match(self):
         """Tests that a trait is found from a search query containing multiple exact matches."""
         factories.SourceTraitFactory.create(i_description='other trait')
         trait = factories.SourceTraitFactory.create(i_description='lorem ipsum')
-        qs = searches.source_trait_search(q='lorem ipsum')
+        qs = searches.source_trait_search(description='lorem ipsum')
         self.assertQuerysetEqual(qs, [repr(trait)])
 
     def test_description_multiple_words_substring_match(self):
         """Tests that a trait is found from a search query containing multiple substring matches."""
         factories.SourceTraitFactory.create(i_description='other trait')
         trait = factories.SourceTraitFactory.create(i_description='lorem ipsum')
-        qs = searches.source_trait_search(q='lore ipsu')
+        qs = searches.source_trait_search(description='lore ipsu')
         self.assertQuerysetEqual(qs, [repr(trait)])
 
     def test_description_match_can_be_anywhere(self):
         """Tests that a trait is found when the search query term is not the first word."""
         factories.SourceTraitFactory.create(i_description='other trait')
         trait = factories.SourceTraitFactory.create(i_description='lorem ipsum')
-        qs = searches.source_trait_search(q='ipsu')
+        qs = searches.source_trait_search(description='ipsu')
         self.assertQuerysetEqual(qs, [repr(trait)])
 
     def test_description_finds_only_descriptions_with_all_search_terms(self):
         """Tests that only traits whose descriptions contain all words in the search query are found."""
         factories.SourceTraitFactory.create(i_description='lorem other words')
         trait = factories.SourceTraitFactory.create(i_description='lorem ipsum other words')
-        qs = searches.source_trait_search(q='lorem ipsum')
+        qs = searches.source_trait_search(description='lorem ipsum')
         self.assertQuerysetEqual(qs, [repr(trait)])
 
     def test_description_matches_search_terms_in_any_order(self):
@@ -112,21 +112,21 @@ class SourceTraitSearchTest(ClearSearchIndexMixin, TestCase):
         factories.SourceTraitFactory.create(i_description='lorem other words')
         trait_1 = factories.SourceTraitFactory.create(i_description='lorem ipsum other words')
         trait_2 = factories.SourceTraitFactory.create(i_description='ipsum lorem other words')
-        qs = searches.source_trait_search(q='ipsum lorem')
+        qs = searches.source_trait_search(description='ipsum lorem')
         self.assertQuerysetEqual(qs, [repr(trait_1), repr(trait_2)])
 
     def test_description_stop_words(self):
         """Tests that traits whose descriptions contain common default stop words are found."""
         # However is a stopword in MySQL by default.
         trait = factories.SourceTraitFactory.create(i_description='however has stop words')
-        qs = searches.source_trait_search(q='however')
+        qs = searches.source_trait_search(description='however')
         self.assertQuerysetEqual(qs, [repr(trait)])
 
     def test_description_is_case_insensitive(self):
         """Tests that the search is case insensitive."""
         trait_1 = factories.SourceTraitFactory.create(i_description='lorem ipsum')
         trait_2 = factories.SourceTraitFactory.create(i_description='LOREM other')
-        qs = searches.source_trait_search(q='lorem')
+        qs = searches.source_trait_search(description='lorem')
         self.assertIn(trait_1, qs)
         self.assertIn(trait_2, qs)
 
@@ -134,7 +134,7 @@ class SourceTraitSearchTest(ClearSearchIndexMixin, TestCase):
         """Tests that the name field is not matched when searchign by description."""
         factories.SourceTraitFactory.create(i_trait_name='lorem',
             i_description='other description')
-        qs = searches.source_trait_search(q='lorem')
+        qs = searches.source_trait_search(description='lorem')
         self.assertEqual(len(qs), 0)
 
     def test_trait_name_does_not_match_description_field(self):
@@ -147,13 +147,13 @@ class SourceTraitSearchTest(ClearSearchIndexMixin, TestCase):
     def test_description_can_include_a_number(self):
         """Tests that the "words" that include a number in the description are matched."""
         trait = factories.SourceTraitFactory.create(i_description='abcd123')
-        qs = searches.source_trait_search(q='abcd123')
+        qs = searches.source_trait_search(description='abcd123')
         self.assertQuerysetEqual(qs, [repr(trait)])
 
     def test_description_can_be_only_numbers(self):
         """Tests that the "words" composed of all numbers in the description are matched."""
         trait = factories.SourceTraitFactory.create(i_description='123456')
-        qs = searches.source_trait_search(q='123456')
+        qs = searches.source_trait_search(description='123456')
         self.assertQuerysetEqual(qs, [repr(trait)])
 
     def test_finds_matching_trait_in_one_specified_study(self):
@@ -207,7 +207,7 @@ class SourceTraitSearchTest(ClearSearchIndexMixin, TestCase):
         trait = factories.SourceTraitFactory.create(i_trait_name='ipsum', i_description='lorem')
         factories.SourceTraitFactory.create(i_trait_name='ipsum', i_description='other')
         factories.SourceTraitFactory.create(i_trait_name='other', i_description='lorem')
-        qs = searches.source_trait_search(name='ipsum', q='lorem')
+        qs = searches.source_trait_search(name='ipsum', description='lorem')
         self.assertQuerysetEqual(qs, [repr(trait)])
 
     def test_works_with_trait_name_description_and_study(self):
@@ -215,5 +215,5 @@ class SourceTraitSearchTest(ClearSearchIndexMixin, TestCase):
         trait = factories.SourceTraitFactory.create(i_trait_name='ipsum', i_description='lorem')
         factories.SourceTraitFactory.create(i_trait_name='ipsum', i_description='lorem')
         study = trait.source_dataset.source_study_version.study
-        qs = searches.source_trait_search(name='ipsum', q='lorem', studies=[study.pk])
+        qs = searches.source_trait_search(name='ipsum', description='lorem', studies=[study.pk])
         self.assertQuerysetEqual(qs, [repr(trait)])

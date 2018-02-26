@@ -1937,7 +1937,7 @@ class SourceTraitSearchViewTest(ClearSearchIndexMixin, UserLoginTestCase):
 
     def test_context_data_with_blank_form(self):
         """Tests that view has the correct context upon invalid form submission."""
-        response = self.client.get(self.get_url(), {'q': ''})
+        response = self.client.get(self.get_url(), {'description': ''})
         context = response.context
         self.assertTrue(context['form'].is_bound)
         self.assertFalse(context['has_results'])
@@ -1945,7 +1945,7 @@ class SourceTraitSearchViewTest(ClearSearchIndexMixin, UserLoginTestCase):
 
     def test_context_data_with_valid_search_and_no_results(self):
         """Tests that the view has correct context with a valid search but no results."""
-        response = self.client.get(self.get_url(), {'q': 'test'})
+        response = self.client.get(self.get_url(), {'description': 'test'})
         context = response.context
         self.assertIn('form', context)
         self.assertTrue(context['has_results'])
@@ -1954,8 +1954,8 @@ class SourceTraitSearchViewTest(ClearSearchIndexMixin, UserLoginTestCase):
     def test_context_data_with_valid_search_and_some_results(self):
         """Tests that the view has correct context with a valid search and existing results."""
         factories.SourceTraitFactory.create(i_description='lorem ipsum')
-        response = self.client.get(self.get_url(), {'q': 'lorem'})
-        qs = searches.source_trait_search(q='lorem')
+        response = self.client.get(self.get_url(), {'description': 'lorem'})
+        qs = searches.source_trait_search(description='lorem')
         context = response.context
         self.assertIn('form', context)
         self.assertTrue(context['has_results'])
@@ -1967,9 +1967,9 @@ class SourceTraitSearchViewTest(ClearSearchIndexMixin, UserLoginTestCase):
         trait = factories.SourceTraitFactory.create(i_description='lorem ipsum')
         study = trait.source_dataset.source_study_version.study
         factories.SourceTraitFactory.create(i_description='lorem other')
-        response = self.client.get(self.get_url(), {'q': 'lorem',
+        response = self.client.get(self.get_url(), {'description': 'lorem',
             'studies': [study.pk]})
-        qs = searches.source_trait_search(q='lorem', studies=[study.pk])
+        qs = searches.source_trait_search(description='lorem', studies=[study.pk])
         context = response.context
         self.assertIn('form', context)
         self.assertTrue(context['has_results'])
@@ -1982,8 +1982,8 @@ class SourceTraitSearchViewTest(ClearSearchIndexMixin, UserLoginTestCase):
             i_trait_name='dolor')
         factories.SourceTraitFactory.create(i_description='lorem other',
             i_trait_name='tempor')
-        response = self.client.get(self.get_url(), {'q': 'lorem', 'name': 'dolor'})
-        qs = searches.source_trait_search(q='lorem', name='dolor')
+        response = self.client.get(self.get_url(), {'description': 'lorem', 'name': 'dolor'})
+        qs = searches.source_trait_search(description='lorem', name='dolor')
         context = response.context
         self.assertIn('form', context)
         self.assertTrue(context['has_results'])
@@ -1996,19 +1996,19 @@ class SourceTraitSearchViewTest(ClearSearchIndexMixin, UserLoginTestCase):
         self.assertEqual(len(messages), 0)
 
     def test_context_data_no_messages_for_invalid_form(self):
-        response = self.client.get(self.get_url(), {'q': ''})
+        response = self.client.get(self.get_url(), {'description': ''})
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 0)
 
     def test_context_data_info_message_for_no_results(self):
-        response = self.client.get(self.get_url(), {'q': 'lorem'})
+        response = self.client.get(self.get_url(), {'description': 'lorem'})
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
         self.assertEqual(str(messages[0]), '0 results found.')
 
     def test_context_data_info_message_for_one_result(self):
         factories.SourceTraitFactory.create(i_description='lorem ipsum')
-        response = self.client.get(self.get_url(), {'q': 'lorem'})
+        response = self.client.get(self.get_url(), {'description': 'lorem'})
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
         self.assertEqual(str(messages[0]), '1 result found.')
@@ -2016,7 +2016,7 @@ class SourceTraitSearchViewTest(ClearSearchIndexMixin, UserLoginTestCase):
     def test_context_data_info_message_for_multiple_result(self):
         factories.SourceTraitFactory.create(i_description='lorem ipsum')
         factories.SourceTraitFactory.create(i_description='lorem ipsum 2')
-        response = self.client.get(self.get_url(), {'q': 'lorem'})
+        response = self.client.get(self.get_url(), {'description': 'lorem'})
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
         self.assertEqual(str(messages[0]), '2 results found.')
@@ -2024,7 +2024,7 @@ class SourceTraitSearchViewTest(ClearSearchIndexMixin, UserLoginTestCase):
     def test_table_pagination(self):
         n_traits = TABLE_PER_PAGE + 2
         factories.SourceTraitFactory.create_batch(n_traits, i_description='lorem ipsum')
-        response = self.client.get(self.get_url(), {'q': 'lorem'})
+        response = self.client.get(self.get_url(), {'description': 'lorem'})
         context = response.context
         self.assertIn('form', context)
         self.assertTrue(context['has_results'])
@@ -2034,7 +2034,7 @@ class SourceTraitSearchViewTest(ClearSearchIndexMixin, UserLoginTestCase):
     def test_form_works_with_table_pagination_on_second_page(self):
         n_traits = TABLE_PER_PAGE + 2
         factories.SourceTraitFactory.create_batch(n_traits, i_description='lorem ipsum')
-        response = self.client.get(self.get_url(), {'q': 'lorem', 'page': 2})
+        response = self.client.get(self.get_url(), {'description': 'lorem', 'page': 2})
         context = response.context
         self.assertIn('form', context)
         self.assertTrue(context['has_results'])

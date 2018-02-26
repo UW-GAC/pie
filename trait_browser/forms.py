@@ -22,7 +22,7 @@ class SourceTraitSearchForm(forms.Form):
         max_length=100,
         required=False,
         help_text='Search for exact source variable names.')
-    q = forms.CharField(
+    description = forms.CharField(
         label='search text',
         max_length=100,
         required=False,
@@ -50,7 +50,7 @@ class SourceTraitSearchForm(forms.Form):
 
     def clean(self):
         cleaned_data = super(SourceTraitSearchForm, self).clean()
-        if not cleaned_data['name'] and not cleaned_data['q']:
+        if not cleaned_data['name'] and not cleaned_data['description']:
             raise forms.ValidationError(
                 'At least one field must be filled in.'
             )
