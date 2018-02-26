@@ -22,6 +22,12 @@ class SourceTraitSearchForm(forms.Form):
         max_length=100,
         required=False,
         help_text='Search for exact source variable names.')
+    match_exact_name = forms.BooleanField(
+        label='Match variable name exactly.',
+        required=False,
+        initial=True,
+        help_text='Uncheck to match a substring.'
+    )
     description = forms.CharField(
         label='search text',
         max_length=100,

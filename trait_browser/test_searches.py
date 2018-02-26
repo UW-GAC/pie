@@ -202,10 +202,22 @@ class SourceTraitSearchTest(ClearSearchIndexMixin, TestCase):
         self.assertQuerysetEqual(qs, [repr(trait)])
 
     def test_does_not_find_substring_name_match(self):
-        """Tests that substrings of trait namesa re not matched."""
+        """Tests that substrings of trait namesa re not matched by default."""
         trait = factories.SourceTraitFactory.create(i_trait_name='ipsum')
         qs = searches.source_trait_search(name='ipsu')
         self.assertEqual(len(qs), 0)
+
+    def test_finds_name_beginning_with_requested_string_if_specified(self):
+        """Tests that substrings of at the beginning of trait names are matched if requested."""
+        trait = factories.SourceTraitFactory.create(i_trait_name='ipsum')
+        qs = searches.source_trait_search(name='ipsu', match_exact_name=False)
+        self.assertQuerysetEqual(qs, [repr(trait)])
+
+    def test_finds_name_containing_requested_string_if_specified(self):
+        """Tests that substrings of trait names are matched if requested."""
+        trait = factories.SourceTraitFactory.create(i_trait_name='ipsum')
+        qs = searches.source_trait_search(name='psu', match_exact_name=False)
+        self.assertQuerysetEqual(qs, [repr(trait)])
 
     def test_works_with_both_trait_name_and_description(self):
         """Tests that searching works when trait name and description all specified."""

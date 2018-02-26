@@ -53,6 +53,16 @@ class SourceTraitSearchFormTestCase(TestCase):
         form = forms.SourceTraitSearchForm(input)
         self.assertTrue(form.is_valid())
 
+    def test_form_is_valid_with_exact_match_checkbox_false(self):
+        input = {'name': 'abc', 'exact_name_match': False}
+        form = forms.SourceTraitSearchForm(input)
+        self.assertTrue(form.is_valid())
+
+    def test_form_is_valid_with_exact_match_checkbox_true(self):
+        input = {'name': 'abc', 'exact_name_match': True}
+        form = forms.SourceTraitSearchForm(input)
+        self.assertTrue(form.is_valid())
+
 
 class SourceTraitCrispySearchFormTestCase(TestCase):
 
