@@ -113,7 +113,8 @@ class SourceTraitSearchTest(ClearSearchIndexMixin, TestCase):
         trait_1 = factories.SourceTraitFactory.create(i_description='lorem ipsum other words')
         trait_2 = factories.SourceTraitFactory.create(i_description='ipsum lorem other words')
         qs = searches.source_trait_search(description='ipsum lorem')
-        self.assertQuerysetEqual(qs, [repr(trait_1), repr(trait_2)])
+        self.assertIn(trait_1, qs)
+        self.assertIn(trait_2, qs)
 
     def test_description_stop_words(self):
         """Tests that traits whose descriptions contain common default stop words are found."""
@@ -217,3 +218,22 @@ class SourceTraitSearchTest(ClearSearchIndexMixin, TestCase):
         study = trait.source_dataset.source_study_version.study
         qs = searches.source_trait_search(name='ipsum', description='lorem', studies=[study.pk])
         self.assertQuerysetEqual(qs, [repr(trait)])
+
+    def test_default_ordering_by_trait(self):
+        dataset = factories.SourceDatasetFactory.create()
+        trait_1 = factories.SourceTraitFactory.create(i_dbgap_variable_accession=2,
+            source_dataset=dataset)
+        trait_2 = factories.SourceTraitFactory.create(i_dbgap_variable_accession=1,
+            source_dataset=dataset)
+        qs = searches.source_trait_search()
+        self.assertEqual(list(qs), [trait_2, trait_1])
+
+    def test_default_ordering_by_dataset_and_trait(self):
+        dataset_1 = factories.SourceDatasetFactory.create(i_accession=2)
+        dataset_2 = factories.SourceDatasetFactory.create(i_accession=1)
+        trait_1 = factories.SourceTraitFactory.create(i_dbgap_variable_accession=1,
+            source_dataset=dataset_1)
+        trait_2 = factories.SourceTraitFactory.create(i_dbgap_variable_accession=2,
+            source_dataset=dataset_2)
+        qs = searches.source_trait_search()
+        self.assertEqual(list(qs), [trait_2, trait_1])

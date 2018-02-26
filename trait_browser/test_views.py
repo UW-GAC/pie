@@ -2041,6 +2041,17 @@ class SourceTraitSearchViewTest(ClearSearchIndexMixin, UserLoginTestCase):
         self.assertIsInstance(context['results_table'], tables.SourceTraitTableFull)
         self.assertEqual(len(context['results_table'].rows), n_traits)
 
+    def test_table_ordering(self):
+        dataset = factories.SourceDatasetFactory.create()
+        trait_1 = factories.SourceTraitFactory.create(i_dbgap_variable_accession=2,
+            source_dataset=dataset, i_description='lorem ipsum')
+        trait_2 = factories.SourceTraitFactory.create(i_dbgap_variable_accession=1,
+            source_dataset=dataset, i_description='lorem other')
+        response = self.client.get(self.get_url(), {'description': 'lorem'})
+        context = response.context
+        table = context['results_table']
+        self.assertEqual(list(table.data), [trait_2, trait_1])
+
 
 # Tests of searching. Will probably be replaced/majorly rewritten after search is redesigned.
 class OldSourceSearchTest(TestCase):
