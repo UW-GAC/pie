@@ -2,6 +2,8 @@
 
 from django.test import TestCase
 
+from unittest import skip
+
 from watson.models import SearchEntry
 
 from . import models
@@ -72,6 +74,7 @@ class SourceTraitSearchTest(ClearSearchIndexMixin, TestCase):
         qs = searches.source_trait_search(description='lo')
         self.assertQuerysetEqual(qs, [repr(trait)])
 
+    @skip("Requires mysql server setting updates.")
     def test_description_one_word_substring_match_short_word(self):
         """Tests that a short word in the description can be found."""
         factories.SourceTraitFactory.create(i_description='other trait')
@@ -116,6 +119,7 @@ class SourceTraitSearchTest(ClearSearchIndexMixin, TestCase):
         self.assertIn(trait_1, qs)
         self.assertIn(trait_2, qs)
 
+    @skip("Requires mysql server setting updates.")
     def test_description_stop_words(self):
         """Tests that traits whose descriptions contain common default stop words are found."""
         # However is a stopword in MySQL by default.
