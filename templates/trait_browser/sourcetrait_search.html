@@ -11,6 +11,8 @@
 
 {% block content %}
     <h1>Search dbGaP phenotype variables</h1>
+    {% include 'trait_browser/_search_help.html' %}
+
     {% crispy form %}
 
     {% include '_messages.html' %}
