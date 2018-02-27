@@ -46,17 +46,23 @@ class SourceTraitSearchForm(forms.Form):
         super(SourceTraitSearchForm, self).__init__(*args, **kwargs)
         self.helper = FormHelper(self)
         self.helper.form_method = 'get'
+        self.helper.form_class = 'form-horizontal'
+        self.helper.label_class = 'col-sm-2'
+        self.helper.field_class = 'col-sm-10'
         self.helper.layout = Layout(
             Div(
                 Div(
-                    'name',
-                    'match_exact_name',
-                    css_class='panel-body',
+                    Div(
+                        'name',
+                        'match_exact_name',
+                        css_class='panel-body',
+                    ),
+                    css_class='panel panel-default'
                 ),
-                css_class='panel panel-default'
-            ),
-            'description',
-            'studies',
+                'description',
+                'studies',
+                css_class='col-sm-10 col-sm-offset-1'
+            )
         )
         # Add a submit button.
         self.helper.layout.append(
