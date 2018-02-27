@@ -3,7 +3,7 @@
 from django import forms
 
 from crispy_forms.helper import FormHelper
-from crispy_forms.layout import Layout, Submit, Field
+from crispy_forms.layout import Layout, Submit, Field, Div
 from crispy_forms.bootstrap import FormActions, InlineCheckboxes
 from dal import autocomplete
 
@@ -47,6 +47,18 @@ class SourceTraitSearchForm(forms.Form):
         super(SourceTraitSearchForm, self).__init__(*args, **kwargs)
         self.helper = FormHelper(self)
         self.helper.form_method = 'get'
+        self.helper.layout = Layout(
+            Div(
+                Div(
+                    'name',
+                    'match_exact_name',
+                    css_class='panel-body',
+                ),
+                css_class='panel panel-default'
+            ),
+            'description',
+            'studies',
+        )
         # Add a submit button.
         self.helper.layout.append(
             FormActions(
