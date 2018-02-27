@@ -21,6 +21,7 @@ class ClearSearchIndexMixin(object):
     """
 
     def tearDown(self):
+        super(ClearSearchIndexMixin, self).tearDown()
         SearchEntry.objects.all().delete()
 
 
