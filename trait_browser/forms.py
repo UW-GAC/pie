@@ -18,21 +18,20 @@ class SourceTraitSearchForm(forms.Form):
     """
 
     name = forms.CharField(
-        label='variable name',
+        label='Name',
         max_length=100,
         required=False,
-        help_text='Search for exact source variable names.')
+        help_text='Search dbGaP phenotype variable names.')
     match_exact_name = forms.BooleanField(
-        label='Match variable name exactly.',
+        label='Match name exactly.',
         required=False,
-        initial=True,
-        help_text='Uncheck to match a substring.'
+        initial=True
     )
     description = forms.CharField(
-        label='search text',
+        label='Description',
         max_length=100,
         required=False,
-        help_text='Search within source variable descriptions.'
+        help_text='Search dbGaP phenotype variable descriptions.'
     )
     studies = forms.ModelMultipleChoiceField(
         queryset=models.Study.objects.all(),
@@ -40,7 +39,7 @@ class SourceTraitSearchForm(forms.Form):
         label='Studies',
         widget=autocomplete.ModelSelect2Multiple(
             url='trait_browser:source:studies:autocomplete:by-name'),
-        help_text='Search within these studies.'
+        help_text='Search only in selected studies.'
     )
 
     def __init__(self, *args, **kwargs):
