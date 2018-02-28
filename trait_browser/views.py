@@ -221,7 +221,7 @@ class SourceTraitTagging(LoginRequiredMixin, PermissionRequiredMixin, UserPasses
 
 
 class SourceTraitSearch(LoginRequiredMixin, SingleTableMixin, MessageMixin, FormView):
-
+    """Form view class for searching for source traits."""
     # NEEDS: LoginRequiredMixin
     # May want: ListView; SearchMixin or SingleTableMixin; FormMessagesMixin (may need FormView)
     # Possibly need to override the post method to call the get method?
@@ -246,6 +246,7 @@ class SourceTraitSearch(LoginRequiredMixin, SingleTableMixin, MessageMixin, Form
             return self.form_invalid(form)
 
     def form_valid(self, form):
+        """Override form_valid method to process form and add results to the search page."""
         self.form_valid_message = 'form is valid'
         self.table_data = searches.source_trait_search(**form.cleaned_data)
         context = self.get_context_data(form=form)
@@ -258,6 +259,7 @@ class SourceTraitSearch(LoginRequiredMixin, SingleTableMixin, MessageMixin, Form
         return self.render_to_response(context)
 
     def form_invalid(self, form):
+        """Override form_valid method to process form and redirect to the search page."""
         context = self.get_context_data(form=form)
         context['has_results'] = False
         return self.render_to_response(context)
