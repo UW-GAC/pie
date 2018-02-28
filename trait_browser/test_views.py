@@ -1917,18 +1917,18 @@ class HarmonizedTraitFlavorNameAutocompleteViewTest(UserLoginTestCase):
         self.assertEqual(names_in_content[0], ht1.trait_flavor_name)
 
 
-class SourceTraitSearchViewTest(ClearSearchIndexMixin, UserLoginTestCase):
+class SourceTraitSearchTest(ClearSearchIndexMixin, UserLoginTestCase):
 
     def get_url(self, *args):
         return reverse('trait_browser:source:traits:watsonsearch')
 
     def test_view_success_code(self):
-        """Tests that view returns successful response code."""
+        """View returns successful response code."""
         response = self.client.get(self.get_url())
         self.assertEqual(response.status_code, 200)
 
     def test_context_data_with_empty_form(self):
-        """Tests that view has the correct context upon initial load."""
+        """View has the correct context upon initial load."""
         response = self.client.get(self.get_url())
         context = response.context
         self.assertFalse(context['form'].is_bound)
@@ -1936,7 +1936,7 @@ class SourceTraitSearchViewTest(ClearSearchIndexMixin, UserLoginTestCase):
         self.assertIn('results_table', context)
 
     def test_context_data_with_blank_form(self):
-        """Tests that view has the correct context upon invalid form submission."""
+        """View has the correct context upon invalid form submission."""
         response = self.client.get(self.get_url(), {'description': ''})
         context = response.context
         self.assertTrue(context['form'].is_bound)
@@ -1944,7 +1944,7 @@ class SourceTraitSearchViewTest(ClearSearchIndexMixin, UserLoginTestCase):
         self.assertIn('results_table', context)
 
     def test_context_data_with_valid_search_and_no_results(self):
-        """Tests that the view has correct context with a valid search but no results."""
+        """View has correct context with a valid search but no results."""
         response = self.client.get(self.get_url(), {'description': 'test'})
         context = response.context
         self.assertIn('form', context)
@@ -1952,7 +1952,7 @@ class SourceTraitSearchViewTest(ClearSearchIndexMixin, UserLoginTestCase):
         self.assertIsInstance(context['results_table'], tables.SourceTraitTableFull)
 
     def test_context_data_with_valid_search_and_some_results(self):
-        """Tests that the view has correct context with a valid search and existing results."""
+        """View has correct context with a valid search and existing results."""
         factories.SourceTraitFactory.create(i_description='lorem ipsum')
         response = self.client.get(self.get_url(), {'description': 'lorem'})
         qs = searches.source_trait_search(description='lorem')
@@ -1963,7 +1963,7 @@ class SourceTraitSearchViewTest(ClearSearchIndexMixin, UserLoginTestCase):
         self.assertQuerysetEqual(qs, [repr(x) for x in context['results_table'].data])
 
     def test_context_data_with_valid_search_and_a_specified_study(self):
-        """Tests that the view has correct context with a valid search and existing results if a study is selected."""
+        """View has correct context with a valid search and existing results if a study is selected."""
         trait = factories.SourceTraitFactory.create(i_description='lorem ipsum')
         study = trait.source_dataset.source_study_version.study
         factories.SourceTraitFactory.create(i_description='lorem other')
@@ -1977,7 +1977,7 @@ class SourceTraitSearchViewTest(ClearSearchIndexMixin, UserLoginTestCase):
         self.assertQuerysetEqual(qs, [repr(x) for x in context['results_table'].data])
 
     def test_context_data_with_valid_search_and_trait_name(self):
-        """Tests that the view has correct context with a valid search and existing results if a study is selected."""
+        """View has correct context with a valid search and existing results if a study is selected."""
         trait = factories.SourceTraitFactory.create(i_description='lorem ipsum',
             i_trait_name='dolor')
         factories.SourceTraitFactory.create(i_description='lorem other',
@@ -1991,22 +1991,26 @@ class SourceTraitSearchViewTest(ClearSearchIndexMixin, UserLoginTestCase):
         self.assertQuerysetEqual(qs, [repr(x) for x in context['results_table'].data])
 
     def test_context_data_no_messages_for_initial_load(self):
+        """No messages are displayed on initial load of page."""
         response = self.client.get(self.get_url())
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 0)
 
     def test_context_data_no_messages_for_invalid_form(self):
+        """No messages are displayed if form is invalid."""
         response = self.client.get(self.get_url(), {'description': ''})
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 0)
 
     def test_context_data_info_message_for_no_results(self):
+        """A message is displayed if no results are found."""
         response = self.client.get(self.get_url(), {'description': 'lorem'})
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
         self.assertEqual(str(messages[0]), '0 results found.')
 
     def test_context_data_info_message_for_one_result(self):
+        """A message is displayed if one result is found."""
         factories.SourceTraitFactory.create(i_description='lorem ipsum')
         response = self.client.get(self.get_url(), {'description': 'lorem'})
         messages = list(response.wsgi_request._messages)
@@ -2014,6 +2018,7 @@ class SourceTraitSearchViewTest(ClearSearchIndexMixin, UserLoginTestCase):
         self.assertEqual(str(messages[0]), '1 result found.')
 
     def test_context_data_info_message_for_multiple_result(self):
+        """A message is displayed if two results are found."""
         factories.SourceTraitFactory.create(i_description='lorem ipsum')
         factories.SourceTraitFactory.create(i_description='lorem ipsum 2')
         response = self.client.get(self.get_url(), {'description': 'lorem'})
@@ -2022,6 +2027,7 @@ class SourceTraitSearchViewTest(ClearSearchIndexMixin, UserLoginTestCase):
         self.assertEqual(str(messages[0]), '2 results found.')
 
     def test_table_pagination(self):
+        """Table pagination works correctly on the first page."""
         n_traits = TABLE_PER_PAGE + 2
         factories.SourceTraitFactory.create_batch(n_traits, i_description='lorem ipsum')
         response = self.client.get(self.get_url(), {'description': 'lorem'})
@@ -2032,6 +2038,7 @@ class SourceTraitSearchViewTest(ClearSearchIndexMixin, UserLoginTestCase):
         self.assertEqual(len(context['results_table'].rows), n_traits)
 
     def test_form_works_with_table_pagination_on_second_page(self):
+        """Table pagination works correctly on the second page."""
         n_traits = TABLE_PER_PAGE + 2
         factories.SourceTraitFactory.create_batch(n_traits, i_description='lorem ipsum')
         response = self.client.get(self.get_url(), {'description': 'lorem', 'page': 2})
@@ -2042,6 +2049,7 @@ class SourceTraitSearchViewTest(ClearSearchIndexMixin, UserLoginTestCase):
         self.assertEqual(len(context['results_table'].rows), n_traits)
 
     def test_table_ordering(self):
+        """Traits are ordered by dataset and then variable accession."""
         dataset = factories.SourceDatasetFactory.create()
         trait_1 = factories.SourceTraitFactory.create(i_dbgap_variable_accession=2,
             source_dataset=dataset, i_description='lorem ipsum')
