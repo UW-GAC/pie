@@ -790,6 +790,27 @@ class PhenotypeTaggerTaggableStudyFilteredSourceTraitPHVAutocompleteTest(Phenoty
         pks = get_autocomplete_view_ids(response)
         self.assertEqual(sorted([trait.pk for trait in self.source_traits]), sorted(pks))
 
+    def test_returns_all_traits_with_two_taggable_studies(self):
+        """Queryset returns all of the traits from two different studies."""
+        # Delete all but five source traits, so that there are 5 from each study.
+        models.SourceTrait.objects.exclude(i_dbgap_variable_accession__in=TEST_PHVS[:5]).delete()
+        self.source_traits = list(models.SourceTrait.objects.all())
+        study2 = factories.StudyFactory.create()
+        self.user.profile.taggable_studies.add(study2)
+        source_traits2 = factories.SourceTraitFactory.create_batch(
+            5, source_dataset__source_study_version__study=study2)
+        # Get results from the autocomplete view and make sure only the correct study is found.
+        url = self.get_url(self.study.pk)
+        response = self.client.get(url)
+        returned_pks = get_autocomplete_view_ids(response)
+        # Make sure that there's only one page of results.
+        self.assertTrue(models.SourceTrait.objects.all().count() <= 10)
+        self.assertEqual(len(returned_pks), len(self.source_traits + source_traits2))
+        for trait in source_traits2:
+            self.assertIn(trait.i_trait_id, returned_pks)
+        for trait in self.source_traits:
+            self.assertIn(trait.i_trait_id, returned_pks)
+
     def test_no_deprecated_traits_in_queryset(self):
         """Queryset returns only the latest version of a trait."""
         # Copy the source study version and increment it.
@@ -1126,6 +1147,27 @@ class PhenotypeTaggerTaggableStudyFilteredSourceTraitNameAutocompleteTest(Phenot
         response = self.client.get(url)
         pks = get_autocomplete_view_ids(response)
         self.assertEqual(sorted([trait.pk for trait in self.source_traits]), sorted(pks))
+
+    def test_returns_all_traits_with_two_taggable_studies(self):
+        """Queryset returns all of the traits from two different studies."""
+        # Delete all source traits and make 5 new ones, so there are only 5 for study 1.
+        models.SourceTrait.objects.all().delete()
+        self.source_traits = factories.SourceTraitFactory.create_batch(5, source_dataset=self.source_dataset)
+        study2 = factories.StudyFactory.create()
+        self.user.profile.taggable_studies.add(study2)
+        source_traits2 = factories.SourceTraitFactory.create_batch(
+            5, source_dataset__source_study_version__study=study2)
+        # Get results from the autocomplete view and make sure only the correct study is found.
+        url = self.get_url(self.study.pk)
+        response = self.client.get(url)
+        returned_pks = get_autocomplete_view_ids(response)
+        # Make sure that there's only one page of results.
+        self.assertTrue(models.SourceTrait.objects.all().count() <= 10)
+        self.assertEqual(len(returned_pks), len(self.source_traits + source_traits2))
+        for trait in source_traits2:
+            self.assertIn(trait.i_trait_id, returned_pks)
+        for trait in self.source_traits:
+            self.assertIn(trait.i_trait_id, returned_pks)
 
     def test_no_deprecated_traits_in_queryset(self):
         """Queryset returns only the latest version of a trait."""
@@ -1487,6 +1529,27 @@ class PhenotypeTaggerTaggableStudyFilteredSourceTraitNameOrPHVAutocompleteTest(P
         response = self.client.get(url)
         pks = get_autocomplete_view_ids(response)
         self.assertEqual(sorted([trait.pk for trait in self.source_traits]), sorted(pks))
+
+    def test_returns_all_traits_with_two_taggable_studies(self):
+        """Queryset returns all of the traits from two different studies."""
+        # Delete all but five source traits, so that there are 5 from each study.
+        models.SourceTrait.objects.exclude(i_dbgap_variable_accession__in=TEST_PHVS[:5]).delete()
+        self.source_traits = list(models.SourceTrait.objects.all())
+        study2 = factories.StudyFactory.create()
+        self.user.profile.taggable_studies.add(study2)
+        source_traits2 = factories.SourceTraitFactory.create_batch(
+            5, source_dataset__source_study_version__study=study2)
+        # Get results from the autocomplete view and make sure only the correct study is found.
+        url = self.get_url(self.study.pk)
+        response = self.client.get(url)
+        returned_pks = get_autocomplete_view_ids(response)
+        # Make sure that there's only one page of results.
+        self.assertTrue(models.SourceTrait.objects.all().count() <= 10)
+        self.assertEqual(len(returned_pks), len(self.source_traits + source_traits2))
+        for trait in source_traits2:
+            self.assertIn(trait.i_trait_id, returned_pks)
+        for trait in self.source_traits:
+            self.assertIn(trait.i_trait_id, returned_pks)
 
     def test_no_deprecated_traits_in_queryset(self):
         """Queryset returns only the latest version of a trait."""
