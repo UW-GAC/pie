@@ -41,35 +41,33 @@ class SourceTraitSearchForm(forms.Form):
             url='trait_browser:source:studies:autocomplete:by-name'),
         help_text='Search only in selected studies.'
     )
-
-    def __init__(self, *args, **kwargs):
-        super(SourceTraitSearchForm, self).__init__(*args, **kwargs)
-        self.helper = FormHelper(self)
-        self.helper.form_method = 'get'
-        self.helper.form_class = 'form-horizontal'
-        self.helper.label_class = 'col-sm-2'
-        self.helper.field_class = 'col-sm-10'
-        self.helper.layout = Layout(
+    # Specify how form should be displayed.
+    helper = FormHelper()
+    helper.form_method = 'get'
+    helper.form_class = 'form-horizontal'
+    helper.label_class = 'col-sm-2'
+    helper.field_class = 'col-sm-10'
+    helper.layout = Layout(
+        Div(
             Div(
                 Div(
-                    Div(
-                        'name',
-                        'match_exact_name',
-                        css_class='panel-body',
-                    ),
-                    css_class='panel panel-default'
+                    'name',
+                    'match_exact_name',
+                    css_class='panel-body',
                 ),
-                'description',
-                'studies',
-                css_class='col-sm-10 col-sm-offset-1'
-            )
+                css_class='panel panel-default'
+            ),
+            'description',
+            'studies',
+            css_class='col-sm-10 col-sm-offset-1'
         )
-        # Add a submit button.
-        self.helper.layout.append(
-            FormActions(
-                Submit('submit', 'Search', css_class='btn-primary btn-disable'),
-            )
+    )
+    # Add a submit button.
+    helper.layout.append(
+        FormActions(
+            Submit('submit', 'Search', css_class='btn-primary btn-disable'),
         )
+    )
 
     def clean(self):
         cleaned_data = super(SourceTraitSearchForm, self).clean()
