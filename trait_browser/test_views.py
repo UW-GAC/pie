@@ -10,7 +10,6 @@ from django.test import TestCase
 from core.utils import (DCCAnalystLoginTestCase, LoginRequiredTestCase, PhenotypeTaggerLoginTestCase, UserLoginTestCase,
                         get_autocomplete_view_ids)
 from profiles.models import Search, Profile
-from watson.models import SearchEntry
 
 from tags.models import TaggedTrait
 from tags.factories import TagFactory
@@ -1967,8 +1966,8 @@ class SourceTraitSearchTest(ClearSearchIndexMixin, UserLoginTestCase):
         trait = factories.SourceTraitFactory.create(i_description='lorem ipsum')
         study = trait.source_dataset.source_study_version.study
         factories.SourceTraitFactory.create(i_description='lorem other')
-        response = self.client.get(self.get_url(), {'description': 'lorem',
-            'studies': [study.pk]})
+        get = {'description': 'lorem', 'studies': [study.pk]}
+        response = self.client.get(self.get_url(), get)
         qs = searches.source_trait_search(description='lorem', studies=[study.pk])
         context = response.context
         self.assertIn('form', context)
@@ -1978,10 +1977,8 @@ class SourceTraitSearchTest(ClearSearchIndexMixin, UserLoginTestCase):
 
     def test_context_data_with_valid_search_and_trait_name(self):
         """View has correct context with a valid search and existing results if a study is selected."""
-        trait = factories.SourceTraitFactory.create(i_description='lorem ipsum',
-            i_trait_name='dolor')
-        factories.SourceTraitFactory.create(i_description='lorem other',
-            i_trait_name='tempor')
+        trait = factories.SourceTraitFactory.create(i_description='lorem ipsum', i_trait_name='dolor')
+        factories.SourceTraitFactory.create(i_description='lorem other', i_trait_name='tempor')
         response = self.client.get(self.get_url(), {'description': 'lorem', 'name': 'dolor'})
         qs = searches.source_trait_search(description='lorem', name='dolor')
         context = response.context
@@ -2051,9 +2048,11 @@ class SourceTraitSearchTest(ClearSearchIndexMixin, UserLoginTestCase):
     def test_table_ordering(self):
         """Traits are ordered by dataset and then variable accession."""
         dataset = factories.SourceDatasetFactory.create()
-        trait_1 = factories.SourceTraitFactory.create(i_dbgap_variable_accession=2,
+        trait_1 = factories.SourceTraitFactory.create(
+            i_dbgap_variable_accession=2,
             source_dataset=dataset, i_description='lorem ipsum')
-        trait_2 = factories.SourceTraitFactory.create(i_dbgap_variable_accession=1,
+        trait_2 = factories.SourceTraitFactory.create(
+            i_dbgap_variable_accession=1,
             source_dataset=dataset, i_description='lorem other')
         response = self.client.get(self.get_url(), {'description': 'lorem'})
         context = response.context

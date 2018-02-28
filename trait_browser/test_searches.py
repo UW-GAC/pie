@@ -138,14 +138,16 @@ class SourceTraitSearchTest(ClearSearchIndexMixin, TestCase):
 
     def test_description_does_not_match_trait_name_field(self):
         """Traits whose name field matches description query are not found."""
-        factories.SourceTraitFactory.create(i_trait_name='lorem',
+        factories.SourceTraitFactory.create(
+            i_trait_name='lorem',
             i_description='other description')
         qs = searches.source_trait_search(description='lorem')
         self.assertEqual(len(qs), 0)
 
     def test_trait_name_does_not_match_description_field(self):
         """Traits whose description field matches name query are not found."""
-        factories.SourceTraitFactory.create(i_trait_name='other',
+        factories.SourceTraitFactory.create(
+            i_trait_name='other',
             i_description='lorem')
         qs = searches.source_trait_search(name='lorem')
         self.assertEqual(len(qs), 0)
@@ -233,9 +235,11 @@ class SourceTraitSearchTest(ClearSearchIndexMixin, TestCase):
     def test_default_ordering_by_trait(self):
         """Traits are ordered by dataset accession."""
         dataset = factories.SourceDatasetFactory.create()
-        trait_1 = factories.SourceTraitFactory.create(i_dbgap_variable_accession=2,
+        trait_1 = factories.SourceTraitFactory.create(
+            i_dbgap_variable_accession=2,
             source_dataset=dataset)
-        trait_2 = factories.SourceTraitFactory.create(i_dbgap_variable_accession=1,
+        trait_2 = factories.SourceTraitFactory.create(
+            i_dbgap_variable_accession=1,
             source_dataset=dataset)
         qs = searches.source_trait_search()
         self.assertEqual(list(qs), [trait_2, trait_1])
@@ -244,9 +248,11 @@ class SourceTraitSearchTest(ClearSearchIndexMixin, TestCase):
         """Traits are ordered by dataset accession and then variable accession."""
         dataset_1 = factories.SourceDatasetFactory.create(i_accession=2)
         dataset_2 = factories.SourceDatasetFactory.create(i_accession=1)
-        trait_1 = factories.SourceTraitFactory.create(i_dbgap_variable_accession=1,
+        trait_1 = factories.SourceTraitFactory.create(
+            i_dbgap_variable_accession=1,
             source_dataset=dataset_1)
-        trait_2 = factories.SourceTraitFactory.create(i_dbgap_variable_accession=2,
+        trait_2 = factories.SourceTraitFactory.create(
+            i_dbgap_variable_accession=2,
             source_dataset=dataset_2)
         qs = searches.source_trait_search()
         self.assertEqual(list(qs), [trait_2, trait_1])

@@ -77,6 +77,7 @@ class SourceTraitSearchForm(forms.Form):
                 'At least one field must be filled in.'
             )
 
+
 class SourceTraitCrispySearchForm(forms.Form):
     """Form to handle searching within SourceTrait objects.
 
