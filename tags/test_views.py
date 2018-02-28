@@ -5,9 +5,9 @@ from faker import Faker
 from django.contrib.auth.models import Group
 from django.core.urlresolvers import reverse
 
+from core.factories import UserFactory
 from core.utils import (LoginRequiredTestCase, PhenotypeTaggerLoginTestCase, UserLoginTestCase,
                         DCCAnalystLoginTestCase, get_autocomplete_view_ids)
-from profiles.models import Profile
 from trait_browser.factories import SourceTraitFactory, StudyFactory
 from trait_browser.models import SourceTrait
 from . import factories
