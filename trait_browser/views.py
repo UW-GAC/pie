@@ -222,9 +222,6 @@ class SourceTraitTagging(LoginRequiredMixin, PermissionRequiredMixin, UserPasses
 
 class SourceTraitSearch(LoginRequiredMixin, SingleTableMixin, MessageMixin, FormView):
     """Form view class for searching for source traits."""
-    # NEEDS: LoginRequiredMixin
-    # May want: ListView; SearchMixin or SingleTableMixin; FormMessagesMixin (may need FormView)
-    # Possibly need to override the post method to call the get method?
 
     template_name = 'trait_browser/sourcetrait_search.html'
     form_class = forms.SourceTraitSearchForm
