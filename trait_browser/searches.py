@@ -16,5 +16,5 @@ def source_trait_search(description='', studies=[], name='', match_exact_name=Tr
         else:
             qs = qs.filter(i_trait_name__icontains=name)
     if len(description) > 0:
-        qs = watson.filter(qs, description)
+        qs = watson.filter(qs, description, ranking=False)
     return qs.order_by('source_dataset__i_accession', 'i_dbgap_variable_accession')
