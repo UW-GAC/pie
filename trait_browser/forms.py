@@ -70,6 +70,7 @@ class SourceTraitSearchForm(forms.Form):
     )
 
     def clean(self):
+        """Perform additional multi-field cleaning to make sure that either description or name is entered."""
         cleaned_data = super(SourceTraitSearchForm, self).clean()
         if not cleaned_data['name'] and not cleaned_data['description']:
             raise forms.ValidationError(
