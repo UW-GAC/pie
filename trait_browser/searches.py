@@ -5,7 +5,7 @@ import watson.search as watson
 from . import models
 
 
-def source_trait_search(description='', studies=[], name='', match_exact_name=True):
+def search_source_traits(description='', studies=[], name='', match_exact_name=True):
     """Search source traits."""
     qs = models.SourceTrait.objects.current()
     if len(studies) > 0:

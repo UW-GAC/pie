@@ -1954,7 +1954,7 @@ class SourceTraitSearchTest(ClearSearchIndexMixin, UserLoginTestCase):
         """View has correct context with a valid search and existing results."""
         factories.SourceTraitFactory.create(i_description='lorem ipsum')
         response = self.client.get(self.get_url(), {'description': 'lorem'})
-        qs = searches.source_trait_search(description='lorem')
+        qs = searches.search_source_traits(description='lorem')
         context = response.context
         self.assertIn('form', context)
         self.assertTrue(context['has_results'])
@@ -1968,7 +1968,7 @@ class SourceTraitSearchTest(ClearSearchIndexMixin, UserLoginTestCase):
         factories.SourceTraitFactory.create(i_description='lorem other')
         get = {'description': 'lorem', 'studies': [study.pk]}
         response = self.client.get(self.get_url(), get)
-        qs = searches.source_trait_search(description='lorem', studies=[study.pk])
+        qs = searches.search_source_traits(description='lorem', studies=[study.pk])
         context = response.context
         self.assertIn('form', context)
         self.assertTrue(context['has_results'])
@@ -1980,7 +1980,7 @@ class SourceTraitSearchTest(ClearSearchIndexMixin, UserLoginTestCase):
         trait = factories.SourceTraitFactory.create(i_description='lorem ipsum', i_trait_name='dolor')
         factories.SourceTraitFactory.create(i_description='lorem other', i_trait_name='tempor')
         response = self.client.get(self.get_url(), {'description': 'lorem', 'name': 'dolor'})
-        qs = searches.source_trait_search(description='lorem', name='dolor')
+        qs = searches.search_source_traits(description='lorem', name='dolor')
         context = response.context
         self.assertIn('form', context)
         self.assertTrue(context['has_results'])
@@ -2117,7 +2117,7 @@ class OldSourceSearchTest(TestCase):
 
 class OldSourceTraitSearchViewTest(UserLoginTestCase):
 
-    def test_source_trait_search_with_valid_results(self):
+    def test_search_source_traits_with_valid_results(self):
         """Returns 200 code and correct number of search results when valid results exist."""
         # Make ten random SourceTraits.
         factories.SourceTraitFactory.create_batch(10)
@@ -2130,7 +2130,7 @@ class OldSourceTraitSearchViewTest(UserLoginTestCase):
         self.assertIsInstance(response.context['trait_table'], tables.SourceTraitTableFull)
         self.assertEqual(len(response.context['trait_table'].rows), 1)
 
-    def test_source_trait_search_with_no_results(self):
+    def test_search_source_traits_with_no_results(self):
         """Returns 200 code and empty table when there are no valid search results."""
         factories.SourceTraitFactory.create_batch(10)
         url = reverse('trait_browser:source:traits:search')
@@ -2140,7 +2140,7 @@ class OldSourceTraitSearchViewTest(UserLoginTestCase):
         self.assertIsInstance(response.context['trait_table'], tables.SourceTraitTableFull)
         self.assertEqual(len(response.context['trait_table'].rows), 0)
 
-    def test_source_trait_search_with_no_search_text_entered(self):
+    def test_search_source_traits_with_no_search_text_entered(self):
         """There is no trait table displayed when no search text is entered and the form is not bound to data."""
         factories.SourceTraitFactory.create_batch(10)
         url = reverse('trait_browser:source:traits:search')
@@ -2152,7 +2152,7 @@ class OldSourceTraitSearchViewTest(UserLoginTestCase):
         self.assertEqual(response.context['trait_type'], 'source')
         self.assertIsInstance(response.context['form'], forms.SourceTraitCrispySearchForm)
 
-    def test_source_trait_search_with_valid_results_and_study_filter(self):
+    def test_search_source_traits_with_valid_results_and_study_filter(self):
         """Returns 200 code and correct number of results when there are valid results for study-filtered search."""
         factories.SourceTraitFactory.create_batch(10)
         good_trait = factories.SourceTraitFactory.create(i_trait_name='asdfghjkl')
@@ -2164,7 +2164,7 @@ class OldSourceTraitSearchViewTest(UserLoginTestCase):
         self.assertIsInstance(response.context['trait_table'], tables.SourceTraitTableFull)
         self.assertEqual(len(response.context['trait_table'].rows), 1)
 
-    def test_source_trait_search_with_no_results_and_study_filter(self):
+    def test_search_source_traits_with_no_results_and_study_filter(self):
         """Returns 0 results and 200 code for invalid study-filtered search."""
         traits = factories.SourceTraitFactory.create_batch(10)
         good_trait = factories.SourceTraitFactory.create(i_trait_name='asdfghjkl')
@@ -2176,7 +2176,7 @@ class OldSourceTraitSearchViewTest(UserLoginTestCase):
         self.assertIsInstance(response.context['trait_table'], tables.SourceTraitTableFull)
         self.assertEqual(len(response.context['trait_table'].rows), 0)
 
-    def test_source_trait_search_with_no_search_text_entered_and_study_filter(self):
+    def test_search_source_traits_with_no_search_text_entered_and_study_filter(self):
         """Trait table is not in context when study filter is checked but form is unbound."""
         factories.SourceTraitFactory.create_batch(10)
         url = reverse('trait_browser:source:traits:search')
@@ -2186,7 +2186,7 @@ class OldSourceTraitSearchViewTest(UserLoginTestCase):
         self.assertNotIn('trait_table', response.context)
         self.assertFalse(response.context['form'].is_bound)
 
-    def test_source_trait_search_has_no_initial_checkboxes(self):
+    def test_search_source_traits_has_no_initial_checkboxes(self):
         """Tests that the base search url does not have an initial checkbox."""
         url = reverse('trait_browser:source:traits:search')
         response = self.client.get(url)
