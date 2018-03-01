@@ -20,5 +20,4 @@ class TraitBrowserConfig(AppConfig):
 
     def ready(self):
         SourceTrait = self.get_model("SourceTrait")
-        watson.register(SourceTrait, SourceTraitSearchAdapter,
-            fields=('i_description',))
+        watson.register(SourceTrait, SourceTraitSearchAdapter, fields=('i_description',))

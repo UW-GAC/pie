@@ -1,4 +1,4 @@
-<!-- Includable snippet to display messages on any given page. -->
+<!-- Includable snippet to display help text about searches. -->
 {% comment %}
     Usage: {% include 'trait_browser/_search_help.html' %}
 {% endcomment %}
@@ -18,9 +18,9 @@
           <dt>Variable name</dt>
           <dd>
             Variable names are matched with case-insensitivity.
-            If the "Match name exactly." box is checked, the variable name must match exactly what is entered in the Name field.
+            If the "Match whole name" box is checked, the text entered in the "Variable name" field must be the whole variable name.
             For example, "bmi" will match "BMI" but not "BMI_1" or "baseline_bmi".
-            Non-exact searches will match text anywhere in the variable name, so "bmi" will match "BMI", "BMI_1" and "baseline_bmi".
+            Searches without the "Match whole name" box checked will match text anywhere in the variable name, so "bmi" will match "BMI", "BMI_1" and "baseline_bmi".
           </dd>
           <dt>Variable description</dt>
           <dd>

@@ -18,17 +18,17 @@ class SourceTraitSearchForm(forms.Form):
     """
 
     name = forms.CharField(
-        label='Name',
+        label='Variable name',
         max_length=100,
         required=False,
         help_text='Search dbGaP phenotype variable names.')
     match_exact_name = forms.BooleanField(
-        label='Match name exactly.',
+        label='Match whole name',
         required=False,
         initial=True
     )
     description = forms.CharField(
-        label='Description',
+        label='Variable description',
         max_length=100,
         required=False,
         help_text='Search dbGaP phenotype variable descriptions.'
@@ -36,10 +36,11 @@ class SourceTraitSearchForm(forms.Form):
     studies = forms.ModelMultipleChoiceField(
         queryset=models.Study.objects.all(),
         required=False,
-        label='Studies',
+        label='Study/Studies',
         widget=autocomplete.ModelSelect2Multiple(
             url='trait_browser:source:studies:autocomplete:by-name'),
-        help_text='Search only in selected studies.'
+        help_text="""Search only in selected studies. Start typing the dbGaP study name to filter the list, then
+        select the intended study. More than one study may be selected."""
     )
     # Specify how form should be displayed.
     helper = FormHelper()
@@ -74,7 +75,7 @@ class SourceTraitSearchForm(forms.Form):
         cleaned_data = super(SourceTraitSearchForm, self).clean()
         if not cleaned_data['name'] and not cleaned_data['description']:
             raise forms.ValidationError(
-                'At least one field must be filled in.'
+                'Either variable name or description must be filled in.'
             )
 
 
