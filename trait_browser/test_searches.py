@@ -267,6 +267,11 @@ class SourceTraitSearchTest(ClearSearchIndexMixin, TestCase):
             msg = "found {char}".format(char=character)
             self.assertNotIn(trait, qs, msg=msg)
 
+    def test_does_not_find_harmonized_traits(self):
+        """Source trait search function does not find matching harmonized traits."""
+        trait = factories.HarmonizedTraitFactory.create(i_trait_name='lorem')
+        self.assertEqual(searches.search_source_traits(name='lorem').count(), 0)
+
 
 class HarmonizedTraitSearchTest(ClearSearchIndexMixin, TestCase):
     def test_returns_all_traits_with_no_input(self):
@@ -476,3 +481,8 @@ class HarmonizedTraitSearchTest(ClearSearchIndexMixin, TestCase):
             qs = searches.search_harmonized_traits(description=description)
             msg = "found {char}".format(char=character)
             self.assertNotIn(trait, qs, msg=msg)
+
+    def test_does_not_find_source_traits(self):
+        """Harmonized trait search function does not find matching source traits."""
+        trait = factories.SourceTraitFactory.create(i_trait_name='lorem')
+        self.assertEqual(searches.search_harmonized_traits(name='lorem').count(), 0)
