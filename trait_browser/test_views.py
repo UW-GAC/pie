@@ -2059,6 +2059,26 @@ class SourceTraitSearchTest(ClearSearchIndexMixin, UserLoginTestCase):
         table = context['results_table']
         self.assertEqual(list(table.data), [trait_2, trait_1])
 
+    def test_reset_button_works_on_initial_page(self):
+        """Reset button returns to original page."""
+        response = self.client.get(self.get_url(), {'reset': 'Reset'}, follow=True)
+        context = response.context
+        self.assertIn('form', context)
+        self.assertFalse(context['form'].is_bound)
+        self.assertFalse(context['has_results'])
+        self.assertIn('results_table', context)
+        self.assertEqual(len(context['results_table'].rows), 0)
+
+    def test_reset_button_works_with_data_in_form(self):
+        """Reset button returns to original page."""
+        response = self.client.get(self.get_url(), {'reset': 'Reset', 'name': ''}, follow=True)
+        context = response.context
+        self.assertIn('form', context)
+        self.assertFalse(context['form'].is_bound)
+        self.assertFalse(context['has_results'])
+        self.assertIn('results_table', context)
+        self.assertEqual(len(context['results_table'].rows), 0)
+
 
 # Tests of searching. Will probably be replaced/majorly rewritten after search is redesigned.
 class OldSourceSearchTest(TestCase):

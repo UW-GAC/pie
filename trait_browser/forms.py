@@ -63,10 +63,13 @@ class SourceTraitSearchForm(forms.Form):
             css_class='col-sm-10 col-sm-offset-1'
         )
     )
-    # Add a submit button.
+    # Add submit and reset buttons.
     helper.layout.append(
         FormActions(
             Submit('submit', 'Search', css_class='btn-primary btn-disable'),
+            # For some reason, adding btn-disable to the css_class does not work properly. Unfortunately the tests
+            # still pass; I can't figure out how to make them fail if btn-disable is included.
+            Submit('reset', 'Reset', css_class='btn-info'),
         )
     )
 

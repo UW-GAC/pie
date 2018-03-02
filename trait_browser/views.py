@@ -7,6 +7,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.utils.safestring import mark_safe
 from django.views.generic import DetailView, FormView, ListView
 from django.template.defaultfilters import pluralize    # Use pluralize in the views.
+from django.http import HttpResponseRedirect
 
 from braces.views import FormMessagesMixin, LoginRequiredMixin, MessageMixin, PermissionRequiredMixin, UserPassesTestMixin
 from dal import autocomplete
@@ -232,6 +233,8 @@ class SourceTraitSearch(LoginRequiredMixin, SingleTableMixin, MessageMixin, Form
     def get(self, request, *args, **kwargs):
         """Override get method for form and search processing."""
         form_class = self.get_form_class()
+        if 'reset' in request.GET:
+            return HttpResponseRedirect(request.path, {'form': self.get_form(form_class)})
         if request.GET:
             form = form_class(request.GET)
         else:
