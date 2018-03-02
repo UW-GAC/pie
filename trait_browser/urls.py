@@ -78,6 +78,7 @@ harmonized_trait_patterns = [
     url(r'^$', views.HarmonizedTraitList.as_view(), name='list'),
     url(r'^(?P<pk>\d+)/$', views.HarmonizedTraitSetVersionDetail.as_view(), name='detail'),
     url(r'^search/$', views.trait_search, {'trait_type': 'harmonized'}, name='search'),
+    url(r'^watsonsearch/$', views.HarmonizedTraitSearch.as_view(), name='watsonsearch'),
 ]
 
 harmonized_patterns = [

@@ -29,5 +29,5 @@ def search_harmonized_traits(description='', name='', match_exact_name=True):
         else:
             qs = qs.filter(i_trait_name__icontains=name)
     if len(description) > 0:
-        qs = watson.filter(qs, description)
+        qs = watson.filter(qs, description, ranking=False)
     return qs.order_by('harmonized_trait_set_version__harmonized_trait_set')

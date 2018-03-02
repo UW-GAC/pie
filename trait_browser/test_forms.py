@@ -67,6 +67,44 @@ class SourceTraitSearchFormTest(TestCase):
         self.assertTrue(form.is_valid())
 
 
+class HarmonizedTraitSearchFormTest(TestCase):
+
+    def test_form_with_no_input_data(self):
+        """Form is not bound when it's not given input data."""
+        form = forms.HarmonizedTraitSearchForm()
+        self.assertFalse(form.is_bound)
+
+    def test_form_is_invalid_with_blank_name_and_description(self):
+        """Form is invalid if both name and description are blank."""
+        input = {'description': '', 'name': ''}
+        form = forms.HarmonizedTraitSearchForm(input)
+        self.assertFalse(form.is_valid())
+
+    def test_form_with_valid_description_and_no_studies(self):
+        """Form is valid when given appropriate search text and no studies."""
+        input = {'description': 'some string'}
+        form = forms.HarmonizedTraitSearchForm(input)
+        self.assertTrue(form.is_valid())
+
+    def test_form_valid_with_valid_description_and_trait_name(self):
+        """Form is valid when given appropriate search text and a trait name."""
+        input = {'description': 'text', 'name': 'abc'}
+        form = forms.HarmonizedTraitSearchForm(input)
+        self.assertTrue(form.is_valid())
+
+    def test_form_is_valid_with_exact_name_match_checkbox_false(self):
+        """Form is valid if exact_name_match checkbox is False."""
+        input = {'name': 'abc', 'exact_name_match': False}
+        form = forms.HarmonizedTraitSearchForm(input)
+        self.assertTrue(form.is_valid())
+
+    def test_form_is_valid_with_exact_name_match_checkbox_true(self):
+        """Form is valid if exact_match checkbox is True."""
+        input = {'name': 'abc', 'exact_name_match': True}
+        form = forms.HarmonizedTraitSearchForm(input)
+        self.assertTrue(form.is_valid())
+
+
 class SourceTraitCrispySearchFormTestCase(TestCase):
 
     def test_form_with_valid_text_no_study(self):

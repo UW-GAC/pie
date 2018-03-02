@@ -2429,9 +2429,11 @@ class IntegrationTest(ClearSearchIndexMixin, BaseTestDataReloadingTestCase):
         # Check all of the M2M relationships again.
         self.check_imported_m2m_relations_match(
             m2m_tables, group_by_fields, concat_fields, parent_models, m2m_att_names)
-        # Check that search indices are correct.
+        # Check that search indices are added.
         self.assertEqual(watson.filter(models.SourceTrait, '').count(),
             models.SourceTrait.objects.all().count())
+        self.assertEqual(watson.filter(models.HarmonizedTrait, '').count(),
+            models.HarmonizedTrait.objects.all().count())
 
     def test_updated_data_from_every_table(self):
         """Every kind of update is detected and imported by import_db."""

@@ -2080,6 +2080,142 @@ class SourceTraitSearchTest(ClearSearchIndexMixin, UserLoginTestCase):
         self.assertEqual(len(context['results_table'].rows), 0)
 
 
+class HarmonizedTraitSearchTest(ClearSearchIndexMixin, UserLoginTestCase):
+
+    def get_url(self, *args):
+        return reverse('trait_browser:harmonized:traits:watsonsearch')
+
+    def test_view_success_code(self):
+        """View returns successful response code."""
+        response = self.client.get(self.get_url())
+        self.assertEqual(response.status_code, 200)
+
+    def test_context_data_with_empty_form(self):
+        """View has the correct context upon initial load."""
+        response = self.client.get(self.get_url())
+        context = response.context
+        self.assertFalse(context['form'].is_bound)
+        self.assertFalse(context['has_results'])
+        self.assertIn('results_table', context)
+
+    def test_context_data_with_blank_form(self):
+        """View has the correct context upon invalid form submission."""
+        response = self.client.get(self.get_url(), {'description': ''})
+        context = response.context
+        self.assertTrue(context['form'].is_bound)
+        self.assertFalse(context['has_results'])
+        self.assertIn('results_table', context)
+
+    def test_context_data_with_valid_search_and_no_results(self):
+        """View has correct context with a valid search but no results."""
+        response = self.client.get(self.get_url(), {'description': 'test'})
+        context = response.context
+        self.assertIn('form', context)
+        self.assertTrue(context['has_results'])
+        self.assertIsInstance(context['results_table'], tables.HarmonizedTraitTable)
+
+    def test_context_data_with_valid_search_and_some_results(self):
+        """View has correct context with a valid search and existing results."""
+        factories.HarmonizedTraitFactory.create(i_description='lorem ipsum')
+        response = self.client.get(self.get_url(), {'description': 'lorem'})
+        qs = searches.search_harmonized_traits(description='lorem')
+        context = response.context
+        self.assertIn('form', context)
+        self.assertTrue(context['has_results'])
+        self.assertIsInstance(context['results_table'], tables.HarmonizedTraitTable)
+        self.assertQuerysetEqual(qs, [repr(x) for x in context['results_table'].data])
+
+    def test_context_data_with_valid_search_and_trait_name(self):
+        """View has correct context with a valid search and existing results if a study is selected."""
+        trait = factories.HarmonizedTraitFactory.create(i_description='lorem ipsum', i_trait_name='dolor')
+        factories.HarmonizedTraitFactory.create(i_description='lorem other', i_trait_name='tempor')
+        response = self.client.get(self.get_url(), {'description': 'lorem', 'name': 'dolor'})
+        qs = searches.search_harmonized_traits(description='lorem', name='dolor')
+        context = response.context
+        self.assertIn('form', context)
+        self.assertTrue(context['has_results'])
+        self.assertIsInstance(context['results_table'], tables.HarmonizedTraitTable)
+        self.assertQuerysetEqual(qs, [repr(x) for x in context['results_table'].data])
+
+    def test_context_data_no_messages_for_initial_load(self):
+        """No messages are displayed on initial load of page."""
+        response = self.client.get(self.get_url())
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 0)
+
+    def test_context_data_no_messages_for_invalid_form(self):
+        """No messages are displayed if form is invalid."""
+        response = self.client.get(self.get_url(), {'description': ''})
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 0)
+
+    def test_context_data_info_message_for_no_results(self):
+        """A message is displayed if no results are found."""
+        response = self.client.get(self.get_url(), {'description': 'lorem'})
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertEqual(str(messages[0]), '0 results found.')
+
+    def test_context_data_info_message_for_one_result(self):
+        """A message is displayed if one result is found."""
+        factories.HarmonizedTraitFactory.create(i_description='lorem ipsum')
+        response = self.client.get(self.get_url(), {'description': 'lorem'})
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertEqual(str(messages[0]), '1 result found.')
+
+    def test_context_data_info_message_for_multiple_result(self):
+        """A message is displayed if two results are found."""
+        factories.HarmonizedTraitFactory.create(i_description='lorem ipsum')
+        factories.HarmonizedTraitFactory.create(i_description='lorem ipsum 2')
+        response = self.client.get(self.get_url(), {'description': 'lorem'})
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertEqual(str(messages[0]), '2 results found.')
+
+    def test_table_pagination(self):
+        """Table pagination works correctly on the first page."""
+        n_traits = TABLE_PER_PAGE + 2
+        factories.HarmonizedTraitFactory.create_batch(n_traits, i_description='lorem ipsum')
+        response = self.client.get(self.get_url(), {'description': 'lorem'})
+        context = response.context
+        self.assertIn('form', context)
+        self.assertTrue(context['has_results'])
+        self.assertIsInstance(context['results_table'], tables.HarmonizedTraitTable)
+        self.assertEqual(len(context['results_table'].rows), n_traits)
+
+    def test_form_works_with_table_pagination_on_second_page(self):
+        """Table pagination works correctly on the second page."""
+        n_traits = TABLE_PER_PAGE + 2
+        factories.HarmonizedTraitFactory.create_batch(n_traits, i_description='lorem ipsum')
+        response = self.client.get(self.get_url(), {'description': 'lorem', 'page': 2})
+        context = response.context
+        self.assertIn('form', context)
+        self.assertTrue(context['has_results'])
+        self.assertIsInstance(context['results_table'], tables.HarmonizedTraitTable)
+        self.assertEqual(len(context['results_table'].rows), n_traits)
+
+    def test_reset_button_works_on_initial_page(self):
+        """Reset button returns to original page."""
+        response = self.client.get(self.get_url(), {'reset': 'Reset'}, follow=True)
+        context = response.context
+        self.assertIn('form', context)
+        self.assertFalse(context['form'].is_bound)
+        self.assertFalse(context['has_results'])
+        self.assertIn('results_table', context)
+        self.assertEqual(len(context['results_table'].rows), 0)
+
+    def test_reset_button_works_with_data_in_form(self):
+        """Reset button returns to original page."""
+        response = self.client.get(self.get_url(), {'reset': 'Reset', 'name': ''}, follow=True)
+        context = response.context
+        self.assertIn('form', context)
+        self.assertFalse(context['form'].is_bound)
+        self.assertFalse(context['has_results'])
+        self.assertIn('results_table', context)
+        self.assertEqual(len(context['results_table'].rows), 0)
+
+
 # Tests of searching. Will probably be replaced/majorly rewritten after search is redesigned.
 class OldSourceSearchTest(TestCase):
 
@@ -2213,7 +2349,7 @@ class OldSourceTraitSearchViewTest(UserLoginTestCase):
         self.assertEqual(len(response.context['form'].initial), 0)
 
 
-class HarmonizedSearchTest(TestCase):
+class OldHarmonizedSearchTest(TestCase):
 
     # Note that there is currently no test to ensure that H. trait search does not return deprecated traits.
 
@@ -2254,7 +2390,7 @@ class HarmonizedSearchTest(TestCase):
         self.assertNotIn(st_nonmatch, search1)
 
 
-class HarmonizedTraitSearchViewTest(UserLoginTestCase):
+class OldHarmonizedTraitSearchViewTest(UserLoginTestCase):
 
     def test_harmonized_trait_search_with_valid_results(self):
         """Returns 200 code and correct number of results when only 1 result exists."""

@@ -420,6 +420,50 @@ class HarmonizedTraitFlavorNameAutocomplete(LoginRequiredMixin, autocomplete.Sel
         return retrieved
 
 
+class HarmonizedTraitSearch(LoginRequiredMixin, SingleTableMixin, MessageMixin, FormView):
+    """Form view class for searching for source traits."""
+
+    template_name = 'trait_browser/sourcetrait_search.html'
+    form_class = forms.HarmonizedTraitSearchForm
+    table_class = tables.HarmonizedTraitTable
+    context_table_name = 'results_table'
+    table_data = models.HarmonizedTrait.objects.none()
+
+    def get(self, request, *args, **kwargs):
+        """Override get method for form and search processing."""
+        form_class = self.get_form_class()
+        if 'reset' in request.GET:
+            return HttpResponseRedirect(request.path, {'form': self.get_form(form_class)})
+        if request.GET:
+            form = form_class(request.GET)
+        else:
+            form = self.get_form(form_class)
+
+        if form.is_valid():
+            return self.form_valid(form)
+        else:
+            return self.form_invalid(form)
+
+    def form_valid(self, form):
+        """Override form_valid method to process form and add results to the search page."""
+        self.form_valid_message = 'form is valid'
+        self.table_data = searches.search_harmonized_traits(**form.cleaned_data)
+        context = self.get_context_data(form=form)
+        context['has_results'] = True
+        # Add an informational message about the number of results found.
+        msg = '{n} result{s} found.'.format(
+            n=self.table_data.count(),
+            s=pluralize(self.table_data.count()))
+        self.messages.info(msg, fail_silently=True)
+        return self.render_to_response(context)
+
+    def form_invalid(self, form):
+        """Override form_valid method to process form and redirect to the search page."""
+        context = self.get_context_data(form=form)
+        context['has_results'] = False
+        return self.render_to_response(context)
+
+
 def search(text_query, trait_type, study_pks=[]):
     """profiles.models.Search either source or (eventually) harmonized traits for a given query.
 
