@@ -24,8 +24,11 @@ class Tag(TimeStampedModel):
     def save(self, *args, **kwargs):
         """Custom save method.
 
+        Strips leading and trailing whitespace from the title.
         Automatically saves the lower_title field based on the title field.
         """
+        # Strip all leading and trailing whitespace.
+        self.title = self.title.strip()
         self.lower_title = self.title.lower()
         # Call the "real" save method.
         super(Tag, self).save(*args, **kwargs)
