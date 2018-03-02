@@ -247,7 +247,6 @@ class SourceTraitSearch(LoginRequiredMixin, SingleTableMixin, MessageMixin, Form
 
     def form_valid(self, form):
         """Override form_valid method to process form and add results to the search page."""
-        self.form_valid_message = 'form is valid'
         self.table_data = searches.search_source_traits(**form.cleaned_data)
         context = self.get_context_data(form=form)
         context['has_results'] = True
@@ -446,7 +445,6 @@ class HarmonizedTraitSearch(LoginRequiredMixin, SingleTableMixin, MessageMixin, 
 
     def form_valid(self, form):
         """Override form_valid method to process form and add results to the search page."""
-        self.form_valid_message = 'form is valid'
         self.table_data = searches.search_harmonized_traits(**form.cleaned_data)
         context = self.get_context_data(form=form)
         context['has_results'] = True
