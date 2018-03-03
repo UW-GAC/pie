@@ -16,7 +16,7 @@ class TagAdmin(admin.ModelAdmin):
 
     def save_model(self, request, obj, form, change):
         """Save current user as the Tag creator."""
-        if obj.pk is None:
+        if obj.pk is None:  # Test for whether the tag is being created or edited.
             obj.creator = request.user
         obj.save()
 
