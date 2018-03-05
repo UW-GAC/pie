@@ -1,9 +1,6 @@
 """View functions and classes for the trait_browser app."""
 
-from django.contrib.auth.decorators import login_required
-from django.core.urlresolvers import reverse
-from django.db.models import Q    # Allows complex queries when searching.
-from django.shortcuts import render, get_object_or_404, redirect
+from django.shortcuts import get_object_or_404
 from django.utils.safestring import mark_safe
 from django.views.generic import DetailView, FormView, ListView
 from django.template.defaultfilters import pluralize    # Use pluralize in the views.
@@ -11,8 +8,7 @@ from django.http import HttpResponseRedirect
 
 from braces.views import FormMessagesMixin, LoginRequiredMixin, MessageMixin, PermissionRequiredMixin, UserPassesTestMixin
 from dal import autocomplete
-from django_tables2 import RequestConfig, SingleTableMixin, SingleTableView
-from urllib.parse import parse_qs
+from django_tables2 import SingleTableMixin, SingleTableView
 
 import profiles.models
 from tags.forms import TagSpecificTraitForm
@@ -460,80 +456,3 @@ class HarmonizedTraitSearch(LoginRequiredMixin, SingleTableMixin, MessageMixin, 
         context = self.get_context_data(form=form)
         context['has_results'] = False
         return self.render_to_response(context)
-
-
-def search(text_query, trait_type, study_pks=[]):
-    """profiles.models.Search either source or (eventually) harmonized traits for a given query.
-
-    Function to search the trait name and trait description for the given query
-    text, and possibly filtering to the list of studies specified. The search is
-    case-insensitive. Do not include quotes. This is a very simple search.
-
-    Arguments:
-        text_query -- string; text to search for within descriptions and names
-        trait_type -- string; "source" or "harmonized"
-        study_pks -- list of (primary_key, study_name) tuples
-
-    Returns:
-        queryset of SourceTrait or HarmonizedTrait objects
-    """
-    # TODO: add try/except to catch invalid trait_type values.
-    if trait_type == 'source':
-        if (len(study_pks) == 0):
-            traits = models.SourceTrait.objects.current()
-        # Filter by study.
-        else:
-            traits = models.SourceTrait.objects.current().filter(
-                source_dataset__source_study_version__study__pk__in=study_pks)
-        # Then search text.
-        traits = traits.filter(Q(i_description__iregex=text_query) | Q(i_trait_name__iregex=text_query))
-    elif trait_type == 'harmonized':
-        traits = models.HarmonizedTrait.objects.current()
-        traits = traits.filter(
-            Q(i_description__iregex=text_query) | Q(i_trait_name__iregex=text_query))
-    return(traits)
-
-
-@login_required
-def trait_search(request, trait_type):
-    """Trait search form view.
-
-    Displays the SourceTraitCrispySearchForm or HarmonizedTraitCrispySearchForm
-    and any search results as a django-tables2 table view.
-    """
-    # Create a form instance with data from the request.
-    FormClass = forms.SourceTraitCrispySearchForm if trait_type == 'source' else forms.HarmonizedTraitCrispySearchForm
-    form = FormClass(request.GET)
-    if trait_type == 'source':
-        trait_type_name = 'study'
-    else:
-        trait_type_name = trait_type
-    page_data = {'form': form, 'trait_type': trait_type, 'trait_type_name': trait_type_name, }
-    # If there was no data entered, show the empty form.
-    if request.GET.get('text', None) is None:
-        form = FormClass()
-        if trait_type == 'source':
-            if request.GET.get('study', None) is not None:
-                form = FormClass(initial=request.GET)
-        page_data['form'] = form
-        page_data['results'] = False
-        return render(request, 'trait_browser/search.html', page_data)
-    # If the form data is valid...
-    if form.is_valid():
-        # ...process form data.
-        query = form.cleaned_data.get('text', None)
-        study_pks = form.cleaned_data.get('study', []) if 'study' in form.cleaned_data else []
-        # Search text.
-        traits = search(query, trait_type, study_pks)
-        TraitTableClass = tables.SourceTraitTableFull if trait_type == 'source' else tables.HarmonizedTraitTable
-        trait_table = TraitTableClass(traits)
-        RequestConfig(request, paginate={'per_page': TABLE_PER_PAGE}).configure(trait_table)
-        # Show the search results.
-        page_data['trait_table'] = trait_table
-        page_data['query'] = query
-        page_data['study_pks'] = study_pks
-        page_data['results'] = True
-    # If the form data isn't valid, show the data to modify.
-    else:
-        page_data['results'] = False
-    return render(request, 'trait_browser/search.html', page_data)

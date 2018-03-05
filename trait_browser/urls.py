@@ -32,8 +32,7 @@ source_trait_patterns = [
     url(r'^list/$', views.SourceTraitList.as_view(), name='list'),
     url(r'^(?P<pk>\d+)/$', views.SourceTraitDetail.as_view(), name='detail'),
     url(r'^(?P<pk>\d+)/add-tag/$', views.SourceTraitTagging.as_view(), name='tagging'),
-    url(r'^search/$', views.trait_search, {'trait_type': 'source'}, name='search'),
-    url(r'^watsonsearch/$', views.SourceTraitSearch.as_view(), name='watsonsearch'),
+    url(r'^search/$', views.SourceTraitSearch.as_view(), name='search'),
 ]
 
 source_dataset_patterns = [
@@ -77,8 +76,7 @@ harmonized_trait_patterns = [
     url(r'^autocomplete/', include(harmonized_trait_autocomplete_patterns, namespace='autocomplete')),
     url(r'^$', views.HarmonizedTraitList.as_view(), name='list'),
     url(r'^(?P<pk>\d+)/$', views.HarmonizedTraitSetVersionDetail.as_view(), name='detail'),
-    url(r'^search/$', views.trait_search, {'trait_type': 'harmonized'}, name='search'),
-    url(r'^watsonsearch/$', views.HarmonizedTraitSearch.as_view(), name='watsonsearch'),
+    url(r'^search/$', views.HarmonizedTraitSearch.as_view(), name='search'),
 ]
 
 harmonized_patterns = [
