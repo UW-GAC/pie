@@ -168,23 +168,22 @@ class HomeTestCase(SeleniumTestCase):
         # Is the navbar there?
         navbar = self.selenium.find_element_by_class_name('navbar')
         self.assertIsNotNone(navbar)
-        # Click on the Source phenotypes dropdown menu.
-        self.selenium.find_element_by_link_text('Study phenotypes').click()
-        time.sleep(1)
-
-        self.selenium.find_element_by_link_text('View all').click()
-        time.sleep(1)
-        self.go_back()
 
         self.selenium.find_element_by_link_text('Study phenotypes').click()
-        self.selenium.find_element_by_link_text('Browse by study').click()
+        self.selenium.find_element_by_link_text('Search variables').click()
         time.sleep(1)
-        self.go_back()
 
         self.selenium.find_element_by_link_text('Study phenotypes').click()
-        self.selenium.find_element_by_link_text('Search').click()
+        self.selenium.find_element_by_link_text('Studies').click()
         time.sleep(1)
-        self.go_back()
+
+        self.selenium.find_element_by_link_text('Study phenotypes').click()
+        self.selenium.find_element_by_link_text('Datasets').click()
+        time.sleep(1)
+
+        self.selenium.find_element_by_link_text('Study phenotypes').click()
+        self.selenium.find_element_by_link_text('Variables').click()
+        time.sleep(1)
 
 
 class AdminTestCase(SeleniumTestCase):
@@ -393,8 +392,7 @@ class TablePageTestCase(UserAutoLoginSeleniumTestCase):
         """Run check_table_view on the All source traits table page. Check the link for a source trait detail page."""
         total_source_traits = trait_browser.models.SourceTrait.objects.count()
         self.get_reverse('trait_browser:source:traits:list')
-        # Expect 2 extra rows here because of the table containing the upper right buttons.
-        self.check_table_view(expected_rows=total_source_traits + 2)
+        self.check_table_view(expected_rows=total_source_traits)
         # Check the detail page for the first listed SourceTrait.
         detail_link = self.selenium.find_element_by_class_name('i_trait_name')
         detail_link.click()
@@ -409,14 +407,10 @@ class TablePageTestCase(UserAutoLoginSeleniumTestCase):
         study_name = trait_browser.models.Study.objects.all().order_by('i_study_name')[0].i_study_name
         study_link = self.selenium.find_element_by_link_text(study_name)
         study_link.click()
-        self.check_table_presence()
-        self.go_back()
 
     def test_source_study_detail_table(self):
-        """Run check_table_view on the Study detail list page (from a link in the Browse by study table)."""
+        """Study detail page works."""
         study = trait_browser.models.Study.objects.all()[0]
         trait_count = trait_browser.models.SourceTrait.objects.filter(
             source_dataset__source_study_version__study=study).all().count()
         self.get_reverse('trait_browser:source:studies:detail:detail', study.pk)
-        # Expect 2 extra rows here because of the table containing the upper right buttons.
-        self.check_table_view(expected_rows=trait_count + 2)
