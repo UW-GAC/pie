@@ -1500,6 +1500,18 @@ class SourceTraitNameOrPHVAutocompleteTest(UserLoginTestCase):
                 self.assertIn(expected_pk, returned_pks,
                               msg="Could not find expected trait name {} with query '{}'".format(expected_name, query))
 
+    def test_correct_trait_found_with_phv_in_name(self):
+        """Queryset returns both traits when one has trait name of phvNNN and the other has phv NNN."""
+        models.SourceTrait.objects.all().delete()
+        name_trait = factories.SourceTraitFactory.create(i_trait_name='phv557')
+        phv_trait = factories.SourceTraitFactory.create(i_dbgap_variable_accession=557)
+        url = self.get_url()
+        response = self.client.get(url, {'q': 'phv557'})
+        returned_pks = get_autocomplete_view_ids(response)
+        self.assertEqual(len(returned_pks), 2)
+        self.assertIn(name_trait.pk, returned_pks)
+        self.assertIn(phv_trait.pk, returned_pks)
+
 
 class PhenotypeTaggerTaggableStudyFilteredSourceTraitNameOrPHVAutocompleteTest(PhenotypeTaggerLoginTestCase):
     """Autocomplete view works as expected."""
@@ -1689,6 +1701,21 @@ class PhenotypeTaggerTaggableStudyFilteredSourceTraitNameOrPHVAutocompleteTest(P
                 self.assertIn(expected_pk, returned_pks,
                               msg="Could not find expected trait name {} with query '{}'".format(expected_name, query))
 
+    def test_correct_trait_found_with_phv_in_name(self):
+        """Queryset returns both traits when one has trait name of phvNNN and the other has phv NNN."""
+        models.SourceTrait.objects.all().delete()
+        study = models.Study.objects.all().first()
+        name_trait = factories.SourceTraitFactory.create(
+            i_trait_name='phv557', source_dataset__source_study_version__study=self.study)
+        phv_trait = factories.SourceTraitFactory.create(
+            i_dbgap_variable_accession=557, source_dataset__source_study_version__study=self.study)
+        url = self.get_url()
+        response = self.client.get(url, {'q': 'phv557'})
+        returned_pks = get_autocomplete_view_ids(response)
+        self.assertEqual(len(returned_pks), 2)
+        self.assertIn(name_trait.pk, returned_pks)
+        self.assertIn(phv_trait.pk, returned_pks)
+
 
 class DCCAnalystTaggableStudyFilteredSourceTraitNameOrPHVAutocompleteTest(DCCAnalystLoginTestCase):
     """Autocomplete view works as expected."""
@@ -1780,7 +1807,8 @@ class DCCAnalystTaggableStudyFilteredSourceTraitNameOrPHVAutocompleteTest(DCCAna
         response = self.client.get(url, {'q': query_trait.i_trait_name})
         returned_pks = get_autocomplete_view_ids(response)
         # Get traits that have the same trait name, to account for how small the word lists for faker are.
-        traits_with_name = models.SourceTrait.objects.filter(i_trait_name=query_trait.i_trait_name)
+        traits_with_name = models.SourceTrait.objects.filter(
+            i_trait_name=query_trait.i_trait_name, source_dataset__source_study_version__study=self.study)
         self.assertEqual(len(returned_pks), len(traits_with_name))
         for name_trait in traits_with_name:
             self.assertIn(name_trait.pk, returned_pks)
@@ -1865,6 +1893,21 @@ class DCCAnalystTaggableStudyFilteredSourceTraitNameOrPHVAutocompleteTest(DCCAna
                 expected_pk = name_queryset.first().pk
                 self.assertIn(expected_pk, returned_pks,
                               msg="Could not find expected trait name {} with query '{}'".format(expected_name, query))
+
+    def test_correct_trait_found_with_phv_in_name(self):
+        """Queryset returns both traits when one has trait name of phvNNN and the other has phv NNN."""
+        models.SourceTrait.objects.all().delete()
+        study = models.Study.objects.all().first()
+        name_trait = factories.SourceTraitFactory.create(
+            i_trait_name='phv557', source_dataset__source_study_version__study=self.study)
+        phv_trait = factories.SourceTraitFactory.create(
+            i_dbgap_variable_accession=557, source_dataset__source_study_version__study=self.study)
+        url = self.get_url()
+        response = self.client.get(url, {'q': 'phv557'})
+        returned_pks = get_autocomplete_view_ids(response)
+        self.assertEqual(len(returned_pks), 2)
+        self.assertIn(name_trait.pk, returned_pks)
+        self.assertIn(phv_trait.pk, returned_pks)
 
 
 class HarmonizedTraitListTest(UserLoginTestCase):

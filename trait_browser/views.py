@@ -1,7 +1,7 @@
 """View functions and classes for the trait_browser app."""
 
 from django.contrib.auth.decorators import login_required
-from django.db.models import Q    # Allows complex queries when searching.
+from django.db.models import Q  # Allows complex queries when searching.
 from django.shortcuts import render, get_object_or_404
 from django.utils.safestring import mark_safe
 from django.views.generic import DetailView, FormView, ListView
@@ -282,22 +282,33 @@ class TaggableStudyFilteredSourceTraitNameAutocomplete(LoginRequiredMixin, Tagga
 
 
 class SourceTraitNameOrPHVAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
-    """Auto-complete source traits in a form field by i_trait_name OR phv (with leading zeros or not)."""
+    """Auto-complete source traits in a form field by i_trait_name OR phv (with leading zeros or not).
+
+    User can input a phv in several ways, e.g. 'phv597', '597', '00000597', or 'phv00000597'. User can
+    also input the trait name. Either one will work.
+    """
 
     def get_queryset(self):
         retrieved = models.SourceTrait.objects.current()
         if self.q:
+            q_no_phv = self.q.replace('phv', '')
+            # Autocomplete using name AND phv if q fits "phv\d+".
+            if self.q.lower().startswith('phv') and q_no_phv.isdigit():
+                if q_no_phv.startswith('0'):
+                    phvQ = Q(variable_accession__regex=r'^{}'.format('phv' + q_no_phv))
+                else:
+                    phvQ = Q(i_dbgap_variable_accession__regex=r'^{}'.format(q_no_phv))
+                retrieved = retrieved.filter(phvQ | Q(i_trait_name__iregex=r'^{}'.format(self.q)))
+            # Autocomplete using formatted phv if q is only digits.
             # I checked that none of the source trait names are all digits (as of 2/5/2018).
-            if self.q.lower().startswith('phv') or self.q.isdigit():
-                # User can input a phv in several ways, e.g. 'phv597', '597', '00000597', or 'phv00000597'.
-                # Get rid of the phv.
-                phv_digits = self.q.replace('phv', '')
+            elif self.q.isdigit():
                 # Search against the phv string if user started the query with leading zeros.
-                if phv_digits.startswith('0'):
-                    retrieved = retrieved.filter(variable_accession__regex=r'^{}'.format('phv' + phv_digits))
+                if q_no_phv.startswith('0'):
+                    retrieved = retrieved.filter(variable_accession__regex=r'^{}'.format('phv' + q_no_phv))
                 # Search against the phv digits if user started the query with non-zero digits.
                 else:
-                    retrieved = retrieved.filter(i_dbgap_variable_accession__regex=r'^{}'.format(phv_digits))
+                    retrieved = retrieved.filter(i_dbgap_variable_accession__regex=r'^{}'.format(q_no_phv))
+            # Autocomplete using the source trait name in all other cases.
             else:
                 retrieved = retrieved.filter(i_trait_name__iregex=r'^{}'.format(self.q))
         return retrieved
@@ -318,19 +329,27 @@ class TaggableStudyFilteredSourceTraitNameOrPHVAutocomplete(LoginRequiredMixin, 
             retrieved = models.SourceTrait.objects.current().filter(
                 source_dataset__source_study_version__study__in=list(studies)
             )
-        # I checked that none of the source trait names are all digits (as of 2/5/2018).
-        if self.q.lower().startswith('phv') or self.q.isdigit():
-            # User can input a phv in several ways, e.g. 'phv597', '597', '00000597', or 'phv00000597'.
-            # Get rid of the phv.
-            phv_digits = self.q.replace('phv', '')
-            # Search against the phv string if user started the query with leading zeros.
-            if phv_digits.startswith('0'):
-                retrieved = retrieved.filter(variable_accession__regex=r'^{}'.format('phv' + phv_digits))
-            # Search against the phv digits if user started the query with non-zero digits.
+        if self.q:
+            q_no_phv = self.q.replace('phv', '')
+            # Autocomplete using name AND phv if q fits "phv\d+".
+            if self.q.lower().startswith('phv') and q_no_phv.isdigit():
+                if q_no_phv.startswith('0'):
+                    phvQ = Q(variable_accession__regex=r'^{}'.format('phv' + q_no_phv))
+                else:
+                    phvQ = Q(i_dbgap_variable_accession__regex=r'^{}'.format(q_no_phv))
+                retrieved = retrieved.filter(phvQ | Q(i_trait_name__iregex=r'^{}'.format(self.q)))
+            # Autocomplete using formatted phv if q is only digits.
+            # I checked that none of the source trait names are all digits (as of 2/5/2018).
+            elif self.q.isdigit():
+                # Search against the phv string if user started the query with leading zeros.
+                if q_no_phv.startswith('0'):
+                    retrieved = retrieved.filter(variable_accession__regex=r'^{}'.format('phv' + q_no_phv))
+                # Search against the phv digits if user started the query with non-zero digits.
+                else:
+                    retrieved = retrieved.filter(i_dbgap_variable_accession__regex=r'^{}'.format(q_no_phv))
+            # Autocomplete using the source trait name in all other cases.
             else:
-                retrieved = retrieved.filter(i_dbgap_variable_accession__regex=r'^{}'.format(phv_digits))
-        else:
-            retrieved = retrieved.filter(i_trait_name__iregex=r'^{}'.format(self.q))
+                retrieved = retrieved.filter(i_trait_name__iregex=r'^{}'.format(self.q))
         return retrieved
 
 
