@@ -37,9 +37,9 @@ class SourceDatasetTable(tables.Table):
     """Class for table of source datasets for inheritance."""
 
     dataset_name = tables.LinkColumn(
-        'trait_browser:source:datasets:detail', args=[tables.utils.A('pk')], verbose_name='dbGaP dataset accession',
-        text=lambda record: record.pht_version_string)
-    i_dbgap_description = tables.Column(verbose_name='dbGaP dataset description', orderable=False)
+        'trait_browser:source:datasets:detail', args=[tables.utils.A('pk')], verbose_name='Dataset name',
+        text=lambda record: record.dataset_name)
+    i_dbgap_description = tables.Column(verbose_name='Dataset description', orderable=False)
     trait_count = tables.Column(verbose_name='Variable count', orderable=False, empty_values=())
 
     class Meta:
@@ -92,7 +92,7 @@ class SourceTraitTableFull(SourceTraitTable):
     dataset = tables.LinkColumn(
         'trait_browser:source:datasets:detail',
         args=[tables.utils.A('source_dataset.pk')],
-        text=lambda record: record.source_dataset.pht_version_string,
+        text=lambda record: record.source_dataset.dataset_name,
         verbose_name='Dataset', orderable=False)
     dbGaP_study = tables.TemplateColumn(
         orderable=False,
@@ -113,7 +113,7 @@ class SourceTraitStudyTable(SourceTraitTable):
     dataset = tables.LinkColumn(
         'trait_browser:source:datasets:detail',
         args=[tables.utils.A('source_dataset.pk')],
-        text=lambda record: record.source_dataset.pht_version_string,
+        text=lambda record: record.source_dataset.dataset_name,
         verbose_name='Dataset', orderable=False)
     dbGaP_dataset = tables.TemplateColumn(
         orderable=False,

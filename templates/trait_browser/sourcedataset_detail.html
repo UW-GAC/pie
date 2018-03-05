@@ -3,17 +3,17 @@
 
 
 {% block head_title %}
-     | {{ source_dataset.pht_version_string }} details
+     | {{ source_dataset.dataset_name }} details
 {% endblock %}
 
 {% block content %}
     <div class="well">
     
-    <h2>{{ source_dataset.pht_version_string }} <small>dbGaP dataset details</small></h2>
+    <h2>{{ source_dataset.dataset_name }} <small>dbGaP dataset details</small></h2>
 
     <div class="panel panel-info">
         <div class="panel-heading">
-            <h3 class="panel-title">Dataset: {{ source_dataset.pht_version_string }}</h3>
+            <h3 class="panel-title">Dataset: {{ source_dataset.dataset_name }}</h3>
         </div>
         <div class="panel-body">
             <dl class="dl-horizontal">

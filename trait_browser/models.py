@@ -250,14 +250,16 @@ class SourceDataset(SourceDBTimeStampedModel):
     i_dbgap_description = models.TextField('dbGaP description', blank=True)
     i_dbgap_date_created = models.DateTimeField('dbGaP date created', null=True, blank=True)
     pht_version_string = models.CharField(max_length=20)
+    dbgap_filename = models.CharField(max_length=255, default='')
+    dataset_name = models.CharField(max_length=255, default='')
 
     # Managers/custom querysets.
     objects = querysets.SourceDatasetQuerySet.as_manager()
 
     def __str__(self):
         """Pretty printing."""
-        return 'dataset {} of study {}, id={}'.format(
-            self.pht_version_string, self.source_study_version.study, self.i_id)
+        return 'dataset {} of study {}, id={}, pht={}'.format(
+            self.dataset_name, self.source_study_version.study, self.i_id, self.pht_version_string)
 
     def save(self, *args, **kwargs):
         """Custom save method for setting default dbGaP accession strings.

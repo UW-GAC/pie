@@ -47,6 +47,37 @@ class TagTest(TestCase):
         with self.assertRaises(IntegrityError):
             instance2.save()
 
+    def test_lower_title_updates(self):
+        """Changing the title of an existing Tag object correctly updates lower_title."""
+        instance = self.model(**self.model_args)
+        instance.save()
+        new_title = 'koo6mooYa2ga'
+        self.assertNotEqual(new_title, instance.title)
+        instance.title = new_title
+        instance.save()
+        self.assertEqual(instance.title, new_title)
+        self.assertEqual(instance.lower_title, new_title.lower())
+
+    def test_trailing_spaces_in_title(self):
+        """Trailing spaces in the title aren't counted for uniqueness of lower_title."""
+        instance = self.model(**self.model_args)
+        instance.save()
+        model_args2 = self.model_args.copy()
+        model_args2['title'] = self.model_args['title'] + '  '
+        instance2 = self.model(**model_args2)
+        with self.assertRaises(IntegrityError):
+            instance2.save()
+
+    def test_leading_spaces_in_title(self):
+        """Leading spaces in the title aren't counted for uniqueness of lower_title."""
+        instance = self.model(**self.model_args)
+        instance.save()
+        model_args2 = self.model_args.copy()
+        model_args2['title'] = '  ' + self.model_args['title']
+        instance2 = self.model(**model_args2)
+        with self.assertRaises(IntegrityError):
+            instance2.save()
+
     def test_get_absolute_url(self):
         """get_absolute_url function doesn't fail."""
         instance = self.model_factory.create()

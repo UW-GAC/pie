@@ -54,10 +54,12 @@ class TagAdminForm(forms.ModelForm):
         """Custom cleaning to enforce uniqueness of lower_title before it's saved."""
         cleaned_data = super(TagAdminForm, self).clean()
         title = cleaned_data.get('title')
-        if title is not None:
-            lower_title = title.lower()
-            if models.Tag.objects.filter(lower_title=lower_title).exists():
-                self.add_error('title', LOWER_TITLE_EXISTS_ERROR)
+        # If the object doesn't exist already.
+        if self.instance.pk is None:
+            if title is not None:
+                lower_title = title.lower()
+                if models.Tag.objects.filter(lower_title=lower_title).exists():
+                    self.add_error('title', LOWER_TITLE_EXISTS_ERROR)
 
 
 class TaggedTraitForm(forms.ModelForm):

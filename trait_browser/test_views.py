@@ -790,6 +790,27 @@ class PhenotypeTaggerTaggableStudyFilteredSourceTraitPHVAutocompleteTest(Phenoty
         pks = get_autocomplete_view_ids(response)
         self.assertEqual(sorted([trait.pk for trait in self.source_traits]), sorted(pks))
 
+    def test_returns_all_traits_with_two_taggable_studies(self):
+        """Queryset returns all of the traits from two different studies."""
+        # Delete all but five source traits, so that there are 5 from each study.
+        models.SourceTrait.objects.exclude(i_dbgap_variable_accession__in=TEST_PHVS[:5]).delete()
+        self.source_traits = list(models.SourceTrait.objects.all())
+        study2 = factories.StudyFactory.create()
+        self.user.profile.taggable_studies.add(study2)
+        source_traits2 = factories.SourceTraitFactory.create_batch(
+            5, source_dataset__source_study_version__study=study2)
+        # Get results from the autocomplete view and make sure only the correct study is found.
+        url = self.get_url(self.study.pk)
+        response = self.client.get(url)
+        returned_pks = get_autocomplete_view_ids(response)
+        # Make sure that there's only one page of results.
+        self.assertTrue(models.SourceTrait.objects.all().count() <= 10)
+        self.assertEqual(len(returned_pks), len(self.source_traits + source_traits2))
+        for trait in source_traits2:
+            self.assertIn(trait.i_trait_id, returned_pks)
+        for trait in self.source_traits:
+            self.assertIn(trait.i_trait_id, returned_pks)
+
     def test_no_deprecated_traits_in_queryset(self):
         """Queryset returns only the latest version of a trait."""
         # Copy the source study version and increment it.
@@ -1017,7 +1038,7 @@ TEST_NAME_QUERIES = {'a': ('abc', 'ABC', 'aBc', 'abc2', 'abc22', 'abc_and_ABC', 
                      'abc22': ('abc22', ),
                      'c22': ('c225ab', ),
                      'abc': ('abc', 'ABC', 'aBc', 'abc2', 'abc22', 'abc_and_ABC', ),
-                     'abc_': ('abc_and_ABC', ),
+                     'abc_and': ('abc_and_ABC', ),
                      '225': (),
                      'very_long_string': (),
                      }
@@ -1126,6 +1147,27 @@ class PhenotypeTaggerTaggableStudyFilteredSourceTraitNameAutocompleteTest(Phenot
         response = self.client.get(url)
         pks = get_autocomplete_view_ids(response)
         self.assertEqual(sorted([trait.pk for trait in self.source_traits]), sorted(pks))
+
+    def test_returns_all_traits_with_two_taggable_studies(self):
+        """Queryset returns all of the traits from two different studies."""
+        # Delete all source traits and make 5 new ones, so there are only 5 for study 1.
+        models.SourceTrait.objects.all().delete()
+        self.source_traits = factories.SourceTraitFactory.create_batch(5, source_dataset=self.source_dataset)
+        study2 = factories.StudyFactory.create()
+        self.user.profile.taggable_studies.add(study2)
+        source_traits2 = factories.SourceTraitFactory.create_batch(
+            5, source_dataset__source_study_version__study=study2)
+        # Get results from the autocomplete view and make sure only the correct study is found.
+        url = self.get_url(self.study.pk)
+        response = self.client.get(url)
+        returned_pks = get_autocomplete_view_ids(response)
+        # Make sure that there's only one page of results.
+        self.assertTrue(models.SourceTrait.objects.all().count() <= 10)
+        self.assertEqual(len(returned_pks), len(self.source_traits + source_traits2))
+        for trait in source_traits2:
+            self.assertIn(trait.i_trait_id, returned_pks)
+        for trait in self.source_traits:
+            self.assertIn(trait.i_trait_id, returned_pks)
 
     def test_no_deprecated_traits_in_queryset(self):
         """Queryset returns only the latest version of a trait."""
@@ -1458,6 +1500,18 @@ class SourceTraitNameOrPHVAutocompleteTest(UserLoginTestCase):
                 self.assertIn(expected_pk, returned_pks,
                               msg="Could not find expected trait name {} with query '{}'".format(expected_name, query))
 
+    def test_correct_trait_found_with_phv_in_name(self):
+        """Queryset returns both traits when one has trait name of phvNNN and the other has phv NNN."""
+        models.SourceTrait.objects.all().delete()
+        name_trait = factories.SourceTraitFactory.create(i_trait_name='phv557')
+        phv_trait = factories.SourceTraitFactory.create(i_dbgap_variable_accession=557)
+        url = self.get_url()
+        response = self.client.get(url, {'q': 'phv557'})
+        returned_pks = get_autocomplete_view_ids(response)
+        self.assertEqual(len(returned_pks), 2)
+        self.assertIn(name_trait.pk, returned_pks)
+        self.assertIn(phv_trait.pk, returned_pks)
+
 
 class PhenotypeTaggerTaggableStudyFilteredSourceTraitNameOrPHVAutocompleteTest(PhenotypeTaggerLoginTestCase):
     """Autocomplete view works as expected."""
@@ -1487,6 +1541,27 @@ class PhenotypeTaggerTaggableStudyFilteredSourceTraitNameOrPHVAutocompleteTest(P
         response = self.client.get(url)
         pks = get_autocomplete_view_ids(response)
         self.assertEqual(sorted([trait.pk for trait in self.source_traits]), sorted(pks))
+
+    def test_returns_all_traits_with_two_taggable_studies(self):
+        """Queryset returns all of the traits from two different studies."""
+        # Delete all but five source traits, so that there are 5 from each study.
+        models.SourceTrait.objects.exclude(i_dbgap_variable_accession__in=TEST_PHVS[:5]).delete()
+        self.source_traits = list(models.SourceTrait.objects.all())
+        study2 = factories.StudyFactory.create()
+        self.user.profile.taggable_studies.add(study2)
+        source_traits2 = factories.SourceTraitFactory.create_batch(
+            5, source_dataset__source_study_version__study=study2)
+        # Get results from the autocomplete view and make sure only the correct study is found.
+        url = self.get_url(self.study.pk)
+        response = self.client.get(url)
+        returned_pks = get_autocomplete_view_ids(response)
+        # Make sure that there's only one page of results.
+        self.assertTrue(models.SourceTrait.objects.all().count() <= 10)
+        self.assertEqual(len(returned_pks), len(self.source_traits + source_traits2))
+        for trait in source_traits2:
+            self.assertIn(trait.i_trait_id, returned_pks)
+        for trait in self.source_traits:
+            self.assertIn(trait.i_trait_id, returned_pks)
 
     def test_no_deprecated_traits_in_queryset(self):
         """Queryset returns only the latest version of a trait."""
@@ -1626,6 +1701,21 @@ class PhenotypeTaggerTaggableStudyFilteredSourceTraitNameOrPHVAutocompleteTest(P
                 self.assertIn(expected_pk, returned_pks,
                               msg="Could not find expected trait name {} with query '{}'".format(expected_name, query))
 
+    def test_correct_trait_found_with_phv_in_name(self):
+        """Queryset returns both traits when one has trait name of phvNNN and the other has phv NNN."""
+        models.SourceTrait.objects.all().delete()
+        study = models.Study.objects.all().first()
+        name_trait = factories.SourceTraitFactory.create(
+            i_trait_name='phv557', source_dataset__source_study_version__study=self.study)
+        phv_trait = factories.SourceTraitFactory.create(
+            i_dbgap_variable_accession=557, source_dataset__source_study_version__study=self.study)
+        url = self.get_url()
+        response = self.client.get(url, {'q': 'phv557'})
+        returned_pks = get_autocomplete_view_ids(response)
+        self.assertEqual(len(returned_pks), 2)
+        self.assertIn(name_trait.pk, returned_pks)
+        self.assertIn(phv_trait.pk, returned_pks)
+
 
 class DCCAnalystTaggableStudyFilteredSourceTraitNameOrPHVAutocompleteTest(DCCAnalystLoginTestCase):
     """Autocomplete view works as expected."""
@@ -1717,7 +1807,8 @@ class DCCAnalystTaggableStudyFilteredSourceTraitNameOrPHVAutocompleteTest(DCCAna
         response = self.client.get(url, {'q': query_trait.i_trait_name})
         returned_pks = get_autocomplete_view_ids(response)
         # Get traits that have the same trait name, to account for how small the word lists for faker are.
-        traits_with_name = models.SourceTrait.objects.filter(i_trait_name=query_trait.i_trait_name)
+        traits_with_name = models.SourceTrait.objects.filter(
+            i_trait_name=query_trait.i_trait_name, source_dataset__source_study_version__study=self.study)
         self.assertEqual(len(returned_pks), len(traits_with_name))
         for name_trait in traits_with_name:
             self.assertIn(name_trait.pk, returned_pks)
@@ -1803,6 +1894,21 @@ class DCCAnalystTaggableStudyFilteredSourceTraitNameOrPHVAutocompleteTest(DCCAna
                 self.assertIn(expected_pk, returned_pks,
                               msg="Could not find expected trait name {} with query '{}'".format(expected_name, query))
 
+    def test_correct_trait_found_with_phv_in_name(self):
+        """Queryset returns both traits when one has trait name of phvNNN and the other has phv NNN."""
+        models.SourceTrait.objects.all().delete()
+        study = models.Study.objects.all().first()
+        name_trait = factories.SourceTraitFactory.create(
+            i_trait_name='phv557', source_dataset__source_study_version__study=self.study)
+        phv_trait = factories.SourceTraitFactory.create(
+            i_dbgap_variable_accession=557, source_dataset__source_study_version__study=self.study)
+        url = self.get_url()
+        response = self.client.get(url, {'q': 'phv557'})
+        returned_pks = get_autocomplete_view_ids(response)
+        self.assertEqual(len(returned_pks), 2)
+        self.assertIn(name_trait.pk, returned_pks)
+        self.assertIn(phv_trait.pk, returned_pks)
+
 
 class HarmonizedTraitListTest(UserLoginTestCase):
     """Unit tests for the HarmonizedTraitList view."""
@@ -1848,32 +1954,75 @@ class HarmonizedTraitListTest(UserLoginTestCase):
         self.assertEqual(len(table.rows), 0)
 
 
-class HarmonizedTraitFlavorNameAutocompleteViewTest(UserLoginTestCase):
+class HarmonizedTraitFlavorNameAutocompleteTest(UserLoginTestCase):
     """Autocomplete view works as expected."""
 
-    def test_no_deprecated_traits_in_queryset(self):
-        """Queryset returns only the latest version of a trait."""
-        # Create a source trait with linked source dataset and source study version.
-        # Make some fake data here.
-        # Get results from the autocomplete view and make sure only the new version is found.
-        # url = reverse('trait_browser:source:traits:autocomplete:by-phv')
-        # response = self.client.get(url, {'q': source_trait2.i_dbgap_variable_accession})
-        # id_re = re.compile(r'"id": (\d+)')
-        # ids_in_content = [match[0] for match in id_re.findall(str(response.content))]
-        # self.assertTrue(len(ids_in_content) == 1)
-        # self.assertTrue(str(source_trait2.i_trait_id) in ids_in_content)
-        pass
+    def setUp(self):
+        super(HarmonizedTraitFlavorNameAutocompleteTest, self).setUp()
+        # Create 10 harmonized traits, non-deprecated.
+        self.harmonized_traits = []
+        for name in TEST_NAMES:
+            self.harmonized_traits.append(factories.HarmonizedTraitFactory.create(
+                harmonized_trait_set_version__i_is_deprecated=False, i_trait_name=name,
+                harmonized_trait_set_version__i_version=2,
+                harmonized_trait_set_version__harmonized_trait_set__i_flavor=1)
+            )
 
-    def test_proper_phv_in_queryset(self):
-        """Queryset returns only the proper phv number."""
-        harmonized_traits = factories.HarmonizedTraitFactory.create_batch(10)
-        ht1 = harmonized_traits[0]
-        url = reverse('trait_browser:harmonized:traits:autocomplete:by-name')
-        response = self.client.get(url, {'q': ht1.trait_flavor_name})
-        names_re = re.compile(r'"text": "(.+?)"')
-        names_in_content = [match for match in names_re.findall(str(response.content))]
-        self.assertTrue(len(names_in_content) == 1)
-        self.assertEqual(names_in_content[0], ht1.trait_flavor_name)
+    def get_url(self, *args):
+        return reverse('trait_browser:harmonized:traits:autocomplete:by-name')
+
+    def test_view_success_code(self):
+        """View returns successful response code."""
+        response = self.client.get(self.get_url())
+        self.assertEqual(response.status_code, 200)
+
+    def test_returns_all_traits(self):
+        """Queryset returns all of the traits with no query (when there are 10, which is the page limit)."""
+        url = self.get_url()
+        response = self.client.get(url)
+        pks = get_autocomplete_view_ids(response)
+        self.assertEqual(sorted([trait.pk for trait in self.harmonized_traits]), sorted(pks))
+
+    def test_no_deprecated_traits_in_queryset(self):
+        """Queryset returns only the latest version of traits with the same trait name."""
+        # Create an older, deprecated version of an existing source trait.
+        trait = self.harmonized_traits[0]
+        # Make a new copy of the harmonized_trait_set_version, and decrement the version number.
+        htsv2 = copy(trait.harmonized_trait_set_version)
+        htsv2.i_version -= 1
+        htsv2.i_id += 1
+        htsv2.i_is_deprecated = True
+        htsv2.save()
+        # Note that the new htsv is still liknked to the existing h. trait set.
+        # Copy the harmonized trait and link it to the older htsv.
+        trait2 = copy(trait)
+        trait2.harmonized_trait_set_version = htsv2
+        trait2.i_trait_id += 1
+        trait2.save()
+        # Get results from the autocomplete view and make sure only the new version is found.
+        url = self.get_url()
+        response = self.client.get(url, {'q': trait.i_trait_name})
+        pks = get_autocomplete_view_ids(response)
+        self.assertIn(trait.pk, pks)
+        self.assertNotIn(trait2.pk, pks)
+
+    def test_name_test_queries(self):
+        """Returns only the correct source trait for each of the TEST_NAME_QUERIES."""
+        url = self.get_url()
+        for query in TEST_NAME_QUERIES:
+            response = self.client.get(url, {'q': query})
+            returned_pks = get_autocomplete_view_ids(response)
+            expected_matches = TEST_NAME_QUERIES[query]
+            # Make sure number of matches is as expected.
+            self.assertEqual(len(returned_pks), len(expected_matches))
+            # Make sure the matches that are found are the ones expected.
+            for expected_name in expected_matches:
+                # This filter should only have one result, but I want to make sure.
+                name_queryset = models.HarmonizedTrait.objects.filter(i_trait_name__regex=r'^{}$'.format(expected_name))
+                self.assertEqual(name_queryset.count(), 1)
+                expected_pk = name_queryset.first().pk
+                self.assertIn(expected_pk, returned_pks,
+                              msg="Could not find expected trait name {} with query '{}'".format(expected_name, query))
 
 
 # Tests of searching. Will probably be replaced/majorly rewritten after search is redesigned.

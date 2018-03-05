@@ -13,6 +13,7 @@ This test module runs several unit tests and one integration test.
 from datetime import datetime, timedelta
 from os.path import exists, join
 from os import listdir, stat
+from re import compile
 from shutil import rmtree
 from subprocess import call
 from tempfile import mkdtemp
@@ -34,6 +35,8 @@ from trait_browser import models
 
 CMD = Command()
 ORIGINAL_BACKUP_DIR = settings.DBBACKUP_STORAGE_OPTIONS['location']
+TEST_DATA_DIR = 'trait_browser/source_db_test_data'
+DBGAP_RE = compile(r'(?P<dbgap_id>phs\d{6}\.v\d+?\.pht\d{6}\.v\d+?)')
 
 
 def get_devel_db(permissions='readonly'):
@@ -71,9 +74,6 @@ def clean_devel_db():
     cursor.execute('SET FOREIGN_KEY_CHECKS = 1;')
     cursor.close()
     source_db.close()
-
-
-TEST_DATA_DIR = 'trait_browser/source_db_test_data'
 
 
 def load_test_source_db_data(filename):
@@ -636,6 +636,32 @@ class GetCurrentListsTest(TestCase):
 
 
 # Tests that require test data.
+class SetDatasetNamesTest(BaseTestDataTestCase):
+    """Tests of the _set_dataset_names method."""
+
+    def test_dataset_name_after_import(self):
+        """The dataset_name field is a valid-ish string after running an import."""
+        management.call_command('import_db', '--which_db=devel', '--no_backup')
+        source_dataset_names = models.SourceDataset.objects.all().values_list('dataset_name', flat=True)
+        # None of the dataset_names are empty strings anymore.
+        self.assertNotIn('', source_dataset_names)
+        # None of the dataset names have a phs.v.pht.v string in them.
+        self.assertFalse(any([DBGAP_RE.search(name) for name in source_dataset_names]))
+        # None of the dataset names have any directory path in them.
+        self.assertFalse(any(['/' in name for name in source_dataset_names]))
+
+    def test_dbgap_filename_after_import(self):
+        """The dbgap_filename field is a valid-ish string after running an import."""
+        management.call_command('import_db', '--which_db=devel', '--no_backup')
+        source_dataset_files = models.SourceDataset.objects.all().values_list('dbgap_filename', flat=True)
+        # None of the dataset_names are empty strings anymore.
+        self.assertNotIn('', source_dataset_files)
+        # All of the file names have a phs.v.pht.v string in them.
+        self.assertTrue(all([DBGAP_RE.search(name) for name in source_dataset_files]))
+        # None of the file names have any directory path in them.
+        self.assertFalse(any(['/' in name for name in source_dataset_files]))
+
+
 class MakeArgsTest(BaseTestDataTestCase):
     """Tests of the _make_[model]_args functions."""
 
