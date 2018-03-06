@@ -16,8 +16,8 @@ django-debug-toolbar==1.7
 django-extensions==1.7.8
 django-tables2==1.16.0
 django==1.8.19
-factory-boy==2.8.1
-faker==0.7.10             # via factory-boy
+factory-boy==2.10.0
+faker==0.8.11             # via factory-boy
 first==2.0.1              # via pip-tools
 flake8-docstrings==1.1.0
 flake8-polyfill==1.0.1    # via flake8-docstrings
@@ -36,3 +36,4 @@ selenium==3.3.1
 six==1.10.0               # via django-dbbackup, django-extensions, faker, pip-tools, pydocstyle, python-dateutil
 snowballstemmer==1.2.1    # via pydocstyle
 sqlparse==0.2.3           # via django-debug-toolbar
+text-unidecode==1.2       # via faker
