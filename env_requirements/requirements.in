@@ -8,7 +8,7 @@ django-crispy-forms
 django-dbbackup
 django-debug-toolbar
 django-extensions
-django-tables2
+django-tables2==1.16.0
 factory-boy
 flake8
 flake8-docstrings
