@@ -221,7 +221,7 @@ class SourceTraitSearch(LoginRequiredMixin, SingleTableMixin, MessageMixin, Form
     """Form view class for searching for source traits."""
 
     template_name = 'trait_browser/sourcetrait_search.html'
-    form_class = forms.SourceTraitSearchForm
+    form_class = forms.SourceTraitSearchMultipleStudiesForm
     table_class = tables.SourceTraitTableFull
     context_table_name = 'results_table'
     table_data = models.SourceTrait.objects.none()

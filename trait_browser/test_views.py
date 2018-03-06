@@ -1929,6 +1929,7 @@ class SourceTraitSearchTest(ClearSearchIndexMixin, UserLoginTestCase):
         """View has the correct context upon initial load."""
         response = self.client.get(self.get_url())
         context = response.context
+        self.assertIsInstance(context['form'], forms.SourceTraitSearchMultipleStudiesForm)
         self.assertFalse(context['form'].is_bound)
         self.assertFalse(context['has_results'])
         self.assertIn('results_table', context)
