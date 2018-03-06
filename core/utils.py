@@ -36,7 +36,7 @@ def get_autocomplete_view_ids(response):
     """Get the pks of objects returned by an autocomplete view, from the parsed response content."""
     content = json.loads(response.content.decode('utf-8'))
     results = content['results']
-    ids = [el['id'] for el in results]
+    ids = [int(el['id']) for el in results]
     return ids
 
 
