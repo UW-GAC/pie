@@ -2125,7 +2125,8 @@ class SourceTraitSearchByStudyTest(ClearSearchIndexMixin, UserLoginTestCase):
 
     def test_context_data_with_valid_search_and_some_results(self):
         """View has correct context with a valid search and existing results."""
-        factories.SourceTraitFactory.create(i_description='lorem ipsum',
+        factories.SourceTraitFactory.create(
+            i_description='lorem ipsum',
             source_dataset__source_study_version__study=self.study)
         response = self.client.get(self.get_url(self.study.pk), {'description': 'lorem'})
         qs = searches.search_source_traits(description='lorem')
@@ -2137,7 +2138,8 @@ class SourceTraitSearchByStudyTest(ClearSearchIndexMixin, UserLoginTestCase):
 
     def test_context_data_only_finds_results_in_requested_study(self):
         """View has correct context with a valid search and existing results if a study is selected."""
-        trait = factories.SourceTraitFactory.create(i_description='lorem ipsum',
+        trait = factories.SourceTraitFactory.create(
+            i_description='lorem ipsum',
             source_dataset__source_study_version__study=self.study)
         factories.SourceTraitFactory.create(i_description='lorem ipsum')
         get = {'description': 'lorem'}
@@ -2150,9 +2152,13 @@ class SourceTraitSearchByStudyTest(ClearSearchIndexMixin, UserLoginTestCase):
 
     def test_context_data_with_valid_search_and_trait_name(self):
         """View has correct context with a valid search and existing results if a study is selected."""
-        trait = factories.SourceTraitFactory.create(i_description='lorem ipsum', i_trait_name='dolor',
+        trait = factories.SourceTraitFactory.create(
+            i_description='lorem ipsum',
+            i_trait_name='dolor',
             source_dataset__source_study_version__study=self.study)
-        factories.SourceTraitFactory.create(i_description='lorem other', i_trait_name='tempor',
+        factories.SourceTraitFactory.create(
+            i_description='lorem other',
+            i_trait_name='tempor',
             source_dataset__source_study_version__study=self.study)
         response = self.client.get(self.get_url(self.study.pk), {'description': 'lorem', 'name': 'dolor'})
         context = response.context
@@ -2182,7 +2188,8 @@ class SourceTraitSearchByStudyTest(ClearSearchIndexMixin, UserLoginTestCase):
 
     def test_context_data_info_message_for_one_result(self):
         """A message is displayed if one result is found."""
-        factories.SourceTraitFactory.create(i_description='lorem ipsum',
+        factories.SourceTraitFactory.create(
+            i_description='lorem ipsum',
             source_dataset__source_study_version__study=self.study)
         response = self.client.get(self.get_url(self.study.pk), {'description': 'lorem'})
         messages = list(response.wsgi_request._messages)
@@ -2191,9 +2198,11 @@ class SourceTraitSearchByStudyTest(ClearSearchIndexMixin, UserLoginTestCase):
 
     def test_context_data_info_message_for_multiple_result(self):
         """A message is displayed if two results are found."""
-        factories.SourceTraitFactory.create(i_description='lorem ipsum',
+        factories.SourceTraitFactory.create(
+            i_description='lorem ipsum',
             source_dataset__source_study_version__study=self.study)
-        factories.SourceTraitFactory.create(i_description='lorem ipsum 2',
+        factories.SourceTraitFactory.create(
+            i_description='lorem ipsum 2',
             source_dataset__source_study_version__study=self.study)
         response = self.client.get(self.get_url(self.study.pk), {'description': 'lorem'})
         messages = list(response.wsgi_request._messages)

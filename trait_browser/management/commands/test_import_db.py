@@ -32,7 +32,6 @@ from trait_browser.management.commands.import_db import Command, HUNIT_QUERY, ST
 from trait_browser.management.commands.db_factory import fake_row_dict
 from trait_browser import factories
 from trait_browser import models
-from trait_browser import searches
 from trait_browser.test_searches import ClearSearchIndexMixin
 
 CMD = Command()
@@ -1184,7 +1183,7 @@ class UpdateModelsTest(ClearSearchIndexMixin, BaseTestDataTestCase):
         self.assertTrue(model_instance.modified > old_mod_time)
         # Check that the trait can be found in the search index.
         self.assertQuerysetEqual(watson.filter(models.SourceTrait, new_value),
-            [repr(model_instance)])
+                                 [repr(model_instance)])
 
     def test_update_source_trait_encoded_value(self):
         """Updates in source_trait_encoded_values are imported."""
@@ -2431,9 +2430,9 @@ class IntegrationTest(ClearSearchIndexMixin, BaseTestDataReloadingTestCase):
             m2m_tables, group_by_fields, concat_fields, parent_models, m2m_att_names)
         # Check that search indices are added.
         self.assertEqual(watson.filter(models.SourceTrait, '').count(),
-            models.SourceTrait.objects.all().count())
+                         models.SourceTrait.objects.all().count())
         self.assertEqual(watson.filter(models.HarmonizedTrait, '').count(),
-            models.HarmonizedTrait.objects.all().count())
+                         models.HarmonizedTrait.objects.all().count())
 
     def test_updated_data_from_every_table(self):
         """Every kind of update is detected and imported by import_db."""
