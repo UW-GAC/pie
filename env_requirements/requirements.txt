@@ -30,7 +30,7 @@ pycodestyle==2.3.1        # via flake8
 pydocstyle==2.1.1         # via flake8-docstrings
 pyflakes==1.6.0           # via flake8
 pygraphviz==1.3.1
-python-dateutil==2.6.0    # via faker
+python-dateutil==2.6.1    # via faker
 pytz==2017.2
 selenium==3.3.1
 six==1.10.0               # via django-dbbackup, django-extensions, faker, pip-tools, pydocstyle, python-dateutil
