@@ -5,7 +5,7 @@
 #    pip-compile --output-file env_requirements/requirements.txt env_requirements/requirements.in
 #
 click==6.7                # via pip-tools
-coverage==4.3.4
+coverage==4.5.1
 django-admin-bootstrapped==2.5.7
 django-authtools==1.6.0
 django-autocomplete-light==3.2.10
