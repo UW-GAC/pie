@@ -8,6 +8,7 @@ django-crispy-forms
 django-dbbackup
 django-debug-toolbar
 django-extensions
+django-maintenance-mode
 django-tables2==1.16.0
 factory-boy
 flake8

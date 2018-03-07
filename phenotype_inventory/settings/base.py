@@ -140,6 +140,7 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'maintenance_mode.middleware.MaintenanceModeMiddleware',
 )
 
 
@@ -166,6 +167,7 @@ INSTALLED_APPS = (
     'django_extensions',    # https://github.com/django-extensions/django-extensions
     'authtools',    # https://django-authtools.readthedocs.io/en/latest/index.html
     'dbbackup',    # https://github.com/django-dbbackup/django-dbbackup
+    'maintenance_mode',    # https://github.com/fabiocaccamo/django-maintenance-mode
     # Our custom apps.
     'trait_browser',    # Handles table-based viewing and searching of trait data.
     'core',    # Code used across the project, and data migrations for built-in apps (e.g. sites).
