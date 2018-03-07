@@ -57,7 +57,7 @@ source_study_patterns = [
     url(r'^autocomplete/', include(source_study_autocomplete_patterns, namespace='autocomplete')),
     url(r'^list/$', views.StudyList.as_view(), name='list'),
     url(r'^(?P<pk>\d+)/', include(source_study_detail_patterns, namespace='detail')),
-    # search
+    url(r'^(?P<pk>\d+)/search/', views.SourceTraitSearchByStudy.as_view(), name='search')
     # include autocomplete?
 ]
 

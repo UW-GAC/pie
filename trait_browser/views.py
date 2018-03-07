@@ -3,6 +3,7 @@
 from django.shortcuts import get_object_or_404
 from django.utils.safestring import mark_safe
 from django.views.generic import DetailView, FormView, ListView
+from django.views.generic.detail import SingleObjectMixin
 from django.template.defaultfilters import pluralize    # Use pluralize in the views.
 from django.http import HttpResponseRedirect
 
@@ -226,6 +227,9 @@ class SourceTraitSearch(LoginRequiredMixin, SingleTableMixin, MessageMixin, Form
     context_table_name = 'results_table'
     table_data = models.SourceTrait.objects.none()
 
+    def __init__(self):
+        self.search_kwargs = {}
+
     def get(self, request, *args, **kwargs):
         """Override get method for form and search processing."""
         form_class = self.get_form_class()
@@ -243,7 +247,8 @@ class SourceTraitSearch(LoginRequiredMixin, SingleTableMixin, MessageMixin, Form
 
     def form_valid(self, form):
         """Override form_valid method to process form and add results to the search page."""
-        self.table_data = searches.search_source_traits(**form.cleaned_data)
+        self.search_kwargs.update(form.cleaned_data)
+        self.table_data = searches.search_source_traits(**self.search_kwargs)
         context = self.get_context_data(form=form)
         context['has_results'] = True
         # Add an informational message about the number of results found.
@@ -258,6 +263,24 @@ class SourceTraitSearch(LoginRequiredMixin, SingleTableMixin, MessageMixin, Form
         context = self.get_context_data(form=form)
         context['has_results'] = False
         return self.render_to_response(context)
+
+
+class SourceTraitSearchByStudy(SingleObjectMixin, SourceTraitSearch):
+    """Form view class for searching for source traits within a specific study."""
+
+    template_name = 'trait_browser/study_sourcetrait_search.html'
+    form_class = forms.SourceTraitSearchForm
+    table_class = tables.SourceTraitTableFull
+    context_table_name = 'results_table'
+    table_data = models.SourceTrait.objects.none()
+    context_object_name = 'study'
+    model = models.Study
+
+    def get(self, request, *args, **kwargs):
+        """Override get method for form and search processing."""
+        self.object = self.get_object()
+        self.search_kwargs.update({'studies': [self.object.pk]})
+        return super(SourceTraitSearchByStudy, self).get(request, *args, **kwargs)
 
 
 class SourceTraitPHVAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):

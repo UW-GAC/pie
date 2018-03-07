@@ -53,11 +53,10 @@ class StudyTestCase(TestCase):
         self.assertRegex(study.phs, 'phs\d{6}')
         self.assertEqual(study.dbgap_latest_version_link[:68], models.Study.STUDY_URL[:68])
 
-    def test_get_search_url_creation(self):
+    def test_get_search_url(self):
         """Tests that the get_search_url method returns an appropriately constructed url."""
         study = factories.StudyFactory.create()
-        url = ''.join([reverse('trait_browser:source:traits:search'), '\?study=\d+'])
-        self.assertRegex(study.get_search_url(), url)
+        url = study.get_search_url()
 
     def test_get_absolute_url(self):
         """get_absolute_url function doesn't fail."""

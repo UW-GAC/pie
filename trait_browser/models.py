@@ -169,7 +169,7 @@ class Study(SourceDBTimeStampedModel):
 
     def get_search_url(self):
         """Produce a url to initially populate checkboxes in the search page based on the study."""
-        return reverse('trait_browser:source:traits:search') + '?study={}'.format(self.i_accession)
+        return reverse('trait_browser:source:studies:search', kwargs={'pk': self.pk})
 
     def get_name_link_html(self):
         """Get html for study's name linking to study detail page."""
