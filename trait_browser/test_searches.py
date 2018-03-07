@@ -2,8 +2,6 @@
 
 from django.test import TestCase
 
-from unittest import skip
-
 from watson.models import SearchEntry
 
 from . import models
@@ -75,7 +73,6 @@ class SourceTraitSearchTest(ClearSearchIndexMixin, TestCase):
         qs = searches.search_source_traits(description='lo')
         self.assertQuerysetEqual(qs, [repr(trait)])
 
-    @skip("Requires mysql server setting updates.")
     def test_description_one_word_substring_match_short_word(self):
         """Short word with three letters in the description are found."""
         factories.SourceTraitFactory.create(i_description='other trait')
@@ -120,7 +117,6 @@ class SourceTraitSearchTest(ClearSearchIndexMixin, TestCase):
         self.assertIn(trait_1, qs)
         self.assertIn(trait_2, qs)
 
-    @skip("Requires mysql server setting updates.")
     def test_description_stop_words(self):
         """Trait whose description contains common default stop words is found."""
         # However is a stopword in MySQL by default.
@@ -322,7 +318,6 @@ class HarmonizedTraitSearchTest(ClearSearchIndexMixin, TestCase):
         qs = searches.search_harmonized_traits(description='lo')
         self.assertQuerysetEqual(qs, [repr(trait)])
 
-    @skip("Requires mysql server setting updates.")
     def test_description_one_word_substring_match_short_word(self):
         """Short word with three letters in the description are found."""
         factories.HarmonizedTraitFactory.create(i_description='other trait')
@@ -367,7 +362,6 @@ class HarmonizedTraitSearchTest(ClearSearchIndexMixin, TestCase):
         self.assertIn(trait_1, qs)
         self.assertIn(trait_2, qs)
 
-    @skip("Requires mysql server setting updates.")
     def test_description_stop_words(self):
         """Trait whose description contains common default stop words is found."""
         # However is a stopword in MySQL by default.
