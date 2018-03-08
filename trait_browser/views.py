@@ -98,7 +98,7 @@ class StudySourceDatasetList(LoginRequiredMixin, SingleTableMixin, DetailView):
 
 
 class StudyNameAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
-    """."""
+    """Auto-complete studies in a form field by i_study_name."""
 
     def get_queryset(self):
         retrieved = models.Study.objects.all()
