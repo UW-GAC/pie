@@ -50,7 +50,7 @@ source_study_detail_patterns = [
 ]
 
 source_study_autocomplete_patterns = [
-    url(r'^by-name/$', views.StudyNameAutocompleteByName.as_view(), name='by-name'),
+    url(r'^by-name/$', views.StudyNameAutocomplete.as_view(), name='by-name'),
 ]
 
 source_study_patterns = [

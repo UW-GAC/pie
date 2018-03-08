@@ -240,7 +240,7 @@ class StudySourceTableViewsTest(UserLoginTestCase):
         self.assertIsInstance(response.context['form'], forms.SourceTraitSearchForm)
 
 
-class StudyNameAutocompleteByNameTest(UserLoginTestCase):
+class StudyNameAutocompleteTest(UserLoginTestCase):
 
     def get_url(self):
         return reverse('trait_browser:source:studies:autocomplete:by-name')

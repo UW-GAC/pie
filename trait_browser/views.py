@@ -97,7 +97,7 @@ class StudySourceDatasetList(LoginRequiredMixin, SingleTableMixin, DetailView):
         return context
 
 
-class StudyNameAutocompleteByName(LoginRequiredMixin, autocomplete.Select2QuerySetView):
+class StudyNameAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
     """."""
 
     def get_queryset(self):
