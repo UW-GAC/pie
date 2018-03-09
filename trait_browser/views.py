@@ -441,7 +441,7 @@ class HarmonizedTraitFlavorNameAutocomplete(LoginRequiredMixin, autocomplete.Sel
 class HarmonizedTraitSearch(LoginRequiredMixin, SingleTableMixin, MessageMixin, FormView):
     """Form view class for searching for source traits."""
 
-    template_name = 'trait_browser/sourcetrait_search.html'
+    template_name = 'trait_browser/harmonizedtrait_search.html'
     form_class = forms.HarmonizedTraitSearchForm
     table_class = tables.HarmonizedTraitTable
     context_table_name = 'results_table'
