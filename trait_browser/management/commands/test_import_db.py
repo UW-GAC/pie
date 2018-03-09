@@ -27,11 +27,13 @@ from django.core import management
 from django.test import TestCase
 from django.utils import timezone
 
+import watson.search as watson
+
 from trait_browser.management.commands.import_db import Command, HUNIT_QUERY, STRING_TYPES
 from trait_browser.management.commands.db_factory import fake_row_dict
 from trait_browser import factories
 from trait_browser import models
-
+from trait_browser.test_searches import ClearSearchIndexMixin
 
 CMD = Command()
 ORIGINAL_BACKUP_DIR = settings.DBBACKUP_STORAGE_OPTIONS['location']
@@ -1058,7 +1060,7 @@ class SpecialQueryTest(BaseTestDataTestCase):
         self.assertIn('harmonization_unit_id', results[0].keys())
 
 
-class UpdateModelsTest(BaseTestDataTestCase):
+class UpdateModelsTest(ClearSearchIndexMixin, BaseTestDataTestCase):
     """Tests of the update functions with updates to each possible source_db table."""
 
     # Source trait updates.
@@ -1183,7 +1185,7 @@ class UpdateModelsTest(BaseTestDataTestCase):
         self.assertTrue(model_instance.modified > old_mod_time)
 
     def test_update_source_trait(self):
-        """Updates in source_trait table are imported."""
+        """Updates in source_trait table are imported and the search index is updated."""
         management.call_command('import_db', '--which_db=devel', '--no_backup')
         # Close the db connections because change_data_in_table() opens new connections.
         # This does not affect the .cursor and .source_db attributes in other functions.
@@ -1191,10 +1193,10 @@ class UpdateModelsTest(BaseTestDataTestCase):
         self.source_db.close()
 
         model = models.SourceTrait
-        model_instance = model.objects.all()[0]
+        model_instance = model.objects.all().current()[0]
         old_mod_time = model_instance.modified
         source_db_table_name = 'source_trait'
-        field_to_update = 'dbgap_comment'
+        field_to_update = 'dbgap_description'
         new_value = 'asdfghjkl'
         source_db_pk_name = 'source_trait_id'
 
@@ -1203,8 +1205,10 @@ class UpdateModelsTest(BaseTestDataTestCase):
         management.call_command('import_db', '--which_db=devel', '--update_only', '--verbosity=0', '--no_backup')
         model_instance.refresh_from_db()
         # Check that modified date > created date, and name is set to new value.
-        self.assertEqual(new_value, getattr(model_instance, 'i_' + field_to_update))
+        self.assertEqual(new_value, getattr(model_instance, 'i_description'))
         self.assertTrue(model_instance.modified > old_mod_time)
+        # Check that the trait can be found in the search index.
+        self.assertQuerysetEqual(watson.filter(models.SourceTrait, new_value), [repr(model_instance)])
 
     def test_update_source_trait_encoded_value(self):
         """Updates in source_trait_encoded_values are imported."""
@@ -2325,7 +2329,7 @@ class ImportNoUpdateTest(BaseTestDataTestCase):
 
 
 # Tests that run import_db from start to finish.
-class IntegrationTest(BaseTestDataReloadingTestCase):
+class IntegrationTest(ClearSearchIndexMixin, BaseTestDataReloadingTestCase):
     """Integration test of the whole management command.
 
     It's very difficult to test just one function at a time here, because of
@@ -2449,6 +2453,11 @@ class IntegrationTest(BaseTestDataReloadingTestCase):
         # Check all of the M2M relationships again.
         self.check_imported_m2m_relations_match(
             m2m_tables, group_by_fields, concat_fields, parent_models, m2m_att_names)
+        # Check that search indices are added.
+        self.assertEqual(watson.filter(models.SourceTrait, '').count(),
+                         models.SourceTrait.objects.all().count())
+        self.assertEqual(watson.filter(models.HarmonizedTrait, '').count(),
+                         models.HarmonizedTrait.objects.all().count())
 
     def test_updated_data_from_every_table(self):
         """Every kind of update is detected and imported by import_db."""

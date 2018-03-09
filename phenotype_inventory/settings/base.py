@@ -174,6 +174,7 @@ INSTALLED_APPS = (
     'profiles',    # Handles profile data for users interacting with the site.
     'recipes',
     'tags',
+    'watson',    # Full-text model search.
 )
 
 

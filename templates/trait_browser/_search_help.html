@@ -1,0 +1,38 @@
+<!-- Includable snippet to display help text about searches. -->
+{% comment %}
+    Usage: {% include 'trait_browser/_search_help.html' %}
+{% endcomment %}
+
+<div class="panel-group" id="accordion" role="tablist" aria-multiselectable="true">
+  <div class="panel panel-default">
+    <div class="panel-heading" role="tab" id="headingThree">
+      <h4 class="panel-title">
+        <a class="collapsed" role="button" data-toggle="collapse" data-parent="#accordion" href="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
+          Help with searches
+        </a>
+      </h4>
+    </div>
+    <div id="collapseThree" class="panel-collapse collapse" role="tabpanel" aria-labelledby="headingThree">
+      <div class="panel-body">
+        <dl class="dl-horizontal">
+          <dt>Variable name</dt>
+          <dd>
+            Variable names are matched with case-insensitivity.
+            If the "Match whole name" box is checked, the text entered in the "Variable name" field must be the whole variable name.
+            For example, "bmi" will match "BMI" but not "BMI_1" or "baseline_bmi".
+            Searches without the "Match whole name" box checked will match text anywhere in the variable name, so "bmi" will match "BMI", "BMI_1" and "baseline_bmi".
+          </dd>
+          <dt>Variable description</dt>
+          <dd>
+            All words entered are required to be in the description, although the order is irrelevant.
+            The search will match either complete words or the beginning of words, but not the end of words.
+            For example, "cons" will match both "cons" and "consent" but not "onset", while "ons" will match "onset" but not "consent".
+            Special characters such as <, >, +, =, ?, %, and quotation marks are ignored.
+            Words that are shorter than 3 letters in the variable description are excluded from the search, so "dir" can be found, but "di" cannot.
+            The search is case insensitive.
+          </dd>
+        </dl>
+      </div>
+    </div>
+  </div>
+</div>

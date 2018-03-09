@@ -5,19 +5,21 @@ import re
 
 from django.contrib.auth.models import Group
 from django.core.urlresolvers import reverse
-from django.test import TestCase
 
 from core.utils import (DCCAnalystLoginTestCase, LoginRequiredTestCase, PhenotypeTaggerLoginTestCase, UserLoginTestCase,
                         get_autocomplete_view_ids)
 from profiles.models import Search, Profile
+
 from tags.models import TaggedTrait
 from tags.factories import TagFactory
 from . import models
 from . import factories
 from . import forms
 from . import tables
-from .views import TABLE_PER_PAGE, search
+from . import searches
+from .views import TABLE_PER_PAGE
 
+from .test_searches import ClearSearchIndexMixin
 
 # NB: The database is reset for each test method within a class!
 # NB: for test methods with multiple assertions, the first failed assert statement
@@ -235,8 +237,44 @@ class StudySourceTableViewsTest(UserLoginTestCase):
         response = self.client.get(url)
         # url should work
         self.assertEqual(response.status_code, 200)
-        # url should be using correct i_accession value as checked box
-        self.assertEqual(response.context['form'].initial['study'], str(this_study.i_accession))
+        self.assertIsInstance(response.context['form'], forms.SourceTraitSearchForm)
+
+
+class StudyNameAutocompleteTest(UserLoginTestCase):
+
+    def get_url(self):
+        return reverse('trait_browser:source:studies:autocomplete:by-name')
+
+    def test_view_success_code(self):
+        """View returns successful response code."""
+        response = self.client.get(self.get_url())
+        self.assertEqual(response.status_code, 200)
+
+    def test_returns_all_studies_with_no_query(self):
+        studies = factories.StudyFactory.create_batch(10)
+        response = self.client.get(self.get_url())
+        pks = get_autocomplete_view_ids(response)
+        self.assertEqual(sorted([study.pk for study in studies]), sorted(pks))
+
+    def test_works_with_no_studies(self):
+        response = self.client.get(self.get_url())
+        pks = get_autocomplete_view_ids(response)
+        self.assertEqual(len(pks), 0)
+
+    def test_finds_one_matching_study(self):
+        factories.StudyFactory.create(i_study_name='other')
+        study = factories.StudyFactory.create(i_study_name='my study')
+        response = self.client.get(self.get_url(), {'q': 'stu'})
+        pks = get_autocomplete_view_ids(response)
+        self.assertEqual([study.pk], pks)
+
+    def test_finds_two_matching_studies(self):
+        factories.StudyFactory.create(i_study_name='other')
+        study_1 = factories.StudyFactory.create(i_study_name='my study')
+        study_2 = factories.StudyFactory.create(i_study_name='another sturgeon')
+        response = self.client.get(self.get_url(), {'q': 'stu'})
+        pks = get_autocomplete_view_ids(response)
+        self.assertEqual(sorted([study_1.pk, study_2.pk]), sorted(pks))
 
 
 class SourceDatasetDetailTest(UserLoginTestCase):
@@ -2025,216 +2063,456 @@ class HarmonizedTraitFlavorNameAutocompleteTest(UserLoginTestCase):
                               msg="Could not find expected trait name {} with query '{}'".format(expected_name, query))
 
 
-# Tests of searching. Will probably be replaced/majorly rewritten after search is redesigned.
-class SourceSearchTest(TestCase):
+class SourceTraitSearchTest(ClearSearchIndexMixin, UserLoginTestCase):
 
-    def test_search_source_trait_name_exact(self):
-        """Finds an exact match in the SourceTrait name field, but doesn't find a non-match."""
-        st_match = factories.SourceTraitFactory.create(i_trait_name='foo_bar', i_trait_id=1)
-        st_nonmatch = factories.SourceTraitFactory.create(i_trait_name='sum_es', i_trait_id=2)
-        search1 = search('foo_bar', 'source')
-        # Check that the matching trait is found, but the non-match is not.
-        self.assertIn(st_match, search1)
-        self.assertNotIn(st_nonmatch, search1)
+    def get_url(self, *args):
+        return reverse('trait_browser:source:traits:search')
 
-    def test_search_source_trait_name_substring(self):
-        """Finds a substring match in the SourceTrait name field, but doesn't find a non-match."""
-        st_match = factories.SourceTraitFactory.create(i_trait_name='foo_bar', i_trait_id=1)
-        st_nonmatch = factories.SourceTraitFactory.create(i_trait_name='sum_es', i_trait_id=2)
-        search1 = search('bar', 'source')
-        # Check that the matching trait is found, but the non-match is not.
-        self.assertIn(st_match, search1)
-        self.assertNotIn(st_nonmatch, search1)
-
-    def test_search_source_trait_description_exact(self):
-        """Finds an exact match in the SourceTrait i_description field, but doesn't find a non-match."""
-        st_match = factories.SourceTraitFactory.create(i_description='foo and bar', i_trait_id=1)
-        st_nonmatch = factories.SourceTraitFactory.create(i_description='sum and es', i_trait_id=2)
-        search1 = search('foo and bar', 'source')
-        # Check that the matching trait is found, but the non-match is not.
-        self.assertIn(st_match, search1)
-        self.assertNotIn(st_nonmatch, search1)
-
-    def test_search_source_trait_description_substring(self):
-        """Finds a substring match in the SourceTrait i_description field, but doesn't find a non-match."""
-        st_match = factories.SourceTraitFactory.create(i_description='foo and bar', i_trait_id=1)
-        st_nonmatch = factories.SourceTraitFactory.create(i_description='sum and es', i_trait_id=2)
-        search1 = search('bar', 'source')
-        # Check that the matching trait is found, but the non-match is not.
-        self.assertIn(st_match, search1)
-        self.assertNotIn(st_nonmatch, search1)
-
-    def test_search_source_trait_name_in_study(self):
-        """Finds a matching name in one particular study, but doesn't find a match from a different study."""
-        study1 = factories.StudyFactory.create(i_study_name="FHS")
-        study2 = factories.StudyFactory.create(i_study_name="CFS")
-        source_dataset1 = factories.SourceDatasetFactory.create(source_study_version__study=study1)
-        source_dataset2 = factories.SourceDatasetFactory.create(source_study_version__study=study2)
-        st_match = factories.SourceTraitFactory.create(
-            i_trait_name='foo_bar', i_trait_id=1, source_dataset=source_dataset1)
-        st_nonmatch = factories.SourceTraitFactory.create(
-            i_trait_name='foo_bar', i_trait_id=2, source_dataset=source_dataset2)
-        search1 = search('bar', 'source', study_pks=[study1.i_accession])
-        # Check that the matching trait is found, but the non-match is not.
-        self.assertIn(st_match, search1)
-        self.assertNotIn(st_nonmatch, search1)
-
-
-class SourceTraitSearchViewTest(UserLoginTestCase):
-
-    def test_source_trait_search_with_valid_results(self):
-        """Returns 200 code and correct number of search results when valid results exist."""
-        # Make ten random SourceTraits.
-        factories.SourceTraitFactory.create_batch(10)
-        # Make one SourceTrait that will match your (improbable) search term.
-        factories.SourceTraitFactory.create(i_trait_name='asdfghjkl')
-        url = reverse('trait_browser:source:traits:search')
-        response = self.client.get(url, {'text': 'asdfghjkl'})
+    def test_view_success_code(self):
+        """View returns successful response code."""
+        response = self.client.get(self.get_url())
         self.assertEqual(response.status_code, 200)
-        self.assertTrue(response.context['results'])
-        self.assertIsInstance(response.context['trait_table'], tables.SourceTraitTableFull)
-        self.assertEqual(len(response.context['trait_table'].rows), 1)
 
-    def test_source_trait_search_with_no_results(self):
-        """Returns 200 code and empty table when there are no valid search results."""
-        factories.SourceTraitFactory.create_batch(10)
-        url = reverse('trait_browser:source:traits:search')
-        response = self.client.get(url, {'text': 'asdfghjkl'})
+    def test_context_data_with_empty_form(self):
+        """View has the correct context upon initial load."""
+        response = self.client.get(self.get_url())
+        context = response.context
+        self.assertIsInstance(context['form'], forms.SourceTraitSearchMultipleStudiesForm)
+        self.assertFalse(context['form'].is_bound)
+        self.assertFalse(context['has_results'])
+        self.assertIn('results_table', context)
+
+    def test_context_data_with_blank_form(self):
+        """View has the correct context upon invalid form submission."""
+        response = self.client.get(self.get_url(), {'description': ''})
+        context = response.context
+        self.assertTrue(context['form'].is_bound)
+        self.assertFalse(context['has_results'])
+        self.assertIn('results_table', context)
+
+    def test_context_data_with_valid_search_and_no_results(self):
+        """View has correct context with a valid search but no results."""
+        response = self.client.get(self.get_url(), {'description': 'test'})
+        context = response.context
+        self.assertIn('form', context)
+        self.assertTrue(context['has_results'])
+        self.assertIsInstance(context['results_table'], tables.SourceTraitTableFull)
+
+    def test_context_data_with_valid_search_and_some_results(self):
+        """View has correct context with a valid search and existing results."""
+        factories.SourceTraitFactory.create(i_description='lorem ipsum')
+        response = self.client.get(self.get_url(), {'description': 'lorem'})
+        qs = searches.search_source_traits(description='lorem')
+        context = response.context
+        self.assertIn('form', context)
+        self.assertTrue(context['has_results'])
+        self.assertIsInstance(context['results_table'], tables.SourceTraitTableFull)
+        self.assertQuerysetEqual(qs, [repr(x) for x in context['results_table'].data])
+
+    def test_context_data_with_valid_search_and_a_specified_study(self):
+        """View has correct context with a valid search and existing results if a study is selected."""
+        trait = factories.SourceTraitFactory.create(i_description='lorem ipsum')
+        study = trait.source_dataset.source_study_version.study
+        factories.SourceTraitFactory.create(i_description='lorem other')
+        get = {'description': 'lorem', 'studies': [study.pk]}
+        response = self.client.get(self.get_url(), get)
+        qs = searches.search_source_traits(description='lorem', studies=[study.pk])
+        context = response.context
+        self.assertIn('form', context)
+        self.assertTrue(context['has_results'])
+        self.assertIsInstance(context['results_table'], tables.SourceTraitTableFull)
+        self.assertQuerysetEqual(qs, [repr(x) for x in context['results_table'].data])
+
+    def test_context_data_with_valid_search_and_trait_name(self):
+        """View has correct context with a valid search and existing results if a study is selected."""
+        trait = factories.SourceTraitFactory.create(i_description='lorem ipsum', i_trait_name='dolor')
+        factories.SourceTraitFactory.create(i_description='lorem other', i_trait_name='tempor')
+        response = self.client.get(self.get_url(), {'description': 'lorem', 'name': 'dolor'})
+        qs = searches.search_source_traits(description='lorem', name='dolor')
+        context = response.context
+        self.assertIn('form', context)
+        self.assertTrue(context['has_results'])
+        self.assertIsInstance(context['results_table'], tables.SourceTraitTableFull)
+        self.assertQuerysetEqual(qs, [repr(x) for x in context['results_table'].data])
+
+    def test_context_data_no_messages_for_initial_load(self):
+        """No messages are displayed on initial load of page."""
+        response = self.client.get(self.get_url())
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 0)
+
+    def test_context_data_no_messages_for_invalid_form(self):
+        """No messages are displayed if form is invalid."""
+        response = self.client.get(self.get_url(), {'description': ''})
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 0)
+
+    def test_context_data_info_message_for_no_results(self):
+        """A message is displayed if no results are found."""
+        response = self.client.get(self.get_url(), {'description': 'lorem'})
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertEqual(str(messages[0]), '0 results found.')
+
+    def test_context_data_info_message_for_one_result(self):
+        """A message is displayed if one result is found."""
+        factories.SourceTraitFactory.create(i_description='lorem ipsum')
+        response = self.client.get(self.get_url(), {'description': 'lorem'})
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertEqual(str(messages[0]), '1 result found.')
+
+    def test_context_data_info_message_for_multiple_result(self):
+        """A message is displayed if two results are found."""
+        factories.SourceTraitFactory.create(i_description='lorem ipsum')
+        factories.SourceTraitFactory.create(i_description='lorem ipsum 2')
+        response = self.client.get(self.get_url(), {'description': 'lorem'})
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertEqual(str(messages[0]), '2 results found.')
+
+    def test_table_pagination(self):
+        """Table pagination works correctly on the first page."""
+        n_traits = TABLE_PER_PAGE + 2
+        factories.SourceTraitFactory.create_batch(n_traits, i_description='lorem ipsum')
+        response = self.client.get(self.get_url(), {'description': 'lorem'})
+        context = response.context
+        self.assertIn('form', context)
+        self.assertTrue(context['has_results'])
+        self.assertIsInstance(context['results_table'], tables.SourceTraitTableFull)
+        self.assertEqual(len(context['results_table'].rows), n_traits)
+
+    def test_form_works_with_table_pagination_on_second_page(self):
+        """Table pagination works correctly on the second page."""
+        n_traits = TABLE_PER_PAGE + 2
+        factories.SourceTraitFactory.create_batch(n_traits, i_description='lorem ipsum')
+        response = self.client.get(self.get_url(), {'description': 'lorem', 'page': 2})
+        context = response.context
+        self.assertIn('form', context)
+        self.assertTrue(context['has_results'])
+        self.assertIsInstance(context['results_table'], tables.SourceTraitTableFull)
+        self.assertEqual(len(context['results_table'].rows), n_traits)
+
+    def test_table_ordering(self):
+        """Traits are ordered by dataset and then variable accession."""
+        dataset = factories.SourceDatasetFactory.create()
+        trait_1 = factories.SourceTraitFactory.create(
+            i_dbgap_variable_accession=2,
+            source_dataset=dataset, i_description='lorem ipsum')
+        trait_2 = factories.SourceTraitFactory.create(
+            i_dbgap_variable_accession=1,
+            source_dataset=dataset, i_description='lorem other')
+        response = self.client.get(self.get_url(), {'description': 'lorem'})
+        context = response.context
+        table = context['results_table']
+        self.assertEqual(list(table.data), [trait_2, trait_1])
+
+    def test_reset_button_works_on_initial_page(self):
+        """Reset button returns to original page."""
+        response = self.client.get(self.get_url(), {'reset': 'Reset'}, follow=True)
+        context = response.context
+        self.assertIn('form', context)
+        self.assertFalse(context['form'].is_bound)
+        self.assertFalse(context['has_results'])
+        self.assertIn('results_table', context)
+        self.assertEqual(len(context['results_table'].rows), 0)
+
+    def test_reset_button_works_with_data_in_form(self):
+        """Reset button returns to original page."""
+        response = self.client.get(self.get_url(), {'reset': 'Reset', 'name': ''}, follow=True)
+        context = response.context
+        self.assertIn('form', context)
+        self.assertFalse(context['form'].is_bound)
+        self.assertFalse(context['has_results'])
+        self.assertIn('results_table', context)
+        self.assertEqual(len(context['results_table'].rows), 0)
+
+
+class SourceTraitSearchByStudyTest(ClearSearchIndexMixin, UserLoginTestCase):
+
+    def setUp(self):
+        super(SourceTraitSearchByStudyTest, self).setUp()
+        self.study = factories.StudyFactory.create()
+
+    def get_url(self, *args):
+        return reverse('trait_browser:source:studies:search', args=args)
+
+    def test_view_success_code(self):
+        """View returns successful response code."""
+        response = self.client.get(self.get_url(self.study.pk))
         self.assertEqual(response.status_code, 200)
-        self.assertTrue(response.context['results'])
-        self.assertIsInstance(response.context['trait_table'], tables.SourceTraitTableFull)
-        self.assertEqual(len(response.context['trait_table'].rows), 0)
 
-    def test_source_trait_search_with_no_search_text_entered(self):
-        """There is no trait table displayed when no search text is entered and the form is not bound to data."""
-        factories.SourceTraitFactory.create_batch(10)
-        url = reverse('trait_browser:source:traits:search')
-        response = self.client.get(url, {'text': ''})
+    def test_view_with_invalid_pk(self):
+        """View returns 404 response code when the pk doesn't exist."""
+        response = self.client.get(self.get_url(self.study.pk + 1))
+        self.assertEqual(response.status_code, 404)
+
+    def test_context_data_with_empty_form(self):
+        """View has the correct context upon initial load."""
+        response = self.client.get(self.get_url(self.study.pk))
+        context = response.context
+        self.assertIsInstance(context['form'], forms.SourceTraitSearchForm)
+        self.assertFalse(context['form'].is_bound)
+        self.assertFalse(context['has_results'])
+        self.assertIn('results_table', context)
+
+    def test_context_data_with_blank_form(self):
+        """View has the correct context upon invalid form submission."""
+        response = self.client.get(self.get_url(self.study.pk), {'description': ''})
+        context = response.context
+        self.assertTrue(context['form'].is_bound)
+        self.assertFalse(context['has_results'])
+        self.assertIn('results_table', context)
+
+    def test_context_data_with_valid_search_and_no_results(self):
+        """View has correct context with a valid search but no results."""
+        response = self.client.get(self.get_url(self.study.pk), {'description': 'test'})
+        context = response.context
+        self.assertIn('form', context)
+        self.assertTrue(context['has_results'])
+        self.assertIsInstance(context['results_table'], tables.SourceTraitTableFull)
+
+    def test_context_data_with_valid_search_and_some_results(self):
+        """View has correct context with a valid search and existing results."""
+        factories.SourceTraitFactory.create(
+            i_description='lorem ipsum',
+            source_dataset__source_study_version__study=self.study)
+        response = self.client.get(self.get_url(self.study.pk), {'description': 'lorem'})
+        qs = searches.search_source_traits(description='lorem')
+        context = response.context
+        self.assertIn('form', context)
+        self.assertTrue(context['has_results'])
+        self.assertIsInstance(context['results_table'], tables.SourceTraitTableFull)
+        self.assertQuerysetEqual(qs, [repr(x) for x in context['results_table'].data])
+
+    def test_context_data_only_finds_results_in_requested_study(self):
+        """View has correct context with a valid search and existing results if a study is selected."""
+        trait = factories.SourceTraitFactory.create(
+            i_description='lorem ipsum',
+            source_dataset__source_study_version__study=self.study)
+        factories.SourceTraitFactory.create(i_description='lorem ipsum')
+        get = {'description': 'lorem'}
+        response = self.client.get(self.get_url(self.study.pk), get)
+        context = response.context
+        self.assertIn('form', context)
+        self.assertTrue(context['has_results'])
+        self.assertIsInstance(context['results_table'], tables.SourceTraitTableFull)
+        self.assertQuerysetEqual(context['results_table'].data, [repr(trait)])
+
+    def test_context_data_with_valid_search_and_trait_name(self):
+        """View has correct context with a valid search and existing results if a study is selected."""
+        trait = factories.SourceTraitFactory.create(
+            i_description='lorem ipsum',
+            i_trait_name='dolor',
+            source_dataset__source_study_version__study=self.study)
+        factories.SourceTraitFactory.create(
+            i_description='lorem other',
+            i_trait_name='tempor',
+            source_dataset__source_study_version__study=self.study)
+        response = self.client.get(self.get_url(self.study.pk), {'description': 'lorem', 'name': 'dolor'})
+        context = response.context
+        self.assertIn('form', context)
+        self.assertTrue(context['has_results'])
+        self.assertIsInstance(context['results_table'], tables.SourceTraitTableFull)
+        self.assertQuerysetEqual(context['results_table'].data, [repr(trait)])
+
+    def test_context_data_no_messages_for_initial_load(self):
+        """No messages are displayed on initial load of page."""
+        response = self.client.get(self.get_url(self.study.pk))
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 0)
+
+    def test_context_data_no_messages_for_invalid_form(self):
+        """No messages are displayed if form is invalid."""
+        response = self.client.get(self.get_url(self.study.pk), {'description': ''})
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 0)
+
+    def test_context_data_info_message_for_no_results(self):
+        """A message is displayed if no results are found."""
+        response = self.client.get(self.get_url(self.study.pk), {'description': 'lorem'})
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertEqual(str(messages[0]), '0 results found.')
+
+    def test_context_data_info_message_for_one_result(self):
+        """A message is displayed if one result is found."""
+        factories.SourceTraitFactory.create(
+            i_description='lorem ipsum',
+            source_dataset__source_study_version__study=self.study)
+        response = self.client.get(self.get_url(self.study.pk), {'description': 'lorem'})
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertEqual(str(messages[0]), '1 result found.')
+
+    def test_context_data_info_message_for_multiple_result(self):
+        """A message is displayed if two results are found."""
+        factories.SourceTraitFactory.create(
+            i_description='lorem ipsum',
+            source_dataset__source_study_version__study=self.study)
+        factories.SourceTraitFactory.create(
+            i_description='lorem ipsum 2',
+            source_dataset__source_study_version__study=self.study)
+        response = self.client.get(self.get_url(self.study.pk), {'description': 'lorem'})
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertEqual(str(messages[0]), '2 results found.')
+
+    def test_reset_button_works_on_initial_page(self):
+        """Reset button returns to original page."""
+        response = self.client.get(self.get_url(self.study.pk), {'reset': 'Reset'}, follow=True)
+        context = response.context
+        self.assertIn('form', context)
+        self.assertFalse(context['form'].is_bound)
+        self.assertFalse(context['has_results'])
+        self.assertIn('results_table', context)
+        self.assertEqual(len(context['results_table'].rows), 0)
+
+    def test_reset_button_works_with_data_in_form(self):
+        """Reset button returns to original page."""
+        response = self.client.get(self.get_url(self.study.pk), {'reset': 'Reset', 'name': ''}, follow=True)
+        context = response.context
+        self.assertIn('form', context)
+        self.assertFalse(context['form'].is_bound)
+        self.assertFalse(context['has_results'])
+        self.assertIn('results_table', context)
+        self.assertEqual(len(context['results_table'].rows), 0)
+
+
+class HarmonizedTraitSearchTest(ClearSearchIndexMixin, UserLoginTestCase):
+
+    def get_url(self, *args):
+        return reverse('trait_browser:harmonized:traits:search')
+
+    def test_view_success_code(self):
+        """View returns successful response code."""
+        response = self.client.get(self.get_url())
         self.assertEqual(response.status_code, 200)
-        self.assertFalse(response.context['results'])
-        self.assertNotIn('trait_table', response.context)
-        self.assertTrue(response.context['form'].is_bound)
-        self.assertEqual(response.context['trait_type'], 'source')
-        self.assertIsInstance(response.context['form'], forms.SourceTraitCrispySearchForm)
 
-    def test_source_trait_search_with_valid_results_and_study_filter(self):
-        """Returns 200 code and correct number of results when there are valid results for study-filtered search."""
-        factories.SourceTraitFactory.create_batch(10)
-        good_trait = factories.SourceTraitFactory.create(i_trait_name='asdfghjkl')
-        url = reverse('trait_browser:source:traits:search')
-        response = self.client.get(url, {'text': 'asdfghjkl',
-                                         'study': [good_trait.source_dataset.source_study_version.study.i_accession]})
-        self.assertEqual(response.status_code, 200)
-        self.assertTrue(response.context['results'])
-        self.assertIsInstance(response.context['trait_table'], tables.SourceTraitTableFull)
-        self.assertEqual(len(response.context['trait_table'].rows), 1)
+    def test_context_data_with_empty_form(self):
+        """View has the correct context upon initial load."""
+        response = self.client.get(self.get_url())
+        context = response.context
+        self.assertFalse(context['form'].is_bound)
+        self.assertFalse(context['has_results'])
+        self.assertIn('results_table', context)
 
-    def test_source_trait_search_with_no_results_and_study_filter(self):
-        """Returns 0 results and 200 code for invalid study-filtered search."""
-        traits = factories.SourceTraitFactory.create_batch(10)
-        good_trait = factories.SourceTraitFactory.create(i_trait_name='asdfghjkl')
-        url = reverse('trait_browser:source:traits:search')
-        response = self.client.get(url, {'text': 'asdfghjkl',
-                                         'study': [traits[0].source_dataset.source_study_version.study.i_accession]})
-        self.assertEqual(response.status_code, 200)
-        self.assertTrue(response.context['results'])
-        self.assertIsInstance(response.context['trait_table'], tables.SourceTraitTableFull)
-        self.assertEqual(len(response.context['trait_table'].rows), 0)
+    def test_context_data_with_blank_form(self):
+        """View has the correct context upon invalid form submission."""
+        response = self.client.get(self.get_url(), {'description': ''})
+        context = response.context
+        self.assertTrue(context['form'].is_bound)
+        self.assertFalse(context['has_results'])
+        self.assertIn('results_table', context)
 
-    def test_source_trait_search_with_no_search_text_entered_and_study_filter(self):
-        """Trait table is not in context when study filter is checked but form is unbound."""
-        factories.SourceTraitFactory.create_batch(10)
-        url = reverse('trait_browser:source:traits:search')
-        response = self.client.get(url, {'study': [st.pk for st in models.Study.objects.all()[:3]]})
-        self.assertEqual(response.status_code, 200)
-        self.assertFalse(response.context['results'])
-        self.assertNotIn('trait_table', response.context)
-        self.assertFalse(response.context['form'].is_bound)
+    def test_context_data_with_valid_search_and_no_results(self):
+        """View has correct context with a valid search but no results."""
+        response = self.client.get(self.get_url(), {'description': 'test'})
+        context = response.context
+        self.assertIn('form', context)
+        self.assertTrue(context['has_results'])
+        self.assertIsInstance(context['results_table'], tables.HarmonizedTraitTable)
 
-    def test_source_trait_search_has_no_initial_checkboxes(self):
-        """Tests that the base search url does not have an initial checkbox."""
-        url = reverse('trait_browser:source:traits:search')
-        response = self.client.get(url)
-        self.assertEqual(len(response.context['form'].initial), 0)
+    def test_context_data_with_valid_search_and_some_results(self):
+        """View has correct context with a valid search and existing results."""
+        factories.HarmonizedTraitFactory.create(i_description='lorem ipsum')
+        response = self.client.get(self.get_url(), {'description': 'lorem'})
+        qs = searches.search_harmonized_traits(description='lorem')
+        context = response.context
+        self.assertIn('form', context)
+        self.assertTrue(context['has_results'])
+        self.assertIsInstance(context['results_table'], tables.HarmonizedTraitTable)
+        self.assertQuerysetEqual(qs, [repr(x) for x in context['results_table'].data])
 
+    def test_context_data_with_valid_search_and_trait_name(self):
+        """View has correct context with a valid search and existing results if a study is selected."""
+        trait = factories.HarmonizedTraitFactory.create(i_description='lorem ipsum', i_trait_name='dolor')
+        factories.HarmonizedTraitFactory.create(i_description='lorem other', i_trait_name='tempor')
+        response = self.client.get(self.get_url(), {'description': 'lorem', 'name': 'dolor'})
+        qs = searches.search_harmonized_traits(description='lorem', name='dolor')
+        context = response.context
+        self.assertIn('form', context)
+        self.assertTrue(context['has_results'])
+        self.assertIsInstance(context['results_table'], tables.HarmonizedTraitTable)
+        self.assertQuerysetEqual(qs, [repr(x) for x in context['results_table'].data])
 
-class HarmonizedSearchTest(TestCase):
+    def test_context_data_no_messages_for_initial_load(self):
+        """No messages are displayed on initial load of page."""
+        response = self.client.get(self.get_url())
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 0)
 
-    # Note that there is currently no test to ensure that H. trait search does not return deprecated traits.
+    def test_context_data_no_messages_for_invalid_form(self):
+        """No messages are displayed if form is invalid."""
+        response = self.client.get(self.get_url(), {'description': ''})
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 0)
 
-    def test_search_harmonized_trait_name_exact(self):
-        """Finds an exact match in the HarmonizedTrait name field, but doesn't find a non-match."""
-        st_match = factories.HarmonizedTraitFactory.create(i_trait_name='foo_bar', i_trait_id=1)
-        st_nonmatch = factories.HarmonizedTraitFactory.create(i_trait_name='sum_es', i_trait_id=2)
-        search1 = search('foo_bar', 'harmonized')
-        # Check that the matching trait is found, but the non-match is not.
-        self.assertIn(st_match, search1)
-        self.assertNotIn(st_nonmatch, search1)
+    def test_context_data_info_message_for_no_results(self):
+        """A message is displayed if no results are found."""
+        response = self.client.get(self.get_url(), {'description': 'lorem'})
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertEqual(str(messages[0]), '0 results found.')
 
-    def test_search_harmonized_trait_name_substring(self):
-        """Finds a substring match in the HarmonizedTrait name field, but doesn't find a non-match."""
-        st_match = factories.HarmonizedTraitFactory.create(i_trait_name='foo_bar', i_trait_id=1)
-        st_nonmatch = factories.HarmonizedTraitFactory.create(i_trait_name='sum_es', i_trait_id=2)
-        search1 = search('bar', 'harmonized')
-        # Check that the matching trait is found, but the non-match is not.
-        self.assertIn(st_match, search1)
-        self.assertNotIn(st_nonmatch, search1)
+    def test_context_data_info_message_for_one_result(self):
+        """A message is displayed if one result is found."""
+        factories.HarmonizedTraitFactory.create(i_description='lorem ipsum')
+        response = self.client.get(self.get_url(), {'description': 'lorem'})
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertEqual(str(messages[0]), '1 result found.')
 
-    def test_search_harmonized_trait_description_exact(self):
-        """Finds an exact match in the HarmonizedTrait i_description field, but doesn't find a non-match."""
-        st_match = factories.HarmonizedTraitFactory.create(i_description='foo and bar', i_trait_id=1)
-        st_nonmatch = factories.HarmonizedTraitFactory.create(i_description='sum and es', i_trait_id=2)
-        search1 = search('foo and bar', 'harmonized')
-        # Check that the matching trait is found, but the non-match is not.
-        self.assertIn(st_match, search1)
-        self.assertNotIn(st_nonmatch, search1)
+    def test_context_data_info_message_for_multiple_result(self):
+        """A message is displayed if two results are found."""
+        factories.HarmonizedTraitFactory.create(i_description='lorem ipsum')
+        factories.HarmonizedTraitFactory.create(i_description='lorem ipsum 2')
+        response = self.client.get(self.get_url(), {'description': 'lorem'})
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertEqual(str(messages[0]), '2 results found.')
 
-    def test_search_harmonized_trait_description_substring(self):
-        """Finds a substring match in the HarmonizedTrait i_description field, but doesn't find a non-match."""
-        st_match = factories.HarmonizedTraitFactory.create(i_description='foo and bar', i_trait_id=1)
-        st_nonmatch = factories.HarmonizedTraitFactory.create(i_description='sum and es', i_trait_id=2)
-        search1 = search('bar', 'harmonized')
-        # Check that the matching trait is found, but the non-match is not.
-        self.assertIn(st_match, search1)
-        self.assertNotIn(st_nonmatch, search1)
+    def test_table_pagination(self):
+        """Table pagination works correctly on the first page."""
+        n_traits = TABLE_PER_PAGE + 2
+        factories.HarmonizedTraitFactory.create_batch(n_traits, i_description='lorem ipsum')
+        response = self.client.get(self.get_url(), {'description': 'lorem'})
+        context = response.context
+        self.assertIn('form', context)
+        self.assertTrue(context['has_results'])
+        self.assertIsInstance(context['results_table'], tables.HarmonizedTraitTable)
+        self.assertEqual(len(context['results_table'].rows), n_traits)
 
+    def test_form_works_with_table_pagination_on_second_page(self):
+        """Table pagination works correctly on the second page."""
+        n_traits = TABLE_PER_PAGE + 2
+        factories.HarmonizedTraitFactory.create_batch(n_traits, i_description='lorem ipsum')
+        response = self.client.get(self.get_url(), {'description': 'lorem', 'page': 2})
+        context = response.context
+        self.assertIn('form', context)
+        self.assertTrue(context['has_results'])
+        self.assertIsInstance(context['results_table'], tables.HarmonizedTraitTable)
+        self.assertEqual(len(context['results_table'].rows), n_traits)
 
-class HarmonizedTraitSearchViewTest(UserLoginTestCase):
+    def test_reset_button_works_on_initial_page(self):
+        """Reset button returns to original page."""
+        response = self.client.get(self.get_url(), {'reset': 'Reset'}, follow=True)
+        context = response.context
+        self.assertIn('form', context)
+        self.assertFalse(context['form'].is_bound)
+        self.assertFalse(context['has_results'])
+        self.assertIn('results_table', context)
+        self.assertEqual(len(context['results_table'].rows), 0)
 
-    def test_harmonized_trait_search_with_valid_results(self):
-        """Returns 200 code and correct number of results when only 1 result exists."""
-        # Make ten random HarmonizedTraits.
-        factories.HarmonizedTraitFactory.create_batch(10)
-        # Make one HarmonizedTrait that will match your (improbable) search term.
-        factories.HarmonizedTraitFactory.create(i_trait_name='asdfghjkl')
-        url = reverse('trait_browser:harmonized:traits:search')
-        response = self.client.get(url, {'text': 'asdfghjkl'})
-        self.assertEqual(response.status_code, 200)
-        self.assertTrue(response.context['results'])
-        self.assertIsInstance(response.context['trait_table'], tables.HarmonizedTraitTable)
-        self.assertEqual(len(response.context['trait_table'].rows), 1)
-
-    def test_harmonized_trait_search_with_no_results(self):
-        """Returns 200 code and 0 results when there are no matches."""
-        factories.HarmonizedTraitFactory.create_batch(10)
-        url = reverse('trait_browser:harmonized:traits:search')
-        response = self.client.get(url, {'text': 'asdfghjkl'})
-        self.assertEqual(response.status_code, 200)
-        self.assertTrue(response.context['results'])
-        self.assertIsInstance(response.context['trait_table'], tables.HarmonizedTraitTable)
-        self.assertEqual(len(response.context['trait_table'].rows), 0)
-
-    def test_harmonized_trait_search_with_no_search_text_entered(self):
-        """There is no trait table displayed when no search text is entered and the form is not bound to data."""
-        factories.HarmonizedTraitFactory.create_batch(10)
-        url = reverse('trait_browser:harmonized:traits:search')
-        response = self.client.get(url, {'text': ''})
-        self.assertEqual(response.status_code, 200)
-        self.assertFalse(response.context['results'])
-        self.assertNotIn('trait_table', response.context)
-        self.assertTrue(response.context['form'].is_bound)
-        self.assertEqual(response.context['trait_type'], 'harmonized')
-        self.assertIsInstance(response.context['form'], forms.HarmonizedTraitCrispySearchForm)
+    def test_reset_button_works_with_data_in_form(self):
+        """Reset button returns to original page."""
+        response = self.client.get(self.get_url(), {'reset': 'Reset', 'name': ''}, follow=True)
+        context = response.context
+        self.assertIn('form', context)
+        self.assertFalse(context['form'].is_bound)
+        self.assertFalse(context['has_results'])
+        self.assertIn('results_table', context)
+        self.assertEqual(len(context['results_table'].rows), 0)
 
 
 # Test of the login-required for each URL in the app.
