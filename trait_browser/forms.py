@@ -21,7 +21,8 @@ class SourceTraitSearchForm(forms.Form):
         label='Variable name',
         max_length=100,
         required=False,
-        help_text='Search dbGaP phenotype variable names.')
+        help_text='Search dbGaP phenotype variable names.'
+    )
     match_exact_name = forms.BooleanField(
         label='Match whole name',
         required=False,
@@ -70,9 +71,7 @@ class SourceTraitSearchForm(forms.Form):
         """Perform additional multi-field cleaning to make sure that either description or name is entered."""
         cleaned_data = super(SourceTraitSearchForm, self).clean()
         if not cleaned_data['name'] and not cleaned_data['description']:
-            raise forms.ValidationError(
-                'Either variable name or description must be filled in.'
-            )
+            raise forms.ValidationError('Either variable name or description must be filled in.')
 
 
 class SourceTraitSearchMultipleStudiesForm(SourceTraitSearchForm):
@@ -82,8 +81,7 @@ class SourceTraitSearchMultipleStudiesForm(SourceTraitSearchForm):
         queryset=models.Study.objects.all(),
         required=False,
         label='Study/Studies',
-        widget=autocomplete.ModelSelect2Multiple(
-            url='trait_browser:source:studies:autocomplete:by-name'),
+        widget=autocomplete.ModelSelect2Multiple(url='trait_browser:source:studies:autocomplete:by-name'),
         help_text="""Search only in selected studies. Start typing the dbGaP study name to filter the list, then
         select the intended study. More than one study may be selected."""
     )
@@ -152,6 +150,4 @@ class HarmonizedTraitSearchForm(forms.Form):
         """Perform additional multi-field cleaning to make sure that either description or name is entered."""
         cleaned_data = super(HarmonizedTraitSearchForm, self).clean()
         if not cleaned_data['name'] and not cleaned_data['description']:
-            raise forms.ValidationError(
-                'Either variable name or description must be filled in.'
-            )
+            raise forms.ValidationError('Either variable name or description must be filled in.')

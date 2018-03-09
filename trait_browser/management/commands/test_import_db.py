@@ -1182,8 +1182,7 @@ class UpdateModelsTest(ClearSearchIndexMixin, BaseTestDataTestCase):
         self.assertEqual(new_value, getattr(model_instance, 'i_description'))
         self.assertTrue(model_instance.modified > old_mod_time)
         # Check that the trait can be found in the search index.
-        self.assertQuerysetEqual(watson.filter(models.SourceTrait, new_value),
-                                 [repr(model_instance)])
+        self.assertQuerysetEqual(watson.filter(models.SourceTrait, new_value), [repr(model_instance)])
 
     def test_update_source_trait_encoded_value(self):
         """Updates in source_trait_encoded_values are imported."""

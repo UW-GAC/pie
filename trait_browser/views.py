@@ -7,11 +7,11 @@ from django.views.generic.detail import SingleObjectMixin
 from django.template.defaultfilters import pluralize    # Use pluralize in the views.
 from django.http import HttpResponseRedirect
 
-from braces.views import FormMessagesMixin, LoginRequiredMixin, MessageMixin, PermissionRequiredMixin, UserPassesTestMixin
+from braces.views import (FormMessagesMixin, LoginRequiredMixin, MessageMixin, PermissionRequiredMixin,
+                          UserPassesTestMixin)
 from dal import autocomplete
 from django_tables2 import SingleTableMixin, SingleTableView
 
-import profiles.models
 from tags.forms import TagSpecificTraitForm
 from tags.models import Tag, TaggedTrait
 from tags.views import TAGGING_ERROR_MESSAGE, TaggableStudiesRequiredMixin
