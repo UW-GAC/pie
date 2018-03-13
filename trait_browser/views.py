@@ -31,16 +31,23 @@ TABLE_PER_PAGE = 50    # Setting for per_page rows for all table views.
 class SearchFormMixin(FormMixin):
     """Mixin to run a django-watson search for a view."""
 
+    def get_form_kwargs(self):
+        """Override method such that form kwargs are obtained from the get request."""
+        kwargs = {}
+        if self.request.GET:
+            kwargs.update({
+                'data': self.request.GET
+            })
+        return kwargs
+
     def get(self, request, *args, **kwargs):
         """Override get method for form and search processing."""
-        form_class = self.get_form_class()
-        if 'reset' in request.GET:
-            return HttpResponseRedirect(request.path, {'form': self.get_form(form_class)})
-        if request.GET:
-            form = form_class(request.GET)
-        else:
-            form = self.get_form(form_class)
-
+        if 'reset' in self.request.GET:
+            # Instantiate a blank form, ignoring any current GET parameters.
+            form_class = self.get_form_class()
+            return HttpResponseRedirect(request.path, {'form': form_class()})
+        # Process the form.
+        form = self.get_form()
         if form.is_valid():
             return self.form_valid(form)
         else:
