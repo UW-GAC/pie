@@ -160,6 +160,18 @@ class StudyNameAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView
         return retrieved
 
 
+class StudySourceDatasetNameAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
+    """Auto-complete datasets in a form field by dataset_name."""
+
+    def get_queryset(self):
+        retrieved = models.SourceDataset.objects.current().filter(
+            source_study_version__study=self.kwargs['pk']
+        )
+        if self.q:
+            retrieved = retrieved.filter(dataset_name__istartswith=r'{}'.format(self.q))
+        return retrieved
+
+
 class SourceDatasetDetail(LoginRequiredMixin, SingleTableMixin, DetailView):
     """Detail view class for SourceDatasets. Displays the dataset's source traits in a table."""
 
