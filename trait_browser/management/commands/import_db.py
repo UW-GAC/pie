@@ -16,7 +16,7 @@ Requires the CNF_PATH setting from the specified settings module.
 from datetime import datetime
 import logging
 import mysql.connector
-from re import search
+from re import compile, search
 from sys import argv, stdout
 import pytz
 
@@ -54,6 +54,17 @@ MYSQL_TYPES = {FieldType.get_info(el): el for el in FieldType.get_binary_types()
                FieldType.get_string_types() +
                FieldType.get_timestamp_types()}
 STRING_TYPES = FieldType.get_string_types() + [MYSQL_TYPES[ty] for ty in ('BLOB', 'MEDIUM_BLOB', 'LONG_BLOB', )]
+
+# Regex for parsing the dataset name from the data dictionary file name.
+DATA_DICT_RE = compile(
+    ''.join((
+        r'^/projects/topmed/downloaded_data/dbGaP/',
+        r'(released|prerelease)/(?P<phs_dir>phs\d{6})/(?P<version_dir>v\d+|\d{8})',
+        r'/organized/(Subject|Phenotypes)/',
+        r'(?P<filename>',
+        r'(?P<dbgap_id>phs\d{6}\.v\d+?\.pht\d{6}\.v\d+?)\.(?P<base>.+?)\.data_dict(?P<extra>\w{0,}?)\.xml$)',
+    ))
+)
 
 
 class Command(BaseCommand):
@@ -891,6 +902,39 @@ class Command(BaseCommand):
         cursor.close()
         return links
 
+    # One-off method to get the dataset's file name, parse the dataset name from it, and save it to the given dataset.
+    def _set_dataset_names(self, source_db, dataset_pks):
+        """Use source_db to set the dataset_name field for each of the SourceDatasets from dataset_pks."""
+        # Get the file names for all of these datasets.
+        file_query = self._make_table_query(
+            source_table='source_dataset_dictionary_files', filter_field='dataset_id',
+            filter_values=[str(el) for el in dataset_pks], filter_not=False)
+        cursor = source_db.cursor(buffered=True, dictionary=True)
+        cursor.execute(file_query)
+        field_types = {el[0]: el[1] for el in cursor.description}
+        for row in cursor:
+            fixed_row = self._fix_row(row, field_types)
+            dict_file = fixed_row['filename']
+            dataset_id = fixed_row['dataset_id']
+            # Parse the dataset name.
+            try:
+                dataset_name = DATA_DICT_RE.match(dict_file).group('base')
+                filename = DATA_DICT_RE.match(dict_file).group('filename')
+            except AttributeError:
+                logger.debug('Could not parse filename and dataset name from data dictionary {}; re match = {}'.format(
+                    dict_file, DATA_DICT_RE.match(dict_file)))
+                raise AttributeError
+            logger.debug('Found dataset name {} from filename {} for dataset with id {}.'.format(
+                dataset_name, filename, dataset_id))
+            # Save the dataset name to the SourceDataset.
+            source_dataset = models.SourceDataset.objects.get(pk=dataset_id)
+            source_dataset.dbgap_filename = filename
+            source_dataset.dataset_name = dataset_name
+            source_dataset.save()
+            logger.debug('Added dataset name {} to dataset with id {}, from file name {}'.format(
+                dataset_name, dataset_id, filename))
+        cursor.close()
+
     # Methods to run all of the updating or importing on all of the models.
     def _import_source_tables(self, source_db):
         """Import all source trait-related data from the source db into the Django models.
@@ -933,6 +977,10 @@ class Command(BaseCommand):
             source_db=source_db, source_table='source_dataset', source_pk='id', model=models.SourceDataset,
             make_args=self._make_source_dataset_args)
         logger.info("Added {} source datasets".format(len(new_source_dataset_pks)))
+
+        self._set_dataset_names(source_db, new_source_dataset_pks)
+        logger.info(
+            "Set dataset_name and dbgap_filename fields on {} source datasets".format(len(new_source_dataset_pks)))
 
         new_source_trait_pks = self._import_new_data(
             source_db=source_db, source_table='source_trait', source_pk='source_trait_id', model=models.SourceTrait,
@@ -1012,7 +1060,7 @@ class Command(BaseCommand):
             parent_source_pk='harmonization_unit_id', child_model=models.SourceTrait,
             child_source_pk='component_trait_id', child_related_name='component_batch_traits',
             import_parent_pks=new_harmonization_unit_pks)
-        logger.info("Added {} component batch traits".format(len(new_component_source_trait_links_to_unit)))
+        logger.info("Added {} component batch traits".format(len(new_component_batch_trait_links_to_unit)))
 
         new_component_age_trait_links_to_unit = self._import_new_m2m_field(
             source_db=source_db, source_table='component_age_trait', parent_model=models.HarmonizationUnit,
@@ -1042,7 +1090,7 @@ class Command(BaseCommand):
             parent_source_pk='harmonized_trait_id', child_model=models.SourceTrait,
             child_source_pk='component_trait_id', child_related_name='component_batch_traits',
             import_parent_pks=new_harmonized_trait_pks)
-        logger.info("Added {} component batch traits".format(len(new_component_source_trait_links_to_trait)))
+        logger.info("Added {} component batch traits".format(len(new_component_batch_trait_links_to_trait)))
 
         new_harmonization_unit_harmonized_trait_links = self._import_new_m2m_field(
             source_db=source_db, query=HUNIT_QUERY, parent_model=models.HarmonizedTrait,
@@ -1159,9 +1207,9 @@ class Command(BaseCommand):
             parent_source_pk='harmonization_unit_id', child_model=models.SourceTrait,
             child_source_pk='component_trait_id', child_related_name='component_batch_traits', expected=False)
         logger.info("Update: added {} component batch traits".format(
-            len(updated_component_source_trait_links_to_unit['added'])))
+            len(updated_component_batch_trait_links_to_unit['added'])))
         logger.info("Update: removed {} component batch traits".format(
-            len(updated_component_source_trait_links_to_unit['removed'])))
+            len(updated_component_batch_trait_links_to_unit['removed'])))
 
         updated_component_age_trait_links_to_unit = self._update_m2m_field(
             source_db=source_db, source_table='component_age_trait', parent_model=models.HarmonizationUnit,
@@ -1197,9 +1245,9 @@ class Command(BaseCommand):
             parent_source_pk='harmonized_trait_id', child_model=models.SourceTrait,
             child_source_pk='component_trait_id', child_related_name='component_batch_traits', expected=False)
         logger.info("Update: added {} component batch traits".format(
-            len(updated_component_source_trait_links_to_trait['added'])))
+            len(updated_component_batch_trait_links_to_trait['added'])))
         logger.info("Update: removed {} component batch traits".format(
-            len(updated_component_source_trait_links_to_trait['removed'])))
+            len(updated_component_batch_trait_links_to_trait['removed'])))
 
         updated_harmonization_unit_harmonized_trait_links = self._update_m2m_field(
             source_db=source_db, query=HUNIT_QUERY, parent_model=models.HarmonizedTrait,

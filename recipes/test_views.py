@@ -3,7 +3,8 @@
 from django.contrib.auth.models import Group
 from django.core.urlresolvers import reverse
 
-import core.utils
+from core.utils import (DCCAnalystLoginTestCase, DCCDeveloperLoginTestCase, LoginRequiredTestCase,
+                        RecipeSubmitterLoginTestCase, SuperuserLoginTestCase, UserLoginTestCase)
 from core.factories import UserFactory, SuperUserFactory, USER_FACTORY_PASSWORD
 from trait_browser.factories import SourceTraitFactory
 
@@ -11,7 +12,7 @@ from . import factories
 from . import models
 
 
-class UnitRecipeViewsTestCase(core.utils.RecipeSubmitterLoginTestCase):
+class UnitRecipeViewsTestCase(RecipeSubmitterLoginTestCase):
 
     def test_create_unit_recipe(self):
         """The CreateUnitRecipe view can be navigated to."""
@@ -155,7 +156,7 @@ class UnitRecipeViewsTestCase(core.utils.RecipeSubmitterLoginTestCase):
         self.assertEqual(response.status_code, 200)
 
 
-class HarmonizationRecipeViewsTestCase(core.utils.RecipeSubmitterLoginTestCase):
+class HarmonizationRecipeViewsTestCase(RecipeSubmitterLoginTestCase):
 
     def test_create_harmonization_recipe(self):
         """The CreateHarmonizationRecipe view can be navigated to."""
@@ -295,7 +296,7 @@ class HarmonizationRecipeViewsTestCase(core.utils.RecipeSubmitterLoginTestCase):
         self.assertEqual(response.status_code, 200)
 
 
-class GrouplessUserRecipeViewsTest(core.utils.UserLoginTestCase):
+class GrouplessUserRecipeViewsTest(UserLoginTestCase):
 
     def test_unit_create_forbidden_to_groupless(self):
         """The CreateUnitRecipe view can't be accessed by groupless users."""
@@ -364,7 +365,7 @@ class GrouplessUserRecipeViewsTest(core.utils.UserLoginTestCase):
             html=True)
 
 
-class DCCAnalystRecipeViewsTest(core.utils.DCCAnalystLoginTestCase):
+class DCCAnalystRecipeViewsTest(DCCAnalystLoginTestCase):
 
     def test_unit_create_viewable_to_groupless(self):
         """The CreateUnitRecipe view can be accessed by dcc_analysts users.."""
@@ -425,15 +426,15 @@ class DCCAnalystRecipeViewsTest(core.utils.DCCAnalystLoginTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(
             response,
-            '<li role="presentation"><a href="#unitrecipes" role="tab" data-toggle="tab">Unit Recipes</a></li>',
+            '<li role="presentation"><a href="#unitrecipes" role="tab" data-toggle="tab">My Unit Recipes</a></li>',
             html=True)
         self.assertContains(
             response,
-            '<li role="presentation"><a href="#harmonizationrecipes" role="tab" data-toggle="tab">Harmonization Recipes</a></li>',  # noqa: E501
+            '<li role="presentation"><a href="#harmonizationrecipes" role="tab" data-toggle="tab">My Harmonization Recipes</a></li>',  # noqa: E501
             html=True)
 
 
-class DCCDeveloperRecipeViewsTest(core.utils.DCCDeveloperLoginTestCase):
+class DCCDeveloperRecipeViewsTest(DCCDeveloperLoginTestCase):
 
     def test_unit_create_viewable_to_groupless(self):
         """The CreateUnitRecipe view can be accessed by dcc_developers users.."""
@@ -494,15 +495,15 @@ class DCCDeveloperRecipeViewsTest(core.utils.DCCDeveloperLoginTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(
             response,
-            '<li role="presentation"><a href="#unitrecipes" role="tab" data-toggle="tab">Unit Recipes</a></li>',
+            '<li role="presentation"><a href="#unitrecipes" role="tab" data-toggle="tab">My Unit Recipes</a></li>',
             html=True)
         self.assertContains(
             response,
-            '<li role="presentation"><a href="#harmonizationrecipes" role="tab" data-toggle="tab">Harmonization Recipes</a></li>',  # noqa: E501
+            '<li role="presentation"><a href="#harmonizationrecipes" role="tab" data-toggle="tab">My Harmonization Recipes</a></li>',  # noqa: E501
             html=True)
 
 
-class SuperuserRecipeViewsTest(core.utils.SuperuserLoginTestCase):
+class SuperuserRecipeViewsTest(SuperuserLoginTestCase):
 
     def test_unit_create_viewable_to_groupless(self):
         """The CreateUnitRecipe view can be accessed by superusers.."""
@@ -563,15 +564,15 @@ class SuperuserRecipeViewsTest(core.utils.SuperuserLoginTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(
             response,
-            '<li role="presentation"><a href="#unitrecipes" role="tab" data-toggle="tab">Unit Recipes</a></li>',
+            '<li role="presentation"><a href="#unitrecipes" role="tab" data-toggle="tab">My Unit Recipes</a></li>',
             html=True)
         self.assertContains(
             response,
-            '<li role="presentation"><a href="#harmonizationrecipes" role="tab" data-toggle="tab">Harmonization Recipes</a></li>',  # noqa: E501
+            '<li role="presentation"><a href="#harmonizationrecipes" role="tab" data-toggle="tab">My Harmonization Recipes</a></li>',  # noqa: E501
             html=True)
 
 
-class RecipesLoginRequiredTestCase(core.utils.LoginRequiredTestCase):
+class RecipesLoginRequiredTestCase(LoginRequiredTestCase):
 
     def test_recipes_login_required(self):
         """All recipes urls redirect to login page if no user is logged in."""

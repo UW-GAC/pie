@@ -13,17 +13,17 @@ from . import models
 class GlobalStudyTestCase(TestCase):
 
     def test_model_saving(self):
-        """Test that you can save a GlobalStudy object."""
+        """You can save a GlobalStudy object."""
         global_study = factories.GlobalStudyFactory.create()
         self.assertIsInstance(models.GlobalStudy.objects.get(pk=global_study.pk), models.GlobalStudy)
 
     def test_printing(self):
-        """Test the custom __str__ method."""
+        """Custom __str__ method returns a string."""
         global_study = factories.GlobalStudyFactory.build()
         self.assertIsInstance(global_study.__str__(), str)
 
     def test_timestamps_added(self):
-        """Test that timestamps are added."""
+        """Timestamp fields are added to the model."""
         global_study = factories.GlobalStudyFactory.create()
         self.assertIsInstance(global_study.created, datetime)
         self.assertIsInstance(global_study.modified, datetime)
@@ -32,32 +32,31 @@ class GlobalStudyTestCase(TestCase):
 class StudyTestCase(TestCase):
 
     def test_model_saving(self):
-        """Test that you can save a Study object."""
+        """You can save a Study object."""
         study = factories.StudyFactory.create()
         self.assertIsInstance(models.Study.objects.get(pk=study.pk), models.Study)
 
     def test_printing(self):
-        """Test the custom __str__ method."""
+        """Custom __str__ method returns a string."""
         study = factories.StudyFactory.build()
         self.assertIsInstance(study.__str__(), str)
 
     def test_timestamps_added(self):
-        """Test that timestamps are added."""
+        """Timestamp fields are added to the model."""
         study = factories.StudyFactory.create()
         self.assertIsInstance(study.created, datetime)
         self.assertIsInstance(study.modified, datetime)
 
     def test_custom_save(self):
-        """Test that the custom save method works."""
+        """The custom save method works."""
         study = factories.StudyFactory.create()
         self.assertRegex(study.phs, 'phs\d{6}')
         self.assertEqual(study.dbgap_latest_version_link[:68], models.Study.STUDY_URL[:68])
 
-    def test_get_search_url_creation(self):
+    def test_get_search_url(self):
         """Tests that the get_search_url method returns an appropriately constructed url."""
         study = factories.StudyFactory.create()
-        url = ''.join([reverse('trait_browser:source:traits:search'), '\?study=\d+'])
-        self.assertRegex(study.get_search_url(), url)
+        url = study.get_search_url()
 
     def test_get_absolute_url(self):
         """get_absolute_url function doesn't fail."""
@@ -73,24 +72,24 @@ class StudyTestCase(TestCase):
 class SourceStudyVersionTestCase(TestCase):
 
     def test_model_saving(self):
-        """Test that you can save a SourceStudyVersion object."""
+        """You can save a SourceStudyVersion object."""
         source_study_version = factories.SourceStudyVersionFactory.create()
         self.assertIsInstance(
             models.SourceStudyVersion.objects.get(pk=source_study_version.pk), models.SourceStudyVersion)
 
     def test_printing(self):
-        """Test the custom __str__ method."""
+        """Custom __str__ method returns a string."""
         source_study_version = factories.SourceStudyVersionFactory.build()
         self.assertIsInstance(source_study_version.__str__(), str)
 
     def test_timestamps_added(self):
-        """Test that timestamps are added."""
+        """Timestamp fields are added to the model."""
         source_study_version = factories.SourceStudyVersionFactory.create()
         self.assertIsInstance(source_study_version.created, datetime)
         self.assertIsInstance(source_study_version.modified, datetime)
 
     def test_custom_save(self):
-        """Test that the custom save method works."""
+        """The custom save method works."""
         source_study_version = factories.SourceStudyVersionFactory.create()
         self.assertRegex(source_study_version.phs_version_string, 'phs\d{6}\.v\d{1,3}\.p\d{1,3}')
 
@@ -98,17 +97,17 @@ class SourceStudyVersionTestCase(TestCase):
 class SourceDatasetTestCase(TestCase):
 
     def test_model_saving(self):
-        """Test that you can save a SourceDataset object."""
+        """You can save a SourceDataset object."""
         source_dataset = factories.SourceDatasetFactory.create()
         self.assertIsInstance(models.SourceDataset.objects.get(pk=source_dataset.pk), models.SourceDataset)
 
     def test_printing(self):
-        """Test the custom __str__ method."""
+        """Custom __str__ method returns a string."""
         source_dataset = factories.SourceDatasetFactory.build()
         self.assertIsInstance(source_dataset.__str__(), str)
 
     def test_timestamps_added(self):
-        """Test that timestamps are added."""
+        """Timestamp fields are added to the model."""
         source_dataset = factories.SourceDatasetFactory.create()
         self.assertIsInstance(source_dataset.created, datetime)
         self.assertIsInstance(source_dataset.modified, datetime)
@@ -119,7 +118,7 @@ class SourceDatasetTestCase(TestCase):
         url = instance.get_absolute_url()
 
     # def test_adding_subcohorts(self):
-    #     """Test that adding associated subcohorts works."""
+    #     """Adding associated subcohorts works."""
     #     global_study = factories.GlobalStudyFactory.create()
     #     subcohorts = factories.SubcohortFactory.create_batch(5, global_study=global_study)
     #     source_dataset = factories.SourceDatasetFactory.create(
@@ -127,26 +126,35 @@ class SourceDatasetTestCase(TestCase):
     #     self.assertEqual(len(source_dataset.subcohorts.all()), 5)
 
     def test_custom_save(self):
-        """Test that the custom save method works."""
+        """The custom save method works."""
         source_dataset = factories.SourceDatasetFactory.create()
         self.assertRegex(source_dataset.pht_version_string, 'pht\d{6}\.v\d{1,5}.p\d{1,5}')
+
+    def test_current_queryset_method(self):
+        """SourceDataset.objects.current() does not return deprecated traits."""
+        current_dataset = factories.SourceDatasetFactory.create()
+        deprecated_dataset = factories.SourceDatasetFactory.create()
+        deprecated_dataset.source_study_version.i_is_deprecated = True
+        deprecated_dataset.source_study_version.save()
+        self.assertIn(current_dataset, models.SourceDataset.objects.current())
+        self.assertNotIn(deprecated_dataset, models.SourceDataset.objects.current())
 
 
 class HarmonizedTraitSetTestCase(TestCase):
 
     def test_model_saving(self):
-        """Test that you can save a HarmonizedTraitSet object."""
+        """You can save a HarmonizedTraitSet object."""
         harmonized_trait_set = factories.HarmonizedTraitSetFactory.create()
         self.assertIsInstance(
             models.HarmonizedTraitSet.objects.get(pk=harmonized_trait_set.pk), models.HarmonizedTraitSet)
 
     def test_printing(self):
-        """Test the custom __str__ method."""
+        """Custom __str__ method returns a string."""
         harmonized_trait_set = factories.HarmonizedTraitSetFactory.build()
         self.assertIsInstance(harmonized_trait_set.__str__(), str)
 
     def test_timestamps_added(self):
-        """Test that timestamps are added."""
+        """Timestamp fields are added to the model."""
         harmonized_trait_set = factories.HarmonizedTraitSetFactory.create()
         self.assertIsInstance(harmonized_trait_set.created, datetime)
         self.assertIsInstance(harmonized_trait_set.modified, datetime)
@@ -155,19 +163,19 @@ class HarmonizedTraitSetTestCase(TestCase):
 class HarmonizedTraitSetVersionTestCase(TestCase):
 
     def test_model_saving(self):
-        """Test that you can save a HarmonizedTraitSetVersion object."""
+        """You can save a HarmonizedTraitSetVersion object."""
         harmonized_trait_set_version = factories.HarmonizedTraitSetVersionFactory.create()
         self.assertIsInstance(
             models.HarmonizedTraitSetVersion.objects.get(pk=harmonized_trait_set_version.pk),
             models.HarmonizedTraitSetVersion)
 
     def test_printing(self):
-        """Test the custom __str__ method."""
+        """Custom __str__ method returns a string."""
         harmonized_trait_set_version = factories.HarmonizedTraitSetVersionFactory.build()
         self.assertIsInstance(harmonized_trait_set_version.__str__(), str)
 
     def test_timestamps_added(self):
-        """Test that timestamps are added."""
+        """Timestamp fields are added to the model."""
         harmonized_trait_set_version = factories.HarmonizedTraitSetVersionFactory.create()
         self.assertIsInstance(harmonized_trait_set_version.created, datetime)
         self.assertIsInstance(harmonized_trait_set_version.modified, datetime)
@@ -193,23 +201,23 @@ class HarmonizedTraitSetVersionTestCase(TestCase):
 class HarmonizationUnitTestCase(TestCase):
 
     def test_model_saving(self):
-        """Test that you can save a HarmonizationUnit object."""
+        """You can save a HarmonizationUnit object."""
         harmonization_unit = factories.HarmonizationUnitFactory.create()
         self.assertIsInstance(models.HarmonizationUnit.objects.get(pk=harmonization_unit.pk), models.HarmonizationUnit)
 
     def test_printing(self):
-        """Test the custom __str__ method."""
+        """Custom __str__ method returns a string."""
         harmonization_unit = factories.HarmonizationUnitFactory.build()
         self.assertIsInstance(harmonization_unit.__str__(), str)
 
     def test_timestamps_added(self):
-        """Test that timestamps are added."""
+        """Timestamp fields are added to the model."""
         harmonization_unit = factories.HarmonizationUnitFactory.create()
         self.assertIsInstance(harmonization_unit.created, datetime)
         self.assertIsInstance(harmonization_unit.modified, datetime)
 
     def test_adding_component_source_traits(self):
-        """Test that adding associated component_source_traits works."""
+        """Adding associated component_source_traits works."""
         global_study = factories.GlobalStudyFactory.create()
         component_source_traits = factories.SourceTraitFactory.create_batch(
             5, source_dataset__source_study_version__study__global_study=global_study)
@@ -217,7 +225,7 @@ class HarmonizationUnitTestCase(TestCase):
         self.assertEqual(len(harmonization_unit.component_source_traits.all()), 5)
 
     def test_adding_component_batch_traits(self):
-        """Test that adding associated component_batch_traits works."""
+        """Adding associated component_batch_traits works."""
         global_study = factories.GlobalStudyFactory.create()
         component_batch_traits = factories.SourceTraitFactory.create_batch(
             5, source_dataset__source_study_version__study__global_study=global_study)
@@ -225,7 +233,7 @@ class HarmonizationUnitTestCase(TestCase):
         self.assertEqual(len(harmonization_unit.component_batch_traits.all()), 5)
 
     def test_adding_component_age_traits(self):
-        """Test that adding associated component_age_traits works."""
+        """Adding associated component_age_traits works."""
         global_study = factories.GlobalStudyFactory.create()
         component_age_traits = factories.SourceTraitFactory.create_batch(
             5, source_dataset__source_study_version__study__global_study=global_study)
@@ -233,7 +241,7 @@ class HarmonizationUnitTestCase(TestCase):
         self.assertEqual(len(harmonization_unit.component_age_traits.all()), 5)
 
     def test_adding_component_harmonized_trait_set_versions(self):
-        """Test that adding associated component_harmonized_trait_set_versions works."""
+        """Adding associated component_harmonized_trait_set_versions works."""
         component_harmonized_trait_set_versions = factories.HarmonizedTraitSetVersionFactory.create_batch(5)
         harmonization_unit = factories.HarmonizationUnitFactory.create(
             component_harmonized_trait_set_versions=component_harmonized_trait_set_versions)
@@ -268,17 +276,17 @@ class HarmonizationUnitTestCase(TestCase):
 class SourceTraitTestCase(TestCase):
 
     def test_model_saving(self):
-        """Test that you can save a SourceTrait object."""
+        """You can save a SourceTrait object."""
         source_trait = factories.SourceTraitFactory.create()
         self.assertIsInstance(models.SourceTrait.objects.get(pk=source_trait.pk), models.SourceTrait)
 
     def test_printing(self):
-        """Test the custom __str__ method."""
+        """Custom __str__ method returns a string."""
         source_trait = factories.SourceTraitFactory.build()
         self.assertIsInstance(source_trait.__str__(), str)
 
     def test_timestamps_added(self):
-        """Test that timestamps are added."""
+        """Timestamp fields are added to the model."""
         source_trait = factories.SourceTraitFactory.create()
         self.assertIsInstance(source_trait.created, datetime)
         self.assertIsInstance(source_trait.modified, datetime)
@@ -287,7 +295,7 @@ class SourceTraitTestCase(TestCase):
         pass
 
     def test_custom_save(self):
-        """Test that the custom save method works."""
+        """The custom save method works."""
         source_trait = factories.SourceTraitFactory.create()
         self.assertEqual(
             source_trait.study_accession, source_trait.source_dataset.source_study_version.phs_version_string)
@@ -307,27 +315,36 @@ class SourceTraitTestCase(TestCase):
         trait = factories.SourceTraitFactory.create()
         self.assertIsInstance(trait.get_name_link_html(), str)
 
+    def test_current_queryset_method(self):
+        """SourceTrait.objects.current() does not return deprecated traits."""
+        current_trait = factories.SourceTraitFactory.create()
+        deprecated_trait = factories.SourceTraitFactory.create()
+        deprecated_trait.source_dataset.source_study_version.i_is_deprecated = True
+        deprecated_trait.source_dataset.source_study_version.save()
+        self.assertIn(current_trait, models.SourceTrait.objects.current())
+        self.assertNotIn(deprecated_trait, models.SourceTrait.objects.current())
+
 
 class HarmonizedTraitTestCase(TestCase):
 
     def test_model_saving(self):
-        """Test that you can save a HarmonizedTrait object."""
+        """You can save a HarmonizedTrait object."""
         harmonized_trait = factories.HarmonizedTraitFactory.create()
         self.assertIsInstance(models.HarmonizedTrait.objects.get(pk=harmonized_trait.pk), models.HarmonizedTrait)
 
     def test_printing(self):
-        """Test the custom __str__ method."""
+        """Custom __str__ method returns a string."""
         harmonized_trait = factories.HarmonizedTraitFactory.build()
         self.assertIsInstance(harmonized_trait.__str__(), str)
 
     def test_timestamps_added(self):
-        """Test that timestamps are added."""
+        """Timestamp fields are added to the model."""
         harmonized_trait = factories.HarmonizedTraitFactory.create()
         self.assertIsInstance(harmonized_trait.created, datetime)
         self.assertIsInstance(harmonized_trait.modified, datetime)
 
     def test_custom_save(self):
-        """Test that the custom save method works."""
+        """The custom save method works."""
         harmonized_trait = factories.HarmonizedTraitFactory.create()
         self.assertEqual(
             harmonized_trait.trait_flavor_name,
@@ -335,7 +352,7 @@ class HarmonizedTraitTestCase(TestCase):
                            harmonized_trait.harmonized_trait_set_version.harmonized_trait_set.i_flavor))
 
     def test_adding_component_source_traits(self):
-        """Test that adding associated component_source_traits works."""
+        """Adding associated component_source_traits works."""
         global_study = factories.GlobalStudyFactory.create()
         component_source_traits = factories.SourceTraitFactory.create_batch(
             5, source_dataset__source_study_version__study__global_study=global_study)
@@ -343,7 +360,7 @@ class HarmonizedTraitTestCase(TestCase):
         self.assertEqual(len(harmonized_trait.component_source_traits.all()), 5)
 
     def test_adding_component_batch_traits(self):
-        """Test that adding associated component_batch_traits works."""
+        """Adding associated component_batch_traits works."""
         global_study = factories.GlobalStudyFactory.create()
         component_batch_traits = factories.SourceTraitFactory.create_batch(
             5, source_dataset__source_study_version__study__global_study=global_study)
@@ -351,14 +368,14 @@ class HarmonizedTraitTestCase(TestCase):
         self.assertEqual(len(harmonized_trait.component_batch_traits.all()), 5)
 
     def test_adding_component_harmonized_trait_set_versions(self):
-        """Test that adding associated component_harmonized_trait_set_versions works."""
+        """Adding associated component_harmonized_trait_set_versions works."""
         component_harmonized_trait_set_versions = factories.HarmonizedTraitSetVersionFactory.create_batch(5)
         harmonized_trait = factories.HarmonizedTraitFactory.create(
             component_harmonized_trait_set_versions=component_harmonized_trait_set_versions)
         self.assertEqual(len(harmonized_trait.component_harmonized_trait_set_versions.all()), 5)
 
     def test_adding_harmonization_units(self):
-        """Test that adding associated harmonization_units works."""
+        """Adding associated harmonization_units works."""
         htrait_set_version = factories.HarmonizedTraitSetVersionFactory.create()
         harmonization_units = factories.HarmonizationUnitFactory.create_batch(
             5, harmonized_trait_set_version=htrait_set_version)
@@ -391,23 +408,32 @@ class HarmonizedTraitTestCase(TestCase):
         with self.assertRaises(ValidationError):
             duplicate.full_clean()
 
+    def test_current_queryset_method(self):
+        """HarmonizedTrait.objects.current() does not return deprecated traits."""
+        current_trait = factories.HarmonizedTraitFactory.create()
+        deprecated_trait = factories.HarmonizedTraitFactory.create()
+        deprecated_trait.harmonized_trait_set_version.i_is_deprecated = True
+        deprecated_trait.harmonized_trait_set_version.save()
+        self.assertIn(current_trait, models.HarmonizedTrait.objects.current())
+        self.assertNotIn(deprecated_trait, models.HarmonizedTrait.objects.current())
+
 
 class SourceTraitEncodedValueTestCase(TestCase):
 
     def test_model_saving(self):
-        """Test that you can save a SourceTraitEncodedValue object."""
+        """You can save a SourceTraitEncodedValue object."""
         source_trait_encoded_value = factories.SourceTraitEncodedValueFactory.create()
         self.assertIsInstance(
             models.SourceTraitEncodedValue.objects.get(pk=source_trait_encoded_value.pk),
             models.SourceTraitEncodedValue)
 
     def test_printing(self):
-        """Test the custom __str__ method."""
+        """Custom __str__ method returns a string."""
         source_trait_encoded_value = factories.SourceTraitEncodedValueFactory.build()
         self.assertIsInstance(source_trait_encoded_value.__str__(), str)
 
     def test_timestamps_added(self):
-        """Test that timestamps are added."""
+        """Timestamp fields are added to the model."""
         source_trait_encoded_value = factories.SourceTraitEncodedValueFactory.create()
         self.assertIsInstance(source_trait_encoded_value.created, datetime)
         self.assertIsInstance(source_trait_encoded_value.modified, datetime)
@@ -416,19 +442,19 @@ class SourceTraitEncodedValueTestCase(TestCase):
 class HarmonizedTraitEncodedValueTestCase(TestCase):
 
     def test_model_saving(self):
-        """Test that you can save a HarmonizedTraitEncodedValue object."""
+        """You can save a HarmonizedTraitEncodedValue object."""
         harmonized_trait_encoded_value = factories.HarmonizedTraitEncodedValueFactory.create()
         self.assertIsInstance(
             models.HarmonizedTraitEncodedValue.objects.get(pk=harmonized_trait_encoded_value.pk),
             models.HarmonizedTraitEncodedValue)
 
     def test_printing(self):
-        """Test the custom __str__ method."""
+        """Custom __str__ method returns a string."""
         harmonized_trait_encoded_value = factories.HarmonizedTraitEncodedValueFactory.build()
         self.assertIsInstance(harmonized_trait_encoded_value.__str__(), str)
 
     def test_timestamps_added(self):
-        """Test that timestamps are added."""
+        """Timestamp fields are added to the model."""
         harmonized_trait_encoded_value = factories.HarmonizedTraitEncodedValueFactory.create()
         self.assertIsInstance(harmonized_trait_encoded_value.created, datetime)
         self.assertIsInstance(harmonized_trait_encoded_value.modified, datetime)

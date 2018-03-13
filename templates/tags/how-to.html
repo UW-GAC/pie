@@ -6,12 +6,14 @@
 <h1>Help with phenotype tagging</h1>
 
 <!-- Demo -->
+<!--
 <div class="panel panel-default">
     <div class="panel-heading"><h3 class='panel-title'>Demonstration video</h3></div>
     <div class="panel-body">
         Coming soon...
     </div>
 </div>
+-->
 
 <!-- How to apply tags -->
 <div class="panel panel-default">
@@ -21,21 +23,62 @@
     <div class="panel-collapse collapse" id="howto-collapse">
         <ul class="list-group" id="how-to">
             <li class="list-group-item">
-                <h5 data-toggle="collapse" data-target="#howto-one" data-parent="#how-to" aria-expanded="false" aria-controls="howto-one">From a study phenotype’s detail page</h5>
+                <h5 data-toggle="collapse" data-target="#howto-one" data-parent="#how-to" aria-expanded="false" aria-controls="howto-one">From a study phenotype’s variable detail page</h5>
                 <div id="howto-one" class="collapse">
-                Instructions here...
+                    <ol>
+                        <li>Find a phenotype variable by searching within your study or browsing within your study’s variables or datasets.</li>
+                        <li>Once you’ve found a phenotype that you’d like to apply a tag to, click on the phenotype variable’s name and you will be taken to the detail page.</li>
+                        <li>Click the "Tag this phenotype" button. You will be taken to a page to apply a tag to this phenotype.</li>
+                        <li>In the "Tag" field, you may either select a tag from the dropdown menu or start typing to autocomplete the tag by name. When autocompleting, hit return to select the tag of your choice.</li>
+                        <li>Click on the "Save" button to apply the selected tag to the specified phenotype variable.</li>
+                    </ol>
                 </div>
             </li>
             <li class="list-group-item">
-                <h5 class="list-group-heading" data-toggle="collapse" data-target="#howto-two" data-parent="#how-to" aria-expanded="false" aria-controls="howto-two">From the “Tag phenotypes” form</h5>
+                <h5 class="list-group-heading" data-toggle="collapse" data-target="#howto-two" data-parent="#how-to" aria-expanded="false" aria-controls="howto-three">From a tag’s detail page</h5>
                 <div id="howto-two" class="collapse">
-                Instructions here...
+                    <ol>
+                        <li>Find a phenotype by searching within your study or browsing within your study’s datasets. You may also search your study on dbGaP.</li>
+                        <li>Copy and save the phenotype’s dbGaP variable accession (phv) or variable name. You will use it at a later step.</li>
+                        <li>In the navbar, select “Phenotype tags” > “View all tags”.</li>
+                        <li>From the list of tags, click on the name of the tag you’d like to apply to the dbGaP phenotype variable. This will take you to the tag’s detail page.</li>
+                        <li>Click the 'Tag phenotypes as "[tag name]"' button. You will be taken to a form to select dbGaP phenotype variables to tag.</li>
+                        <li>In the "Phenotype(s)" field, paste or start typing the dbGaP variable accession (phv) or name that you saved.  Hit return to select the phenotype variable of your choice.</li>
+                            <ul>
+                                <li><em>Example:</em> I want to select “MF353” from Framingham Heart Study, phv00000803. I can type or paste several things to get the variable.</li>
+                                    <ul>
+                                        <li>phv803</li>
+                                        <li>803</li>
+                                        <li>00000803 (note that the number of leading zeros is important)</li>
+                                        <li>MF353</li>
+                                    </ul>
+                            </ul>
+                        <li>You may select multiple dbGaP variables for the "Phenotype(s)" field. All of the selected variables will be labeled with the selected tag.</li>
+                        <li>Click on the "Save" button to apply the selected tag to the selected variable(s).</li>
+                    </ol>
                 </div>
             </li>
             <li class="list-group-item">
-                <h5 class="list-group-heading" data-toggle="collapse" data-target="#howto-three" data-parent="#how-to" aria-expanded="false" aria-controls="howto-three">From a tag’s detail page</h5>
+                <h5 class="list-group-heading" data-toggle="collapse" data-target="#howto-three" data-parent="#how-to" aria-expanded="false" aria-controls="howto-two">From the “Apply a tag to multiple phenotypes” form</h5>
                 <div id="howto-three" class="collapse">
-                Instructions here...
+                    <ol>
+                        <li>Find a phenotype by searching within your study or browsing within your study’s datasets. You may also search your study on dbGaP.</li>
+                        <li>Copy and save the phenotype’s dbGaP variable accession (phv) or variable name. You will use it at a later step.</li>
+                        <li>In the navbar, select "Phenotype tags" > “Apply tags to phenotypes”. Or <a href="{% url 'tags:add-many:main' %}">click here</a> to go directly to the form.</li>
+                        <li>In the "Tag" field, you may either select a tag from the dropdown menu or start typing to autocomplete the tag by name. When autocompleting, hit return to select the tag of your choice.</li>
+                        <li>In the "Phenotype(s)" field, paste or start typing the dbGaP variable accession (phv) or name that you saved.  Hit return to select the phenotype variable of your choice.</li>
+                            <ul>
+                                <li><em>Example:</em> I want to select “MF353” from Framingham Heart Study, phv00000803. I can type or paste several things to get the variable.</li>
+                                    <ul>
+                                        <li>phv803</li>
+                                        <li>803</li>
+                                        <li>00000803 (note that the number of leading zeros is important)</li>
+                                        <li>MF353</li>
+                                    </ul>
+                            </ul>
+                        <li>You may select multiple dbGaP variables for the "Phenotype(s)" field. All of the selected variables will be labeled with the selected tag.</li>
+                        <li>Click on the "Save" button to apply the selected tag to the selected variable(s).</li>
+                    </ol>
                 </div>
             </li>
         </ul>
@@ -50,10 +93,57 @@
     <div class="panel-collapse collapse" id="guidelines-collapse">
         <div class="panel-body">
             <ul>
-                <li>Item 1</li>
-                <li>Item 2</li>
-                <li>Item 3</li>
+                <li>Refer to a tag's instructions for specific details and examples of which phenotype variables are appropriate under this tag. .</li>
+                    <ul>
+                        <li>Apply the tag to all of the dbGaP phenotype variables that fit the description and instructions</li>
+                        <li>Apply the tag to variables from all time points and all repeated measures within each time point.</li>
+                        <li>Apply the tag to both corrected & uncorrected, adjusted & unadjusted variables.</li>
+                        <li>Apply the tag to all instances of duplicated variables. </li>
+                            <ul>
+                                <li>e.g. "Visit" or "Subcohort" included in multiple data sets.</li>
+                            </ul>
+                    </ul>
+                <li>Unless otherwise noted in tag instructions, a dbGaP phenotype variable should usually only have one tag applied to it.</li>
+                <li>Some variables (composites) are calculated or inferred from a combination of other variables (i.e. components). For example, BMI is derived from height and weight. Do not tag components with composite variable and vice versa. For example tag height with "height" and not with "bmi" and vice versa.</li>
+                    <ul>
+                        <li>Unless otherwise noted in tag instructions, do not apply a phenotype tag to component variables that could be used to derive the phenotype.</li>
+                        <li>e.g. height and weight are component variables used to derive the body mass index. Do not apply the "body mass index" tag to height or weight variables.</li>
+                    </ul>
+                <li>Do not tag medication variables, such as use of lipid-lowering medication, with the LDL (or other lipid) concentration tag ; there is a general "medication use" concept with which all medication use variables should be tagged.</li>
+                <li>Disease/event/intervention/behavior phenotype tags:</li>
+                    <ul>
+                        <li>Status concepts include prevalent and incident diseases (e.g.asthma, COPD), events (e.g. MI), medical interventions (e.g. angioplasty, CABG), and behavior (e.g. smoking).  Status variables are qualitative indicators of whether individuals have the specified disease, event, intervention, or behavior. Status may be based on self report, adjudication, clinical verification, medical records, ICD code, or by calculation/inference from related traits. Tag both prevalent and incident case variables.  Include both event status and time-to-event variables for incident cases.  Include variables that give age at diagnosis/event/intervention/behavior (e.g. answer to question "how old were you when you first were diagnosed with asthma").</li>
+                    </ul>
+                <li>Multiple tags for the same dbGaP phenotype variable:</li>
+                    <ul>
+                        <li>In general, the phenotype concepts are defined with enough specificity to avoid multiple tagging of a single variable.  However, there will be exceptions.  A clear exception is when a single variable represents multiple distinct phenotypes.  For example, consider a data set containing blood chemistry results for a number of subjects. This data set has multiple rows per subject with columns named subjectID, analyte (blood analyte type such as LDL, fibrinogen, IL6), and concentration (measurement of concentration of the corresponding analyte).  For rows in which the analyte column value is "LDL", the concentration column is a measure of LDL concentration; for rows in which the analyte column value is "fibrinogen", the concentration column is a measure of fibrinogen concentation; etc..  In this example, both the analyte and concentration variables should be tagged with all three phenotype concepts ("LDL in blood", "fibrinogen in blood", and "Interleukin 6 in blood").</li>
+                    </ul>
             </ul>
+        </div>
+    </div>
+</div>
+
+<!-- Age -->
+<div class="panel panel-default">
+    <div class="panel-heading"><h3 class='panel-title'>
+        <a href="#age-collapse" data-toggle='collapse' aria-expanded="false" aria-controls="age-collapase">Special instructions for the <mark>Age at enrollment/collection</mark> tag</a>
+    </h3></div>
+    <div class="panel-collapse collapse" id="age-collapse">
+        <div class="panel-body">
+            <p>We consider two types of age variables:</p>
+            <ol>
+                <li>Participant age at enrollment or age at which data or biosamples were collected.</li>
+                <ul>
+                    <li>Include all variables representing age directly and all variables used to calculate age (such as days between exams or visits).</li>
+                    <li><em>Examples:</em> age at enrollment, blood draw, sample collection, imaging, visit or exam identifier, and days since baseline visit.</li>
+                    <li>These types of variables usually provide age for multiple different phenotypes. For example, age at blood draw corresponds to age at measurement of all blood chemistry analytes assayed from that blood draw; age at clinic visit for imaging provides age for all traits derived from the images, etc.  These types of age variables should be tagged with the "age" concept.</li>
+                </ul>
+                <li>Participant ages that correspond to the timing of specific events, diagnoses or behavior.</li>
+                <ul>
+                    <li><em>Examples:</em> age at onset of asthma symptoms, age at smoking initiation, and time in time-to-event data.</li>
+                    <li>These types of variables are tagged with the corresponding event/diagnosis/behavioral concept. For example, age at onset of asthma symptoms should be tagged with "asthma status", age at onset of smoking should be tagged with "smoking history", time to event where the event is COPD should be tagged with "COPD".</li>
+                </ul>
+            </ol>
         </div>
     </div>
 </div>
@@ -68,25 +158,25 @@
             <li class="list-group-item">
                 <h5 data-toggle="collapse" data-target="#item-one" data-parent="#terms" aria-expanded="false" aria-controls="item-one">Tag</h5>
                 <div id="item-one" class="collapse">
-                Definition here...
+                A tag is a label representing a phenotype concept. This is usually synonymous with a phenotype name. Click on a tag's name to see its detail page, where you can read the detailed description of the phenotype concept it represents and specific instructions for identifying dbGaP phenotype variables to apply the tag to.
                 </div>
             </li>
             <li class="list-group-item">
                 <h5 class="list-group-heading" data-toggle="collapse" data-target="#terms-two" data-parent="#terms" aria-expanded="false" aria-controls="terms-two">Tagged phenotype</h5>
                 <div id="terms-two" class="collapse">
-                Definition here...
+                A tagged phenotype is the association between a phenotype tag and a specific dbGaP variable (study phenotype).
                 </div>
             </li>
             <li class="list-group-item">
                 <h5 class="list-group-heading" data-toggle="collapse" data-target="#terms-three" data-parent="#terms" aria-expanded="false" aria-controls="terms-three">Tag description</h5>
                 <div id="terms-three" class="collapse">
-                Definition here...
+                A brief description of the phenotype concept that the tag represents.
                 </div>
             </li>
             <li class="list-group-item">
                 <h5 class="list-group-heading" data-toggle="collapse" data-target="#terms-four" data-parent="#terms" aria-expanded="false" aria-controls="terms-four">Tag instructions</h5>
                 <div id="terms-four" class="collapse">
-                Definition here...
+                Detailed instructions for what types dbGaP variables to apply the tag to. Lists common examples of variables to include or exclude from tagging.
                 </div>
             </li>
         </ul>
@@ -100,7 +190,20 @@
     </h3></div>
     <div class="panel-collapse collapse" id="contact-collapse">
         <div class="panel-body">
-            <p>If you have further questions that aren’t addressed by the above instructions, email dccpheno@uw.edu</p>
+            <ul>
+                <li>Email the site administrator (dccpheno@uw.edu) with:</li>
+                <ul>
+                    <li>Unexpected error pages (e.g. "server error", or "404" errors)</li>
+                    <li>Site design issues</li>
+                    <li>Typos or confusing wording</li>
+                </ul>
+                <li>Email the tagging mailing list (topmed_tagging@uw.edu) with:</li>
+                <ul>
+                    <li>Questions about how to interpret tag instructions for your study</li>
+                    <li>Examples you think should be added to the tag instructions</li>
+                    <li>Examples of variables from your study that don't quite match the tag instructions</li>
+                </ul>
+            </ul>
         </div>
     </div>
 </div>

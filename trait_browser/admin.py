@@ -66,12 +66,12 @@ class SourceDatasetAdmin(admin.ModelAdmin):
     """Admin class for SourceDataset objects."""
 
     # Set fields to display, filter, and search on.
-    list_display = ('i_id', 'i_accession', 'i_version', 'i_dbgap_description', 'pht_version_string',
+    list_display = ('i_id', 'dataset_name', 'i_dbgap_description', 'pht_version_string',
                     'created', 'modified', )
     list_filter = ('source_study_version__study__i_accession',
                    'source_study_version__study__global_study__i_name',
                    'i_is_subject_file', )
-    search_fields = ('i_id', 'i_accession', 'pht_version_string', )
+    search_fields = ('i_id', 'i_accession', 'dataset_name', 'pht_version_string', )
 
 
 class HarmonizedTraitSetAdmin(admin.ModelAdmin):

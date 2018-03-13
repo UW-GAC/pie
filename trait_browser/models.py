@@ -65,6 +65,7 @@ from django.core.urlresolvers import reverse
 
 
 from core.models import TimeStampedModel
+from . import querysets
 
 
 INLINE_LIST_HTML = '\n'.join(
@@ -168,7 +169,7 @@ class Study(SourceDBTimeStampedModel):
 
     def get_search_url(self):
         """Produce a url to initially populate checkboxes in the search page based on the study."""
-        return reverse('trait_browser:source:traits:search') + '?study={}'.format(self.i_accession)
+        return reverse('trait_browser:source:studies:search', kwargs={'pk': self.pk})
 
     def get_name_link_html(self):
         """Get html for study's name linking to study detail page."""
@@ -249,11 +250,16 @@ class SourceDataset(SourceDBTimeStampedModel):
     i_dbgap_description = models.TextField('dbGaP description', blank=True)
     i_dbgap_date_created = models.DateTimeField('dbGaP date created', null=True, blank=True)
     pht_version_string = models.CharField(max_length=20)
+    dbgap_filename = models.CharField(max_length=255, default='')
+    dataset_name = models.CharField(max_length=255, default='')
+
+    # Managers/custom querysets.
+    objects = querysets.SourceDatasetQuerySet.as_manager()
 
     def __str__(self):
         """Pretty printing."""
-        return 'dataset {} of study {}, id={}'.format(
-            self.pht_version_string, self.source_study_version.study, self.i_id)
+        return 'dataset {} of study {}, id={}, pht={}'.format(
+            self.dataset_name, self.source_study_version.study, self.i_id, self.pht_version_string)
 
     def save(self, *args, **kwargs):
         """Custom save method for setting default dbGaP accession strings.
@@ -438,6 +444,9 @@ class SourceTrait(Trait):
     STUDY_URL = 'http://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id={}'
     DATASET_URL = 'http://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/dataset.cgi?study_id={}&pht={}'
 
+    # Managers/custom querysets.
+    objects = querysets.SourceTraitQuerySet.as_manager()
+
     def __str__(self):
         """Pretty printing of SourceTrait objects."""
         return '{trait_name} ({phv}): dataset {pht}'.format(trait_name=self.i_trait_name,
@@ -543,6 +552,9 @@ class HarmonizedTrait(Trait):
     harmonization_units = models.ManyToManyField(HarmonizationUnit)
     # Created according to same rules as topmed_pheno.
     trait_flavor_name = models.CharField(max_length=150)
+
+    # Managers/custom querysets.
+    objects = querysets.HarmonizedTraitQuerySet.as_manager()
 
     class Meta:
         unique_together = (('harmonized_trait_set_version', 'i_trait_name'), )

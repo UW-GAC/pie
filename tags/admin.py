@@ -9,14 +9,14 @@ from . import models
 class TagAdmin(admin.ModelAdmin):
     """Admin class for Tag objects."""
 
-    list_display = ('lower_title', 'creator', 'created', 'modified', )
+    list_display = ('title', 'lower_title', 'description', 'creator', 'created', 'modified', )
     list_filter = ('creator', )
     search_fields = ('lower_title', 'description', )
     form = forms.TagAdminForm
 
     def save_model(self, request, obj, form, change):
         """Save current user as the Tag creator."""
-        if obj.pk is None:
+        if obj.pk is None:  # Test for whether the tag is being created or edited.
             obj.creator = request.user
         obj.save()
 

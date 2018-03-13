@@ -168,23 +168,22 @@ class HomeTestCase(SeleniumTestCase):
         # Is the navbar there?
         navbar = self.selenium.find_element_by_class_name('navbar')
         self.assertIsNotNone(navbar)
-        # Click on the Source phenotypes dropdown menu.
-        self.selenium.find_element_by_link_text('Study phenotypes').click()
-        time.sleep(1)
-
-        self.selenium.find_element_by_link_text('View all').click()
-        time.sleep(1)
-        self.go_back()
 
         self.selenium.find_element_by_link_text('Study phenotypes').click()
-        self.selenium.find_element_by_link_text('Browse by study').click()
+        self.selenium.find_element_by_link_text('Search variables').click()
         time.sleep(1)
-        self.go_back()
 
         self.selenium.find_element_by_link_text('Study phenotypes').click()
-        self.selenium.find_element_by_link_text('Search').click()
+        self.selenium.find_element_by_link_text('Studies').click()
         time.sleep(1)
-        self.go_back()
+
+        self.selenium.find_element_by_link_text('Study phenotypes').click()
+        self.selenium.find_element_by_link_text('Datasets').click()
+        time.sleep(1)
+
+        self.selenium.find_element_by_link_text('Study phenotypes').click()
+        self.selenium.find_element_by_link_text('Variables').click()
+        time.sleep(1)
 
 
 class AdminTestCase(SeleniumTestCase):
@@ -324,12 +323,15 @@ class SourceTraitSearchTestCase(UserAutoLoginSeleniumTestCase):
         self.get_reverse('trait_browser:source:traits:search')
         time.sleep(1)
 
-    def run_search(self, search_string, study_list=None):
+    def run_search(self, name='', description='', study_list=None):
         """Submit a search for the given search string."""
-        search_text = self.selenium.find_element_by_id('id_text')
-        search_text.send_keys(search_string)
+        search_name = self.selenium.find_element_by_id('id_name')
+        search_name.send_keys(name)
+        search_description = self.selenium.find_element_by_id('id_description')
+        search_description.send_keys(description)
         time.sleep(1)
         if study_list is not None:
+            # This section is broken with the new django-autocomplete-light widget.
             studies_with_ranks = [(study, i + 1) for (i, study,) in
                                   enumerate(trait_browser.models.Study.objects.all().order_by('i_study_name')) if
                                   study in study_list]
@@ -343,14 +345,14 @@ class SourceTraitSearchTestCase(UserAutoLoginSeleniumTestCase):
         """Test the SourceTrait search page with a string you know is in one of the SourceTraits in the test db."""
         # Get the trait name for the first trait you can find.
         good_text = trait_browser.models.SourceTrait.objects.all()[0].i_trait_name
-        self.run_search(good_text)
-        result_count = len(trait_browser.views.search(good_text, 'source'))
+        self.run_search(name=good_text)
+        result_count = len(trait_browser.searches.search_source_traits(name=good_text))
         self.check_table_view(expected_rows=result_count)
 
     def test_source_trait_search_all_studies_bad_text(self):
         """Test the SourceTrait search page with a string is not in any of the traits in the test db."""
-        bad_text = 'very_unlikely_search_string!'
-        self.run_search(bad_text)
+        bad_text = 'very_unlikely_search_string'
+        self.run_search(name=bad_text)
         self.check_table_view()
         # TODO: proper handling when there are 0 expected rows. Currently, the row count
         # is 1 when it should be 0 because "no results" is in a row of the table.
@@ -362,19 +364,19 @@ class SourceTraitSearchTestCase(UserAutoLoginSeleniumTestCase):
         study_trait = trait_browser.models.SourceTrait.objects.filter(
             source_dataset__source_study_version__study=study)[0]
         good_text = study_trait.i_trait_name
-        self.run_search(good_text, [study])
+        self.run_search(name=good_text, study_list=[study])
         # This will find many more results than you expect, because the list of words
         # that Faker uses is fairly small. The result is that a given fake trait name
         # will likely end up in the trait descriptions of many other traits.
 
-    def test_source_trait_search_single_study_good_specific_text(self):
+    def test_source_trait_search_single_study_good_description_text(self):
         """Search page finds a trait based on description, within a given study."""
         # This search string is more specific, so should only find one result
         study = trait_browser.models.Study.objects.all()[0]
         study_trait = trait_browser.models.SourceTrait.objects.filter(
             source_dataset__source_study_version__study=study)[0]
         good_text = study_trait.i_description
-        self.run_search(good_text, [study])
+        self.run_search(description=good_text, study_list=[study])
 
     def test_source_trait_search_specific_text_wrong_study(self):
         """Test the SourceTrait search page by searching for a long search phrase in the wrong study."""
@@ -384,7 +386,7 @@ class SourceTraitSearchTestCase(UserAutoLoginSeleniumTestCase):
         study_trait = trait_browser.models.SourceTrait.objects.filter(
             source_dataset__source_study_version__study=study)[0]
         good_text = study_trait.i_description
-        self.run_search(good_text, [studies[1]])
+        self.run_search(description=good_text, study_list=[studies[1]])
 
 
 class TablePageTestCase(UserAutoLoginSeleniumTestCase):
@@ -393,8 +395,7 @@ class TablePageTestCase(UserAutoLoginSeleniumTestCase):
         """Run check_table_view on the All source traits table page. Check the link for a source trait detail page."""
         total_source_traits = trait_browser.models.SourceTrait.objects.count()
         self.get_reverse('trait_browser:source:traits:list')
-        # Expect 2 extra rows here because of the table containing the upper right buttons.
-        self.check_table_view(expected_rows=total_source_traits + 2)
+        self.check_table_view(expected_rows=total_source_traits)
         # Check the detail page for the first listed SourceTrait.
         detail_link = self.selenium.find_element_by_class_name('i_trait_name')
         detail_link.click()
@@ -409,14 +410,10 @@ class TablePageTestCase(UserAutoLoginSeleniumTestCase):
         study_name = trait_browser.models.Study.objects.all().order_by('i_study_name')[0].i_study_name
         study_link = self.selenium.find_element_by_link_text(study_name)
         study_link.click()
-        self.check_table_presence()
-        self.go_back()
 
     def test_source_study_detail_table(self):
-        """Run check_table_view on the Study detail list page (from a link in the Browse by study table)."""
+        """Study detail page works."""
         study = trait_browser.models.Study.objects.all()[0]
         trait_count = trait_browser.models.SourceTrait.objects.filter(
             source_dataset__source_study_version__study=study).all().count()
         self.get_reverse('trait_browser:source:studies:detail:detail', study.pk)
-        # Expect 2 extra rows here because of the table containing the upper right buttons.
-        self.check_table_view(expected_rows=trait_count + 2)

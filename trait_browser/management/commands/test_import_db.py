@@ -13,6 +13,7 @@ This test module runs several unit tests and one integration test.
 from datetime import datetime, timedelta
 from os.path import exists, join
 from os import listdir, stat
+from re import compile
 from shutil import rmtree
 from subprocess import call
 from tempfile import mkdtemp
@@ -26,14 +27,18 @@ from django.core import management
 from django.test import TestCase
 from django.utils import timezone
 
+import watson.search as watson
+
 from trait_browser.management.commands.import_db import Command, HUNIT_QUERY, STRING_TYPES
 from trait_browser.management.commands.db_factory import fake_row_dict
 from trait_browser import factories
 from trait_browser import models
-
+from trait_browser.test_searches import ClearSearchIndexMixin
 
 CMD = Command()
 ORIGINAL_BACKUP_DIR = settings.DBBACKUP_STORAGE_OPTIONS['location']
+TEST_DATA_DIR = 'trait_browser/source_db_test_data'
+DBGAP_RE = compile(r'(?P<dbgap_id>phs\d{6}\.v\d+?\.pht\d{6}\.v\d+?)')
 
 
 def get_devel_db(permissions='readonly'):
@@ -71,9 +76,6 @@ def clean_devel_db():
     cursor.execute('SET FOREIGN_KEY_CHECKS = 1;')
     cursor.close()
     source_db.close()
-
-
-TEST_DATA_DIR = 'trait_browser/source_db_test_data'
 
 
 def load_test_source_db_data(filename):
@@ -636,6 +638,32 @@ class GetCurrentListsTest(TestCase):
 
 
 # Tests that require test data.
+class SetDatasetNamesTest(BaseTestDataTestCase):
+    """Tests of the _set_dataset_names method."""
+
+    def test_dataset_name_after_import(self):
+        """The dataset_name field is a valid-ish string after running an import."""
+        management.call_command('import_db', '--which_db=devel', '--no_backup')
+        source_dataset_names = models.SourceDataset.objects.all().values_list('dataset_name', flat=True)
+        # None of the dataset_names are empty strings anymore.
+        self.assertNotIn('', source_dataset_names)
+        # None of the dataset names have a phs.v.pht.v string in them.
+        self.assertFalse(any([DBGAP_RE.search(name) for name in source_dataset_names]))
+        # None of the dataset names have any directory path in them.
+        self.assertFalse(any(['/' in name for name in source_dataset_names]))
+
+    def test_dbgap_filename_after_import(self):
+        """The dbgap_filename field is a valid-ish string after running an import."""
+        management.call_command('import_db', '--which_db=devel', '--no_backup')
+        source_dataset_files = models.SourceDataset.objects.all().values_list('dbgap_filename', flat=True)
+        # None of the dataset_names are empty strings anymore.
+        self.assertNotIn('', source_dataset_files)
+        # All of the file names have a phs.v.pht.v string in them.
+        self.assertTrue(all([DBGAP_RE.search(name) for name in source_dataset_files]))
+        # None of the file names have any directory path in them.
+        self.assertFalse(any(['/' in name for name in source_dataset_files]))
+
+
 class MakeArgsTest(BaseTestDataTestCase):
     """Tests of the _make_[model]_args functions."""
 
@@ -1032,7 +1060,7 @@ class SpecialQueryTest(BaseTestDataTestCase):
         self.assertIn('harmonization_unit_id', results[0].keys())
 
 
-class UpdateModelsTest(BaseTestDataTestCase):
+class UpdateModelsTest(ClearSearchIndexMixin, BaseTestDataTestCase):
     """Tests of the update functions with updates to each possible source_db table."""
 
     # Source trait updates.
@@ -1157,7 +1185,7 @@ class UpdateModelsTest(BaseTestDataTestCase):
         self.assertTrue(model_instance.modified > old_mod_time)
 
     def test_update_source_trait(self):
-        """Updates in source_trait table are imported."""
+        """Updates in source_trait table are imported and the search index is updated."""
         management.call_command('import_db', '--which_db=devel', '--no_backup')
         # Close the db connections because change_data_in_table() opens new connections.
         # This does not affect the .cursor and .source_db attributes in other functions.
@@ -1165,10 +1193,10 @@ class UpdateModelsTest(BaseTestDataTestCase):
         self.source_db.close()
 
         model = models.SourceTrait
-        model_instance = model.objects.all()[0]
+        model_instance = model.objects.all().current()[0]
         old_mod_time = model_instance.modified
         source_db_table_name = 'source_trait'
-        field_to_update = 'dbgap_comment'
+        field_to_update = 'dbgap_description'
         new_value = 'asdfghjkl'
         source_db_pk_name = 'source_trait_id'
 
@@ -1177,8 +1205,10 @@ class UpdateModelsTest(BaseTestDataTestCase):
         management.call_command('import_db', '--which_db=devel', '--update_only', '--verbosity=0', '--no_backup')
         model_instance.refresh_from_db()
         # Check that modified date > created date, and name is set to new value.
-        self.assertEqual(new_value, getattr(model_instance, 'i_' + field_to_update))
+        self.assertEqual(new_value, getattr(model_instance, 'i_description'))
         self.assertTrue(model_instance.modified > old_mod_time)
+        # Check that the trait can be found in the search index.
+        self.assertQuerysetEqual(watson.filter(models.SourceTrait, new_value), [repr(model_instance)])
 
     def test_update_source_trait_encoded_value(self):
         """Updates in source_trait_encoded_values are imported."""
@@ -2299,7 +2329,7 @@ class ImportNoUpdateTest(BaseTestDataTestCase):
 
 
 # Tests that run import_db from start to finish.
-class IntegrationTest(BaseTestDataReloadingTestCase):
+class IntegrationTest(ClearSearchIndexMixin, BaseTestDataReloadingTestCase):
     """Integration test of the whole management command.
 
     It's very difficult to test just one function at a time here, because of
@@ -2423,6 +2453,11 @@ class IntegrationTest(BaseTestDataReloadingTestCase):
         # Check all of the M2M relationships again.
         self.check_imported_m2m_relations_match(
             m2m_tables, group_by_fields, concat_fields, parent_models, m2m_att_names)
+        # Check that search indices are added.
+        self.assertEqual(watson.filter(models.SourceTrait, '').count(),
+                         models.SourceTrait.objects.all().count())
+        self.assertEqual(watson.filter(models.HarmonizedTrait, '').count(),
+                         models.HarmonizedTrait.objects.all().count())
 
     def test_updated_data_from_every_table(self):
         """Every kind of update is detected and imported by import_db."""
