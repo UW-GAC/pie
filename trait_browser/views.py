@@ -55,8 +55,8 @@ class SearchFormMixin(FormMixin):
 
     def search(self, **search_kwargs):
         """Define a search method to be implemented by Views using this Mixin."""
-            # Ensure that View classes implement their own search method by raising an exception.
-            raise NotImplementedError
+        # Ensure that View classes implement their own search method by raising an exception.
+        raise NotImplementedError
 
     def form_valid(self, form):
         """Override form_valid method to process form and add results to the search page."""
