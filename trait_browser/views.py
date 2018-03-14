@@ -7,6 +7,9 @@ from django.template.defaultfilters import pluralize    # Use pluralize in the v
 from django.utils.safestring import mark_safe
 from django.views.generic import DetailView, FormView, ListView
 from django.views.generic.detail import SingleObjectMixin
+from django.views.generic.edit import FormMixin
+from django.views.generic.base import TemplateView
+from django.template.defaultfilters import pluralize    # Use pluralize in the views.
 
 from braces.views import (FormMessagesMixin, LoginRequiredMixin, MessageMixin, PermissionRequiredMixin,
                           UserPassesTestMixin)
@@ -23,6 +26,55 @@ from . import searches
 
 
 TABLE_PER_PAGE = 50    # Setting for per_page rows for all table views.
+
+
+class SearchFormMixin(FormMixin):
+    """Mixin to run a django-watson search for a view."""
+
+    def get_form_kwargs(self):
+        """Override method such that form kwargs are obtained from the get request."""
+        kwargs = {}
+        if self.request.GET:
+            kwargs.update({
+                'data': self.request.GET
+            })
+        return kwargs
+
+    def get(self, request, *args, **kwargs):
+        """Override get method for form and search processing."""
+        if 'reset' in self.request.GET:
+            # Instantiate a blank form, ignoring any current GET parameters.
+            form_class = self.get_form_class()
+            return HttpResponseRedirect(request.path, {'form': form_class()})
+        # Process the form.
+        form = self.get_form()
+        if form.is_valid():
+            return self.form_valid(form)
+        else:
+            return self.form_invalid(form)
+
+    def search(self, **search_kwargs):
+        """Define a search method to be implemented by Views using this Mixin."""
+        # Ensure that View classes implement their own search method by raising an exception.
+        raise NotImplementedError
+
+    def form_valid(self, form):
+        """Override form_valid method to process form and add results to the search page."""
+        self.table_data = self.search(**form.cleaned_data)
+        context = self.get_context_data(form=form)
+        context['has_results'] = True
+        # Add an informational message about the number of results found.
+        msg = '{n} result{s} found.'.format(
+            n=self.table_data.count(),
+            s=pluralize(self.table_data.count()))
+        self.messages.info(msg, fail_silently=True)
+        return self.render_to_response(context)
+
+    def form_invalid(self, form):
+        """Override form_valid method to process form and redirect to the search page."""
+        context = self.get_context_data(form=form)
+        context['has_results'] = False
+        return self.render_to_response(context)
 
 
 class StudyDetail(LoginRequiredMixin, DetailView):
@@ -219,7 +271,7 @@ class SourceTraitTagging(LoginRequiredMixin, PermissionRequiredMixin, UserPasses
         return mark_safe(msg)
 
 
-class SourceTraitSearch(LoginRequiredMixin, SingleTableMixin, MessageMixin, FormView):
+class SourceTraitSearch(LoginRequiredMixin, SearchFormMixin, SingleTableMixin, MessageMixin, TemplateView):
     """Form view class for searching for source traits."""
 
     template_name = 'trait_browser/sourcetrait_search.html'
@@ -228,45 +280,11 @@ class SourceTraitSearch(LoginRequiredMixin, SingleTableMixin, MessageMixin, Form
     context_table_name = 'results_table'
     table_data = models.SourceTrait.objects.none()
 
-    def __init__(self):
-        self.search_kwargs = {}
-
-    def get(self, request, *args, **kwargs):
-        """Override get method for form and search processing."""
-        form_class = self.get_form_class()
-        if 'reset' in request.GET:
-            return HttpResponseRedirect(request.path, {'form': self.get_form(form_class)})
-        if request.GET:
-            form = form_class(request.GET)
-        else:
-            form = self.get_form(form_class)
-
-        if form.is_valid():
-            return self.form_valid(form)
-        else:
-            return self.form_invalid(form)
-
-    def form_valid(self, form):
-        """Override form_valid method to process form and add results to the search page."""
-        self.search_kwargs.update(form.cleaned_data)
-        self.table_data = searches.search_source_traits(**self.search_kwargs)
-        context = self.get_context_data(form=form)
-        context['has_results'] = True
-        # Add an informational message about the number of results found.
-        msg = '{n} result{s} found.'.format(
-            n=self.table_data.count(),
-            s=pluralize(self.table_data.count()))
-        self.messages.info(msg, fail_silently=True)
-        return self.render_to_response(context)
-
-    def form_invalid(self, form):
-        """Override form_valid method to process form and redirect to the search page."""
-        context = self.get_context_data(form=form)
-        context['has_results'] = False
-        return self.render_to_response(context)
+    def search(self, **search_kwargs):
+        return searches.search_source_traits(**search_kwargs)
 
 
-class SourceTraitSearchByStudy(SingleObjectMixin, SourceTraitSearch):
+class SourceTraitSearchByStudy(LoginRequiredMixin, SearchFormMixin, SingleObjectMixin, SingleTableMixin, MessageMixin, TemplateView):
     """Form view class for searching for source traits within a specific study."""
 
     template_name = 'trait_browser/study_sourcetrait_search.html'
@@ -278,10 +296,13 @@ class SourceTraitSearchByStudy(SingleObjectMixin, SourceTraitSearch):
     model = models.Study
 
     def get(self, request, *args, **kwargs):
-        """Override get method for form and search processing."""
         self.object = self.get_object()
-        self.search_kwargs.update({'studies': [self.object.pk]})
         return super(SourceTraitSearchByStudy, self).get(request, *args, **kwargs)
+
+    def search(self, **search_kwargs):
+        new_search_kwargs = search_kwargs.copy()
+        new_search_kwargs.update({'studies': [self.object.pk]})
+        return searches.search_source_traits(**new_search_kwargs)
 
 
 class SourceTraitPHVAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
@@ -457,7 +478,7 @@ class HarmonizedTraitFlavorNameAutocomplete(LoginRequiredMixin, autocomplete.Sel
         return retrieved
 
 
-class HarmonizedTraitSearch(LoginRequiredMixin, SingleTableMixin, MessageMixin, FormView):
+class HarmonizedTraitSearch(LoginRequiredMixin, SearchFormMixin, SingleTableMixin, MessageMixin, TemplateView):
     """Form view class for searching for source traits."""
 
     template_name = 'trait_browser/harmonizedtrait_search.html'
@@ -466,35 +487,6 @@ class HarmonizedTraitSearch(LoginRequiredMixin, SingleTableMixin, MessageMixin, 
     context_table_name = 'results_table'
     table_data = models.HarmonizedTrait.objects.none()
 
-    def get(self, request, *args, **kwargs):
-        """Override get method for form and search processing."""
-        form_class = self.get_form_class()
-        if 'reset' in request.GET:
-            return HttpResponseRedirect(request.path, {'form': self.get_form(form_class)})
-        if request.GET:
-            form = form_class(request.GET)
-        else:
-            form = self.get_form(form_class)
-
-        if form.is_valid():
-            return self.form_valid(form)
-        else:
-            return self.form_invalid(form)
-
-    def form_valid(self, form):
+    def search(self, **search_kwargs):
         """Override form_valid method to process form and add results to the search page."""
-        self.table_data = searches.search_harmonized_traits(**form.cleaned_data)
-        context = self.get_context_data(form=form)
-        context['has_results'] = True
-        # Add an informational message about the number of results found.
-        msg = '{n} result{s} found.'.format(
-            n=self.table_data.count(),
-            s=pluralize(self.table_data.count()))
-        self.messages.info(msg, fail_silently=True)
-        return self.render_to_response(context)
-
-    def form_invalid(self, form):
-        """Override form_valid method to process form and redirect to the search page."""
-        context = self.get_context_data(form=form)
-        context['has_results'] = False
-        return self.render_to_response(context)
+        return searches.search_harmonized_traits(**search_kwargs)
