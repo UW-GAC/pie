@@ -9,7 +9,7 @@ from . import models
 from . import factories
 
 
-class UnitRecipeFactoryTestCase(TestCase):
+class UnitRecipeFactoryTest(TestCase):
 
     def test_unit_recipe_factory_build(self):
         """A UnitRecipe instance is returned by UnitRecipeFactory.build()."""
@@ -48,7 +48,7 @@ class UnitRecipeFactoryTestCase(TestCase):
         self.assertEqual(pheno_vars, list(unit_recipe.phenotype_variables.all()))
 
 
-class HarmonizationRecipeFactoryTestCase(TestCase):
+class HarmonizationRecipeFactoryTest(TestCase):
 
     def test_harmonization_recipe_factory_build(self):
         """A HarmonizationRecipe instance is returned by HarmonizationRecipeFactory.build()."""

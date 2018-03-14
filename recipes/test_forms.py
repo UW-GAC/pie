@@ -9,7 +9,7 @@ from . import factories
 from . import models
 
 
-class UnitRecipeFormTestCase(TestCase):
+class UnitRecipeFormTest(TestCase):
 
     def test_form_with_valid_input_type_other(self):
         """The UnitRecipeForm is valid with valid input data and a valid user set on the form."""
@@ -385,7 +385,7 @@ class UnitRecipeFormTestCase(TestCase):
         self.assertFalse(form.is_valid())
 
 
-class HarmonizationRecipeFormTestCase(TestCase):
+class HarmonizationRecipeFormTest(TestCase):
 
     def test_form_with_valid_input(self):
         """The HarmonizationRecipeForm is valid with good input data."""

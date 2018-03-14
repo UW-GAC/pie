@@ -8,7 +8,7 @@ from . import factories
 from . import models
 
 
-class SearchTestCase(TestCase):
+class SearchTest(TestCase):
 
     def test_model_saving(self):
         """Test that you can save a Search object."""
@@ -27,7 +27,7 @@ class SearchTestCase(TestCase):
         self.assertIsInstance(search.modified, datetime)
 
 
-class ProfileTestCase(TestCase):
+class ProfileTest(TestCase):
 
     def test_model_saving(self):
         """Test that you can save a Profile object."""
@@ -54,7 +54,7 @@ class ProfileTestCase(TestCase):
             self.assertIn(st, user.profile.taggable_studies.all())
 
 
-class SavedSearchMetaTestCase(TestCase):
+class SavedSearchMetaTest(TestCase):
 
     def test_model_saving(self):
         """Test that you can save a SavedSearchMeta object."""

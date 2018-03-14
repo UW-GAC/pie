@@ -1424,7 +1424,7 @@ class ManyTaggedTraitsCreateByTagDCCAnalystTest(DCCAnalystLoginTestCase):
         self.assertEqual(response.status_code, 200)
 
 
-class TagsLoginRequiredTestCase(LoginRequiredTestCase):
+class TagsLoginRequiredTest(LoginRequiredTestCase):
 
     def test_recipes_login_required(self):
         """All recipes urls redirect to login page if no user is logged in."""

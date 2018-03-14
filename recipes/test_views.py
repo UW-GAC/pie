@@ -12,7 +12,7 @@ from . import factories
 from . import models
 
 
-class UnitRecipeViewsTestCase(RecipeSubmitterLoginTestCase):
+class UnitRecipeViewsTest(RecipeSubmitterLoginTestCase):
 
     def test_create_unit_recipe(self):
         """The CreateUnitRecipe view can be navigated to."""
@@ -156,7 +156,7 @@ class UnitRecipeViewsTestCase(RecipeSubmitterLoginTestCase):
         self.assertEqual(response.status_code, 200)
 
 
-class HarmonizationRecipeViewsTestCase(RecipeSubmitterLoginTestCase):
+class HarmonizationRecipeViewsTest(RecipeSubmitterLoginTestCase):
 
     def test_create_harmonization_recipe(self):
         """The CreateHarmonizationRecipe view can be navigated to."""
@@ -572,7 +572,7 @@ class SuperuserRecipeViewsTest(SuperuserLoginTestCase):
             html=True)
 
 
-class RecipesLoginRequiredTestCase(LoginRequiredTestCase):
+class RecipesLoginRequiredTest(LoginRequiredTestCase):
 
     def test_recipes_login_required(self):
         """All recipes urls redirect to login page if no user is logged in."""

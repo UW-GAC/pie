@@ -9,7 +9,7 @@ from . import models
 # caused because Faker doesn't have enough unique fake values.
 
 
-class GlobalStudyFactoryTestCase(TestCase):
+class GlobalStudyFactoryTest(TestCase):
 
     def test_global_study_factory_build(self):
         """A GlobalStudy instance is returned by GlobalStudyFactory.build()."""
@@ -34,7 +34,7 @@ class GlobalStudyFactoryTestCase(TestCase):
             self.assertIsInstance(one, models.GlobalStudy)
 
 
-class StudyFactoryTestCase(TestCase):
+class StudyFactoryTest(TestCase):
 
     def test_study_factory_build(self):
         """A Study instance is returned by StudyFactory.build()."""
@@ -59,7 +59,7 @@ class StudyFactoryTestCase(TestCase):
             self.assertIsInstance(one, models.Study)
 
 
-class SourceStudyVersionFactoryTestCase(TestCase):
+class SourceStudyVersionFactoryTest(TestCase):
 
     def test_source_study_version_factory_build(self):
         """A SourceStudyVersion instance is returned by SourceStudyVersionFactory.build()."""
@@ -84,7 +84,7 @@ class SourceStudyVersionFactoryTestCase(TestCase):
             self.assertIsInstance(one, models.SourceStudyVersion)
 
 
-class SubcohortFactoryTestCase(TestCase):
+class SubcohortFactoryTest(TestCase):
 
     def test_source_trait_factory_build(self):
         """A Subcohort instance is returned by SubcohortFactory.build()."""
@@ -109,7 +109,7 @@ class SubcohortFactoryTestCase(TestCase):
             self.assertIsInstance(one, models.Subcohort)
 
 
-class SourceDatasetFactoryTestCase(TestCase):
+class SourceDatasetFactoryTest(TestCase):
 
     def test_source_dataset_factory_build(self):
         """A SourceDataset instance is returned by SourceDatasetFactory.build()."""
@@ -140,7 +140,7 @@ class SourceDatasetFactoryTestCase(TestCase):
     #     self.assertEqual(subcohorts, list(source_dataset.subcohorts.all()))
 
 
-class HarmonizedTraitSetFactoryTestCase(TestCase):
+class HarmonizedTraitSetFactoryTest(TestCase):
 
     def test_harmonized_trait_set_factory_build(self):
         """A HarmonizedTraitSet instance is returned by HarmonizedTraitSetFactory.build()."""
@@ -165,7 +165,7 @@ class HarmonizedTraitSetFactoryTestCase(TestCase):
             self.assertIsInstance(one, models.HarmonizedTraitSet)
 
 
-class AllowedUpdateReasonFactoryTestCase(TestCase):
+class AllowedUpdateReasonFactoryTest(TestCase):
 
     def test_allowed_update_reason_factory_build(self):
         """An AllowedUpdateReason instance is returned by AllowedUpdateReasonFactory.build()."""
@@ -190,7 +190,7 @@ class AllowedUpdateReasonFactoryTestCase(TestCase):
             self.assertIsInstance(one, models.AllowedUpdateReason)
 
 
-class HarmonizedTraitSetVersionFactoryTestCase(TestCase):
+class HarmonizedTraitSetVersionFactoryTest(TestCase):
 
     def test_harmonized_trait_set_version_factory_build(self):
         """A HarmonizedTraitSetVersion instance is returned by HarmonizedTraitSetVersionFactory.build()."""
@@ -215,7 +215,7 @@ class HarmonizedTraitSetVersionFactoryTestCase(TestCase):
             self.assertIsInstance(one, models.HarmonizedTraitSetVersion)
 
 
-class HarmonizationUnitFactoryTestCase(TestCase):
+class HarmonizationUnitFactoryTest(TestCase):
 
     def test_build(self):
         """A HarmonizationUnit instance is returned by HarmonizationUnitFactory.build()."""
@@ -273,7 +273,7 @@ class HarmonizationUnitFactoryTestCase(TestCase):
         self.assertEqual(batch_traits, list(harmonization_unit.component_batch_traits.all()))
 
 
-class SourceTraitFactoryTestCase(TestCase):
+class SourceTraitFactoryTest(TestCase):
 
     def test_source_trait_factory_build(self):
         """A SourceTrait instance is returned by SourceTraitFactory.build()."""
@@ -298,7 +298,7 @@ class SourceTraitFactoryTestCase(TestCase):
             self.assertIsInstance(one, models.SourceTrait)
 
 
-class HarmonizedTraitFactoryTestCase(TestCase):
+class HarmonizedTraitFactoryTest(TestCase):
 
     def test_build(self):
         """A HarmonizedTrait instance is returned by HarmonizedTraitFactory.build()."""
@@ -362,7 +362,7 @@ class HarmonizedTraitFactoryTestCase(TestCase):
         self.assertEqual(batch_traits, list(harmonized_trait.component_batch_traits.all()))
 
 
-class SourceTraitEncodedValueFactoryTestCase(TestCase):
+class SourceTraitEncodedValueFactoryTest(TestCase):
 
     def test_source_trait_encoded_value_factory_build(self):
         """A SourceTraitEncodedValue instance is returned by SourceTraitEncodedValueFactory.build()."""
@@ -387,7 +387,7 @@ class SourceTraitEncodedValueFactoryTestCase(TestCase):
             self.assertIsInstance(one, models.SourceTraitEncodedValue)
 
 
-class HarmonizedTraitEncodedValueFactoryTestCase(TestCase):
+class HarmonizedTraitEncodedValueFactoryTest(TestCase):
 
     def test_harmonized_trait_encoded_value_factory_build(self):
         """A HarmonizedTraitEncodedValue instance is returned by HarmonizedTraitEncodedValueFactory.build()."""

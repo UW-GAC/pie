@@ -10,7 +10,7 @@ from . import factories
 from . import models
 
 
-class GlobalStudyTestCase(TestCase):
+class GlobalStudyTest(TestCase):
 
     def test_model_saving(self):
         """You can save a GlobalStudy object."""
@@ -29,7 +29,7 @@ class GlobalStudyTestCase(TestCase):
         self.assertIsInstance(global_study.modified, datetime)
 
 
-class StudyTestCase(TestCase):
+class StudyTest(TestCase):
 
     def test_model_saving(self):
         """You can save a Study object."""
@@ -69,7 +69,7 @@ class StudyTestCase(TestCase):
         self.assertIsInstance(study.get_name_link_html(), str)
 
 
-class SourceStudyVersionTestCase(TestCase):
+class SourceStudyVersionTest(TestCase):
 
     def test_model_saving(self):
         """You can save a SourceStudyVersion object."""
@@ -94,7 +94,7 @@ class SourceStudyVersionTestCase(TestCase):
         self.assertRegex(source_study_version.phs_version_string, 'phs\d{6}\.v\d{1,3}\.p\d{1,3}')
 
 
-class SourceDatasetTestCase(TestCase):
+class SourceDatasetTest(TestCase):
 
     def test_model_saving(self):
         """You can save a SourceDataset object."""
@@ -140,7 +140,7 @@ class SourceDatasetTestCase(TestCase):
         self.assertNotIn(deprecated_dataset, models.SourceDataset.objects.current())
 
 
-class HarmonizedTraitSetTestCase(TestCase):
+class HarmonizedTraitSetTest(TestCase):
 
     def test_model_saving(self):
         """You can save a HarmonizedTraitSet object."""
@@ -160,7 +160,7 @@ class HarmonizedTraitSetTestCase(TestCase):
         self.assertIsInstance(harmonized_trait_set.modified, datetime)
 
 
-class HarmonizedTraitSetVersionTestCase(TestCase):
+class HarmonizedTraitSetVersionTest(TestCase):
 
     def test_model_saving(self):
         """You can save a HarmonizedTraitSetVersion object."""
@@ -198,7 +198,7 @@ class HarmonizedTraitSetVersionTestCase(TestCase):
         self.assertIsInstance(htsv.get_component_html(), str)
 
 
-class HarmonizationUnitTestCase(TestCase):
+class HarmonizationUnitTest(TestCase):
 
     def test_model_saving(self):
         """You can save a HarmonizationUnit object."""
@@ -273,7 +273,7 @@ class HarmonizationUnitTestCase(TestCase):
         self.assertIsInstance(htsv.get_component_html(), str)
 
 
-class SourceTraitTestCase(TestCase):
+class SourceTraitTest(TestCase):
 
     def test_model_saving(self):
         """You can save a SourceTrait object."""
@@ -325,7 +325,7 @@ class SourceTraitTestCase(TestCase):
         self.assertNotIn(deprecated_trait, models.SourceTrait.objects.current())
 
 
-class HarmonizedTraitTestCase(TestCase):
+class HarmonizedTraitTest(TestCase):
 
     def test_model_saving(self):
         """You can save a HarmonizedTrait object."""
@@ -418,7 +418,7 @@ class HarmonizedTraitTestCase(TestCase):
         self.assertNotIn(deprecated_trait, models.HarmonizedTrait.objects.current())
 
 
-class SourceTraitEncodedValueTestCase(TestCase):
+class SourceTraitEncodedValueTest(TestCase):
 
     def test_model_saving(self):
         """You can save a SourceTraitEncodedValue object."""
@@ -439,7 +439,7 @@ class SourceTraitEncodedValueTestCase(TestCase):
         self.assertIsInstance(source_trait_encoded_value.modified, datetime)
 
 
-class HarmonizedTraitEncodedValueTestCase(TestCase):
+class HarmonizedTraitEncodedValueTest(TestCase):
 
     def test_model_saving(self):
         """You can save a HarmonizedTraitEncodedValue object."""
