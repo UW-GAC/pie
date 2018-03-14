@@ -86,26 +86,26 @@ class SourceStudyVersionFactoryTest(TestCase):
 
 class SubcohortFactoryTest(TestCase):
 
-    def test_source_trait_factory_build(self):
+    def test_subcohort_factory_build(self):
         """A Subcohort instance is returned by SubcohortFactory.build()."""
-        source_trait = factories.SubcohortFactory.build()
-        self.assertIsInstance(source_trait, models.Subcohort)
+        subcohort = factories.SubcohortFactory.build()
+        self.assertIsInstance(subcohort, models.Subcohort)
 
-    def test_source_trait_factory_create(self):
+    def test_subcohort_factory_create(self):
         """A Subcohort instance is returned by SubcohortFactory.create()."""
-        source_trait = factories.SubcohortFactory.create()
-        self.assertIsInstance(source_trait, models.Subcohort)
+        subcohort = factories.SubcohortFactory.create()
+        self.assertIsInstance(subcohort, models.Subcohort)
 
-    def test_source_trait_factory_build_batch(self):
+    def test_subcohort_factory_build_batch(self):
         """A Subcohort instance is returned by SubcohortFactory.build_batch."""
-        source_traits = factories.SubcohortFactory.build_batch(10)
-        for one in source_traits:
+        subcohorts = factories.SubcohortFactory.build_batch(10)
+        for one in subcohorts:
             self.assertIsInstance(one, models.Subcohort)
 
-    def test_source_trait_factory_create_batch(self):
+    def test_subcohort_factory_create_batch(self):
         """A Subcohort instance is returned by SubcohortFactory.create_batch."""
-        source_traits = factories.SubcohortFactory.create_batch(1000)
-        for one in source_traits:
+        subcohorts = factories.SubcohortFactory.create_batch(1000)
+        for one in subcohorts:
             self.assertIsInstance(one, models.Subcohort)
 
 
