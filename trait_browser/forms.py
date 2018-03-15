@@ -1,6 +1,7 @@
 """Form classes for the trait_browser app."""
 
 from django import forms
+from django.core.urlresolvers import reverse
 
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Layout, Submit, Div
@@ -90,6 +91,38 @@ class SourceTraitSearchMultipleStudiesForm(SourceTraitSearchForm):
         super(SourceTraitSearchMultipleStudiesForm, self).__init__(*args, **kwargs)
         # Add the studies field to the form.
         self.helper.layout[0].append('studies')
+
+
+class SourceTraitSearchOneStudyForm(SourceTraitSearchForm):
+
+    ERROR_DEPRECATED_DATASET = 'Datasets must be from the most recent study version.'
+    ERROR_DIFFERENT_STUDY = 'Datasets must be from this study.'
+
+    def __init__(self, study, *args, **kwargs):
+        self.study = study
+        super(SourceTraitSearchOneStudyForm, self).__init__(*args, **kwargs)
+        # Add an autocomplete field for datasets belonging to this study.
+        self.fields['datasets'] = forms.ModelMultipleChoiceField(
+            # Use .all() instead of .current() to get an appropriate error message from the clean message.
+            queryset=models.SourceDataset.objects.all(),
+            required=False,
+            label='Dataset(s)',
+            widget=autocomplete.ModelSelect2Multiple(
+                url=reverse('trait_browser:source:studies:detail:dataset-autocomplete-by-name', args=[study.pk])
+            ),
+            help_text="""Search only in selected datasets. Start by typing the dataset name to first the list, then
+            select the intended dataset. More than one dataset may be selected."""
+        )
+        self.helper.layout[0].append('datasets')
+
+    def clean_datasets(self):
+        data = self.cleaned_data['datasets']
+        for dataset in data:
+            if dataset.source_study_version.study != self.study:
+                raise forms.ValidationError(self.ERROR_DIFFERENT_STUDY)
+            if dataset.source_study_version.i_is_deprecated:
+                raise forms.ValidationError(self.ERROR_DEPRECATED_DATASET)
+        return data
 
 
 class HarmonizedTraitSearchForm(forms.Form):
