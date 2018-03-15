@@ -1,14 +1,12 @@
 """Test the functions and classes for views.py."""
 
 from copy import copy
-import re
 
 from django.contrib.auth.models import Group
 from django.core.urlresolvers import reverse
 
 from core.utils import (DCCAnalystLoginTestCase, LoginRequiredTestCase, PhenotypeTaggerLoginTestCase, UserLoginTestCase,
                         get_autocomplete_view_ids)
-from profiles.models import Search, Profile
 
 from tags.models import TaggedTrait
 from tags.factories import TagFactory
