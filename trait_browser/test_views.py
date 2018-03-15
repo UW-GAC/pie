@@ -159,7 +159,7 @@ class StudySourceDatasetListTest(UserLoginTestCase):
             factories.SourceTraitFactory.create_batch(5, source_dataset=ds)
 
     def get_url(self, *args):
-        return reverse('trait_browser:source:studies:detail:datasets', args=args)
+        return reverse('trait_browser:source:studies:detail:datasets:list', args=args)
 
     def test_view_success_code(self):
         """View returns successful response code."""
@@ -226,7 +226,7 @@ class StudySourceDatasetNameAutocompleteTest(UserLoginTestCase):
         self.user.refresh_from_db()
 
     def get_url(self, *args):
-        return reverse('trait_browser:source:studies:detail:dataset-autocomplete-by-name', args=args)
+        return reverse('trait_browser:source:studies:detail:datasets:autocomplete:by-name', args=args)
 
     def test_view_success_code(self):
         """View returns successful response code."""

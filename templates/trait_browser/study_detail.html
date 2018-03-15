@@ -8,7 +8,7 @@
 
 {% block content %}
     <div class="well">
-    
+
     <h2>{{ study.i_study_name }} <small>dbGaP study details</small></h2>
 
     <div class="panel panel-info">
@@ -29,9 +29,9 @@
 
             <p><a class="btn btn-primary" href="{% url 'trait_browser:source:studies:detail:variables' study.pk %}" role="button"><span class="glyphicon glyphicon-th-large" aria-hidden="true">
             </span> Study variables</a></p>
-            <p><a class="btn btn-primary" href="{% url 'trait_browser:source:studies:detail:datasets' study.pk %}" role="button"><span class="glyphicon glyphicon-th-list" aria-hidden="true">
+            <p><a class="btn btn-primary" href="{% url 'trait_browser:source:studies:detail:datasets:list' study.pk %}" role="button"><span class="glyphicon glyphicon-th-list" aria-hidden="true">
             </span> Study datasets</a></p>
-            
+
         </div>
     </div>
 
@@ -47,5 +47,5 @@
     </div>
 
     </div>
-    
+
 {% endblock %}
