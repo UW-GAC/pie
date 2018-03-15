@@ -2502,6 +2502,51 @@ class SourceTraitSearchByStudyTest(ClearSearchIndexMixin, UserLoginTestCase):
         self.assertIn('results_table', context)
         self.assertEqual(len(context['results_table'].rows), 0)
 
+    def test_context_data_with_valid_search_trait_description_and_dataset(self):
+        """View has correct context with a valid search and existing results if a study is selected."""
+        dataset = factories.SourceDatasetFactory.create(source_study_version__study=self.study)
+        other_dataset = factories.SourceDatasetFactory.create(source_study_version__study=self.study)
+        trait = factories.SourceTraitFactory.create(
+            i_description='lorem ipsum',
+            i_trait_name='dolor',
+            source_dataset=dataset
+        )
+        factories.SourceTraitFactory.create(
+            i_description='lorem other',
+            i_trait_name='tempor',
+            source_dataset=other_dataset
+        )
+        response = self.client.get(self.get_url(self.study.pk), {'description': 'lorem', 'datasets': [dataset.pk]})
+        context = response.context
+        self.assertIn('form', context)
+        self.assertTrue(context['has_results'])
+        self.assertIsInstance(context['results_table'], tables.SourceTraitTableFull)
+        self.assertQuerysetEqual(context['results_table'].data, [repr(trait)])
+
+    def test_context_data_with_dataset_from_a_different_study(self):
+        """View has correct context with a valid search and existing results if a study is selected."""
+        other_study = factories.StudyFactory.create()
+        dataset = factories.SourceDatasetFactory.create(source_study_version__study=other_study)
+        trait = factories.SourceTraitFactory.create(
+            i_description='lorem ipsum',
+            i_trait_name='dolor',
+            source_dataset=dataset
+        )
+        response = self.client.get(self.get_url(self.study.pk), {'description': 'lorem', 'datasets': [dataset.pk]})
+        self.assertFormError(response, "form", 'datasets', forms.SourceTraitSearchOneStudyForm.ERROR_DIFFERENT_STUDY)
+
+    def test_context_data_with_deprecated_dataset(self):
+        """View has correct context with a valid search and existing results if a study is selected."""
+        study_version = factories.SourceStudyVersionFactory(i_is_deprecated=True, study=self.study)
+        dataset = factories.SourceDatasetFactory.create(source_study_version=study_version)
+        trait = factories.SourceTraitFactory.create(
+            i_description='lorem ipsum',
+            i_trait_name='dolor',
+            source_dataset=dataset
+        )
+        response = self.client.get(self.get_url(self.study.pk), {'description': 'lorem', 'datasets': [dataset.pk]})
+        self.assertFormError(response, "form", 'datasets', forms.SourceTraitSearchOneStudyForm.ERROR_DEPRECATED_DATASET)
+
 
 class HarmonizedTraitSearchTest(ClearSearchIndexMixin, UserLoginTestCase):
 

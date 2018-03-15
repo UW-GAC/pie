@@ -300,15 +300,24 @@ class SourceTraitSearchByStudy(LoginRequiredMixin, SearchFormMixin, SingleObject
     """Form view class for searching for source traits within a specific study."""
 
     template_name = 'trait_browser/study_sourcetrait_search.html'
-    form_class = forms.SourceTraitSearchForm
+    form_class = forms.SourceTraitSearchOneStudyForm
     table_class = tables.SourceTraitTableFull
     context_table_name = 'results_table'
     table_data = models.SourceTrait.objects.none()
     context_object_name = 'study'
     model = models.Study
 
+    def get_form(self, form_class=None):
+        if form_class is None:
+            form_class = self.get_form_class()
+        return form_class(self.object, **self.get_form_kwargs())
+
     def get(self, request, *args, **kwargs):
         self.object = self.get_object()
+        if 'reset' in self.request.GET:
+            # Instantiate a blank form, ignoring any current GET parameters.
+            form_class = self.get_form_class()
+            return HttpResponseRedirect(request.path, {'form': form_class(self.object)})
         return super(SourceTraitSearchByStudy, self).get(request, *args, **kwargs)
 
     def search(self, **search_kwargs):
