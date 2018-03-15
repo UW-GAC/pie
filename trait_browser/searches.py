@@ -5,11 +5,13 @@ import watson.search as watson
 from . import models
 
 
-def search_source_traits(description='', studies=[], name='', match_exact_name=True):
+def search_source_traits(description='', studies=[], datasets=[], name='', match_exact_name=True):
     """Search source traits."""
     qs = models.SourceTrait.objects.current()
     if len(studies) > 0:
         qs = qs.filter(source_dataset__source_study_version__study__in=studies)
+    if len(datasets) > 0:
+        qs = qs.filter(source_dataset__in=datasets)
     if len(name) > 0:
         if match_exact_name:
             qs = qs.filter(i_trait_name__iexact=name)
