@@ -211,7 +211,9 @@ class SourceTraitDetail(LoginRequiredMixin, DetailView):
         context = super(SourceTraitDetail, self).get_context_data(**kwargs)
         user_studies = list(self.request.user.profile.taggable_studies.all())
         context['user_is_study_tagger'] = self.object.source_dataset.source_study_version.study in user_studies
-        context['tags'] = list(Tag.objects.filter(traits=self.object))
+        tags = list(Tag.objects.filter(traits=self.object))
+        tagged_traits = [TaggedTrait.objects.get(trait=self.object) for tag in tags]
+        context['tag_tagged_trait_pairs'] = zip(tags, tagged_traits)
         return context
 
 
