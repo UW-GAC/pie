@@ -328,6 +328,125 @@ class StudySourceDatasetNameAutocompleteTest(UserLoginTestCase):
                               msg='Could not find expected dataset name {} with query {}'.format(expected_name, query))
 
 
+class StudySourceDatasetPHTAutocompleteTest(UserLoginTestCase):
+    """Autocomplete view works as expected."""
+
+    def setUp(self):
+        super(StudySourceDatasetPHTAutocompleteTest, self).setUp()
+        self.study = factories.StudyFactory.create()
+        self.source_study_version = factories.SourceStudyVersionFactory.create(study=self.study)
+        # Create 10 source traits from the same dataset, with non-deprecated ssv of version 2.
+        self.source_datasets = []
+        self.TEST_PHTS = (5, 50, 500, 500000, 55, 555, 555555, 52, 520, 5200, )
+        self.TEST_PHT_QUERIES = {'5': (5, 50, 500, 500000, 55, 555, 555555, 52, 520, 5200, ),
+                            '05': (),
+                            '0005': (500, 555, 520, ),
+                            '000005': (5, ),
+                            '52': (52, 520, 5200, ),
+                            '052': (),
+                            '0052': (5200, ),
+                            '00052': (520, ),
+                            '555555': (555555, ),
+                            '0': (5, 50, 500, 55, 555, 52, 520, 5200, ),
+                            }
+        for pht in self.TEST_PHTS:
+            self.source_datasets.append(factories.SourceDatasetFactory.create(
+                source_study_version = self.source_study_version,
+                i_accession=pht
+            ))
+
+    def get_url(self, *args):
+        return reverse('trait_browser:source:studies:detail:datasets:autocomplete:by-pht', args=args)
+
+    def test_view_success_code(self):
+        """View returns successful response code."""
+        tmp = self.get_url(self.study.pk)
+        response = self.client.get(tmp)
+        self.assertEqual(response.status_code, 200)
+
+    def test_returns_all_datasets_with_no_query(self):
+        """Queryset returns all of the datasets with no query."""
+        url = self.get_url(self.study.pk)
+        response = self.client.get(url)
+        pks = get_autocomplete_view_ids(response)
+        self.assertEqual(sorted([dataset.pk for dataset in self.source_datasets]), sorted(pks))
+
+    def test_no_deprecated_datasets_in_queryset(self):
+        """Queryset returns only the latest version of a dataset."""
+        # Copy the source study version and increment it.
+        source_study_version2 = copy(self.source_study_version)
+        source_study_version2.i_version += 1
+        source_study_version2.i_id += 1
+        source_study_version2.save()
+        # Make the old ssv deprecated.
+        self.source_study_version.i_is_deprecated = True
+        self.source_study_version.save()
+        # Copy the source datasets and increment their versions. Link it to the new ssv.
+        datasets2 = []
+        for dataset in self.source_datasets:
+            d2 = copy(dataset)
+            d2.source_study_version = source_study_version2
+            d2.i_id = dataset.i_id + len(self.source_datasets)
+            d2.save()
+            datasets2.append(d2)
+        # Get results from the autocomplete view and make sure only the new versions are found.
+        url = self.get_url(self.study.pk)
+        response = self.client.get(url)
+        returned_pks = get_autocomplete_view_ids(response)
+        self.assertEqual(len(returned_pks), len(datasets2))
+        for dataset in datasets2:
+            self.assertIn(dataset.i_id, returned_pks)
+        for dataset in self.source_datasets:
+            self.assertNotIn(dataset.i_id, returned_pks)
+
+    def test_other_study_not_in_queryset(self):
+        """Queryset returns only datasets belonging to the appropriate study."""
+        # Delete all but five source traits, so that there are 5 from each study.
+        study2 = factories.StudyFactory.create()
+        datasets2 = factories.SourceDatasetFactory.create_batch(
+            5, source_study_version__study=study2)
+        # Get results from the autocomplete view and make sure only datasets from the correct study are found.
+        url = self.get_url(self.study.pk)
+        response = self.client.get(url)
+        returned_pks = get_autocomplete_view_ids(response)
+        # Make sure that the other study's datasets do not show up.
+        self.assertEqual(len(returned_pks), len(self.source_datasets))
+        for dataset in datasets2:
+            self.assertNotIn(dataset.i_id, returned_pks)
+        for dataset in self.source_datasets:
+            self.assertIn(dataset.i_id, returned_pks)
+
+    def test_pht_test_queries_without_pht_in_string(self):
+        """Returns only the correct source datasets for each of the TEST_PHT_QUERIES when 'pht' is not in query string."""
+        url = self.get_url(self.study.pk)
+        for query in self.TEST_PHT_QUERIES:
+            response = self.client.get(url, {'q': query})
+            returned_pks = get_autocomplete_view_ids(response)
+            expected_matches = self.TEST_PHT_QUERIES[query]
+            # Make sure number of matches is as expected.
+            self.assertEqual(len(returned_pks), len(expected_matches))
+            # Make sure the matches that are found are the ones expected.
+            for expected_pht in expected_matches:
+                expected_pk = models.SourceDataset.objects.get(i_accession=expected_pht).pk
+                self.assertIn(expected_pk, returned_pks,
+                              msg="Could not find expected pht {} with query '{}'".format(expected_pht, query))
+
+    def test_pht_test_queries_with_pht_in_string(self):
+        """Returns only the correct source datasets for each of the TEST_PHT_QUERIES when 'pht' is in query string."""
+        url = self.get_url(self.study.pk)
+        for query in self.TEST_PHT_QUERIES:
+            response = self.client.get(url, {'q': 'pht' + query})
+            returned_pks = get_autocomplete_view_ids(response)
+            expected_matches = self.TEST_PHT_QUERIES[query]
+            # Make sure number of matches is as expected.
+            self.assertEqual(len(returned_pks), len(expected_matches))
+            # Make sure the matches that are found are the ones expected.
+            for expected_pht in expected_matches:
+                expected_pk = models.SourceDataset.objects.get(i_accession=expected_pht).pk
+                self.assertIn(expected_pk, returned_pks,
+                              msg="Could not find expected pht {} with query '{}'".format(expected_pht, query))
+
+
 class StudySourceTableViewsTest(UserLoginTestCase):
     """Unit tests for the SourceTrait by Study views."""
 

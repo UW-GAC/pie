@@ -172,6 +172,26 @@ class StudySourceDatasetNameAutocomplete(LoginRequiredMixin, autocomplete.Select
         return retrieved
 
 
+class StudySourceDatasetPHTAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
+    """Auto-complete datasets in a form field by dataset pht string."""
+
+    def get_queryset(self):
+        retrieved = models.SourceDataset.objects.current().filter(
+            source_study_version__study=self.kwargs['pk']
+        )
+        if self.q:
+            # User can input a pht in several ways, e.g. 'pht597', '597', '000597', or 'pht000597'.
+            # Get rid of the pht.
+            pht_digits = self.q.replace('pht', '')
+            # Search against the phv string if user started the query with leading zeros.
+            if pht_digits.startswith('0'):
+                retrieved = retrieved.filter(pht_version_string__regex=r'^{}'.format('pht' + pht_digits))
+            # Search against the pht digits if user started the query with non-zero digits.
+            else:
+                retrieved = retrieved.filter(i_accession__regex=r'^{}'.format(pht_digits))
+        return retrieved
+
+
 class SourceDatasetDetail(LoginRequiredMixin, SingleTableMixin, DetailView):
     """Detail view class for SourceDatasets. Displays the dataset's source traits in a table."""
 
