@@ -425,10 +425,18 @@ class SourceTraitDetailTest(UserLoginTestCase):
         context = response.context
         self.assertIn('source_trait', context)
         self.assertEqual(context['source_trait'], self.trait)
-        self.assertIn('tags', context)
-        self.assertEqual(context['tags'], [])
+        self.assertIn('tag_tagged_trait_pairs', context)
+        self.assertEqual(context['tag_tagged_trait_pairs'], [])
         self.assertIn('user_is_study_tagger', context)
         self.assertFalse(context['user_is_study_tagger'])
+
+    def test_no_tagged_trait_remove_button(self):
+        """The tag removal button shows up."""
+        tag = TagFactory.create()
+        tagged_trait = TaggedTrait.objects.create(tag=tag, trait=self.trait, creator=self.user)
+        response = self.client.get(self.get_url(self.trait.pk))
+        context = response.context
+        self.assertNotContains(response, 'data-toggle="tooltip" title="Remove {} tag"'.format(tag.title))
 
     def test_no_tagging_button(self):
         """Regular user does not see a button to add tags on this detail page."""
@@ -452,6 +460,28 @@ class SourceTraitDetailPhenotypeTaggerTest(PhenotypeTaggerLoginTestCase):
         response = self.client.get(self.get_url(self.trait.pk))
         self.assertEqual(response.status_code, 200)
 
+    def test_has_tagged_trait(self):
+        """The correct TaggedTrait is in the context."""
+        tagged_trait = TaggedTrait.objects.create(tag=self.tag, trait=self.trait, creator=self.user)
+        response = self.client.get(self.get_url(self.trait.pk))
+        context = response.context
+        self.assertEqual(context['tag_tagged_trait_pairs'][0], (self.tag, tagged_trait))
+
+    def test_has_tagged_trait_remove_button(self):
+        """The tag removal button shows up."""
+        tagged_trait = TaggedTrait.objects.create(tag=self.tag, trait=self.trait, creator=self.user)
+        response = self.client.get(self.get_url(self.trait.pk))
+        context = response.context
+        self.assertContains(response, 'data-toggle="tooltip" title="Remove {} tag"'.format(self.tag.title))
+
+    def test_no_tagged_trait_remove_button_for_other_study(self):
+        """The tag removal button does not show up for a trait from another study."""
+        other_trait = factories.SourceTraitFactory.create()
+        tagged_trait = TaggedTrait.objects.create(tag=self.tag, trait=other_trait, creator=self.user)
+        response = self.client.get(self.get_url(other_trait.pk))
+        context = response.context
+        self.assertNotContains(response, 'data-toggle="tooltip" title="Remove {} tag"'.format(self.tag.title))
+
     def test_has_tagging_button(self):
         """A phenotype tagger does see a button to add tags on this detail page."""
         response = self.client.get(self.get_url(self.trait.pk))
@@ -462,6 +492,49 @@ class SourceTraitDetailPhenotypeTaggerTest(PhenotypeTaggerLoginTestCase):
         response = self.client.get(self.get_url(self.trait.pk))
         context = response.context
         self.assertTrue(context['user_is_study_tagger'])
+
+
+class SourceTraitDetailDCCAnalystTest(DCCAnalystLoginTestCase):
+
+    def setUp(self):
+        super(SourceTraitDetailDCCAnalystTest, self).setUp()
+        self.study = factories.StudyFactory.create()
+        self.trait = factories.SourceTraitFactory.create(source_dataset__source_study_version__study=self.study)
+        self.tag = TagFactory.create()
+        self.user.refresh_from_db()
+
+    def get_url(self, *args):
+        return reverse('trait_browser:source:traits:detail', args=args)
+
+    def test_view_success_code(self):
+        """View returns successful response code."""
+        response = self.client.get(self.get_url(self.trait.pk))
+        self.assertEqual(response.status_code, 200)
+
+    def test_has_tagged_trait(self):
+        """The correct TaggedTrait is in the context."""
+        tagged_trait = TaggedTrait.objects.create(tag=self.tag, trait=self.trait, creator=self.user)
+        response = self.client.get(self.get_url(self.trait.pk))
+        context = response.context
+        self.assertEqual(context['tag_tagged_trait_pairs'][0], (self.tag, tagged_trait))
+
+    def test_has_tagged_trait_remove_button(self):
+        """The tag removal button shows up."""
+        tagged_trait = TaggedTrait.objects.create(tag=self.tag, trait=self.trait, creator=self.user)
+        response = self.client.get(self.get_url(self.trait.pk))
+        context = response.context
+        self.assertContains(response, 'data-toggle="tooltip" title="Remove {} tag"'.format(self.tag.title))
+
+    def test_has_tagging_button(self):
+        """A phenotype tagger does see a button to add tags on this detail page."""
+        response = self.client.get(self.get_url(self.trait.pk))
+        self.assertContains(response, 'Tag this phenotype')
+
+    def test_user_is_study_tagger_false(self):
+        """user_is_study_tagger is false in the view's context."""
+        response = self.client.get(self.get_url(self.trait.pk))
+        context = response.context
+        self.assertFalse(context['user_is_study_tagger'])
 
 
 class SourceTraitListTest(UserLoginTestCase):

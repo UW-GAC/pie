@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load core_tags %}
+{% load staticfiles %}
 
 {% block head_title %}
      | {{ source_trait.i_trait_name }} details
@@ -30,8 +31,17 @@
                     </dd>
                 <dt>Phenotype tag(s)</dt> 
                     <dd>
-                        {% for tag in tags %}
-                            <a href="{{ tag.get_absolute_url }}" class="btn btn-default btn-xs" role="button">{{ tag.title }}</a>
+                        {% for tag, tagged_trait in tag_tagged_trait_pairs %}
+                            <div class="btn-group btn-group-xs">
+                                <a href="{{ tag.get_absolute_url }}" class="btn btn-default" role="button">{{ tag.title }}</a>
+                                {% if perms.tags.add_taggedtrait %}
+                                    {% if user_is_study_tagger or request.user.is_staff %}
+                                        <a href="{% url 'tags:tagged-traits:delete' tagged_trait.pk %}" class="btn btn-default"
+                                        data-toggle="tooltip" title="Remove {{ tag.title }} tag" role="button">
+                                            <span class="glyphicon glyphicon-remove" aria-hidden="true"></a>
+                                    {% endif %}
+                                {% endif %}
+                            </div>
                         {% endfor %}
                     </dd>
 
@@ -81,4 +91,8 @@
 
     </div>
 
+{% endblock %}
+
+{% block custom_javascript %}
+<script src="{% static 'js/tooltip.js' %}"></script>
 {% endblock %}
