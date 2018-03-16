@@ -474,6 +474,14 @@ class SourceTraitDetailPhenotypeTaggerTest(PhenotypeTaggerLoginTestCase):
         context = response.context
         self.assertContains(response, 'data-toggle="tooltip" title="Remove {} tag"'.format(self.tag.title))
 
+    def test_no_tagged_trait_remove_button_for_other_study(self):
+        """The tag removal button does not show up for a trait from another study."""
+        other_trait = factories.SourceTraitFactory.create()
+        tagged_trait = TaggedTrait.objects.create(tag=self.tag, trait=other_trait, creator=self.user)
+        response = self.client.get(self.get_url(other_trait.pk))
+        context = response.context
+        self.assertNotContains(response, 'data-toggle="tooltip" title="Remove {} tag"'.format(self.tag.title))
+
     def test_has_tagging_button(self):
         """A phenotype tagger does see a button to add tags on this detail page."""
         response = self.client.get(self.get_url(self.trait.pk))
