@@ -168,7 +168,7 @@ class StudySourceDatasetNameAutocomplete(LoginRequiredMixin, autocomplete.Select
             source_study_version__study=self.kwargs['pk']
         )
         if self.q:
-            retrieved = retrieved.filter(dataset_name__istartswith=r'{}'.format(self.q))
+            retrieved = retrieved.filter(dataset_name__icontains=r'{}'.format(self.q))
         return retrieved
 
 

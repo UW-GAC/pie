@@ -210,13 +210,13 @@ class StudySourceDatasetNameAutocompleteTest(UserLoginTestCase):
         self.source_study_version = factories.SourceStudyVersionFactory.create(study=self.study)
         # Create 10 source traits from the same dataset, with non-deprecated ssv of version 2.
         self.source_datasets = []
-        self.TEST_DATASETS = ['abcde', 'abcdef', 'abcd_ef', 'abcd123', 'bcdefg', 'cdefgh',
-            'extra1', 'extra2', 'extra3', 'extra4']
+        self.TEST_DATASETS = ['abcde', 'abcdef', 'abcd_ef', 'abcd123', 'bcdefg', 'cdefgh', 'bcdefa',
+            'other1', 'other2', 'other3']
         self.TEST_NAME_QUERIES = {
-            'a': ['abcde', 'abcdef', 'abcd_ef', 'abcd123'],
+            'a': ['abcde', 'abcdef', 'abcd_ef', 'abcd123', 'bcdefa'],
             'abc': ['abcde', 'abcdef', 'abcd_ef', 'abcd123'],
             'abcd1': ['abcd123'],
-            'b': ['bcdefg'],
+            'b': ['abcde', 'abcdef', 'abcd_ef', 'abcd123', 'bcdefg', 'bcdefa'],
             'abcde': ['abcde', 'abcdef'],
             'abcdef': ['abcdef'],
         }
@@ -317,7 +317,8 @@ class StudySourceDatasetNameAutocompleteTest(UserLoginTestCase):
             response = self.client.get(url, {'q': query})
             returned_pks = get_autocomplete_view_ids(response)
             expected_matches = self.TEST_NAME_QUERIES[query]
-            self.assertEqual(len(returned_pks), len(expected_matches))
+            self.assertEqual(len(returned_pks), len(expected_matches),
+                             msg='Did not find correct number of matches for query {}'.format(query))
             # Make sure the matches found are those that are expected.
             for expected_name in expected_matches:
                 name_queryset = models.SourceDataset.objects.filter(dataset_name__regex=r'^{}$'.format(expected_name))
