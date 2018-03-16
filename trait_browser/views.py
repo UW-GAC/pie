@@ -213,7 +213,7 @@ class SourceTraitDetail(LoginRequiredMixin, DetailView):
         context['user_is_study_tagger'] = self.object.source_dataset.source_study_version.study in user_studies
         tags = list(Tag.objects.filter(traits=self.object))
         tagged_traits = [TaggedTrait.objects.get(trait=self.object) for tag in tags]
-        context['tag_tagged_trait_pairs'] = zip(tags, tagged_traits)
+        context['tag_tagged_trait_pairs'] = list(zip(tags, tagged_traits))
         return context
 
 
