@@ -9,12 +9,12 @@
 {% block content %}
     <div class="well">
     
-        <h2>{{ harmonized_trait_set_version.get_trait_names|join:", " }} <small>harmonized phenotype details</small></h2>
+        <h2>{{ harmonized_trait_set_version.get_trait_names|join:", " }} <small>harmonized variable details</small></h2>
         
         {% for trait in harmonized_trait_set_version.harmonizedtrait_set.all %}
             <div class="panel panel-info">
                 <div class="panel-heading">
-                    <h3 class="panel-title">Phenotype name: {{ trait.trait_flavor_name }}</h3>
+                    <h3 class="panel-title">Variable name: {{ trait.trait_flavor_name }}</h3>
                 </div>
                 <div class="panel-body">
                     <dl class="dl-horizontal">
@@ -45,7 +45,7 @@
         <hr>
 <!-- TODO: handle unique keys somehow... -->
 
-        <button type="button" class="btn btn-default" data-toggle="collapse" data-target="#components">Component Phenotypes</button>
+        <button type="button" class="btn btn-default" data-toggle="collapse" data-target="#components">Component Variables</button>
         <div id="components" class="collapse">
             {% render_as_template harmonized_trait_set_version.component_html_detail|safe %}
         </div>

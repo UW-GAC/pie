@@ -13,9 +13,9 @@ class StudyTable(tables.Table):
     """
 
     i_study_name = tables.LinkColumn(
-        'trait_browser:source:studies:detail:detail', args=[tables.utils.A('pk')], verbose_name='Study name',
+        'trait_browser:source:studies:detail:detail', args=[tables.utils.A('pk')], verbose_name='Study',
         orderable=False)
-    trait_count = tables.Column(accessor='study', verbose_name='Phenotype count', orderable=False, empty_values=())
+    trait_count = tables.Column(accessor='study', verbose_name='Number of variables', orderable=False, empty_values=())
     dbGaP_accession = tables.TemplateColumn(
         orderable=False,
         template_code='<a target="_blank" href={{record.dbgap_latest_version_link}}>{{ record.phs }}</a>')
@@ -37,10 +37,10 @@ class SourceDatasetTable(tables.Table):
     """Class for table of source datasets for inheritance."""
 
     dataset_name = tables.LinkColumn(
-        'trait_browser:source:datasets:detail', args=[tables.utils.A('pk')], verbose_name='Dataset name',
+        'trait_browser:source:datasets:detail', args=[tables.utils.A('pk')], verbose_name='Dataset',
         text=lambda record: record.dataset_name)
-    i_dbgap_description = tables.Column(verbose_name='Dataset description', orderable=False)
-    trait_count = tables.Column(verbose_name='Variable count', orderable=False, empty_values=())
+    i_dbgap_description = tables.Column(verbose_name='Description', orderable=False)
+    trait_count = tables.Column(verbose_name='Number of variables', orderable=False, empty_values=())
 
     class Meta:
         model = models.SourceDataset
@@ -68,8 +68,8 @@ class SourceTraitTable(tables.Table):
 
     # Set custom column values that need extra settings.
     i_trait_name = tables.LinkColumn(
-        'trait_browser:source:traits:detail', args=[tables.utils.A('pk')], verbose_name='Phenotype name')
-    i_description = tables.Column('Phenotype description', orderable=False)
+        'trait_browser:source:traits:detail', args=[tables.utils.A('pk')], verbose_name='Variable')
+    i_description = tables.Column('Description', orderable=False)
     dbGaP_variable = tables.TemplateColumn(
         orderable=False,
         template_code='<a target="_blank" href={{ record.dbgap_variable_link }}>{{ record.variable_accession }}</a>')
@@ -149,8 +149,8 @@ class HarmonizedTraitTable(tables.Table):
     # Set custom column values that need extra settings.
     trait_flavor_name = tables.LinkColumn(
         'trait_browser:harmonized:traits:detail', args=[tables.utils.A('harmonized_trait_set_version.pk')],
-        verbose_name='Phenotype name')
-    i_description = tables.Column('Phenotype description', orderable=False)
+        verbose_name='Variable')
+    i_description = tables.Column('Description', orderable=False)
 
     class Meta:
         model = models.HarmonizedTrait

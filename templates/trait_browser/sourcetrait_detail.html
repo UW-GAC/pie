@@ -9,19 +9,19 @@
 {% block content %}
     <div class="well">
     
-    <h2>{{ source_trait.i_trait_name }} <small>study phenotype details</small></h2>
+    <h2>{{ source_trait.i_trait_name }} <small>study variable details</small></h2>
 
     {% include '_messages.html' %}
 
     <div class="panel panel-info">
         <div class="panel-heading">
-            <h3 class="panel-title">Phenotype name: {{ source_trait.i_trait_name }}</h3>
+            <h3 class="panel-title">Variable name: {{ source_trait.i_trait_name }}</h3>
         </div>
         <div class="panel-body">
             <dl class="dl-horizontal">
-                <dt>Study</dt> <dd><a href="{{ source_trait.source_dataset.source_study_version.study.get_absolute_url }}">{{ source_trait.source_dataset.source_study_version.study.i_study_name }}</a></dd>
-                <dt>Phenotype description</dt> <dd>{{ source_trait.i_description }}</dd>
+                <dt>Description</dt> <dd>{{ source_trait.i_description }}</dd>
                 <dt>Data type</dt> <dd>{{ source_trait.i_detected_type }}</dd>
+                <dt>Study</dt> <dd><a href="{{ source_trait.source_dataset.source_study_version.study.get_absolute_url }}">{{ source_trait.source_dataset.source_study_version.study.i_study_name }}</a></dd>
                 <dt>Dataset</dt> <dd><a href="{{ source_trait.source_dataset.get_absolute_url }}">{{ source_trait.source_dataset.dataset_name }}</a></dd>
                 <dt>Dataset description</dt>
                     <dd>
@@ -51,7 +51,7 @@
                         <dl class="dl-horizontal">
                         <dt></dt>
                         <dd>
-                        <a href="{% url 'trait_browser:source:traits:tagging' pk=source_trait.pk %}" class="btn btn-primary btn-md" role="button">Tag this phenotype</a>
+                        <a href="{% url 'trait_browser:source:traits:tagging' pk=source_trait.pk %}" class="btn btn-primary btn-md" role="button">Tag this variable</a>
                         </dd>
                     {% endif %}
                 {% endif %}
@@ -80,7 +80,7 @@
         <div class="panel-heading"><h4 class="panel-title">Links to dbGaP information</h4></div>
         <div class="panel-body">
             <dl class="dl-horizontal">
-                <dt>Phenotype variable</dt> <dd><a target="_blank" href="{{ source_trait.dbgap_variable_link }}">{{ source_trait.variable_accession }}</a></dd>
+                <dt>Variable</dt> <dd><a target="_blank" href="{{ source_trait.dbgap_variable_link }}">{{ source_trait.variable_accession }}</a></dd>
                 <dt>Dataset</dt> <dd><a target="_blank" href="{{ source_trait.dbgap_dataset_link }}">{{ source_trait.dataset_accession }}</a></dd>
                 <dt>Study</dt> <dd><a target="_blank" href="{{ source_trait.dbgap_study_link }}">{{ source_trait.study_accession }}</a></dd>
             </dl>

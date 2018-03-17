@@ -39,7 +39,7 @@ class TagTable(tables.Table):
 
     title = tables.LinkColumn('tags:tag:detail', args=[tables.utils.A('pk')], verbose_name='Tag')
     number_tagged_traits = tables.Column(
-        accessor='traits.count', verbose_name='Number of dbGaP phenotype variables with this tag', orderable=False)
+        accessor='traits.count', verbose_name='Number of study variables tagged', orderable=False)
     # TODO: Add column for the number of studies tagged.
 
     class Meta:
@@ -60,7 +60,7 @@ class StudyTaggedTraitTable(tables.Table):
         accessor='get_tag_count', verbose_name='Number of tags', orderable=False)
     number_traits = tables.Column(
         accessor='get_tagged_trait_count', orderable=False,
-        verbose_name='Number of dbGaP phenotype variables with a tag')
+        verbose_name='Number of tagged study variables')
 
     class Meta:
         model = Study
@@ -74,12 +74,12 @@ class TaggedTraitTable(tables.Table):
     """Table for displaying TaggedTraits."""
 
     trait = tables.LinkColumn(
-        'trait_browser:source:traits:detail', args=[tables.utils.A('trait.pk')], verbose_name='Phenotype',
+        'trait_browser:source:traits:detail', args=[tables.utils.A('trait.pk')], verbose_name='Study variable',
         text=lambda record: record.trait.i_trait_name, orderable=True)
-    description = tables.Column('Phenotype description', accessor='trait.i_description', orderable=False)
+    description = tables.Column('Variable description', accessor='trait.i_description', orderable=False)
     dataset = tables.LinkColumn(
         'trait_browser:source:datasets:detail', args=[tables.utils.A('trait.source_dataset.pk')],
-        verbose_name='Dataset name',
+        verbose_name='Dataset',
         text=lambda record: record.trait.source_dataset.dataset_name, orderable=False)
     tag = tables.LinkColumn(
         'tags:tag:detail', args=[tables.utils.A('tag.pk')], verbose_name='Tag',
@@ -108,12 +108,12 @@ class TagDetailTraitTable(tables.Table):
     """Table for displaying TaggedTraits on the TagDetail page."""
 
     trait = tables.LinkColumn(
-        'trait_browser:source:traits:detail', args=[tables.utils.A('trait.pk')], verbose_name='Phenotype',
+        'trait_browser:source:traits:detail', args=[tables.utils.A('trait.pk')], verbose_name='Variable',
         text=lambda record: record.trait.i_trait_name, orderable=True)
-    description = tables.Column('Phenotype description', accessor='trait.i_description', orderable=False)
+    description = tables.Column('Description', accessor='trait.i_description', orderable=False)
     dataset = tables.LinkColumn(
         'trait_browser:source:datasets:detail', args=[tables.utils.A('trait.source_dataset.pk')],
-        verbose_name='Dataset name',
+        verbose_name='Dataset',
         text=lambda record: record.trait.source_dataset.dataset_name, orderable=False)
     study = tables.LinkColumn('trait_browser:source:studies:detail:tagged',
                               verbose_name='Study',

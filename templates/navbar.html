@@ -54,14 +54,14 @@
               <a href="{% url 'tags:list' %}"><span class="glyphicon glyphicon-list"></span> View all tags</a>
             </li>
             <li>
-              <a href="{% url 'tags:tagged-traits:by-study' %}"><span class="glyphicon glyphicon-list"></span> View tagged phenotypes by study</a>
+              <a href="{% url 'tags:tagged-traits:by-study' %}"><span class="glyphicon glyphicon-list"></span> View tagged variables by study</a>
             </li>
             {% if perms.tags.add_taggedtrait %}
                 <li>
-                  <a href="{% url 'tags:add-many:main' %}"><span class="glyphicon glyphicon-tag"></span> Apply tags to phenotypes</a>
+                  <a href="{% url 'tags:add-many:main' %}"><span class="glyphicon glyphicon-tag"></span> Apply tags to variables</a>
                 </li>
                 <li>
-                  <a href="{% url 'tags:how-to' %}"><span class="glyphicon glyphicon-question-sign"></span> How to apply tags to phenotypes</a>
+                  <a href="{% url 'tags:how-to' %}"><span class="glyphicon glyphicon-question-sign"></span> How to apply tags to variables</a>
                 </li>
             {% endif %}
           </ul>

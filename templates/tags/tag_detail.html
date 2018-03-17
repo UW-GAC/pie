@@ -16,7 +16,7 @@
         {% if perms.tags.add_taggedtrait %}
             <p>
                 <a href="{% url 'tags:add-many:by-tag' pk=tag.pk %}" class="btn btn-primary btn-md" role="button">
-                Tag phenotypes as "{{ tag.title }}"</a>
+                Tag variables as "{{ tag.title }}"</a>
             </p>
         {% endif %}
 
@@ -27,7 +27,7 @@
         </dl>
         
         <div class="panel panel-default">
-            <div class="panel-heading"><h4 class="panel-title">Tagged phenotypes</h4></div>
+            <div class="panel-heading"><h4 class="panel-title">Tagged study variables</h4></div>
             <div class="panel-body">
                 {% render_table tagged_trait_table %}
            </div>

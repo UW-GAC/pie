@@ -9,7 +9,7 @@
 {% block content %}
     <div class="well">
     
-    <h2>{{ source_dataset.dataset_name }} <small>dbGaP dataset details</small></h2>
+    <h2>{{ source_dataset.dataset_name }} <small>study dataset details</small></h2>
 
     <div class="panel panel-info">
         <div class="panel-heading">
@@ -17,12 +17,9 @@
         </div>
         <div class="panel-body">
             <dl class="dl-horizontal">
-                <dt>Study</dt>
-                <dd><a href="{{ source_dataset.source_study_version.study.get_absolute_url }}">{{ source_dataset.source_study_version.study.i_study_name }}</a></dd>
-                <dt>Dataset description</dt>
-                <dd>{{ source_dataset.i_dbgap_description }}</dd>
-                <dt>Variable count</dt>
-                <dd>{{ trait_count }}</dd>
+                <dt>Description</dt><dd>{{ source_dataset.i_dbgap_description }}</dd>
+                <dt>Variable count</dt><dd>{{ trait_count }}</dd>
+                <dt>Study</dt><dd><a href="{{ source_dataset.source_study_version.study.get_absolute_url }}">{{ source_dataset.source_study_version.study.i_study_name }}</a></dd>
             </dl>
 
         </div>
@@ -41,9 +38,9 @@
     </div>
 
     <div class="panel panel-default">
-        <div class="panel-heading"><h4 class="panel-title">dbGaP phenotype variables in dataset</h4></div>
+        <div class="panel-heading"><h4 class="panel-title">Variables in this dataset</h4></div>
         <div class="panel-body">
-            {% render_table trait_table %}    
+            {% render_table trait_table %}
         </div>
     </div>
 

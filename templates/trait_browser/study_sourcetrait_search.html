@@ -3,14 +3,12 @@
 {% load crispy_forms_tags %}
 
 {% block head_title %}
-     | Search {{ study.i_study_name }}
+     | Search {{ study.i_study_name }} variables
 {% endblock %}
 
 
 {% block content %}
-    <h2>
-      {{ study.i_study_name }} <small>Search dbGaP phenotype variables</small>
-    </h2>
+    <h2> Search <a href="{{ study.get_absolute_url }}">{{ study.i_study_name }}</a> variables</h2>
     {% include 'trait_browser/_search_help.html' %}
 
     {% crispy form %}
