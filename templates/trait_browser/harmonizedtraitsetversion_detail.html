@@ -12,10 +12,7 @@
         <h2>{{ harmonized_trait_set_version.get_trait_names|join:", " }} <small>harmonized variable details</small></h2>
         
         {% for trait in harmonized_trait_set_version.harmonizedtrait_set.all %}
-            <div class="panel panel-info">
-                <div class="panel-heading">
-                    <h3 class="panel-title">Variable name: {{ trait.trait_flavor_name }}</h3>
-                </div>
+            <div class="panel panel-default">
                 <div class="panel-body">
                     <dl class="dl-horizontal">
                     <dt>Description</dt><dd>{{ trait.i_description }}</dd>

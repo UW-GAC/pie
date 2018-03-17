@@ -8,24 +8,23 @@
 
 {% block content %}
     <div class="well">
-    
-        <h2><small>Phenotype tag</small> {{ tag.title }}</h2>
-        
+        <h2>{{ tag.title }} <small>phenotype tag details</small></h2>
         {% include '_messages.html' %}
-
-        {% if perms.tags.add_taggedtrait %}
-            <p>
-                <a href="{% url 'tags:add-many:by-tag' pk=tag.pk %}" class="btn btn-primary btn-md" role="button">
-                Tag variables as "{{ tag.title }}"</a>
-            </p>
-        {% endif %}
-
-        <dl class="dl-horizontal">
-            <dt>Description</dt><dd>{{ tag.description }}</dd>
-            <dt>Instructions</dt><dd>{{ tag.instructions }}</dd>
-            <dt>N tagged</dt><dd>{{ tag.traits.count }}</dd>
-        </dl>
-        
+        <div class="panel panel-default">
+            <div class="panel-body">
+                {% if perms.tags.add_taggedtrait %}
+                    <p>
+                        <a href="{% url 'tags:add-many:by-tag' pk=tag.pk %}" class="btn btn-primary btn-md" role="button">
+                        Tag variables as "{{ tag.title }}"</a>
+                    </p>
+                {% endif %}
+                <dl class="dl-horizontal">
+                    <dt>Description</dt><dd>{{ tag.description }}</dd>
+                    <dt>Instructions</dt><dd>{{ tag.instructions }}</dd>
+                    <dt>N tagged</dt><dd>{{ tag.traits.count }}</dd>
+                </dl>
+            </div>
+        </div>
         <div class="panel panel-default">
             <div class="panel-heading"><h4 class="panel-title">Tagged study variables</h4></div>
             <div class="panel-body">

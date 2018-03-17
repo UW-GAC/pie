@@ -11,17 +11,13 @@
     
     <h2>{{ source_dataset.dataset_name }} <small>study dataset details</small></h2>
 
-    <div class="panel panel-info">
-        <div class="panel-heading">
-            <h3 class="panel-title">Dataset: {{ source_dataset.dataset_name }}</h3>
-        </div>
+    <div class="panel panel-default">
         <div class="panel-body">
             <dl class="dl-horizontal">
                 <dt>Description</dt><dd>{{ source_dataset.i_dbgap_description }}</dd>
                 <dt>Variable count</dt><dd>{{ trait_count }}</dd>
                 <dt>Study</dt><dd><a href="{{ source_dataset.source_study_version.study.get_absolute_url }}">{{ source_dataset.source_study_version.study.i_study_name }}</a></dd>
             </dl>
-
         </div>
     </div>
 
