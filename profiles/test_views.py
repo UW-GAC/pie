@@ -41,16 +41,16 @@ class ProfileTest(UserLoginTestCase):
         """Regular user does not see My Tagged Phenotypes."""
         response = self.client.get(self.get_url())
         context = response.context
-        self.assertNotContains(response, 'My Tagged Phenotypes')
-        self.assertNotContains(response, 'Tagged Phenotypes in My Studies')
+        self.assertNotContains(response, 'id="user_tagged_phenotypes"')
+        self.assertNotContains(response, 'id="study_tagged_phenotypes"')
 
     def test_no_recipes(self):
         """Regular user does not see any recipes."""
         response = self.client.get(self.get_url())
         context = response.context
         self.assertFalse(context['show_recipes'])
-        self.assertNotContains(response, 'My Unit Recipes')
-        self.assertNotContains(response, 'My Harmonization Recipes')
+        self.assertNotContains(response, 'id="unitrecipes"')
+        self.assertNotContains(response, 'id="harmonizationrecipes"')
 
 
 class DCCAnalystLoginTestCaseProfileTest(DCCAnalystLoginTestCase):
@@ -86,16 +86,16 @@ class DCCAnalystLoginTestCaseProfileTest(DCCAnalystLoginTestCase):
         """Staff user does see My Tagged Phenotypes, but not study tagged phenotypes."""
         response = self.client.get(self.get_url())
         context = response.context
-        self.assertContains(response, 'My Tagged Phenotypes')
-        self.assertNotContains(response, 'Tagged Phenotypes in My Studies')
+        self.assertContains(response, 'id="user_tagged_phenotypes"')
+        self.assertNotContains(response, 'id="study_tagged_phenotypes"')
 
     def test_has_recipes(self):
         """Staff user does see any recipes."""
         response = self.client.get(self.get_url())
         context = response.context
         self.assertTrue(context['show_recipes'])
-        self.assertContains(response, 'My Unit Recipes')
-        self.assertContains(response, 'My Harmonization Recipes')
+        self.assertContains(response, 'id="unitrecipes"')
+        self.assertContains(response, 'id="harmonizationrecipes"')
 
     def test_has_correct_recipe_count(self):
         """Tables of recipes have the correct number of rows for this user."""
@@ -158,16 +158,16 @@ class RecipeSubmitterLoginTestCaseProfileTest(RecipeSubmitterLoginTestCase):
         """Regular user does not see My Tagged Phenotypes."""
         response = self.client.get(self.get_url())
         context = response.context
-        self.assertNotContains(response, 'My Tagged Phenotypes')
-        self.assertNotContains(response, 'Tagged Phenotypes in My Studies')
+        self.assertNotContains(response, 'id="user_tagged_phenotypes"')
+        self.assertNotContains(response, 'id="study_tagged_phenotypes"')
 
     def test_no_recipes(self):
         """Regular user does not see any recipes."""
         response = self.client.get(self.get_url())
         context = response.context
         self.assertTrue(context['show_recipes'])
-        self.assertContains(response, 'My Unit Recipes')
-        self.assertContains(response, 'My Harmonization Recipes')
+        self.assertContains(response, 'id="unitrecipes"')
+        self.assertContains(response, 'id="harmonizationrecipes"')
 
     def test_has_correct_recipe_count(self):
         """Tables of recipes have the correct number of rows for this user."""
@@ -213,16 +213,16 @@ class PhenotypeTaggerLoginTestCaseProfileTest(PhenotypeTaggerLoginTestCase):
         """Tagger user does see My Tagged Phenotypes."""
         response = self.client.get(self.get_url())
         context = response.context
-        self.assertContains(response, 'My Tagged Phenotypes')
-        self.assertContains(response, 'Tagged Phenotypes in My Studies')
+        self.assertContains(response, 'id="user_tagged_phenotypes"')
+        self.assertContains(response, 'id="study_tagged_phenotypes"')
 
     def test_no_recipes(self):
         """Regular user does not see any recipes."""
         response = self.client.get(self.get_url())
         context = response.context
         self.assertFalse(context['show_recipes'])
-        self.assertNotContains(response, 'My Unit Recipes')
-        self.assertNotContains(response, 'My Harmonization Recipes')
+        self.assertNotContains(response, 'id="unitrecipes"')
+        self.assertNotContains(response, 'id="harmonizationrecipes"')
 
     def test_has_correct_taggedtrait_count(self):
         """Table of tagged traits by user and by study have the correct number of rows."""
