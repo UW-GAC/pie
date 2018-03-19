@@ -4,7 +4,7 @@
 
 {% block head_title %}
      | {{ source_trait.i_trait_name }} details
-{% endblock %}
+{% endblock head_title %}
 
 {% block content %}
     <div class="well">
@@ -88,8 +88,8 @@
 
     </div>
 
-{% endblock %}
+{% endblock content%}
 
 {% block custom_javascript %}
 <script src="{% static 'js/tooltip.js' %}"></script>
-{% endblock %}
+{% endblock custom_javascript %}

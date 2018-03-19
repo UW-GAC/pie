@@ -4,7 +4,7 @@
 
 {% block head_title %}
      | {{ harmonized_trait_set_version.get_trait_names|join:", " }} details
-{% endblock %}
+{% endblock head_title %}
 
 {% block content %}
     <div class="well">
@@ -51,8 +51,8 @@
         <p>Coming soon...</p>
  
     </div>
-{% endblock %}
+{% endblock content %}
 
 {% block custom_javascript %}
     <script src="{% static 'js/popover.js' %}"></script>
-{% endblock %}
+{% endblock custom_javascript %}

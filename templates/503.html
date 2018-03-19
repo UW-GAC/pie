@@ -18,7 +18,7 @@
         <link rel="stylesheet" href="{% static 'css/style.css' %}">
 
         <title>
-            topmedphenotypes.org{% block head_title %} {% endblock %}
+            topmedphenotypes.org{% block head_title %} {% endblock head_title %}
         </title>
     </head>
 
@@ -61,7 +61,7 @@
             </div>
         </div>
     </nav>
-    {% endblock %}
+    {% endblock minimal_navbar%}
 
     {% block content %}
         <div class="jumbotron">
@@ -73,7 +73,7 @@
           </p>
           <p><strong>PIE</strong> is currently down for maintenance. We'll be back shortly.</p>
         </div>
-    {% endblock %}
+    {% endblock content %}
 
     </div>
 
@@ -86,12 +86,12 @@
     <script src="{% static 'bootstrap/js/bootstrap.min.js' %}"></script>
     <script src="{% static 'js/home.js' %}"></script>
     {% block custom_javascript %}
-    {% endblock %}
+    {% endblock custom_javascript %}
 
     <!--<script src="{% static 'js/.js' %}"></script>-->
 
     {% block footer %}
-    {% endblock %}
+    {% endblock footer %}
 
     </body>
 </html>

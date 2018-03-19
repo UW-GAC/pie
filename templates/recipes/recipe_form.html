@@ -9,7 +9,7 @@
     {% else %}
         | New {{ form.get_model_name|title }}
     {% endif %}
-{% endblock %}
+{% endblock head_title %}
 
 {% block content %}
     <h1>
@@ -24,11 +24,11 @@
     
     {% crispy form %}
 
-{% endblock %}
+{% endblock content %}
 
-{% block footer %}
+{% block custom_javascript %}
     <!-- script for django-autocomplete-light -->
     <script type="text/javascript" src="{% static 'admin/js/vendor/jquery/jquery.js' %}"></script>
     {{ form.media }}
 
-{% endblock %}
+{% endblock custom_javascript %}
