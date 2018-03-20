@@ -1,0 +1,31 @@
+{% extends '__object_detail.html' %}
+
+{% block head_title %}
+     | {{ study.i_study_name }} details
+{% endblock head_title %}
+
+{% block title %}
+    {{ study.i_study_name }}
+{% endblock title %}
+
+{% block detail_fields %}
+    {# <dt>TOPMed abbreviation</dt><dd>{{ study.global_study.topmed_abbreviation }}</dd> #}
+    <dt>Dataset count</dt><dd>{{ dataset_count }}</dd>
+    <dt>Variable count</dt><dd>{{ trait_count }}</dd>
+{% endblock detail_fields %}
+
+{% block after_panel %}
+    <p><a class="btn btn-primary btn-lg" href="{{ study.get_search_url }}" role="button">
+        <span class="glyphicon glyphicon-search" aria-hidden="true"></span>
+        Search variables from this study
+    </a></p>
+    <p><a class="btn btn-primary" href="{% url 'trait_browser:source:studies:detail:variables' study.pk %}" role="button">
+        <span class="glyphicon glyphicon-th-large" aria-hidden="true"></span>
+        Study variables
+    </a></p>
+    <p><a class="btn btn-primary" href="{% url 'trait_browser:source:studies:detail:datasets' study.pk %}" role="button">
+        <span class="glyphicon glyphicon-th-list" aria-hidden="true"></span>
+        Study datasets
+    </a></p>
+    {% include 'trait_browser/_dbgap_link_panel.html' with study_string=phs study_link=phs_link %}
+{% endblock after_panel %}

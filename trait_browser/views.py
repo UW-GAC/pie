@@ -84,11 +84,9 @@ class StudyDetail(LoginRequiredMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super(StudyDetail, self).get_context_data(**kwargs)
-        traits = models.SourceTrait.objects.current().filter(
-            source_dataset__source_study_version__study=self.object)
+        traits = models.SourceTrait.objects.current().filter(source_dataset__source_study_version__study=self.object)
         trait_count = traits.count()
-        dataset_count = models.SourceDataset.objects.current().filter(
-            source_study_version__study=self.object).count()
+        dataset_count = models.SourceDataset.objects.current().filter(source_study_version__study=self.object).count()
         context['trait_count'] = '{:,}'.format(trait_count)
         context['dataset_count'] = '{:,}'.format(dataset_count)
         context['phs_link'] = traits[0].dbgap_study_link
@@ -104,12 +102,10 @@ class StudyList(LoginRequiredMixin, SingleTableMixin, ListView):
     table_pagination = {'per_page': TABLE_PER_PAGE}
 
 
-class StudySourceTraitList(LoginRequiredMixin, SingleTableMixin, DetailView):
+class StudySourceTraitList(SingleTableMixin, StudyDetail):
     """."""
 
     template_name = 'trait_browser/study_sourcetrait_list.html'
-    model = models.Study
-    context_object_name = 'study'
     context_table_name = 'source_trait_table'
     table_class = tables.SourceTraitStudyTable
     table_pagination = {'per_page': TABLE_PER_PAGE}
@@ -118,21 +114,11 @@ class StudySourceTraitList(LoginRequiredMixin, SingleTableMixin, DetailView):
         return models.SourceTrait.objects.current().filter(
             source_dataset__source_study_version__study=self.object)
 
-    def get_context_data(self, **kwargs):
-        context = super(StudySourceTraitList, self).get_context_data(**kwargs)
-        traits = context['source_trait_table'].data
-        context['trait_count'] = '{:,}'.format(len(traits))
-        context['phs_link'] = traits[0].dbgap_study_link
-        context['phs'] = traits[0].study_accession
-        return context
 
-
-class StudySourceDatasetList(LoginRequiredMixin, SingleTableMixin, DetailView):
+class StudySourceDatasetList(SingleTableMixin, StudyDetail):
     """."""
 
     template_name = 'trait_browser/study_sourcedataset_list.html'
-    model = models.Study
-    context_object_name = 'study'
     context_table_name = 'source_dataset_table'
     table_class = tables.SourceDatasetTable
     table_pagination = {'per_page': TABLE_PER_PAGE}
@@ -140,14 +126,6 @@ class StudySourceDatasetList(LoginRequiredMixin, SingleTableMixin, DetailView):
     def get_table_data(self):
         return models.SourceDataset.objects.current().filter(
             source_study_version__study=self.object)
-
-    def get_context_data(self, **kwargs):
-        context = super(StudySourceDatasetList, self).get_context_data(**kwargs)
-        datasets = context['source_dataset_table'].data
-        context['dataset_count'] = '{:,}'.format(len(datasets))
-        context['phs_link'] = datasets[0].sourcetrait_set.first().dbgap_study_link
-        context['phs'] = datasets[0].sourcetrait_set.first().study_accession
-        return context
 
 
 class StudyNameAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):

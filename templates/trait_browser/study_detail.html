@@ -1,46 +1,5 @@
-{% extends '__base.html' %}
-{% load render_table from django_tables2 %}
+{% extends 'trait_browser/__study_page.html' %}
 
-
-{% block head_title %}
-     | {{ study.i_study_name }} details
-{% endblock head_title %}
-
-{% block content %}
-    <div class="well">
-    
-    <h2>{{ study.i_study_name }} <small>study details</small></h2>
-
-    <div class="panel panel-default">
-        <div class="panel-body">
-            <p><a class="btn btn-primary btn-lg" href="{{ study.get_search_url }}" role="button"><span class="glyphicon glyphicon-search" aria-hidden="true">
-            </span> Search variables from this study</a></p>
-            <dl class="dl-horizontal">
-                <dt>Dataset count</dt>
-                <dd>{{ dataset_count }}</dd>
-                <dt>Variable count</dt>
-                <dd>{{ trait_count }}</dd>
-            </dl>
-
-            <p><a class="btn btn-primary" href="{% url 'trait_browser:source:studies:detail:variables' study.pk %}" role="button"><span class="glyphicon glyphicon-th-large" aria-hidden="true">
-            </span> Study variables</a></p>
-            <p><a class="btn btn-primary" href="{% url 'trait_browser:source:studies:detail:datasets' study.pk %}" role="button"><span class="glyphicon glyphicon-th-list" aria-hidden="true">
-            </span> Study datasets</a></p>
-            
-        </div>
-    </div>
-
-    <div class="panel panel-default">
-        <div class="panel-heading"><h4 class="panel-title">Links to dbGaP information</h4></div>
-        <div class="panel-body">
-            <dl class="dl-horizontal">
-                <dt>Study</dt> <dd><a target="_blank" href="{{ phs_link }}">{{ phs }}</a></dd>
-            </dl>
-            <p>A study's data collection forms and and related documents can be found on dbGaP.</p>
-            <p><mark>Please keep in mind that dbGaP data summaries might include many subjects who were not included in TOPMed sequencing.</mark></p>
-        </div>
-    </div>
-
-    </div>
-    
-{% endblock content %}
+{% block subtitle %}
+    study details
+{% endblock subtitle %}

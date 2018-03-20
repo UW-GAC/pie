@@ -1,4 +1,4 @@
-{% extends '__base.html' %}
+{% extends '__object_detail.html' %}
 {% load staticfiles %}
 {% load core_tags %}
 
@@ -6,52 +6,41 @@
      | {{ harmonized_trait_set_version.get_trait_names|join:", " }} details
 {% endblock head_title %}
 
-{% block content %}
-    <div class="well">
-    
-        <h2>{{ harmonized_trait_set_version.get_trait_names|join:", " }} <small>harmonized variable details</small></h2>
-        
-        {% for trait in harmonized_trait_set_version.harmonizedtrait_set.all %}
-            <div class="panel panel-default">
-                <div class="panel-body">
-                    <dl class="dl-horizontal">
+{% block title %}
+    {{ harmonized_trait_set_version.get_trait_names|join:", " }}
+{% endblock title %}
+
+{% block subtitle %}
+    harmonized variable details
+{% endblock subtitle %}
+
+{% block details %}
+    {% for trait in harmonized_trait_set_version.harmonizedtrait_set.all %}
+        <div class="panel panel-default">
+            <div class="panel-heading"><h4 class="panel-title">{{ trait.trait_flavor_name }}</h4></div>
+            <div class="panel-body">
+                <dl class="dl-horizontal">
                     <dt>Description</dt><dd>{{ trait.i_description }}</dd>
                     <dt>Data type</dt><dd>{{ trait.i_data_type }}</dd>
                     <dt>Unit</dt><dd>{{ trait.i_unit }}</dd>
-
-                    {% if trait.harmonizedtraitencodedvalue_set.all %}
-                       <table class="table table-nonfluid table-condensed table-sm">
-                           <caption><strong>Encoded values</strong></caption>
-                           <tr>
-                               <th>Category</th>
-                               <th>Value</th>
-                           </tr>
-                           {% for ev in trait.harmonizedtraitencodedvalue_set.all %}
-                               <tr>
-                                   <td>{{ ev.i_category }}</td>
-                                   <td>{{ ev.i_value }}</td>
-                               </tr>
-                           {% endfor %}
-                       </table>
-                    {% endif %}
-                </div>
-
+                </dl>
             </div>
-        {% endfor %}
-
-        <hr>
-<!-- TODO: handle unique keys somehow... -->
-
-        <button type="button" class="btn btn-default" data-toggle="collapse" data-target="#components">Component Variables</button>
-        <div id="components" class="collapse">
-            {% render_as_template harmonized_trait_set_version.component_html_detail|safe %}
+            <!-- Encoded values table -->
+            {% if trait.harmonizedtraitencodedvalue_set.all %}
+                {% include 'trait_browser/_encoded_values_table.html' with ev_set=trait.harmonizedtraitencodedvalue_set.all inner=True %}
+            {% endif %}
         </div>
-
-        <h4>Documentation</h4>
-        <p>Coming soon...</p>
- 
+    {% endfor %}
+    <!-- Compenent variable information -->
+    <hr>
+    <button type="button" class="btn btn-default" data-toggle="collapse" data-target="#components">Component variables</button>
+    <div id="components" class="collapse">
+        {% render_as_template harmonized_trait_set_version.component_html_detail|safe %}
     </div>
-{% endblock content %}
+    <!-- Documentation -->
+    <h4>Documentation</h4>
+    <p>Coming soon...</p>
+{% endblock details %}
 
 {% block custom_javascript %}
     <script src="{% static 'js/popover.js' %}"></script>

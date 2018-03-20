@@ -1,0 +1,29 @@
+{% comment %}
+    A snipped to display a panel containing links to dbGaP object pages and information about
+    what can be found on dbGaP
+
+    Required variables:
+        variable_string
+        dataset_string
+        study_string
+        variable_link
+        dataset_link
+        study_link
+{% endcomment %}
+
+<div class="panel panel-default">
+    <div class="panel-heading"><h4 class="panel-title">Links to dbGaP information</h4></div>
+    <div class="panel-body">
+        <dl class="dl-horizontal">
+            {% if variable_link %}
+                <dt>Variable</dt> <dd><a target="_blank" href="{{ variable_link }}">{{ variable_string }}</a></dd>
+            {% endif %}
+            {% if dataset_link %}
+                <dt>Dataset</dt> <dd><a target="_blank" href="{{ dataset_link }}">{{ dataset_string }}</a></dd>
+            {% endif %}
+            <dt>Study</dt> <dd><a target="_blank" href="{{ study_link }}">{{ study_string }}</a></dd>
+        </dl>
+        <p>A study's questionnaires, methods descriptions, and related documents can often be found on dbGaP.</p>
+        <p><mark>Please keep in mind that dbGaP data summaries might include many subjects who were not included in TOPMed sequencing.</mark></p>
+    </div>
+</div>

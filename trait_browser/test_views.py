@@ -117,11 +117,17 @@ class StudySourceTraitListTest(UserLoginTestCase):
         """View has appropriate data in the context."""
         response = self.client.get(self.get_url(self.study.pk))
         context = response.context
+        self.assertIn('study', context)
         self.assertIn('trait_count', context)
+        self.assertIn('dataset_count', context)
         self.assertIn('phs_link', context)
         self.assertIn('phs', context)
-        self.assertIn('source_trait_table', context)
-        self.assertIsInstance(context['source_trait_table'], tables.SourceTraitStudyTable)
+        self.assertEqual(context['study'], self.study)
+        self.assertEqual(context['trait_count'], '{:,}'.format(len(self.source_traits)))
+        dataset_count = models.SourceDataset.objects.filter(source_study_version__study=self.study).count()
+        self.assertEqual(context['dataset_count'], '{:,}'.format(dataset_count))
+        self.assertEqual(context['phs_link'], self.source_traits[0].dbgap_study_link)
+        self.assertEqual(context['phs'], self.source_traits[0].study_accession)
 
     def test_no_deprecated_traits_in_table(self):
         """No deprecated traits are shown in the table."""
@@ -170,11 +176,18 @@ class StudySourceDatasetListTest(UserLoginTestCase):
         """View has appropriate data in the context."""
         response = self.client.get(self.get_url(self.study.pk))
         context = response.context
+        self.assertIn('study', context)
+        self.assertIn('trait_count', context)
         self.assertIn('dataset_count', context)
         self.assertIn('phs_link', context)
         self.assertIn('phs', context)
-        self.assertIn('source_dataset_table', context)
-        self.assertIsInstance(context['source_dataset_table'], tables.SourceDatasetTable)
+        self.assertEqual(context['study'], self.study)
+        traits = models.SourceTrait.objects.filter(source_dataset__source_study_version__study=self.study)
+        self.assertEqual(context['trait_count'], '{:,}'.format(traits.count()))
+        dataset_count = models.SourceDataset.objects.filter(source_study_version__study=self.study).count()
+        self.assertEqual(context['dataset_count'], '{:,}'.format(dataset_count))
+        self.assertEqual(context['phs_link'], traits[0].dbgap_study_link)
+        self.assertEqual(context['phs'], traits[0].study_accession)
 
     def test_no_deprecated_traits_in_table(self):
         """No deprecated datasets are shown in the table."""
@@ -472,7 +485,7 @@ class SourceTraitDetailPhenotypeTaggerTest(PhenotypeTaggerLoginTestCase):
         tagged_trait = TaggedTrait.objects.create(tag=self.tag, trait=self.trait, creator=self.user)
         response = self.client.get(self.get_url(self.trait.pk))
         context = response.context
-        self.assertContains(response, reverse('tags:tagged-traits:delete', kwargs={'pk': self.tag.pk}))
+        self.assertContains(response, reverse('tags:tagged-traits:delete', kwargs={'pk': tagged_trait.pk}))
 
     def test_no_tagged_trait_remove_button_for_other_study(self):
         """The tag removal button does not show up for a trait from another study."""
@@ -523,7 +536,7 @@ class SourceTraitDetailDCCAnalystTest(DCCAnalystLoginTestCase):
         tagged_trait = TaggedTrait.objects.create(tag=self.tag, trait=self.trait, creator=self.user)
         response = self.client.get(self.get_url(self.trait.pk))
         context = response.context
-        self.assertContains(response, reverse('tags:tagged-traits:delete', kwargs={'pk': self.tag.pk}))
+        self.assertContains(response, reverse('tags:tagged-traits:delete', kwargs={'pk': tagged_trait.pk}))
 
     def test_has_tagging_button(self):
         """A phenotype tagger does see a button to add tags on this detail page."""
