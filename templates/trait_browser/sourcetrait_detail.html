@@ -17,7 +17,6 @@
 {% block detail_fields %}
     <dt>Description</dt> <dd>{{ source_trait.i_description }}</dd>
     <dt>Data type</dt> <dd>{{ source_trait.i_detected_type }}</dd>
-    <dt>Study</dt> <dd><a href="{{ source_trait.source_dataset.source_study_version.study.get_absolute_url }}">{{ source_trait.source_dataset.source_study_version.study.i_study_name }}</a></dd>
     <dt>Dataset</dt> <dd><a href="{{ source_trait.source_dataset.get_absolute_url }}">{{ source_trait.source_dataset.dataset_name }}</a></dd>
     <dt>Dataset description</dt>
         <dd>
@@ -25,6 +24,7 @@
               {{ source_trait.source_dataset.i_dbgap_description }}
             {% endif %}
         </dd>
+        <dt>Study</dt> <dd><a href="{{ source_trait.source_dataset.source_study_version.study.get_absolute_url }}">{{ source_trait.source_dataset.source_study_version.study.i_study_name }}</a></dd>
     <dt>Phenotype tag(s)</dt> 
         <dd>
             {% for tag, tagged_trait in tag_tagged_trait_pairs %}
