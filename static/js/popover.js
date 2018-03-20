@@ -1,6 +1,6 @@
 $(document).ready( function() {
 
-    // Activate Bootstrap tooltip
+    // Activate Bootstrap popover
     $('[data-toggle="popover"]').popover()
 
 });
