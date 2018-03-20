@@ -281,7 +281,6 @@ class SourceTraitSearchTest(ClearSearchIndexMixin, TestCase):
             self.assertNotIn(trait, qs)
 
 
-
 class HarmonizedTraitSearchTest(ClearSearchIndexMixin, TestCase):
     def test_returns_all_traits_with_no_input(self):
         """All traits are returned if nothing is passed to search."""

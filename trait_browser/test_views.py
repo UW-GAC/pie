@@ -211,7 +211,7 @@ class StudySourceDatasetNameAutocompleteTest(UserLoginTestCase):
         # Create 10 source traits from the same dataset, with non-deprecated ssv of version 2.
         self.source_datasets = []
         self.TEST_DATASETS = ['abcde', 'abcdef', 'abcd_ef', 'abcd123', 'bcdefg', 'cdefgh', 'bcdefa',
-            'other1', 'other2', 'other3']
+                              'other1', 'other2', 'other3']
         self.TEST_NAME_QUERIES = {
             'a': ['abcde', 'abcdef', 'abcd_ef', 'abcd123', 'bcdefa'],
             'abc': ['abcde', 'abcdef', 'abcd_ef', 'abcd123'],
@@ -338,20 +338,21 @@ class StudySourceDatasetPHTAutocompleteTest(UserLoginTestCase):
         # Create 10 source traits from the same dataset, with non-deprecated ssv of version 2.
         self.source_datasets = []
         self.TEST_PHTS = (5, 50, 500, 500000, 55, 555, 555555, 52, 520, 5200, )
-        self.TEST_PHT_QUERIES = {'5': (5, 50, 500, 500000, 55, 555, 555555, 52, 520, 5200, ),
-                            '05': (),
-                            '0005': (500, 555, 520, ),
-                            '000005': (5, ),
-                            '52': (52, 520, 5200, ),
-                            '052': (),
-                            '0052': (5200, ),
-                            '00052': (520, ),
-                            '555555': (555555, ),
-                            '0': (5, 50, 500, 55, 555, 52, 520, 5200, ),
-                            }
+        self.TEST_PHT_QUERIES = {
+            '5': (5, 50, 500, 500000, 55, 555, 555555, 52, 520, 5200, ),
+            '05': (),
+            '0005': (500, 555, 520, ),
+            '000005': (5, ),
+            '52': (52, 520, 5200, ),
+            '052': (),
+            '0052': (5200, ),
+            '00052': (520, ),
+            '555555': (555555, ),
+            '0': (5, 50, 500, 55, 555, 52, 520, 5200, ),
+        }
         for pht in self.TEST_PHTS:
             self.source_datasets.append(factories.SourceDatasetFactory.create(
-                source_study_version = self.source_study_version,
+                source_study_version=self.source_study_version,
                 i_accession=pht
             ))
 
@@ -417,7 +418,7 @@ class StudySourceDatasetPHTAutocompleteTest(UserLoginTestCase):
             self.assertIn(dataset.i_id, returned_pks)
 
     def test_pht_test_queries_without_pht_in_string(self):
-        """Returns only the correct source datasets for each of the TEST_PHT_QUERIES when 'pht' is not in query string."""
+        """Returns only the correct datasets for each of the TEST_PHT_QUERIES when 'pht' is not in query string."""
         url = self.get_url(self.study.pk)
         for query in self.TEST_PHT_QUERIES:
             response = self.client.get(url, {'q': query})
@@ -458,18 +459,19 @@ class StudySourceDatasetNameOrPHTAutocompleteTest(UserLoginTestCase):
         self.source_datasets = []
         self.TEST_PHTS = (5, 50, 500, 500000, 55, 555, 555555, 52, 520, 5200, )
         self.TEST_NAMES = ['abcde', 'abcdef', 'abcd_ef', 'abcd123', 'bcdefg', 'cdefgh', 'bcdefa',
-            'other1', 'other2', 'other3']
-        self.TEST_PHT_QUERIES = {'5': (5, 50, 500, 500000, 55, 555, 555555, 52, 520, 5200, ),
-                            '05': (),
-                            '0005': (500, 555, 520, ),
-                            '000005': (5, ),
-                            '52': (52, 520, 5200, ),
-                            '052': (),
-                            '0052': (5200, ),
-                            '00052': (520, ),
-                            '555555': (555555, ),
-                            '0': (5, 50, 500, 55, 555, 52, 520, 5200, ),
-                            }
+                           'other1', 'other2', 'other3']
+        self.TEST_PHT_QUERIES = {
+            '5': (5, 50, 500, 500000, 55, 555, 555555, 52, 520, 5200, ),
+            '05': (),
+            '0005': (500, 555, 520, ),
+            '000005': (5, ),
+            '52': (52, 520, 5200, ),
+            '052': (),
+            '0052': (5200, ),
+            '00052': (520, ),
+            '555555': (555555, ),
+            '0': (5, 50, 500, 55, 555, 52, 520, 5200, ),
+        }
         self.TEST_NAME_QUERIES = {
             'a': ['abcde', 'abcdef', 'abcd_ef', 'abcd123', 'bcdefa'],
             'abc': ['abcde', 'abcdef', 'abcd_ef', 'abcd123'],
@@ -481,7 +483,7 @@ class StudySourceDatasetNameOrPHTAutocompleteTest(UserLoginTestCase):
         }
         for dataset_name, pht in zip(self.TEST_NAMES, self.TEST_PHTS):
             self.source_datasets.append(factories.SourceDatasetFactory.create(
-                source_study_version = self.source_study_version,
+                source_study_version=self.source_study_version,
                 dataset_name=dataset_name,
                 i_accession=pht
             ))
@@ -579,7 +581,7 @@ class StudySourceDatasetNameOrPHTAutocompleteTest(UserLoginTestCase):
             returned_pks = get_autocomplete_view_ids(response)
             expected_matches = self.TEST_NAME_QUERIES[query]
             self.assertEqual(len(returned_pks), len(expected_matches),
-                            msg='Did not find correct number of matches for query {}'.format(query))
+                             msg='Did not find correct number of matches for query {}'.format(query))
             # Make sure the matches found are those that are expected.
             for expected_name in expected_matches:
                 name_queryset = models.SourceDataset.objects.filter(dataset_name__regex=r'^{}$'.format(expected_name))
@@ -589,7 +591,7 @@ class StudySourceDatasetNameOrPHTAutocompleteTest(UserLoginTestCase):
                               msg='Could not find expected dataset name {} with query {}'.format(expected_name, query))
 
     def test_pht_test_queries_without_pht_in_string(self):
-        """Returns only the correct source datasets for each of the TEST_PHT_QUERIES when 'pht' is not in query string."""
+        """Returns only the correct datasets for each of the TEST_PHT_QUERIES when 'pht' is not in query string."""
         url = self.get_url(self.study.pk)
         for query in self.TEST_PHT_QUERIES:
             response = self.client.get(url, {'q': query})
@@ -2511,9 +2513,9 @@ class HarmonizedTraitFlavorNameAutocompleteTest(UserLoginTestCase):
             # Make sure the matches that are found are the ones expected.
             for expected_name in expected_matches:
                 # This filter should only have one result, but I want to make sure.
-                name_queryset = models.HarmonizedTrait.objects.filter(i_trait_name__regex=r'^{}$'.format(expected_name))
-                self.assertEqual(name_queryset.count(), 1)
-                expected_pk = name_queryset.first().pk
+                name_qs = models.HarmonizedTrait.objects.filter(i_trait_name__regex=r'^{}$'.format(expected_name))
+                self.assertEqual(name_qs.count(), 1)
+                expected_pk = name_qs.first().pk
                 self.assertIn(expected_pk, returned_pks,
                               msg="Could not find expected trait name {} with query '{}'".format(expected_name, query))
 
@@ -2876,7 +2878,8 @@ class SourceTraitSearchByStudyTest(ClearSearchIndexMixin, UserLoginTestCase):
             source_dataset=dataset
         )
         response = self.client.get(self.get_url(self.study.pk), {'description': 'lorem', 'datasets': [dataset.pk]})
-        self.assertFormError(response, "form", 'datasets', forms.SourceTraitSearchOneStudyForm.ERROR_DEPRECATED_DATASET)
+        self.assertFormError(response, "form", 'datasets',
+                             forms.SourceTraitSearchOneStudyForm.ERROR_DEPRECATED_DATASET)
 
 
 class HarmonizedTraitSearchTest(ClearSearchIndexMixin, UserLoginTestCase):

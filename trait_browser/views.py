@@ -9,7 +9,6 @@ from django.views.generic import DetailView, FormView, ListView
 from django.views.generic.detail import SingleObjectMixin
 from django.views.generic.edit import FormMixin
 from django.views.generic.base import TemplateView
-from django.template.defaultfilters import pluralize    # Use pluralize in the views.
 
 from braces.views import (FormMessagesMixin, LoginRequiredMixin, MessageMixin, PermissionRequiredMixin,
                           UserPassesTestMixin)
@@ -350,7 +349,8 @@ class SourceTraitSearch(LoginRequiredMixin, SearchFormMixin, SingleTableMixin, M
         return searches.search_source_traits(**search_kwargs)
 
 
-class SourceTraitSearchByStudy(LoginRequiredMixin, SearchFormMixin, SingleObjectMixin, SingleTableMixin, MessageMixin, TemplateView):
+class SourceTraitSearchByStudy(LoginRequiredMixin, SearchFormMixin, SingleObjectMixin, SingleTableMixin, MessageMixin,
+                               TemplateView):
     """Form view class for searching for source traits within a specific study."""
 
     template_name = 'trait_browser/study_sourcetrait_search.html'
