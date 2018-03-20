@@ -6,38 +6,36 @@
         <meta charset="utf-8">
         <meta http-equiv="X-UA-Compatible" content="IE=edge">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+        {# The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags  #}
         <meta name="description" content="">
         <meta name="author" content="">
         <link rel="icon" href="../../favicon.ico">
-        <!-- Bootstrap core CSS -->
+        {# Bootstrap core CSS #}
         <link href="{% static 'bootstrap/css/bootstrap.min.css' %}" rel="stylesheet">
-        <!-- Our custom stylesheet. -->
+        {# Our custom stylesheet. #}
         <link rel="stylesheet" href="{% static 'css/style.css' %}">
         <title>
           topmedphenotypes.org{% block head_title %} {% endblock head_title %}
         </title>
     </head>
-
+    {# Body #}
     <body>
         {% include 'navbar.html' %}
-
+        {# Content #}
         <div class="container">
           {% block content %}
           {% endblock %}
         </div>
-
+        {# Footer navbar #}
         {% include 'footer_navbar.html' %}
-
+        {# Footer #}
         {% block footer %}
         {% endblock footer %}
-
-        <!-- Bootstrap core JavaScript -->
+        {# Bootstrap core JavaScript #}
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
         <script src="{% static 'bootstrap/js/bootstrap.min.js' %}"></script>
         <script src="{% static 'js/home.js' %}"></script>
         {% block custom_javascript %}
         {% endblock custom_javascript %}
-
     </body>
 </html>

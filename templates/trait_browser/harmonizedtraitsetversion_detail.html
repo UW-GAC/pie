@@ -25,19 +25,19 @@
                     <dt>Unit</dt><dd>{{ trait.i_unit }}</dd>
                 </dl>
             </div>
-            <!-- Encoded values table -->
+            {# Encoded values table #}
             {% if trait.harmonizedtraitencodedvalue_set.all %}
                 {% include 'trait_browser/_encoded_values_table.html' with ev_set=trait.harmonizedtraitencodedvalue_set.all inner=True %}
             {% endif %}
         </div>
     {% endfor %}
-    <!-- Compenent variable information -->
+    {# Component variable information #}
     <hr>
     <button type="button" class="btn btn-default" data-toggle="collapse" data-target="#components">Component variables</button>
     <div id="components" class="collapse">
         {% render_as_template harmonized_trait_set_version.component_html_detail|safe %}
     </div>
-    <!-- Documentation -->
+    {# Documentation #}
     <h4>Documentation</h4>
     <p>Coming soon...</p>
 {% endblock details %}

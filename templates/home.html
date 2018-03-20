@@ -3,65 +3,49 @@
 
 {% block content %}
 
-<div class="jumbotron">
-
-  <!--<img src="{% static "topmed_logo/topmed_logo_long_white_circle.svg" %}" alt="topmed_logo_white_circle"/>-->
-
-  <h2>NHLBI TOPMed</h2>
-  <h1>Phenotype Inventory Explorer</h1>
-  <p> <strong>PIE</strong> allows TOPMed investigators to view and search through the phenotype data
-  currently available to the TOPMed Data Coordinating Center. The DCC is in the process
-  of combining study phenotypes across TOPMed projects to produce harmonized
-  phenotypes. TOPMed working groups can help the harmonization process by submitting
-  details for how to combine study phenotypes.
-  </p>
-
-</div>
-
-
-<div class="row">
-  
-  {% if perms.recipes.add_unitrecipe != True %}
-    <div class="col-md-2 text-center action-home">
+    <div class="jumbotron">
+        <h2>NHLBI TOPMed</h2>
+        <h1>Phenotype Inventory Explorer</h1>
+        <p> <strong>PIE</strong> allows TOPMed investigators to view and search through the phenotype data
+            currently available to the TOPMed Data Coordinating Center. The DCC is in the process
+            of combining study phenotypes across TOPMed projects to produce harmonized
+            phenotypes. TOPMed working groups can help the harmonization process by submitting
+            details for how to combine study phenotypes.
+        </p>
     </div>
-  {% endif %}
-  
-  <div class="col-md-4 text-center action-home">
-    <a href="{% url 'trait_browser:source:traits:list' %}">    
-    <h2>Browse study phenotypes</h2>
-    <p>Study phenotypes for each study were downloaded from dbGaP.
-    Study phenotypes available here can be used to generate harmonized phenotypes.</p>
-    <!--<img src="{% static "icons/ingredients.svg" %}" alt="source_phenotype_apple" width=150 style="margin:15px"/>-->
-    </a>
-  </div>
-
-  {% if perms.recipes.add_unitrecipe %}
-    <div class="col-md-4 text-center action-home">
-        <a href="{% url 'recipes:unit:create' %}">
-        <h2>Submit a harmonization recipe</h2>
-        <p>For DCC collaborators, submit harmonization recipes here.</p>
-        <!--<img src="{% static "icons/recipe.svg" %}" alt="harmonization_request_recipe" width=150 style="margin:15px; opacity:0.4;"/>-->
-        </a>
+    <div class="row">
+        {% if perms.recipes.add_unitrecipe != True %}
+            <div class="col-md-2 text-center action-home"></div>
+        {% endif %}
+        <div class="col-md-4 text-center action-home">
+            <a href="{% url 'trait_browser:source:traits:list' %}">
+            <h2>Browse study phenotypes</h2>
+            <p>Study phenotypes for each study were downloaded from dbGaP.
+            Study phenotypes available here can be used to generate harmonized phenotypes.</p>
+            {# <img src="{% static "icons/ingredients.svg" %}" alt="source_phenotype_apple" width=150 style="margin:15px"/> #}
+            </a>
+        </div>
+        {% if perms.recipes.add_unitrecipe %}
+            <div class="col-md-4 text-center action-home">
+                <a href="{% url 'recipes:unit:create' %}">
+                <h2>Submit a harmonization recipe</h2>
+                <p>For DCC collaborators, submit harmonization recipes here.</p>
+                {# <img src="{% static "icons/recipe.svg" %}" alt="harmonization_request_recipe" width=150 style="margin:15px; opacity:0.4;"/> #}
+                </a>
+            </div>
+        {% endif %}
+        <div class="col-md-4 text-center action-home">
+            <a href="{% url 'trait_browser:harmonized:traits:list' %}">
+            <h2>Browse harmonized phenotypes</h2>
+            <p>Harmonized phenotypes are posted here as they become available.</p>
+            {# <img src="{% static "icons/pie.svg" %}" alt="harmonized_phenotype_pie" width=150 style="margin:15px"/> #}
+            </a>
+        </div>
+        {% if perms.recipes.add_unitrecipe != True %}
+            <div class="col-md-2 text-center action-home"></div>
+        {% endif %}
     </div>
-  {% endif %}
-
-  <div class="col-md-4 text-center action-home">
-    <a href="{% url 'trait_browser:harmonized:traits:list' %}">
-    <h2>Browse harmonized phenotypes</h2>
-    <p>Harmonized phenotypes are posted here as they become available.</p>
-    <!--<img src="{% static "icons/pie.svg" %}" alt="harmonized_phenotype_pie" width=150 style="margin:15px"/>-->
-    </a>
-  </div>
-
-  {% if perms.recipes.add_unitrecipe != True %}
-    <div class="col-md-2 text-center action-home">
+    <div class="alert alert-warning">
+        <strong>Construction zone!</strong> Please bear with us as the site changes during development. 
     </div>
-  {% endif %}
-
-</div>
-
-<div class="alert alert-warning">
-  <strong>Construction zone!</strong> Please bear with us as the site changes during development. 
-</div>
-
 {% endblock content %}
