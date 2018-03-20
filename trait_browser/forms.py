@@ -108,10 +108,11 @@ class SourceTraitSearchOneStudyForm(SourceTraitSearchForm):
             required=False,
             label='Dataset(s)',
             widget=autocomplete.ModelSelect2Multiple(
-                url=reverse('trait_browser:source:studies:detail:datasets:autocomplete:by-name', args=[study.pk])
+                url=reverse('trait_browser:source:studies:detail:datasets:autocomplete:by-name-or-pht', args=[study.pk])
             ),
-            help_text="""Search only in selected datasets. Start by typing the dataset name to first the list, then
-            select the intended dataset. More than one dataset may be selected."""
+            help_text="""Search only in selected datasets. Start by typing the dbGaP variable accession (pht) or
+                         dataset name to filter the list (example: 'pht1234', '1234', '01234', or 'ex0_7s'). More
+                         than one dataset may be selected."""
         )
         self.helper.layout[0].append('datasets')
 
