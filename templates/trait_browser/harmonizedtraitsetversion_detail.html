@@ -22,7 +22,9 @@
                 <dl class="dl-horizontal">
                     <dt>Description</dt><dd>{{ trait.i_description }}</dd>
                     <dt>Data type</dt><dd>{{ trait.i_data_type }}</dd>
-                    <dt>Unit</dt><dd>{{ trait.i_unit }}</dd>
+                    {% if trait.i_unit != '' %}
+                        <dt>Measurement unit</dt><dd>{{ trait.i_unit }}</dd>
+                    {% endif %}
                 </dl>
             </div>
             {# Encoded values table #}
