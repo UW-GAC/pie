@@ -192,6 +192,40 @@ class StudySourceDatasetPHTAutocomplete(LoginRequiredMixin, autocomplete.Select2
         return retrieved
 
 
+class StudySourceDatasetNameOrPHTAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
+    """Auto-complete datasets in a form field by dataset name OR pht string."""
+
+    def get_queryset(self):
+        retrieved = models.SourceDataset.objects.current().filter(
+            source_study_version__study=self.kwargs['pk']
+        )
+        if self.q:
+            q_no_pht = self.q.replace('pht', '')
+            # Dataset name should always be queried.
+            nameQ = Q(dataset_name__icontains=self.q)
+            # Process query for pht string.
+            phtQ = None
+            if self.q.lower().startswith('pht') and q_no_pht.isdigit():
+                if q_no_pht.startswith('0'):
+                    phtQ = Q(pht_version_string__regex=r'^{}'.format('pht' + q_no_pht))
+                else:
+                    phtQ = Q(i_accession__regex=r'^{}'.format(q_no_pht))
+            # Autocomplete using formatted pht if q is only digits.
+            # I checked that none of the source trait names are all digits (as of 2/5/2018).
+            elif self.q.isdigit():
+                # Search against the pht string if user started the query with leading zeros.
+                if q_no_pht.startswith('0'):
+                    phtQ = Q(pht_version_string__regex=r'^{}'.format('pht' + q_no_pht))
+                # Search against the pht digits if user started the query with non-zero digits.
+                else:
+                    phtQ = Q(i_accession__regex=r'^{}'.format(q_no_pht))
+            if phtQ:
+                retrieved = retrieved.filter(nameQ | phtQ)
+            else:
+                retrieved = retrieved.filter(nameQ)
+        return retrieved
+
+
 class SourceDatasetDetail(LoginRequiredMixin, SingleTableMixin, DetailView):
     """Detail view class for SourceDatasets. Displays the dataset's source traits in a table."""
 

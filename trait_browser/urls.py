@@ -45,6 +45,7 @@ source_dataset_patterns = [
 source_study_dataset_autocomplete_patterns=[
     url(r'^by-name/$', views.StudySourceDatasetNameAutocomplete.as_view(), name='by-name'),
     url(r'^by-pht/$', views.StudySourceDatasetPHTAutocomplete.as_view(), name='by-pht'),
+    url(r'^by-name-or-pht/$', views.StudySourceDatasetNameOrPHTAutocomplete.as_view(), name='by-name-or-pht'),
 ]
 
 source_study_dataset_patterns = [
