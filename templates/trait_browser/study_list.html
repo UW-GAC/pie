@@ -1,12 +1,14 @@
-{% extends '__base.html' %}
-
+{% extends '__list.html' %}
 {% load render_table from django_tables2 %}
 
 {% block head_title %}
-     | Browse phenotypes by study
+     | Studies
 {% endblock head_title %}
 
-{% block content %}
-    <h2>Studies</h2>
+{% block title %}
+    Studies
+{% endblock title %}
+
+{% block table %}
     {% render_table study_table %}
-{% endblock content %}
+{% endblock table %}

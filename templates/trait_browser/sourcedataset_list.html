@@ -1,11 +1,14 @@
-{% extends '__base.html' %}
+{% extends '__list.html' %}
 {% load render_table from django_tables2 %}
 
 {% block head_title %}
      | Study datasets
 {% endblock head_title %}
 
-{% block content %}
-    <h2>Study datasets</h2>
+{% block title %}
+    Study datasets
+{% endblock title %}
+
+{% block table %}
     {% render_table source_dataset_table %}
-{% endblock content %}
+{% endblock table %}

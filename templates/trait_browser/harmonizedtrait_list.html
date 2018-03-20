@@ -1,12 +1,14 @@
-{% extends '__base.html' %}
-
+{% extends '__list.html' %}
 {% load render_table from django_tables2 %}
 
 {% block head_title %}
      | Harmonized variables
 {% endblock head_title %}
 
-{% block content %}
-    <h2>Harmonized variables</h2>
+{% block title %}
+    Harmonized variables
+{% endblock title %}
+
+{% block table %}
     {% render_table harmonized_trait_table %}
-{% endblock content %}
+{% endblock table %}
