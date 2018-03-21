@@ -17,7 +17,7 @@ class StudyTable(tables.Table):
         orderable=False)
     trait_count = tables.Column(accessor='study', verbose_name='Number of variables', orderable=False, empty_values=())
     dbGaP_accession = tables.TemplateColumn(
-        orderable=False,
+        orderable=False, verbose_name='dbGaP study',
         template_code='<a target="_blank" href={{record.dbgap_latest_version_link}}>{{ record.phs }}</a>')
 
     class Meta:
@@ -71,7 +71,7 @@ class SourceTraitTable(tables.Table):
         'trait_browser:source:traits:detail', args=[tables.utils.A('pk')], verbose_name='Variable')
     i_description = tables.Column('Description', orderable=False)
     dbGaP_variable = tables.TemplateColumn(
-        orderable=False,
+        orderable=False, verbose_name='dbGaP variable',
         template_code='<a target="_blank" href={{ record.dbgap_variable_link }}>{{ record.variable_accession }}</a>')
 
     class Meta:
@@ -95,10 +95,10 @@ class SourceTraitTableFull(SourceTraitTable):
         text=lambda record: record.source_dataset.dataset_name,
         verbose_name='Dataset', orderable=False)
     dbGaP_study = tables.TemplateColumn(
-        orderable=False,
+        orderable=False, verbose_name='dbGaP study',
         template_code='<a target="_blank" href={{ record.dbgap_study_link }}>{{ record.study_accession }}</a>')
     dbGaP_dataset = tables.TemplateColumn(
-        orderable=False,
+        orderable=False, verbose_name='dbGaP dataset',
         template_code='<a target="_blank" href={{ record.dbgap_dataset_link }}>{{ record.dataset_accession }}</a>')
 
     class Meta(SourceTraitTable.Meta):
@@ -116,7 +116,7 @@ class SourceTraitStudyTable(SourceTraitTable):
         text=lambda record: record.source_dataset.dataset_name,
         verbose_name='Dataset', orderable=False)
     dbGaP_dataset = tables.TemplateColumn(
-        orderable=False,
+        orderable=False, verbose_name='dbGaP dataset',
         template_code='<a target="_blank" href={{ record.dbgap_dataset_link }}>{{ record.dataset_accession }}</a>')
 
     class Meta(SourceTraitTable.Meta):
