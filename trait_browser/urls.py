@@ -42,10 +42,21 @@ source_dataset_patterns = [
     # include autocomplete?
 ]
 
+source_study_dataset_autocomplete_patterns = [
+    url(r'^by-name/$', views.StudySourceDatasetNameAutocomplete.as_view(), name='by-name'),
+    url(r'^by-pht/$', views.StudySourceDatasetPHTAutocomplete.as_view(), name='by-pht'),
+    url(r'^by-name-or-pht/$', views.StudySourceDatasetNameOrPHTAutocomplete.as_view(), name='by-name-or-pht'),
+]
+
+source_study_dataset_patterns = [
+    url(r'^$', views.StudySourceDatasetList.as_view(), name='list'),
+    url(r'^autocomplete/', include(source_study_dataset_autocomplete_patterns, namespace='autocomplete')),
+]
+
 source_study_detail_patterns = [
+    url(r'^datasets/', include(source_study_dataset_patterns, namespace='datasets')),
     url(r'^tagged/$', TaggedTraitByStudyList.as_view(), name='tagged'),
     url(r'^variables/$', views.StudySourceTraitList.as_view(), name='variables'),
-    url(r'^datasets/$', views.StudySourceDatasetList.as_view(), name='datasets'),
     url(r'^$', views.StudyDetail.as_view(), name='detail'),
 ]
 

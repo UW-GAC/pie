@@ -268,6 +268,18 @@ class SourceTraitSearchTest(ClearSearchIndexMixin, TestCase):
         trait = factories.HarmonizedTraitFactory.create(i_trait_name='lorem')
         self.assertEqual(searches.search_source_traits(name='lorem').count(), 0)
 
+    def test_filters_to_selected_datasets_only(self):
+        dataset = factories.SourceDatasetFactory.create()
+        traits = factories.SourceTraitFactory.create_batch(5, source_dataset=dataset)
+        other_dataset = factories.SourceDatasetFactory.create()
+        other_traits = factories.SourceTraitFactory.create_batch(5, source_dataset=other_dataset)
+        qs = searches.search_source_traits(datasets=[dataset])
+        self.assertEqual(len(qs), len(traits))
+        for trait in traits:
+            self.assertIn(trait, qs)
+        for trait in other_traits:
+            self.assertNotIn(trait, qs)
+
 
 class HarmonizedTraitSearchTest(ClearSearchIndexMixin, TestCase):
     def test_returns_all_traits_with_no_input(self):

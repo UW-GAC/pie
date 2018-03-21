@@ -9,7 +9,6 @@ from django.views.generic import DetailView, FormView, ListView
 from django.views.generic.detail import SingleObjectMixin
 from django.views.generic.edit import FormMixin
 from django.views.generic.base import TemplateView
-from django.template.defaultfilters import pluralize    # Use pluralize in the views.
 
 from braces.views import (FormMessagesMixin, LoginRequiredMixin, MessageMixin, PermissionRequiredMixin,
                           UserPassesTestMixin)
@@ -160,6 +159,72 @@ class StudyNameAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView
         return retrieved
 
 
+class StudySourceDatasetNameAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
+    """Auto-complete datasets in a form field by dataset_name."""
+
+    def get_queryset(self):
+        retrieved = models.SourceDataset.objects.current().filter(
+            source_study_version__study=self.kwargs['pk']
+        )
+        if self.q:
+            retrieved = retrieved.filter(dataset_name__icontains=r'{}'.format(self.q))
+        return retrieved
+
+
+class StudySourceDatasetPHTAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
+    """Auto-complete datasets in a form field by dataset pht string."""
+
+    def get_queryset(self):
+        retrieved = models.SourceDataset.objects.current().filter(
+            source_study_version__study=self.kwargs['pk']
+        )
+        if self.q:
+            # User can input a pht in several ways, e.g. 'pht597', '597', '000597', or 'pht000597'.
+            # Get rid of the pht.
+            pht_digits = self.q.replace('pht', '')
+            # Search against the phv string if user started the query with leading zeros.
+            if pht_digits.startswith('0'):
+                retrieved = retrieved.filter(pht_version_string__regex=r'^{}'.format('pht' + pht_digits))
+            # Search against the pht digits if user started the query with non-zero digits.
+            else:
+                retrieved = retrieved.filter(i_accession__regex=r'^{}'.format(pht_digits))
+        return retrieved
+
+
+class StudySourceDatasetNameOrPHTAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
+    """Auto-complete datasets in a form field by dataset name OR pht string."""
+
+    def get_queryset(self):
+        retrieved = models.SourceDataset.objects.current().filter(
+            source_study_version__study=self.kwargs['pk']
+        )
+        if self.q:
+            q_no_pht = self.q.replace('pht', '')
+            # Dataset name should always be queried.
+            nameQ = Q(dataset_name__icontains=self.q)
+            # Process query for pht string.
+            phtQ = None
+            if self.q.lower().startswith('pht') and q_no_pht.isdigit():
+                if q_no_pht.startswith('0'):
+                    phtQ = Q(pht_version_string__regex=r'^{}'.format('pht' + q_no_pht))
+                else:
+                    phtQ = Q(i_accession__regex=r'^{}'.format(q_no_pht))
+            # Autocomplete using formatted pht if q is only digits.
+            # Checked that none of the dataset names are all digits (as of 03/21/2018).
+            elif self.q.isdigit():
+                # Search against the pht string if user started the query with leading zeros.
+                if q_no_pht.startswith('0'):
+                    phtQ = Q(pht_version_string__regex=r'^{}'.format('pht' + q_no_pht))
+                # Search against the pht digits if user started the query with non-zero digits.
+                else:
+                    phtQ = Q(i_accession__regex=r'^{}'.format(q_no_pht))
+            if phtQ:
+                retrieved = retrieved.filter(nameQ | phtQ)
+            else:
+                retrieved = retrieved.filter(nameQ)
+        return retrieved
+
+
 class SourceDatasetDetail(LoginRequiredMixin, SingleTableMixin, DetailView):
     """Detail view class for SourceDatasets. Displays the dataset's source traits in a table."""
 
@@ -286,19 +351,29 @@ class SourceTraitSearch(LoginRequiredMixin, SearchFormMixin, SingleTableMixin, M
         return searches.search_source_traits(**search_kwargs)
 
 
-class SourceTraitSearchByStudy(LoginRequiredMixin, SearchFormMixin, SingleObjectMixin, SingleTableMixin, MessageMixin, TemplateView):
+class SourceTraitSearchByStudy(LoginRequiredMixin, SearchFormMixin, SingleObjectMixin, SingleTableMixin, MessageMixin,
+                               TemplateView):
     """Form view class for searching for source traits within a specific study."""
 
     template_name = 'trait_browser/study_sourcetrait_search.html'
-    form_class = forms.SourceTraitSearchForm
+    form_class = forms.SourceTraitSearchOneStudyForm
     table_class = tables.SourceTraitTableFull
     context_table_name = 'results_table'
     table_data = models.SourceTrait.objects.none()
     context_object_name = 'study'
     model = models.Study
 
+    def get_form(self, form_class=None):
+        if form_class is None:
+            form_class = self.get_form_class()
+        return form_class(self.object, **self.get_form_kwargs())
+
     def get(self, request, *args, **kwargs):
         self.object = self.get_object()
+        if 'reset' in self.request.GET:
+            # Instantiate a blank form, ignoring any current GET parameters.
+            form_class = self.get_form_class()
+            return HttpResponseRedirect(request.path, {'form': form_class(self.object)})
         return super(SourceTraitSearchByStudy, self).get(request, *args, **kwargs)
 
     def search(self, **search_kwargs):

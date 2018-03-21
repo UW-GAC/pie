@@ -1,6 +1,7 @@
 """Form classes for the trait_browser app."""
 
 from django import forms
+from django.core.urlresolvers import reverse
 
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Layout, Submit, Div
@@ -36,6 +37,10 @@ class SourceTraitSearchForm(forms.Form):
     )
 
     def __init__(self, *args, **kwargs):
+        """Initialize form instance.
+
+        Set up layout.
+        """
         super(SourceTraitSearchForm, self).__init__(*args, **kwargs)
         # Specify how form should be displayed.
         self.helper = FormHelper(self)
@@ -83,13 +88,58 @@ class SourceTraitSearchMultipleStudiesForm(SourceTraitSearchForm):
         label='Study/Studies',
         widget=autocomplete.ModelSelect2Multiple(url='trait_browser:source:studies:autocomplete:by-name'),
         help_text="""Search only in selected studies. Start typing the dbGaP study name to filter the list, then
-        select the intended study. More than one study may be selected."""
+                     select the intended study. More than one study may be selected.
+                     """
     )
 
     def __init__(self, *args, **kwargs):
+        """Initialize form instance.
+
+        Add a study field to the superclass layout.
+        """
         super(SourceTraitSearchMultipleStudiesForm, self).__init__(*args, **kwargs)
         # Add the studies field to the form.
         self.helper.layout[0].append('studies')
+
+
+class SourceTraitSearchOneStudyForm(SourceTraitSearchForm):
+
+    ERROR_DEPRECATED_DATASET = 'Datasets must be from the most recent study version.'
+    ERROR_DIFFERENT_STUDY = 'Datasets must be from this study.'
+
+    def __init__(self, study, *args, **kwargs):
+        """Initialize form instance.
+
+        Add a datasets field to the superclass layout.
+        """
+        self.study = study
+        super(SourceTraitSearchOneStudyForm, self).__init__(*args, **kwargs)
+        # Add an autocomplete field for datasets belonging to this study.
+        self.fields['datasets'] = forms.ModelMultipleChoiceField(
+            # Use .all() instead of .current() to get an appropriate error message from the clean message.
+            queryset=models.SourceDataset.objects.all(),
+            required=False,
+            label='Dataset(s)',
+            widget=autocomplete.ModelSelect2Multiple(
+                url=reverse(
+                    'trait_browser:source:studies:detail:datasets:autocomplete:by-name-or-pht',
+                    args=[study.pk]
+                )
+            ),
+            help_text="""Search only in selected datasets. Start by typing the dbGaP variable accession (pht) or
+                         dataset name to filter the list (example: 'pht1234', '1234', '01234', or 'ex0_7s'). More
+                         than one dataset may be selected."""
+        )
+        self.helper.layout[0].append('datasets')
+
+    def clean_datasets(self):
+        data = self.cleaned_data['datasets']
+        for dataset in data:
+            if dataset.source_study_version.study != self.study:
+                raise forms.ValidationError(self.ERROR_DIFFERENT_STUDY)
+            if dataset.source_study_version.i_is_deprecated:
+                raise forms.ValidationError(self.ERROR_DEPRECATED_DATASET)
+        return data
 
 
 class HarmonizedTraitSearchForm(forms.Form):
