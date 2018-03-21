@@ -104,30 +104,6 @@ class TaggedTraitTableWithDelete(TaggedTraitTable):
         fields = ('tag', 'trait', 'description', 'dataset', 'creator', 'delete',)
 
 
-class TagDetailTraitTable(tables.Table):
-    """Table for displaying TaggedTraits on the TagDetail page."""
-
-    trait = tables.LinkColumn(
-        'trait_browser:source:traits:detail', args=[tables.utils.A('trait.pk')], verbose_name='Variable',
-        text=lambda record: record.trait.i_trait_name, orderable=True)
-    description = tables.Column('Description', accessor='trait.i_description', orderable=False)
-    dataset = tables.LinkColumn(
-        'trait_browser:source:datasets:detail', args=[tables.utils.A('trait.source_dataset.pk')],
-        verbose_name='Dataset',
-        text=lambda record: record.trait.source_dataset.dataset_name, orderable=False)
-    study = tables.LinkColumn('trait_browser:source:studies:detail:tagged',
-                              verbose_name='Study',
-                              args=[tables.utils.A('trait.source_dataset.source_study_version.study.pk')],
-                              text=lambda record: record.trait.source_dataset.source_study_version.study.i_study_name,
-                              orderable=False)
-
-    class Meta:
-        model = models.TaggedTrait
-        fields = ('trait', 'description', 'dataset', 'study', )
-        attrs = {'class': 'table table-striped table-bordered table-hover', 'style': 'width: auto;'}
-        template = 'bootstrap_tables2.html'
-
-
 class UserTaggedTraitTable(TaggedTraitTable):
     """Table for displaying TaggedTraits on a user's profile page.
 
