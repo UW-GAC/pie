@@ -2674,7 +2674,7 @@ class SourceTraitSearchTest(ClearSearchIndexMixin, UserLoginTestCase):
         factories.SourceTraitFactory.create(i_description='lorem other')
         get = {'description': 'lorem', 'studies': [study.pk]}
         response = self.client.get(self.get_url(), get)
-        qs = searches.search_source_traits(description='lorem', studies=[study.pk])
+        qs = searches.search_source_traits(description='lorem', datasets=[trait.source_dataset])
         context = response.context
         self.assertIn('form', context)
         self.assertTrue(context['has_results'])

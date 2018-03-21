@@ -339,7 +339,9 @@ class SourceTraitSearch(LoginRequiredMixin, SearchFormMixin, SingleTableMixin, M
     table_data = models.SourceTrait.objects.none()
 
     def search(self, **search_kwargs):
-        return searches.search_source_traits(**search_kwargs)
+        studies = search_kwargs.pop('studies')
+        datasets = models.SourceDataset.objects.current().filter(source_study_version__study__in=studies)
+        return searches.search_source_traits(datasets=datasets, **search_kwargs)
 
 
 class SourceTraitSearchByStudy(LoginRequiredMixin, SearchFormMixin, SingleObjectMixin, SingleTableMixin, MessageMixin,
@@ -368,9 +370,10 @@ class SourceTraitSearchByStudy(LoginRequiredMixin, SearchFormMixin, SingleObject
         return super(SourceTraitSearchByStudy, self).get(request, *args, **kwargs)
 
     def search(self, **search_kwargs):
-        new_search_kwargs = search_kwargs.copy()
-        new_search_kwargs.update({'studies': [self.object.pk]})
-        return searches.search_source_traits(**new_search_kwargs)
+        datasets = search_kwargs.pop('datasets')
+        if len(datasets) == 0:
+            datasets = searches.search_source_datasets(studies=[self.object.pk])
+        return searches.search_source_traits(datasets=datasets, **search_kwargs)
 
 
 class SourceTraitPHVAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):

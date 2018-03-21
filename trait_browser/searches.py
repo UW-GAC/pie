@@ -20,13 +20,13 @@ def search_source_datasets(description='', name='', studies = [], match_exact_na
     return qs.order_by('i_accession')
 
 
-def search_source_traits(description='', studies=[], datasets=[], name='', match_exact_name=True):
+def search_source_traits(description='', datasets=[], name='', match_exact_name=True):
     """Search source traits."""
     qs = models.SourceTrait.objects.current()
-    if len(studies) > 0:
-        qs = qs.filter(source_dataset__source_study_version__study__in=studies)
     if len(datasets) > 0:
-        qs = qs.filter(source_dataset__in=datasets)
+        # Ensure that the queryset is evaluated, and pull out the pks; otherwise, unexpected errors are thrown.
+        dataset_pks = [x.pk for x in datasets]
+        qs = qs.filter(source_dataset__in=dataset_pks)
     if len(name) > 0:
         if match_exact_name:
             qs = qs.filter(i_trait_name__iexact=name)

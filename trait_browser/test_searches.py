@@ -383,22 +383,22 @@ class SourceTraitSearchTest(ClearSearchIndexMixin, TestCase):
         qs = searches.search_source_traits(description='123456')
         self.assertQuerysetEqual(qs, [repr(trait)])
 
-    def test_finds_matching_trait_in_one_specified_study(self):
-        """Traits only in the requested study are found."""
-        factories.StudyFactory.create()
+    def test_finds_matching_trait_in_one_specified_dataset(self):
+        """Traits only in the requested dataset are found."""
+        factories.SourceDatasetFactory.create()
         trait = factories.SourceTraitFactory.create()
-        qs = searches.search_source_traits(studies=[trait.source_dataset.source_study_version.study.pk])
+        qs = searches.search_source_traits(datasets=[trait.source_dataset])
         self.assertQuerysetEqual(qs, [repr(trait)])
 
-    def test_finds_matching_trait_in_two_specified_studies(self):
+    def test_finds_matching_trait_in_two_specified_datasets(self):
         """Traits in two requested studies are found."""
         trait_1 = factories.SourceTraitFactory.create()
         trait_2 = factories.SourceTraitFactory.create()
-        studies = [
-            trait_1.source_dataset.source_study_version.study.pk,
-            trait_2.source_dataset.source_study_version.study.pk,
+        datasets = [
+            trait_1.source_dataset,
+            trait_2.source_dataset,
         ]
-        qs = searches.search_source_traits(studies=studies)
+        qs = searches.search_source_traits(datasets=datasets)
         self.assertEqual(qs.count(), 2)
         self.assertIn(trait_1, qs)
         self.assertIn(trait_2, qs)
@@ -443,12 +443,12 @@ class SourceTraitSearchTest(ClearSearchIndexMixin, TestCase):
         qs = searches.search_source_traits(name='ipsum', description='lorem')
         self.assertQuerysetEqual(qs, [repr(trait)])
 
-    def test_works_with_trait_name_description_and_study(self):
+    def test_works_with_trait_name_description_and_dataset(self):
         """Searching works when trait name, description, and study are all specified."""
         trait = factories.SourceTraitFactory.create(i_trait_name='ipsum', i_description='lorem')
         factories.SourceTraitFactory.create(i_trait_name='ipsum', i_description='lorem')
-        study = trait.source_dataset.source_study_version.study
-        qs = searches.search_source_traits(name='ipsum', description='lorem', studies=[study.pk])
+        dataset = trait.source_dataset
+        qs = searches.search_source_traits(name='ipsum', description='lorem', datasets=[dataset])
         self.assertQuerysetEqual(qs, [repr(trait)])
 
     def test_default_ordering_by_trait(self):
@@ -502,6 +502,21 @@ class SourceTraitSearchTest(ClearSearchIndexMixin, TestCase):
             self.assertIn(trait, qs)
         for trait in other_traits:
             self.assertNotIn(trait, qs)
+
+    def test_works_with_dataset_querysets(self):
+        """Finds expected traits when a dataset queryset is passed."""
+        dataset = factories.SourceDatasetFactory.create()
+        traits = factories.SourceTraitFactory.create_batch(5, source_dataset=dataset)
+        other_dataset = factories.SourceDatasetFactory.create()
+        other_traits = factories.SourceTraitFactory.create_batch(5, source_dataset=other_dataset)
+        dataset_qs = models.SourceDataset.objects.filter(pk=dataset.pk)
+        qs = searches.search_source_traits(datasets=dataset_qs)
+        self.assertEqual(len(qs), len(traits))
+        for trait in traits:
+            self.assertIn(trait, qs)
+        for trait in other_traits:
+            self.assertNotIn(trait, qs)
+
 
 
 class HarmonizedTraitSearchTest(ClearSearchIndexMixin, TestCase):
