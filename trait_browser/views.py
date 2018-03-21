@@ -210,7 +210,7 @@ class StudySourceDatasetNameOrPHTAutocomplete(LoginRequiredMixin, autocomplete.S
                 else:
                     phtQ = Q(i_accession__regex=r'^{}'.format(q_no_pht))
             # Autocomplete using formatted pht if q is only digits.
-            # I checked that none of the source trait names are all digits (as of 2/5/2018).
+            # Checked that none of the dataset names are all digits (as of 03/21/2018).
             elif self.q.isdigit():
                 # Search against the pht string if user started the query with leading zeros.
                 if q_no_pht.startswith('0'):

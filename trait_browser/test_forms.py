@@ -106,7 +106,8 @@ class SourceTraitSearchMultipleStudiesFormTest(TestCase):
         self.assertTrue(form.is_valid())
 
 
-class SourceTraitSearchOneStudyForm(TestCase):
+class SourceTraitSearchOneStudyFormTest(TestCase):
+
     def setUp(self):
         self.study = factories.StudyFactory.create()
         self.search_form = forms.SourceTraitSearchOneStudyForm
