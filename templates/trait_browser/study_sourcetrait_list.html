@@ -1,6 +1,10 @@
 {% extends 'trait_browser/__study_page.html' %}
 {% load render_table from django_tables2 %}
 
+{% block head_title %}
+    {{ block.super }} variables
+{% endblock head_title %}
+
 {% block subtitle %}
     variables
 {% endblock subtitle %}
