@@ -8,17 +8,17 @@
                panel or not; determines whether the panel has a margin or not
 {% endcomment %}
 
-<div class="panel panel-default" 
+<div class="panel panel-default"
 {% if inner %}
     style="margin:25px"
 {% endif %}
 >
     <div class="panel-heading"><h4 class="panel-title">Encoded values</h4></div>
     {# <div class="panel-body"> #}
-        <table class="table table-responsive table-bordered table-sm" style="text-align:center">
+        <table class="table table-responsive table-bordered">
             <tr>
-                <th style="text-align:center">Category</th>
-                <th style="text-align:center">Value</th>
+                <th class='col-sm-1'>Category</th>
+                <th>Value</th>
             </tr>
             {% for ev in ev_set %}
                 <tr>
