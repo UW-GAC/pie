@@ -39,7 +39,7 @@ class TagTable(tables.Table):
 
     title = tables.LinkColumn('tags:tag:detail', args=[tables.utils.A('pk')], verbose_name='Tag')
     number_tagged_traits = tables.Column(
-        accessor='traits.count', verbose_name='Number of study variables tagged', orderable=False)
+        accessor='traits.count', verbose_name='Number of tagged study variables', orderable=False)
     # TODO: Add column for the number of studies tagged.
 
     class Meta:
