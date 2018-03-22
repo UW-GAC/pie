@@ -15,7 +15,14 @@
 {% endblock subtitle %}
 
 {% block detail_fields %}
-    <dt>Description</dt><dd>{{ source_dataset.i_dbgap_description }}</dd>
+    <dt>Description</dt>
+    <dd>
+        {% if source_dataset.i_dbgap_description != '' %}
+            {{ source_dataset.i_dbgap_description }}
+        {% else %}
+            &mdash;
+        {% endif %}
+    </dd>
     <dt>Number of variables</dt><dd>{{ trait_count }}</dd>
     <dt>Study</dt><dd><a href="{{ source_dataset.source_study_version.study.get_absolute_url }}">{{ source_dataset.source_study_version.study.i_study_name }}</a></dd>
 {% endblock detail_fields %}

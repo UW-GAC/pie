@@ -21,24 +21,30 @@
     <dt>Dataset description</dt>
         <dd>
             {% if source_trait.source_dataset.i_dbgap_description != '' %}
-              {{ source_trait.source_dataset.i_dbgap_description }}
+                {{ source_trait.source_dataset.i_dbgap_description }}
+            {% else %}
+                &mdash;
             {% endif %}
         </dd>
         <dt>Study</dt> <dd><a href="{{ source_trait.source_dataset.source_study_version.study.get_absolute_url }}">{{ source_trait.source_dataset.source_study_version.study.i_study_name }}</a></dd>
-    <dt>Phenotype tag(s)</dt> 
+    <dt>Phenotype tag(s)</dt>
         <dd>
-            {% for tag, tagged_trait in tag_tagged_trait_pairs %}
-                <div class="btn-group btn-group-xs">
-                    <a href="{{ tag.get_absolute_url }}" class="btn btn-default" role="button">{{ tag.title }}</a>
-                    {% if perms.tags.add_taggedtrait %}
-                        {% if user_is_study_tagger or request.user.is_staff %}
-                            <a href="{% url 'tags:tagged-traits:delete' tagged_trait.pk %}" class="btn btn-default"
-                            data-toggle="tooltip" data-placement="auto right" title="Remove {{ tag.title }} tag" role="button">
-                                <span class="glyphicon glyphicon-remove" aria-hidden="true"></a>
+            {% if tag_tagged_trait_pairs|length > 0%}
+                {% for tag, tagged_trait in tag_tagged_trait_pairs %}
+                    <div class="btn-group btn-group-xs">
+                        <a href="{{ tag.get_absolute_url }}" class="btn btn-default" role="button">{{ tag.title }}</a>
+                        {% if perms.tags.add_taggedtrait %}
+                            {% if user_is_study_tagger or request.user.is_staff %}
+                                <a href="{% url 'tags:tagged-traits:delete' tagged_trait.pk %}" class="btn btn-default"
+                                data-toggle="tooltip" data-placement="auto right" title="Remove {{ tag.title }} tag" role="button">
+                                    <span class="glyphicon glyphicon-remove" aria-hidden="true"></a>
+                            {% endif %}
                         {% endif %}
-                    {% endif %}
-                </div>
-            {% endfor %}
+                    </div>
+                {% endfor %}
+            {% else %}
+                &mdash;
+            {% endif %}
         </dd>
         {% if perms.tags.add_taggedtrait %}
             {% if user_is_study_tagger or request.user.is_staff %}
