@@ -178,6 +178,14 @@ class HarmonizedTraitSetVersionDetail(LoginRequiredMixin, FormMessagesMixin, Det
     model = models.HarmonizedTraitSetVersion
     context_object_name = 'harmonized_trait_set_version'
 
+    def get_context_data(self, **kwargs):
+        context = super(HarmonizedTraitSetVersionDetail, self).get_context_data(**kwargs)
+        harmonized_traits = self.object.harmonizedtrait_set.all()
+        context['harmonized_trait'] = harmonized_traits.get(i_is_unique_key=False)
+        context['unique_keys'] = harmonized_traits.filter(i_is_unique_key=True)
+        context['unique_key_names'] = ', '.join(context['unique_keys'].values_list('trait_flavor_name', flat=True))
+        return context
+
 
 class SourceTraitDetail(LoginRequiredMixin, DetailView):
     """Detail view class for SourceTraits. Inherits from django.views.generic.DetailView."""
