@@ -13,8 +13,6 @@
     {{ block.super }}
     <div class="panel panel-default">
         <div class="panel-heading"><h4 class="panel-title">Datasets in this study</h4></div>
-        <div class="panel-body">
-            {% render_table source_dataset_table %}
-        </div>
+        {% render_table source_dataset_table %}
     </div>
 {% endblock after_panel %}
