@@ -46,7 +46,7 @@ class TagTable(tables.Table):
         model = models.Tag
         fields = ('title', 'description', )
         attrs = {'class': 'table table-striped table-bordered table-hover'}
-        template = 'bootstrap_tables2.html'
+        template = 'django_tables2/bootstrap-responsive.html'
         order_by = ('title', )
 
 
@@ -66,7 +66,7 @@ class StudyTaggedTraitTable(tables.Table):
         model = Study
         fields = ('i_study_name', )
         attrs = {'class': 'table table-striped table-bordered table-hover'}
-        template = 'bootstrap_tables2.html'
+        template = 'django_tables2/bootstrap-responsive.html'
         order_by = ('i_study_name', )
 
 
@@ -89,7 +89,7 @@ class TaggedTraitTable(tables.Table):
         model = models.TaggedTrait
         fields = ('tag', 'trait', 'description', 'dataset', )
         attrs = {'class': 'table table-striped table-bordered table-hover', 'style': 'width: auto;'}
-        template = 'bootstrap_tables2.html'
+        template = 'django_tables2/bootstrap-responsive.html'
         order_by = ('tag', )
 
 

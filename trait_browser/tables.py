@@ -24,7 +24,7 @@ class StudyTable(tables.Table):
         model = models.Study
         fields = ('i_study_name', )
         attrs = {'class': 'table table-striped table-hover table-bordered', 'style': 'width: auto;'}
-        template = 'bootstrap_tables2.html'
+        template = 'django_tables2/bootstrap-responsive.html'
         order_by = ('i_study_name', )
 
     def render_trait_count(self, record):
@@ -46,7 +46,7 @@ class SourceDatasetTable(tables.Table):
         model = models.SourceDataset
         fields = ('dataset_name', 'i_dbgap_description', 'trait_count', )
         attrs = {'class': 'table table-striped table-hover table-bordered', 'style': 'width: auto;'}
-        template = 'bootstrap_tables2.html'
+        template = 'django_tables2/bootstrap-responsive.html'
 
     def render_trait_count(self, record):
         return '{:,}'.format(record.sourcetrait_set.count())
@@ -78,7 +78,7 @@ class SourceTraitTable(tables.Table):
         fields = ('i_trait_name', 'i_description', 'dbGaP_variable', )
         model = models.SourceTrait
         attrs = {'class': 'table table-striped table-bordered table-hover table-condensed'}
-        template = 'bootstrap_tables2.html'
+        template = 'django_tables2/bootstrap-responsive.html'
 
 
 class SourceTraitTableFull(SourceTraitTable):
@@ -156,5 +156,5 @@ class HarmonizedTraitTable(tables.Table):
         model = models.HarmonizedTrait
         fields = ('trait_flavor_name', 'i_description', )
         attrs = {'class': 'table table-striped table-bordered table-hover table-condensed'}
-        template = 'bootstrap_tables2.html'
+        template = 'django_tables2/bootstrap-responsive.html'
         order_by = ('trait_flavor_name', )
