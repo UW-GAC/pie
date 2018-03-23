@@ -385,7 +385,11 @@ class HarmonizedTraitSetVersionDetailTest(UserLoginTestCase):
     def setUp(self):
         super(HarmonizedTraitSetVersionDetailTest, self).setUp()
         self.htsv = factories.HarmonizedTraitSetVersionFactory.create()
-        self.htraits = factories.HarmonizedTraitFactory.create_batch(2, harmonized_trait_set_version=self.htsv)
+        self.htraits = factories.HarmonizedTraitFactory.create_batch(
+            2, harmonized_trait_set_version=self.htsv, i_is_unique_key=True)
+        # Only one of the h. traits can be unique_key=False.
+        self.htraits[0].i_is_unique_key = False
+        self.htraits[0].save()
 
     def get_url(self, *args):
         return reverse('trait_browser:harmonized:traits:detail', args=args)
