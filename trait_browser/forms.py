@@ -10,6 +10,25 @@ from dal import autocomplete
 from . import models
 
 
+ERROR_ONLY_SHORT_WORDS = 'Only short words entered.'
+
+class WatsonSearchField(forms.CharField):
+
+    def clean(self, value):
+        """Custom cleaning for fields to be passed to watson search calls.
+
+        This method checks that checks that at least one long word was passed,
+        if anything was passed. It then removes any short words from the query.
+        """
+        data = super(WatsonSearchField, self).clean(value)
+        words = data.split()
+        short_words = [word for word in words if len(word) < 3]
+        long_words = [word for word in words if word not in short_words]
+        if len(words) > 0 and len(long_words) == 0:
+            raise forms.ValidationError(ERROR_ONLY_SHORT_WORDS)
+        return ' '.join(long_words)
+
+
 class SourceTraitSearchForm(forms.Form):
     """Form to handle django-watson searches for SourceTrait objects.
 
@@ -28,11 +47,12 @@ class SourceTraitSearchForm(forms.Form):
         required=False,
         initial=True
     )
-    description = forms.CharField(
+    description = WatsonSearchField(
         label='Variable description',
         max_length=100,
         required=False,
-        help_text='Search dbGaP phenotype variable descriptions.'
+        help_text='Search dbGaP phenotype variable descriptions. Words less than three letters are ignored.'#,
+        #validators=[validate_watson_search_field]
     )
 
     def __init__(self, *args, **kwargs):
@@ -69,9 +89,13 @@ class SourceTraitSearchForm(forms.Form):
 
     def clean(self):
         """Perform additional multi-field cleaning to make sure that either description or name is entered."""
-        cleaned_data = super(SourceTraitSearchForm, self).clean()
-        if not cleaned_data['name'] and not cleaned_data['description']:
-            raise forms.ValidationError('Either variable name or description must be filled in.')
+        super(SourceTraitSearchForm, self).clean()
+        # If one of the fields failed its validation/cleaning, it will not be in cleaned data.
+        name = self.cleaned_data.get('name')
+        description = self.cleaned_data.get('description')
+        if name is not None and description is not None:
+            if not name and not description:
+                raise forms.ValidationError('Either variable name or description must be filled in.')
 
 
 class SourceTraitSearchMultipleStudiesForm(SourceTraitSearchForm):
@@ -109,7 +133,7 @@ class HarmonizedTraitSearchForm(forms.Form):
         required=False,
         initial=True
     )
-    description = forms.CharField(
+    description = WatsonSearchField(
         label='Variable description',
         max_length=100,
         required=False,
@@ -149,5 +173,9 @@ class HarmonizedTraitSearchForm(forms.Form):
     def clean(self):
         """Perform additional multi-field cleaning to make sure that either description or name is entered."""
         cleaned_data = super(HarmonizedTraitSearchForm, self).clean()
-        if not cleaned_data['name'] and not cleaned_data['description']:
-            raise forms.ValidationError('Either variable name or description must be filled in.')
+        # If one of the fields failed its validation/cleaning, it will not be in cleaned data.
+        name = self.cleaned_data.get('name')
+        description = self.cleaned_data.get('description')
+        if name is not None and description is not None:
+            if not name and not description:
+                raise forms.ValidationError('Either variable name or description must be filled in.')
