@@ -449,7 +449,7 @@ class HarmonizedTraitList(LoginRequiredMixin, SingleTableMixin, ListView):
     table_pagination = {'per_page': TABLE_PER_PAGE}
 
     def get_table_data(self):
-        return models.HarmonizedTrait.objects.current()
+        return models.HarmonizedTrait.objects.current().non_unique_keys()
 
 
 class HarmonizedTraitFlavorNameAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):

@@ -2071,6 +2071,17 @@ class HarmonizedTraitListTest(UserLoginTestCase):
         for trait in self.harmonized_traits:
             self.assertIn(trait, table.data)
 
+    def test_no_unique_key_traits_in_table(self):
+        """No unique key traits are shown in the table."""
+        uk_traits = factories.HarmonizedTraitFactory.create_batch(10, i_is_unique_key=True)
+        response = self.client.get(self.get_url())
+        context = response.context
+        table = context['harmonized_trait_table']
+        for trait in uk_traits:
+            self.assertNotIn(trait, table.data)
+        for trait in self.harmonized_traits:
+            self.assertIn(trait, table.data)
+
     def test_table_has_no_rows(self):
         """When there are no harmonized traits, there are no rows in the table, but the view still works."""
         models.HarmonizedTrait.objects.all().delete()
