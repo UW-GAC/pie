@@ -12,6 +12,7 @@ from . import models
 
 ERROR_ONLY_SHORT_WORDS = 'Enter at least one term with more than two letters.'
 
+
 class WatsonSearchField(forms.CharField):
 
     warning_message = None
@@ -59,11 +60,11 @@ class SourceTraitSearchForm(forms.Form):
         label='Variable description',
         max_length=100,
         required=False,
-        help_text='Search dbGaP phenotype variable descriptions. Words less than three letters are ignored.'#,
-        #validators=[validate_watson_search_field]
+        help_text='Search dbGaP phenotype variable descriptions. Words less than three letters are ignored.'
     )
 
     def __init__(self, *args, **kwargs):
+        """Initialize form with formatting and submit button."""
         super(SourceTraitSearchForm, self).__init__(*args, **kwargs)
         # Specify how form should be displayed.
         self.helper = FormHelper(self)
@@ -119,6 +120,7 @@ class SourceTraitSearchMultipleStudiesForm(SourceTraitSearchForm):
     )
 
     def __init__(self, *args, **kwargs):
+        """Initialize form and add the studies field to the layout."""
         super(SourceTraitSearchMultipleStudiesForm, self).__init__(*args, **kwargs)
         # Add the studies field to the form.
         self.helper.layout[0].append('studies')
