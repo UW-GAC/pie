@@ -15,10 +15,10 @@
 {% endblock subtitle %}
 
 {% block detail_fields %}
-    <dt>Description</dt><dd>{{ trait.i_description }}</dd>
-    <dt>Data type</dt><dd>{{ trait.i_data_type }}</dd>
-    {% if trait.i_unit != '' %}
-        <dt>Measurement unit</dt><dd>{{ trait.i_unit }}</dd>
+    <dt>Description</dt><dd>{{ harmonized_trait.i_description }}</dd>
+    <dt>Data type</dt><dd>{{ harmonized_trait.i_data_type }}</dd>
+    {% if harmonized_trait.i_unit != '' %}
+        <dt>Measurement unit</dt><dd>{{ harmonized_trait.i_unit }}</dd>
     {% endif %}
     {% if unique_key_names != '' %}
         <dt>Unique keys</dt><dd>{{ unique_key_names }}</dd>
