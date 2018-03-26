@@ -252,6 +252,10 @@ class SourceTraitSearch(LoginRequiredMixin, SingleTableMixin, MessageMixin, Form
         self.table_data = searches.search_source_traits(**self.search_kwargs)
         context = self.get_context_data(form=form)
         context['has_results'] = True
+        # Add field-specific messages.
+        # May need to figure out how to make this general to any form field that is a WatsonSearchField.
+        if form.fields['description'].warning_message:
+            self.messages.warning(form.fields['description'].warning_message, fail_silently=True)
         # Add an informational message about the number of results found.
         msg = '{n} result{s} found.'.format(
             n=self.table_data.count(),
@@ -486,6 +490,10 @@ class HarmonizedTraitSearch(LoginRequiredMixin, SingleTableMixin, MessageMixin, 
         self.table_data = searches.search_harmonized_traits(**form.cleaned_data)
         context = self.get_context_data(form=form)
         context['has_results'] = True
+        # Add field-specific messages.
+        # May need to figure out how to make this general to any form field that is a WatsonSearchField.
+        if form.fields['description'].warning_message:
+            self.messages.warning(form.fields['description'].warning_message, fail_silently=True)
         # Add an informational message about the number of results found.
         msg = '{n} result{s} found.'.format(
             n=self.table_data.count(),

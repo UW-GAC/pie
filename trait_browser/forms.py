@@ -14,6 +14,8 @@ ERROR_ONLY_SHORT_WORDS = 'Only short words entered.'
 
 class WatsonSearchField(forms.CharField):
 
+    warning_message = None
+
     def clean(self, value):
         """Custom cleaning for fields to be passed to watson search calls.
 
@@ -24,8 +26,14 @@ class WatsonSearchField(forms.CharField):
         words = data.split()
         short_words = [word for word in words if len(word) < 3]
         long_words = [word for word in words if word not in short_words]
-        if len(words) > 0 and len(long_words) == 0:
-            raise forms.ValidationError(ERROR_ONLY_SHORT_WORDS)
+        if len(short_words) > 0:
+            self.warning_message = 'Omitted short words in {field} field: {words}'.format(
+                words=' '.join(short_words),
+                field=self.label
+            )
+            # Raise an error if all words were short words.
+            if len(long_words) == 0:
+                raise forms.ValidationError(ERROR_ONLY_SHORT_WORDS)
         return ' '.join(long_words)
 
 

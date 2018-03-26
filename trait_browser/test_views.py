@@ -2240,6 +2240,13 @@ class SourceTraitSearchTest(ClearSearchIndexMixin, UserLoginTestCase):
         self.assertIn(trait_1, context['results_table'].data)
         self.assertIn(trait_2, context['results_table'].data)
 
+    def test_message_for_omitted_short_words(self):
+        response = self.client.get(self.get_url(), {'description': 'lorem ip'})
+        context = response.context
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 2)
+        self.assertIn('Omitted short words in Variable description field', str(messages[0]))
+
 
 class SourceTraitSearchByStudyTest(ClearSearchIndexMixin, UserLoginTestCase):
 
@@ -2410,6 +2417,13 @@ class SourceTraitSearchByStudyTest(ClearSearchIndexMixin, UserLoginTestCase):
         self.assertIn(trait_1, context['results_table'].data)
         self.assertIn(trait_2, context['results_table'].data)
 
+    def test_message_for_omitted_short_words(self):
+        response = self.client.get(self.get_url(self.study.pk), {'description': 'lorem ip'})
+        context = response.context
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 2)
+        self.assertIn('Omitted short words in Variable description field', str(messages[0]))
+
 
 class HarmonizedTraitSearchTest(ClearSearchIndexMixin, UserLoginTestCase):
 
@@ -2558,6 +2572,13 @@ class HarmonizedTraitSearchTest(ClearSearchIndexMixin, UserLoginTestCase):
         self.assertEqual(len(context['results_table'].rows), 2)
         self.assertIn(trait_1, context['results_table'].data)
         self.assertIn(trait_2, context['results_table'].data)
+
+    def test_message_for_omitted_short_words(self):
+        response = self.client.get(self.get_url(), {'description': 'lorem ip'})
+        context = response.context
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 2)
+        self.assertIn('Omitted short words in Variable description field', str(messages[0]))
 
 
 # Test of the login-required for each URL in the app.
