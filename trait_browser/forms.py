@@ -10,7 +10,7 @@ from dal import autocomplete
 from . import models
 
 
-ERROR_ONLY_SHORT_WORDS = 'Only short words entered.'
+ERROR_ONLY_SHORT_WORDS = 'Enter at least one term with more than two letters.'
 
 class WatsonSearchField(forms.CharField):
 
