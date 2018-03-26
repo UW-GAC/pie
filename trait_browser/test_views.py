@@ -2674,12 +2674,11 @@ class SourceTraitSearchTest(ClearSearchIndexMixin, UserLoginTestCase):
         factories.SourceTraitFactory.create(i_description='lorem other')
         get = {'description': 'lorem', 'studies': [study.pk]}
         response = self.client.get(self.get_url(), get)
-        qs = searches.search_source_traits(description='lorem', datasets=[trait.source_dataset])
         context = response.context
         self.assertIn('form', context)
         self.assertTrue(context['has_results'])
         self.assertIsInstance(context['results_table'], tables.SourceTraitTableFull)
-        self.assertQuerysetEqual(qs, [repr(x) for x in context['results_table'].data])
+        self.assertQuerysetEqual(context['results_table'].data, [repr(trait)])
 
     def test_context_data_with_valid_search_and_trait_name(self):
         """View has correct context with a valid search and existing results if a study is selected."""
@@ -2805,6 +2804,18 @@ class SourceTraitSearchTest(ClearSearchIndexMixin, UserLoginTestCase):
         self.assertEqual(len(messages), 2)
         self.assertIn('Ignored short words in "Variable description" field', str(messages[0]))
 
+    def test_filters_by_datasets_if_requested(self):
+        """View has correct results when filtering by dataset."""
+        dataset = factories.SourceDatasetFactory.create(i_dbgap_description='a dataset about demographic measurements')
+        trait = factories.SourceTraitFactory.create(i_description='lorem ipsum', source_dataset=dataset)
+        factories.SourceTraitFactory.create(i_description='lorem ipsum')
+        response = self.client.get(self.get_url(), {'description': 'lorem', 'dataset_description': 'demographic'})
+        context = response.context
+        self.assertIn('form', context)
+        self.assertTrue(context['has_results'])
+        self.assertIsInstance(context['results_table'], tables.SourceTraitTableFull)
+        self.assertQuerysetEqual(context['results_table'].data, [repr(trait)])
+ 
 
 class SourceTraitSearchByStudyTest(ClearSearchIndexMixin, UserLoginTestCase):
 

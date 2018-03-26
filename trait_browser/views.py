@@ -338,10 +338,23 @@ class SourceTraitSearch(LoginRequiredMixin, SearchFormMixin, SingleTableMixin, M
     context_table_name = 'results_table'
     table_data = models.SourceTrait.objects.none()
 
-    def search(self, **search_kwargs):
-        studies = search_kwargs.pop('studies')
-        datasets = models.SourceDataset.objects.current().filter(source_study_version__study__in=studies)
-        return searches.search_source_traits(datasets=datasets, **search_kwargs)
+    def search(self, name='', description='', match_exact_name=False, dataset_name='', dataset_description='',
+               dataset_match_exact_name=False, studies=[]):
+        datasets = []
+        if dataset_name or dataset_description or studies:
+            datasets = searches.search_source_datasets(
+                name=dataset_name,
+                description=dataset_description,
+                match_exact_name=dataset_match_exact_name,
+                studies=studies
+            )
+        results = searches.search_source_traits(
+            name=name,
+            description=description,
+            match_exact_name=match_exact_name,
+            datasets=datasets
+        )
+        return results
 
 
 class SourceTraitSearchByStudy(LoginRequiredMixin, SearchFormMixin, SingleObjectMixin, SingleTableMixin, MessageMixin,

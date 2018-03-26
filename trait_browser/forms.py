@@ -120,11 +120,41 @@ class SourceTraitSearchMultipleStudiesForm(SourceTraitSearchForm):
                      select the intended study. More than one study may be selected.
                      """
     )
+    dataset_name = forms.CharField(
+        label='Dataset name',
+        max_length=100,
+        required=False,
+        help_text='Search only within study datasets matching this name.'
+    )
+    dataset_match_exact_name = forms.BooleanField(
+        label='Match whole name',
+        required=False,
+        initial=True
+    )
+    dataset_description = forms.CharField(
+        label='Dataset description',
+        max_length=100,
+        required=False,
+        help_text='Search only within study datasets matching this description.'
+    )
 
     def __init__(self, *args, **kwargs):
-        """Initialize form and add the studies field to the layout."""
+        """Initialize form instance by adding study and dataset propery fields to the layout."""
         super(SourceTraitSearchMultipleStudiesForm, self).__init__(*args, **kwargs)
-        # Add the studies field to the form.
+        # Add the additional field to the form.
+        self.helper.layout[0].append(
+            Div(
+                Div(
+                    Div(
+                        'dataset_name',
+                        'dataset_match_exact_name',
+                        css_class='panel-body',
+                    ),
+                    css_class='panel panel-default'
+                ),
+                'dataset_description',
+            )
+        )
         self.helper.layout[0].append('studies')
 
 

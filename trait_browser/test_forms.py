@@ -215,6 +215,41 @@ class SourceTraitSearchMultipleStudiesFormTest(TestCase):
         self.assertEqual(form.fields['description'].warning_message,
                          'Ignored short words in "Variable description" field: to of')
 
+    def test_form_is_valid_with_dataset_name(self):
+        """Form is valid if dataset_name is passed."""
+        input = {'name': 'abc', 'dataset_name': 'foo'}
+        form = self.search_form(input)
+        self.assertTrue(form.is_valid())
+
+    def test_form_is_valid_with_dataset_name_and_match_exact_name(self):
+        """Form is valid if dataset_name is passed and match_exact_name is True."""
+        input = {'name': 'abc', 'dataset_name': 'foo', 'dataset_match_exact_name': True}
+        form = self.search_form(input)
+        self.assertTrue(form.is_valid())
+
+    def test_form_is_valid_with_dataset_description(self):
+        """Form is valid if dataset_description is passed."""
+        input = {'name': 'abc', 'dataset_description': 'foo'}
+        form = self.search_form(input)
+        self.assertTrue(form.is_valid())
+
+    def test_form_is_valid_with_dataset_name_and_description(self):
+        """Form is valid if dataset_name and description are passed."""
+        input = {'name': 'abc', 'dataset_name': 'foo', 'dataset_description': 'bar'}
+        form = self.search_form(input)
+        self.assertTrue(form.is_valid())
+
+    def test_form_is_valid_with_dataset_name_match_exact_name_and_description(self):
+        """Form is valid if dataset_name, dataset_match_exact_name, and description are passed."""
+        input = {
+            'name': 'abc',
+            'dataset_name': 'foo',
+            'dataset_description': 'bar',
+            'dataest_match_exact_name': True
+        }
+        form = self.search_form(input)
+        self.assertTrue(form.is_valid())
+
 
 class SourceTraitSearchOneStudyFormTest(TestCase):
 
