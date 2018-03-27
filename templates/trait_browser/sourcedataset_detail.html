@@ -3,37 +3,37 @@
 
 
 {% block head_title %}
-     | {{ source_dataset.dataset_name }} details
+  | {{ source_dataset.dataset_name }} details
 {% endblock head_title %}
 
 {% block title %}
-    {{ source_dataset.dataset_name }}
+  {{ source_dataset.dataset_name }}
 {% endblock title %}
 
 {% block subtitle %}
-    study dataset details
+  study dataset details
 {% endblock subtitle %}
 
 {% block detail_fields %}
-    <dt>Description</dt>
-    <dd>
-        {% if source_dataset.i_dbgap_description != '' %}
-            {{ source_dataset.i_dbgap_description }}
-        {% else %}
-            &mdash;
-        {% endif %}
-    </dd>
-    <dt>Number of variables</dt><dd>{{ trait_count }}</dd>
-    <dt>Study</dt><dd><a href="{{ source_dataset.source_study_version.study.get_absolute_url }}">{{ source_dataset.source_study_version.study.i_study_name }}</a></dd>
+  <dt>Description</dt>
+  <dd>
+    {% if source_dataset.i_dbgap_description != '' %}
+      {{ source_dataset.i_dbgap_description }}
+    {% else %}
+      &mdash;
+    {% endif %}
+  </dd>
+  <dt>Number of variables</dt><dd>{{ trait_count }}</dd>
+  <dt>Study</dt><dd><a href="{{ source_dataset.source_study_version.study.get_absolute_url }}">{{ source_dataset.source_study_version.study.i_study_name }}</a></dd>
 {% endblock detail_fields %}
 
 {% block after_panel %}
-    {% include 'trait_browser/_dbgap_link_panel.html' with dataset_string=source_dataset.pht_version_string dataset_link=pht_link study_string=phs study_link=phs_link %}
-    {# Table of variables #}
-    <div class="panel panel-default">
-        <div class="panel-heading"><h4 class="panel-title">Variables in this dataset</h4></div>
-        <div class="panel-body">
-            {% render_table trait_table %}
-        </div>
+  {% include 'trait_browser/_dbgap_link_panel.html' with dataset_string=source_dataset.pht_version_string dataset_link=pht_link study_string=phs study_link=phs_link %}
+  {# Table of variables #}
+  <div class="panel panel-default">
+    <div class="panel-heading"><h4 class="panel-title">Variables in this dataset</h4></div>
+    <div class="panel-body">
+      {% render_table trait_table %}
     </div>
+  </div>
 {% endblock after_panel %}

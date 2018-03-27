@@ -8,271 +8,271 @@
 {# Demo #}
 {% comment %}
 <div class="panel panel-default">
-    <div class="panel-heading"><h3 class='panel-title'>Demonstration video</h3></div>
-    <div class="panel-body">
-        Coming soon...
-    </div>
+  <div class="panel-heading"><h3 class='panel-title'>Demonstration video</h3></div>
+  <div class="panel-body">
+    Coming soon...
+  </div>
 </div>
 {% endcomment %}
 
 {# How to apply tags #}
 <div class="panel panel-default">
-    <div class="panel-heading"><h3 class='panel-title'>
-        <a href="#howto-collapse" data-toggle="collapse" aria-expanded="false" aria-controls="#howto-collapse">
-            How to apply tags</a>
-    </h3></div>
-    <div class="panel-collapse collapse" id="howto-collapse">
-        <ul class="list-group" id="how-to">
-            <li class="list-group-item">
-                <h5 data-toggle="collapse" data-target="#howto-one" data-parent="#how-to" aria-expanded="false"
-                aria-controls="howto-one">From a study variable's detail page</h5>
-                <div id="howto-one" class="collapse">
-                    <ol>
-                        <li>Find a study variable by searching within your study or browsing within your study’s
-                            variables or datasets.</li>
-                        <li>Once you’ve found a study variable that you’d like to apply a tag to, click on the variable’s
-                            name and you will be taken to its detail page.</li>
-                        <li>Click the "Tag this variable" button. You will be taken to a page to apply a tag to this
-                            study variable.</li>
-                        <li>In the "Tag" field, you may either select a tag from the dropdown menu or start typing to
-                            autocomplete the tag by name. When autocompleting, hit return to select the tag of your
-                            choice.</li>
-                        <li>Click on the "Save" button to apply the selected tag to the specified study variable.</li>
-                    </ol>
-                </div>
-            </li>
-            <li class="list-group-item">
-                <h5 class="list-group-heading" data-toggle="collapse" data-target="#howto-two" data-parent="#how-to"
-                aria-expanded="false" aria-controls="howto-three">From a tag’s detail page</h5>
-                <div id="howto-two" class="collapse">
-                    <ol>
-                        <li>Find one or more variables by searching within your study or browsing within your study’s datasets.
-                            You may also search your study's variables on dbGaP.</li>
-                        <li>Copy and save the dbGaP accession (phv) or variable name of the variable(s). You will use
-                            this information at a later step.</li>
-                        <li>In the navbar, select “Phenotype tags” > “Phenotype tags”.</li>
-                        <li>From the list of tags, click on the name of the tag you’d like to apply to a study
-                            variable. This will take you to the tag’s detail page.</li>
-                        <li>Click the 'Tag variables as "[tag name]"' button. You will be taken to a form to select
-                            study variable(s) to tag.</li>
-                        <li>In the "Variable(s)" field, paste or start typing the study variable's dbGaP accession (phv)
-                            or name that you saved earlier. Hit return to select the study variable of your choice.</li>
-                            <ul>
-                                <li><em>Example:</em> You want to select “MF353” from Framingham Heart Study, phv00000803.
-                                    You can type or paste several things to select the study variable.</li>
-                                    <ul>
-                                        <li>phv803</li>
-                                        <li>803</li>
-                                        <li>00000803 (note that the number of leading zeros is important)</li>
-                                        <li>MF353</li>
-                                    </ul>
-                            </ul>
-                        <li>You may select multiple study variables for the "Variable(s)" field. All of the selected
-                            study variables will be labeled with the selected tag.</li>
-                        <li>Click on the "Save" button to apply the selected tag to the selected study variable(s).</li>
-                    </ol>
-                </div>
-            </li>
-            <li class="list-group-item">
-                <h5 class="list-group-heading" data-toggle="collapse" data-target="#howto-three" data-parent="#how-to"
-                aria-expanded="false" aria-controls="howto-two">From the “Apply tag to variables” form</h5>
-                <div id="howto-three" class="collapse">
-                    <ol>
-                        <li>Find one or more variables by searching within your study or browsing within your study’s datasets.
-                            You may also search your study's variables on dbGaP.</li>
-                        <li>Copy and save the dbGaP accession (phv) or variable name of the variable(s). You will use
-                            this information at a later step.</li>
-                        <li>In the navbar, select "Phenotype tags" > “Apply tag to variables”. Or 
-                            <a href="{% url 'tags:add-many:main' %}">click here</a> to go directly to the form.</li>
-                        <li>In the "Tag" field, you may either select a tag from the dropdown menu or start typing to
-                            autocomplete the tag by name. When autocompleting, hit return to select the tag of your
-                            choice.</li>
-                        <li>In the "Variable(s)" field, paste or start typing the study variable's dbGaP accession (phv)
-                            or name that you saved earlier. Hit return to select the study variable of your choice.</li>
-                            <ul>
-                                <li><em>Example:</em> You want to select “MF353” from Framingham Heart Study, phv00000803.
-                                    You can type or paste several things to select the study variable.</li>
-                                    <ul>
-                                        <li>phv803</li>
-                                        <li>803</li>
-                                        <li>00000803 (note that the number of leading zeros is important)</li>
-                                        <li>MF353</li>
-                                    </ul>
-                            </ul>
-                        <li>You may select multiple study variables for the "Variable(s)" field. All of the selected
-                            study variables will be labeled with the selected tag.</li>
-                        <li>Click on the "Save" button to apply the selected tag to the selected study variable(s).</li>
-                    </ol>
-                </div>
-            </li>
-        </ul>
-    </div>
+  <div class="panel-heading"><h3 class='panel-title'>
+    <a href="#howto-collapse" data-toggle="collapse" aria-expanded="false" aria-controls="#howto-collapse">
+      How to apply tags</a>
+  </h3></div>
+  <div class="panel-collapse collapse" id="howto-collapse">
+    <ul class="list-group" id="how-to">
+      <li class="list-group-item">
+        <h5 data-toggle="collapse" data-target="#howto-one" data-parent="#how-to" aria-expanded="false"
+        aria-controls="howto-one">From a study variable's detail page</h5>
+        <div id="howto-one" class="collapse">
+          <ol>
+            <li>Find a study variable by searching within your study or browsing within your study’s
+              variables or datasets.</li>
+            <li>Once you’ve found a study variable that you’d like to apply a tag to, click on the variable’s
+              name and you will be taken to its detail page.</li>
+            <li>Click the "Tag this variable" button. You will be taken to a page to apply a tag to this
+              study variable.</li>
+            <li>In the "Tag" field, you may either select a tag from the dropdown menu or start typing to
+              autocomplete the tag by name. When autocompleting, hit return to select the tag of your
+              choice.</li>
+            <li>Click on the "Save" button to apply the selected tag to the specified study variable.</li>
+          </ol>
+        </div>
+      </li>
+      <li class="list-group-item">
+        <h5 class="list-group-heading" data-toggle="collapse" data-target="#howto-two" data-parent="#how-to"
+        aria-expanded="false" aria-controls="howto-three">From a tag’s detail page</h5>
+        <div id="howto-two" class="collapse">
+          <ol>
+            <li>Find one or more variables by searching within your study or browsing within your study’s datasets.
+              You may also search your study's variables on dbGaP.</li>
+            <li>Copy and save the dbGaP accession (phv) or variable name of the variable(s). You will use
+              this information at a later step.</li>
+            <li>In the navbar, select “Phenotype tags” > “Phenotype tags”.</li>
+            <li>From the list of tags, click on the name of the tag you’d like to apply to a study
+              variable. This will take you to the tag’s detail page.</li>
+            <li>Click the 'Tag variables as "[tag name]"' button. You will be taken to a form to select
+              study variable(s) to tag.</li>
+            <li>In the "Variable(s)" field, paste or start typing the study variable's dbGaP accession (phv)
+              or name that you saved earlier. Hit return to select the study variable of your choice.</li>
+              <ul>
+                <li><em>Example:</em> You want to select “MF353” from Framingham Heart Study, phv00000803.
+                  You can type or paste several things to select the study variable.</li>
+                  <ul>
+                    <li>phv803</li>
+                    <li>803</li>
+                    <li>00000803 (note that the number of leading zeros is important)</li>
+                    <li>MF353</li>
+                  </ul>
+              </ul>
+            <li>You may select multiple study variables for the "Variable(s)" field. All of the selected
+              study variables will be labeled with the selected tag.</li>
+            <li>Click on the "Save" button to apply the selected tag to the selected study variable(s).</li>
+          </ol>
+        </div>
+      </li>
+      <li class="list-group-item">
+        <h5 class="list-group-heading" data-toggle="collapse" data-target="#howto-three" data-parent="#how-to"
+        aria-expanded="false" aria-controls="howto-two">From the “Apply tag to variables” form</h5>
+        <div id="howto-three" class="collapse">
+          <ol>
+            <li>Find one or more variables by searching within your study or browsing within your study’s datasets.
+              You may also search your study's variables on dbGaP.</li>
+            <li>Copy and save the dbGaP accession (phv) or variable name of the variable(s). You will use
+              this information at a later step.</li>
+            <li>In the navbar, select "Phenotype tags" > “Apply tag to variables”. Or 
+              <a href="{% url 'tags:add-many:main' %}">click here</a> to go directly to the form.</li>
+            <li>In the "Tag" field, you may either select a tag from the dropdown menu or start typing to
+              autocomplete the tag by name. When autocompleting, hit return to select the tag of your
+              choice.</li>
+            <li>In the "Variable(s)" field, paste or start typing the study variable's dbGaP accession (phv)
+              or name that you saved earlier. Hit return to select the study variable of your choice.</li>
+              <ul>
+                <li><em>Example:</em> You want to select “MF353” from Framingham Heart Study, phv00000803.
+                  You can type or paste several things to select the study variable.</li>
+                  <ul>
+                    <li>phv803</li>
+                    <li>803</li>
+                    <li>00000803 (note that the number of leading zeros is important)</li>
+                    <li>MF353</li>
+                  </ul>
+              </ul>
+            <li>You may select multiple study variables for the "Variable(s)" field. All of the selected
+              study variables will be labeled with the selected tag.</li>
+            <li>Click on the "Save" button to apply the selected tag to the selected study variable(s).</li>
+          </ol>
+        </div>
+      </li>
+    </ul>
+  </div>
 </div>
 
 {# Guidelines #}
 <div class="panel panel-default">
-    <div class="panel-heading"><h3 class='panel-title'>
-        <a href="#guidelines-collapse" data-toggle='collapse' aria-expanded="false" aria-controls="guidelines-collapase">
-            General guidelines for tagging</a>
-    </h3></div>
-    <div class="panel-collapse collapse" id="guidelines-collapse">
-        <div class="panel-body">
-            <ul>
-                <li>Refer to a tag's instructions for specific details and examples of which study variables are
-                    appropriate under this tag.</li>
-                    <ul>
-                        <li>Apply the tag to all of the study variables that fit the description and instructions</li>
-                        <li>Apply the tag to study variables from all time points and all repeated measures within each time point.</li>
-                        <li>Apply the tag to both corrected & uncorrected, adjusted & unadjusted study variables.</li>
-                        <li>Apply the tag to all instances of duplicated study variables. </li>
-                            <ul>
-                                <li>e.g. "Visit" or "Subcohort" included in multiple data sets.</li>
-                            </ul>
-                    </ul>
-                <li>Unless otherwise noted in tag instructions, a study variable should usually only have one tag
-                    applied to it.</li>
-                <li>Some study variables (composites) are calculated or inferred from a combination of other variables (i.e.
-                    components).</li>
-                    <ul>
-                        <li>Unless otherwise noted in tag instructions, do not apply a phenotype tag to component
-                            study variables that could be used to derive the phenotype.</li>
-                        <li>e.g. height and weight are component variables used to derive the body mass index (BMI). Do not
-                            apply the "BMI" tag to height or weight variables or vice versa.</li>
-                    </ul>
-                <li>Do not tag medication variables with their related phenotype tag; instead, there is a general
-                    "medication use" concept with which all medication use variables should be tagged.</li>
-                    <ul>
-                        <li>e.g. A study variable for lipid-lowering medication use should be tagged as "medication use"
-                        and not as "LDL in blood" or "HDL in blood", etc.</li>
-                    </ul>
-                <li>Disease/event/intervention/behavior phenotype tags:</li>
-                    <ul>
-                        <li>Status concepts include prevalent and incident diseases (e.g.asthma, COPD), events
-                            (e.g. MI), medical interventions (e.g. angioplasty, CABG), and behavior (e.g. smoking).
-                            Status variables are qualitative indicators of whether individuals have the specified
-                            disease, event, intervention, or behavior. Status may be based on self report, adjudication,
-                            clinical verification, medical records, ICD code, or by calculation/inference from related
-                            traits. Tag both prevalent and incident case variables.  Include both event status and
-                            time-to-event variables for incident cases. Include variables that give age at 
-                            diagnosis/event/intervention/behavior (e.g. answer to question "how old were you when you
-                            first were diagnosed with asthma").</li>
-                    </ul>
-                <li>Multiple tags for the same study variable:</li>
-                    <ul>
-                        <li>In general, the phenotype concepts are defined with enough specificity to avoid multiple
-                            tagging of a single study variable.  However, there will be exceptions.  A clear exception is
-                            when a single study variable represents multiple distinct phenotypes.  For example, consider a
-                            data set containing blood chemistry results for a number of subjects. This data set has
-                            multiple rows per subject with columns named subjectID, analyte (blood analyte type such as
-                            LDL, fibrinogen, IL6), and concentration (measurement of concentration of the corresponding
-                            analyte).  For rows in which the analyte column value is "LDL", the concentration column is
-                            a measure of LDL concentration; for rows in which the analyte column value is "fibrinogen",
-                            the concentration column is a measure of fibrinogen concentation; etc.  In this example,
-                            both the analyte and concentration variables should be tagged with all three phenotype
-                            concepts ("LDL in blood", "Fibrinogen in blood", and "Interleukin 6 in blood").</li>
-                    </ul>
-            </ul>
-        </div>
+  <div class="panel-heading"><h3 class='panel-title'>
+    <a href="#guidelines-collapse" data-toggle='collapse' aria-expanded="false" aria-controls="guidelines-collapase">
+      General guidelines for tagging</a>
+  </h3></div>
+  <div class="panel-collapse collapse" id="guidelines-collapse">
+    <div class="panel-body">
+      <ul>
+        <li>Refer to a tag's instructions for specific details and examples of which study variables are
+          appropriate under this tag.</li>
+          <ul>
+            <li>Apply the tag to all of the study variables that fit the description and instructions</li>
+            <li>Apply the tag to study variables from all time points and all repeated measures within each time point.</li>
+            <li>Apply the tag to both corrected & uncorrected, adjusted & unadjusted study variables.</li>
+            <li>Apply the tag to all instances of duplicated study variables. </li>
+              <ul>
+                <li>e.g. "Visit" or "Subcohort" included in multiple data sets.</li>
+              </ul>
+          </ul>
+        <li>Unless otherwise noted in tag instructions, a study variable should usually only have one tag
+          applied to it.</li>
+        <li>Some study variables (composites) are calculated or inferred from a combination of other variables (i.e.
+          components).</li>
+          <ul>
+            <li>Unless otherwise noted in tag instructions, do not apply a phenotype tag to component
+              study variables that could be used to derive the phenotype.</li>
+            <li>e.g. height and weight are component variables used to derive the body mass index (BMI). Do not
+              apply the "BMI" tag to height or weight variables or vice versa.</li>
+          </ul>
+        <li>Do not tag medication variables with their related phenotype tag; instead, there is a general
+          "medication use" concept with which all medication use variables should be tagged.</li>
+          <ul>
+            <li>e.g. A study variable for lipid-lowering medication use should be tagged as "medication use"
+            and not as "LDL in blood" or "HDL in blood", etc.</li>
+          </ul>
+        <li>Disease/event/intervention/behavior phenotype tags:</li>
+          <ul>
+            <li>Status concepts include prevalent and incident diseases (e.g.asthma, COPD), events
+              (e.g. MI), medical interventions (e.g. angioplasty, CABG), and behavior (e.g. smoking).
+              Status variables are qualitative indicators of whether individuals have the specified
+              disease, event, intervention, or behavior. Status may be based on self report, adjudication,
+              clinical verification, medical records, ICD code, or by calculation/inference from related
+              traits. Tag both prevalent and incident case variables.  Include both event status and
+              time-to-event variables for incident cases. Include variables that give age at 
+              diagnosis/event/intervention/behavior (e.g. answer to question "how old were you when you
+              first were diagnosed with asthma").</li>
+          </ul>
+        <li>Multiple tags for the same study variable:</li>
+          <ul>
+            <li>In general, the phenotype concepts are defined with enough specificity to avoid multiple
+              tagging of a single study variable.  However, there will be exceptions.  A clear exception is
+              when a single study variable represents multiple distinct phenotypes.  For example, consider a
+              data set containing blood chemistry results for a number of subjects. This data set has
+              multiple rows per subject with columns named subjectID, analyte (blood analyte type such as
+              LDL, fibrinogen, IL6), and concentration (measurement of concentration of the corresponding
+              analyte).  For rows in which the analyte column value is "LDL", the concentration column is
+              a measure of LDL concentration; for rows in which the analyte column value is "fibrinogen",
+              the concentration column is a measure of fibrinogen concentation; etc.  In this example,
+              both the analyte and concentration variables should be tagged with all three phenotype
+              concepts ("LDL in blood", "Fibrinogen in blood", and "Interleukin 6 in blood").</li>
+          </ul>
+      </ul>
     </div>
+  </div>
 </div>
 
 {# Age #}
 <div class="panel panel-default">
-    <div class="panel-heading"><h3 class='panel-title'>
-        <a href="#age-collapse" data-toggle='collapse' aria-expanded="false" aria-controls="age-collapase">
-            Special instructions for the <mark>Age at enrollment/collection</mark> tag</a>
-    </h3></div>
-    <div class="panel-collapse collapse" id="age-collapse">
-        <div class="panel-body">
-            <p>We consider two types of age variables:</p>
-            <ol>
-                <li>Participant age at enrollment or age at which data or biosamples were collected.</li>
-                <ul>
-                    <li><em>Examples:</em> age at enrollment, blood draw, sample collection, imaging, visit or exam
-                        identifier, and days since baseline visit.</li>
-                    <li>Include all study variables representing age directly and all study variables used to calculate
-                        age (such as days between exams or visits).</li>
-                    <li>These types of variables usually provide age for multiple different phenotypes. For example,
-                        age at blood draw corresponds to age at measurement of all blood chemistry analytes assayed from
-                        that blood draw; age at clinic visit for imaging provides age for all traits derived from the
-                        images, etc.  These types of age variables should be tagged with the
-                        "Age at enrollment/collection" tag.</li>
-                </ul>
-                <li>Participant ages that correspond to the timing of specific events, diagnoses or behavior.</li>
-                <ul>
-                    <li><em>Examples:</em> age at onset of asthma symptoms, age at smoking initiation, and time in 
-                        time-to-event data.</li>
-                    <li>These types of variables are tagged with the corresponding event/diagnosis/behavioral concept.
-                        For example, age at onset of asthma symptoms should be tagged with "Asthma status", age at onset
-                        of smoking should be tagged with "Cigarette smoking", time to event where the event is COPD
-                        should be tagged with "COPD".</li>
-                </ul>
-            </ol>
-        </div>
+  <div class="panel-heading"><h3 class='panel-title'>
+    <a href="#age-collapse" data-toggle='collapse' aria-expanded="false" aria-controls="age-collapase">
+      Special instructions for the <mark>Age at enrollment/collection</mark> tag</a>
+  </h3></div>
+  <div class="panel-collapse collapse" id="age-collapse">
+    <div class="panel-body">
+      <p>We consider two types of age variables:</p>
+      <ol>
+        <li>Participant age at enrollment or age at which data or biosamples were collected.</li>
+        <ul>
+          <li><em>Examples:</em> age at enrollment, blood draw, sample collection, imaging, visit or exam
+            identifier, and days since baseline visit.</li>
+          <li>Include all study variables representing age directly and all study variables used to calculate
+            age (such as days between exams or visits).</li>
+          <li>These types of variables usually provide age for multiple different phenotypes. For example,
+            age at blood draw corresponds to age at measurement of all blood chemistry analytes assayed from
+            that blood draw; age at clinic visit for imaging provides age for all traits derived from the
+            images, etc.  These types of age variables should be tagged with the
+            "Age at enrollment/collection" tag.</li>
+        </ul>
+        <li>Participant ages that correspond to the timing of specific events, diagnoses or behavior.</li>
+        <ul>
+          <li><em>Examples:</em> age at onset of asthma symptoms, age at smoking initiation, and time in 
+            time-to-event data.</li>
+          <li>These types of variables are tagged with the corresponding event/diagnosis/behavioral concept.
+            For example, age at onset of asthma symptoms should be tagged with "Asthma status", age at onset
+            of smoking should be tagged with "Cigarette smoking", time to event where the event is COPD
+            should be tagged with "COPD".</li>
+        </ul>
+      </ol>
     </div>
+  </div>
 </div>
 
 {# Terminology #}
 <div class="panel panel-default">
-    <div class="panel-heading"><h3 class='panel-title'>
-        <a href="#terms-collapse" data-toggle="collapse" aria-expanded="false" aria-controls="terms-collapse">
-            Terminology</a>
-    </h3></div>
-    <div class="panel-collapse collapse" id="terms-collapse">
-        <ul class="list-group" id="terms">
-            <li class="list-group-item">
-                <h5 data-toggle="collapse" data-target="#item-one" data-parent="#terms" aria-expanded="false" 
-                aria-controls="item-one">Tag</h5>
-                <div id="item-one" class="collapse">
-                A tag is a label representing a phenotype concept. This is usually synonymous with a phenotype name.
-                Click on a tag's name to see its detail page, where you can read the detailed description of the
-                phenotype concept it represents and specific instructions for identifying study variables to apply the
-                tag to.
-                </div>
-            </li>
-            <li class="list-group-item">
-                <h5 class="list-group-heading" data-toggle="collapse" data-target="#terms-three" data-parent="#terms"
-                aria-expanded="false" aria-controls="terms-three">Tag description</h5>
-                <div id="terms-three" class="collapse">
-                A brief description of the phenotype concept that the tag represents.
-                </div>
-            </li>
-            <li class="list-group-item">
-                <h5 class="list-group-heading" data-toggle="collapse" data-target="#terms-four" data-parent="#terms"
-                aria-expanded="false" aria-controls="terms-four">Tag instructions</h5>
-                <div id="terms-four" class="collapse">
-                Detailed instructions for what types of study variables to apply the tag to. Includes common examples of
-                study variables to include or exclude from tagging.
-                </div>
-            </li>
-        </ul>
-    </div>
+  <div class="panel-heading"><h3 class='panel-title'>
+    <a href="#terms-collapse" data-toggle="collapse" aria-expanded="false" aria-controls="terms-collapse">
+      Terminology</a>
+  </h3></div>
+  <div class="panel-collapse collapse" id="terms-collapse">
+    <ul class="list-group" id="terms">
+      <li class="list-group-item">
+        <h5 data-toggle="collapse" data-target="#item-one" data-parent="#terms" aria-expanded="false" 
+        aria-controls="item-one">Tag</h5>
+        <div id="item-one" class="collapse">
+        A tag is a label representing a phenotype concept. This is usually synonymous with a phenotype name.
+        Click on a tag's name to see its detail page, where you can read the detailed description of the
+        phenotype concept it represents and specific instructions for identifying study variables to apply the
+        tag to.
+        </div>
+      </li>
+      <li class="list-group-item">
+        <h5 class="list-group-heading" data-toggle="collapse" data-target="#terms-three" data-parent="#terms"
+        aria-expanded="false" aria-controls="terms-three">Tag description</h5>
+        <div id="terms-three" class="collapse">
+        A brief description of the phenotype concept that the tag represents.
+        </div>
+      </li>
+      <li class="list-group-item">
+        <h5 class="list-group-heading" data-toggle="collapse" data-target="#terms-four" data-parent="#terms"
+        aria-expanded="false" aria-controls="terms-four">Tag instructions</h5>
+        <div id="terms-four" class="collapse">
+        Detailed instructions for what types of study variables to apply the tag to. Includes common examples of
+        study variables to include or exclude from tagging.
+        </div>
+      </li>
+    </ul>
+  </div>
 </div>
 
 {# Contact #}
 <div class="panel panel-default">
-    <div class="panel-heading"><h3 class='panel-title'>
-        <a href="#contact-collapse" data-toggle='collapse' aria-expanded="false" aria-controls="contact-collapase">
-            Additional questions</a>
-    </h3></div>
-    <div class="panel-collapse collapse" id="contact-collapse">
-        <div class="panel-body">
-            <ul>
-                <li>Email the site administrator (dccpheno@uw.edu) with:</li>
-                <ul>
-                    <li>Unexpected error pages (e.g. "server error", or "404" errors)</li>
-                    <li>Site design issues</li>
-                    <li>Typos or confusing wording</li>
-                </ul>
-                <li>Email the tagging mailing list (topmed_tagging@uw.edu) with:</li>
-                <ul>
-                    <li>Questions about how to interpret tag instructions for your study</li>
-                    <li>Examples you think should be added to the tag instructions</li>
-                    <li>Examples of variables from your study that don't quite match the tag instructions</li>
-                </ul>
-            </ul>
-        </div>
+  <div class="panel-heading"><h3 class='panel-title'>
+    <a href="#contact-collapse" data-toggle='collapse' aria-expanded="false" aria-controls="contact-collapase">
+      Additional questions</a>
+  </h3></div>
+  <div class="panel-collapse collapse" id="contact-collapse">
+    <div class="panel-body">
+      <ul>
+        <li>Email the site administrator (dccpheno@uw.edu) with:</li>
+        <ul>
+          <li>Unexpected error pages (e.g. "server error", or "404" errors)</li>
+          <li>Site design issues</li>
+          <li>Typos or confusing wording</li>
+        </ul>
+        <li>Email the tagging mailing list (topmed_tagging@uw.edu) with:</li>
+        <ul>
+          <li>Questions about how to interpret tag instructions for your study</li>
+          <li>Examples you think should be added to the tag instructions</li>
+          <li>Examples of variables from your study that don't quite match the tag instructions</li>
+        </ul>
+      </ul>
     </div>
+  </div>
 </div>
 
 {% endblock content %}

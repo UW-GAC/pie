@@ -3,59 +3,59 @@
 
 {% block content %}
 
-    <div class="jumbotron">
-        <h2>NHLBI TOPMed</h2>
-        <h1>Phenotype Inventory Explorer</h1>
-        <p> <strong>PIE</strong> allows TOPMed investigators to view and search through the phenotype data
-            currently available to the TOPMed Data Coordinating Center. The DCC is in the process
-            of combining study phenotypes across TOPMed projects to produce harmonized
-            phenotypes. TOPMed Working Groups can help the harmonization process by submitting
-            details for how to combine study phenotypes.
-        </p>
+  <div class="jumbotron">
+    <h2>NHLBI TOPMed</h2>
+    <h1>Phenotype Inventory Explorer</h1>
+    <p> <strong>PIE</strong> allows TOPMed investigators to view and search through the phenotype data
+      currently available to the TOPMed Data Coordinating Center. The DCC is in the process
+      of combining study phenotypes across TOPMed projects to produce harmonized
+      phenotypes. TOPMed Working Groups can help the harmonization process by submitting
+      details for how to combine study phenotypes.
+    </p>
+  </div>
+  <div class="row">
+    {% if perms.recipes.add_unitrecipe != True %}
+      <div class="col-md-2 text-center"></div>
+    {% endif %}
+    <div class="col-md-4 text-center">
+      {# action-home #}
+      <h2>Study phenotypes</h2>
+      <p>
+        Phenotype data from each study is downloaded from dbGaP and stored securely at the TOPMed DCC.
+        Metadata (but not phenotype data values) are scanned and stored by PIE to facilitate browsing,
+        searching, and tagging phenotypic variables and datasets. dbGaP accession numbers uniquely identify each
+        study, dataset, and variable. These study variables are used as the source material for the DCC's
+        reproducible and rigorously documented phenotype harmonization process.
+      </p>
+      {# <img src="{% static "icons/ingredients.svg" %}" alt="source_phenotype_apple" width=150 style="margin:15px"/> #}
     </div>
-    <div class="row">
-        {% if perms.recipes.add_unitrecipe != True %}
-            <div class="col-md-2 text-center"></div>
-        {% endif %}
-        <div class="col-md-4 text-center">
-            {# action-home #}
-            <h2>Study phenotypes</h2>
-            <p>
-                Phenotype data from each study is downloaded from dbGaP and stored securely at the TOPMed DCC.
-                Metadata (but not phenotype data values) are scanned and stored by PIE to facilitate browsing,
-                searching, and tagging phenotypic variables and datasets. dbGaP accession numbers uniquely identify each
-                study, dataset, and variable. These study variables are used as the source material for the DCC's
-                reproducible and rigorously documented phenotype harmonization process.
-            </p>
-            {# <img src="{% static "icons/ingredients.svg" %}" alt="source_phenotype_apple" width=150 style="margin:15px"/> #}
-        </div>
-        <div class="col-md-4 text-center">
-            {# action-home #}
-            <h2>Harmonized phenotypes</h2>
-            <p>
-                The TOPMed DCC is producing a high quality, lasting resource of publicly available and thoroughly documented
-                harmonized phenotype variables. The DCC collaborates with Working Group members and study and
-                phenotype experts to define a target harmonized variable and to idenfity the component study variables to
-                use. Harmonized variables are listed on PIE as they become available. Once finalized, datasets
-                containing harmonized variables can be downloaded from the dbGaP TOPMed exchange area by authorized
-                TOPMed investigators (<a href="https://www.nhlbiwgs.org/dcc-harmonized-phenotypes">more information here</a>).
-                Eventually these harmonized phenotypes will be available from dbGaP.
-            </p>
-            {# <img src="{% static "icons/pie.svg" %}" alt="harmonized_phenotype_pie" width=150 style="margin:15px"/> #}
-        </div>
-        {% if perms.recipes.add_unitrecipe %}
-            <div class="col-md-4 text-center action-home">
-                <a href="{% url 'recipes:unit:create' %}">
-                <h2>Submit a harmonization recipe</h2>
-                <p>For DCC collaborators, submit harmonization recipes here.</p>
-                {# <img src="{% static "icons/recipe.svg" %}" alt="harmonization_request_recipe" width=150 style="margin:15px; opacity:0.4;"/> #}
-                </a>
-            </div>
-        {% else %}
-            <div class="col-md-2 text-center action-home"></div>
-        {% endif %}
+    <div class="col-md-4 text-center">
+      {# action-home #}
+      <h2>Harmonized phenotypes</h2>
+      <p>
+        The TOPMed DCC is producing a high quality, lasting resource of publicly available and thoroughly documented
+        harmonized phenotype variables. The DCC collaborates with Working Group members and study and
+        phenotype experts to define a target harmonized variable and to idenfity the component study variables to
+        use. Harmonized variables are listed on PIE as they become available. Once finalized, datasets
+        containing harmonized variables can be downloaded from the dbGaP TOPMed exchange area by authorized
+        TOPMed investigators (<a href="https://www.nhlbiwgs.org/dcc-harmonized-phenotypes">more information here</a>).
+        Eventually these harmonized phenotypes will be available from dbGaP.
+      </p>
+      {# <img src="{% static "icons/pie.svg" %}" alt="harmonized_phenotype_pie" width=150 style="margin:15px"/> #}
     </div>
-    <div class="alert alert-warning">
-        <strong>Construction zone!</strong> Please bear with us as the site changes during development.
-    </div>
+    {% if perms.recipes.add_unitrecipe %}
+      <div class="col-md-4 text-center action-home">
+        <a href="{% url 'recipes:unit:create' %}">
+        <h2>Submit a harmonization recipe</h2>
+        <p>For DCC collaborators, submit harmonization recipes here.</p>
+        {# <img src="{% static "icons/recipe.svg" %}" alt="harmonization_request_recipe" width=150 style="margin:15px; opacity:0.4;"/> #}
+        </a>
+      </div>
+    {% else %}
+      <div class="col-md-2 text-center action-home"></div>
+    {% endif %}
+  </div>
+  <div class="alert alert-warning">
+    <strong>Construction zone!</strong> Please bear with us as the site changes during development.
+  </div>
 {% endblock content %}

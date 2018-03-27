@@ -1,29 +1,29 @@
 {% comment %}
-    An html snippet to display a panel, titled "Encoded values", containing a table of encoded
-    value categories and corresponding values
+  An html snippet to display a panel, titled "Encoded values", containing a table of encoded
+  value categories and corresponding values
 
-    Required variables:
-        ev_set: a queryset containing encoded value objects
-        inner: boolean indicating whether the panel of encoded values is inside another
-               panel or not; determines whether the panel has a margin or not
+  Required variables:
+    ev_set: a queryset containing encoded value objects
+    inner: boolean indicating whether the panel of encoded values is inside another
+         panel or not; determines whether the panel has a margin or not
 {% endcomment %}
 
 <div class="panel panel-default"
 {% if inner %}
-    style="margin:25px"
+  style="margin:25px"
 {% endif %}
 >
-    <div class="panel-heading"><h4 class="panel-title">Encoded values</h4></div>
-        <table class="table table-responsive table-bordered">
-            <tr>
-                <th class='col-sm-1'>Category</th>
-                <th>Value</th>
-            </tr>
-            {% for ev in ev_set %}
-                <tr>
-                    <td>{{ ev.i_category }}</td>
-                    <td>{{ ev.i_value }}</td>
-                </tr>
-            {% endfor %}
-        </table>
+  <div class="panel-heading"><h4 class="panel-title">Encoded values</h4></div>
+    <table class="table table-responsive table-bordered">
+      <tr>
+        <th class='col-sm-1'>Category</th>
+        <th>Value</th>
+      </tr>
+      {% for ev in ev_set %}
+        <tr>
+          <td>{{ ev.i_category }}</td>
+          <td>{{ ev.i_value }}</td>
+        </tr>
+      {% endfor %}
+    </table>
 </div>

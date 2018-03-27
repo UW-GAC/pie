@@ -3,20 +3,20 @@
 {% load static %}
 
 {% block head_title %}
-    | Remove tag from variable
+  | Remove tag from variable
 {% endblock head_title %}
 
 {% block content %}
 
-    {% include '_messages.html' %}
-    <h1>Remove a tag from a variable</h1>
-    <h3>Are you sure you want to remove the tag <mark>{{ tagged_trait.tag.title }}</mark> from the variable <mark>{{ tagged_trait.trait.i_trait_name }}</mark>?</h3>
-    
-    <form action="{% url 'tags:tagged-traits:delete' pk=tagged_trait.pk %}" method="POST">
-        {% csrf_token %}
-        <input type="submit" class="btn btn-danger" value="Yes, delete." />
-        <a href="{% url 'trait_browser:source:studies:detail:tagged' pk=tagged_trait.trait.source_dataset.source_study_version.study.pk %}" class="btn btn-default" role="button">
-        No, cancel.</a>
-    </form>
+  {% include '_messages.html' %}
+  <h1>Remove a tag from a variable</h1>
+  <h3>Are you sure you want to remove the tag <mark>{{ tagged_trait.tag.title }}</mark> from the variable <mark>{{ tagged_trait.trait.i_trait_name }}</mark>?</h3>
+  
+  <form action="{% url 'tags:tagged-traits:delete' pk=tagged_trait.pk %}" method="POST">
+    {% csrf_token %}
+    <input type="submit" class="btn btn-danger" value="Yes, delete." />
+    <a href="{% url 'trait_browser:source:studies:detail:tagged' pk=tagged_trait.trait.source_dataset.source_study_version.study.pk %}" class="btn btn-default" role="button">
+    No, cancel.</a>
+  </form>
 
 {% endblock content %}

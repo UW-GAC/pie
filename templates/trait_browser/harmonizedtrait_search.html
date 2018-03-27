@@ -3,20 +3,20 @@
 {% load crispy_forms_tags %}
 
 {% block head_title %}
-     | Search harmonized variables
+  | Search harmonized variables
 {% endblock head_title %}
 
 
 {% block content %}
-    <h1>Search harmonized variables</h1>
-    {% include 'trait_browser/_search_help.html' %}
+  <h1>Search harmonized variables</h1>
+  {% include 'trait_browser/_search_help.html' %}
 
-    {% crispy form %}
+  {% crispy form %}
 
-    {% include '_messages.html' %}
+  {% include '_messages.html' %}
 
-    {% if has_results %}
-        {% render_table results_table %}
-    {% endif %}
+  {% if has_results %}
+    {% render_table results_table %}
+  {% endif %}
 
 {% endblock content %}

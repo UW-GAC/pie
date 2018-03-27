@@ -3,37 +3,37 @@
 {% load render_table from django_tables2 %}
 
 {% block head_title %}
-     | {{ tag.lower_title }} details
+  | {{ tag.lower_title }} details
 {% endblock head_title %}
 
 {% block title %}
-    {{ tag.title }}
+  {{ tag.title }}
 {% endblock title %}
 
 {% block subtitle %}
-    phenotype tag details
+  phenotype tag details
 {% endblock subtitle %}
 
 {% block before_panel %}
-    {% if perms.tags.add_taggedtrait %}
-       <p>
-           <a href="{% url 'tags:add-many:by-tag' pk=tag.pk %}" class="btn btn-primary btn-md" role="button">
-           Tag variables as "{{ tag.title }}"</a>
-       </p>
-    {% endif %}
+  {% if perms.tags.add_taggedtrait %}
+     <p>
+       <a href="{% url 'tags:add-many:by-tag' pk=tag.pk %}" class="btn btn-primary btn-md" role="button">
+       Tag variables as "{{ tag.title }}"</a>
+     </p>
+  {% endif %}
 {% endblock before_panel %} 
 
 {% block detail_fields %}
-    <dt>Description</dt><dd>{{ tag.description }}</dd>
-    <dt>Instructions</dt><dd>{{ tag.instructions }}</dd>
-    <dt>Variables tagged</dt><dd>{{ tag.traits.count }}</dd>
+  <dt>Description</dt><dd>{{ tag.description }}</dd>
+  <dt>Instructions</dt><dd>{{ tag.instructions }}</dd>
+  <dt>Variables tagged</dt><dd>{{ tag.traits.count }}</dd>
 {% endblock detail_fields %}
 
 {% block after_panel %}
-    <div class="panel panel-default">
-        <div class="panel-heading"><h4 class="panel-title">Tagged study variables</h4></div>
-        <div class="panel-body">
-            {% render_table tagged_trait_table %}
-       </div>
-    </div>
+  <div class="panel panel-default">
+    <div class="panel-heading"><h4 class="panel-title">Tagged study variables</h4></div>
+    <div class="panel-body">
+      {% render_table tagged_trait_table %}
+     </div>
+  </div>
 {% endblock after_panel %}

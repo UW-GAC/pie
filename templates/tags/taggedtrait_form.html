@@ -4,30 +4,30 @@
 {% load static %}
 
 {% block head_title %}
-    | {{ form.title }}
+  | {{ form.title }}
 {% endblock head_title %}
 
 {% block content %}
-    <h1>
-        {{ form.title }}
-        {% if trait %}
-            <small><mark>{{ trait.i_trait_name }}</mark></small>
-        {% endif %}
-        
-        <p><small>{{ form.subtitle }}</small></p>
-    </h1>
-    <p>{{ form.subtitle2 }}</p>
+  <h1>
+    {{ form.title }}
     {% if trait %}
-        <p>Study variable <a href="{{ trait.get_absolute_url }}">{{ trait.i_trait_name }}</a>
-            from dataset <a href="{{ trait.source_dataset.get_absolute_url }}">{{ trait.source_dataset.dataset_name }}</a></p>
+      <small><mark>{{ trait.i_trait_name }}</mark></small>
     {% endif %}
     
-    {% include '_messages.html' %}
-    {% crispy form %}
+    <p><small>{{ form.subtitle }}</small></p>
+  </h1>
+  <p>{{ form.subtitle2 }}</p>
+  {% if trait %}
+    <p>Study variable <a href="{{ trait.get_absolute_url }}">{{ trait.i_trait_name }}</a>
+      from dataset <a href="{{ trait.source_dataset.get_absolute_url }}">{{ trait.source_dataset.dataset_name }}</a></p>
+  {% endif %}
+  
+  {% include '_messages.html' %}
+  {% crispy form %}
 {% endblock content %}
 
 {% block custom_javascript %}
-    {# script for django-autocomplete-light #}
-    <script type="text/javascript" src="{% static 'admin/js/vendor/jquery/jquery.js' %}"></script>
-    {{ form.media }}
+  {# script for django-autocomplete-light #}
+  <script type="text/javascript" src="{% static 'admin/js/vendor/jquery/jquery.js' %}"></script>
+  {{ form.media }}
 {% endblock custom_javascript %}

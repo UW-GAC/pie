@@ -3,11 +3,11 @@
 {% load render_table from django_tables2 %}
 
 {% block head_title %}
-     | Tagged phenotypes
+  | Tagged phenotypes
 {% endblock head_title %}
 
 {% block content %}
-    {% include '_messages.html' %}
-    <h2>Variables tagged in <a href="{{ study.get_absolute_url }}">{{ study.i_study_name }}</a></h2>
-    {% render_table tagged_trait_table %}
+  {% include '_messages.html' %}
+  <h2>Variables tagged in <a href="{{ study.get_absolute_url }}">{{ study.i_study_name }}</a></h2>
+  {% render_table tagged_trait_table %}
 {% endblock content %}

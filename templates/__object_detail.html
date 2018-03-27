@@ -2,25 +2,25 @@
 {% load staticfiles %}
 
 {% block content %}
-    <div class="well">
-        <h2>
-            {% block title %}{% endblock title %}
-            <small>{% block subtitle %}{% endblock subtitle %}</small>
-        </h2>
-        {% block details %}
-            {% include '_messages.html' %}
-            {% block before_panel %}
-            {% endblock before_panel %}
-            <div class="panel panel-default">
-                <div class="panel-body">
-                    <dl class="dl-horizontal">
-                        {% block detail_fields %}
-                        {% endblock detail_fields %}
-                    </dl>
-                </div>
-            </div>
-        {% endblock details %}
-    {% block after_panel %}
-    {% endblock after_panel %}    
-    </div>
+  <div class="well">
+    <h2>
+      {% block title %}{% endblock title %}
+      <small>{% block subtitle %}{% endblock subtitle %}</small>
+    </h2>
+    {% block details %}
+      {% include '_messages.html' %}
+      {% block before_panel %}
+      {% endblock before_panel %}
+      <div class="panel panel-default">
+        <div class="panel-body">
+          <dl class="dl-horizontal">
+            {% block detail_fields %}
+            {% endblock detail_fields %}
+          </dl>
+        </div>
+      </div>
+    {% endblock details %}
+  {% block after_panel %}
+  {% endblock after_panel %}  
+  </div>
 {% endblock content %}

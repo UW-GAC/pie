@@ -3,73 +3,73 @@
 {% load core_tags %}
 
 {% block head_title %}
-     | {{ harmonized_trait.trait_flavor_name }} details
+  | {{ harmonized_trait.trait_flavor_name }} details
 {% endblock head_title %}
 
 {% block title %}
-    {{ harmonized_trait.trait_flavor_name }}
+  {{ harmonized_trait.trait_flavor_name }}
 {% endblock title %}
 
 {% block subtitle %}
-    harmonized variable details
+  harmonized variable details
 {% endblock subtitle %}
 
 {% block detail_fields %}
-    <dt>Description</dt><dd>{{ harmonized_trait.i_description }}</dd>
-    <dt>Data type</dt><dd>{{ harmonized_trait.i_data_type }}</dd>
-    {% if harmonized_trait.i_unit != '' %}
-        <dt>Measurement unit</dt><dd>{{ harmonized_trait.i_unit }}</dd>
-    {% endif %}
-    {% if unique_key_names != '' %}
-        <dt>Unique keys</dt><dd>{{ unique_key_names }}</dd>
-    {% endif %}
+  <dt>Description</dt><dd>{{ harmonized_trait.i_description }}</dd>
+  <dt>Data type</dt><dd>{{ harmonized_trait.i_data_type }}</dd>
+  {% if harmonized_trait.i_unit != '' %}
+    <dt>Measurement unit</dt><dd>{{ harmonized_trait.i_unit }}</dd>
+  {% endif %}
+  {% if unique_key_names != '' %}
+    <dt>Unique keys</dt><dd>{{ unique_key_names }}</dd>
+  {% endif %}
 {% endblock detail_fields %}
 
 {% block after_panel %}
-    {# Encoded values table #}
-    {% if harmonized_trait.harmonizedtraitencodedvalue_set.all %}
-        {% include 'trait_browser/_encoded_values_table.html' with ev_set=harmonized_trait.harmonizedtraitencodedvalue_set.all %}
-    {% endif %}
-    {# Unique key variable panels #}
-    <hr>
-    {% if unique_key_names != '' %}
-        <button type="button" class="btn btn-info" data-toggle="collapse" data-target="#unique_keys">Unique key variables</button>
-        <div id="unique_keys" class="collapse">
-            {% for unique_key_trait in unique_keys %}
-                <div class="panel panel-info">
-                    <div class="panel-heading"><h3 class="panel-title">{{ unique_key_trait.trait_flavor_name }}</h3></div>
-                    <div class="panel-body">
-                        <dl class="dl-horizontal">
-                            <dt>Description</dt><dd>{{ unique_key_trait.i_description }}</dd>
-                            <dt>Data type</dt><dd>{{ unique_key_trait.i_data_type }}</dd>
-                            {% if trait.i_unit != '' %}
-                                <dt>Measurement unit</dt><dd>{{ unique_key_trait.i_unit }}</dd>
-                            {% endif %}
-                        </dl>
-                        {# Encoded values table #}
-                        {% if unique_key_trait.harmonizedtraitencodedvalue_set.all %}
-                            {% include 'trait_browser/_encoded_values_table.html' with ev_set=unique_key_trait.harmonizedtraitencodedvalue_set.all inner=True %}
-                        {% endif %}
-                    </div>
-                </div>
-            {% endfor %}
+  {# Encoded values table #}
+  {% if harmonized_trait.harmonizedtraitencodedvalue_set.all %}
+    {% include 'trait_browser/_encoded_values_table.html' with ev_set=harmonized_trait.harmonizedtraitencodedvalue_set.all %}
+  {% endif %}
+  {# Unique key variable panels #}
+  <hr>
+  {% if unique_key_names != '' %}
+    <button type="button" class="btn btn-info" data-toggle="collapse" data-target="#unique_keys">Unique key variables</button>
+    <div id="unique_keys" class="collapse">
+      {% for unique_key_trait in unique_keys %}
+        <div class="panel panel-info">
+          <div class="panel-heading"><h3 class="panel-title">{{ unique_key_trait.trait_flavor_name }}</h3></div>
+          <div class="panel-body">
+            <dl class="dl-horizontal">
+              <dt>Description</dt><dd>{{ unique_key_trait.i_description }}</dd>
+              <dt>Data type</dt><dd>{{ unique_key_trait.i_data_type }}</dd>
+              {% if trait.i_unit != '' %}
+                <dt>Measurement unit</dt><dd>{{ unique_key_trait.i_unit }}</dd>
+              {% endif %}
+            </dl>
+            {# Encoded values table #}
+            {% if unique_key_trait.harmonizedtraitencodedvalue_set.all %}
+              {% include 'trait_browser/_encoded_values_table.html' with ev_set=unique_key_trait.harmonizedtraitencodedvalue_set.all inner=True %}
+            {% endif %}
+          </div>
         </div>
-    {% endif %}
-    {# Component variable information #}
-    <hr>
-    <button type="button" class="btn btn-default" data-toggle="collapse" data-target="#components">Component variables</button>
-    <div id="components" class="collapse">
-        {% render_as_template harmonized_trait_set_version.component_html_detail|safe %}
+      {% endfor %}
     </div>
-    {# Documentation #}
-    {% comment %}
-    <hr>
-    <button type="button" class="btn btn-default" data-toggle="collapse" data-target="#documentation">Documentation</button>
-    <div id="components" class="collapse">
-    </div>
-    {% endcomment %}
+  {% endif %}
+  {# Component variable information #}
+  <hr>
+  <button type="button" class="btn btn-default" data-toggle="collapse" data-target="#components">Component variables</button>
+  <div id="components" class="collapse">
+    {% render_as_template harmonized_trait_set_version.component_html_detail|safe %}
+  </div>
+  {# Documentation #}
+  {% comment %}
+  <hr>
+  <button type="button" class="btn btn-default" data-toggle="collapse" data-target="#documentation">Documentation</button>
+  <div id="components" class="collapse">
+  </div>
+  {% endcomment %}
 {% endblock after_panel %}
 
 {% block custom_javascript %}
-    <script src="{% static 'js/popover.js' %}"></script>
+  <script src="{% static 'js/popover.js' %}"></script>
 {% endblock custom_javascript %}

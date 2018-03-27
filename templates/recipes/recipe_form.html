@@ -4,30 +4,30 @@
 {% load static %}
 
 {% block head_title %}
-    {% if object %}
-        | Edit {{ form.get_model_name|title }}   
-    {% else %}
-        | New {{ form.get_model_name|title }}
-    {% endif %}
+  {% if object %}
+    | Edit {{ form.get_model_name|title }}   
+  {% else %}
+    | New {{ form.get_model_name|title }}
+  {% endif %}
 {% endblock head_title %}
 
 {% block content %}
-    <h1>
-        {% if object %}
-            Edit {{ form.get_model_name|title }}   
-        {% else %}
-            New {{ form.get_model_name|title }}
-        {% endif %}        
-    </h1>
-    
-    {% include '_messages.html' %}
-    
-    {% crispy form %}
+  <h1>
+    {% if object %}
+      Edit {{ form.get_model_name|title }}   
+    {% else %}
+      New {{ form.get_model_name|title }}
+    {% endif %}    
+  </h1>
+  
+  {% include '_messages.html' %}
+  
+  {% crispy form %}
 
 {% endblock content %}
 
 {% block custom_javascript %}
-    {# django-autocomplete-light script #}
-    <script type="text/javascript" src="{% static 'admin/js/vendor/jquery/jquery.js' %}"></script>
-    {{ form.media }}
+  {# django-autocomplete-light script #}
+  <script type="text/javascript" src="{% static 'admin/js/vendor/jquery/jquery.js' %}"></script>
+  {{ form.media }}
 {% endblock custom_javascript %}

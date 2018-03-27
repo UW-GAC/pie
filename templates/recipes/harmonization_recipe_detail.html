@@ -2,54 +2,54 @@
 {% load render_table from django_tables2 %}
 
 {% block head_title %}
-     | {{ h_recipe.name }} details
+  | {{ h_recipe.name }} details
 {% endblock head_title %}
 
 {% block content %}
-    <div class="well">
+  <div class="well">
+  
+    <h2>{{ h_recipe.name }} <small>harmonization recipe</small></h2>
     
-        <h2>{{ h_recipe.name }} <small>harmonization recipe</small></h2>
-        
-        {% include '_messages.html' %}
+    {% include '_messages.html' %}
+    <dl class="dl-horizontal">
+      <dt>Version</dt><dd>{{ h_recipe.version }}</dd>
+      <dt>Created by</dt><dd>{{ h_recipe.creator.name }}, {{ h_recipe.created }}</dd>
+      <dt>Last modified by</dt><dd>{{ h_recipe.last_modifier.name }}, {{ h_recipe.modified }}</dd>
+    </dl>
+    <p><a href="{% url 'recipes:harmonization:edit' pk=h_recipe.pk %}" class="btn btn-primary" role="button">Edit</a></p>
+    
+    <div class="panel panel-default">
+      <div class="panel-heading"><h4 class="panel-title">Target harmonized variable</h4></div>
+      <div class="panel-body">
         <dl class="dl-horizontal">
-            <dt>Version</dt><dd>{{ h_recipe.version }}</dd>
-            <dt>Created by</dt><dd>{{ h_recipe.creator.name }}, {{ h_recipe.created }}</dd>
-            <dt>Last modified by</dt><dd>{{ h_recipe.last_modifier.name }}, {{ h_recipe.modified }}</dd>
+          <dt>Name</dt><dd>{{ h_recipe.target_name }}</dd>
+          <dt>Description</dt><dd>{{ h_recipe.target_description }}</dd>
+          <dt>Unit of measurement</dt><dd>{{ h_recipe.measurement_unit }}</dd>
         </dl>
-        <p><a href="{% url 'recipes:harmonization:edit' pk=h_recipe.pk %}" class="btn btn-primary" role="button">Edit</a></p>
         
-        <div class="panel panel-default">
-            <div class="panel-heading"><h4 class="panel-title">Target harmonized variable</h4></div>
-            <div class="panel-body">
-                <dl class="dl-horizontal">
-                    <dt>Name</dt><dd>{{ h_recipe.target_name }}</dd>
-                    <dt>Description</dt><dd>{{ h_recipe.target_description }}</dd>
-                    <dt>Unit of measurement</dt><dd>{{ h_recipe.measurement_unit }}</dd>
-                </dl>
-                
-                {% if h_recipe.encoded_values %}
-                <table class="table table-nonfluid table-condensed table-sm">
-                    <caption><strong>Encoded value definitions</strong></caption>
-                     <tr>
-                         <th>Category</th>
-                         <th>Value</th>
-                     </tr>
-                     {% for category, definition in h_recipe.get_encoded_values_dict.items %}
-                         <tr>
-                             <td>{{ category }}</td>
-                             <td>{{ definition }}</td>
-                         </tr>
-                     {% endfor %}
-                 </table>
-                {% endif %}
-            </div>
-        </div> 
-        
-        <div class="panel panel-default">
-            <div class="panel-heading"><h4 class="panel-title">Harmonization unit recipes</h4></div>
-            <div class="panel-body">
-                {% render_table unit_recipe_table %}
-            </div>
-        </div>
+        {% if h_recipe.encoded_values %}
+        <table class="table table-nonfluid table-condensed table-sm">
+          <caption><strong>Encoded value definitions</strong></caption>
+           <tr>
+             <th>Category</th>
+             <th>Value</th>
+           </tr>
+           {% for category, definition in h_recipe.get_encoded_values_dict.items %}
+             <tr>
+               <td>{{ category }}</td>
+               <td>{{ definition }}</td>
+             </tr>
+           {% endfor %}
+         </table>
+        {% endif %}
+      </div>
+    </div> 
+    
+    <div class="panel panel-default">
+      <div class="panel-heading"><h4 class="panel-title">Harmonization unit recipes</h4></div>
+      <div class="panel-body">
+        {% render_table unit_recipe_table %}
+      </div>
     </div>
+  </div>
 {% endblock content %}
