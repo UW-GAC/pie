@@ -42,6 +42,61 @@ class SourceTraitSearchFormTest(TestCase):
         form = self.search_form(input)
         self.assertTrue(form.is_valid())
 
+    def test_form_invalid_with_only_short_words_in_description(self):
+        """Form is invalid when only short words are entered in the description field."""
+        input = {'description': 'of'}
+        form = self.search_form(input)
+        self.assertFalse(form.is_valid())
+        self.assertEqual(form.errors, {
+            'description': [forms.ERROR_ONLY_SHORT_WORDS],
+        })
+
+    def test_form_valid_with_name_and_only_short_words_in_description(self):
+        """Form is invalid when only short words are entered in the description field even if name is present."""
+        input = {'description': 'of', 'name': 'bmi'}
+        form = self.search_form(input)
+        self.assertFalse(form.is_valid())
+        self.assertEqual(form.errors, {
+            'description': [forms.ERROR_ONLY_SHORT_WORDS]
+        })
+
+    def test_short_words_removed_from_description(self):
+        """Short words are removed from the description field."""
+        input = {'description': 'number of'}
+        form = self.search_form(input)
+        self.assertTrue(form.is_valid())
+        self.assertEqual(form.cleaned_data['description'], 'number')
+
+    def test_short_words_removed_from_description_when_separated_by_tabs(self):
+        """Short words are removed from the description field."""
+        input = {'description': 'number\tof\tdays'}
+        form = self.search_form(input)
+        self.assertTrue(form.is_valid())
+        self.assertEqual(form.cleaned_data['description'], 'number days')
+
+    def test_short_words_removed_from_description_when_separated_by_extra_whitespace(self):
+        """Short words are removed from the description field."""
+        input = {'description': 'number  of    days measured'}
+        form = self.search_form(input)
+        self.assertTrue(form.is_valid())
+        self.assertEqual(form.cleaned_data['description'], 'number days measured')
+
+    def test_updates_warning_message_field_with_one_short_word(self):
+        """warning_message field is updated if one short word is removed."""
+        input = {'description': 'number of'}
+        form = self.search_form(input)
+        self.assertTrue(form.is_valid())
+        self.assertEqual(form.fields['description'].warning_message,
+                         'Ignored short words in "Variable description" field: of')
+
+    def test_updates_warning_message_field_with_two_short_words(self):
+        """warning_message field is updated if two short words are removed."""
+        input = {'description': 'number to of'}
+        form = self.search_form(input)
+        self.assertTrue(form.is_valid())
+        self.assertEqual(form.fields['description'].warning_message,
+                         'Ignored short words in "Variable description" field: to of')
+
 
 class SourceTraitSearchMultipleStudiesFormTest(TestCase):
 
@@ -105,6 +160,61 @@ class SourceTraitSearchMultipleStudiesFormTest(TestCase):
         form = self.search_form(input)
         self.assertTrue(form.is_valid())
 
+    def test_form_invalid_with_only_short_words_in_description(self):
+        """Form is invalid when only short words are entered in the description field."""
+        input = {'description': 'of'}
+        form = self.search_form(input)
+        self.assertFalse(form.is_valid())
+        self.assertEqual(form.errors, {
+            'description': [forms.ERROR_ONLY_SHORT_WORDS],
+        })
+
+    def test_form_valid_with_name_and_only_short_words_in_description(self):
+        """Form is invalid when only short words are entered in the description field even if name is present."""
+        input = {'description': 'of', 'name': 'bmi'}
+        form = self.search_form(input)
+        self.assertFalse(form.is_valid())
+        self.assertEqual(form.errors, {
+            'description': [forms.ERROR_ONLY_SHORT_WORDS]
+        })
+
+    def test_short_words_removed_from_description(self):
+        """Short words are removed from the description field."""
+        input = {'description': 'number of'}
+        form = self.search_form(input)
+        self.assertTrue(form.is_valid())
+        self.assertEqual(form.cleaned_data['description'], 'number')
+
+    def test_short_words_removed_from_description_when_separated_by_tabs(self):
+        """Short words are removed from the description field."""
+        input = {'description': 'number\tof\tdays'}
+        form = self.search_form(input)
+        self.assertTrue(form.is_valid())
+        self.assertEqual(form.cleaned_data['description'], 'number days')
+
+    def test_short_words_removed_from_description_when_separated_by_extra_whitespace(self):
+        """Short words are removed from the description field."""
+        input = {'description': 'number  of    days measured'}
+        form = self.search_form(input)
+        self.assertTrue(form.is_valid())
+        self.assertEqual(form.cleaned_data['description'], 'number days measured')
+
+    def test_updates_warning_message_field_with_one_short_word(self):
+        """warning_message field is updated if one short word is removed."""
+        input = {'description': 'number of'}
+        form = self.search_form(input)
+        self.assertTrue(form.is_valid())
+        self.assertEqual(form.fields['description'].warning_message,
+                         'Ignored short words in "Variable description" field: of')
+
+    def test_updates_warning_message_field_with_two_short_words(self):
+        """warning_message field is updated if two short words are removed."""
+        input = {'description': 'number to of'}
+        form = self.search_form(input)
+        self.assertTrue(form.is_valid())
+        self.assertEqual(form.fields['description'].warning_message,
+                         'Ignored short words in "Variable description" field: to of')
+
 
 class HarmonizedTraitSearchFormTest(TestCase):
 
@@ -142,3 +252,65 @@ class HarmonizedTraitSearchFormTest(TestCase):
         input = {'name': 'abc', 'exact_name_match': True}
         form = forms.HarmonizedTraitSearchForm(input)
         self.assertTrue(form.is_valid())
+
+    def test_form_invalid_with_only_short_words_in_description(self):
+        """Form is invalid when only short words are entered in the description field."""
+        input = {'description': 'of'}
+        form = forms.HarmonizedTraitSearchForm(input)
+        self.assertFalse(form.is_valid())
+        self.assertEqual(form.errors, {
+            'description': [forms.ERROR_ONLY_SHORT_WORDS],
+        })
+
+    def test_form_valid_with_name_and_only_short_words_in_description(self):
+        """Form is invalid when only short words are entered in the description field even if name is present."""
+        input = {'description': 'of', 'name': 'bmi'}
+        form = forms.HarmonizedTraitSearchForm(input)
+        self.assertFalse(form.is_valid())
+        self.assertEqual(form.errors, {
+            'description': [forms.ERROR_ONLY_SHORT_WORDS]
+        })
+
+    def test_short_words_removed_from_description(self):
+        """Short words are removed from the description field."""
+        input = {'description': 'number of'}
+        form = forms.HarmonizedTraitSearchForm(input)
+        self.assertTrue(form.is_valid())
+        self.assertEqual(form.cleaned_data['description'], 'number')
+
+    def test_three_letter_words_not_removed_from_description(self):
+        """Short words are removed from the description field."""
+        input = {'description': 'bmi'}
+        form = forms.HarmonizedTraitSearchForm(input)
+        self.assertTrue(form.is_valid())
+        self.assertEqual(form.cleaned_data['description'], 'bmi')
+
+    def test_short_words_removed_from_description_when_separated_by_tabs(self):
+        """Short words are removed from the description field."""
+        input = {'description': 'number\tof\tdays'}
+        form = forms.HarmonizedTraitSearchForm(input)
+        self.assertTrue(form.is_valid())
+        self.assertEqual(form.cleaned_data['description'], 'number days')
+
+    def test_short_words_removed_from_description_when_separated_by_extra_whitespace(self):
+        """Short words are removed from the description field."""
+        input = {'description': 'number  of    days measured'}
+        form = forms.HarmonizedTraitSearchForm(input)
+        self.assertTrue(form.is_valid())
+        self.assertEqual(form.cleaned_data['description'], 'number days measured')
+
+    def test_updates_warning_message_field_with_one_short_word(self):
+        """warning_message field is updated if one short word is removed."""
+        input = {'description': 'number of'}
+        form = forms.HarmonizedTraitSearchForm(input)
+        self.assertTrue(form.is_valid())
+        self.assertEqual(form.fields['description'].warning_message,
+                         'Ignored short words in "Variable description" field: of')
+
+    def test_updates_warning_message_field_with_two_short_words(self):
+        """warning_message field is updated if two short words are removed."""
+        input = {'description': 'number to of'}
+        form = forms.HarmonizedTraitSearchForm(input)
+        self.assertTrue(form.is_valid())
+        self.assertEqual(form.fields['description'].warning_message,
+                         'Ignored short words in "Variable description" field: to of')
