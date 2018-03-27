@@ -28,7 +28,7 @@ class WatsonSearchField(forms.CharField):
         short_words = [word for word in words if len(word) < 3]
         long_words = [word for word in words if word not in short_words]
         if len(short_words) > 0:
-            self.warning_message = 'Omitted short words in {field} field: {words}'.format(
+            self.warning_message = 'Ignored short words in "{field}" field: {words}'.format(
                 words=' '.join(short_words),
                 field=self.label
             )
@@ -147,7 +147,7 @@ class HarmonizedTraitSearchForm(forms.Form):
         label='Variable description',
         max_length=100,
         required=False,
-        help_text='Search harmonized phenotype variable descriptions.'
+        help_text='Search harmonized phenotype variable descriptions. Words less than three letters are ignored.'
     )
     # Specify how form should be displayed.
     helper = FormHelper()

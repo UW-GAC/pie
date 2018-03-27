@@ -87,7 +87,7 @@ class SourceTraitSearchFormTest(TestCase):
         form = self.search_form(input)
         self.assertTrue(form.is_valid())
         self.assertEqual(form.fields['description'].warning_message,
-                         'Omitted short words in Variable description field: of')
+                         'Ignored short words in "Variable description" field: of')
 
     def test_updates_warning_message_field_with_two_short_words(self):
         """warning_message field is updated if two short words are removed."""
@@ -95,7 +95,7 @@ class SourceTraitSearchFormTest(TestCase):
         form = self.search_form(input)
         self.assertTrue(form.is_valid())
         self.assertEqual(form.fields['description'].warning_message,
-                         'Omitted short words in Variable description field: to of')
+                         'Ignored short words in "Variable description" field: to of')
 
 
 class SourceTraitSearchMultipleStudiesFormTest(TestCase):
@@ -205,7 +205,7 @@ class SourceTraitSearchMultipleStudiesFormTest(TestCase):
         form = self.search_form(input)
         self.assertTrue(form.is_valid())
         self.assertEqual(form.fields['description'].warning_message,
-                         'Omitted short words in Variable description field: of')
+                         'Ignored short words in "Variable description" field: of')
 
     def test_updates_warning_message_field_with_two_short_words(self):
         """warning_message field is updated if two short words are removed."""
@@ -213,7 +213,7 @@ class SourceTraitSearchMultipleStudiesFormTest(TestCase):
         form = self.search_form(input)
         self.assertTrue(form.is_valid())
         self.assertEqual(form.fields['description'].warning_message,
-                         'Omitted short words in Variable description field: to of')
+                         'Ignored short words in "Variable description" field: to of')
 
 
 class HarmonizedTraitSearchFormTest(TestCase):
@@ -305,7 +305,7 @@ class HarmonizedTraitSearchFormTest(TestCase):
         form = forms.HarmonizedTraitSearchForm(input)
         self.assertTrue(form.is_valid())
         self.assertEqual(form.fields['description'].warning_message,
-                         'Omitted short words in Variable description field: of')
+                         'Ignored short words in "Variable description" field: of')
 
     def test_updates_warning_message_field_with_two_short_words(self):
         """warning_message field is updated if two short words are removed."""
@@ -313,4 +313,4 @@ class HarmonizedTraitSearchFormTest(TestCase):
         form = forms.HarmonizedTraitSearchForm(input)
         self.assertTrue(form.is_valid())
         self.assertEqual(form.fields['description'].warning_message,
-                         'Omitted short words in Variable description field: to of')
+                         'Ignored short words in "Variable description" field: to of')
