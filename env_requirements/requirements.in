@@ -11,6 +11,7 @@ django-extensions
 django-maintenance-mode
 django-tables2==1.16.0
 django-watson
+docutils
 factory-boy
 flake8
 flake8-docstrings
