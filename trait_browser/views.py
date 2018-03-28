@@ -340,9 +340,9 @@ class SourceTraitSearch(LoginRequiredMixin, SearchFormMixin, SingleTableMixin, M
 
     def search(self, name='', description='', match_exact_name=False, dataset_name='', dataset_description='',
                dataset_match_exact_name=False, studies=[]):
-        datasets = []
+        extra_kwargs = {}
         if dataset_name or dataset_description or studies:
-            datasets = searches.search_source_datasets(
+            extra_kwargs['datasets'] = searches.search_source_datasets(
                 name=dataset_name,
                 description=dataset_description,
                 match_exact_name=dataset_match_exact_name,
@@ -352,7 +352,7 @@ class SourceTraitSearch(LoginRequiredMixin, SearchFormMixin, SingleTableMixin, M
             name=name,
             description=description,
             match_exact_name=match_exact_name,
-            datasets=datasets
+            **extra_kwargs
         )
         return results
 

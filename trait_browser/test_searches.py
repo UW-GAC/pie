@@ -517,6 +517,10 @@ class SourceTraitSearchTest(ClearSearchIndexMixin, TestCase):
         for trait in other_traits:
             self.assertNotIn(trait, qs)
 
+    def test_finds_no_matching_traits_with_empty_dataset_array(self):
+        trait = factories.SourceTraitFactory.create(i_trait_name='lorem')
+        qs = searches.search_source_traits(name='lorem', datasets=[])
+        self.assertEqual(len(qs), 0)
 
 
 class HarmonizedTraitSearchTest(ClearSearchIndexMixin, TestCase):

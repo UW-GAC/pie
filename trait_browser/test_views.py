@@ -2804,18 +2804,30 @@ class SourceTraitSearchTest(ClearSearchIndexMixin, UserLoginTestCase):
         self.assertEqual(len(messages), 2)
         self.assertIn('Ignored short words in "Variable description" field', str(messages[0]))
 
-    def test_filters_by_datasets_if_requested(self):
+    def test_filters_by_dataset_description_if_requested(self):
         """View has correct results when filtering by dataset."""
         dataset = factories.SourceDatasetFactory.create(i_dbgap_description='a dataset about demographic measurements')
         trait = factories.SourceTraitFactory.create(i_description='lorem ipsum', source_dataset=dataset)
-        factories.SourceTraitFactory.create(i_description='lorem ipsum')
-        response = self.client.get(self.get_url(), {'description': 'lorem', 'dataset_description': 'demographic'})
+        other_dataset = factories.SourceDatasetFactory.create(i_dbgap_description='foo')
+        factories.SourceTraitFactory.create(i_description='lorem ipsum', source_dataset=other_dataset)
+        response = self.client.get(self.get_url(), {'description': 'lorem', 'dataset_description': 'demographic', 'dataset_name': ''})
         context = response.context
         self.assertIn('form', context)
         self.assertTrue(context['has_results'])
         self.assertIsInstance(context['results_table'], tables.SourceTraitTableFull)
         self.assertQuerysetEqual(context['results_table'].data, [repr(trait)])
- 
+
+    def test_finds_no_traits_if_dataset_search_doesnt_match(self):
+        """View has correct results when filtering by dataset."""
+        dataset = factories.SourceDatasetFactory.create(i_dbgap_description='a dataset about demographic measurements')
+        trait = factories.SourceTraitFactory.create(i_description='lorem ipsum', source_dataset=dataset)
+        response = self.client.get(self.get_url(), {'description': 'lorem', 'dataset_description': 'something'})
+        context = response.context
+        self.assertIn('form', context)
+        self.assertTrue(context['has_results'])
+        self.assertIsInstance(context['results_table'], tables.SourceTraitTableFull)
+        self.assertEqual(len(context['results_table'].rows), 0)
+
 
 class SourceTraitSearchByStudyTest(ClearSearchIndexMixin, UserLoginTestCase):
 
