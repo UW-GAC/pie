@@ -152,6 +152,7 @@ INSTALLED_APPS = (
     'django_admin_bootstrapped',
     # Built-in apps.
     'django.contrib.admin',
+    'django.contrib.admindocs',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
