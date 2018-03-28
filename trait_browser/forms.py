@@ -11,6 +11,34 @@ from dal import autocomplete
 from . import models
 
 
+ERROR_ONLY_SHORT_WORDS = 'Enter at least one term with more than two letters.'
+
+
+class WatsonSearchField(forms.CharField):
+
+    warning_message = None
+
+    def clean(self, value):
+        """Custom cleaning for fields to be passed to watson search calls.
+
+        This method checks that checks that at least one long word was passed,
+        if anything was passed. It then removes any short words from the query.
+        """
+        data = super(WatsonSearchField, self).clean(value)
+        words = data.split()
+        short_words = [word for word in words if len(word) < 3]
+        long_words = [word for word in words if word not in short_words]
+        if len(short_words) > 0:
+            self.warning_message = 'Ignored short words in "{field}" field: {words}'.format(
+                words=' '.join(short_words),
+                field=self.label
+            )
+            # Raise an error if all words were short words.
+            if len(long_words) == 0:
+                raise forms.ValidationError(ERROR_ONLY_SHORT_WORDS)
+        return ' '.join(long_words)
+
+
 class SourceTraitSearchForm(forms.Form):
     """Form to handle django-watson searches for SourceTrait objects.
 
@@ -29,18 +57,15 @@ class SourceTraitSearchForm(forms.Form):
         required=False,
         initial=True
     )
-    description = forms.CharField(
+    description = WatsonSearchField(
         label='Variable description',
         max_length=100,
         required=False,
-        help_text='Search dbGaP phenotype variable descriptions.'
+        help_text='Search dbGaP phenotype variable descriptions. Words less than three letters are ignored.'
     )
 
     def __init__(self, *args, **kwargs):
-        """Initialize form instance.
-
-        Set up layout.
-        """
+        """Initialize form with formatting and submit button."""
         super(SourceTraitSearchForm, self).__init__(*args, **kwargs)
         # Specify how form should be displayed.
         self.helper = FormHelper(self)
@@ -74,9 +99,13 @@ class SourceTraitSearchForm(forms.Form):
 
     def clean(self):
         """Perform additional multi-field cleaning to make sure that either description or name is entered."""
-        cleaned_data = super(SourceTraitSearchForm, self).clean()
-        if not cleaned_data['name'] and not cleaned_data['description']:
-            raise forms.ValidationError('Either variable name or description must be filled in.')
+        super(SourceTraitSearchForm, self).clean()
+        # If one of the fields failed its validation/cleaning, it will not be in cleaned data.
+        name = self.cleaned_data.get('name')
+        description = self.cleaned_data.get('description')
+        if name is not None and description is not None:
+            if not name and not description:
+                raise forms.ValidationError('Either variable name or description must be filled in.')
 
 
 class SourceTraitSearchMultipleStudiesForm(SourceTraitSearchForm):
@@ -93,10 +122,7 @@ class SourceTraitSearchMultipleStudiesForm(SourceTraitSearchForm):
     )
 
     def __init__(self, *args, **kwargs):
-        """Initialize form instance.
-
-        Add a study field to the superclass layout.
-        """
+        """Initialize form and add the studies field to the layout."""
         super(SourceTraitSearchMultipleStudiesForm, self).__init__(*args, **kwargs)
         # Add the studies field to the form.
         self.helper.layout[0].append('studies')
@@ -159,11 +185,11 @@ class HarmonizedTraitSearchForm(forms.Form):
         required=False,
         initial=True
     )
-    description = forms.CharField(
+    description = WatsonSearchField(
         label='Variable description',
         max_length=100,
         required=False,
-        help_text='Search harmonized phenotype variable descriptions.'
+        help_text='Search harmonized phenotype variable descriptions. Words less than three letters are ignored.'
     )
     # Specify how form should be displayed.
     helper = FormHelper()
@@ -199,5 +225,9 @@ class HarmonizedTraitSearchForm(forms.Form):
     def clean(self):
         """Perform additional multi-field cleaning to make sure that either description or name is entered."""
         cleaned_data = super(HarmonizedTraitSearchForm, self).clean()
-        if not cleaned_data['name'] and not cleaned_data['description']:
-            raise forms.ValidationError('Either variable name or description must be filled in.')
+        # If one of the fields failed its validation/cleaning, it will not be in cleaned data.
+        name = self.cleaned_data.get('name')
+        description = self.cleaned_data.get('description')
+        if name is not None and description is not None:
+            if not name and not description:
+                raise forms.ValidationError('Either variable name or description must be filled in.')

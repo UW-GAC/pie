@@ -62,6 +62,11 @@ class SearchFormMixin(FormMixin):
         self.table_data = self.search(**form.cleaned_data)
         context = self.get_context_data(form=form)
         context['has_results'] = True
+        # Add field-specific messages.
+        # May need to figure out how to make this general to any form field that is a WatsonSearchField.
+        # This also requires the form to have a 'description' field.
+        if form.fields['description'].warning_message:
+            self.messages.warning(form.fields['description'].warning_message, fail_silently=True)
         # Add an informational message about the number of results found.
         msg = '{n} result{s} found.'.format(
             n=self.table_data.count(),
@@ -565,5 +570,4 @@ class HarmonizedTraitSearch(LoginRequiredMixin, SearchFormMixin, SingleTableMixi
     table_data = models.HarmonizedTrait.objects.none()
 
     def search(self, **search_kwargs):
-        """Override form_valid method to process form and add results to the search page."""
         return searches.search_harmonized_traits(**search_kwargs)

@@ -2757,6 +2757,26 @@ class SourceTraitSearchTest(ClearSearchIndexMixin, UserLoginTestCase):
         self.assertIn('results_table', context)
         self.assertEqual(len(context['results_table'].rows), 0)
 
+    def test_short_words_are_removed(self):
+        """Short words are properly removed."""
+        trait_1 = factories.SourceTraitFactory.create(i_description='lorem ipsum')
+        trait_2 = factories.SourceTraitFactory.create(i_description='lorem')
+        response = self.client.get(self.get_url(), {'description': 'lorem ip'})
+        context = response.context
+        self.assertIn('form', context)
+        self.assertTrue(context['has_results'])
+        self.assertIsInstance(context['results_table'], tables.SourceTraitTableFull)
+        self.assertEqual(len(context['results_table'].rows), 2)
+        self.assertIn(trait_1, context['results_table'].data)
+        self.assertIn(trait_2, context['results_table'].data)
+
+    def test_message_for_ignored_short_words(self):
+        response = self.client.get(self.get_url(), {'description': 'lorem ip'})
+        context = response.context
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 2)
+        self.assertIn('Ignored short words in "Variable description" field', str(messages[0]))
+
 
 class SourceTraitSearchByStudyTest(ClearSearchIndexMixin, UserLoginTestCase):
 
@@ -2954,6 +2974,32 @@ class SourceTraitSearchByStudyTest(ClearSearchIndexMixin, UserLoginTestCase):
         self.assertFormError(response, "form", 'datasets',
                              forms.SourceTraitSearchOneStudyForm.ERROR_DEPRECATED_DATASET)
 
+    def test_short_words_are_removed(self):
+        """Short words are properly removed."""
+        trait_1 = factories.SourceTraitFactory.create(
+            i_description='lorem ipsum',
+            source_dataset__source_study_version__study=self.study
+        )
+        trait_2 = factories.SourceTraitFactory.create(
+            i_description='lorem ipsum',
+            source_dataset__source_study_version__study=self.study
+        )
+        response = self.client.get(self.get_url(self.study.pk), {'description': 'lorem ip'})
+        context = response.context
+        self.assertIn('form', context)
+        self.assertTrue(context['has_results'])
+        self.assertIsInstance(context['results_table'], tables.SourceTraitTableFull)
+        self.assertEqual(len(context['results_table'].rows), 2)
+        self.assertIn(trait_1, context['results_table'].data)
+        self.assertIn(trait_2, context['results_table'].data)
+
+    def test_message_for_ignored_short_words(self):
+        response = self.client.get(self.get_url(self.study.pk), {'description': 'lorem ip'})
+        context = response.context
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 2)
+        self.assertIn('Ignored short words in "Variable description" field', str(messages[0]))
+
 
 class HarmonizedTraitSearchTest(ClearSearchIndexMixin, UserLoginTestCase):
 
@@ -3089,6 +3135,26 @@ class HarmonizedTraitSearchTest(ClearSearchIndexMixin, UserLoginTestCase):
         self.assertFalse(context['has_results'])
         self.assertIn('results_table', context)
         self.assertEqual(len(context['results_table'].rows), 0)
+
+    def test_short_words_are_removed(self):
+        """Short words are properly removed."""
+        trait_1 = factories.HarmonizedTraitFactory.create(i_description='lorem ipsum')
+        trait_2 = factories.HarmonizedTraitFactory.create(i_description='lorem')
+        response = self.client.get(self.get_url(), {'description': 'lorem ip'})
+        context = response.context
+        self.assertIn('form', context)
+        self.assertTrue(context['has_results'])
+        self.assertIsInstance(context['results_table'], tables.HarmonizedTraitTable)
+        self.assertEqual(len(context['results_table'].rows), 2)
+        self.assertIn(trait_1, context['results_table'].data)
+        self.assertIn(trait_2, context['results_table'].data)
+
+    def test_message_for_ignored_short_words(self):
+        response = self.client.get(self.get_url(), {'description': 'lorem ip'})
+        context = response.context
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 2)
+        self.assertIn('Ignored short words in "Variable description" field', str(messages[0]))
 
 
 # Test of the login-required for each URL in the app.
