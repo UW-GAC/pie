@@ -1,22 +1,22 @@
-{% extends 'base.html' %}
+{% extends '__base.html' %}
 {% load render_table from django_tables2 %}
 {% load crispy_forms_tags %}
 
 {% block head_title %}
-     | Search harmonized phenotype variables
-{% endblock %}
+  | Search harmonized variables
+{% endblock head_title %}
 
 
 {% block content %}
-    <h1>Search harmonized phenotype variables</h1>
-    {% include 'trait_browser/_search_help.html' %}
+  <h1>Search harmonized variables</h1>
+  {% include 'trait_browser/_search_help.html' %}
 
-    {% crispy form %}
+  {% crispy form %}
 
-    {% include '_messages.html' %}
+  {% include '_messages.html' %}
 
-    {% if has_results %}
-        {% render_table results_table %}
-    {% endif %}
+  {% if has_results %}
+    {% render_table results_table %}
+  {% endif %}
 
-{% endblock %}
+{% endblock content %}

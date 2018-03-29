@@ -1,37 +1,39 @@
-{% extends 'base.html' %}
+{% extends '__object_detail.html' %}
 {% load core_tags %}
 {% load render_table from django_tables2 %}
 
 {% block head_title %}
-     | {{ tag.lower_title }} details
-{% endblock %}
+  | {{ tag.lower_title }} details
+{% endblock head_title %}
 
-{% block content %}
-    <div class="well">
-    
-        <h2><small>Phenotype tag</small> {{ tag.title }}</h2>
-        
-        {% include '_messages.html' %}
+{% block title %}
+  {{ tag.title }}
+{% endblock title %}
 
-        {% if perms.tags.add_taggedtrait %}
-            <p>
-                <a href="{% url 'tags:add-many:by-tag' pk=tag.pk %}" class="btn btn-primary btn-md" role="button">
-                Tag phenotypes as "{{ tag.title }}"</a>
-            </p>
-        {% endif %}
+{% block subtitle %}
+  phenotype tag details
+{% endblock subtitle %}
 
-        <dl class="dl-horizontal">
-            <dt>Description</dt><dd>{{ tag.description }}</dd>
-            <dt>Instructions</dt><dd>{{ tag.instructions }}</dd>
-            <dt>N tagged</dt><dd>{{ tag.traits.count }}</dd>
-        </dl>
-        
-        <div class="panel panel-default">
-            <div class="panel-heading"><h4 class="panel-title">Tagged phenotypes</h4></div>
-            <div class="panel-body">
-                {% render_table tagged_trait_table %}
-           </div>
-       </div>
-    
-    </div>
-{% endblock %}
+{% block before_panel %}
+  {% if perms.tags.add_taggedtrait %}
+     <p>
+       <a href="{% url 'tags:add-many:by-tag' pk=tag.pk %}" class="btn btn-primary btn-md" role="button">
+       Tag variables as "{{ tag.title }}"</a>
+     </p>
+  {% endif %}
+{% endblock before_panel %} 
+
+{% block detail_fields %}
+  <dt>Description</dt><dd>{{ tag.description }}</dd>
+  <dt>Instructions</dt><dd>{{ tag.instructions }}</dd>
+  <dt>Variables tagged</dt><dd>{{ tag.traits.count }}</dd>
+{% endblock detail_fields %}
+
+{% block after_panel %}
+  <div class="panel panel-default">
+    <div class="panel-heading"><h4 class="panel-title">Tagged study variables</h4></div>
+    <div class="panel-body">
+      {% render_table tagged_trait_table %}
+     </div>
+  </div>
+{% endblock after_panel %}

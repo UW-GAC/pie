@@ -117,11 +117,17 @@ class StudySourceTraitListTest(UserLoginTestCase):
         """View has appropriate data in the context."""
         response = self.client.get(self.get_url(self.study.pk))
         context = response.context
+        self.assertIn('study', context)
         self.assertIn('trait_count', context)
+        self.assertIn('dataset_count', context)
         self.assertIn('phs_link', context)
         self.assertIn('phs', context)
-        self.assertIn('source_trait_table', context)
-        self.assertIsInstance(context['source_trait_table'], tables.SourceTraitStudyTable)
+        self.assertEqual(context['study'], self.study)
+        self.assertEqual(context['trait_count'], '{:,}'.format(len(self.source_traits)))
+        dataset_count = models.SourceDataset.objects.filter(source_study_version__study=self.study).count()
+        self.assertEqual(context['dataset_count'], '{:,}'.format(dataset_count))
+        self.assertEqual(context['phs_link'], self.source_traits[0].dbgap_study_link)
+        self.assertEqual(context['phs'], self.source_traits[0].study_accession)
 
     def test_no_deprecated_traits_in_table(self):
         """No deprecated traits are shown in the table."""
@@ -170,11 +176,18 @@ class StudySourceDatasetListTest(UserLoginTestCase):
         """View has appropriate data in the context."""
         response = self.client.get(self.get_url(self.study.pk))
         context = response.context
+        self.assertIn('study', context)
+        self.assertIn('trait_count', context)
         self.assertIn('dataset_count', context)
         self.assertIn('phs_link', context)
         self.assertIn('phs', context)
-        self.assertIn('source_dataset_table', context)
-        self.assertIsInstance(context['source_dataset_table'], tables.SourceDatasetTable)
+        self.assertEqual(context['study'], self.study)
+        traits = models.SourceTrait.objects.filter(source_dataset__source_study_version__study=self.study)
+        self.assertEqual(context['trait_count'], '{:,}'.format(traits.count()))
+        dataset_count = models.SourceDataset.objects.filter(source_study_version__study=self.study).count()
+        self.assertEqual(context['dataset_count'], '{:,}'.format(dataset_count))
+        self.assertEqual(context['phs_link'], traits[0].dbgap_study_link)
+        self.assertEqual(context['phs'], traits[0].study_accession)
 
     def test_no_deprecated_traits_in_table(self):
         """No deprecated datasets are shown in the table."""
@@ -831,7 +844,11 @@ class HarmonizedTraitSetVersionDetailTest(UserLoginTestCase):
     def setUp(self):
         super(HarmonizedTraitSetVersionDetailTest, self).setUp()
         self.htsv = factories.HarmonizedTraitSetVersionFactory.create()
-        self.htraits = factories.HarmonizedTraitFactory.create_batch(2, harmonized_trait_set_version=self.htsv)
+        self.htraits = factories.HarmonizedTraitFactory.create_batch(
+            2, harmonized_trait_set_version=self.htsv, i_is_unique_key=True)
+        # Only one of the h. traits can be unique_key=False.
+        self.htraits[0].i_is_unique_key = False
+        self.htraits[0].save()
 
     def get_url(self, *args):
         return reverse('trait_browser:harmonized:traits:detail', args=args)
@@ -895,12 +912,12 @@ class SourceTraitDetailTest(UserLoginTestCase):
         tagged_trait = TaggedTrait.objects.create(tag=tag, trait=self.trait, creator=self.user)
         response = self.client.get(self.get_url(self.trait.pk))
         context = response.context
-        self.assertNotContains(response, 'data-toggle="tooltip" title="Remove {} tag"'.format(tag.title))
+        self.assertNotContains(response, reverse('tags:tagged-traits:delete', kwargs={'pk': tag.pk}))
 
     def test_no_tagging_button(self):
         """Regular user does not see a button to add tags on this detail page."""
         response = self.client.get(self.get_url(self.trait.pk))
-        self.assertNotContains(response, 'Tag this phenotype')
+        self.assertNotContains(response, reverse('trait_browser:source:traits:tagging', kwargs={'pk': self.trait.pk}))
 
 
 class SourceTraitDetailPhenotypeTaggerTest(PhenotypeTaggerLoginTestCase):
@@ -931,7 +948,7 @@ class SourceTraitDetailPhenotypeTaggerTest(PhenotypeTaggerLoginTestCase):
         tagged_trait = TaggedTrait.objects.create(tag=self.tag, trait=self.trait, creator=self.user)
         response = self.client.get(self.get_url(self.trait.pk))
         context = response.context
-        self.assertContains(response, 'data-toggle="tooltip" title="Remove {} tag"'.format(self.tag.title))
+        self.assertContains(response, reverse('tags:tagged-traits:delete', kwargs={'pk': tagged_trait.pk}))
 
     def test_no_tagged_trait_remove_button_for_other_study(self):
         """The tag removal button does not show up for a trait from another study."""
@@ -939,12 +956,12 @@ class SourceTraitDetailPhenotypeTaggerTest(PhenotypeTaggerLoginTestCase):
         tagged_trait = TaggedTrait.objects.create(tag=self.tag, trait=other_trait, creator=self.user)
         response = self.client.get(self.get_url(other_trait.pk))
         context = response.context
-        self.assertNotContains(response, 'data-toggle="tooltip" title="Remove {} tag"'.format(self.tag.title))
+        self.assertNotContains(response, reverse('tags:tagged-traits:delete', kwargs={'pk': self.tag.pk}))
 
     def test_has_tagging_button(self):
         """A phenotype tagger does see a button to add tags on this detail page."""
         response = self.client.get(self.get_url(self.trait.pk))
-        self.assertContains(response, 'Tag this phenotype')
+        self.assertContains(response, reverse('trait_browser:source:traits:tagging', kwargs={'pk': self.trait.pk}))
 
     def test_user_is_study_tagger_true(self):
         """user_is_study_tagger is true in the view's context."""
@@ -982,12 +999,12 @@ class SourceTraitDetailDCCAnalystTest(DCCAnalystLoginTestCase):
         tagged_trait = TaggedTrait.objects.create(tag=self.tag, trait=self.trait, creator=self.user)
         response = self.client.get(self.get_url(self.trait.pk))
         context = response.context
-        self.assertContains(response, 'data-toggle="tooltip" title="Remove {} tag"'.format(self.tag.title))
+        self.assertContains(response, reverse('tags:tagged-traits:delete', kwargs={'pk': tagged_trait.pk}))
 
     def test_has_tagging_button(self):
         """A phenotype tagger does see a button to add tags on this detail page."""
         response = self.client.get(self.get_url(self.trait.pk))
-        self.assertContains(response, 'Tag this phenotype')
+        self.assertContains(response, reverse('trait_browser:source:traits:tagging', kwargs={'pk': self.trait.pk}))
 
     def test_user_is_study_tagger_false(self):
         """user_is_study_tagger is false in the view's context."""
@@ -2509,6 +2526,17 @@ class HarmonizedTraitListTest(UserLoginTestCase):
         context = response.context
         table = context['harmonized_trait_table']
         for trait in deprecated_traits:
+            self.assertNotIn(trait, table.data)
+        for trait in self.harmonized_traits:
+            self.assertIn(trait, table.data)
+
+    def test_no_unique_key_traits_in_table(self):
+        """No unique key traits are shown in the table."""
+        uk_traits = factories.HarmonizedTraitFactory.create_batch(10, i_is_unique_key=True)
+        response = self.client.get(self.get_url())
+        context = response.context
+        table = context['harmonized_trait_table']
+        for trait in uk_traits:
             self.assertNotIn(trait, table.data)
         for trait in self.harmonized_traits:
             self.assertIn(trait, table.data)

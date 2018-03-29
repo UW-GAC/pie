@@ -10,6 +10,7 @@ from core.utils import (LoginRequiredTestCase, PhenotypeTaggerLoginTestCase, Use
                         DCCAnalystLoginTestCase, get_autocomplete_view_ids)
 from trait_browser.factories import SourceTraitFactory, StudyFactory
 from trait_browser.models import SourceTrait
+from trait_browser.tables import SourceTraitTableFull
 from . import factories
 from . import models
 from . import tables
@@ -43,12 +44,12 @@ class TagDetailTest(UserLoginTestCase):
         self.assertIn('tag', context)
         self.assertEqual(context['tag'], self.tag)
         self.assertIn('tagged_trait_table', context)
-        self.assertIsInstance(context['tagged_trait_table'], tables.TagDetailTraitTable)
+        self.assertIsInstance(context['tagged_trait_table'], SourceTraitTableFull)
 
     def test_no_tagging_button(self):
         """Regular user does not see a button to add tags on this detail page."""
         response = self.client.get(self.get_url(self.tag.pk))
-        self.assertNotContains(response, 'Tag phenotypes as "{}"'.format(self.tag.title))
+        self.assertNotContains(response, reverse('tags:add-many:by-tag', kwargs={'pk': self.tag.pk}))
 
 
 class TagDetailPhenotypeTaggerTest(PhenotypeTaggerLoginTestCase):
@@ -70,7 +71,7 @@ class TagDetailPhenotypeTaggerTest(PhenotypeTaggerLoginTestCase):
     def test_has_tagging_button(self):
         """A phenotype tagger does see a button to add tags on this detail page."""
         response = self.client.get(self.get_url(self.tag.pk))
-        self.assertContains(response, 'Tag phenotypes as "{}"'.format(self.tag.title))
+        self.assertContains(response, reverse('tags:add-many:by-tag', kwargs={'pk': self.tag.pk}))
 
 
 class TagDetailDCCAnalystTest(DCCAnalystLoginTestCase):
@@ -93,7 +94,7 @@ class TagDetailDCCAnalystTest(DCCAnalystLoginTestCase):
     def test_has_tagging_button(self):
         """A DCC analyst does see a button to add tags on this detail page."""
         response = self.client.get(self.get_url(self.tag.pk))
-        self.assertContains(response, 'Tag phenotypes as "{}"'.format(self.tag.title))
+        self.assertContains(response, reverse('tags:add-many:by-tag', kwargs={'pk': self.tag.pk}))
 
 
 class TagListTest(UserLoginTestCase):
@@ -1426,7 +1427,7 @@ class ManyTaggedTraitsCreateByTagDCCAnalystTest(DCCAnalystLoginTestCase):
 
 class TagsLoginRequiredTest(LoginRequiredTestCase):
 
-    def test_recipes_login_required(self):
+    def test_tags_login_required(self):
         """All recipes urls redirect to login page if no user is logged in."""
         self.assert_redirect_all_urls('tags')
 

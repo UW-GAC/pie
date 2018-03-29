@@ -417,6 +417,13 @@ class HarmonizedTraitTest(TestCase):
         self.assertIn(current_trait, models.HarmonizedTrait.objects.current())
         self.assertNotIn(deprecated_trait, models.HarmonizedTrait.objects.current())
 
+    def test_non_unique_keys_queryset_method(self):
+        """HarmonizedTrait.objects.non_unique_keys() does not return unique key traits."""
+        non_uk_trait = factories.HarmonizedTraitFactory.create(i_is_unique_key=False)
+        uk_trait = factories.HarmonizedTraitFactory.create(i_is_unique_key=True)
+        self.assertIn(non_uk_trait, models.HarmonizedTrait.objects.non_unique_keys())
+        self.assertNotIn(uk_trait, models.HarmonizedTrait.objects.non_unique_keys())
+
 
 class SourceTraitEncodedValueTest(TestCase):
 

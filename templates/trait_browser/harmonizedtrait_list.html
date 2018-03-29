@@ -1,36 +1,14 @@
-{% extends 'base.html' %}
-
+{% extends '__list.html' %}
 {% load render_table from django_tables2 %}
 
 {% block head_title %}
-     | Harmonized phenotypes
-{% endblock %}
+  | Harmonized variables
+{% endblock head_title %}
 
-{% block content %}
-    <table border="0" align="right">
-        <tr>
-        <td style="padding:4px">
-            <a class="btn btn-primary pull-right btn-lg" href="{% url 'trait_browser:harmonized:traits:search' %}" role="button">
-                <span class="glyphicon glyphicon-search" aria-hidden="true">
-                </span> Search harmonized phenotype variables
-            </a>
-        </td>
-        </tr>
-        
-        <tr>
-        <td style="padding:4px">
-        <button data-toggle="collapse" data-target="#demo" type="button" class="btn btn-info pull-right">Help with tables</button>
-            <div id="demo" class="collapse">
-            
-            <ul>
-                <li>Click on column names with arrows to change the sort order of the table.</li>
-                <li>Click on a phenotype's name to go to the phenotype's detailed information page.</li>
-            </ul>
-            </div>
-        </td>
-        </tr>
-    </table>
+{% block title %}
+  Harmonized variables
+{% endblock title %}
 
-    <h2>Harmonized phenotypes currently available</h2>
-    {% render_table harmonized_trait_table %}
-{% endblock %}
+{% block table %}
+  {% render_table harmonized_trait_table %}
+{% endblock table %}

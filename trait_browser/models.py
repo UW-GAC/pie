@@ -606,12 +606,12 @@ class HarmonizedTrait(Trait):
         if len(source) > 0:
             trait_list = '\n'.join([LIST_ELEMENT_HTML.format(element=trait) for trait in source])
             component_html += INLINE_LIST_HTML.format(
-                list_title='Component source phenotypes for {}'.format(self.trait_flavor_name),
+                list_title='Component study variables for {}'.format(self.trait_flavor_name),
                 list_elements=trait_list)
         if len(harmonized) > 0:
             trait_list = '\n'.join([LIST_ELEMENT_HTML.format(element=trait) for trait in harmonized])
             component_html += '\n' + INLINE_LIST_HTML.format(
-                list_title='Component harmonized phenotypes for {}'.format(self.trait_flavor_name),
+                list_title='Component harmonized variables for {}'.format(self.trait_flavor_name),
                 list_elements=trait_list)
         return component_html
 

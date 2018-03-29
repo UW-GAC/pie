@@ -1,31 +1,30 @@
-{% extends 'base.html' %}
+{% extends '__base.html' %}
 {% load render_table from django_tables2 %}
 {% load crispy_forms_tags %}
 {% load staticfiles %}
 {% load static %}
 
 {% block head_title %}
-     | Search dbGaP phenotype variables
-{% endblock %}
+  | Search study variables
+{% endblock head_title %}
 
 
 {% block content %}
-    <h1>Search dbGaP phenotype variables</h1>
-    {% include 'trait_browser/_search_help.html' %}
+  <h1>Search study variables</h1>
+  {% include 'trait_browser/_search_help.html' %}
 
-    {% crispy form %}
+  {% crispy form %}
 
-    {% include '_messages.html' %}
+  {% include '_messages.html' %}
 
-    {% if has_results %}
-        {% render_table results_table %}
-    {% endif %}
+  {% if has_results %}
+    {% render_table results_table %}
+  {% endif %}
 
-{% endblock %}
+{% endblock content %}
 
-{% block footer %}
-    <!-- script for django-autocomplete-light -->
-    <script type="text/javascript" src="{% static 'admin/js/vendor/jquery/jquery.js' %}"></script>
-    {{ form.media }}
-
-{% endblock %}
+{% block custom_javascript %}
+  {# script for django-autocomplete-light #}
+  <script type="text/javascript" src="{% static 'admin/js/vendor/jquery/jquery.js' %}"></script>
+  {{ form.media }}
+{% endblock custom_javascript %}

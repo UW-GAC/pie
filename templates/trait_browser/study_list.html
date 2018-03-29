@@ -1,20 +1,14 @@
-{% extends 'base.html' %}
-
+{% extends '__list.html' %}
 {% load render_table from django_tables2 %}
 
 {% block head_title %}
-     | Browse phenotypes by study
-{% endblock %}
+  | Studies
+{% endblock head_title %}
 
-{% block content %}
-    <button data-toggle="collapse" data-target="#demo" type="button" class="btn btn-info">Help with tables</button>
-        <div id="demo" class="collapse">
-        
-        <ul>
-            <li>Click on a study's name to go to the table displaying all of the study's available study phenotypes.</li>
-            <li>Click on dbGaP Accession links to view detailed information about the study at dbGaP.</li>
-        </ul>
-        </div>
-    <h2>Studies with available phenotypes</h2>
-    {% render_table study_table %}
-{% endblock %}
+{% block title %}
+  Studies
+{% endblock title %}
+
+{% block table %}
+  {% render_table study_table %}
+{% endblock table %}

@@ -1,12 +1,14 @@
-{% extends 'base.html' %}
-
+{% extends '__list.html' %}
 {% load render_table from django_tables2 %}
 
 {% block head_title %}
-     | Tagged in studies
-{% endblock %}
+  | Tags by study
+{% endblock head_title %}
 
-{% block content %}
-    <h2>Tagged phenotypes by study</h2>
-    {% render_table study_table %}
-{% endblock %}
+{% block title %}
+  Phenotype tags by study
+{% endblock title %}
+
+{% block table %}
+  {% render_table study_table %}
+{% endblock table %}

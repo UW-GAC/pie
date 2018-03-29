@@ -1,84 +1,75 @@
-{% extends 'base.html' %}
+{% extends '__base.html' %}
 {% load staticfiles %}
 {% load render_table from django_tables2 %}
 
 {% block head_title %}
-     | My profile
-{% endblock %}
+  | My profile
+{% endblock head_title %}
 
 {% block content %}
-    <div class="container">
-
-        <div class="panel panel-default">
-            <div class="panel-heading h3">My profile</div>
-            <div class="panel-body">
-                <p><b>Email:</b> {{ user.email }}</p>
-                <p><b>Name:</b> {{ user.name }}</p>
-                <p><a href="{% url 'password_reset' %}" class="btn btn-primary" role="button">Reset password</a></p>
-                <p>
-                    {% if request.user.is_staff %}
-                        <a href="{% url 'admin:index' %}" class="btn btn-primary" role="button">PIE Administration</a>
-                    {% endif %}
-                </p>
-            </div>
-        </div>
-
-        {% if show_tabs %}
-            <div class="panel panel-default">
-                <!-- Nav tabs -->
-                <div class="panel-body">
-                    <ul class="nav nav-tabs" role="tablist">
-                        {% if show_my_tagged %}
-                            <li role="presentation" class="active"><a href="#user_tagged_phenotypes" role="tab" data-toggle="tab">My Tagged Phenotypes</a></li>
-                        {% endif %}
-                        {% if show_study_tagged %}
-                            <li role="presentation"><a href="#study_tagged_phenotypes" role="tab" data-toggle="tab">Tagged Phenotypes in My Studies</a></li>
-                        {% endif %}
-
-                        {% if show_recipes %}
-                            <li role="presentation"><a href="#unitrecipes" role="tab" data-toggle="tab">My Unit Recipes</a></li>
-                            <li role="presentation"><a href="#harmonizationrecipes" role="tab" data-toggle="tab">My Harmonization Recipes</a></li>
-                        {% endif %}
-                    </ul>
-
-                    <!-- Tab panes -->
-                    <br><!-- Add space between tabs and content -->
-
-                    <div class="tab-content">
-
-                        {% if show_my_tagged %}
-                            <div role="tabpanel" class="tab-pane fade in active" id="user_tagged_phenotypes">
-                                {% for study,taggedtrait_table in user_tagged_tables %}
-                                    <h4><a href="{{ study.get_absolute_url }}">{{ study.i_study_name }}</a></h4>
-                                    {% render_table taggedtrait_table %}
-                                {% endfor %}
-                            </div>
-                        {% endif %}
-                        {% if show_study_tagged %}
-                            <div role="tabpanel" class="tab-pane fade" id="study_tagged_phenotypes">
-                                {% for study,taggedtrait_table in taggable_study_tagged_tables %}
-                                    <h4><a href="{{ study.get_absolute_url }}">{{ study.i_study_name }}</a></h4>
-                                    {% render_table taggedtrait_table %}
-                                {% endfor %}
-                            </div>
-                        {% endif %}
-
-                        {% if show_recipes %}
-                            <div role="tabpanel" class="tab-pane fade" id="unitrecipes">
-                                {% render_table unit_recipe_table %}
-                            </div>
-                            <div role="tabpanel" class="tab-pane fade" id="harmonizationrecipes">
-                                {% render_table harmonization_recipe_table %}
-                            </div>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
-        {% endif %}
+  <div class="container">
+    <div class="panel panel-default">
+      <div class="panel-heading h3">My profile</div>
+      <div class="panel-body">
+        <p><b>Email:</b> {{ user.email }}</p>
+        <p><b>Name:</b> {{ user.name }}</p>
+        <p><a href="{% url 'password_reset' %}" class="btn btn-primary" role="button">Reset password</a></p>
+        <p>
+          {% if request.user.is_staff %}
+            <a href="{% url 'admin:index' %}" class="btn btn-primary" role="button">PIE Administration</a>
+          {% endif %}
+        </p>
+      </div>
     </div>
+    {% if show_tabs %}
+      <div class="panel panel-default">
+        <div class="panel-body">
+          {# Nav tabs #}
+          <ul class="nav nav-tabs" role="tablist">
+            {% if show_my_tagged %}
+              <li role="presentation" class="active"><a href="#user_tagged_phenotypes" role="tab" data-toggle="tab">My Tagged Variables</a></li>
+            {% endif %}
+            {% if show_study_tagged %}
+              <li role="presentation"><a href="#study_tagged_phenotypes" role="tab" data-toggle="tab">Tagged Variables in My Studies</a></li>
+            {% endif %}
+            {% if show_recipes %}
+              <li role="presentation"><a href="#unitrecipes" role="tab" data-toggle="tab">My Unit Recipes</a></li>
+              <li role="presentation"><a href="#harmonizationrecipes" role="tab" data-toggle="tab">My Harmonization Recipes</a></li>
+            {% endif %}
+          </ul>
+          <br>
+          {# Tab panes #}
+          <div class="tab-content">
+            {% if show_my_tagged %}
+              <div role="tabpanel" class="tab-pane fade in active" id="user_tagged_phenotypes">
+                {% for study,taggedtrait_table in user_tagged_tables %}
+                  <h4><a href="{{ study.get_absolute_url }}">{{ study.i_study_name }}</a></h4>
+                  {% render_table taggedtrait_table %}
+                {% endfor %}
+              </div>
+            {% endif %}
+            {% if show_study_tagged %}
+              <div role="tabpanel" class="tab-pane fade" id="study_tagged_phenotypes">
+                {% for study,taggedtrait_table in taggable_study_tagged_tables %}
+                  <h4><a href="{{ study.get_absolute_url }}">{{ study.i_study_name }}</a></h4>
+                  {% render_table taggedtrait_table %}
+                {% endfor %}
+              </div>
+            {% endif %}
+            {% if show_recipes %}
+              <div role="tabpanel" class="tab-pane fade" id="unitrecipes">
+                {% render_table unit_recipe_table %}
+              </div>
+              <div role="tabpanel" class="tab-pane fade" id="harmonizationrecipes">
+                {% render_table harmonization_recipe_table %}
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    {% endif %}
+  </div>
 {% endblock content %}
-
 {% block custom_javascript %}
-<script src="{% static 'js/popover.js' %}"></script>
-{% endblock %}
-
+  <script src="{% static 'js/popover.js' %}"></script>
+{% endblock custom_javascript %}

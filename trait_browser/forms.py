@@ -50,7 +50,7 @@ class SourceTraitSearchForm(forms.Form):
         label='Variable name',
         max_length=100,
         required=False,
-        help_text='Search dbGaP phenotype variable names.'
+        help_text='Search variable names.'
     )
     match_exact_name = forms.BooleanField(
         label='Match whole name',
@@ -61,7 +61,7 @@ class SourceTraitSearchForm(forms.Form):
         label='Variable description',
         max_length=100,
         required=False,
-        help_text='Search dbGaP phenotype variable descriptions. Words less than three letters are ignored.'
+        help_text='Search within variable descriptions. Words less than three letters are ignored.'
     )
 
     def __init__(self, *args, **kwargs):
@@ -179,7 +179,7 @@ class HarmonizedTraitSearchForm(forms.Form):
         label='Variable name',
         max_length=100,
         required=False,
-        help_text='Search harmonized phenotype variable names.')
+        help_text='Search variable names.')
     match_exact_name = forms.BooleanField(
         label='Match whole name',
         required=False,
@@ -189,7 +189,7 @@ class HarmonizedTraitSearchForm(forms.Form):
         label='Variable description',
         max_length=100,
         required=False,
-        help_text='Search harmonized phenotype variable descriptions. Words less than three letters are ignored.'
+        help_text='Search within variable descriptions. Words less than three letters are ignored.'
     )
     # Specify how form should be displayed.
     helper = FormHelper()
