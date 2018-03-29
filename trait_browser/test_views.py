@@ -2784,7 +2784,7 @@ class SourceTraitSearchTest(ClearSearchIndexMixin, UserLoginTestCase):
         self.assertIn('results_table', context)
         self.assertEqual(len(context['results_table'].rows), 0)
 
-    def test_short_words_are_removed(self):
+    def test_short_words_in_trait_description_are_removed(self):
         """Short words are properly removed."""
         trait_1 = factories.SourceTraitFactory.create(i_description='lorem ipsum')
         trait_2 = factories.SourceTraitFactory.create(i_description='lorem')
@@ -2797,7 +2797,7 @@ class SourceTraitSearchTest(ClearSearchIndexMixin, UserLoginTestCase):
         self.assertIn(trait_1, context['results_table'].data)
         self.assertIn(trait_2, context['results_table'].data)
 
-    def test_message_for_ignored_short_words(self):
+    def test_message_for_ignored_short_words_in_trait_description(self):
         response = self.client.get(self.get_url(), {'description': 'lorem ip'})
         context = response.context
         messages = list(response.wsgi_request._messages)
@@ -2828,6 +2828,35 @@ class SourceTraitSearchTest(ClearSearchIndexMixin, UserLoginTestCase):
         self.assertIsInstance(context['results_table'], tables.SourceTraitTableFull)
         self.assertEqual(len(context['results_table'].rows), 0)
 
+    def test_short_words_in_dataset_description_are_removed(self):
+        """Short words are properly removed."""
+        dataset_1 = factories.SourceDatasetFactory.create(i_dbgap_description='lorem ipsum')
+        trait_1 = factories.SourceTraitFactory.create(i_trait_name='foobar', source_dataset=dataset_1)
+        dataset_2 = factories.SourceDatasetFactory.create(i_dbgap_description='lorem')
+        trait_2 = factories.SourceTraitFactory.create(i_trait_name='foobar', source_dataset=dataset_2)
+        response = self.client.get(self.get_url(), {'name': 'foobar', 'dataset_description': 'lorem ip'})
+        context = response.context
+        self.assertIn('form', context)
+        self.assertTrue(context['has_results'])
+        self.assertIsInstance(context['results_table'], tables.SourceTraitTableFull)
+        self.assertEqual(len(context['results_table'].rows), 2)
+        self.assertIn(trait_1, context['results_table'].data)
+        self.assertIn(trait_2, context['results_table'].data)
+
+    def test_message_for_ignored_short_words_in_dataset_description(self):
+        response = self.client.get(self.get_url(), {'name': 'foo', 'dataset_description': 'lorem ip'})
+        context = response.context
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 2)
+        self.assertIn('Ignored short words in "Dataset description" field', str(messages[0]))
+
+    def test_message_for_short_words_in_both_trait_and_dataset_descriptions(self):
+        response = self.client.get(self.get_url(), {'description': 'lo ipsum', 'dataset_description': 'lorem ip'})
+        context = response.context
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 3)
+        self.assertEqual('Ignored short words in "Variable description" field: lo', str(messages[0]))
+        self.assertEqual('Ignored short words in "Dataset description" field: ip', str(messages[1]))
 
 class SourceTraitSearchByStudyTest(ClearSearchIndexMixin, UserLoginTestCase):
 

@@ -131,7 +131,7 @@ class SourceTraitSearchMultipleStudiesForm(SourceTraitSearchForm):
         required=False,
         initial=True
     )
-    dataset_description = forms.CharField(
+    dataset_description = WatsonSearchField(
         label='Dataset description',
         max_length=100,
         required=False,

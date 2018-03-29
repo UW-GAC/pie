@@ -62,11 +62,14 @@ class SearchFormMixin(FormMixin):
         self.table_data = self.search(**form.cleaned_data)
         context = self.get_context_data(form=form)
         context['has_results'] = True
-        # Add field-specific messages.
-        # May need to figure out how to make this general to any form field that is a WatsonSearchField.
-        # This also requires the form to have a 'description' field.
-        if form.fields['description'].warning_message:
-            self.messages.warning(form.fields['description'].warning_message, fail_silently=True)
+        # Add WatsonSearchField warning messages.
+        for field in form.fields:
+            try:
+                if form.fields[field].warning_message:
+                    self.messages.warning(form.fields[field].warning_message, fail_silently=True)
+            except AttributeError:
+                # If the field doesn't have a warning_message, then no message should be displayed.
+                pass
         # Add an informational message about the number of results found.
         msg = '{n} result{s} found.'.format(
             n=self.table_data.count(),
