@@ -152,7 +152,7 @@ class SourceTraitSearchOneStudyForm(SourceTraitSearchForm):
                     args=[study.pk]
                 )
             ),
-            help_text="""Search only in selected datasets. Start by typing the dbGaP variable accession (pht) or
+            help_text="""Search only in selected datasets. Start by typing the dbGaP dataset accession (pht) or
                          dataset name to filter the list (example: 'pht1234', '1234', '01234', or 'ex0_7s'). More
                          than one dataset may be selected."""
         )
