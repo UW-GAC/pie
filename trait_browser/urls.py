@@ -37,8 +37,8 @@ source_trait_patterns = [
 
 source_dataset_patterns = [
     url(r'^(?P<pk>\d+)/$', views.SourceDatasetDetail.as_view(), name='detail'),
-    url(r'^list/$', views.SourceDatasetList.as_view(), name='list')
-    # search
+    url(r'^list/$', views.SourceDatasetList.as_view(), name='list'),
+    url(r'^search/$', views.SourceDatasetSearch.as_view(), name='search'),
     # include autocomplete?
 ]
 
@@ -49,8 +49,9 @@ source_study_dataset_autocomplete_patterns = [
 ]
 
 source_study_dataset_patterns = [
-    url(r'^$', views.StudySourceDatasetList.as_view(), name='list'),
     url(r'^autocomplete/', include(source_study_dataset_autocomplete_patterns, namespace='autocomplete')),
+    url(r'^$', views.StudySourceDatasetList.as_view(), name='list'),
+    url(r'^search/', views.StudySourceDatasetSearch.as_view(), name='search'),
 ]
 
 source_study_detail_patterns = [

@@ -673,6 +673,12 @@ class StudySourceDatasetNameOrPHTAutocompleteTest(UserLoginTestCase):
         self.assertEqual(sorted(returned_pks), sorted([dataset_name_match.i_id, dataset_accession_match.i_id]))
 
 
+class StudySourceDatasetSearchTest(UserLoginTestCase):
+
+    def test_add_tests(self):
+        self.assertTrue(False)
+
+
 class StudySourceTableViewsTest(UserLoginTestCase):
     """Unit tests for the SourceTrait by Study views."""
 
@@ -836,6 +842,12 @@ class SourceDatasetListTest(UserLoginTestCase):
         context = response.context
         table = context['source_dataset_table']
         self.assertEqual(len(table.rows), 0)
+
+
+class SourceDatasetSearchTest(UserLoginTestCase):
+
+    def test_add_tests(self):
+        self.assertTrue(False)
 
 
 class HarmonizedTraitSetVersionDetailTest(UserLoginTestCase):

@@ -1,0 +1,21 @@
+{% extends '__base.html' %}
+{% load render_table from django_tables2 %}
+{% load crispy_forms_tags %}
+{% load staticfiles %}
+{% load static %}
+
+{% block head_title %}
+  | Search study datasets
+{% endblock %}
+
+
+{% block content %}
+  <h1>Search study datasets</h1>
+
+{% endblock %}
+
+{% block custom_javascript %}
+  {# script for django-autocomplete-light #}
+  <script type="text/javascript" src="{% static 'admin/js/vendor/jquery/jquery.js' %}"></script>
+  {{ form.media }}
+{% endblock custom_javascript %}

@@ -135,6 +135,12 @@ class StudySourceDatasetList(SingleTableMixin, StudyDetail):
             source_study_version__study=self.object)
 
 
+class StudySourceDatasetSearch(TemplateView):
+    """Class for searching source datasets within a specific study."""
+
+    template_name = 'trait_browser/study_sourcedataset_search.html'
+
+
 class StudyNameAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
     """Auto-complete studies in a form field by i_study_name."""
 
@@ -243,6 +249,12 @@ class SourceDatasetList(LoginRequiredMixin, SingleTableView):
 
     def get_table_data(self):
         return models.SourceDataset.objects.current()
+
+
+class SourceDatasetSearch(TemplateView):
+    """Class for searching source datasets."""
+
+    template_name = 'trait_browser/sourcedataset_search.html'
 
 
 class HarmonizedTraitSetVersionDetail(LoginRequiredMixin, FormMessagesMixin, DetailView):
