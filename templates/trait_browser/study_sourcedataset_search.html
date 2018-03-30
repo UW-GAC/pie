@@ -11,7 +11,15 @@
 
 {% block content %}
   <h2> Search <a href="{{ study.get_absolute_url }}">{{ study.i_study_name }}</a> datasets</h2>
+  {% include 'trait_browser/_search_help.html' %}
 
+  {% crispy form %}
+
+  {% include '_messages.html' %}
+
+  {% if has_results %}
+    {% render_table results_table %}
+  {% endif %}
 
 {% endblock %}
 

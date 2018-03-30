@@ -135,10 +135,29 @@ class StudySourceDatasetList(SingleTableMixin, StudyDetail):
             source_study_version__study=self.object)
 
 
-class StudySourceDatasetSearch(TemplateView):
+class StudySourceDatasetSearch(LoginRequiredMixin, SearchFormMixin, SingleObjectMixin, SingleTableMixin, MessageMixin,
+                               TemplateView):
     """Class for searching source datasets within a specific study."""
 
     template_name = 'trait_browser/study_sourcedataset_search.html'
+    form_class = forms.SourceDatasetSearchForm
+    table_class = tables.SourceDatasetTableFull
+    context_table_name = 'results_table'
+    table_data = models.SourceDataset.objects.none()
+    context_object_name = 'study'
+    model = models.Study
+
+    def get(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        return super(StudySourceDatasetSearch, self).get(request, *args, **kwargs)
+
+    def search(self, name='', description='', match_exact_name=True):
+        return searches.search_source_datasets(
+            name=name,
+            description=description,
+            match_exact_name=match_exact_name,
+            studies=[self.object.pk]
+        )
 
 
 class StudyNameAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
@@ -251,10 +270,22 @@ class SourceDatasetList(LoginRequiredMixin, SingleTableView):
         return models.SourceDataset.objects.current()
 
 
-class SourceDatasetSearch(TemplateView):
+class SourceDatasetSearch(LoginRequiredMixin, SearchFormMixin, SingleTableMixin, MessageMixin, TemplateView):
     """Class for searching source datasets."""
 
     template_name = 'trait_browser/sourcedataset_search.html'
+    form_class = forms.SourceDatasetSearchMultipleStudiesForm
+    table_class = tables.SourceDatasetTableFull
+    context_table_name = 'results_table'
+    table_data = models.SourceDataset.objects.none()
+
+    def search(self, name='', description='', match_exact_name=True, studies=[]):
+        return searches.search_source_datasets(
+            name=name,
+            description=description,
+            match_exact_name=match_exact_name,
+            studies=studies
+        )
 
 
 class HarmonizedTraitSetVersionDetail(LoginRequiredMixin, FormMessagesMixin, DetailView):

@@ -12,6 +12,16 @@
 {% block content %}
   <h1>Search study datasets</h1>
 
+  {% include 'trait_browser/_search_help.html' %}
+
+  {% crispy form %}
+
+  {% include '_messages.html' %}
+
+  {% if has_results %}
+      {% render_table results_table %}
+  {% endif %}
+
 {% endblock %}
 
 {% block custom_javascript %}
