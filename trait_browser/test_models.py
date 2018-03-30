@@ -58,6 +58,11 @@ class StudyTest(TestCase):
         study = factories.StudyFactory.create()
         url = study.get_search_url()
 
+    def test_get_dataset_search_url(self):
+        """Tests that the get_search_url method returns an appropriately constructed url."""
+        study = factories.StudyFactory.create()
+        url = study.get_dataset_search_url()
+
     def test_get_absolute_url(self):
         """get_absolute_url function doesn't fail."""
         instance = factories.StudyFactory.create()
