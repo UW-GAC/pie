@@ -39,6 +39,90 @@ class WatsonSearchField(forms.CharField):
         return ' '.join(long_words)
 
 
+class SourceDatasetSearchForm(forms.Form):
+    """Form to handle django-watson searches for SourceDataset objects."""
+
+    name = forms.CharField(
+        label='Dataset name',
+        max_length=100,
+        required=False,
+        help_text="Search dataset names."
+    )
+    match_exact_name = forms.BooleanField(
+        label='Match whole name',
+        required=False,
+        initial=True
+    )
+    description = WatsonSearchField(
+        label='Dataset description',
+        max_length=100,
+        required=False,
+        help_text='Search dataset descriptions. Words less than three letters are ignored.'
+    )
+    def __init__(self, *args, **kwargs):
+        """Initialize form with formatting and submit button."""
+        super(SourceDatasetSearchForm, self).__init__(*args, **kwargs)
+        # Specify how form should be displayed.
+        self.helper = FormHelper(self)
+        self.helper.form_method = 'get'
+        self.helper.form_class = 'form-horizontal'
+        self.helper.label_class = 'col-sm-2'
+        self.helper.field_class = 'col-sm-10'
+        self.helper.layout = Layout(
+            Div(
+                Div(
+                    Div(
+                        'name',
+                        'match_exact_name',
+                        css_class='panel-body',
+                    ),
+                    css_class='panel panel-default'
+                ),
+                'description',
+                css_class='col-sm-10 col-sm-offset-1'
+            )
+        )
+        # Add submit and reset buttons.
+        self.helper.layout.append(
+            FormActions(
+                Submit('submit', 'Search', css_class='btn-primary btn-disable'),
+                # For some reason, adding btn-disable to the css_class does not work properly. Unfortunately the tests
+                # still pass; I can't figure out how to make them fail if btn-disable is included.
+                Submit('reset', 'Reset', css_class='btn-info'),
+            )
+        )
+
+    def clean(self):
+        """Perform additional multi-field cleaning to make sure that either description or name is entered."""
+        super(SourceDatasetSearchForm, self).clean()
+        # If one of the fields failed its validation/cleaning, it will not be in cleaned data.
+        name = self.cleaned_data.get('name')
+        description = self.cleaned_data.get('description')
+        if name is not None and description is not None:
+            if not name and not description:
+                raise forms.ValidationError('Either dataset name or description must be filled in.')
+
+
+class SourceDatasetSearchMultipleStudiesForm(SourceDatasetSearchForm):
+    """Form to handle django-watson searches for SourceDataset objects within a specific study."""
+
+    studies = forms.ModelMultipleChoiceField(
+        queryset=models.Study.objects.all(),
+        required=False,
+        label='Study/Studies',
+        widget=autocomplete.ModelSelect2Multiple(url='trait_browser:source:studies:autocomplete:by-name'),
+        help_text="""Search only in selected studies. Start typing the dbGaP study name to filter the list, then
+                     select the intended study. More than one study may be selected.
+                     """
+    )
+
+    def __init__(self, *args, **kwargs):
+        """Initialize form instance by adding study and dataset propery fields to the layout."""
+        super(SourceDatasetSearchMultipleStudiesForm, self).__init__(*args, **kwargs)
+        # Add the additional field to the form.
+        self.helper.layout[0].append('studies')
+
+
 class SourceTraitSearchForm(forms.Form):
     """Form to handle django-watson searches for SourceTrait objects.
 
