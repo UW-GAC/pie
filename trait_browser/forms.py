@@ -4,7 +4,7 @@ from django import forms
 from django.core.urlresolvers import reverse
 
 from crispy_forms.helper import FormHelper
-from crispy_forms.layout import Layout, Submit, Div
+from crispy_forms.layout import Layout, Submit, Div, Field
 from crispy_forms.bootstrap import FormActions
 from dal import autocomplete
 
@@ -13,27 +13,67 @@ from . import models
 
 ERROR_ONLY_SHORT_WORDS = 'Enter at least one term with more than two letters.'
 
+class MultilineField(Field):
+    """Superclass to allow multiple form fields on one line.
+
+    This class is a subclass of django-crispy-form's Field class. It is not
+    intended to be used directly. Instead, one of its subclasses should be used.
+    """
+
+    template = 'trait_browser/crispy_forms/_shared_row_fields.html'
+
+    def __init__(self, field, input_class, *args, **kwargs):
+        super(MultilineField, self).__init__(field, *args, **kwargs)
+        self.input_class = input_class
+
+    def render(self, form, form_style, context, extra_context=None, **kwargs):
+        if extra_context is None:
+            extra_context = {}
+        extra_context['input_class'] = self.input_class
+        return super(MultilineField, self).render(form, form_style, context, extra_context=extra_context, **kwargs)
+
+
+class MultilineStartingField(MultilineField):
+    """Class to create the first form field on a given line.
+
+    This class adds the form-group class to the div starting a set of fields.
+    It must be used before a MultilineEndingField field.
+    """
+
+    def render(self, *args, **kwargs):
+        extra_context = kwargs.get('extra_context')
+        if extra_context is None:
+            extra_context = {}
+        extra_context['add_starting_formgroup'] = True
+        extra_context['add_ending_formgroup'] = False
+        return super(MultilineStartingField, self).render(extra_context=extra_context, *args, **kwargs)
+
+
+class MultilineEndingField(MultilineField):
+    """Class to create the first form field on a given line.
+
+    This class adds the form-group class to the div following a set of fields.
+     It must be used after a MultilineStartingField field.
+    """
+
+    def render(self, *args, **kwargs):
+        extra_context = kwargs.get('extra_context')
+        if extra_context is None:
+            extra_context = {}
+        extra_context['add_starting_formgroup'] = False
+        extra_context['add_ending_formgroup'] = True
+        return super(MultilineEndingField, self).render(extra_context=extra_context, *args, **kwargs)
+
+
 # Custom layouts for searching.
 name_checkbox_layout = Layout(
-    Div(
-        Div(
-            'name',
-            'match_exact_name',
-            css_class='panel-body',
-        ),
-        css_class='panel panel-default'
-    )
+    MultilineStartingField('name', 'col-sm-6'),
+    MultilineEndingField('match_exact_name', 'col-sm-4')
 )
 
 dataset_name_checkbox_layout = Layout(
-    Div(
-        Div(
-            'dataset_name',
-            'dataset_match_exact_name',
-            css_class='panel-body',
-        ),
-        css_class='panel panel-default'
-    )
+    MultilineStartingField('dataset_name', 'col-sm-6'),
+    MultilineEndingField('dataset_match_exact_name', 'col-sm-4')
 )
 
 buttons_layout = Layout(
