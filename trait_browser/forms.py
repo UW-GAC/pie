@@ -13,6 +13,38 @@ from . import models
 
 ERROR_ONLY_SHORT_WORDS = 'Enter at least one term with more than two letters.'
 
+# Custom layouts for searching.
+name_checkbox_layout = Layout(
+    Div(
+        Div(
+            'name',
+            'match_exact_name',
+            css_class='panel-body',
+        ),
+        css_class='panel panel-default'
+    )
+)
+
+dataset_name_checkbox_layout = Layout(
+    Div(
+        Div(
+            'dataset_name',
+            'dataset_match_exact_name',
+            css_class='panel-body',
+        ),
+        css_class='panel panel-default'
+    )
+)
+
+buttons_layout = Layout(
+    FormActions(
+        Submit('submit', 'Search', css_class='btn-primary btn-disable'),
+        # For some reason, adding btn-disable to the css_class does not work properly. Unfortunately the tests
+        # still pass; I can't figure out how to make them fail if btn-disable is included.
+        Submit('reset', 'Reset', css_class='btn-info'),
+    )
+)
+
 
 class WatsonSearchField(forms.CharField):
 
@@ -70,25 +102,10 @@ class SourceDatasetSearchForm(forms.Form):
         self.helper.field_class = 'col-sm-10'
         self.helper.layout = Layout(
             Div(
-                Div(
-                    Div(
-                        'name',
-                        'match_exact_name',
-                        css_class='panel-body',
-                    ),
-                    css_class='panel panel-default'
-                ),
+                name_checkbox_layout,
                 'description',
+                buttons_layout,
                 css_class='col-sm-10 col-sm-offset-1'
-            )
-        )
-        # Add submit and reset buttons.
-        self.helper.layout.append(
-            FormActions(
-                Submit('submit', 'Search', css_class='btn-primary btn-disable'),
-                # For some reason, adding btn-disable to the css_class does not work properly. Unfortunately the tests
-                # still pass; I can't figure out how to make them fail if btn-disable is included.
-                Submit('reset', 'Reset', css_class='btn-info'),
             )
         )
 
@@ -120,7 +137,15 @@ class SourceDatasetSearchMultipleStudiesForm(SourceDatasetSearchForm):
         """Initialize form instance by adding study and dataset propery fields to the layout."""
         super(SourceDatasetSearchMultipleStudiesForm, self).__init__(*args, **kwargs)
         # Add the additional field to the form.
-        self.helper.layout[0].append('studies')
+        self.helper.Layout = Layout(
+            Div(
+                name_checkbox_layout,
+                'description',
+                'studies',
+                buttons_layout,
+                css_class='col-sm-10 col-sm-offset-1'
+            )
+        )
 
 
 class SourceTraitSearchForm(forms.Form):
@@ -159,25 +184,10 @@ class SourceTraitSearchForm(forms.Form):
         self.helper.field_class = 'col-sm-10'
         self.helper.layout = Layout(
             Div(
-                Div(
-                    Div(
-                        'name',
-                        'match_exact_name',
-                        css_class='panel-body',
-                    ),
-                    css_class='panel panel-default'
-                ),
+                name_checkbox_layout,
                 'description',
+                buttons_layout,
                 css_class='col-sm-10 col-sm-offset-1'
-            )
-        )
-        # Add submit and reset buttons.
-        self.helper.layout.append(
-            FormActions(
-                Submit('submit', 'Search', css_class='btn-primary btn-disable'),
-                # For some reason, adding btn-disable to the css_class does not work properly. Unfortunately the tests
-                # still pass; I can't figure out how to make them fail if btn-disable is included.
-                Submit('reset', 'Reset', css_class='btn-info'),
             )
         )
 
@@ -226,20 +236,17 @@ class SourceTraitSearchMultipleStudiesForm(SourceTraitSearchForm):
         """Initialize form instance by adding study and dataset propery fields to the layout."""
         super(SourceTraitSearchMultipleStudiesForm, self).__init__(*args, **kwargs)
         # Add the additional field to the form.
-        self.helper.layout[0].append(
+        self.helper.layout = Layout(
             Div(
-                Div(
-                    Div(
-                        'dataset_name',
-                        'dataset_match_exact_name',
-                        css_class='panel-body',
-                    ),
-                    css_class='panel panel-default'
-                ),
+                name_checkbox_layout,
+                'description',
+                dataset_name_checkbox_layout,
                 'dataset_description',
+                'studies',
+                buttons_layout,
+                css_class='col-sm-10 col-sm-offset-1'
             )
         )
-        self.helper.layout[0].append('studies')
 
 
 class SourceTraitSearchOneStudyForm(SourceTraitSearchForm):
@@ -270,7 +277,15 @@ class SourceTraitSearchOneStudyForm(SourceTraitSearchForm):
                          dataset name to filter the list (example: 'pht1234', '1234', '01234', or 'ex0_7s'). More
                          than one dataset may be selected."""
         )
-        self.helper.layout[0].append('datasets')
+        self.helper.layout = Layout(
+            Div(
+                name_checkbox_layout,
+                'description',
+                'datasets',
+                buttons_layout,
+                css_class='col-sm-10 col-sm-offset-1'
+            )
+        )
 
     def clean_datasets(self):
         data = self.cleaned_data['datasets']
@@ -313,26 +328,10 @@ class HarmonizedTraitSearchForm(forms.Form):
     helper.field_class = 'col-sm-10'
     helper.layout = Layout(
         Div(
-            Div(
-                Div(
-                    'name',
-                    'match_exact_name',
-                    css_class='panel-body',
-                ),
-                css_class='panel panel-default'
-            ),
+            name_checkbox_layout,
             'description',
-            'studies',
+            buttons_layout,
             css_class='col-sm-10 col-sm-offset-1'
-        )
-    )
-    # Add submit and reset buttons.
-    helper.layout.append(
-        FormActions(
-            Submit('submit', 'Search', css_class='btn-primary btn-disable'),
-            # For some reason, adding btn-disable to the css_class does not work properly. Unfortunately the tests
-            # still pass; I can't figure out how to make them fail if btn-disable is included.
-            Submit('reset', 'Reset', css_class='btn-info'),
         )
     )
 
