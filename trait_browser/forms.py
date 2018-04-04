@@ -4,7 +4,7 @@ from django import forms
 from django.core.urlresolvers import reverse
 
 from crispy_forms.helper import FormHelper
-from crispy_forms.layout import Layout, Submit, Div, Field
+from crispy_forms.layout import Layout, Submit, Div, Field, Row
 from crispy_forms.bootstrap import FormActions
 from dal import autocomplete
 
@@ -141,11 +141,13 @@ class SourceDatasetSearchForm(forms.Form):
         self.helper.label_class = 'col-sm-2'
         self.helper.field_class = 'col-sm-10'
         self.helper.layout = Layout(
-            Div(
-                name_checkbox_layout,
-                'description',
-                buttons_layout,
-                css_class='col-sm-10 col-sm-offset-1'
+            Row(
+                Div(
+                    name_checkbox_layout,
+                    'description',
+                    buttons_layout,
+                    css_class='col-sm-10 col-sm-offset-1'
+                )
             )
         )
 
@@ -178,15 +180,16 @@ class SourceDatasetSearchMultipleStudiesForm(SourceDatasetSearchForm):
         super(SourceDatasetSearchMultipleStudiesForm, self).__init__(*args, **kwargs)
         # Add the additional field to the form.
         self.helper.Layout = Layout(
-            Div(
-                name_checkbox_layout,
-                'description',
-                'studies',
-                buttons_layout,
-                css_class='col-sm-10 col-sm-offset-1'
+            Row(
+                Div(
+                    name_checkbox_layout,
+                    'description',
+                    'studies',
+                    buttons_layout,
+                    css_class='col-sm-10 col-sm-offset-1'
+                )
             )
         )
-
 
 class SourceTraitSearchForm(forms.Form):
     """Form to handle django-watson searches for SourceTrait objects.
@@ -223,11 +226,13 @@ class SourceTraitSearchForm(forms.Form):
         self.helper.label_class = 'col-sm-2'
         self.helper.field_class = 'col-sm-10'
         self.helper.layout = Layout(
-            Div(
-                name_checkbox_layout,
-                'description',
-                buttons_layout,
-                css_class='col-sm-10 col-sm-offset-1'
+            Row(
+                Div(
+                    name_checkbox_layout,
+                    'description',
+                    buttons_layout,
+                    css_class='col-sm-10 col-sm-offset-1'
+                )
             )
         )
 
@@ -277,14 +282,16 @@ class SourceTraitSearchMultipleStudiesForm(SourceTraitSearchForm):
         super(SourceTraitSearchMultipleStudiesForm, self).__init__(*args, **kwargs)
         # Add the additional field to the form.
         self.helper.layout = Layout(
-            Div(
-                name_checkbox_layout,
-                'description',
-                dataset_name_checkbox_layout,
-                'dataset_description',
-                'studies',
-                buttons_layout,
-                css_class='col-sm-10 col-sm-offset-1'
+            Row(
+                Div(
+                    name_checkbox_layout,
+                    'description',
+                    dataset_name_checkbox_layout,
+                    'dataset_description',
+                    'studies',
+                    buttons_layout,
+                    css_class='col-sm-10 col-sm-offset-1'
+                )
             )
         )
 
@@ -318,12 +325,14 @@ class SourceTraitSearchOneStudyForm(SourceTraitSearchForm):
                          than one dataset may be selected."""
         )
         self.helper.layout = Layout(
-            Div(
-                name_checkbox_layout,
-                'description',
-                'datasets',
-                buttons_layout,
-                css_class='col-sm-10 col-sm-offset-1'
+            Row(
+                Div(
+                    name_checkbox_layout,
+                    'description',
+                    'datasets',
+                    buttons_layout,
+                    css_class='col-sm-10 col-sm-offset-1'
+                )
             )
         )
 
@@ -367,11 +376,13 @@ class HarmonizedTraitSearchForm(forms.Form):
     helper.label_class = 'col-sm-2'
     helper.field_class = 'col-sm-10'
     helper.layout = Layout(
-        Div(
-            name_checkbox_layout,
-            'description',
-            buttons_layout,
-            css_class='col-sm-10 col-sm-offset-1'
+        Row(
+            Div(
+                name_checkbox_layout,
+                'description',
+                buttons_layout,
+                css_class='col-sm-10 col-sm-offset-1'
+            )
         )
     )
 
