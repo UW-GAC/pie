@@ -179,7 +179,7 @@ class SourceDatasetSearchMultipleStudiesForm(SourceDatasetSearchForm):
         """Initialize form instance by adding study and dataset propery fields to the layout."""
         super(SourceDatasetSearchMultipleStudiesForm, self).__init__(*args, **kwargs)
         # Add the additional field to the form.
-        self.helper.Layout = Layout(
+        self.helper.layout = Layout(
             Row(
                 Div(
                     name_checkbox_layout,
