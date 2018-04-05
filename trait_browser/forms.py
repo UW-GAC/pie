@@ -5,7 +5,7 @@ from django.core.urlresolvers import reverse
 
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Layout, Submit, Div, Field, Row
-from crispy_forms.bootstrap import FormActions
+from crispy_forms.bootstrap import Accordion, AccordionGroup, FormActions
 from dal import autocomplete
 
 from . import models
@@ -280,15 +280,28 @@ class SourceTraitSearchMultipleStudiesForm(SourceTraitSearchForm):
     def __init__(self, *args, **kwargs):
         """Initialize form instance by adding study and dataset propery fields to the layout."""
         super(SourceTraitSearchMultipleStudiesForm, self).__init__(*args, **kwargs)
+
+        # Set the status of the collapsible panel depending on which data have been passed to form.
+        panel_active = False
+        if self.is_bound and self.data:
+            if self.data.get('dataset_description') or self.data.get('dataset_name') or self.data.get('studies'):
+                panel_active = True
+
         # Add the additional field to the form.
         self.helper.layout = Layout(
             Row(
                 Div(
                     name_checkbox_layout,
                     'description',
-                    dataset_name_checkbox_layout,
-                    'dataset_description',
-                    'studies',
+                    Accordion(
+                        AccordionGroup(
+                            'Additional filtering by study and dataset',
+                            dataset_name_checkbox_layout,
+                            'dataset_description',
+                            'studies',
+                            active=panel_active
+                        )
+                    ),
                     buttons_layout,
                     css_class='col-sm-10 col-sm-offset-1'
                 )
