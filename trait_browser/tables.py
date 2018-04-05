@@ -13,7 +13,7 @@ class StudyTable(tables.Table):
     """
 
     i_study_name = tables.LinkColumn(
-        'trait_browser:source:studies:detail:detail', args=[tables.utils.A('pk')], verbose_name='Study',
+        'trait_browser:source:studies:pk:detail', args=[tables.utils.A('pk')], verbose_name='Study',
         orderable=False)
     trait_count = tables.Column(accessor='study', verbose_name='Number of variables', orderable=False, empty_values=())
     dbGaP_accession = tables.TemplateColumn(
@@ -56,7 +56,7 @@ class SourceDatasetTableFull(SourceDatasetTable):
     """Class for table of source datasets for listview."""
 
     study = tables.LinkColumn(
-        'trait_browser:source:studies:detail:detail', args=[tables.utils.A('source_study_version.study.pk')],
+        'trait_browser:source:studies:pk:detail', args=[tables.utils.A('source_study_version.study.pk')],
         text=lambda record: record.source_study_version.study.i_study_name, verbose_name='Study', orderable=False)
 
     class Meta(SourceDatasetTable.Meta):
@@ -85,7 +85,7 @@ class SourceTraitTableFull(SourceTraitTable):
     """Table for source traits with all information."""
 
     study = tables.LinkColumn(
-        'trait_browser:source:studies:detail:detail',
+        'trait_browser:source:studies:pk:detail',
         args=[tables.utils.A('source_dataset.source_study_version.study.pk')],
         text=lambda record: record.source_dataset.source_study_version.study.i_study_name,
         verbose_name='Study', orderable=False)
@@ -128,7 +128,7 @@ class SourceTraitDatasetTable(SourceTraitTable):
     """Table for displaying SourceTraits that are restricted to one dataset (e.g. in dataset views)."""
 
     study = tables.LinkColumn(
-        'trait_browser:source:studies:detail:detail',
+        'trait_browser:source:studies:pk:detail',
         args=[tables.utils.A('source_dataset.source_study_version.study.pk')],
         text=lambda record: record.source_dataset.source_study_version.study.i_study_name,
         verbose_name='Study', orderable=False)

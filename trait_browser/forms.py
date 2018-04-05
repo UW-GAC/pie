@@ -329,7 +329,7 @@ class SourceTraitSearchOneStudyForm(SourceTraitSearchForm):
             label='Dataset(s)',
             widget=autocomplete.ModelSelect2Multiple(
                 url=reverse(
-                    'trait_browser:source:studies:detail:datasets:autocomplete:by-name-or-pht',
+                    'trait_browser:source:studies:pk:datasets:autocomplete:by-name-or-pht',
                     args=[study.pk]
                 )
             ),

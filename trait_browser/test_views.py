@@ -35,7 +35,7 @@ class StudyDetailTest(UserLoginTestCase):
             source_dataset__source_study_version__study=self.study)
 
     def get_url(self, *args):
-        return reverse('trait_browser:source:studies:detail:detail', args=args)
+        return reverse('trait_browser:source:studies:pk:detail', args=args)
 
     def test_view_success_code(self):
         """View returns successful response code."""
@@ -106,7 +106,7 @@ class StudySourceTraitListTest(UserLoginTestCase):
             source_dataset__source_study_version__study=self.study)
 
     def get_url(self, *args):
-        return reverse('trait_browser:source:studies:detail:variables', args=args)
+        return reverse('trait_browser:source:studies:pk:variables', args=args)
 
     def test_view_success_code(self):
         """View returns successful response code."""
@@ -165,7 +165,7 @@ class StudySourceDatasetListTest(UserLoginTestCase):
             factories.SourceTraitFactory.create_batch(5, source_dataset=ds)
 
     def get_url(self, *args):
-        return reverse('trait_browser:source:studies:detail:datasets:list', args=args)
+        return reverse('trait_browser:source:studies:pk:datasets:list', args=args)
 
     def test_view_success_code(self):
         """View returns successful response code."""
@@ -239,7 +239,7 @@ class StudySourceDatasetNameAutocompleteTest(UserLoginTestCase):
         self.user.refresh_from_db()
 
     def get_url(self, *args):
-        return reverse('trait_browser:source:studies:detail:datasets:autocomplete:by-name', args=args)
+        return reverse('trait_browser:source:studies:pk:datasets:autocomplete:by-name', args=args)
 
     def test_view_success_code(self):
         """View returns successful response code."""
@@ -370,7 +370,7 @@ class StudySourceDatasetPHTAutocompleteTest(UserLoginTestCase):
             ))
 
     def get_url(self, *args):
-        return reverse('trait_browser:source:studies:detail:datasets:autocomplete:by-pht', args=args)
+        return reverse('trait_browser:source:studies:pk:datasets:autocomplete:by-pht', args=args)
 
     def test_view_success_code(self):
         """View returns successful response code."""
@@ -502,7 +502,7 @@ class StudySourceDatasetNameOrPHTAutocompleteTest(UserLoginTestCase):
             ))
 
     def get_url(self, *args):
-        return reverse('trait_browser:source:studies:detail:datasets:autocomplete:by-name-or-pht', args=args)
+        return reverse('trait_browser:source:studies:pk:datasets:autocomplete:by-name-or-pht', args=args)
 
     def test_view_success_code(self):
         """View returns successful response code."""
@@ -680,7 +680,7 @@ class StudySourceDatasetSearchTest(UserLoginTestCase):
         self.study = factories.StudyFactory.create()
 
     def get_url(self, *args):
-        return reverse('trait_browser:source:studies:detail:datasets:search', args=args)
+        return reverse('trait_browser:source:studies:pk:datasets:search', args=args)
 
     def test_view_success_code(self):
         """View returns successful response code."""
