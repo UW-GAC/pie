@@ -106,7 +106,7 @@ class StudySourceTraitListTest(UserLoginTestCase):
             source_dataset__source_study_version__study=self.study)
 
     def get_url(self, *args):
-        return reverse('trait_browser:source:studies:pk:variables', args=args)
+        return reverse('trait_browser:source:studies:pk:traits:list', args=args)
 
     def test_view_success_code(self):
         """View returns successful response code."""
@@ -3228,7 +3228,7 @@ class SourceTraitSearchByStudyTest(ClearSearchIndexMixin, UserLoginTestCase):
         self.study = factories.StudyFactory.create()
 
     def get_url(self, *args):
-        return reverse('trait_browser:source:studies:search', args=args)
+        return reverse('trait_browser:source:studies:pk:traits:search', args=args)
 
     def test_view_success_code(self):
         """View returns successful response code."""
