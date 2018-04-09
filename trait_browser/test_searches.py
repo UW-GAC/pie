@@ -23,7 +23,7 @@ class ClearSearchIndexMixin(object):
         SearchEntry.objects.all().delete()
 
 
-class SourceDatasetSearchTest(ClearSearchIndexMixin, TestCase):
+class SearchSourceDatasetsTest(ClearSearchIndexMixin, TestCase):
 
     def test_returns_all_datasets_with_no_input(self):
         """All datasets are returned if nothing is passed to search."""
@@ -256,7 +256,7 @@ class SourceDatasetSearchTest(ClearSearchIndexMixin, TestCase):
             self.assertNotIn(dataset, qs, msg=msg)
 
 
-class SourceTraitSearchTest(ClearSearchIndexMixin, TestCase):
+class SearchSourceTraitsTest(ClearSearchIndexMixin, TestCase):
 
     def test_returns_all_traits_with_no_input(self):
         """All traits are returned if nothing is passed to search."""
@@ -549,7 +549,7 @@ class SourceTraitSearchTest(ClearSearchIndexMixin, TestCase):
         self.assertEqual(len(qs), 0)
 
 
-class HarmonizedTraitSearchTest(ClearSearchIndexMixin, TestCase):
+class SearchHarmonizedTraitsTest(ClearSearchIndexMixin, TestCase):
     def test_returns_all_traits_with_no_input(self):
         """All traits are returned if nothing is passed to search."""
         traits = factories.HarmonizedTraitFactory.create_batch(10)
