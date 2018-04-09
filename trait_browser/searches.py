@@ -17,7 +17,7 @@ def search_source_datasets(description='', name='', studies = [], match_exact_na
             qs = qs.filter(dataset_name__icontains=name)
     if len(description) > 0:
         qs = watson.filter(qs, description, ranking=False)
-    return qs.order_by('i_accession')
+    return qs.order_by('source_study_version__study__i_accession', 'i_accession')
 
 
 def search_source_traits(description='', datasets=None, name='', match_exact_name=True):
@@ -34,7 +34,8 @@ def search_source_traits(description='', datasets=None, name='', match_exact_nam
             qs = qs.filter(i_trait_name__icontains=name)
     if len(description) > 0:
         qs = watson.filter(qs, description, ranking=False)
-    return qs.order_by('source_dataset__i_accession', 'i_dbgap_variable_accession')
+    return qs.order_by('source_dataset__source_study_version__study__i_accession',
+                       'source_dataset__i_accession', 'i_dbgap_variable_accession')
 
 
 def search_harmonized_traits(description='', name='', match_exact_name=True):

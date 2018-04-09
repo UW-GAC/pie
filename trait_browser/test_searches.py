@@ -228,10 +228,20 @@ class SourceDatasetSearchTest(ClearSearchIndexMixin, TestCase):
         qs = searches.search_source_datasets(name='ipsum', description='lorem', studies=[study.pk])
         self.assertQuerysetEqual(qs, [repr(dataset)])
 
-    def test_default_ordering_by_dataset(self):
+    def test_default_ordering_by_dataset_accession(self):
         """Datasets are ordered by dataset accession."""
-        dataset_1 = factories.SourceDatasetFactory.create(i_accession=2)
-        dataset_2 = factories.SourceDatasetFactory.create(i_accession=1)
+        study = factories.StudyFactory.create()
+        dataset_1 = factories.SourceDatasetFactory.create(i_accession=2, source_study_version__study=study)
+        dataset_2 = factories.SourceDatasetFactory.create(i_accession=1, source_study_version__study=study)
+        qs = searches.search_source_datasets()
+        self.assertEqual(list(qs), [dataset_2, dataset_1])
+
+    def test_default_ordering_by_study_and_dataset_accession(self):
+        """Datasets are ordered by dataset accession."""
+        study_1 = factories.StudyFactory.create(i_accession=2)
+        study_2 = factories.StudyFactory.create(i_accession=1)
+        dataset_1 = factories.SourceDatasetFactory.create(i_accession=1, source_study_version__study=study_1)
+        dataset_2 = factories.SourceDatasetFactory.create(i_accession=2, source_study_version__study=study_2)
         qs = searches.search_source_datasets()
         self.assertEqual(list(qs), [dataset_2, dataset_1])
 
@@ -465,8 +475,24 @@ class SourceTraitSearchTest(ClearSearchIndexMixin, TestCase):
 
     def test_default_ordering_by_dataset_and_trait(self):
         """Traits are ordered by dataset accession and then variable accession."""
-        dataset_1 = factories.SourceDatasetFactory.create(i_accession=2)
-        dataset_2 = factories.SourceDatasetFactory.create(i_accession=1)
+        study = factories.StudyFactory.create()
+        dataset_1 = factories.SourceDatasetFactory.create(i_accession=2, source_study_version__study=study)
+        dataset_2 = factories.SourceDatasetFactory.create(i_accession=1, source_study_version__study=study)
+        trait_1 = factories.SourceTraitFactory.create(
+            i_dbgap_variable_accession=1,
+            source_dataset=dataset_1)
+        trait_2 = factories.SourceTraitFactory.create(
+            i_dbgap_variable_accession=2,
+            source_dataset=dataset_2)
+        qs = searches.search_source_traits()
+        self.assertEqual(list(qs), [trait_2, trait_1])
+
+    def test_default_ordering_by_study_dataset_and_trait(self):
+        """Traits are ordered by study accession, dataset accession, and then variable accession."""
+        study_1 = factories.StudyFactory.create(i_accession=2)
+        study_2 = factories.StudyFactory.create(i_accession=1)
+        dataset_1 = factories.SourceDatasetFactory.create(i_accession=1, source_study_version__study=study_1)
+        dataset_2 = factories.SourceDatasetFactory.create(i_accession=2, source_study_version__study=study_2)
         trait_1 = factories.SourceTraitFactory.create(
             i_dbgap_variable_accession=1,
             source_dataset=dataset_1)
