@@ -5,7 +5,7 @@ import watson.search as watson
 from . import models
 
 
-def search_source_datasets(description='', name='', studies = [], match_exact_name=True):
+def search_source_datasets(description='', name='', studies=[], match_exact_name=True):
     """Search source datasets."""
     qs = models.SourceDataset.objects.current()
     if len(studies) > 0:

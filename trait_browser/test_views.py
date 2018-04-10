@@ -3445,7 +3445,8 @@ class SourceTraitSearchTest(ClearSearchIndexMixin, UserLoginTestCase):
         trait = factories.SourceTraitFactory.create(i_description='lorem ipsum', source_dataset=dataset)
         other_dataset = factories.SourceDatasetFactory.create(i_dbgap_description='foo')
         factories.SourceTraitFactory.create(i_description='lorem ipsum', source_dataset=other_dataset)
-        response = self.client.get(self.get_url(), {'description': 'lorem', 'dataset_description': 'demographic', 'dataset_name': ''})
+        input = {'description': 'lorem', 'dataset_description': 'demographic', 'dataset_name': ''}
+        response = self.client.get(self.get_url(), input)
         context = response.context
         self.assertIn('form', context)
         self.assertTrue(context['has_results'])

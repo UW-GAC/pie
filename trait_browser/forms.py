@@ -16,6 +16,7 @@ from . import models
 ERROR_ONLY_SHORT_WORDS = 'Enter at least one term with more than two letters.'
 ERROR_ALLOWED_CHARACTERS = 'Include only uppercase and lowercase letters, digits, underscores, and apostrophes.'
 
+
 class MultilineField(Field):
     """Superclass to allow multiple form fields on one line.
 
@@ -26,6 +27,7 @@ class MultilineField(Field):
     template = 'trait_browser/crispy_forms/_shared_row_fields.html'
 
     def __init__(self, field, input_class, *args, **kwargs):
+        """Add the specified css class for the input tag to the object."""
         super(MultilineField, self).__init__(field, *args, **kwargs)
         self.input_class = input_class
 
@@ -136,8 +138,10 @@ class SourceDatasetSearchForm(forms.Form):
         label='Dataset description',
         max_length=100,
         required=False,
-        help_text='Search dataset descriptions. Words less than three letters are ignored. Only alphanumeric characters, apostrophes, and underscores are allowed.'
+        help_text=('Search dataset descriptions. Words less than three letters are ignored. Only alphanumeric '
+                   'characters, apostrophes, and underscores are allowed.')
     )
+
     def __init__(self, *args, **kwargs):
         """Initialize form with formatting and submit button."""
         super(SourceDatasetSearchForm, self).__init__(*args, **kwargs)
@@ -177,9 +181,8 @@ class SourceDatasetSearchMultipleStudiesForm(SourceDatasetSearchForm):
         required=False,
         label='Study/Studies',
         widget=autocomplete.ModelSelect2Multiple(url='trait_browser:source:studies:autocomplete:by-name'),
-        help_text="""Search only in selected studies. Start typing the dbGaP study name to filter the list, then
-                     select the intended study. More than one study may be selected.
-                     """
+        help_text=('Search only in selected studies. Start typing the dbGaP study name to filter the list, then '
+                   'select the intended study. More than one study may be selected.')
     )
 
     def __init__(self, *args, **kwargs):
@@ -197,6 +200,7 @@ class SourceDatasetSearchMultipleStudiesForm(SourceDatasetSearchForm):
                 )
             )
         )
+
 
 class SourceTraitSearchForm(forms.Form):
     """Form to handle django-watson searches for SourceTrait objects.
@@ -220,7 +224,8 @@ class SourceTraitSearchForm(forms.Form):
         label='Variable description',
         max_length=100,
         required=False,
-        help_text='Search within variable descriptions. Words less than three letters are ignored. Only alphanumeric characters, apostrophes, and underscores are allowed.'
+        help_text=('Search within variable descriptions. Words less than three letters are ignored. Only alphanumeric '
+                   'characters, apostrophes, and underscores are allowed.')
     )
 
     def __init__(self, *args, **kwargs):
@@ -387,7 +392,8 @@ class HarmonizedTraitSearchForm(forms.Form):
         label='Variable description',
         max_length=100,
         required=False,
-        help_text='Search within variable descriptions. Words less than three letters are ignored. Only alphanumeric characters, apostrophes, and underscores are allowed.'
+        help_text=('Search within variable descriptions. Words less than three letters are ignored. Only alphanumeric '
+                   'characters, apostrophes, and underscores are allowed.')
     )
     # Specify how form should be displayed.
     helper = FormHelper()

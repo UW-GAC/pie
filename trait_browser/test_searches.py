@@ -133,7 +133,7 @@ class SearchSourceDatasetsTest(ClearSearchIndexMixin, TestCase):
         self.assertIn(dataset_2, qs)
 
     def test_description_does_not_match_dataset_name_field(self):
-        """datasets whose name field matches description query are not found."""
+        """Datasets whose name field matches description query are not found."""
         factories.SourceDatasetFactory.create(
             dataset_name='lorem',
             i_dbgap_description='other description')
@@ -141,7 +141,7 @@ class SearchSourceDatasetsTest(ClearSearchIndexMixin, TestCase):
         self.assertEqual(len(qs), 0)
 
     def test_dataset_name_does_not_match_description_field(self):
-        """datasets whose description field matches name query are not found."""
+        """Datasets whose description field matches name query are not found."""
         factories.SourceDatasetFactory.create(
             dataset_name='other',
             i_dbgap_description='lorem')
