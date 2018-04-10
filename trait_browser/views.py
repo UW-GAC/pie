@@ -62,11 +62,14 @@ class SearchFormMixin(FormMixin):
         self.table_data = self.search(**form.cleaned_data)
         context = self.get_context_data(form=form)
         context['has_results'] = True
-        # Add field-specific messages.
-        # May need to figure out how to make this general to any form field that is a WatsonSearchField.
-        # This also requires the form to have a 'description' field.
-        if form.fields['description'].warning_message:
-            self.messages.warning(form.fields['description'].warning_message, fail_silently=True)
+        # Add WatsonSearchField warning messages.
+        for field in form.fields:
+            try:
+                if form.fields[field].warning_message:
+                    self.messages.warning(form.fields[field].warning_message, fail_silently=True)
+            except AttributeError:
+                # If the field doesn't have a warning_message, then no message should be displayed.
+                pass
         # Add an informational message about the number of results found.
         msg = '{n} result{s} found.'.format(
             n=self.table_data.count(),
@@ -119,6 +122,38 @@ class StudySourceTraitList(SingleTableMixin, StudyDetail):
             source_dataset__source_study_version__study=self.object)
 
 
+class StudySourceTraitSearch(LoginRequiredMixin, SearchFormMixin, SingleObjectMixin, SingleTableMixin, MessageMixin,
+                             TemplateView):
+    """Form view class for searching for source traits within a specific study."""
+
+    template_name = 'trait_browser/study_sourcetrait_search.html'
+    form_class = forms.SourceTraitSearchOneStudyForm
+    table_class = tables.SourceTraitTableFull
+    context_table_name = 'results_table'
+    table_data = models.SourceTrait.objects.none()
+    context_object_name = 'study'
+    model = models.Study
+
+    def get_form(self, form_class=None):
+        if form_class is None:
+            form_class = self.get_form_class()
+        return form_class(self.object, **self.get_form_kwargs())
+
+    def get(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        if 'reset' in self.request.GET:
+            # Instantiate a blank form, ignoring any current GET parameters.
+            form_class = self.get_form_class()
+            return HttpResponseRedirect(request.path, {'form': form_class(self.object)})
+        return super(StudySourceTraitSearch, self).get(request, *args, **kwargs)
+
+    def search(self, **search_kwargs):
+        datasets = search_kwargs.pop('datasets')
+        if len(datasets) == 0:
+            datasets = searches.search_source_datasets(studies=[self.object.pk])
+        return searches.search_source_traits(datasets=datasets, **search_kwargs)
+
+
 class StudySourceDatasetList(SingleTableMixin, StudyDetail):
     """."""
 
@@ -130,6 +165,31 @@ class StudySourceDatasetList(SingleTableMixin, StudyDetail):
     def get_table_data(self):
         return models.SourceDataset.objects.current().filter(
             source_study_version__study=self.object)
+
+
+class StudySourceDatasetSearch(LoginRequiredMixin, SearchFormMixin, SingleObjectMixin, SingleTableMixin, MessageMixin,
+                               TemplateView):
+    """Class for searching source datasets within a specific study."""
+
+    template_name = 'trait_browser/study_sourcedataset_search.html'
+    form_class = forms.SourceDatasetSearchForm
+    table_class = tables.SourceDatasetTableFull
+    context_table_name = 'results_table'
+    table_data = models.SourceDataset.objects.none()
+    context_object_name = 'study'
+    model = models.Study
+
+    def get(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        return super(StudySourceDatasetSearch, self).get(request, *args, **kwargs)
+
+    def search(self, name='', description='', match_exact_name=True):
+        return searches.search_source_datasets(
+            name=name,
+            description=description,
+            match_exact_name=match_exact_name,
+            studies=[self.object.pk]
+        )
 
 
 class StudyNameAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
@@ -242,6 +302,24 @@ class SourceDatasetList(LoginRequiredMixin, SingleTableView):
         return models.SourceDataset.objects.current()
 
 
+class SourceDatasetSearch(LoginRequiredMixin, SearchFormMixin, SingleTableMixin, MessageMixin, TemplateView):
+    """Class for searching source datasets."""
+
+    template_name = 'trait_browser/sourcedataset_search.html'
+    form_class = forms.SourceDatasetSearchMultipleStudiesForm
+    table_class = tables.SourceDatasetTableFull
+    context_table_name = 'results_table'
+    table_data = models.SourceDataset.objects.none()
+
+    def search(self, name='', description='', match_exact_name=True, studies=[]):
+        return searches.search_source_datasets(
+            name=name,
+            description=description,
+            match_exact_name=match_exact_name,
+            studies=studies
+        )
+
+
 class HarmonizedTraitSetVersionDetail(LoginRequiredMixin, FormMessagesMixin, DetailView):
     """Detail view class for HarmonizedTraitSetVersions. Inherits from django.views.generic.DetailView."""
 
@@ -338,39 +416,23 @@ class SourceTraitSearch(LoginRequiredMixin, SearchFormMixin, SingleTableMixin, M
     context_table_name = 'results_table'
     table_data = models.SourceTrait.objects.none()
 
-    def search(self, **search_kwargs):
-        return searches.search_source_traits(**search_kwargs)
-
-
-class SourceTraitSearchByStudy(LoginRequiredMixin, SearchFormMixin, SingleObjectMixin, SingleTableMixin, MessageMixin,
-                               TemplateView):
-    """Form view class for searching for source traits within a specific study."""
-
-    template_name = 'trait_browser/study_sourcetrait_search.html'
-    form_class = forms.SourceTraitSearchOneStudyForm
-    table_class = tables.SourceTraitTableFull
-    context_table_name = 'results_table'
-    table_data = models.SourceTrait.objects.none()
-    context_object_name = 'study'
-    model = models.Study
-
-    def get_form(self, form_class=None):
-        if form_class is None:
-            form_class = self.get_form_class()
-        return form_class(self.object, **self.get_form_kwargs())
-
-    def get(self, request, *args, **kwargs):
-        self.object = self.get_object()
-        if 'reset' in self.request.GET:
-            # Instantiate a blank form, ignoring any current GET parameters.
-            form_class = self.get_form_class()
-            return HttpResponseRedirect(request.path, {'form': form_class(self.object)})
-        return super(SourceTraitSearchByStudy, self).get(request, *args, **kwargs)
-
-    def search(self, **search_kwargs):
-        new_search_kwargs = search_kwargs.copy()
-        new_search_kwargs.update({'studies': [self.object.pk]})
-        return searches.search_source_traits(**new_search_kwargs)
+    def search(self, name='', description='', match_exact_name=False, dataset_name='', dataset_description='',
+               dataset_match_exact_name=False, studies=[]):
+        extra_kwargs = {}
+        if dataset_name or dataset_description or studies:
+            extra_kwargs['datasets'] = searches.search_source_datasets(
+                name=dataset_name,
+                description=dataset_description,
+                match_exact_name=dataset_match_exact_name,
+                studies=studies
+            )
+        results = searches.search_source_traits(
+            name=name,
+            description=description,
+            match_exact_name=match_exact_name,
+            **extra_kwargs
+        )
+        return results
 
 
 class SourceTraitPHVAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):

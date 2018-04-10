@@ -37,8 +37,8 @@ source_trait_patterns = [
 
 source_dataset_patterns = [
     url(r'^(?P<pk>\d+)/$', views.SourceDatasetDetail.as_view(), name='detail'),
-    url(r'^list/$', views.SourceDatasetList.as_view(), name='list')
-    # search
+    url(r'^list/$', views.SourceDatasetList.as_view(), name='list'),
+    url(r'^search/$', views.SourceDatasetSearch.as_view(), name='search'),
     # include autocomplete?
 ]
 
@@ -49,14 +49,20 @@ source_study_dataset_autocomplete_patterns = [
 ]
 
 source_study_dataset_patterns = [
-    url(r'^$', views.StudySourceDatasetList.as_view(), name='list'),
     url(r'^autocomplete/', include(source_study_dataset_autocomplete_patterns, namespace='autocomplete')),
+    url(r'^$', views.StudySourceDatasetList.as_view(), name='list'),
+    url(r'^search/', views.StudySourceDatasetSearch.as_view(), name='search'),
+]
+
+source_study_trait_patterns = [
+    url(r'^$', views.StudySourceTraitList.as_view(), name='list'),
+    url(r'^search/', views.StudySourceTraitSearch.as_view(), name='search'),
+    url(r'^tagged/$', TaggedTraitByStudyList.as_view(), name='tagged'),
 ]
 
 source_study_detail_patterns = [
     url(r'^datasets/', include(source_study_dataset_patterns, namespace='datasets')),
-    url(r'^tagged/$', TaggedTraitByStudyList.as_view(), name='tagged'),
-    url(r'^variables/$', views.StudySourceTraitList.as_view(), name='variables'),
+    url(r'^variables/', include(source_study_trait_patterns, namespace='traits')),
     url(r'^$', views.StudyDetail.as_view(), name='detail'),
 ]
 
@@ -67,8 +73,7 @@ source_study_autocomplete_patterns = [
 source_study_patterns = [
     url(r'^autocomplete/', include(source_study_autocomplete_patterns, namespace='autocomplete')),
     url(r'^list/$', views.StudyList.as_view(), name='list'),
-    url(r'^(?P<pk>\d+)/', include(source_study_detail_patterns, namespace='detail')),
-    url(r'^(?P<pk>\d+)/search/', views.SourceTraitSearchByStudy.as_view(), name='search')
+    url(r'^(?P<pk>\d+)/', include(source_study_detail_patterns, namespace='pk')),
     # include autocomplete?
 ]
 

@@ -20,20 +20,26 @@
             Study phenotypes <span class="caret"></span></a>
           <ul class="dropdown-menu">
             <li>
-              <a href="{% url 'trait_browser:source:traits:search' %}">
-                <span class="glyphicon glyphicon-search"></span> Search variables</a>
-            </li>
-            <li>
               <a href="{% url 'trait_browser:source:studies:list' %}">
                 <span class="glyphicon glyphicon-th-large"></span> Studies</a>
             </li>
+            <li role="separator" class="divider"></li>
             <li>
               <a href="{% url 'trait_browser:source:datasets:list' %}">
                 <span class="glyphicon glyphicon-th"></span> Datasets</a>
             </li>
             <li>
+              <a href="{% url 'trait_browser:source:datasets:search' %}">
+                <span class="glyphicon glyphicon-search"></span> Search datasets</a>
+            </li>
+            <li role="separator" class="divider"></li>
+            <li>
               <a href="{% url 'trait_browser:source:traits:list' %}">
                 <span class="glyphicon glyphicon-th-list"></span> Variables</a>
+            </li>
+            <li>
+              <a href="{% url 'trait_browser:source:traits:search' %}">
+                <span class="glyphicon glyphicon-search"></span> Search variables</a>
             </li>
           </ul>
         </li>
@@ -43,12 +49,12 @@
             Harmonized phenotypes <span class="caret"></span></a>
           <ul class="dropdown-menu">
             <li>
-              <a href="{% url 'trait_browser:harmonized:traits:search' %}">
-                <span class="glyphicon glyphicon-search"></span> Search variables</a>
-            </li>
-            <li>
               <a href="{% url 'trait_browser:harmonized:traits:list' %}">
                 <span class="glyphicon glyphicon-list"></span> Variables</a>
+            </li>
+            <li>
+              <a href="{% url 'trait_browser:harmonized:traits:search' %}">
+                <span class="glyphicon glyphicon-search"></span> Search variables</a>
             </li>
           </ul>
         </li>

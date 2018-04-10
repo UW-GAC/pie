@@ -35,7 +35,7 @@ class StudyDetailTest(UserLoginTestCase):
             source_dataset__source_study_version__study=self.study)
 
     def get_url(self, *args):
-        return reverse('trait_browser:source:studies:detail:detail', args=args)
+        return reverse('trait_browser:source:studies:pk:detail', args=args)
 
     def test_view_success_code(self):
         """View returns successful response code."""
@@ -106,7 +106,7 @@ class StudySourceTraitListTest(UserLoginTestCase):
             source_dataset__source_study_version__study=self.study)
 
     def get_url(self, *args):
-        return reverse('trait_browser:source:studies:detail:variables', args=args)
+        return reverse('trait_browser:source:studies:pk:traits:list', args=args)
 
     def test_view_success_code(self):
         """View returns successful response code."""
@@ -153,6 +153,249 @@ class StudySourceTraitListTest(UserLoginTestCase):
     #     self.assertEqual(len(table.rows), 0)
 
 
+class StudySourceTraitSearchTest(ClearSearchIndexMixin, UserLoginTestCase):
+
+    def setUp(self):
+        super(StudySourceTraitSearchTest, self).setUp()
+        self.study = factories.StudyFactory.create()
+
+    def get_url(self, *args):
+        return reverse('trait_browser:source:studies:pk:traits:search', args=args)
+
+    def test_view_success_code(self):
+        """View returns successful response code."""
+        response = self.client.get(self.get_url(self.study.pk))
+        self.assertEqual(response.status_code, 200)
+
+    def test_view_with_invalid_pk(self):
+        """View returns 404 response code when the pk doesn't exist."""
+        response = self.client.get(self.get_url(self.study.pk + 1))
+        self.assertEqual(response.status_code, 404)
+
+    def test_context_data_with_empty_form(self):
+        """View has the correct context upon initial load."""
+        response = self.client.get(self.get_url(self.study.pk))
+        context = response.context
+        self.assertIsInstance(context['form'], forms.SourceTraitSearchForm)
+        self.assertFalse(context['form'].is_bound)
+        self.assertFalse(context['has_results'])
+        self.assertIn('results_table', context)
+
+    def test_context_data_with_blank_form(self):
+        """View has the correct context upon invalid form submission."""
+        response = self.client.get(self.get_url(self.study.pk), {'description': ''})
+        context = response.context
+        self.assertTrue(context['form'].is_bound)
+        self.assertFalse(context['has_results'])
+        self.assertIn('results_table', context)
+
+    def test_context_data_with_valid_search_and_no_results(self):
+        """View has correct context with a valid search but no results."""
+        response = self.client.get(self.get_url(self.study.pk), {'description': 'test'})
+        context = response.context
+        self.assertIn('form', context)
+        self.assertTrue(context['has_results'])
+        self.assertIsInstance(context['results_table'], tables.SourceTraitTableFull)
+
+    def test_context_data_with_valid_search_and_some_results(self):
+        """View has correct context with a valid search and existing results."""
+        factories.SourceTraitFactory.create(
+            i_description='lorem ipsum',
+            source_dataset__source_study_version__study=self.study)
+        response = self.client.get(self.get_url(self.study.pk), {'description': 'lorem'})
+        qs = searches.search_source_traits(description='lorem')
+        context = response.context
+        self.assertIn('form', context)
+        self.assertTrue(context['has_results'])
+        self.assertIsInstance(context['results_table'], tables.SourceTraitTableFull)
+        self.assertQuerysetEqual(qs, [repr(x) for x in context['results_table'].data])
+
+    def test_context_data_only_finds_results_in_requested_study(self):
+        """View has correct context with a valid search and existing results if a study is selected."""
+        trait = factories.SourceTraitFactory.create(
+            i_description='lorem ipsum',
+            source_dataset__source_study_version__study=self.study)
+        factories.SourceTraitFactory.create(i_description='lorem ipsum')
+        get = {'description': 'lorem'}
+        response = self.client.get(self.get_url(self.study.pk), get)
+        context = response.context
+        self.assertIn('form', context)
+        self.assertTrue(context['has_results'])
+        self.assertIsInstance(context['results_table'], tables.SourceTraitTableFull)
+        self.assertQuerysetEqual(context['results_table'].data, [repr(trait)])
+
+    def test_context_data_with_valid_search_and_trait_name(self):
+        """View has correct context with a valid search and existing results if a study is selected."""
+        trait = factories.SourceTraitFactory.create(
+            i_description='lorem ipsum',
+            i_trait_name='dolor',
+            source_dataset__source_study_version__study=self.study)
+        factories.SourceTraitFactory.create(
+            i_description='lorem other',
+            i_trait_name='tempor',
+            source_dataset__source_study_version__study=self.study)
+        response = self.client.get(self.get_url(self.study.pk), {'description': 'lorem', 'name': 'dolor'})
+        context = response.context
+        self.assertIn('form', context)
+        self.assertTrue(context['has_results'])
+        self.assertIsInstance(context['results_table'], tables.SourceTraitTableFull)
+        self.assertQuerysetEqual(context['results_table'].data, [repr(trait)])
+
+    def test_context_data_no_messages_for_initial_load(self):
+        """No messages are displayed on initial load of page."""
+        response = self.client.get(self.get_url(self.study.pk))
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 0)
+
+    def test_context_data_no_messages_for_invalid_form(self):
+        """No messages are displayed if form is invalid."""
+        response = self.client.get(self.get_url(self.study.pk), {'description': ''})
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 0)
+
+    def test_context_data_info_message_for_no_results(self):
+        """A message is displayed if no results are found."""
+        response = self.client.get(self.get_url(self.study.pk), {'description': 'lorem'})
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertEqual(str(messages[0]), '0 results found.')
+
+    def test_context_data_info_message_for_one_result(self):
+        """A message is displayed if one result is found."""
+        factories.SourceTraitFactory.create(
+            i_description='lorem ipsum',
+            source_dataset__source_study_version__study=self.study)
+        response = self.client.get(self.get_url(self.study.pk), {'description': 'lorem'})
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertEqual(str(messages[0]), '1 result found.')
+
+    def test_context_data_info_message_for_multiple_result(self):
+        """A message is displayed if two results are found."""
+        factories.SourceTraitFactory.create(
+            i_description='lorem ipsum',
+            source_dataset__source_study_version__study=self.study)
+        factories.SourceTraitFactory.create(
+            i_description='lorem ipsum 2',
+            source_dataset__source_study_version__study=self.study)
+        response = self.client.get(self.get_url(self.study.pk), {'description': 'lorem'})
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertEqual(str(messages[0]), '2 results found.')
+
+    def test_reset_button_works_on_initial_page(self):
+        """Reset button returns to original page."""
+        response = self.client.get(self.get_url(self.study.pk), {'reset': 'Reset'}, follow=True)
+        context = response.context
+        self.assertIn('form', context)
+        self.assertFalse(context['form'].is_bound)
+        self.assertFalse(context['has_results'])
+        self.assertIn('results_table', context)
+        self.assertEqual(len(context['results_table'].rows), 0)
+
+    def test_reset_button_works_with_data_in_form(self):
+        """Reset button returns to original page."""
+        response = self.client.get(self.get_url(self.study.pk), {'reset': 'Reset', 'name': ''}, follow=True)
+        context = response.context
+        self.assertIn('form', context)
+        self.assertFalse(context['form'].is_bound)
+        self.assertFalse(context['has_results'])
+        self.assertIn('results_table', context)
+        self.assertEqual(len(context['results_table'].rows), 0)
+
+    def test_context_data_with_valid_search_trait_description_and_dataset(self):
+        """View has correct context with a valid search and existing results if a study is selected."""
+        dataset = factories.SourceDatasetFactory.create(source_study_version__study=self.study)
+        other_dataset = factories.SourceDatasetFactory.create(source_study_version__study=self.study)
+        trait = factories.SourceTraitFactory.create(
+            i_description='lorem ipsum',
+            i_trait_name='dolor',
+            source_dataset=dataset
+        )
+        factories.SourceTraitFactory.create(
+            i_description='lorem other',
+            i_trait_name='tempor',
+            source_dataset=other_dataset
+        )
+        response = self.client.get(self.get_url(self.study.pk), {'description': 'lorem', 'datasets': [dataset.pk]})
+        context = response.context
+        self.assertIn('form', context)
+        self.assertTrue(context['has_results'])
+        self.assertIsInstance(context['results_table'], tables.SourceTraitTableFull)
+        self.assertQuerysetEqual(context['results_table'].data, [repr(trait)])
+
+    def test_context_data_with_dataset_from_a_different_study(self):
+        """View has correct context with a valid search and existing results if a study is selected."""
+        other_study = factories.StudyFactory.create()
+        dataset = factories.SourceDatasetFactory.create(source_study_version__study=other_study)
+        trait = factories.SourceTraitFactory.create(
+            i_description='lorem ipsum',
+            i_trait_name='dolor',
+            source_dataset=dataset
+        )
+        response = self.client.get(self.get_url(self.study.pk), {'description': 'lorem', 'datasets': [dataset.pk]})
+        self.assertFormError(response, "form", 'datasets', forms.SourceTraitSearchOneStudyForm.ERROR_DIFFERENT_STUDY)
+
+    def test_context_data_with_deprecated_dataset(self):
+        """View has correct context with a valid search and existing results if a study is selected."""
+        study_version = factories.SourceStudyVersionFactory(i_is_deprecated=True, study=self.study)
+        dataset = factories.SourceDatasetFactory.create(source_study_version=study_version)
+        trait = factories.SourceTraitFactory.create(
+            i_description='lorem ipsum',
+            i_trait_name='dolor',
+            source_dataset=dataset
+        )
+        response = self.client.get(self.get_url(self.study.pk), {'description': 'lorem', 'datasets': [dataset.pk]})
+        self.assertFormError(response, "form", 'datasets',
+                             forms.SourceTraitSearchOneStudyForm.ERROR_DEPRECATED_DATASET)
+
+    def test_short_words_are_removed(self):
+        """Short words are properly removed."""
+        trait_1 = factories.SourceTraitFactory.create(
+            i_description='lorem ipsum',
+            source_dataset__source_study_version__study=self.study
+        )
+        trait_2 = factories.SourceTraitFactory.create(
+            i_description='lorem ipsum',
+            source_dataset__source_study_version__study=self.study
+        )
+        response = self.client.get(self.get_url(self.study.pk), {'description': 'lorem ip'})
+        context = response.context
+        self.assertIn('form', context)
+        self.assertTrue(context['has_results'])
+        self.assertIsInstance(context['results_table'], tables.SourceTraitTableFull)
+        self.assertEqual(len(context['results_table'].rows), 2)
+        self.assertIn(trait_1, context['results_table'].data)
+        self.assertIn(trait_2, context['results_table'].data)
+
+    def test_message_for_ignored_short_words(self):
+        response = self.client.get(self.get_url(self.study.pk), {'description': 'lorem ip'})
+        context = response.context
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 2)
+        self.assertIn('Ignored short words in "Variable description" field', str(messages[0]))
+
+    def test_can_find_apostrophes_in_description_field(self):
+        """Can search for apostrophes."""
+        trait = factories.SourceTraitFactory.create(
+            i_description="don't miss me",
+            source_dataset__source_study_version__study=self.study
+        )
+        response = self.client.get(self.get_url(self.study.pk), {'description': "don't"})
+        context = response.context
+        self.assertIn(trait, context['results_table'].data)
+
+    def test_can_find_underscores_in_description_field(self):
+        """Can search for undescores."""
+        trait = factories.SourceTraitFactory.create(
+            i_description='description with_char',
+            source_dataset__source_study_version__study=self.study
+        )
+        response = self.client.get(self.get_url(self.study.pk), {'description': 'with_char'})
+        context = response.context
+        self.assertIn(trait, context['results_table'].data)
+
+
 class StudySourceDatasetListTest(UserLoginTestCase):
     """."""
 
@@ -165,7 +408,7 @@ class StudySourceDatasetListTest(UserLoginTestCase):
             factories.SourceTraitFactory.create_batch(5, source_dataset=ds)
 
     def get_url(self, *args):
-        return reverse('trait_browser:source:studies:detail:datasets:list', args=args)
+        return reverse('trait_browser:source:studies:pk:datasets:list', args=args)
 
     def test_view_success_code(self):
         """View returns successful response code."""
@@ -239,7 +482,7 @@ class StudySourceDatasetNameAutocompleteTest(UserLoginTestCase):
         self.user.refresh_from_db()
 
     def get_url(self, *args):
-        return reverse('trait_browser:source:studies:detail:datasets:autocomplete:by-name', args=args)
+        return reverse('trait_browser:source:studies:pk:datasets:autocomplete:by-name', args=args)
 
     def test_view_success_code(self):
         """View returns successful response code."""
@@ -370,7 +613,7 @@ class StudySourceDatasetPHTAutocompleteTest(UserLoginTestCase):
             ))
 
     def get_url(self, *args):
-        return reverse('trait_browser:source:studies:detail:datasets:autocomplete:by-pht', args=args)
+        return reverse('trait_browser:source:studies:pk:datasets:autocomplete:by-pht', args=args)
 
     def test_view_success_code(self):
         """View returns successful response code."""
@@ -502,7 +745,7 @@ class StudySourceDatasetNameOrPHTAutocompleteTest(UserLoginTestCase):
             ))
 
     def get_url(self, *args):
-        return reverse('trait_browser:source:studies:detail:datasets:autocomplete:by-name-or-pht', args=args)
+        return reverse('trait_browser:source:studies:pk:datasets:autocomplete:by-name-or-pht', args=args)
 
     def test_view_success_code(self):
         """View returns successful response code."""
@@ -673,6 +916,194 @@ class StudySourceDatasetNameOrPHTAutocompleteTest(UserLoginTestCase):
         self.assertEqual(sorted(returned_pks), sorted([dataset_name_match.i_id, dataset_accession_match.i_id]))
 
 
+class StudySourceDatasetSearchTest(UserLoginTestCase):
+
+    def setUp(self):
+        super(StudySourceDatasetSearchTest, self).setUp()
+        self.study = factories.StudyFactory.create()
+
+    def get_url(self, *args):
+        return reverse('trait_browser:source:studies:pk:datasets:search', args=args)
+
+    def test_view_success_code(self):
+        """View returns successful response code."""
+        response = self.client.get(self.get_url(self.study.pk))
+        self.assertEqual(response.status_code, 200)
+
+    def test_view_with_invalid_pk(self):
+        """View returns 404 response code when the pk doesn't exist."""
+        response = self.client.get(self.get_url(self.study.pk + 1))
+        self.assertEqual(response.status_code, 404)
+
+    def test_context_data_with_empty_form(self):
+        """View has the correct context upon initial load."""
+        response = self.client.get(self.get_url(self.study.pk))
+        context = response.context
+        self.assertIsInstance(context['form'], forms.SourceDatasetSearchForm)
+        self.assertFalse(context['form'].is_bound)
+        self.assertFalse(context['has_results'])
+        self.assertIn('results_table', context)
+
+    def test_context_data_with_blank_form(self):
+        """View has the correct context upon invalid form submission."""
+        response = self.client.get(self.get_url(self.study.pk), {'description': ''})
+        context = response.context
+        self.assertTrue(context['form'].is_bound)
+        self.assertFalse(context['has_results'])
+        self.assertIn('results_table', context)
+
+    def test_context_data_with_valid_search_and_no_results(self):
+        """View has correct context with a valid search but no results."""
+        response = self.client.get(self.get_url(self.study.pk), {'description': 'test'})
+        context = response.context
+        self.assertIn('form', context)
+        self.assertTrue(context['has_results'])
+        self.assertIsInstance(context['results_table'], tables.SourceDatasetTableFull)
+
+    def test_context_data_with_valid_search_and_some_results(self):
+        """View has correct context with a valid search and existing results."""
+        dataset = factories.SourceDatasetFactory.create(
+            i_dbgap_description='lorem ipsum',
+            source_study_version__study=self.study)
+        response = self.client.get(self.get_url(self.study.pk), {'description': 'lorem'})
+        context = response.context
+        self.assertIn('form', context)
+        self.assertTrue(context['has_results'])
+        self.assertIsInstance(context['results_table'], tables.SourceDatasetTableFull)
+        self.assertQuerysetEqual(context['results_table'].data, [repr(dataset)])
+
+    def test_context_data_only_finds_results_in_requested_study(self):
+        """View has correct context with a valid search and existing results if a study is selected."""
+        dataset = factories.SourceDatasetFactory.create(
+            i_dbgap_description='lorem ipsum',
+            source_study_version__study=self.study)
+        factories.SourceDatasetFactory.create(i_dbgap_description='lorem ipsum')
+        get = {'description': 'lorem'}
+        response = self.client.get(self.get_url(self.study.pk), get)
+        context = response.context
+        self.assertIn('form', context)
+        self.assertTrue(context['has_results'])
+        self.assertIsInstance(context['results_table'], tables.SourceDatasetTableFull)
+        self.assertQuerysetEqual(context['results_table'].data, [repr(dataset)])
+
+    def test_context_data_with_valid_search_and_trait_name(self):
+        """View has correct context with a valid search and existing results if a study is selected."""
+        dataset = factories.SourceDatasetFactory.create(
+            i_dbgap_description='lorem ipsum',
+            dataset_name='dolor',
+            source_study_version__study=self.study)
+        factories.SourceDatasetFactory.create(
+            i_dbgap_description='lorem other',
+            dataset_name='tempor',
+            source_study_version__study=self.study)
+        response = self.client.get(self.get_url(self.study.pk), {'description': 'lorem', 'name': 'dolor'})
+        context = response.context
+        self.assertIn('form', context)
+        self.assertTrue(context['has_results'])
+        self.assertIsInstance(context['results_table'], tables.SourceDatasetTableFull)
+        self.assertQuerysetEqual(context['results_table'].data, [repr(dataset)])
+
+    def test_context_data_no_messages_for_initial_load(self):
+        """No messages are displayed on initial load of page."""
+        response = self.client.get(self.get_url(self.study.pk))
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 0)
+
+    def test_context_data_no_messages_for_invalid_form(self):
+        """No messages are displayed if form is invalid."""
+        response = self.client.get(self.get_url(self.study.pk), {'description': ''})
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 0)
+
+    def test_context_data_info_message_for_no_results(self):
+        """A message is displayed if no results are found."""
+        response = self.client.get(self.get_url(self.study.pk), {'description': 'lorem'})
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertEqual(str(messages[0]), '0 results found.')
+
+    def test_context_data_info_message_for_one_result(self):
+        """A message is displayed if one result is found."""
+        factories.SourceDatasetFactory.create(
+            i_dbgap_description='lorem ipsum',
+            source_study_version__study=self.study)
+        response = self.client.get(self.get_url(self.study.pk), {'description': 'lorem'})
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertEqual(str(messages[0]), '1 result found.')
+
+    def test_context_data_info_message_for_multiple_result(self):
+        """A message is displayed if two results are found."""
+        factories.SourceDatasetFactory.create_batch(2, i_dbgap_description='lorem ipsum',
+                                                    source_study_version__study=self.study)
+        response = self.client.get(self.get_url(self.study.pk), {'description': 'lorem'})
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertEqual(str(messages[0]), '2 results found.')
+
+    def test_reset_button_works_on_initial_page(self):
+        """Reset button returns to original page."""
+        response = self.client.get(self.get_url(self.study.pk), {'reset': 'Reset'}, follow=True)
+        context = response.context
+        self.assertIn('form', context)
+        self.assertFalse(context['form'].is_bound)
+        self.assertFalse(context['has_results'])
+        self.assertIn('results_table', context)
+        self.assertEqual(len(context['results_table'].rows), 0)
+
+    def test_reset_button_works_with_data_in_form(self):
+        """Reset button returns to original page."""
+        response = self.client.get(self.get_url(self.study.pk), {'reset': 'Reset', 'name': ''}, follow=True)
+        context = response.context
+        self.assertIn('form', context)
+        self.assertFalse(context['form'].is_bound)
+        self.assertFalse(context['has_results'])
+        self.assertIn('results_table', context)
+        self.assertEqual(len(context['results_table'].rows), 0)
+
+    def test_short_words_are_removed(self):
+        """Short words are properly removed."""
+        dataset_1 = factories.SourceDatasetFactory.create(
+            i_dbgap_description='lorem ipsum',
+            source_study_version__study=self.study
+        )
+        dataset_2 = factories.SourceDatasetFactory.create(
+            i_dbgap_description='lorem ipsum',
+            source_study_version__study=self.study
+        )
+        response = self.client.get(self.get_url(self.study.pk), {'description': 'lorem ip'})
+        context = response.context
+        self.assertIn('form', context)
+        self.assertTrue(context['has_results'])
+        self.assertIsInstance(context['results_table'], tables.SourceDatasetTableFull)
+        self.assertEqual(len(context['results_table'].rows), 2)
+        self.assertIn(dataset_1, context['results_table'].data)
+        self.assertIn(dataset_2, context['results_table'].data)
+
+    def test_message_for_ignored_short_words(self):
+        response = self.client.get(self.get_url(self.study.pk), {'description': 'lorem ip'})
+        context = response.context
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 2)
+        self.assertIn('Ignored short words in "Dataset description" field', str(messages[0]))
+
+    def test_can_find_apostrophes_in_description_field(self):
+        """Can search for apostrophes."""
+        trait = factories.SourceDatasetFactory.create(i_dbgap_description="don't miss me",
+                                                      source_study_version__study=self.study)
+        response = self.client.get(self.get_url(self.study.pk), {'description': "don't"})
+        context = response.context
+        self.assertIn(trait, context['results_table'].data)
+
+    def test_can_find_underscores_in_description_field(self):
+        """Can search for undescores."""
+        trait = factories.SourceDatasetFactory.create(i_dbgap_description='description with_char',
+                                                      source_study_version__study=self.study)
+        response = self.client.get(self.get_url(self.study.pk), {'description': 'with_char'})
+        context = response.context
+        self.assertIn(trait, context['results_table'].data)
+
+
 class StudySourceTableViewsTest(UserLoginTestCase):
     """Unit tests for the SourceTrait by Study views."""
 
@@ -836,6 +1267,210 @@ class SourceDatasetListTest(UserLoginTestCase):
         context = response.context
         table = context['source_dataset_table']
         self.assertEqual(len(table.rows), 0)
+
+
+class SourceDatasetSearchTest(UserLoginTestCase):
+    """Unit tests for SourceDatasetSearch view."""
+
+    def get_url(self, *args):
+        return reverse('trait_browser:source:datasets:search')
+
+    def test_view_success_code(self):
+        """View returns successful response code."""
+        response = self.client.get(self.get_url())
+        self.assertEqual(response.status_code, 200)
+
+    def test_context_data_with_empty_form(self):
+        """View has the correct context upon initial load."""
+        response = self.client.get(self.get_url())
+        context = response.context
+        self.assertIsInstance(context['form'], forms.SourceDatasetSearchForm)
+        self.assertFalse(context['form'].is_bound)
+        self.assertFalse(context['has_results'])
+        self.assertIn('results_table', context)
+
+    def test_context_data_with_blank_form(self):
+        """View has the correct context upon invalid form submission."""
+        response = self.client.get(self.get_url(), {'description': ''})
+        context = response.context
+        self.assertTrue(context['form'].is_bound)
+        self.assertFalse(context['has_results'])
+        self.assertIn('results_table', context)
+
+    def test_context_data_with_valid_search_and_no_results(self):
+        """View has correct context with a valid search but no results."""
+        response = self.client.get(self.get_url(), {'description': 'test'})
+        context = response.context
+        self.assertIn('form', context)
+        self.assertTrue(context['has_results'])
+        self.assertIsInstance(context['results_table'], tables.SourceDatasetTableFull)
+
+    def test_context_data_with_valid_search_and_some_results(self):
+        """View has correct context with a valid search and existing results."""
+        dataset = factories.SourceDatasetFactory.create(i_dbgap_description='lorem ipsum')
+        factories.SourceDatasetFactory.create(i_dbgap_description='other')
+        response = self.client.get(self.get_url(), {'description': 'lorem'})
+        context = response.context
+        self.assertIn('form', context)
+        self.assertTrue(context['has_results'])
+        self.assertIsInstance(context['results_table'], tables.SourceDatasetTableFull)
+        self.assertQuerysetEqual(context['results_table'].data, [repr(dataset)])
+
+    def test_context_data_with_valid_search_and_a_specified_study(self):
+        """View has correct context with a valid search and existing results if a study is selected."""
+        dataset = factories.SourceDatasetFactory.create(i_dbgap_description='lorem ipsum')
+        study = dataset.source_study_version.study
+        factories.SourceDatasetFactory.create(i_dbgap_description='lorem other')
+        get = {'description': 'lorem', 'studies': [study.pk]}
+        response = self.client.get(self.get_url(), get)
+        context = response.context
+        self.assertIn('form', context)
+        self.assertTrue(context['has_results'])
+        self.assertIsInstance(context['results_table'], tables.SourceDatasetTableFull)
+        self.assertQuerysetEqual(context['results_table'].data, [repr(dataset)])
+
+    def test_context_data_with_valid_search_and_dataset_name(self):
+        """View has correct context with a valid search and existing results if a study is selected."""
+        study = factories.StudyFactory.create()
+        dataset = factories.SourceDatasetFactory.create(i_dbgap_description='lorem ipsum', dataset_name='dolor',
+                                                        source_study_version__study=study)
+        factories.SourceDatasetFactory.create(i_dbgap_description='lorem other', dataset_name='tempor')
+        response = self.client.get(self.get_url(), {'description': 'lorem', 'name': 'dolor'})
+        context = response.context
+        self.assertIn('form', context)
+        self.assertTrue(context['has_results'])
+        self.assertIsInstance(context['results_table'], tables.SourceDatasetTableFull)
+        self.assertQuerysetEqual(context['results_table'].data, [repr(dataset)])
+
+    def test_context_data_no_messages_for_initial_load(self):
+        """No messages are displayed on initial load of page."""
+        response = self.client.get(self.get_url())
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 0)
+
+    def test_context_data_no_messages_for_invalid_form(self):
+        """No messages are displayed if form is invalid."""
+        response = self.client.get(self.get_url(), {'description': '', 'name': ''})
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 0)
+
+    def test_context_data_info_message_for_no_results(self):
+        """A message is displayed if no results are found."""
+        response = self.client.get(self.get_url(), {'description': 'lorem'})
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertEqual(str(messages[0]), '0 results found.')
+
+    def test_context_data_info_message_for_one_result(self):
+        """A message is displayed if one result is found."""
+        factories.SourceDatasetFactory.create(i_dbgap_description='lorem ipsum')
+        response = self.client.get(self.get_url(), {'description': 'lorem'})
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertEqual(str(messages[0]), '1 result found.')
+
+    def test_context_data_info_message_for_multiple_result(self):
+        """A message is displayed if two results are found."""
+        factories.SourceDatasetFactory.create(i_dbgap_description='lorem ipsum')
+        factories.SourceDatasetFactory.create(i_dbgap_description='lorem ipsum 2')
+        response = self.client.get(self.get_url(), {'description': 'lorem'})
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertEqual(str(messages[0]), '2 results found.')
+
+    def test_table_pagination(self):
+        """Table pagination works correctly on the first page."""
+        n_datasets = TABLE_PER_PAGE + 2
+        factories.SourceDatasetFactory.create_batch(n_datasets, i_dbgap_description='lorem ipsum')
+        response = self.client.get(self.get_url(), {'description': 'lorem'})
+        context = response.context
+        self.assertIn('form', context)
+        self.assertTrue(context['has_results'])
+        self.assertIsInstance(context['results_table'], tables.SourceDatasetTableFull)
+        self.assertEqual(len(context['results_table'].rows), n_datasets)
+
+    def test_form_works_with_table_pagination_on_second_page(self):
+        """Table pagination works correctly on the second page."""
+        n_datasets = TABLE_PER_PAGE + 2
+        factories.SourceDatasetFactory.create_batch(n_datasets, i_dbgap_description='lorem ipsum')
+        response = self.client.get(self.get_url(), {'description': 'lorem', 'page': 2})
+        context = response.context
+        self.assertIn('form', context)
+        self.assertTrue(context['has_results'])
+        self.assertIsInstance(context['results_table'], tables.SourceDatasetTableFull)
+        self.assertEqual(len(context['results_table'].rows), n_datasets)
+
+    def test_table_ordering(self):
+        """Traits are ordered by study and then dataset accession."""
+        study_1 = factories.StudyFactory.create(i_accession=2)
+        dataset_1 = factories.SourceDatasetFactory.create(i_accession=4, source_study_version__study=study_1,
+                                                          i_dbgap_description='lorem')
+        dataset_2 = factories.SourceDatasetFactory.create(i_accession=3, source_study_version__study=study_1,
+                                                          i_dbgap_description='lorem')
+        study_2 = factories.StudyFactory.create(i_accession=1)
+        dataset_3 = factories.SourceDatasetFactory.create(i_accession=2, source_study_version__study=study_2,
+                                                          i_dbgap_description='lorem')
+        dataset_4 = factories.SourceDatasetFactory.create(i_accession=1, source_study_version__study=study_2,
+                                                          i_dbgap_description='lorem')
+        dataset = factories.SourceDatasetFactory.create()
+        response = self.client.get(self.get_url(), {'description': 'lorem'})
+        context = response.context
+        table = context['results_table']
+        self.assertEqual(list(table.data), [dataset_4, dataset_3, dataset_2, dataset_1])
+
+    def test_reset_button_works_on_initial_page(self):
+        """Reset button returns to original page."""
+        response = self.client.get(self.get_url(), {'reset': 'Reset'}, follow=True)
+        context = response.context
+        self.assertIn('form', context)
+        self.assertFalse(context['form'].is_bound)
+        self.assertFalse(context['has_results'])
+        self.assertIn('results_table', context)
+        self.assertEqual(len(context['results_table'].rows), 0)
+
+    def test_reset_button_works_with_data_in_form(self):
+        """Reset button returns to original page."""
+        response = self.client.get(self.get_url(), {'reset': 'Reset', 'name': ''}, follow=True)
+        context = response.context
+        self.assertIn('form', context)
+        self.assertFalse(context['form'].is_bound)
+        self.assertFalse(context['has_results'])
+        self.assertIn('results_table', context)
+        self.assertEqual(len(context['results_table'].rows), 0)
+
+    def test_short_words_in_description_are_removed(self):
+        """Short words are properly removed."""
+        dataset_1 = factories.SourceDatasetFactory.create(i_dbgap_description='lorem ipsum')
+        dataset_2 = factories.SourceDatasetFactory.create(i_dbgap_description='lorem')
+        response = self.client.get(self.get_url(), {'description': 'lorem ip'})
+        context = response.context
+        self.assertIn('form', context)
+        self.assertTrue(context['has_results'])
+        self.assertIsInstance(context['results_table'], tables.SourceDatasetTableFull)
+        self.assertEqual(len(context['results_table'].rows), 2)
+        self.assertIn(dataset_1, context['results_table'].data)
+        self.assertIn(dataset_2, context['results_table'].data)
+
+    def test_message_for_ignored_short_words_in_description(self):
+        response = self.client.get(self.get_url(), {'name': 'foo', 'description': 'lorem ip'})
+        context = response.context
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 2)
+        self.assertIn('Ignored short words in "Dataset description" field', str(messages[0]))
+
+    def test_can_find_apostrophes_in_description_field(self):
+        """Can search for apostrophes."""
+        trait = factories.SourceDatasetFactory.create(i_dbgap_description="don't miss me")
+        response = self.client.get(self.get_url(), {'description': "don't"})
+        context = response.context
+        self.assertIn(trait, context['results_table'].data)
+
+    def test_can_find_underscores_in_description_field(self):
+        """Can search for undescores."""
+        trait = factories.SourceDatasetFactory.create(i_dbgap_description='description with_char')
+        response = self.client.get(self.get_url(), {'description': 'with_char'})
+        context = response.context
+        self.assertIn(trait, context['results_table'].data)
 
 
 class HarmonizedTraitSetVersionDetailTest(UserLoginTestCase):
@@ -2674,12 +3309,11 @@ class SourceTraitSearchTest(ClearSearchIndexMixin, UserLoginTestCase):
         factories.SourceTraitFactory.create(i_description='lorem other')
         get = {'description': 'lorem', 'studies': [study.pk]}
         response = self.client.get(self.get_url(), get)
-        qs = searches.search_source_traits(description='lorem', studies=[study.pk])
         context = response.context
         self.assertIn('form', context)
         self.assertTrue(context['has_results'])
         self.assertIsInstance(context['results_table'], tables.SourceTraitTableFull)
-        self.assertQuerysetEqual(qs, [repr(x) for x in context['results_table'].data])
+        self.assertQuerysetEqual(context['results_table'].data, [repr(trait)])
 
     def test_context_data_with_valid_search_and_trait_name(self):
         """View has correct context with a valid search and existing results if a study is selected."""
@@ -2785,7 +3419,7 @@ class SourceTraitSearchTest(ClearSearchIndexMixin, UserLoginTestCase):
         self.assertIn('results_table', context)
         self.assertEqual(len(context['results_table'].rows), 0)
 
-    def test_short_words_are_removed(self):
+    def test_short_words_in_trait_description_are_removed(self):
         """Short words are properly removed."""
         trait_1 = factories.SourceTraitFactory.create(i_description='lorem ipsum')
         trait_2 = factories.SourceTraitFactory.create(i_description='lorem')
@@ -2798,221 +3432,45 @@ class SourceTraitSearchTest(ClearSearchIndexMixin, UserLoginTestCase):
         self.assertIn(trait_1, context['results_table'].data)
         self.assertIn(trait_2, context['results_table'].data)
 
-    def test_message_for_ignored_short_words(self):
+    def test_message_for_ignored_short_words_in_trait_description(self):
         response = self.client.get(self.get_url(), {'description': 'lorem ip'})
         context = response.context
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 2)
         self.assertIn('Ignored short words in "Variable description" field', str(messages[0]))
 
-
-class SourceTraitSearchByStudyTest(ClearSearchIndexMixin, UserLoginTestCase):
-
-    def setUp(self):
-        super(SourceTraitSearchByStudyTest, self).setUp()
-        self.study = factories.StudyFactory.create()
-
-    def get_url(self, *args):
-        return reverse('trait_browser:source:studies:search', args=args)
-
-    def test_view_success_code(self):
-        """View returns successful response code."""
-        response = self.client.get(self.get_url(self.study.pk))
-        self.assertEqual(response.status_code, 200)
-
-    def test_view_with_invalid_pk(self):
-        """View returns 404 response code when the pk doesn't exist."""
-        response = self.client.get(self.get_url(self.study.pk + 1))
-        self.assertEqual(response.status_code, 404)
-
-    def test_context_data_with_empty_form(self):
-        """View has the correct context upon initial load."""
-        response = self.client.get(self.get_url(self.study.pk))
-        context = response.context
-        self.assertIsInstance(context['form'], forms.SourceTraitSearchForm)
-        self.assertFalse(context['form'].is_bound)
-        self.assertFalse(context['has_results'])
-        self.assertIn('results_table', context)
-
-    def test_context_data_with_blank_form(self):
-        """View has the correct context upon invalid form submission."""
-        response = self.client.get(self.get_url(self.study.pk), {'description': ''})
-        context = response.context
-        self.assertTrue(context['form'].is_bound)
-        self.assertFalse(context['has_results'])
-        self.assertIn('results_table', context)
-
-    def test_context_data_with_valid_search_and_no_results(self):
-        """View has correct context with a valid search but no results."""
-        response = self.client.get(self.get_url(self.study.pk), {'description': 'test'})
-        context = response.context
-        self.assertIn('form', context)
-        self.assertTrue(context['has_results'])
-        self.assertIsInstance(context['results_table'], tables.SourceTraitTableFull)
-
-    def test_context_data_with_valid_search_and_some_results(self):
-        """View has correct context with a valid search and existing results."""
-        factories.SourceTraitFactory.create(
-            i_description='lorem ipsum',
-            source_dataset__source_study_version__study=self.study)
-        response = self.client.get(self.get_url(self.study.pk), {'description': 'lorem'})
-        qs = searches.search_source_traits(description='lorem')
-        context = response.context
-        self.assertIn('form', context)
-        self.assertTrue(context['has_results'])
-        self.assertIsInstance(context['results_table'], tables.SourceTraitTableFull)
-        self.assertQuerysetEqual(qs, [repr(x) for x in context['results_table'].data])
-
-    def test_context_data_only_finds_results_in_requested_study(self):
-        """View has correct context with a valid search and existing results if a study is selected."""
-        trait = factories.SourceTraitFactory.create(
-            i_description='lorem ipsum',
-            source_dataset__source_study_version__study=self.study)
-        factories.SourceTraitFactory.create(i_description='lorem ipsum')
-        get = {'description': 'lorem'}
-        response = self.client.get(self.get_url(self.study.pk), get)
+    def test_filters_by_dataset_description_if_requested(self):
+        """View has correct results when filtering by dataset."""
+        dataset = factories.SourceDatasetFactory.create(i_dbgap_description='a dataset about demographic measurements')
+        trait = factories.SourceTraitFactory.create(i_description='lorem ipsum', source_dataset=dataset)
+        other_dataset = factories.SourceDatasetFactory.create(i_dbgap_description='foo')
+        factories.SourceTraitFactory.create(i_description='lorem ipsum', source_dataset=other_dataset)
+        input = {'description': 'lorem', 'dataset_description': 'demographic', 'dataset_name': ''}
+        response = self.client.get(self.get_url(), input)
         context = response.context
         self.assertIn('form', context)
         self.assertTrue(context['has_results'])
         self.assertIsInstance(context['results_table'], tables.SourceTraitTableFull)
         self.assertQuerysetEqual(context['results_table'].data, [repr(trait)])
 
-    def test_context_data_with_valid_search_and_trait_name(self):
-        """View has correct context with a valid search and existing results if a study is selected."""
-        trait = factories.SourceTraitFactory.create(
-            i_description='lorem ipsum',
-            i_trait_name='dolor',
-            source_dataset__source_study_version__study=self.study)
-        factories.SourceTraitFactory.create(
-            i_description='lorem other',
-            i_trait_name='tempor',
-            source_dataset__source_study_version__study=self.study)
-        response = self.client.get(self.get_url(self.study.pk), {'description': 'lorem', 'name': 'dolor'})
+    def test_finds_no_traits_if_dataset_search_doesnt_match(self):
+        """View has correct results when filtering by dataset."""
+        dataset = factories.SourceDatasetFactory.create(i_dbgap_description='a dataset about demographic measurements')
+        trait = factories.SourceTraitFactory.create(i_description='lorem ipsum', source_dataset=dataset)
+        response = self.client.get(self.get_url(), {'description': 'lorem', 'dataset_description': 'something'})
         context = response.context
         self.assertIn('form', context)
         self.assertTrue(context['has_results'])
         self.assertIsInstance(context['results_table'], tables.SourceTraitTableFull)
-        self.assertQuerysetEqual(context['results_table'].data, [repr(trait)])
-
-    def test_context_data_no_messages_for_initial_load(self):
-        """No messages are displayed on initial load of page."""
-        response = self.client.get(self.get_url(self.study.pk))
-        messages = list(response.wsgi_request._messages)
-        self.assertEqual(len(messages), 0)
-
-    def test_context_data_no_messages_for_invalid_form(self):
-        """No messages are displayed if form is invalid."""
-        response = self.client.get(self.get_url(self.study.pk), {'description': ''})
-        messages = list(response.wsgi_request._messages)
-        self.assertEqual(len(messages), 0)
-
-    def test_context_data_info_message_for_no_results(self):
-        """A message is displayed if no results are found."""
-        response = self.client.get(self.get_url(self.study.pk), {'description': 'lorem'})
-        messages = list(response.wsgi_request._messages)
-        self.assertEqual(len(messages), 1)
-        self.assertEqual(str(messages[0]), '0 results found.')
-
-    def test_context_data_info_message_for_one_result(self):
-        """A message is displayed if one result is found."""
-        factories.SourceTraitFactory.create(
-            i_description='lorem ipsum',
-            source_dataset__source_study_version__study=self.study)
-        response = self.client.get(self.get_url(self.study.pk), {'description': 'lorem'})
-        messages = list(response.wsgi_request._messages)
-        self.assertEqual(len(messages), 1)
-        self.assertEqual(str(messages[0]), '1 result found.')
-
-    def test_context_data_info_message_for_multiple_result(self):
-        """A message is displayed if two results are found."""
-        factories.SourceTraitFactory.create(
-            i_description='lorem ipsum',
-            source_dataset__source_study_version__study=self.study)
-        factories.SourceTraitFactory.create(
-            i_description='lorem ipsum 2',
-            source_dataset__source_study_version__study=self.study)
-        response = self.client.get(self.get_url(self.study.pk), {'description': 'lorem'})
-        messages = list(response.wsgi_request._messages)
-        self.assertEqual(len(messages), 1)
-        self.assertEqual(str(messages[0]), '2 results found.')
-
-    def test_reset_button_works_on_initial_page(self):
-        """Reset button returns to original page."""
-        response = self.client.get(self.get_url(self.study.pk), {'reset': 'Reset'}, follow=True)
-        context = response.context
-        self.assertIn('form', context)
-        self.assertFalse(context['form'].is_bound)
-        self.assertFalse(context['has_results'])
-        self.assertIn('results_table', context)
         self.assertEqual(len(context['results_table'].rows), 0)
 
-    def test_reset_button_works_with_data_in_form(self):
-        """Reset button returns to original page."""
-        response = self.client.get(self.get_url(self.study.pk), {'reset': 'Reset', 'name': ''}, follow=True)
-        context = response.context
-        self.assertIn('form', context)
-        self.assertFalse(context['form'].is_bound)
-        self.assertFalse(context['has_results'])
-        self.assertIn('results_table', context)
-        self.assertEqual(len(context['results_table'].rows), 0)
-
-    def test_context_data_with_valid_search_trait_description_and_dataset(self):
-        """View has correct context with a valid search and existing results if a study is selected."""
-        dataset = factories.SourceDatasetFactory.create(source_study_version__study=self.study)
-        other_dataset = factories.SourceDatasetFactory.create(source_study_version__study=self.study)
-        trait = factories.SourceTraitFactory.create(
-            i_description='lorem ipsum',
-            i_trait_name='dolor',
-            source_dataset=dataset
-        )
-        factories.SourceTraitFactory.create(
-            i_description='lorem other',
-            i_trait_name='tempor',
-            source_dataset=other_dataset
-        )
-        response = self.client.get(self.get_url(self.study.pk), {'description': 'lorem', 'datasets': [dataset.pk]})
-        context = response.context
-        self.assertIn('form', context)
-        self.assertTrue(context['has_results'])
-        self.assertIsInstance(context['results_table'], tables.SourceTraitTableFull)
-        self.assertQuerysetEqual(context['results_table'].data, [repr(trait)])
-
-    def test_context_data_with_dataset_from_a_different_study(self):
-        """View has correct context with a valid search and existing results if a study is selected."""
-        other_study = factories.StudyFactory.create()
-        dataset = factories.SourceDatasetFactory.create(source_study_version__study=other_study)
-        trait = factories.SourceTraitFactory.create(
-            i_description='lorem ipsum',
-            i_trait_name='dolor',
-            source_dataset=dataset
-        )
-        response = self.client.get(self.get_url(self.study.pk), {'description': 'lorem', 'datasets': [dataset.pk]})
-        self.assertFormError(response, "form", 'datasets', forms.SourceTraitSearchOneStudyForm.ERROR_DIFFERENT_STUDY)
-
-    def test_context_data_with_deprecated_dataset(self):
-        """View has correct context with a valid search and existing results if a study is selected."""
-        study_version = factories.SourceStudyVersionFactory(i_is_deprecated=True, study=self.study)
-        dataset = factories.SourceDatasetFactory.create(source_study_version=study_version)
-        trait = factories.SourceTraitFactory.create(
-            i_description='lorem ipsum',
-            i_trait_name='dolor',
-            source_dataset=dataset
-        )
-        response = self.client.get(self.get_url(self.study.pk), {'description': 'lorem', 'datasets': [dataset.pk]})
-        self.assertFormError(response, "form", 'datasets',
-                             forms.SourceTraitSearchOneStudyForm.ERROR_DEPRECATED_DATASET)
-
-    def test_short_words_are_removed(self):
+    def test_short_words_in_dataset_description_are_removed(self):
         """Short words are properly removed."""
-        trait_1 = factories.SourceTraitFactory.create(
-            i_description='lorem ipsum',
-            source_dataset__source_study_version__study=self.study
-        )
-        trait_2 = factories.SourceTraitFactory.create(
-            i_description='lorem ipsum',
-            source_dataset__source_study_version__study=self.study
-        )
-        response = self.client.get(self.get_url(self.study.pk), {'description': 'lorem ip'})
+        dataset_1 = factories.SourceDatasetFactory.create(i_dbgap_description='lorem ipsum')
+        trait_1 = factories.SourceTraitFactory.create(i_trait_name='foobar', source_dataset=dataset_1)
+        dataset_2 = factories.SourceDatasetFactory.create(i_dbgap_description='lorem')
+        trait_2 = factories.SourceTraitFactory.create(i_trait_name='foobar', source_dataset=dataset_2)
+        response = self.client.get(self.get_url(), {'name': 'foobar', 'dataset_description': 'lorem ip'})
         context = response.context
         self.assertIn('form', context)
         self.assertTrue(context['has_results'])
@@ -3021,12 +3479,34 @@ class SourceTraitSearchByStudyTest(ClearSearchIndexMixin, UserLoginTestCase):
         self.assertIn(trait_1, context['results_table'].data)
         self.assertIn(trait_2, context['results_table'].data)
 
-    def test_message_for_ignored_short_words(self):
-        response = self.client.get(self.get_url(self.study.pk), {'description': 'lorem ip'})
+    def test_message_for_ignored_short_words_in_dataset_description(self):
+        response = self.client.get(self.get_url(), {'name': 'foo', 'dataset_description': 'lorem ip'})
         context = response.context
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 2)
-        self.assertIn('Ignored short words in "Variable description" field', str(messages[0]))
+        self.assertIn('Ignored short words in "Dataset description" field', str(messages[0]))
+
+    def test_message_for_short_words_in_both_trait_and_dataset_descriptions(self):
+        response = self.client.get(self.get_url(), {'description': 'lo ipsum', 'dataset_description': 'lorem ip'})
+        context = response.context
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 3)
+        self.assertEqual('Ignored short words in "Variable description" field: lo', str(messages[0]))
+        self.assertEqual('Ignored short words in "Dataset description" field: ip', str(messages[1]))
+
+    def test_can_find_apostrophes_in_description_field(self):
+        """Can search for apostrophes."""
+        trait = factories.SourceTraitFactory.create(i_description="don't miss me")
+        response = self.client.get(self.get_url(), {'description': "don't"})
+        context = response.context
+        self.assertIn(trait, context['results_table'].data)
+
+    def test_can_find_underscores_in_description_field(self):
+        """Can search for undescores."""
+        trait = factories.SourceTraitFactory.create(i_description='description with_char')
+        response = self.client.get(self.get_url(), {'description': 'with_char'})
+        context = response.context
+        self.assertIn(trait, context['results_table'].data)
 
 
 class HarmonizedTraitSearchTest(ClearSearchIndexMixin, UserLoginTestCase):
@@ -3183,6 +3663,20 @@ class HarmonizedTraitSearchTest(ClearSearchIndexMixin, UserLoginTestCase):
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 2)
         self.assertIn('Ignored short words in "Variable description" field', str(messages[0]))
+
+    def test_can_find_apostrophes_in_description_field(self):
+        """Can search for apostrophes."""
+        trait = factories.HarmonizedTraitFactory.create(i_description="don't miss me")
+        response = self.client.get(self.get_url(), {'description': "don't"})
+        context = response.context
+        self.assertIn(trait, context['results_table'].data)
+
+    def test_can_find_underscores_in_description_field(self):
+        """Can search for undescores."""
+        trait = factories.HarmonizedTraitFactory.create(i_description='description with_char')
+        response = self.client.get(self.get_url(), {'description': 'with_char'})
+        context = response.context
+        self.assertIn(trait, context['results_table'].data)
 
 
 # Test of the login-required for each URL in the app.
