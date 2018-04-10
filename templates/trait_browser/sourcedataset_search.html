@@ -6,7 +6,7 @@
 
 {% block head_title %}
   | Search study datasets
-{% endblock %}
+{% endblock head_title %}
 
 
 {% block content %}
@@ -22,7 +22,7 @@
       {% render_table results_table %}
   {% endif %}
 
-{% endblock %}
+{% endblock content %}
 
 {% block custom_javascript %}
   {# script for django-autocomplete-light #}
