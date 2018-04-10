@@ -24,7 +24,7 @@ class MultilineField(Field):
     intended to be used directly. Instead, one of its subclasses should be used.
     """
 
-    template = 'trait_browser/crispy_forms/_shared_row_fields.html'
+    template = 'crispy_forms/_shared_row_fields.html'
 
     def __init__(self, field, input_class, *args, **kwargs):
         """Add the specified css class for the input tag to the object."""
