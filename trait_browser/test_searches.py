@@ -245,16 +245,6 @@ class SearchSourceDatasetsTest(ClearSearchIndexMixin, TestCase):
         qs = searches.search_source_datasets()
         self.assertEqual(list(qs), [dataset_2, dataset_1])
 
-    def test_does_not_find_special_characters_in_description(self):
-        """Special characters are ignored."""
-        characters = ['\'', '%', '#', '<', '>', '=', '?', '-']
-        for character in characters:
-            description = "special{char}character".format(char=character)
-            dataset = factories.SourceDatasetFactory.create(dataset_name=description)
-            qs = searches.search_source_datasets(description=description)
-            msg = "found {char}".format(char=character)
-            self.assertNotIn(dataset, qs, msg=msg)
-
 
 class SearchSourceTraitsTest(ClearSearchIndexMixin, TestCase):
 
@@ -502,16 +492,6 @@ class SearchSourceTraitsTest(ClearSearchIndexMixin, TestCase):
         qs = searches.search_source_traits()
         self.assertEqual(list(qs), [trait_2, trait_1])
 
-    def test_does_not_find_special_characters_in_description(self):
-        """Special characters are ignored."""
-        characters = ['\'', '%', '#', '<', '>', '=', '?', '-']
-        for character in characters:
-            description = "special{char}character".format(char=character)
-            trait = factories.SourceTraitFactory.create(i_trait_name=description)
-            qs = searches.search_source_traits(description=description)
-            msg = "found {char}".format(char=character)
-            self.assertNotIn(trait, qs, msg=msg)
-
     def test_does_not_find_harmonized_traits(self):
         """Source trait search function does not find matching harmonized traits."""
         trait = factories.HarmonizedTraitFactory.create(i_trait_name='lorem')
@@ -745,16 +725,6 @@ class SearchHarmonizedTraitsTest(ClearSearchIndexMixin, TestCase):
         )
         qs = searches.search_harmonized_traits()
         self.assertEqual(list(qs), [trait_2, trait_1])
-
-    def test_does_not_find_special_characters_in_description(self):
-        """Special characters are ignored."""
-        characters = ['\'', '%', '#', '<', '>', '=', '?', '-']
-        for character in characters:
-            description = "special{char}character".format(char=character)
-            trait = factories.HarmonizedTraitFactory.create(i_trait_name=description)
-            qs = searches.search_harmonized_traits(description=description)
-            msg = "found {char}".format(char=character)
-            self.assertNotIn(trait, qs, msg=msg)
 
     def test_does_not_find_source_traits(self):
         """Harmonized trait search function does not find matching source traits."""

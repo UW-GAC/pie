@@ -97,6 +97,17 @@ class SourceDatasetSearchFormTest(TestCase):
         self.assertEqual(form.fields['description'].warning_message,
                          'Ignored short words in "Dataset description" field: to of')
 
+    def test_error_if_special_characters_are_passed(self):
+        """Fails with description search terms that include special characters."""
+        characters = ['%', '#', '<', '>', '=', '?', '-']
+        for character in characters:
+            description = "special{char}character".format(char=character)
+            input = {'description': description}
+            form = self.search_form(input)
+            self.assertFalse(form.is_valid(), msg='valid for term with {char}'.format(char=character))
+            self.assertEqual(form.errors, {'description': [forms.ERROR_ALLOWED_CHARACTERS]},
+                             msg='incorrect error for term with {char}'.format(char=character))
+
 
 class SourceDatasetSearchMultipleStudiesFormTest(TestCase):
 

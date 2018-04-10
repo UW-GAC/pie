@@ -3,6 +3,8 @@
 from django import forms
 from django.core.urlresolvers import reverse
 
+import string
+
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Layout, Submit, Div, Field, Row
 from crispy_forms.bootstrap import Accordion, AccordionGroup, FormActions
@@ -12,6 +14,7 @@ from . import models
 
 
 ERROR_ONLY_SHORT_WORDS = 'Enter at least one term with more than two letters.'
+ERROR_ALLOWED_CHARACTERS = 'Include only uppercase and lowercase letters, digits, underscores, and apostrophes.'
 
 class MultilineField(Field):
     """Superclass to allow multiple form fields on one line.
@@ -88,6 +91,7 @@ buttons_layout = Layout(
 
 class WatsonSearchField(forms.CharField):
 
+    ALLOWED_CHARACTERS = set(string.ascii_letters + string.digits + string.whitespace + '_' + '\'')
     warning_message = None
 
     def clean(self, value):
@@ -97,6 +101,9 @@ class WatsonSearchField(forms.CharField):
         if anything was passed. It then removes any short words from the query.
         """
         data = super(WatsonSearchField, self).clean(value)
+        # Check that search term is composed only of allowed characters.
+        if not set(data).issubset(self.ALLOWED_CHARACTERS):
+            raise forms.ValidationError(ERROR_ALLOWED_CHARACTERS)
         words = data.split()
         short_words = [word for word in words if len(word) < 3]
         long_words = [word for word in words if word not in short_words]
@@ -129,7 +136,7 @@ class SourceDatasetSearchForm(forms.Form):
         label='Dataset description',
         max_length=100,
         required=False,
-        help_text='Search dataset descriptions. Words less than three letters are ignored.'
+        help_text='Search dataset descriptions. Words less than three letters are ignored. Only alphanumeric characters, apostrophes, and underscores are allowed.'
     )
     def __init__(self, *args, **kwargs):
         """Initialize form with formatting and submit button."""
@@ -213,7 +220,7 @@ class SourceTraitSearchForm(forms.Form):
         label='Variable description',
         max_length=100,
         required=False,
-        help_text='Search within variable descriptions. Words less than three letters are ignored.'
+        help_text='Search within variable descriptions. Words less than three letters are ignored. Only alphanumeric characters, apostrophes, and underscores are allowed.'
     )
 
     def __init__(self, *args, **kwargs):
@@ -380,7 +387,7 @@ class HarmonizedTraitSearchForm(forms.Form):
         label='Variable description',
         max_length=100,
         required=False,
-        help_text='Search within variable descriptions. Words less than three letters are ignored.'
+        help_text='Search within variable descriptions. Words less than three letters are ignored. Only alphanumeric characters, apostrophes, and underscores are allowed.'
     )
     # Specify how form should be displayed.
     helper = FormHelper()

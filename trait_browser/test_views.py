@@ -844,6 +844,22 @@ class StudySourceDatasetSearchTest(UserLoginTestCase):
         self.assertEqual(len(messages), 2)
         self.assertIn('Ignored short words in "Dataset description" field', str(messages[0]))
 
+    def test_can_find_apostrophes_in_description_field(self):
+        """Can search for apostrophes."""
+        trait = factories.SourceDatasetFactory.create(i_dbgap_description="don't miss me",
+                                                      source_study_version__study=self.study)
+        response = self.client.get(self.get_url(self.study.pk), {'description': "don't"})
+        context = response.context
+        self.assertIn(trait, context['results_table'].data)
+
+    def test_can_find_underscores_in_description_field(self):
+        """Can search for undescores."""
+        trait = factories.SourceDatasetFactory.create(i_dbgap_description='description with_char',
+                                                      source_study_version__study=self.study)
+        response = self.client.get(self.get_url(self.study.pk), {'description': 'with_char'})
+        context = response.context
+        self.assertIn(trait, context['results_table'].data)
+
 
 class StudySourceTableViewsTest(UserLoginTestCase):
     """Unit tests for the SourceTrait by Study views."""
@@ -1198,6 +1214,20 @@ class SourceDatasetSearchTest(UserLoginTestCase):
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 2)
         self.assertIn('Ignored short words in "Dataset description" field', str(messages[0]))
+
+    def test_can_find_apostrophes_in_description_field(self):
+        """Can search for apostrophes."""
+        trait = factories.SourceDatasetFactory.create(i_dbgap_description="don't miss me")
+        response = self.client.get(self.get_url(), {'description': "don't"})
+        context = response.context
+        self.assertIn(trait, context['results_table'].data)
+
+    def test_can_find_underscores_in_description_field(self):
+        """Can search for undescores."""
+        trait = factories.SourceDatasetFactory.create(i_dbgap_description='description with_char')
+        response = self.client.get(self.get_url(), {'description': 'with_char'})
+        context = response.context
+        self.assertIn(trait, context['results_table'].data)
 
 
 class HarmonizedTraitSetVersionDetailTest(UserLoginTestCase):
@@ -3220,6 +3250,20 @@ class SourceTraitSearchTest(ClearSearchIndexMixin, UserLoginTestCase):
         self.assertEqual('Ignored short words in "Variable description" field: lo', str(messages[0]))
         self.assertEqual('Ignored short words in "Dataset description" field: ip', str(messages[1]))
 
+    def test_can_find_apostrophes_in_description_field(self):
+        """Can search for apostrophes."""
+        trait = factories.SourceTraitFactory.create(i_description="don't miss me")
+        response = self.client.get(self.get_url(), {'description': "don't"})
+        context = response.context
+        self.assertIn(trait, context['results_table'].data)
+
+    def test_can_find_underscores_in_description_field(self):
+        """Can search for undescores."""
+        trait = factories.SourceTraitFactory.create(i_description='description with_char')
+        response = self.client.get(self.get_url(), {'description': 'with_char'})
+        context = response.context
+        self.assertIn(trait, context['results_table'].data)
+
 
 class SourceTraitSearchByStudyTest(ClearSearchIndexMixin, UserLoginTestCase):
 
@@ -3443,6 +3487,26 @@ class SourceTraitSearchByStudyTest(ClearSearchIndexMixin, UserLoginTestCase):
         self.assertEqual(len(messages), 2)
         self.assertIn('Ignored short words in "Variable description" field', str(messages[0]))
 
+    def test_can_find_apostrophes_in_description_field(self):
+        """Can search for apostrophes."""
+        trait = factories.SourceTraitFactory.create(
+            i_description="don't miss me",
+            source_dataset__source_study_version__study=self.study
+        )
+        response = self.client.get(self.get_url(self.study.pk), {'description': "don't"})
+        context = response.context
+        self.assertIn(trait, context['results_table'].data)
+
+    def test_can_find_underscores_in_description_field(self):
+        """Can search for undescores."""
+        trait = factories.SourceTraitFactory.create(
+            i_description='description with_char',
+            source_dataset__source_study_version__study=self.study
+        )
+        response = self.client.get(self.get_url(self.study.pk), {'description': 'with_char'})
+        context = response.context
+        self.assertIn(trait, context['results_table'].data)
+
 
 class HarmonizedTraitSearchTest(ClearSearchIndexMixin, UserLoginTestCase):
 
@@ -3598,6 +3662,20 @@ class HarmonizedTraitSearchTest(ClearSearchIndexMixin, UserLoginTestCase):
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 2)
         self.assertIn('Ignored short words in "Variable description" field', str(messages[0]))
+
+    def test_can_find_apostrophes_in_description_field(self):
+        """Can search for apostrophes."""
+        trait = factories.HarmonizedTraitFactory.create(i_description="don't miss me")
+        response = self.client.get(self.get_url(), {'description': "don't"})
+        context = response.context
+        self.assertIn(trait, context['results_table'].data)
+
+    def test_can_find_underscores_in_description_field(self):
+        """Can search for undescores."""
+        trait = factories.HarmonizedTraitFactory.create(i_description='description with_char')
+        response = self.client.get(self.get_url(), {'description': 'with_char'})
+        context = response.context
+        self.assertIn(trait, context['results_table'].data)
 
 
 # Test of the login-required for each URL in the app.
