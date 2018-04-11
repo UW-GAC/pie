@@ -181,8 +181,9 @@ class SourceDatasetSearchMultipleStudiesForm(SourceDatasetSearchForm):
         required=False,
         label='Study/Studies',
         widget=autocomplete.ModelSelect2Multiple(url='trait_browser:source:studies:autocomplete:by-name-or-phs'),
-        help_text=('Search only in selected studies. Start typing the dbGaP study name to filter the list, then '
-                   'select the intended study. More than one study may be selected.')
+        help_text=('Search only in selected studies. Start typing the dbGaP study accession or name to filter the '
+                   'list (example: Framingham, phs7, phs000007, 7), then select the intended study. More than one '
+                   'study may be selected.')
     )
 
     def __init__(self, *args, **kwargs):
@@ -267,9 +268,9 @@ class SourceTraitSearchMultipleStudiesForm(SourceTraitSearchForm):
         required=False,
         label='Study/Studies',
         widget=autocomplete.ModelSelect2Multiple(url='trait_browser:source:studies:autocomplete:by-name-or-phs'),
-        help_text="""Search only in selected studies. Start typing the dbGaP study name to filter the list, then
-                     select the intended study. More than one study may be selected.
-                     """
+        help_text=('Search only in selected studies. Start typing the dbGaP study accession or name to filter the '
+                   'list (example: Framingham, phs7, phs000007, 7), then select the intended study. More than one '
+                   'study may be selected.')
     )
     dataset_name = forms.CharField(
         label='Dataset name',
