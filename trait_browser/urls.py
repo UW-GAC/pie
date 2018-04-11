@@ -68,6 +68,7 @@ source_study_detail_patterns = [
 
 source_study_autocomplete_patterns = [
     url(r'^by-name/$', views.StudyNameAutocomplete.as_view(), name='by-name'),
+    url(r'^by-phs/$', views.StudyPHSAutocomplete.as_view(), name='by-phs'),
 ]
 
 source_study_patterns = [

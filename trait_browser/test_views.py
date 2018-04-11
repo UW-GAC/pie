@@ -1178,6 +1178,76 @@ class StudyNameAutocompleteTest(UserLoginTestCase):
         self.assertEqual(sorted([study_1.pk, study_2.pk]), sorted(pks))
 
 
+class StudyPHSAutocompleteTest(UserLoginTestCase):
+    """Autocomplete view works as expected."""
+
+    def setUp(self):
+        super(StudyPHSAutocompleteTest, self).setUp()
+        # Create 10 studies.
+        self.studies = []
+        test_phs_values = (5, 50, 500, 500000, 55, 555, 555555, 52, 520, 5200, )
+        self.TEST_PHS_QUERIES = {
+            '5': (5, 50, 500, 500000, 55, 555, 555555, 52, 520, 5200, ),
+            '05': (),
+            '0005': (500, 555, 520, ),
+            '000005': (5, ),
+            '52': (52, 520, 5200, ),
+            '052': (),
+            '0052': (5200, ),
+            '00052': (520, ),
+            '555555': (555555, ),
+            '0': (5, 50, 500, 55, 555, 52, 520, 5200, ),
+        }
+        for phs in test_phs_values:
+            self.studies.append(factories.StudyFactory.create(i_accession=phs))
+
+    def get_url(self, *args):
+        return reverse('trait_browser:source:studies:autocomplete:by-phs', args=args)
+
+    def test_view_success_code(self):
+        """View returns successful response code."""
+        tmp = self.get_url()
+        response = self.client.get(tmp)
+        self.assertEqual(response.status_code, 200)
+
+    def test_returns_all_studies_with_no_query(self):
+        """Queryset returns all of the datasets with no query."""
+        url = self.get_url()
+        response = self.client.get(url)
+        pks = get_autocomplete_view_ids(response)
+        self.assertEqual(sorted([study.pk for study in self.studies]), sorted(pks))
+
+    def test_phs_test_queries_without_phs_in_string(self):
+        """Returns only the correct studies for each of the TEST_PHS_QUERIES when 'phs' is not in query string."""
+        url = self.get_url()
+        for query in self.TEST_PHS_QUERIES:
+            response = self.client.get(url, {'q': query})
+            returned_pks = get_autocomplete_view_ids(response)
+            expected_matches = self.TEST_PHS_QUERIES[query]
+            # Make sure number of matches is as expected.
+            self.assertEqual(len(returned_pks), len(expected_matches))
+            # Make sure the matches that are found are the ones expected.
+            for expected_phs in expected_matches:
+                expected_pk = models.Study.objects.get(i_accession=expected_phs).pk
+                self.assertIn(expected_pk, returned_pks,
+                              msg="Could not find expected pht {} with query '{}'".format(expected_phs, query))
+
+    def test_phs_test_queries_with_phs_in_string(self):
+        """Returns only the correct study for each of the TEST_PHS_QUERIES when 'phs' is in query string."""
+        url = self.get_url()
+        for query in self.TEST_PHS_QUERIES:
+            response = self.client.get(url, {'q': 'phs' + query})
+            returned_pks = get_autocomplete_view_ids(response)
+            expected_matches = self.TEST_PHS_QUERIES[query]
+            # Make sure number of matches is as expected.
+            self.assertEqual(len(returned_pks), len(expected_matches))
+            # Make sure the matches that are found are the ones expected.
+            for expected_phs in expected_matches:
+                expected_pk = models.Study.objects.get(i_accession=expected_phs).pk
+                self.assertIn(expected_pk, returned_pks,
+                              msg="Could not find expected phs {} with query '{}'".format(expected_phs, query))
+
+
 class SourceDatasetDetailTest(UserLoginTestCase):
     """Unit tests for the SourceDataset views."""
 

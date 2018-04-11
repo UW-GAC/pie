@@ -202,6 +202,24 @@ class StudyNameAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView
         return retrieved
 
 
+class StudyPHSAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
+    """Auto-complete studies in a form field by phs string."""
+
+    def get_queryset(self):
+        retrieved = models.Study.objects.all()
+        if self.q:
+            # User can input a phs in several ways, e.g. 'phs597', '597', '000597', or 'phs000597'.
+            # Get rid of the phs.
+            phs_digits = self.q.replace('phs', '')
+            # Search against the phs string if user started the query with leading zeros.
+            if phs_digits.startswith('0'):
+                retrieved = retrieved.filter(phs__regex=r'^{}'.format('phs' + phs_digits))
+            # Search against the phs digits if user started the query with non-zero digits.
+            else:
+                retrieved = retrieved.filter(i_accession__regex=r'^{}'.format(phs_digits))
+        return retrieved
+
+
 class StudySourceDatasetNameAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
     """Auto-complete datasets in a form field by dataset_name."""
 
