@@ -220,6 +220,38 @@ class StudyPHSAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView)
         return retrieved
 
 
+class StudyNameOrPHSAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
+    """Auto-complete studies in a form field by phs string."""
+
+    def get_queryset(self):
+        retrieved = models.Study.objects.all()
+        if self.q:
+            q_no_phs = self.q.replace('phs', '')
+            # Study name should always be queried.
+            nameQ = Q(i_study_name__icontains=self.q)
+            # Process query for pht string.
+            phsQ = None
+            if self.q.lower().startswith('phs') and q_no_phs.isdigit():
+                if q_no_phs.startswith('0'):
+                    phsQ = Q(phs__regex=r'^{}'.format('phs' + q_no_phs))
+                else:
+                    phsQ = Q(i_accession__regex=r'^{}'.format(q_no_phs))
+            # Autocomplete using formatted phs if q is only digits.
+            # None of the study names should be all digits.
+            elif self.q.isdigit():
+                # Search against the pht string if user started the query with leading zeros.
+                if q_no_phs.startswith('0'):
+                    phsQ = Q(phs__regex=r'^{}'.format('phs' + q_no_phs))
+                # Search against the phs digits if user started the query with non-zero digits.
+                else:
+                    phsQ = Q(i_accession__regex=r'^{}'.format(q_no_phs))
+            if phsQ:
+                retrieved = retrieved.filter(nameQ | phsQ)
+            else:
+                retrieved = retrieved.filter(nameQ)
+        return retrieved
+
+
 class StudySourceDatasetNameAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
     """Auto-complete datasets in a form field by dataset_name."""
 
