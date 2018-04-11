@@ -180,7 +180,7 @@ class SourceDatasetSearchMultipleStudiesForm(SourceDatasetSearchForm):
         queryset=models.Study.objects.all(),
         required=False,
         label='Study/Studies',
-        widget=autocomplete.ModelSelect2Multiple(url='trait_browser:source:studies:autocomplete:by-name'),
+        widget=autocomplete.ModelSelect2Multiple(url='trait_browser:source:studies:autocomplete:by-name-or-phs'),
         help_text=('Search only in selected studies. Start typing the dbGaP study name to filter the list, then '
                    'select the intended study. More than one study may be selected.')
     )
@@ -266,7 +266,7 @@ class SourceTraitSearchMultipleStudiesForm(SourceTraitSearchForm):
         queryset=models.Study.objects.all(),
         required=False,
         label='Study/Studies',
-        widget=autocomplete.ModelSelect2Multiple(url='trait_browser:source:studies:autocomplete:by-name'),
+        widget=autocomplete.ModelSelect2Multiple(url='trait_browser:source:studies:autocomplete:by-name-or-phs'),
         help_text="""Search only in selected studies. Start typing the dbGaP study name to filter the list, then
                      select the intended study. More than one study may be selected.
                      """
