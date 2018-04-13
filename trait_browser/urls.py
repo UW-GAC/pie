@@ -35,11 +35,17 @@ source_trait_patterns = [
     url(r'^search/$', views.SourceTraitSearch.as_view(), name='search'),
 ]
 
+source_dataset_autocomplete_patterns = [
+    url(r'^by-name/$', views.SourceDatasetNameAutocomplete.as_view(), name='by-name'),
+    url(r'^by-pht/$', views.SourceDatasetPHTAutocomplete.as_view(), name='by-pht'),
+    url(r'^by-name-or-pht/$', views.SourceDatasetNameOrPHTAutocomplete.as_view(), name='by-name-or-pht'),
+]
+
 source_dataset_patterns = [
     url(r'^(?P<pk>\d+)/$', views.SourceDatasetDetail.as_view(), name='detail'),
     url(r'^list/$', views.SourceDatasetList.as_view(), name='list'),
     url(r'^search/$', views.SourceDatasetSearch.as_view(), name='search'),
-    # include autocomplete?
+    url(r'^autocomplete/', include(source_dataset_autocomplete_patterns, namespace='autocomplete')),
 ]
 
 source_study_dataset_autocomplete_patterns = [

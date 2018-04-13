@@ -259,25 +259,32 @@ class StudySourceDatasetSearch(LoginRequiredMixin, SearchFormMixin, SingleObject
         )
 
 
-class StudySourceDatasetNameAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
+class SourceDatasetNameAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
     """Auto-complete datasets in a form field by dataset_name."""
 
     def get_queryset(self):
-        retrieved = models.SourceDataset.objects.current().filter(
-            source_study_version__study=self.kwargs['pk']
-        )
+        retrieved = models.SourceDataset.objects.current()
         if self.q:
             retrieved = retrieved.filter(dataset_name__icontains=r'{}'.format(self.q))
         return retrieved
 
 
-class StudySourceDatasetPHTAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
+class StudySourceDatasetNameAutocomplete(SourceDatasetNameAutocomplete):
+    """Auto-complete datasets begloning to a specific study in a form field by dataset_name."""
+
+    def get_queryset(self):
+        retrieved = super(StudySourceDatasetNameAutocomplete, self).get_queryset()
+        retrieved = retrieved.filter(
+            source_study_version__study=self.kwargs['pk']
+        )
+        return retrieved
+
+
+class SourceDatasetPHTAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
     """Auto-complete datasets in a form field by dataset pht string."""
 
     def get_queryset(self):
-        retrieved = models.SourceDataset.objects.current().filter(
-            source_study_version__study=self.kwargs['pk']
-        )
+        retrieved = models.SourceDataset.objects.current()
         if self.q:
             # User can input a pht in several ways, e.g. 'pht597', '597', '000597', or 'pht000597'.
             # Get rid of the pht.
@@ -291,13 +298,22 @@ class StudySourceDatasetPHTAutocomplete(LoginRequiredMixin, autocomplete.Select2
         return retrieved
 
 
-class StudySourceDatasetNameOrPHTAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
+class StudySourceDatasetPHTAutocomplete(SourceDatasetPHTAutocomplete):
+    """Auto-complete datasets belonging to a specific study in a form field by dataset pht string."""
+
+    def get_queryset(self):
+        retrieved = super(StudySourceDatasetPHTAutocomplete, self).get_queryset()
+        retrieved = retrieved.filter(
+            source_study_version__study=self.kwargs['pk']
+        )
+        return retrieved
+
+
+class SourceDatasetNameOrPHTAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
     """Auto-complete datasets in a form field by dataset name OR pht string."""
 
     def get_queryset(self):
-        retrieved = models.SourceDataset.objects.current().filter(
-            source_study_version__study=self.kwargs['pk']
-        )
+        retrieved = models.SourceDataset.objects.current()
         if self.q:
             q_no_pht = self.q.replace('pht', '')
             # Dataset name should always be queried.
@@ -322,6 +338,17 @@ class StudySourceDatasetNameOrPHTAutocomplete(LoginRequiredMixin, autocomplete.S
                 retrieved = retrieved.filter(nameQ | phtQ)
             else:
                 retrieved = retrieved.filter(nameQ)
+        return retrieved
+
+
+class StudySourceDatasetNameOrPHTAutocomplete(SourceDatasetNameOrPHTAutocomplete):
+    """Auto-complete datasets belonging to a specific study in a form field by dataset name OR pht string."""
+
+    def get_queryset(self):
+        retrieved = super(StudySourceDatasetNameOrPHTAutocomplete, self).get_queryset()
+        retrieved = retrieved.filter(
+            source_study_version__study=self.kwargs['pk']
+        )
         return retrieved
 
 
