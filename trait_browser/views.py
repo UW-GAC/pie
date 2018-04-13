@@ -2,6 +2,7 @@
 
 from django.db.models import Q  # Allows complex queries when searching.
 from django.http import HttpResponseRedirect
+from django.core.urlresolvers import reverse
 from django.shortcuts import get_object_or_404
 from django.template.defaultfilters import pluralize    # Use pluralize in the views.
 from django.utils.safestring import mark_safe
@@ -643,6 +644,37 @@ class TaggableStudyFilteredSourceTraitNameOrPHVAutocomplete(LoginRequiredMixin, 
             else:
                 retrieved = retrieved.filter(i_trait_name__iregex=r'^{}'.format(self.q))
         return retrieved
+
+
+class SourceAccessionLookupSelect(LoginRequiredMixin, TemplateView):
+    template_name = 'trait_browser/accession_lookup_select.html'
+
+
+class SourceAccessionLookupStudy(LoginRequiredMixin, TemplateView):
+    template_name = 'trait_browser/accession_lookup.html'
+
+    def get_context_data(self, **kwargs):
+        if 'object_type' not in kwargs:
+            kwargs['object_type'] = 'study'
+        return kwargs
+
+
+class SourceAccessionLookupDataset(LoginRequiredMixin, TemplateView):
+    template_name = 'trait_browser/accession_lookup.html'
+
+    def get_context_data(self, **kwargs):
+        if 'object_type' not in kwargs:
+            kwargs['object_type'] = 'dataset'
+        return kwargs
+
+
+class SourceAccessionLookupTrait(LoginRequiredMixin, TemplateView):
+    template_name = 'trait_browser/accession_lookup.html'
+
+    def get_context_data(self, **kwargs):
+        if 'object_type' not in kwargs:
+            kwargs['object_type'] = 'variable'
+        return kwargs
 
 
 class HarmonizedTraitList(LoginRequiredMixin, SingleTableMixin, ListView):

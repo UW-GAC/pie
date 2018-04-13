@@ -85,10 +85,18 @@ source_study_patterns = [
     # include autocomplete?
 ]
 
+source_accession_lookup_patterns = [
+    url(r'select/$', views.SourceAccessionLookupSelect.as_view(), name='select'),
+    url(r'study/$', views.SourceAccessionLookupStudy.as_view(), name='study'),
+    url(r'dataset/$', views.SourceAccessionLookupDataset.as_view(), name='dataset'),
+    url(r'variable/$', views.SourceAccessionLookupTrait.as_view(), name='trait'),
+]
+
 source_patterns = [
     url(r'^variables/', include(source_trait_patterns, namespace='traits')),
     url(r'^datasets/', include(source_dataset_patterns, namespace='datasets')),
     url(r'^studies/', include(source_study_patterns, namespace='studies')),
+    url(r'accession-lookup/', include(source_accession_lookup_patterns, namespace='lookup'))
 ]
 
 # Harmonized trait patterns.
