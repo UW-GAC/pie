@@ -372,6 +372,31 @@ class SourceTraitSearchOneStudyForm(SourceTraitSearchForm):
         return data
 
 
+class SourceAccessionLookupSelectForm(forms.Form):
+
+    types = (
+        ('study', 'Study'),
+        ('dataset', 'Dataset'),
+        ('trait', 'Variable'),
+    )
+    object_type = forms.ChoiceField(
+        choices=types,
+        label='Object type',
+        help_text='Select what type of accession to look up.'
+    )
+
+    helper = FormHelper()
+    helper.form_class = 'form-horizontal'
+    helper.label_class = 'col-sm-2'
+    helper.field_class = 'col-sm-8'
+    helper.layout = Layout(
+        'object_type',
+        FormActions(
+            Submit('submit', 'Next', css_class='btn-primary btn-disable')
+        )
+    )
+
+
 class HarmonizedTraitSearchForm(forms.Form):
     """Form to handle django-watson searches for HarmonizedTrait objects.
 

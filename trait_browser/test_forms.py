@@ -539,6 +539,28 @@ class SourceTraitSearchOneStudyFormTest(TestCase):
         self.assertIn(self.search_form.ERROR_DEPRECATED_DATASET, form.errors['datasets'])
 
 
+class SourceAccessionLookupSelectFormTest(TestCase):
+
+    def setUp(self):
+        self.search_form = forms.SourceAccessionLookupSelectForm
+
+    def test_form_with_no_input_data(self):
+        """Form is not bound when it's not given input data."""
+        form = self.search_form()
+        self.assertFalse(form.is_bound)
+
+    def test_form_is_valid_with_choices(self):
+        """Form is valid with all allowed choices."""
+        for choice in ('study', 'dataset', 'trait'):
+            form = self.search_form({'object_type': choice})
+            self.assertTrue(form.is_valid(), msg='form not valid for choice {}'.format(choice))
+
+    def test_form_is_invalid_with_invalid_choice(self):
+        """Form is invalid with a choice that's not allowed."""
+        form = self.search_form({'object_type': 'invalid'})
+        self.assertFalse(form.is_valid())
+
+
 class HarmonizedTraitSearchFormTest(TestCase):
 
     def test_form_with_no_input_data(self):
