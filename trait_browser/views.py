@@ -646,8 +646,17 @@ class TaggableStudyFilteredSourceTraitNameOrPHVAutocomplete(LoginRequiredMixin, 
         return retrieved
 
 
-class SourceAccessionLookupSelect(LoginRequiredMixin, TemplateView):
+class SourceAccessionLookupSelect(LoginRequiredMixin, FormView):
     template_name = 'trait_browser/accession_lookup_select.html'
+    form_class = forms.SourceAccessionLookupSelectForm
+
+    def form_valid(self, form):
+        self.form = form
+        return super(SourceAccessionLookupSelect, self).form_valid(form)
+
+    def get_success_url(self):
+        url_string = 'trait_browser:source:lookup:{type}'.format(type=self.form.cleaned_data['object_type'])
+        return reverse(url_string)
 
 
 class SourceAccessionLookupStudy(LoginRequiredMixin, TemplateView):

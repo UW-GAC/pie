@@ -3859,6 +3859,45 @@ class DCCAnalystTaggableStudyFilteredSourceTraitNameOrPHVAutocompleteTest(DCCAna
         self.assertIn(phv_trait.pk, returned_pks)
 
 
+class SourceAccessionLookupSelectTest(UserLoginTestCase):
+    """Unit tests for the SourceAccessionLookupSelect view."""
+
+    def get_url(self):
+        return reverse('trait_browser:source:lookup:select')
+
+    def test_view_success_code(self):
+        """View returns successful response code."""
+        response = self.client.get(self.get_url())
+        self.assertEqual(response.status_code, 200)
+
+    def test_context_data(self):
+        """View has the proper context data."""
+        response = self.client.get(self.get_url())
+        context = response.context
+        self.assertIn('form', context)
+        self.assertIsInstance(context['form'], forms.SourceAccessionLookupSelectForm)
+
+    def test_redirects_to_study_lookup_page(self):
+        response = self.client.post(self.get_url(), {'object_type': 'study'})
+        self.assertRedirects(response, reverse('trait_browser:source:lookup:study'))
+
+    def test_redirects_to_dataset_lookup_page(self):
+        response = self.client.post(self.get_url(), {'object_type': 'dataset'})
+        self.assertRedirects(response, reverse('trait_browser:source:lookup:dataset'))
+
+    def test_redirects_to_variable_lookup_page(self):
+        response = self.client.post(self.get_url(), {'object_type': 'trait'})
+        self.assertRedirects(response, reverse('trait_browser:source:lookup:trait'))
+
+    def test_error_with_invalid_choice(self):
+        response = self.client.post(self.get_url(), {'object_type': 'foo'})
+        self.assertEqual(response.status_code, 200)
+        context = response.context
+        self.assertIn('form', context)
+        self.assertFormError(response, 'form', 'object_type',
+                             'Select a valid choice. foo is not one of the available choices.')
+
+
 class HarmonizedTraitListTest(UserLoginTestCase):
     """Unit tests for the HarmonizedTraitList view."""
 
