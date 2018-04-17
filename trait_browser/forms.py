@@ -419,6 +419,52 @@ class SourceAccessionLookupStudyForm(forms.Form):
     )
 
 
+class SourceAccessionLookupDatasetForm(forms.Form):
+
+    object = forms.ModelChoiceField(
+        queryset=models.SourceDataset.objects.all(),
+        required=True,
+        label='Dataset',
+        widget=autocomplete.ModelSelect2(url='trait_browser:source:datasets:autocomplete:by-name-or-pht'),
+        help_text=('Enter the dataset to look up. Start typing the dbGaP dataset accession or name to filter the '
+                   'list (example: ex0_7s, pht9, pht000009, 000009, 9), then select the intended dataset. '
+                   'Note that dataset names may not be unique.')
+    )
+    helper = FormHelper()
+    helper.form_class = 'form_horizontal'
+    helper.label_class = 'col-sm-2'
+    helper.field_class = 'col-sm-8'
+    helper.layout = Layout(
+        'object',
+        FormActions(
+            Submit('submit', 'Look up', css_class='btn-primary btn-disable')
+        )
+    )
+
+
+class SourceAccessionLookupTraitForm(forms.Form):
+
+    object = forms.ModelChoiceField(
+        queryset=models.SourceTrait.objects.all(),
+        required=True,
+        label='Variable',
+        widget=autocomplete.ModelSelect2(url='trait_browser:source:traits:autocomplete:by-name-or-phv'),
+        help_text=('Enter the variable to look up. Start typing the dbGaP variable accession or name to filter the '
+                   'list (example: MF33, phv507, phv00000507, 00000507, 507), then select the intended variable. '
+                   'Note that variable names may not be unique.')
+    )
+    helper = FormHelper()
+    helper.form_class = 'form_horizontal'
+    helper.label_class = 'col-sm-2'
+    helper.field_class = 'col-sm-8'
+    helper.layout = Layout(
+        'object',
+        FormActions(
+            Submit('submit', 'Look up', css_class='btn-primary btn-disable')
+        )
+    )
+
+
 class HarmonizedTraitSearchForm(forms.Form):
     """Form to handle django-watson searches for HarmonizedTrait objects.
 

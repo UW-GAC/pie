@@ -3945,6 +3945,96 @@ class SourceAccessionLookupStudyTest(UserLoginTestCase):
                              'Select a valid choice. That choice is not one of the available choices.')
 
 
+class SourceAccessionLookupDatasetTest(UserLoginTestCase):
+    """Unit tests for the SourceAccessionLookupSelect view."""
+
+    def get_url(self):
+        return reverse('trait_browser:source:lookup:dataset')
+
+    def test_view_success_code(self):
+        """View returns successful response code."""
+        response = self.client.get(self.get_url())
+        self.assertEqual(response.status_code, 200)
+
+    def test_context_data(self):
+        """View has the proper context data."""
+        response = self.client.get(self.get_url())
+        context = response.context
+        self.assertIn('object_type', context)
+        self.assertEqual(context['object_type'], 'dataset')
+        self.assertIn('form', context)
+        self.assertIsInstance(context['form'], forms.SourceAccessionLookupDatasetForm)
+
+    def test_redirects_to_study_detail_page(self):
+        """View redirects to study detail page upon successful form submission."""
+        dataset = factories.SourceDatasetFactory.create()
+        # We need to create some traits so the detail page renders properly.
+        source_traits = factories.SourceTraitFactory.create_batch(
+            10, source_dataset__source_study_version__i_is_deprecated=False,
+            source_dataset=dataset)
+        response = self.client.post(self.get_url(), {'object': dataset.pk})
+        self.assertRedirects(response, reverse('trait_browser:source:datasets:detail', args=[dataset.pk]))
+
+    def test_error_with_empty_dataset_field(self):
+        """View has form error with unsuccessful form submission."""
+        response = self.client.post(self.get_url(), {'object': ''})
+        self.assertEqual(response.status_code, 200)
+        self.assertFormError(response, 'form', 'object',
+                             'This field is required.')
+
+    def test_error_with_invalid_dataset(self):
+        """View has form error if non-existent dataset is requested."""
+        # Use a dataset pk that doesn't exist.
+        response = self.client.post(self.get_url(), {'object': 1})
+        self.assertEqual(response.status_code, 200)
+        # Due to the autocomplete, this error is unlikely to occur.
+        self.assertFormError(response, 'form', 'object',
+                             'Select a valid choice. That choice is not one of the available choices.')
+
+
+class SourceAccessionLookupTraitTest(UserLoginTestCase):
+    """Unit tests for the SourceAccessionLookupSelect view."""
+
+    def get_url(self):
+        return reverse('trait_browser:source:lookup:trait')
+
+    def test_view_success_code(self):
+        """View returns successful response code."""
+        response = self.client.get(self.get_url())
+        self.assertEqual(response.status_code, 200)
+
+    def test_context_data(self):
+        """View has the proper context data."""
+        response = self.client.get(self.get_url())
+        context = response.context
+        self.assertIn('object_type', context)
+        self.assertEqual(context['object_type'], 'variable')
+        self.assertIn('form', context)
+        self.assertIsInstance(context['form'], forms.SourceAccessionLookupTraitForm)
+
+    def test_redirects_to_trait_detail_page(self):
+        """View redirects to trait detail page upon successful form submission."""
+        trait = factories.SourceTraitFactory.create()
+        response = self.client.post(self.get_url(), {'object': trait.pk})
+        self.assertRedirects(response, reverse('trait_browser:source:traits:detail', args=[trait.pk]))
+
+    def test_error_with_empty_trait_field(self):
+        """View has form error with unsuccessful form submission."""
+        response = self.client.post(self.get_url(), {'object': ''})
+        self.assertEqual(response.status_code, 200)
+        self.assertFormError(response, 'form', 'object',
+                             'This field is required.')
+
+    def test_error_with_invalid_trait(self):
+        """View has form error if non-existent trait is requested."""
+        # Use a trait pk that doesn't exist.
+        response = self.client.post(self.get_url(), {'object': 1})
+        self.assertEqual(response.status_code, 200)
+        # Due to the autocomplete, this error is unlikely to occur.
+        self.assertFormError(response, 'form', 'object',
+                             'Select a valid choice. That choice is not one of the available choices.')
+
+
 class HarmonizedTraitListTest(UserLoginTestCase):
     """Unit tests for the HarmonizedTraitList view."""
 

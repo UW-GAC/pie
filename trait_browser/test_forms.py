@@ -583,6 +583,50 @@ class SourceAccessionLookupStudyFormTest(TestCase):
         self.assertFalse(form.is_valid())
 
 
+class SourceAccessionLookupDatasetFormTest(TestCase):
+
+    def setUp(self):
+        self.search_form = forms.SourceAccessionLookupDatasetForm
+
+    def test_form_with_no_input_data(self):
+        """Form is not bound when it's not given input data."""
+        form = self.search_form()
+        self.assertFalse(form.is_bound)
+
+    def test_form_is_valid_with_existing_dataset(self):
+        """Form is valid with an existing dataset."""
+        dataset = factories.SourceDatasetFactory.create()
+        form = self.search_form({'object': dataset.pk})
+        self.assertTrue(form.is_valid())
+
+    def test_form_invalid_with_missing_dataset(self):
+        """Form is invalid if no dataset is given."""
+        form = self.search_form({'object': ''})
+        self.assertFalse(form.is_valid())
+
+
+class SourceAccessionLookupTraitFormTest(TestCase):
+
+    def setUp(self):
+        self.search_form = forms.SourceAccessionLookupTraitForm
+
+    def test_form_with_no_input_data(self):
+        """Form is not bound when it's not given input data."""
+        form = self.search_form()
+        self.assertFalse(form.is_bound)
+
+    def test_form_is_valid_with_existing_trait(self):
+        """Form is valid with an existing source trait."""
+        trait = factories.SourceTraitFactory.create()
+        form = self.search_form({'object': trait.pk})
+        self.assertTrue(form.is_valid())
+
+    def test_form_invalid_with_missing_trait(self):
+        """Form is invalid if no trait is given."""
+        form = self.search_form({'object': ''})
+        self.assertFalse(form.is_valid())
+
+
 class HarmonizedTraitSearchFormTest(TestCase):
 
     def test_form_with_no_input_data(self):

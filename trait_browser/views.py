@@ -677,22 +677,40 @@ class SourceAccessionLookupStudy(LoginRequiredMixin, FormView):
         return url
 
 
-class SourceAccessionLookupDataset(LoginRequiredMixin, TemplateView):
+class SourceAccessionLookupDataset(LoginRequiredMixin, FormView):
     template_name = 'trait_browser/accession_lookup.html'
+    form_class = forms.SourceAccessionLookupDatasetForm
 
     def get_context_data(self, **kwargs):
         if 'object_type' not in kwargs:
             kwargs['object_type'] = 'dataset'
         return kwargs
 
+    def form_valid(self, form, **kwargs):
+        self.object = form.cleaned_data['object']
+        return HttpResponseRedirect(self.get_success_url())
 
-class SourceAccessionLookupTrait(LoginRequiredMixin, TemplateView):
+    def get_success_url(self, **kwargs):
+        url = reverse('trait_browser:source:datasets:detail', args=[self.object.pk])
+        return url
+
+
+class SourceAccessionLookupTrait(LoginRequiredMixin, FormView):
     template_name = 'trait_browser/accession_lookup.html'
+    form_class = forms.SourceAccessionLookupTraitForm
 
     def get_context_data(self, **kwargs):
         if 'object_type' not in kwargs:
             kwargs['object_type'] = 'variable'
         return kwargs
+
+    def form_valid(self, form, **kwargs):
+        self.object = form.cleaned_data['object']
+        return HttpResponseRedirect(self.get_success_url())
+
+    def get_success_url(self, **kwargs):
+        url = reverse('trait_browser:source:traits:detail', args=[self.object.pk])
+        return url
 
 
 class HarmonizedTraitList(LoginRequiredMixin, SingleTableMixin, ListView):
