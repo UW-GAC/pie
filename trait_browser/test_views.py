@@ -3991,6 +3991,16 @@ class SourceAccessionLookupDatasetTest(UserLoginTestCase):
         self.assertFormError(response, 'form', 'object',
                              'Select a valid choice. That choice is not one of the available choices.')
 
+    def test_error_with_deprecated_dataset(self):
+        """View has form error if non-existent dataset is requested."""
+        # Use a trait pk that doesn't exist.
+        dataset = factories.SourceDatasetFactory.create(source_study_version__i_is_deprecated=True)
+        response = self.client.post(self.get_url(), {'object': dataset.pk})
+        self.assertEqual(response.status_code, 200)
+        # Due to the autocomplete, this error is unlikely to occur.
+        self.assertFormError(response, 'form', 'object',
+                             'Select a valid choice. That choice is not one of the available choices.')
+
 
 class SourceAccessionLookupTraitTest(UserLoginTestCase):
     """Unit tests for the SourceAccessionLookupSelect view."""
@@ -4029,6 +4039,16 @@ class SourceAccessionLookupTraitTest(UserLoginTestCase):
         """View has form error if non-existent trait is requested."""
         # Use a trait pk that doesn't exist.
         response = self.client.post(self.get_url(), {'object': 1})
+        self.assertEqual(response.status_code, 200)
+        # Due to the autocomplete, this error is unlikely to occur.
+        self.assertFormError(response, 'form', 'object',
+                             'Select a valid choice. That choice is not one of the available choices.')
+
+    def test_error_with_deprecated_trait(self):
+        """View has form error if non-existent trait is requested."""
+        # Use a trait pk that doesn't exist.
+        trait = factories.SourceTraitFactory.create(source_dataset__source_study_version__i_is_deprecated=True)
+        response = self.client.post(self.get_url(), {'object': trait.pk})
         self.assertEqual(response.status_code, 200)
         # Due to the autocomplete, this error is unlikely to occur.
         self.assertFormError(response, 'form', 'object',

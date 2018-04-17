@@ -604,6 +604,12 @@ class SourceAccessionLookupDatasetFormTest(TestCase):
         form = self.search_form({'object': ''})
         self.assertFalse(form.is_valid())
 
+    def test_form_invalid_with_deprecated_dataset(self):
+        """Form is invalid if a deprecated dataset is chosen."""
+        dataset = factories.SourceDatasetFactory.create(source_study_version__i_is_deprecated=True)
+        form = self.search_form({'object': dataset.pk})
+        self.assertFalse(form.is_valid())
+
 
 class SourceAccessionLookupTraitFormTest(TestCase):
 
@@ -624,6 +630,12 @@ class SourceAccessionLookupTraitFormTest(TestCase):
     def test_form_invalid_with_missing_trait(self):
         """Form is invalid if no trait is given."""
         form = self.search_form({'object': ''})
+        self.assertFalse(form.is_valid())
+
+    def test_form_invalid_with_deprecated_trait(self):
+        """Form is invalid if no trait is given."""
+        trait = factories.SourceTraitFactory.create(source_dataset__source_study_version__i_is_deprecated=True)
+        form = self.search_form({'object': trait.pk})
         self.assertFalse(form.is_valid())
 
 

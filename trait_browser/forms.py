@@ -422,7 +422,7 @@ class SourceAccessionLookupStudyForm(forms.Form):
 class SourceAccessionLookupDatasetForm(forms.Form):
 
     object = forms.ModelChoiceField(
-        queryset=models.SourceDataset.objects.all(),
+        queryset=models.SourceDataset.objects.current(),
         required=True,
         label='Dataset',
         widget=autocomplete.ModelSelect2(url='trait_browser:source:datasets:autocomplete:by-name-or-pht'),
@@ -445,7 +445,7 @@ class SourceAccessionLookupDatasetForm(forms.Form):
 class SourceAccessionLookupTraitForm(forms.Form):
 
     object = forms.ModelChoiceField(
-        queryset=models.SourceTrait.objects.all(),
+        queryset=models.SourceTrait.objects.current(),
         required=True,
         label='Variable',
         widget=autocomplete.ModelSelect2(url='trait_browser:source:traits:autocomplete:by-name-or-phv'),
