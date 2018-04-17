@@ -647,6 +647,8 @@ class TaggableStudyFilteredSourceTraitNameOrPHVAutocomplete(LoginRequiredMixin, 
 
 
 class SourceAccessionLookupSelect(LoginRequiredMixin, FormView):
+    """View to allow the user to select the type of object to look up by accession."""
+
     template_name = 'trait_browser/accession_lookup_select.html'
     form_class = forms.SourceAccessionLookupSelectForm
 
@@ -660,6 +662,8 @@ class SourceAccessionLookupSelect(LoginRequiredMixin, FormView):
 
 
 class SourceAccessionLookupStudy(LoginRequiredMixin, FormView):
+    """View to look up a study by dbGaP accession."""
+
     template_name = 'trait_browser/accession_lookup.html'
     form_class = forms.SourceAccessionLookupStudyForm
 
@@ -678,6 +682,8 @@ class SourceAccessionLookupStudy(LoginRequiredMixin, FormView):
 
 
 class SourceAccessionLookupDataset(LoginRequiredMixin, FormView):
+    """View to look up a dataset by dbGaP accession."""
+
     template_name = 'trait_browser/accession_lookup.html'
     form_class = forms.SourceAccessionLookupDatasetForm
 
@@ -696,6 +702,8 @@ class SourceAccessionLookupDataset(LoginRequiredMixin, FormView):
 
 
 class SourceAccessionLookupTrait(LoginRequiredMixin, FormView):
+    """View to look up a trait by dbGaP accession."""
+
     template_name = 'trait_browser/accession_lookup.html'
     form_class = forms.SourceAccessionLookupTraitForm
 
