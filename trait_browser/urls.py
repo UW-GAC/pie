@@ -33,6 +33,7 @@ source_trait_patterns = [
     url(r'^(?P<pk>\d+)/$', views.SourceTraitDetail.as_view(), name='detail'),
     url(r'^(?P<pk>\d+)/add-tag/$', views.SourceTraitTagging.as_view(), name='tagging'),
     url(r'^search/$', views.SourceTraitSearch.as_view(), name='search'),
+    url(r'^lookup/$', views.SourceAccessionLookupTrait.as_view(), name='lookup'),
 ]
 
 source_dataset_autocomplete_patterns = [
@@ -46,6 +47,7 @@ source_dataset_patterns = [
     url(r'^list/$', views.SourceDatasetList.as_view(), name='list'),
     url(r'^search/$', views.SourceDatasetSearch.as_view(), name='search'),
     url(r'^autocomplete/', include(source_dataset_autocomplete_patterns, namespace='autocomplete')),
+    url(r'^lookup/$', views.SourceAccessionLookupDataset.as_view(), name='lookup'),
 ]
 
 source_study_dataset_autocomplete_patterns = [
@@ -82,21 +84,14 @@ source_study_patterns = [
     url(r'^autocomplete/', include(source_study_autocomplete_patterns, namespace='autocomplete')),
     url(r'^list/$', views.StudyList.as_view(), name='list'),
     url(r'^(?P<pk>\d+)/', include(source_study_detail_patterns, namespace='pk')),
-    # include autocomplete?
-]
-
-source_accession_lookup_patterns = [
-    url(r'select/$', views.SourceAccessionLookupSelect.as_view(), name='select'),
-    url(r'study/$', views.SourceAccessionLookupStudy.as_view(), name='study'),
-    url(r'dataset/$', views.SourceAccessionLookupDataset.as_view(), name='dataset'),
-    url(r'variable/$', views.SourceAccessionLookupTrait.as_view(), name='trait'),
+    url(r'^lookup/$', views.SourceAccessionLookupStudy.as_view(), name='lookup'),
 ]
 
 source_patterns = [
     url(r'^variables/', include(source_trait_patterns, namespace='traits')),
     url(r'^datasets/', include(source_dataset_patterns, namespace='datasets')),
     url(r'^studies/', include(source_study_patterns, namespace='studies')),
-    url(r'accession-lookup/', include(source_accession_lookup_patterns, namespace='lookup'))
+    url(r'lookup/$', views.SourceAccessionLookupSelect.as_view(), name='lookup'),
 ]
 
 # Harmonized trait patterns.

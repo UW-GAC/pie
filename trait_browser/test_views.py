@@ -3863,7 +3863,7 @@ class SourceAccessionLookupSelectTest(UserLoginTestCase):
     """Unit tests for the SourceAccessionLookupSelect view."""
 
     def get_url(self):
-        return reverse('trait_browser:source:lookup:select')
+        return reverse('trait_browser:source:lookup')
 
     def test_view_success_code(self):
         """View returns successful response code."""
@@ -3879,15 +3879,15 @@ class SourceAccessionLookupSelectTest(UserLoginTestCase):
 
     def test_redirects_to_study_lookup_page(self):
         response = self.client.post(self.get_url(), {'object_type': 'study'})
-        self.assertRedirects(response, reverse('trait_browser:source:lookup:study'))
+        self.assertRedirects(response, reverse('trait_browser:source:studies:lookup'))
 
     def test_redirects_to_dataset_lookup_page(self):
         response = self.client.post(self.get_url(), {'object_type': 'dataset'})
-        self.assertRedirects(response, reverse('trait_browser:source:lookup:dataset'))
+        self.assertRedirects(response, reverse('trait_browser:source:datasets:lookup'))
 
     def test_redirects_to_variable_lookup_page(self):
         response = self.client.post(self.get_url(), {'object_type': 'trait'})
-        self.assertRedirects(response, reverse('trait_browser:source:lookup:trait'))
+        self.assertRedirects(response, reverse('trait_browser:source:traits:lookup'))
 
     def test_error_with_invalid_choice(self):
         response = self.client.post(self.get_url(), {'object_type': 'foo'})
@@ -3902,7 +3902,7 @@ class SourceAccessionLookupStudyTest(UserLoginTestCase):
     """Unit tests for the SourceAccessionLookupSelect view."""
 
     def get_url(self):
-        return reverse('trait_browser:source:lookup:study')
+        return reverse('trait_browser:source:studies:lookup')
 
     def test_view_success_code(self):
         """View returns successful response code."""
@@ -3949,7 +3949,7 @@ class SourceAccessionLookupDatasetTest(UserLoginTestCase):
     """Unit tests for the SourceAccessionLookupSelect view."""
 
     def get_url(self):
-        return reverse('trait_browser:source:lookup:dataset')
+        return reverse('trait_browser:source:datasets:lookup')
 
     def test_view_success_code(self):
         """View returns successful response code."""
@@ -4006,7 +4006,7 @@ class SourceAccessionLookupTraitTest(UserLoginTestCase):
     """Unit tests for the SourceAccessionLookupSelect view."""
 
     def get_url(self):
-        return reverse('trait_browser:source:lookup:trait')
+        return reverse('trait_browser:source:traits:lookup')
 
     def test_view_success_code(self):
         """View returns successful response code."""

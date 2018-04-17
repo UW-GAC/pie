@@ -657,7 +657,13 @@ class SourceAccessionLookupSelect(LoginRequiredMixin, FormView):
         return super(SourceAccessionLookupSelect, self).form_valid(form)
 
     def get_success_url(self):
-        url_string = 'trait_browser:source:lookup:{type}'.format(type=self.form.cleaned_data['object_type'])
+        type = self.form.cleaned_data['object_type']
+        # Account for pluralization
+        if type == 'study':
+            type = 'studies'
+        else:
+            type = type + 's'
+        url_string = 'trait_browser:source:{type}:lookup'.format(type=type)
         return reverse(url_string)
 
 
