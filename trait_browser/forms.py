@@ -388,7 +388,7 @@ class SourceObjectLookupForm(forms.Form):
     helper = FormHelper()
     helper.form_class = 'form-horizontal'
     helper.label_class = 'col-sm-2'
-    helper.field_class = 'col-sm-8'
+    helper.field_class = 'col-sm-6'
     helper.layout = Layout(
         'object_type',
         FormActions(
@@ -409,12 +409,15 @@ class StudyLookupForm(forms.Form):
     )
     helper = FormHelper()
     helper.form_class = 'form_horizontal'
-    helper.label_class = 'col-sm-2'
-    helper.field_class = 'col-sm-8'
+    helper.label_class = 'col-sm-1'
+    helper.field_class = 'col-sm-11'
     helper.layout = Layout(
-        'object',
-        FormActions(
-            Submit('submit', 'Submit', css_class='btn-primary btn-disable')
+        Div(
+            'object',
+            FormActions(
+                Submit('submit', 'Submit', css_class='btn-primary btn-disable')
+            ),
+            css_class='col-sm-10 col-sm-offset-1'
         )
     )
 
@@ -432,12 +435,15 @@ class SourceDatasetLookupForm(forms.Form):
     )
     helper = FormHelper()
     helper.form_class = 'form_horizontal'
-    helper.label_class = 'col-sm-2'
-    helper.field_class = 'col-sm-8'
+    helper.label_class = 'col-sm-1'
+    helper.field_class = 'col-sm-11'
     helper.layout = Layout(
-        'object',
-        FormActions(
-            Submit('submit', 'Submit', css_class='btn-primary btn-disable')
+        Div(
+            'object',
+            FormActions(
+                Submit('submit', 'Submit', css_class='btn-primary btn-disable')
+            ),
+            css_class='col-sm-10 col-sm-offset-1'
         )
     )
 
@@ -455,12 +461,15 @@ class SourceTraitLookupForm(forms.Form):
     )
     helper = FormHelper()
     helper.form_class = 'form_horizontal'
-    helper.label_class = 'col-sm-2'
-    helper.field_class = 'col-sm-8'
+    helper.label_class = 'col-sm-1'
+    helper.field_class = 'col-sm-11'
     helper.layout = Layout(
-        'object',
-        FormActions(
-            Submit('submit', 'Submit', css_class='btn-primary btn-disable')
+        Div(
+            'object',
+            FormActions(
+                Submit('submit', 'Submit', css_class='btn-primary btn-disable')
+            ),
+            css_class='col-sm-10 col-sm-offset-1'
         )
     )
 
