@@ -109,89 +109,6 @@ class StudyList(LoginRequiredMixin, SingleTableMixin, ListView):
     table_pagination = {'per_page': TABLE_PER_PAGE}
 
 
-class StudySourceTraitList(SingleTableMixin, StudyDetail):
-    """."""
-
-    template_name = 'trait_browser/study_sourcetrait_list.html'
-    context_table_name = 'source_trait_table'
-    table_class = tables.SourceTraitStudyTable
-    table_pagination = {'per_page': TABLE_PER_PAGE}
-
-    def get_table_data(self):
-        return models.SourceTrait.objects.current().filter(
-            source_dataset__source_study_version__study=self.object)
-
-
-class StudySourceTraitSearch(LoginRequiredMixin, SearchFormMixin, SingleObjectMixin, SingleTableMixin, MessageMixin,
-                             TemplateView):
-    """Form view class for searching for source traits within a specific study."""
-
-    template_name = 'trait_browser/study_sourcetrait_search.html'
-    form_class = forms.SourceTraitSearchOneStudyForm
-    table_class = tables.SourceTraitTableFull
-    context_table_name = 'results_table'
-    table_data = models.SourceTrait.objects.none()
-    context_object_name = 'study'
-    model = models.Study
-
-    def get_form(self, form_class=None):
-        if form_class is None:
-            form_class = self.get_form_class()
-        return form_class(self.object, **self.get_form_kwargs())
-
-    def get(self, request, *args, **kwargs):
-        self.object = self.get_object()
-        if 'reset' in self.request.GET:
-            # Instantiate a blank form, ignoring any current GET parameters.
-            form_class = self.get_form_class()
-            return HttpResponseRedirect(request.path, {'form': form_class(self.object)})
-        return super(StudySourceTraitSearch, self).get(request, *args, **kwargs)
-
-    def search(self, **search_kwargs):
-        datasets = search_kwargs.pop('datasets')
-        if len(datasets) == 0:
-            datasets = searches.search_source_datasets(studies=[self.object.pk])
-        return searches.search_source_traits(datasets=datasets, **search_kwargs)
-
-
-class StudySourceDatasetList(SingleTableMixin, StudyDetail):
-    """."""
-
-    template_name = 'trait_browser/study_sourcedataset_list.html'
-    context_table_name = 'source_dataset_table'
-    table_class = tables.SourceDatasetTable
-    table_pagination = {'per_page': TABLE_PER_PAGE}
-
-    def get_table_data(self):
-        return models.SourceDataset.objects.current().filter(
-            source_study_version__study=self.object)
-
-
-class StudySourceDatasetSearch(LoginRequiredMixin, SearchFormMixin, SingleObjectMixin, SingleTableMixin, MessageMixin,
-                               TemplateView):
-    """Class for searching source datasets within a specific study."""
-
-    template_name = 'trait_browser/study_sourcedataset_search.html'
-    form_class = forms.SourceDatasetSearchForm
-    table_class = tables.SourceDatasetTableFull
-    context_table_name = 'results_table'
-    table_data = models.SourceDataset.objects.none()
-    context_object_name = 'study'
-    model = models.Study
-
-    def get(self, request, *args, **kwargs):
-        self.object = self.get_object()
-        return super(StudySourceDatasetSearch, self).get(request, *args, **kwargs)
-
-    def search(self, name='', description='', match_exact_name=True):
-        return searches.search_source_datasets(
-            name=name,
-            description=description,
-            match_exact_name=match_exact_name,
-            studies=[self.object.pk]
-        )
-
-
 class StudyNameAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
     """Auto-complete studies in a form field by i_study_name."""
 
@@ -250,6 +167,96 @@ class StudyNameOrPHSAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySe
             else:
                 retrieved = retrieved.filter(nameQ)
         return retrieved
+
+
+class SourceDatasetDetail(LoginRequiredMixin, SingleTableMixin, DetailView):
+    """Detail view class for SourceDatasets. Displays the dataset's source traits in a table."""
+
+    model = models.SourceDataset
+    context_object_name = 'source_dataset'
+    context_table_name = 'trait_table'
+    table_class = tables.SourceTraitDatasetTable
+    table_pagination = {'per_page': TABLE_PER_PAGE}
+
+    def get_table_data(self):
+        return self.object.sourcetrait_set.all().order_by('i_dbgap_variable_accession')
+
+    def get_context_data(self, **kwargs):
+        context = super(SourceDatasetDetail, self).get_context_data(**kwargs)
+        trait = self.object.sourcetrait_set.first()
+        context['phs'] = trait.study_accession
+        context['phs_link'] = trait.dbgap_study_link
+        context['pht_link'] = trait.dbgap_dataset_link
+        context['trait_count'] = '{:,}'.format(self.object.sourcetrait_set.count())
+        return context
+
+
+class SourceDatasetList(LoginRequiredMixin, SingleTableView):
+    """List view class for SourceDatasets (unfiltered)."""
+
+    model = models.SourceDataset
+    context_table_name = 'source_dataset_table'
+    table_class = tables.SourceDatasetTableFull
+    table_pagination = {'per_page': TABLE_PER_PAGE}
+
+    def get_table_data(self):
+        return models.SourceDataset.objects.current()
+
+
+class StudySourceDatasetList(SingleTableMixin, StudyDetail):
+    """."""
+
+    template_name = 'trait_browser/study_sourcedataset_list.html'
+    context_table_name = 'source_dataset_table'
+    table_class = tables.SourceDatasetTable
+    table_pagination = {'per_page': TABLE_PER_PAGE}
+
+    def get_table_data(self):
+        return models.SourceDataset.objects.current().filter(
+            source_study_version__study=self.object)
+
+
+class SourceDatasetSearch(LoginRequiredMixin, SearchFormMixin, SingleTableMixin, MessageMixin, TemplateView):
+    """Class for searching source datasets."""
+
+    template_name = 'trait_browser/sourcedataset_search.html'
+    form_class = forms.SourceDatasetSearchMultipleStudiesForm
+    table_class = tables.SourceDatasetTableFull
+    context_table_name = 'results_table'
+    table_data = models.SourceDataset.objects.none()
+
+    def search(self, name='', description='', match_exact_name=True, studies=[]):
+        return searches.search_source_datasets(
+            name=name,
+            description=description,
+            match_exact_name=match_exact_name,
+            studies=studies
+        )
+
+
+class StudySourceDatasetSearch(LoginRequiredMixin, SearchFormMixin, SingleObjectMixin, SingleTableMixin, MessageMixin,
+                               TemplateView):
+    """Class for searching source datasets within a specific study."""
+
+    template_name = 'trait_browser/study_sourcedataset_search.html'
+    form_class = forms.SourceDatasetSearchForm
+    table_class = tables.SourceDatasetTableFull
+    context_table_name = 'results_table'
+    table_data = models.SourceDataset.objects.none()
+    context_object_name = 'study'
+    model = models.Study
+
+    def get(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        return super(StudySourceDatasetSearch, self).get(request, *args, **kwargs)
+
+    def search(self, name='', description='', match_exact_name=True):
+        return searches.search_source_datasets(
+            name=name,
+            description=description,
+            match_exact_name=match_exact_name,
+            studies=[self.object.pk]
+        )
 
 
 class StudySourceDatasetNameAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
@@ -318,73 +325,6 @@ class StudySourceDatasetNameOrPHTAutocomplete(LoginRequiredMixin, autocomplete.S
         return retrieved
 
 
-class SourceDatasetDetail(LoginRequiredMixin, SingleTableMixin, DetailView):
-    """Detail view class for SourceDatasets. Displays the dataset's source traits in a table."""
-
-    model = models.SourceDataset
-    context_object_name = 'source_dataset'
-    context_table_name = 'trait_table'
-    table_class = tables.SourceTraitDatasetTable
-    table_pagination = {'per_page': TABLE_PER_PAGE}
-
-    def get_table_data(self):
-        return self.object.sourcetrait_set.all().order_by('i_dbgap_variable_accession')
-
-    def get_context_data(self, **kwargs):
-        context = super(SourceDatasetDetail, self).get_context_data(**kwargs)
-        trait = self.object.sourcetrait_set.first()
-        context['phs'] = trait.study_accession
-        context['phs_link'] = trait.dbgap_study_link
-        context['pht_link'] = trait.dbgap_dataset_link
-        context['trait_count'] = '{:,}'.format(self.object.sourcetrait_set.count())
-        return context
-
-
-class SourceDatasetList(LoginRequiredMixin, SingleTableView):
-    """List view class for SourceDatasets (unfiltered)."""
-
-    model = models.SourceDataset
-    context_table_name = 'source_dataset_table'
-    table_class = tables.SourceDatasetTableFull
-    table_pagination = {'per_page': TABLE_PER_PAGE}
-
-    def get_table_data(self):
-        return models.SourceDataset.objects.current()
-
-
-class SourceDatasetSearch(LoginRequiredMixin, SearchFormMixin, SingleTableMixin, MessageMixin, TemplateView):
-    """Class for searching source datasets."""
-
-    template_name = 'trait_browser/sourcedataset_search.html'
-    form_class = forms.SourceDatasetSearchMultipleStudiesForm
-    table_class = tables.SourceDatasetTableFull
-    context_table_name = 'results_table'
-    table_data = models.SourceDataset.objects.none()
-
-    def search(self, name='', description='', match_exact_name=True, studies=[]):
-        return searches.search_source_datasets(
-            name=name,
-            description=description,
-            match_exact_name=match_exact_name,
-            studies=studies
-        )
-
-
-class HarmonizedTraitSetVersionDetail(LoginRequiredMixin, FormMessagesMixin, DetailView):
-    """Detail view class for HarmonizedTraitSetVersions. Inherits from django.views.generic.DetailView."""
-
-    model = models.HarmonizedTraitSetVersion
-    context_object_name = 'harmonized_trait_set_version'
-
-    def get_context_data(self, **kwargs):
-        context = super(HarmonizedTraitSetVersionDetail, self).get_context_data(**kwargs)
-        harmonized_traits = self.object.harmonizedtrait_set.all()
-        context['harmonized_trait'] = harmonized_traits.get(i_is_unique_key=False)
-        context['unique_keys'] = harmonized_traits.filter(i_is_unique_key=True)
-        context['unique_key_names'] = ', '.join(context['unique_keys'].values_list('trait_flavor_name', flat=True))
-        return context
-
-
 class SourceTraitDetail(LoginRequiredMixin, DetailView):
     """Detail view class for SourceTraits. Inherits from django.views.generic.DetailView."""
 
@@ -410,6 +350,19 @@ class SourceTraitList(LoginRequiredMixin, SingleTableMixin, ListView):
 
     def get_table_data(self):
         return models.SourceTrait.objects.current()
+
+
+class StudySourceTraitList(SingleTableMixin, StudyDetail):
+    """."""
+
+    template_name = 'trait_browser/study_sourcetrait_list.html'
+    context_table_name = 'source_trait_table'
+    table_class = tables.SourceTraitStudyTable
+    table_pagination = {'per_page': TABLE_PER_PAGE}
+
+    def get_table_data(self):
+        return models.SourceTrait.objects.current().filter(
+            source_dataset__source_study_version__study=self.object)
 
 
 class SourceTraitTagging(LoginRequiredMixin, PermissionRequiredMixin, UserPassesTestMixin, FormMessagesMixin,
@@ -483,6 +436,38 @@ class SourceTraitSearch(LoginRequiredMixin, SearchFormMixin, SingleTableMixin, M
             **extra_kwargs
         )
         return results
+
+
+class StudySourceTraitSearch(LoginRequiredMixin, SearchFormMixin, SingleObjectMixin, SingleTableMixin, MessageMixin,
+                             TemplateView):
+    """Form view class for searching for source traits within a specific study."""
+
+    template_name = 'trait_browser/study_sourcetrait_search.html'
+    form_class = forms.SourceTraitSearchOneStudyForm
+    table_class = tables.SourceTraitTableFull
+    context_table_name = 'results_table'
+    table_data = models.SourceTrait.objects.none()
+    context_object_name = 'study'
+    model = models.Study
+
+    def get_form(self, form_class=None):
+        if form_class is None:
+            form_class = self.get_form_class()
+        return form_class(self.object, **self.get_form_kwargs())
+
+    def get(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        if 'reset' in self.request.GET:
+            # Instantiate a blank form, ignoring any current GET parameters.
+            form_class = self.get_form_class()
+            return HttpResponseRedirect(request.path, {'form': form_class(self.object)})
+        return super(StudySourceTraitSearch, self).get(request, *args, **kwargs)
+
+    def search(self, **search_kwargs):
+        datasets = search_kwargs.pop('datasets')
+        if len(datasets) == 0:
+            datasets = searches.search_source_datasets(studies=[self.object.pk])
+        return searches.search_source_traits(datasets=datasets, **search_kwargs)
 
 
 class SourceTraitPHVAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
@@ -669,3 +654,18 @@ class HarmonizedTraitSearch(LoginRequiredMixin, SearchFormMixin, SingleTableMixi
 
     def search(self, **search_kwargs):
         return searches.search_harmonized_traits(**search_kwargs)
+
+
+class HarmonizedTraitSetVersionDetail(LoginRequiredMixin, FormMessagesMixin, DetailView):
+    """Detail view class for HarmonizedTraitSetVersions. Inherits from django.views.generic.DetailView."""
+
+    model = models.HarmonizedTraitSetVersion
+    context_object_name = 'harmonized_trait_set_version'
+
+    def get_context_data(self, **kwargs):
+        context = super(HarmonizedTraitSetVersionDetail, self).get_context_data(**kwargs)
+        harmonized_traits = self.object.harmonizedtrait_set.all()
+        context['harmonized_trait'] = harmonized_traits.get(i_is_unique_key=False)
+        context['unique_keys'] = harmonized_traits.filter(i_is_unique_key=True)
+        context['unique_key_names'] = ', '.join(context['unique_keys'].values_list('trait_flavor_name', flat=True))
+        return context
