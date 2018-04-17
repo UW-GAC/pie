@@ -649,7 +649,7 @@ class TaggableStudyFilteredSourceTraitNameOrPHVAutocomplete(LoginRequiredMixin, 
 class SourceObjectLookup(LoginRequiredMixin, FormView):
     """View to allow the user to select the type of object to look up by accession."""
 
-    template_name = 'trait_browser/accession_lookup_select.html'
+    template_name = 'trait_browser/object_lookup_select.html'
     form_class = forms.SourceObjectLookupForm
 
     def form_valid(self, form):
@@ -670,7 +670,7 @@ class SourceObjectLookup(LoginRequiredMixin, FormView):
 class StudyLookup(LoginRequiredMixin, FormView):
     """View to look up a study by dbGaP accession."""
 
-    template_name = 'trait_browser/accession_lookup.html'
+    template_name = 'trait_browser/object_lookup.html'
     form_class = forms.StudyLookupForm
 
     def get_context_data(self, **kwargs):
@@ -690,7 +690,7 @@ class StudyLookup(LoginRequiredMixin, FormView):
 class SourceDatasetLookup(LoginRequiredMixin, FormView):
     """View to look up a dataset by dbGaP accession."""
 
-    template_name = 'trait_browser/accession_lookup.html'
+    template_name = 'trait_browser/object_lookup.html'
     form_class = forms.SourceDatasetLookupForm
 
     def get_context_data(self, **kwargs):
@@ -710,7 +710,7 @@ class SourceDatasetLookup(LoginRequiredMixin, FormView):
 class SourceTraitLookup(LoginRequiredMixin, FormView):
     """View to look up a trait by dbGaP accession."""
 
-    template_name = 'trait_browser/accession_lookup.html'
+    template_name = 'trait_browser/object_lookup.html'
     form_class = forms.SourceTraitLookupForm
 
     def get_context_data(self, **kwargs):
