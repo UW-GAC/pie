@@ -539,10 +539,10 @@ class SourceTraitSearchOneStudyFormTest(TestCase):
         self.assertIn(self.search_form.ERROR_DEPRECATED_DATASET, form.errors['datasets'])
 
 
-class SourceAccessionLookupSelectFormTest(TestCase):
+class SourceObjectLookupFormTest(TestCase):
 
     def setUp(self):
-        self.search_form = forms.SourceAccessionLookupSelectForm
+        self.search_form = forms.SourceObjectLookupForm
 
     def test_form_with_no_input_data(self):
         """Form is not bound when it's not given input data."""
@@ -561,10 +561,10 @@ class SourceAccessionLookupSelectFormTest(TestCase):
         self.assertFalse(form.is_valid())
 
 
-class SourceAccessionLookupStudyFormTest(TestCase):
+class StudyLookupFormFormTest(TestCase):
 
     def setUp(self):
-        self.search_form = forms.SourceAccessionLookupStudyForm
+        self.search_form = forms.StudyLookupForm
 
     def test_form_with_no_input_data(self):
         """Form is not bound when it's not given input data."""
@@ -583,10 +583,10 @@ class SourceAccessionLookupStudyFormTest(TestCase):
         self.assertFalse(form.is_valid())
 
 
-class SourceAccessionLookupDatasetFormTest(TestCase):
+class SourceDatasetLookupFormTest(TestCase):
 
     def setUp(self):
-        self.search_form = forms.SourceAccessionLookupDatasetForm
+        self.search_form = forms.SourceDatasetLookupForm
 
     def test_form_with_no_input_data(self):
         """Form is not bound when it's not given input data."""
@@ -611,10 +611,10 @@ class SourceAccessionLookupDatasetFormTest(TestCase):
         self.assertFalse(form.is_valid())
 
 
-class SourceAccessionLookupTraitFormTest(TestCase):
+class SourceTraitLookupFormTest(TestCase):
 
     def setUp(self):
-        self.search_form = forms.SourceAccessionLookupTraitForm
+        self.search_form = forms.SourceTraitLookupForm
 
     def test_form_with_no_input_data(self):
         """Form is not bound when it's not given input data."""

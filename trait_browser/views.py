@@ -646,15 +646,15 @@ class TaggableStudyFilteredSourceTraitNameOrPHVAutocomplete(LoginRequiredMixin, 
         return retrieved
 
 
-class SourceAccessionLookupSelect(LoginRequiredMixin, FormView):
+class SourceObjectLookup(LoginRequiredMixin, FormView):
     """View to allow the user to select the type of object to look up by accession."""
 
     template_name = 'trait_browser/accession_lookup_select.html'
-    form_class = forms.SourceAccessionLookupSelectForm
+    form_class = forms.SourceObjectLookupForm
 
     def form_valid(self, form):
         self.form = form
-        return super(SourceAccessionLookupSelect, self).form_valid(form)
+        return super(SourceObjectLookup, self).form_valid(form)
 
     def get_success_url(self):
         type = self.form.cleaned_data['object_type']
@@ -667,11 +667,11 @@ class SourceAccessionLookupSelect(LoginRequiredMixin, FormView):
         return reverse(url_string)
 
 
-class SourceAccessionLookupStudy(LoginRequiredMixin, FormView):
+class StudyLookup(LoginRequiredMixin, FormView):
     """View to look up a study by dbGaP accession."""
 
     template_name = 'trait_browser/accession_lookup.html'
-    form_class = forms.SourceAccessionLookupStudyForm
+    form_class = forms.StudyLookupForm
 
     def get_context_data(self, **kwargs):
         if 'object_type' not in kwargs:
@@ -687,11 +687,11 @@ class SourceAccessionLookupStudy(LoginRequiredMixin, FormView):
         return url
 
 
-class SourceAccessionLookupDataset(LoginRequiredMixin, FormView):
+class SourceDatasetLookup(LoginRequiredMixin, FormView):
     """View to look up a dataset by dbGaP accession."""
 
     template_name = 'trait_browser/accession_lookup.html'
-    form_class = forms.SourceAccessionLookupDatasetForm
+    form_class = forms.SourceDatasetLookupForm
 
     def get_context_data(self, **kwargs):
         if 'object_type' not in kwargs:
@@ -707,11 +707,11 @@ class SourceAccessionLookupDataset(LoginRequiredMixin, FormView):
         return url
 
 
-class SourceAccessionLookupTrait(LoginRequiredMixin, FormView):
+class SourceTraitLookup(LoginRequiredMixin, FormView):
     """View to look up a trait by dbGaP accession."""
 
     template_name = 'trait_browser/accession_lookup.html'
-    form_class = forms.SourceAccessionLookupTraitForm
+    form_class = forms.SourceTraitLookupForm
 
     def get_context_data(self, **kwargs):
         if 'object_type' not in kwargs:

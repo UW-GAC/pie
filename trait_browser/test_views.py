@@ -3859,8 +3859,8 @@ class DCCAnalystTaggableStudyFilteredSourceTraitNameOrPHVAutocompleteTest(DCCAna
         self.assertIn(phv_trait.pk, returned_pks)
 
 
-class SourceAccessionLookupSelectTest(UserLoginTestCase):
-    """Unit tests for the SourceAccessionLookupSelect view."""
+class SourceObjectLookupTest(UserLoginTestCase):
+    """Unit tests for the SourceObjectLookupTest view."""
 
     def get_url(self):
         return reverse('trait_browser:source:lookup')
@@ -3875,7 +3875,7 @@ class SourceAccessionLookupSelectTest(UserLoginTestCase):
         response = self.client.get(self.get_url())
         context = response.context
         self.assertIn('form', context)
-        self.assertIsInstance(context['form'], forms.SourceAccessionLookupSelectForm)
+        self.assertIsInstance(context['form'], forms.SourceObjectLookupForm)
 
     def test_redirects_to_study_lookup_page(self):
         response = self.client.post(self.get_url(), {'object_type': 'study'})
@@ -3898,8 +3898,8 @@ class SourceAccessionLookupSelectTest(UserLoginTestCase):
                              'Select a valid choice. foo is not one of the available choices.')
 
 
-class SourceAccessionLookupStudyTest(UserLoginTestCase):
-    """Unit tests for the SourceAccessionLookupSelect view."""
+class StudyLookupTest(UserLoginTestCase):
+    """Unit tests for the SourceStudyLookup view."""
 
     def get_url(self):
         return reverse('trait_browser:source:studies:lookup')
@@ -3916,7 +3916,7 @@ class SourceAccessionLookupStudyTest(UserLoginTestCase):
         self.assertIn('object_type', context)
         self.assertEqual(context['object_type'], 'study')
         self.assertIn('form', context)
-        self.assertIsInstance(context['form'], forms.SourceAccessionLookupStudyForm)
+        self.assertIsInstance(context['form'], forms.StudyLookupForm)
 
     def test_redirects_to_study_detail_page(self):
         """View redirects to study detail page upon successful form submission."""
@@ -3945,8 +3945,8 @@ class SourceAccessionLookupStudyTest(UserLoginTestCase):
                              'Select a valid choice. That choice is not one of the available choices.')
 
 
-class SourceAccessionLookupDatasetTest(UserLoginTestCase):
-    """Unit tests for the SourceAccessionLookupSelect view."""
+class SourceDatasetLookupTest(UserLoginTestCase):
+    """Unit tests for the SourceDatasetLookup view."""
 
     def get_url(self):
         return reverse('trait_browser:source:datasets:lookup')
@@ -3963,7 +3963,7 @@ class SourceAccessionLookupDatasetTest(UserLoginTestCase):
         self.assertIn('object_type', context)
         self.assertEqual(context['object_type'], 'dataset')
         self.assertIn('form', context)
-        self.assertIsInstance(context['form'], forms.SourceAccessionLookupDatasetForm)
+        self.assertIsInstance(context['form'], forms.SourceDatasetLookupForm)
 
     def test_redirects_to_study_detail_page(self):
         """View redirects to study detail page upon successful form submission."""
@@ -4002,8 +4002,8 @@ class SourceAccessionLookupDatasetTest(UserLoginTestCase):
                              'Select a valid choice. That choice is not one of the available choices.')
 
 
-class SourceAccessionLookupTraitTest(UserLoginTestCase):
-    """Unit tests for the SourceAccessionLookupSelect view."""
+class SourceTraitLookupTest(UserLoginTestCase):
+    """Unit tests for the SourceTraitLookup view."""
 
     def get_url(self):
         return reverse('trait_browser:source:traits:lookup')
@@ -4020,7 +4020,7 @@ class SourceAccessionLookupTraitTest(UserLoginTestCase):
         self.assertIn('object_type', context)
         self.assertEqual(context['object_type'], 'variable')
         self.assertIn('form', context)
-        self.assertIsInstance(context['form'], forms.SourceAccessionLookupTraitForm)
+        self.assertIsInstance(context['form'], forms.SourceTraitLookupForm)
 
     def test_redirects_to_trait_detail_page(self):
         """View redirects to trait detail page upon successful form submission."""

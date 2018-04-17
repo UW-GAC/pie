@@ -372,7 +372,7 @@ class SourceTraitSearchOneStudyForm(SourceTraitSearchForm):
         return data
 
 
-class SourceAccessionLookupSelectForm(forms.Form):
+class SourceObjectLookupForm(forms.Form):
 
     types = (
         ('study', 'Study'),
@@ -397,7 +397,7 @@ class SourceAccessionLookupSelectForm(forms.Form):
     )
 
 
-class SourceAccessionLookupStudyForm(forms.Form):
+class StudyLookupForm(forms.Form):
 
     object = forms.ModelChoiceField(
         queryset=models.Study.objects.all(),
@@ -419,7 +419,7 @@ class SourceAccessionLookupStudyForm(forms.Form):
     )
 
 
-class SourceAccessionLookupDatasetForm(forms.Form):
+class SourceDatasetLookupForm(forms.Form):
 
     object = forms.ModelChoiceField(
         queryset=models.SourceDataset.objects.current(),
@@ -442,7 +442,7 @@ class SourceAccessionLookupDatasetForm(forms.Form):
     )
 
 
-class SourceAccessionLookupTraitForm(forms.Form):
+class SourceTraitLookupForm(forms.Form):
 
     object = forms.ModelChoiceField(
         queryset=models.SourceTrait.objects.current(),
