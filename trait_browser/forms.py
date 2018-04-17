@@ -381,8 +381,8 @@ class SourceAccessionLookupSelectForm(forms.Form):
     )
     object_type = forms.ChoiceField(
         choices=types,
-        label='Object type',
-        help_text='Select what type of accession to look up.'
+        label='dbGaP object type',
+        help_text='Select what type of dbGaP accessioned object to look up.'
     )
 
     helper = FormHelper()
@@ -404,7 +404,7 @@ class SourceAccessionLookupStudyForm(forms.Form):
         required=True,
         label='Study',
         widget=autocomplete.ModelSelect2(url='trait_browser:source:studies:autocomplete:by-name-or-phs'),
-        help_text=('Enter the study to look up. Start typing the dbGaP study accession or name to filter the '
+        help_text=('Enter the study to look up. Start typing the dbGaP study name or accession to filter the '
                    'list (example: Framingham, phs7, phs000007, 7), then select the intended study.')
     )
     helper = FormHelper()
@@ -414,7 +414,7 @@ class SourceAccessionLookupStudyForm(forms.Form):
     helper.layout = Layout(
         'object',
         FormActions(
-            Submit('submit', 'Look up', css_class='btn-primary btn-disable')
+            Submit('submit', 'Submit', css_class='btn-primary btn-disable')
         )
     )
 
@@ -426,7 +426,7 @@ class SourceAccessionLookupDatasetForm(forms.Form):
         required=True,
         label='Dataset',
         widget=autocomplete.ModelSelect2(url='trait_browser:source:datasets:autocomplete:by-name-or-pht'),
-        help_text=('Enter the dataset to look up. Start typing the dbGaP dataset accession or name to filter the '
+        help_text=('Enter the dataset to look up. Start typing the dbGaP dataset name or accession to filter the '
                    'list (example: ex0_7s, pht9, pht000009, 000009, 9), then select the intended dataset. '
                    'Note that dataset names may not be unique.')
     )
@@ -437,7 +437,7 @@ class SourceAccessionLookupDatasetForm(forms.Form):
     helper.layout = Layout(
         'object',
         FormActions(
-            Submit('submit', 'Look up', css_class='btn-primary btn-disable')
+            Submit('submit', 'Submit', css_class='btn-primary btn-disable')
         )
     )
 
@@ -449,7 +449,7 @@ class SourceAccessionLookupTraitForm(forms.Form):
         required=True,
         label='Variable',
         widget=autocomplete.ModelSelect2(url='trait_browser:source:traits:autocomplete:by-name-or-phv'),
-        help_text=('Enter the variable to look up. Start typing the dbGaP variable accession or name to filter the '
+        help_text=('Enter the variable to look up. Start typing the dbGaP variable name or accession to filter the '
                    'list (example: MF33, phv507, phv00000507, 00000507, 507), then select the intended variable. '
                    'Note that variable names may not be unique.')
     )
@@ -460,7 +460,7 @@ class SourceAccessionLookupTraitForm(forms.Form):
     helper.layout = Layout(
         'object',
         FormActions(
-            Submit('submit', 'Look up', css_class='btn-primary btn-disable')
+            Submit('submit', 'Submit', css_class='btn-primary btn-disable')
         )
     )
 
