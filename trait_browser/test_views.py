@@ -3898,6 +3898,53 @@ class SourceAccessionLookupSelectTest(UserLoginTestCase):
                              'Select a valid choice. foo is not one of the available choices.')
 
 
+class SourceAccessionLookupStudyTest(UserLoginTestCase):
+    """Unit tests for the SourceAccessionLookupSelect view."""
+
+    def get_url(self):
+        return reverse('trait_browser:source:lookup:study')
+
+    def test_view_success_code(self):
+        """View returns successful response code."""
+        response = self.client.get(self.get_url())
+        self.assertEqual(response.status_code, 200)
+
+    def test_context_data(self):
+        """View has the proper context data."""
+        response = self.client.get(self.get_url())
+        context = response.context
+        self.assertIn('object_type', context)
+        self.assertEqual(context['object_type'], 'study')
+        self.assertIn('form', context)
+        self.assertIsInstance(context['form'], forms.SourceAccessionLookupStudyForm)
+
+    def test_redirects_to_study_detail_page(self):
+        """View redirects to study detail page upon successful form submission."""
+        study = factories.StudyFactory.create()
+        # We need to create some datasets and traits so the detail page renders properly.
+        source_traits = factories.SourceTraitFactory.create_batch(
+            10, source_dataset__source_study_version__i_is_deprecated=False,
+            source_dataset__source_study_version__study=study)
+        response = self.client.post(self.get_url(), {'object': study.pk})
+        self.assertRedirects(response, reverse('trait_browser:source:studies:pk:detail', args=[study.pk]))
+
+    def test_error_with_empty_study_field(self):
+        """View has form error with unsuccessful form submission."""
+        response = self.client.post(self.get_url(), {'object': ''})
+        self.assertEqual(response.status_code, 200)
+        self.assertFormError(response, 'form', 'object',
+                             'This field is required.')
+
+    def test_error_with_invalid_study(self):
+        """View has form error if non-existent study is requested."""
+        # Use a study pk that doesn't exist.
+        response = self.client.post(self.get_url(), {'object': 1})
+        self.assertEqual(response.status_code, 200)
+        # Due to the autocomplete, this error is unlikely to occur.
+        self.assertFormError(response, 'form', 'object',
+                             'Select a valid choice. That choice is not one of the available choices.')
+
+
 class HarmonizedTraitListTest(UserLoginTestCase):
     """Unit tests for the HarmonizedTraitList view."""
 

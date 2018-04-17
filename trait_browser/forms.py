@@ -397,6 +397,28 @@ class SourceAccessionLookupSelectForm(forms.Form):
     )
 
 
+class SourceAccessionLookupStudyForm(forms.Form):
+
+    object = forms.ModelChoiceField(
+        queryset=models.Study.objects.all(),
+        required=True,
+        label='Study',
+        widget=autocomplete.ModelSelect2(url='trait_browser:source:studies:autocomplete:by-name-or-phs'),
+        help_text=('Enter the study to look up. Start typing the dbGaP study accession or name to filter the '
+                   'list (example: Framingham, phs7, phs000007, 7), then select the intended study.')
+    )
+    helper = FormHelper()
+    helper.form_class = 'form_horizontal'
+    helper.label_class = 'col-sm-2'
+    helper.field_class = 'col-sm-8'
+    helper.layout = Layout(
+        'object',
+        FormActions(
+            Submit('submit', 'Look up', css_class='btn-primary btn-disable')
+        )
+    )
+
+
 class HarmonizedTraitSearchForm(forms.Form):
     """Form to handle django-watson searches for HarmonizedTrait objects.
 

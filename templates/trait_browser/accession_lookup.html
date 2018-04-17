@@ -1,5 +1,7 @@
 {% extends '__base.html' %}
 {% load crispy_forms_tags %}
+{% load staticfiles %}
+{% load static %}
 
 {% block head_title %}
   | Look up objects by accession
@@ -10,4 +12,12 @@
   <h1>Look up objects by dbGaP accession</h1>
   Enter the {{ object_type }} accession.
 
+  {% crispy form %}
+
 {% endblock content %}
+
+{% block custom_javascript %}
+  {# script for django-autocomplete-light #}
+  <script type="text/javascript" src="{% static 'admin/js/vendor/jquery/jquery.js' %}"></script>
+  {{ form.media }}
+{% endblock custom_javascript %}

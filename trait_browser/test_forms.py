@@ -561,6 +561,28 @@ class SourceAccessionLookupSelectFormTest(TestCase):
         self.assertFalse(form.is_valid())
 
 
+class SourceAccessionLookupStudyFormTest(TestCase):
+
+    def setUp(self):
+        self.search_form = forms.SourceAccessionLookupStudyForm
+
+    def test_form_with_no_input_data(self):
+        """Form is not bound when it's not given input data."""
+        form = self.search_form()
+        self.assertFalse(form.is_bound)
+
+    def test_form_is_valid_with_existing_study(self):
+        """Form is valid with an existing study."""
+        study = factories.StudyFactory.create()
+        form = self.search_form({'object': study.pk})
+        self.assertTrue(form.is_valid())
+
+    def test_form_invalid_with_missing_study(self):
+        """Form is invalid if no study is given."""
+        form = self.search_form({'object': ''})
+        self.assertFalse(form.is_valid())
+
+
 class HarmonizedTraitSearchFormTest(TestCase):
 
     def test_form_with_no_input_data(self):

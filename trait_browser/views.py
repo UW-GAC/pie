@@ -659,13 +659,22 @@ class SourceAccessionLookupSelect(LoginRequiredMixin, FormView):
         return reverse(url_string)
 
 
-class SourceAccessionLookupStudy(LoginRequiredMixin, TemplateView):
+class SourceAccessionLookupStudy(LoginRequiredMixin, FormView):
     template_name = 'trait_browser/accession_lookup.html'
+    form_class = forms.SourceAccessionLookupStudyForm
 
     def get_context_data(self, **kwargs):
         if 'object_type' not in kwargs:
             kwargs['object_type'] = 'study'
         return kwargs
+
+    def form_valid(self, form, **kwargs):
+        self.object = form.cleaned_data['object']
+        return HttpResponseRedirect(self.get_success_url())
+
+    def get_success_url(self, **kwargs):
+        url = reverse('trait_browser:source:studies:pk:detail', args=[self.object.pk])
+        return url
 
 
 class SourceAccessionLookupDataset(LoginRequiredMixin, TemplateView):
