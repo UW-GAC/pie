@@ -397,6 +397,21 @@ class SourceObjectLookupForm(forms.Form):
     )
 
 
+lookup_form_helper = FormHelper()
+lookup_form_helper.form_class = 'form_horizontal'
+lookup_form_helper.label_class = 'col-sm-1'
+lookup_form_helper.field_class = 'col-sm-11'
+lookup_form_helper.layout = Layout(
+    Div(
+        'object',
+        FormActions(
+            Submit('submit', 'Submit', css_class='btn-primary btn-disable')
+        ),
+        css_class='col-sm-10 col-sm-offset-1'
+    )
+)
+
+
 class StudyLookupForm(forms.Form):
 
     object = forms.ModelChoiceField(
@@ -407,19 +422,7 @@ class StudyLookupForm(forms.Form):
         help_text=('Enter the study to look up. Start typing the dbGaP study name or accession to filter the '
                    'list (example: Framingham, phs7, phs000007, 7), then select the intended study.')
     )
-    helper = FormHelper()
-    helper.form_class = 'form_horizontal'
-    helper.label_class = 'col-sm-1'
-    helper.field_class = 'col-sm-11'
-    helper.layout = Layout(
-        Div(
-            'object',
-            FormActions(
-                Submit('submit', 'Submit', css_class='btn-primary btn-disable')
-            ),
-            css_class='col-sm-10 col-sm-offset-1'
-        )
-    )
+    helper = lookup_form_helper
 
 
 class SourceDatasetLookupForm(forms.Form):
@@ -433,19 +436,7 @@ class SourceDatasetLookupForm(forms.Form):
                    'list (example: ex0_7s, pht9, pht000009, 000009, 9), then select the intended dataset. '
                    'Note that dataset names may not be unique.')
     )
-    helper = FormHelper()
-    helper.form_class = 'form_horizontal'
-    helper.label_class = 'col-sm-1'
-    helper.field_class = 'col-sm-11'
-    helper.layout = Layout(
-        Div(
-            'object',
-            FormActions(
-                Submit('submit', 'Submit', css_class='btn-primary btn-disable')
-            ),
-            css_class='col-sm-10 col-sm-offset-1'
-        )
-    )
+    helper = lookup_form_helper
 
 
 class SourceTraitLookupForm(forms.Form):
@@ -459,19 +450,7 @@ class SourceTraitLookupForm(forms.Form):
                    'list (example: MF33, phv507, phv00000507, 00000507, 507), then select the intended variable. '
                    'Note that variable names may not be unique.')
     )
-    helper = FormHelper()
-    helper.form_class = 'form_horizontal'
-    helper.label_class = 'col-sm-1'
-    helper.field_class = 'col-sm-11'
-    helper.layout = Layout(
-        Div(
-            'object',
-            FormActions(
-                Submit('submit', 'Submit', css_class='btn-primary btn-disable')
-            ),
-            css_class='col-sm-10 col-sm-offset-1'
-        )
-    )
+    helper = lookup_form_helper
 
 
 class HarmonizedTraitSearchForm(forms.Form):
