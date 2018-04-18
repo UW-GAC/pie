@@ -11,6 +11,10 @@
 {% block content %}
   <h1>Find a {{ object_type}} by name or accession</h1>
 
+  <div class="container col-sm-10 col-sm-offset-1">
+    {{ text }}
+  </div>
+
   {% crispy form %}
 
 {% endblock content %}

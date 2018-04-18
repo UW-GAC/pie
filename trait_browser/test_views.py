@@ -3917,6 +3917,8 @@ class StudyLookupTest(UserLoginTestCase):
         self.assertEqual(context['object_type'], 'study')
         self.assertIn('form', context)
         self.assertIsInstance(context['form'], forms.StudyLookupForm)
+        self.assertIn('text', context)
+        self.assertIsInstance(context['text'], str)
 
     def test_redirects_to_study_detail_page(self):
         """View redirects to study detail page upon successful form submission."""
@@ -3964,6 +3966,8 @@ class SourceDatasetLookupTest(UserLoginTestCase):
         self.assertEqual(context['object_type'], 'dataset')
         self.assertIn('form', context)
         self.assertIsInstance(context['form'], forms.SourceDatasetLookupForm)
+        self.assertIn('text', context)
+        self.assertIsInstance(context['text'], str)
 
     def test_redirects_to_study_detail_page(self):
         """View redirects to study detail page upon successful form submission."""
@@ -4021,6 +4025,8 @@ class SourceTraitLookupTest(UserLoginTestCase):
         self.assertEqual(context['object_type'], 'variable')
         self.assertIn('form', context)
         self.assertIsInstance(context['form'], forms.SourceTraitLookupForm)
+        self.assertIn('text', context)
+        self.assertIsInstance(context['text'], str)
 
     def test_redirects_to_trait_detail_page(self):
         """View redirects to trait detail page upon successful form submission."""
