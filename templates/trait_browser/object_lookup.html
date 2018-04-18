@@ -4,12 +4,12 @@
 {% load static %}
 
 {% block head_title %}
-  | Look up a dbGaP accessioned object
+  | Find a dbGaP accessioned object
 {% endblock head_title %}
 
 
 {% block content %}
-  <h1>Look up a {{ object_type}}</h1>
+  <h1>Find a {{ object_type}} by name or accession</h1>
 
   {% crispy form %}
 
