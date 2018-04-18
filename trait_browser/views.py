@@ -727,7 +727,7 @@ class SourceTraitLookup(LoginRequiredMixin, FormView):
             kwargs['object_type'] = 'variable'
         if 'text' not in kwargs:
             kwargs['text'] = mark_safe(('<p>Each variable on dbGaP is assigned a unique numeric identifier prefixed '
-                                        'by pht. The version of the variable is indicated by a .v# suffix. An '
+                                        'by phv. The version of the variable is indicated by a .v# suffix. An '
                                         'example of a variable accession is phv00000001.v1.</p>'))
         return kwargs
         return kwargs
