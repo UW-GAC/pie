@@ -1,0 +1,26 @@
+{% extends '__base.html' %}
+{% load crispy_forms_tags %}
+{% load staticfiles %}
+{% load static %}
+
+{% block head_title %}
+  | Find a dbGaP accessioned object
+{% endblock head_title %}
+
+
+{% block content %}
+  <h1>Find a {{ object_type}} by name or accession</h1>
+
+  <div class="container col-sm-10 col-sm-offset-1">
+    {{ text }}
+  </div>
+
+  {% crispy form %}
+
+{% endblock content %}
+
+{% block custom_javascript %}
+  {# script for django-autocomplete-light #}
+  <script type="text/javascript" src="{% static 'admin/js/vendor/jquery/jquery.js' %}"></script>
+  {{ form.media }}
+{% endblock custom_javascript %}

@@ -912,6 +912,88 @@ class StudySourceDatasetSearchTest(UserLoginTestCase):
         self.assertIn(trait, context['results_table'].data)
 
 
+class SourceDatasetNameAutocompleteTest(UserLoginTestCase):
+    """Autocomplete view works as expected."""
+
+    def setUp(self):
+        super(SourceDatasetNameAutocompleteTest, self).setUp()
+        # Create 10 source datasets.
+        self.source_datasets = []
+        self.TEST_DATASETS = ['abcde', 'abcdef', 'abcd_ef', 'abcd123', 'bcdefg', 'cdefgh', 'bcdefa',
+                              'other1', 'other2', 'other3']
+        self.TEST_NAME_QUERIES = {
+            'a': ['abcde', 'abcdef', 'abcd_ef', 'abcd123', 'bcdefa'],
+            'abc': ['abcde', 'abcdef', 'abcd_ef', 'abcd123'],
+            'abcd1': ['abcd123'],
+            'b': ['abcde', 'abcdef', 'abcd_ef', 'abcd123', 'bcdefg', 'bcdefa'],
+            'abcde': ['abcde', 'abcdef'],
+            'abcdef': ['abcdef'],
+        }
+        for dataset_name in self.TEST_DATASETS:
+            self.source_datasets.append(factories.SourceDatasetFactory.create(dataset_name=dataset_name))
+
+    def get_url(self, *args):
+        return reverse('trait_browser:source:datasets:autocomplete:by-name', args=args)
+
+    def test_view_success_code(self):
+        """View returns successful response code."""
+        tmp = self.get_url()
+        response = self.client.get(tmp)
+        self.assertEqual(response.status_code, 200)
+
+    def test_returns_all_datasets_with_no_query(self):
+        """Queryset returns all of the datasets with no query."""
+        url = self.get_url()
+        response = self.client.get(url)
+        pks = get_autocomplete_view_ids(response)
+        self.assertEqual(sorted([dataset.pk for dataset in self.source_datasets]), sorted(pks))
+
+    def test_no_deprecated_datasets_in_queryset(self):
+        """Queryset returns only the latest version of a dataset."""
+        models.SourceDataset.objects.all().delete()
+        dataset_1 = factories.SourceDatasetFactory.create(source_study_version__i_is_deprecated=True)
+        dataset_2 = factories.SourceDatasetFactory.create(source_study_version__i_is_deprecated=False)
+        url = self.get_url()
+        response = self.client.get(url)
+        returned_pks = get_autocomplete_view_ids(response)
+        self.assertEqual(returned_pks, [dataset_2.pk])
+
+    def test_correct_dataset_found_by_name(self):
+        """Queryset returns only the correct dataset when found by whole dataset name."""
+        dataset_name = 'my_unlikely_dataset_name'
+        dataset = factories.SourceDatasetFactory.create(dataset_name=dataset_name)
+        url = self.get_url()
+        response = self.client.get(url, {'q': dataset_name})
+        returned_pks = get_autocomplete_view_ids(response)
+        self.assertEqual(returned_pks, [dataset.i_id])
+
+    def test_correct_dataset_found_by_case_insensitive_name(self):
+        """Queryset returns only the correct source dataset when found by whole name, with mismatched case."""
+        dataset_name = 'my_unlikely_dataset_name'
+        dataset = factories.SourceDatasetFactory.create(dataset_name=dataset_name)
+        url = self.get_url()
+        response = self.client.get(url, {'q': dataset_name.upper()})
+        returned_pks = get_autocomplete_view_ids(response)
+        self.assertEqual(returned_pks, [dataset.i_id])
+
+    def test_name_test_queries(self):
+        """Returns only the correct source dataset for each of the TEST_NAME_QUERIES."""
+        url = self.get_url()
+        for query in self.TEST_NAME_QUERIES.keys():
+            response = self.client.get(url, {'q': query})
+            returned_pks = get_autocomplete_view_ids(response)
+            expected_matches = self.TEST_NAME_QUERIES[query]
+            self.assertEqual(len(returned_pks), len(expected_matches),
+                             msg='Did not find correct number of matches for query {}'.format(query))
+            # Make sure the matches found are those that are expected.
+            for expected_name in expected_matches:
+                name_queryset = models.SourceDataset.objects.filter(dataset_name__regex=r'^{}$'.format(expected_name))
+                self.assertEqual(name_queryset.count(), 1)
+                expected_pk = name_queryset.first().pk
+                self.assertIn(expected_pk, returned_pks,
+                              msg='Could not find expected dataset name {} with query {}'.format(expected_name, query))
+
+
 class StudySourceDatasetNameAutocompleteTest(UserLoginTestCase):
     """Autocomplete view works as expected."""
 
@@ -1039,6 +1121,85 @@ class StudySourceDatasetNameAutocompleteTest(UserLoginTestCase):
                               msg='Could not find expected dataset name {} with query {}'.format(expected_name, query))
 
 
+class SourceDatasetPHTAutocompleteTest(UserLoginTestCase):
+    """Autocomplete view works as expected."""
+
+    def setUp(self):
+        super(SourceDatasetPHTAutocompleteTest, self).setUp()
+        self.source_datasets = []
+        self.TEST_PHTS = (5, 50, 500, 500000, 55, 555, 555555, 52, 520, 5200, )
+        self.TEST_PHT_QUERIES = {
+            '5': (5, 50, 500, 500000, 55, 555, 555555, 52, 520, 5200, ),
+            '05': (),
+            '0005': (500, 555, 520, ),
+            '000005': (5, ),
+            '52': (52, 520, 5200, ),
+            '052': (),
+            '0052': (5200, ),
+            '00052': (520, ),
+            '555555': (555555, ),
+            '0': (5, 50, 500, 55, 555, 52, 520, 5200, ),
+        }
+        for pht in self.TEST_PHTS:
+            self.source_datasets.append(factories.SourceDatasetFactory.create(i_accession=pht))
+
+    def get_url(self, *args):
+        return reverse('trait_browser:source:datasets:autocomplete:by-pht', args=args)
+
+    def test_view_success_code(self):
+        """View returns successful response code."""
+        tmp = self.get_url()
+        response = self.client.get(tmp)
+        self.assertEqual(response.status_code, 200)
+
+    def test_returns_all_datasets_with_no_query(self):
+        """Queryset returns all of the datasets with no query."""
+        url = self.get_url()
+        response = self.client.get(url)
+        pks = get_autocomplete_view_ids(response)
+        self.assertEqual(sorted([dataset.pk for dataset in self.source_datasets]), sorted(pks))
+
+    def test_no_deprecated_datasets_in_queryset(self):
+        """Queryset returns only the latest version of a dataset."""
+        models.SourceDataset.objects.all().delete()
+        dataset_1 = factories.SourceDatasetFactory.create(source_study_version__i_is_deprecated=True)
+        dataset_2 = factories.SourceDatasetFactory.create(source_study_version__i_is_deprecated=False)
+        url = self.get_url()
+        response = self.client.get(url)
+        returned_pks = get_autocomplete_view_ids(response)
+        self.assertEqual(returned_pks, [dataset_2.pk])
+
+    def test_pht_test_queries_without_pht_in_string(self):
+        """Returns only the correct datasets for each of the TEST_PHT_QUERIES when 'pht' is not in query string."""
+        url = self.get_url()
+        for query in self.TEST_PHT_QUERIES:
+            response = self.client.get(url, {'q': query})
+            returned_pks = get_autocomplete_view_ids(response)
+            expected_matches = self.TEST_PHT_QUERIES[query]
+            # Make sure number of matches is as expected.
+            self.assertEqual(len(returned_pks), len(expected_matches))
+            # Make sure the matches that are found are the ones expected.
+            for expected_pht in expected_matches:
+                expected_pk = models.SourceDataset.objects.get(i_accession=expected_pht).pk
+                self.assertIn(expected_pk, returned_pks,
+                              msg="Could not find expected pht {} with query '{}'".format(expected_pht, query))
+
+    def test_pht_test_queries_with_pht_in_string(self):
+        """Returns only the correct source datasets for each of the TEST_PHT_QUERIES when 'pht' is in query string."""
+        url = self.get_url()
+        for query in self.TEST_PHT_QUERIES:
+            response = self.client.get(url, {'q': 'pht' + query})
+            returned_pks = get_autocomplete_view_ids(response)
+            expected_matches = self.TEST_PHT_QUERIES[query]
+            # Make sure number of matches is as expected.
+            self.assertEqual(len(returned_pks), len(expected_matches))
+            # Make sure the matches that are found are the ones expected.
+            for expected_pht in expected_matches:
+                expected_pk = models.SourceDataset.objects.get(i_accession=expected_pht).pk
+                self.assertIn(expected_pk, returned_pks,
+                              msg="Could not find expected pht {} with query '{}'".format(expected_pht, query))
+
+
 class StudySourceDatasetPHTAutocompleteTest(UserLoginTestCase):
     """Autocomplete view works as expected."""
 
@@ -1157,6 +1318,160 @@ class StudySourceDatasetPHTAutocompleteTest(UserLoginTestCase):
                 expected_pk = models.SourceDataset.objects.get(i_accession=expected_pht).pk
                 self.assertIn(expected_pk, returned_pks,
                               msg="Could not find expected pht {} with query '{}'".format(expected_pht, query))
+
+
+class SourceDatasetNameOrPHTAutocompleteTest(UserLoginTestCase):
+    """Autocomplete view works as expected."""
+
+    def setUp(self):
+        super(SourceDatasetNameOrPHTAutocompleteTest, self).setUp()
+        # Create 10 source datasets.
+        self.source_datasets = []
+        self.TEST_PHTS = (5, 50, 500, 500000, 55, 555, 555555, 52, 520, 5200, )
+        self.TEST_NAMES = ['abcde', 'abcdef', 'abcd_ef', 'abcd123', 'bcdefg', 'cdefgh', 'bcdefa',
+                           'other1', 'other2', 'other3']
+        self.TEST_PHT_QUERIES = {
+            '5': (5, 50, 500, 500000, 55, 555, 555555, 52, 520, 5200, ),
+            '05': (),
+            '0005': (500, 555, 520, ),
+            '000005': (5, ),
+            '52': (52, 520, 5200, ),
+            '052': (),
+            '0052': (5200, ),
+            '00052': (520, ),
+            '555555': (555555, ),
+            '0': (5, 50, 500, 55, 555, 52, 520, 5200, ),
+        }
+        self.TEST_NAME_QUERIES = {
+            'a': ['abcde', 'abcdef', 'abcd_ef', 'abcd123', 'bcdefa'],
+            'abc': ['abcde', 'abcdef', 'abcd_ef', 'abcd123'],
+            'abcd1': ['abcd123'],
+            'b': ['abcde', 'abcdef', 'abcd_ef', 'abcd123', 'bcdefg', 'bcdefa'],
+            'abcde': ['abcde', 'abcdef'],
+            'abcdef': ['abcdef'],
+            '123': ['abcd123']
+        }
+        for dataset_name, pht in zip(self.TEST_NAMES, self.TEST_PHTS):
+            self.source_datasets.append(factories.SourceDatasetFactory.create(
+                dataset_name=dataset_name,
+                i_accession=pht
+            ))
+
+    def get_url(self, *args):
+        return reverse('trait_browser:source:datasets:autocomplete:by-name-or-pht', args=args)
+
+    def test_view_success_code(self):
+        """View returns successful response code."""
+        tmp = self.get_url()
+        response = self.client.get(tmp)
+        self.assertEqual(response.status_code, 200)
+
+    def test_returns_all_datasets_with_no_query(self):
+        """Queryset returns all of the datasets with no query."""
+        url = self.get_url()
+        response = self.client.get(url)
+        pks = get_autocomplete_view_ids(response)
+        self.assertEqual(sorted([dataset.pk for dataset in self.source_datasets]), sorted(pks))
+
+    def test_no_deprecated_datasets_in_queryset(self):
+        """Queryset returns only the latest version of a dataset."""
+        models.SourceDataset.objects.all().delete()
+        dataset_1 = factories.SourceDatasetFactory.create(source_study_version__i_is_deprecated=True)
+        dataset_2 = factories.SourceDatasetFactory.create(source_study_version__i_is_deprecated=False)
+        url = self.get_url()
+        response = self.client.get(url)
+        returned_pks = get_autocomplete_view_ids(response)
+        self.assertEqual(returned_pks, [dataset_2.pk])
+
+    def test_correct_dataset_found_by_name(self):
+        """Queryset returns only the correct dataset when found by whole dataset name."""
+        dataset_name = 'my_unlikely_dataset_name'
+        dataset = factories.SourceDatasetFactory.create(dataset_name=dataset_name)
+        url = self.get_url()
+        response = self.client.get(url, {'q': dataset_name})
+        returned_pks = get_autocomplete_view_ids(response)
+        self.assertEqual(returned_pks, [dataset.i_id])
+
+    def test_correct_dataset_found_by_case_insensitive_name(self):
+        """Queryset returns only the correct source dataset when found by whole name, with mismatched case."""
+        dataset_name = 'my_unlikely_dataset_name'
+        dataset = factories.SourceDatasetFactory.create(dataset_name=dataset_name)
+        url = self.get_url()
+        response = self.client.get(url, {'q': dataset_name.upper()})
+        returned_pks = get_autocomplete_view_ids(response)
+        self.assertEqual(returned_pks, [dataset.i_id])
+
+    def test_name_test_queries(self):
+        """Returns only the correct source dataset for each of the TEST_NAME_QUERIES."""
+        url = self.get_url()
+        for query in self.TEST_NAME_QUERIES.keys():
+            response = self.client.get(url, {'q': query})
+            returned_pks = get_autocomplete_view_ids(response)
+            expected_matches = self.TEST_NAME_QUERIES[query]
+            self.assertEqual(len(returned_pks), len(expected_matches),
+                             msg='Did not find correct number of matches for query {}'.format(query))
+            # Make sure the matches found are those that are expected.
+            for expected_name in expected_matches:
+                name_queryset = models.SourceDataset.objects.filter(dataset_name__regex=r'^{}$'.format(expected_name))
+                self.assertEqual(name_queryset.count(), 1)
+                expected_pk = name_queryset.first().pk
+                self.assertIn(expected_pk, returned_pks,
+                              msg='Could not find expected dataset name {} with query {}'.format(expected_name, query))
+
+    def test_pht_test_queries_without_pht_in_string(self):
+        """Returns only the correct datasets for each of the TEST_PHT_QUERIES when 'pht' is not in query string."""
+        url = self.get_url()
+        for query in self.TEST_PHT_QUERIES:
+            response = self.client.get(url, {'q': query})
+            returned_pks = get_autocomplete_view_ids(response)
+            expected_matches = self.TEST_PHT_QUERIES[query]
+            # Make sure number of matches is as expected.
+            self.assertEqual(len(returned_pks), len(expected_matches))
+            # Make sure the matches that are found are the ones expected.
+            for expected_pht in expected_matches:
+                expected_pk = models.SourceDataset.objects.get(i_accession=expected_pht).pk
+                self.assertIn(expected_pk, returned_pks,
+                              msg="Could not find expected pht {} with query '{}'".format(expected_pht, query))
+
+    def test_pht_test_queries_with_pht_in_string(self):
+        """Returns only the correct source datasets for each of the TEST_PHT_QUERIES when 'pht' is in query string."""
+        url = self.get_url()
+        for query in self.TEST_PHT_QUERIES:
+            response = self.client.get(url, {'q': 'pht' + query})
+            returned_pks = get_autocomplete_view_ids(response)
+            expected_matches = self.TEST_PHT_QUERIES[query]
+            # Make sure number of matches is as expected.
+            self.assertEqual(len(returned_pks), len(expected_matches))
+            # Make sure the matches that are found are the ones expected.
+            for expected_pht in expected_matches:
+                expected_pk = models.SourceDataset.objects.get(i_accession=expected_pht).pk
+                self.assertIn(expected_pk, returned_pks,
+                              msg="Could not find expected pht {} with query '{}'".format(expected_pht, query))
+
+    def test_correct_dataset_found_with_pht_in_name(self):
+        """Queryset returns both datasets when one has dataset name of phtNNN and the other has pht NNN."""
+        models.SourceTrait.objects.all().delete()
+        name_trait = factories.SourceDatasetFactory.create(dataset_name='pht557')
+        pht_trait = factories.SourceDatasetFactory.create(i_accession=557)
+        url = self.get_url()
+        response = self.client.get(url, {'q': 'pht557'})
+        returned_pks = get_autocomplete_view_ids(response)
+        self.assertEqual(len(returned_pks), 2)
+        self.assertIn(name_trait.pk, returned_pks)
+        self.assertIn(pht_trait.pk, returned_pks)
+
+    def test_dataset_found_when_querying_number_in_name(self):
+        """Queryset returns both datasets when one has dataset name of NNN and the other has pht NNN."""
+        models.SourceTrait.objects.all().delete()
+        # Use a different study to ensure that one of the pre-created datasets doesn't match.
+        dataset_name = 'unlikely_24601_dataset'
+        # Use an accession that won't match for one dataset but not the other
+        dataset_name_match = factories.SourceDatasetFactory.create(dataset_name=dataset_name, i_accession=123456)
+        dataset_accession_match = factories.SourceDatasetFactory.create(dataset_name='other_name', i_accession=24601)
+        url = self.get_url()
+        response = self.client.get(url, {'q': 246})
+        returned_pks = get_autocomplete_view_ids(response)
+        self.assertEqual(sorted(returned_pks), sorted([dataset_name_match.i_id, dataset_accession_match.i_id]))
 
 
 class StudySourceDatasetNameOrPHTAutocompleteTest(UserLoginTestCase):
@@ -3542,6 +3857,208 @@ class DCCAnalystTaggableStudyFilteredSourceTraitNameOrPHVAutocompleteTest(DCCAna
         self.assertEqual(len(returned_pks), 2)
         self.assertIn(name_trait.pk, returned_pks)
         self.assertIn(phv_trait.pk, returned_pks)
+
+
+class SourceObjectLookupTest(UserLoginTestCase):
+    """Unit tests for the SourceObjectLookupTest view."""
+
+    def get_url(self):
+        return reverse('trait_browser:source:lookup')
+
+    def test_view_success_code(self):
+        """View returns successful response code."""
+        response = self.client.get(self.get_url())
+        self.assertEqual(response.status_code, 200)
+
+    def test_context_data(self):
+        """View has the proper context data."""
+        response = self.client.get(self.get_url())
+        context = response.context
+        self.assertIn('form', context)
+        self.assertIsInstance(context['form'], forms.SourceObjectLookupForm)
+
+    def test_redirects_to_study_lookup_page(self):
+        response = self.client.post(self.get_url(), {'object_type': 'study'})
+        self.assertRedirects(response, reverse('trait_browser:source:studies:lookup'))
+
+    def test_redirects_to_dataset_lookup_page(self):
+        response = self.client.post(self.get_url(), {'object_type': 'dataset'})
+        self.assertRedirects(response, reverse('trait_browser:source:datasets:lookup'))
+
+    def test_redirects_to_variable_lookup_page(self):
+        response = self.client.post(self.get_url(), {'object_type': 'trait'})
+        self.assertRedirects(response, reverse('trait_browser:source:traits:lookup'))
+
+    def test_error_with_invalid_choice(self):
+        response = self.client.post(self.get_url(), {'object_type': 'foo'})
+        self.assertEqual(response.status_code, 200)
+        context = response.context
+        self.assertIn('form', context)
+        self.assertFormError(response, 'form', 'object_type',
+                             'Select a valid choice. foo is not one of the available choices.')
+
+
+class StudyLookupTest(UserLoginTestCase):
+    """Unit tests for the SourceStudyLookup view."""
+
+    def get_url(self):
+        return reverse('trait_browser:source:studies:lookup')
+
+    def test_view_success_code(self):
+        """View returns successful response code."""
+        response = self.client.get(self.get_url())
+        self.assertEqual(response.status_code, 200)
+
+    def test_context_data(self):
+        """View has the proper context data."""
+        response = self.client.get(self.get_url())
+        context = response.context
+        self.assertIn('object_type', context)
+        self.assertEqual(context['object_type'], 'study')
+        self.assertIn('form', context)
+        self.assertIsInstance(context['form'], forms.StudyLookupForm)
+        self.assertIn('text', context)
+        self.assertIsInstance(context['text'], str)
+
+    def test_redirects_to_study_detail_page(self):
+        """View redirects to study detail page upon successful form submission."""
+        study = factories.StudyFactory.create()
+        # We need to create some datasets and traits so the detail page renders properly.
+        source_traits = factories.SourceTraitFactory.create_batch(
+            10, source_dataset__source_study_version__i_is_deprecated=False,
+            source_dataset__source_study_version__study=study)
+        response = self.client.post(self.get_url(), {'object': study.pk})
+        self.assertRedirects(response, reverse('trait_browser:source:studies:pk:detail', args=[study.pk]))
+
+    def test_error_with_empty_study_field(self):
+        """View has form error with unsuccessful form submission."""
+        response = self.client.post(self.get_url(), {'object': ''})
+        self.assertEqual(response.status_code, 200)
+        self.assertFormError(response, 'form', 'object',
+                             'This field is required.')
+
+    def test_error_with_invalid_study(self):
+        """View has form error if non-existent study is requested."""
+        # Use a study pk that doesn't exist.
+        response = self.client.post(self.get_url(), {'object': 1})
+        self.assertEqual(response.status_code, 200)
+        # Due to the autocomplete, this error is unlikely to occur.
+        self.assertFormError(response, 'form', 'object',
+                             'Select a valid choice. That choice is not one of the available choices.')
+
+
+class SourceDatasetLookupTest(UserLoginTestCase):
+    """Unit tests for the SourceDatasetLookup view."""
+
+    def get_url(self):
+        return reverse('trait_browser:source:datasets:lookup')
+
+    def test_view_success_code(self):
+        """View returns successful response code."""
+        response = self.client.get(self.get_url())
+        self.assertEqual(response.status_code, 200)
+
+    def test_context_data(self):
+        """View has the proper context data."""
+        response = self.client.get(self.get_url())
+        context = response.context
+        self.assertIn('object_type', context)
+        self.assertEqual(context['object_type'], 'dataset')
+        self.assertIn('form', context)
+        self.assertIsInstance(context['form'], forms.SourceDatasetLookupForm)
+        self.assertIn('text', context)
+        self.assertIsInstance(context['text'], str)
+
+    def test_redirects_to_study_detail_page(self):
+        """View redirects to study detail page upon successful form submission."""
+        dataset = factories.SourceDatasetFactory.create()
+        # We need to create some traits so the detail page renders properly.
+        source_traits = factories.SourceTraitFactory.create_batch(
+            10, source_dataset__source_study_version__i_is_deprecated=False,
+            source_dataset=dataset)
+        response = self.client.post(self.get_url(), {'object': dataset.pk})
+        self.assertRedirects(response, reverse('trait_browser:source:datasets:detail', args=[dataset.pk]))
+
+    def test_error_with_empty_dataset_field(self):
+        """View has form error with unsuccessful form submission."""
+        response = self.client.post(self.get_url(), {'object': ''})
+        self.assertEqual(response.status_code, 200)
+        self.assertFormError(response, 'form', 'object',
+                             'This field is required.')
+
+    def test_error_with_invalid_dataset(self):
+        """View has form error if non-existent dataset is requested."""
+        # Use a dataset pk that doesn't exist.
+        response = self.client.post(self.get_url(), {'object': 1})
+        self.assertEqual(response.status_code, 200)
+        # Due to the autocomplete, this error is unlikely to occur.
+        self.assertFormError(response, 'form', 'object',
+                             'Select a valid choice. That choice is not one of the available choices.')
+
+    def test_error_with_deprecated_dataset(self):
+        """View has form error if non-existent dataset is requested."""
+        # Use a trait pk that doesn't exist.
+        dataset = factories.SourceDatasetFactory.create(source_study_version__i_is_deprecated=True)
+        response = self.client.post(self.get_url(), {'object': dataset.pk})
+        self.assertEqual(response.status_code, 200)
+        # Due to the autocomplete, this error is unlikely to occur.
+        self.assertFormError(response, 'form', 'object',
+                             'Select a valid choice. That choice is not one of the available choices.')
+
+
+class SourceTraitLookupTest(UserLoginTestCase):
+    """Unit tests for the SourceTraitLookup view."""
+
+    def get_url(self):
+        return reverse('trait_browser:source:traits:lookup')
+
+    def test_view_success_code(self):
+        """View returns successful response code."""
+        response = self.client.get(self.get_url())
+        self.assertEqual(response.status_code, 200)
+
+    def test_context_data(self):
+        """View has the proper context data."""
+        response = self.client.get(self.get_url())
+        context = response.context
+        self.assertIn('object_type', context)
+        self.assertEqual(context['object_type'], 'variable')
+        self.assertIn('form', context)
+        self.assertIsInstance(context['form'], forms.SourceTraitLookupForm)
+        self.assertIn('text', context)
+        self.assertIsInstance(context['text'], str)
+
+    def test_redirects_to_trait_detail_page(self):
+        """View redirects to trait detail page upon successful form submission."""
+        trait = factories.SourceTraitFactory.create()
+        response = self.client.post(self.get_url(), {'object': trait.pk})
+        self.assertRedirects(response, reverse('trait_browser:source:traits:detail', args=[trait.pk]))
+
+    def test_error_with_empty_trait_field(self):
+        """View has form error with unsuccessful form submission."""
+        response = self.client.post(self.get_url(), {'object': ''})
+        self.assertEqual(response.status_code, 200)
+        self.assertFormError(response, 'form', 'object',
+                             'This field is required.')
+
+    def test_error_with_invalid_trait(self):
+        """View has form error if non-existent trait is requested."""
+        # Use a trait pk that doesn't exist.
+        response = self.client.post(self.get_url(), {'object': 1})
+        self.assertEqual(response.status_code, 200)
+        # Due to the autocomplete, this error is unlikely to occur.
+        self.assertFormError(response, 'form', 'object',
+                             'Select a valid choice. That choice is not one of the available choices.')
+
+    def test_error_with_deprecated_trait(self):
+        """View has form error if non-existent trait is requested."""
+        # Use a trait pk that doesn't exist.
+        trait = factories.SourceTraitFactory.create(source_dataset__source_study_version__i_is_deprecated=True)
+        response = self.client.post(self.get_url(), {'object': trait.pk})
+        self.assertEqual(response.status_code, 200)
+        # Due to the autocomplete, this error is unlikely to occur.
+        self.assertFormError(response, 'form', 'object',
+                             'Select a valid choice. That choice is not one of the available choices.')
 
 
 class HarmonizedTraitListTest(UserLoginTestCase):

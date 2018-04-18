@@ -372,6 +372,87 @@ class SourceTraitSearchOneStudyForm(SourceTraitSearchForm):
         return data
 
 
+class SourceObjectLookupForm(forms.Form):
+
+    types = (
+        ('study', 'Study'),
+        ('dataset', 'Dataset'),
+        ('trait', 'Variable'),
+    )
+    object_type = forms.ChoiceField(
+        choices=types,
+        label='dbGaP object type',
+        help_text='Select what type of dbGaP accessioned object to find.'
+    )
+
+    helper = FormHelper()
+    helper.form_class = 'form-horizontal'
+    helper.label_class = 'col-sm-2'
+    helper.field_class = 'col-sm-6'
+    helper.layout = Layout(
+        'object_type',
+        FormActions(
+            Submit('submit', 'Next', css_class='btn-primary btn-disable')
+        )
+    )
+
+
+lookup_form_helper = FormHelper()
+lookup_form_helper.form_class = 'form_horizontal'
+lookup_form_helper.label_class = 'col-sm-1'
+lookup_form_helper.field_class = 'col-sm-11'
+lookup_form_helper.layout = Layout(
+    Div(
+        'object',
+        FormActions(
+            Submit('submit', 'Submit', css_class='btn-primary btn-disable')
+        ),
+        css_class='col-sm-10 col-sm-offset-1'
+    )
+)
+
+
+class StudyLookupForm(forms.Form):
+
+    object = forms.ModelChoiceField(
+        queryset=models.Study.objects.all(),
+        required=True,
+        label='Study',
+        widget=autocomplete.ModelSelect2(url='trait_browser:source:studies:autocomplete:by-name-or-phs'),
+        help_text=('Select the study to find. Start typing the dbGaP study name or accession to filter the '
+                   'list (example: Framingham, phs7, phs000007, 7), then select the intended study.')
+    )
+    helper = lookup_form_helper
+
+
+class SourceDatasetLookupForm(forms.Form):
+
+    object = forms.ModelChoiceField(
+        queryset=models.SourceDataset.objects.current(),
+        required=True,
+        label='Dataset',
+        widget=autocomplete.ModelSelect2(url='trait_browser:source:datasets:autocomplete:by-name-or-pht'),
+        help_text=('Select the dataset to find. Start typing the dbGaP dataset name or accession to filter the '
+                   'list (example: ex0_7s, pht9, pht000009, 000009, 9), then select the intended dataset. '
+                   'Note that dataset names may not be unique.')
+    )
+    helper = lookup_form_helper
+
+
+class SourceTraitLookupForm(forms.Form):
+
+    object = forms.ModelChoiceField(
+        queryset=models.SourceTrait.objects.current(),
+        required=True,
+        label='Variable',
+        widget=autocomplete.ModelSelect2(url='trait_browser:source:traits:autocomplete:by-name-or-phv'),
+        help_text=('Select the variable to find. Start typing the dbGaP variable name or accession to filter the '
+                   'list (example: MF33, phv507, phv00000507, 00000507, 507), then select the intended variable. '
+                   'Note that variable names may not be unique.')
+    )
+    helper = lookup_form_helper
+
+
 class HarmonizedTraitSearchForm(forms.Form):
     """Form to handle django-watson searches for HarmonizedTrait objects.
 

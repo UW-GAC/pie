@@ -1,0 +1,36 @@
+{% extends '__base.html' %}
+{% load crispy_forms_tags %}
+
+{% block head_title %}
+  | Find a dbGaP accessioned object
+{% endblock head_title %}
+
+
+{% block content %}
+  <h1>Find a dbGaP accessioned object</h1>
+
+  <div class="container col-sm-10 col-sm-offset-1">
+    <p>
+      dbGaP accession identifiers (IDs) are assigned by dbGaP to studies, sub-studies,
+      and their subordinate digital objects.  These IDs are dbGaP-unique, stable and
+      versioned identifiers. They include both an identifier and a version. All accession
+      ids are unique across dbGaP.
+    </p>
+    <p>
+      PIE stores information for three different types of accession:
+      </ul>
+        <li><b>Studies</b> (example: phs000007)</li>
+        <li><b>Datasets</b> (example: pht000009)</li>
+        <li><b>Variables</b> (example: phv00000507)</li>
+      </ul>
+    </p>
+    <p>
+      This page allows you to find these three types of objects on PIE using either
+      the accession id or the name of the study, dataset, or variable in dbGaP.
+    </p>
+  </div>
+
+  {% crispy form %}
+
+
+{% endblock content %}

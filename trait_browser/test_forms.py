@@ -539,6 +539,106 @@ class SourceTraitSearchOneStudyFormTest(TestCase):
         self.assertIn(self.search_form.ERROR_DEPRECATED_DATASET, form.errors['datasets'])
 
 
+class SourceObjectLookupFormTest(TestCase):
+
+    def setUp(self):
+        self.search_form = forms.SourceObjectLookupForm
+
+    def test_form_with_no_input_data(self):
+        """Form is not bound when it's not given input data."""
+        form = self.search_form()
+        self.assertFalse(form.is_bound)
+
+    def test_form_is_valid_with_choices(self):
+        """Form is valid with all allowed choices."""
+        for choice in ('study', 'dataset', 'trait'):
+            form = self.search_form({'object_type': choice})
+            self.assertTrue(form.is_valid(), msg='form not valid for choice {}'.format(choice))
+
+    def test_form_is_invalid_with_invalid_choice(self):
+        """Form is invalid with a choice that's not allowed."""
+        form = self.search_form({'object_type': 'invalid'})
+        self.assertFalse(form.is_valid())
+
+
+class StudyLookupFormFormTest(TestCase):
+
+    def setUp(self):
+        self.search_form = forms.StudyLookupForm
+
+    def test_form_with_no_input_data(self):
+        """Form is not bound when it's not given input data."""
+        form = self.search_form()
+        self.assertFalse(form.is_bound)
+
+    def test_form_is_valid_with_existing_study(self):
+        """Form is valid with an existing study."""
+        study = factories.StudyFactory.create()
+        form = self.search_form({'object': study.pk})
+        self.assertTrue(form.is_valid())
+
+    def test_form_invalid_with_missing_study(self):
+        """Form is invalid if no study is given."""
+        form = self.search_form({'object': ''})
+        self.assertFalse(form.is_valid())
+
+
+class SourceDatasetLookupFormTest(TestCase):
+
+    def setUp(self):
+        self.search_form = forms.SourceDatasetLookupForm
+
+    def test_form_with_no_input_data(self):
+        """Form is not bound when it's not given input data."""
+        form = self.search_form()
+        self.assertFalse(form.is_bound)
+
+    def test_form_is_valid_with_existing_dataset(self):
+        """Form is valid with an existing dataset."""
+        dataset = factories.SourceDatasetFactory.create()
+        form = self.search_form({'object': dataset.pk})
+        self.assertTrue(form.is_valid())
+
+    def test_form_invalid_with_missing_dataset(self):
+        """Form is invalid if no dataset is given."""
+        form = self.search_form({'object': ''})
+        self.assertFalse(form.is_valid())
+
+    def test_form_invalid_with_deprecated_dataset(self):
+        """Form is invalid if a deprecated dataset is chosen."""
+        dataset = factories.SourceDatasetFactory.create(source_study_version__i_is_deprecated=True)
+        form = self.search_form({'object': dataset.pk})
+        self.assertFalse(form.is_valid())
+
+
+class SourceTraitLookupFormTest(TestCase):
+
+    def setUp(self):
+        self.search_form = forms.SourceTraitLookupForm
+
+    def test_form_with_no_input_data(self):
+        """Form is not bound when it's not given input data."""
+        form = self.search_form()
+        self.assertFalse(form.is_bound)
+
+    def test_form_is_valid_with_existing_trait(self):
+        """Form is valid with an existing source trait."""
+        trait = factories.SourceTraitFactory.create()
+        form = self.search_form({'object': trait.pk})
+        self.assertTrue(form.is_valid())
+
+    def test_form_invalid_with_missing_trait(self):
+        """Form is invalid if no trait is given."""
+        form = self.search_form({'object': ''})
+        self.assertFalse(form.is_valid())
+
+    def test_form_invalid_with_deprecated_trait(self):
+        """Form is invalid if no trait is given."""
+        trait = factories.SourceTraitFactory.create(source_dataset__source_study_version__i_is_deprecated=True)
+        form = self.search_form({'object': trait.pk})
+        self.assertFalse(form.is_valid())
+
+
 class HarmonizedTraitSearchFormTest(TestCase):
 
     def test_form_with_no_input_data(self):

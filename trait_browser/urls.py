@@ -33,13 +33,21 @@ source_trait_patterns = [
     url(r'^(?P<pk>\d+)/$', views.SourceTraitDetail.as_view(), name='detail'),
     url(r'^(?P<pk>\d+)/add-tag/$', views.SourceTraitTagging.as_view(), name='tagging'),
     url(r'^search/$', views.SourceTraitSearch.as_view(), name='search'),
+    url(r'^lookup/$', views.SourceTraitLookup.as_view(), name='lookup'),
+]
+
+source_dataset_autocomplete_patterns = [
+    url(r'^by-name/$', views.SourceDatasetNameAutocomplete.as_view(), name='by-name'),
+    url(r'^by-pht/$', views.SourceDatasetPHTAutocomplete.as_view(), name='by-pht'),
+    url(r'^by-name-or-pht/$', views.SourceDatasetNameOrPHTAutocomplete.as_view(), name='by-name-or-pht'),
 ]
 
 source_dataset_patterns = [
     url(r'^(?P<pk>\d+)/$', views.SourceDatasetDetail.as_view(), name='detail'),
     url(r'^list/$', views.SourceDatasetList.as_view(), name='list'),
     url(r'^search/$', views.SourceDatasetSearch.as_view(), name='search'),
-    # include autocomplete?
+    url(r'^autocomplete/', include(source_dataset_autocomplete_patterns, namespace='autocomplete')),
+    url(r'^lookup/$', views.SourceDatasetLookup.as_view(), name='lookup'),
 ]
 
 source_study_dataset_autocomplete_patterns = [
@@ -76,13 +84,14 @@ source_study_patterns = [
     url(r'^autocomplete/', include(source_study_autocomplete_patterns, namespace='autocomplete')),
     url(r'^list/$', views.StudyList.as_view(), name='list'),
     url(r'^(?P<pk>\d+)/', include(source_study_detail_patterns, namespace='pk')),
-    # include autocomplete?
+    url(r'^lookup/$', views.StudyLookup.as_view(), name='lookup'),
 ]
 
 source_patterns = [
     url(r'^variables/', include(source_trait_patterns, namespace='traits')),
     url(r'^datasets/', include(source_dataset_patterns, namespace='datasets')),
     url(r'^studies/', include(source_study_patterns, namespace='studies')),
+    url(r'lookup/$', views.SourceObjectLookup.as_view(), name='lookup'),
 ]
 
 # Harmonized trait patterns.

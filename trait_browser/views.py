@@ -2,6 +2,7 @@
 
 from django.db.models import Q  # Allows complex queries when searching.
 from django.http import HttpResponseRedirect
+from django.core.urlresolvers import reverse
 from django.shortcuts import get_object_or_404
 from django.template.defaultfilters import pluralize    # Use pluralize in the views.
 from django.utils.safestring import mark_safe
@@ -259,25 +260,32 @@ class StudySourceDatasetSearch(LoginRequiredMixin, SearchFormMixin, SingleObject
         )
 
 
-class StudySourceDatasetNameAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
+class SourceDatasetNameAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
     """Auto-complete datasets in a form field by dataset_name."""
 
     def get_queryset(self):
-        retrieved = models.SourceDataset.objects.current().filter(
-            source_study_version__study=self.kwargs['pk']
-        )
+        retrieved = models.SourceDataset.objects.current()
         if self.q:
             retrieved = retrieved.filter(dataset_name__icontains=r'{}'.format(self.q))
         return retrieved
 
 
-class StudySourceDatasetPHTAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
+class StudySourceDatasetNameAutocomplete(SourceDatasetNameAutocomplete):
+    """Auto-complete datasets begloning to a specific study in a form field by dataset_name."""
+
+    def get_queryset(self):
+        retrieved = super(StudySourceDatasetNameAutocomplete, self).get_queryset()
+        retrieved = retrieved.filter(
+            source_study_version__study=self.kwargs['pk']
+        )
+        return retrieved
+
+
+class SourceDatasetPHTAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
     """Auto-complete datasets in a form field by dataset pht string."""
 
     def get_queryset(self):
-        retrieved = models.SourceDataset.objects.current().filter(
-            source_study_version__study=self.kwargs['pk']
-        )
+        retrieved = models.SourceDataset.objects.current()
         if self.q:
             # User can input a pht in several ways, e.g. 'pht597', '597', '000597', or 'pht000597'.
             # Get rid of the pht.
@@ -291,13 +299,22 @@ class StudySourceDatasetPHTAutocomplete(LoginRequiredMixin, autocomplete.Select2
         return retrieved
 
 
-class StudySourceDatasetNameOrPHTAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
+class StudySourceDatasetPHTAutocomplete(SourceDatasetPHTAutocomplete):
+    """Auto-complete datasets belonging to a specific study in a form field by dataset pht string."""
+
+    def get_queryset(self):
+        retrieved = super(StudySourceDatasetPHTAutocomplete, self).get_queryset()
+        retrieved = retrieved.filter(
+            source_study_version__study=self.kwargs['pk']
+        )
+        return retrieved
+
+
+class SourceDatasetNameOrPHTAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
     """Auto-complete datasets in a form field by dataset name OR pht string."""
 
     def get_queryset(self):
-        retrieved = models.SourceDataset.objects.current().filter(
-            source_study_version__study=self.kwargs['pk']
-        )
+        retrieved = models.SourceDataset.objects.current()
         if self.q:
             q_no_pht = self.q.replace('pht', '')
             # Dataset name should always be queried.
@@ -322,6 +339,17 @@ class StudySourceDatasetNameOrPHTAutocomplete(LoginRequiredMixin, autocomplete.S
                 retrieved = retrieved.filter(nameQ | phtQ)
             else:
                 retrieved = retrieved.filter(nameQ)
+        return retrieved
+
+
+class StudySourceDatasetNameOrPHTAutocomplete(SourceDatasetNameOrPHTAutocomplete):
+    """Auto-complete datasets belonging to a specific study in a form field by dataset name OR pht string."""
+
+    def get_queryset(self):
+        retrieved = super(StudySourceDatasetNameOrPHTAutocomplete, self).get_queryset()
+        retrieved = retrieved.filter(
+            source_study_version__study=self.kwargs['pk']
+        )
         return retrieved
 
 
@@ -616,6 +644,101 @@ class TaggableStudyFilteredSourceTraitNameOrPHVAutocomplete(LoginRequiredMixin, 
             else:
                 retrieved = retrieved.filter(i_trait_name__iregex=r'^{}'.format(self.q))
         return retrieved
+
+
+class SourceObjectLookup(LoginRequiredMixin, FormView):
+    """View to allow the user to select the type of object to look up by accession."""
+
+    template_name = 'trait_browser/object_lookup_select.html'
+    form_class = forms.SourceObjectLookupForm
+
+    def form_valid(self, form):
+        self.form = form
+        return super(SourceObjectLookup, self).form_valid(form)
+
+    def get_success_url(self):
+        type = self.form.cleaned_data['object_type']
+        # Account for pluralization
+        if type == 'study':
+            type = 'studies'
+        else:
+            type = type + 's'
+        url_string = 'trait_browser:source:{type}:lookup'.format(type=type)
+        return reverse(url_string)
+
+
+class StudyLookup(LoginRequiredMixin, FormView):
+    """View to look up a study by dbGaP accession."""
+
+    template_name = 'trait_browser/object_lookup.html'
+    form_class = forms.StudyLookupForm
+
+    def get_context_data(self, **kwargs):
+        if 'object_type' not in kwargs:
+            kwargs['object_type'] = 'study'
+        if 'text' not in kwargs:
+            kwargs['text'] = mark_safe(('<p>Each study on dbGaP is assigned a unique numeric identifier prefixed by '
+                                        'phs. The version of the study is indicated both by a .v# suffix and by a '
+                                        '.p# suffix describing the study participant set. An example of a study '
+                                        'accession is phs000001.v1.p1.</p>'))
+        return kwargs
+
+    def form_valid(self, form, **kwargs):
+        self.object = form.cleaned_data['object']
+        return HttpResponseRedirect(self.get_success_url())
+
+    def get_success_url(self, **kwargs):
+        url = reverse('trait_browser:source:studies:pk:detail', args=[self.object.pk])
+        return url
+
+
+class SourceDatasetLookup(LoginRequiredMixin, FormView):
+    """View to look up a dataset by dbGaP accession."""
+
+    template_name = 'trait_browser/object_lookup.html'
+    form_class = forms.SourceDatasetLookupForm
+
+    def get_context_data(self, **kwargs):
+        if 'object_type' not in kwargs:
+            kwargs['object_type'] = 'dataset'
+        if 'text' not in kwargs:
+            kwargs['text'] = mark_safe(('<p>Each dataset on dbGaP is assigned a unique numeric identifier prefixed '
+                                        'by pht. The version of the dataset is indicated by a .v# suffix. An example '
+                                        'of a dataset accession is pht000001.v1.</p>'))
+        return kwargs
+
+    def form_valid(self, form, **kwargs):
+        self.object = form.cleaned_data['object']
+        return HttpResponseRedirect(self.get_success_url())
+
+    def get_success_url(self, **kwargs):
+        url = reverse('trait_browser:source:datasets:detail', args=[self.object.pk])
+        return url
+
+
+class SourceTraitLookup(LoginRequiredMixin, FormView):
+    """View to look up a trait by dbGaP accession."""
+
+    template_name = 'trait_browser/object_lookup.html'
+    form_class = forms.SourceTraitLookupForm
+
+    def get_context_data(self, **kwargs):
+        if 'object_type' not in kwargs:
+            kwargs['object_type'] = 'variable'
+        if 'text' not in kwargs:
+            kwargs['text'] = mark_safe(('<p>Each variable on dbGaP is assigned a unique numeric identifier prefixed '
+                                        'by phv. The version of the variable is indicated by a .v# suffix. An '
+                                        'example of a variable accession is phv00000001.v1.</p>'))
+        return kwargs
+        return kwargs
+
+    def form_valid(self, form, **kwargs):
+        self.object = form.cleaned_data['object']
+        return HttpResponseRedirect(self.get_success_url())
+
+    def get_success_url(self, **kwargs):
+        url = reverse('trait_browser:source:traits:detail', args=[self.object.pk])
+        return url
 
 
 class HarmonizedTraitList(LoginRequiredMixin, SingleTableMixin, ListView):
