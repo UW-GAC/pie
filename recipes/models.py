@@ -95,12 +95,3 @@ class HarmonizationRecipe(TimeStampedModel):
             dict of (category, value) pairs, both as strings
         """
         return dict([line.split(': ') for line in self.encoded_values.split('\r\n')])
-
-    def get_config(self):
-        """Get a phenotype harmonization workflow config file from this HarmonizationRecipe.
-
-        Produce a formatted xml config file for the DCC phenotype harmonization
-        workflow based on the information in the harmonization unit recipes for
-        this HarmonizationRecipe.
-        """
-        pass
