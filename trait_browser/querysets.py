@@ -22,3 +22,7 @@ class HarmonizedTraitQuerySet(models.query.QuerySet):
     def current(self):
         """Filter to non-deprecated harmonized traits."""
         return self.filter(harmonized_trait_set_version__i_is_deprecated=False)
+
+    def non_unique_keys(self):
+        """Filter to harmonized traits that are not unique key traits."""
+        return self.filter(i_is_unique_key=False)

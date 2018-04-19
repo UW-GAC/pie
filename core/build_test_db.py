@@ -216,6 +216,8 @@ def build_test_db(n_global_studies, n_subcohort_range, n_dataset_range, n_trait_
     ht_set = trait_browser.factories.HarmonizedTraitSetFactory.create()
     ht_set_v1 = trait_browser.factories.HarmonizedTraitSetVersionFactory.create(harmonized_trait_set=ht_set, i_version=1)
     htraits = trait_browser.factories.HarmonizedTraitFactory.create_batch(2, harmonized_trait_set_version=ht_set_v1)
+    htraits[0].i_is_unique_key = True
+    htraits[0].save()
     h_units = {gs: trait_browser.factories.HarmonizationUnitFactory.create(harmonized_trait_set_version=ht_set_v1)
                for gs in trait_browser.models.GlobalStudy.objects.all()}
     for gs in h_units:
@@ -242,9 +244,8 @@ def build_test_db(n_global_studies, n_subcohort_range, n_dataset_range, n_trait_
         htrait_to_encode.save()
     # Add encoded values to all of the encoded value traits.
     for htr in trait_browser.models.HarmonizedTrait.objects.filter(i_data_type='encoded'):
-        for n in range(randrange(n_enc_value_range[0], n_enc_value_range[1])):
-            trait_browser.factories.HarmonizedTraitEncodedValueFactory.create_batch(
-                randrange(n_enc_value_range[0], n_enc_value_range[1]), harmonized_trait=htr)
+        trait_browser.factories.HarmonizedTraitEncodedValueFactory.create_batch(
+            randrange(n_enc_value_range[0], n_enc_value_range[1]), harmonized_trait=htr)
 
     # Add fake recipe objects.
     global_study = trait_browser.models.GlobalStudy.objects.all().first()

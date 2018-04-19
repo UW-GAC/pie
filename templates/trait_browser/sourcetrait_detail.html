@@ -1,84 +1,73 @@
-{% extends 'base.html' %}
+{% extends '__object_detail.html' %}
 {% load core_tags %}
+{% load staticfiles %}
 
 {% block head_title %}
-     | {{ source_trait.i_trait_name }} details
-{% endblock %}
+  | {{ source_trait.i_trait_name }} details
+{% endblock head_title %}
 
-{% block content %}
-    <div class="well">
-    
-    <h2>{{ source_trait.i_trait_name }} <small>study phenotype details</small></h2>
+{% block title %}
+  {{ source_trait.i_trait_name }}
+{% endblock title %}
 
-    {% include '_messages.html' %}
+{% block subtitle %}
+  study variable details
+{% endblock subtitle %}
 
-    <div class="panel panel-info">
-        <div class="panel-heading">
-            <h3 class="panel-title">Phenotype name: {{ source_trait.i_trait_name }}</h3>
-        </div>
-        <div class="panel-body">
-            <dl class="dl-horizontal">
-                <dt>Study</dt> <dd><a href="{{ source_trait.source_dataset.source_study_version.study.get_absolute_url }}">{{ source_trait.source_dataset.source_study_version.study.i_study_name }}</a></dd>
-                <dt>Phenotype description</dt> <dd>{{ source_trait.i_description }}</dd>
-                <dt>Data type</dt> <dd>{{ source_trait.i_detected_type }}</dd>
-                <dt>Dataset</dt> <dd><a href="{{ source_trait.source_dataset.get_absolute_url }}">{{ source_trait.source_dataset.dataset_name }}</a></dd>
-                <dt>Dataset description</dt>
-                    <dd>
-                        {% if source_trait.source_dataset.i_dbgap_description != '' %}
-                          {{ source_trait.source_dataset.i_dbgap_description }}
-                        {% endif %}
-                    </dd>
-                <dt>Phenotype tag(s)</dt> 
-                    <dd>
-                        {% for tag in tags %}
-                            <a href="{{ tag.get_absolute_url }}" class="btn btn-default btn-xs" role="button">{{ tag.title }}</a>
-                        {% endfor %}
-                    </dd>
-
-                {% if perms.tags.add_taggedtrait %}
-                    {% if user_is_study_tagger or request.user.is_staff %}
-                        </dl>
-                        <dl class="dl-horizontal">
-                        <dt></dt>
-                        <dd>
-                        <a href="{% url 'trait_browser:source:traits:tagging' pk=source_trait.pk %}" class="btn btn-primary btn-md" role="button">Tag this phenotype</a>
-                        </dd>
-                    {% endif %}
-                {% endif %}
-            </dl>
-
-
-            {% if source_trait.sourcetraitencodedvalue_set.all %}
-                <table class="table table-nonfluid table-condensed table-sm">
-                    <caption><strong>Encoded values</strong></caption>
-                    <tr>
-                        <th>Category</th>
-                        <th>Value</th>
-                    </tr>
-                    {% for ev in source_trait.sourcetraitencodedvalue_set.all %}
-                        <tr>
-                            <td>{{ ev.i_category }}</td>
-                            <td>{{ ev.i_value }}</td>
-                        </tr>
-                    {% endfor %}
-                </table>
+{% block detail_fields %}
+  <dt>Description</dt> <dd>{{ source_trait.i_description }}</dd>
+  <dt>Data type</dt> <dd>{{ source_trait.i_detected_type }}</dd>
+  <dt>Dataset</dt> <dd><a href="{{ source_trait.source_dataset.get_absolute_url }}">{{ source_trait.source_dataset.dataset_name }}</a></dd>
+  <dt>Dataset description</dt>
+    <dd>
+      {% if source_trait.source_dataset.i_dbgap_description != '' %}
+        {{ source_trait.source_dataset.i_dbgap_description }}
+      {% else %}
+        &mdash;
+      {% endif %}
+    </dd>
+    <dt>Study</dt> <dd><a href="{{ source_trait.source_dataset.source_study_version.study.get_absolute_url }}">{{ source_trait.source_dataset.source_study_version.study.i_study_name }}</a></dd>
+  <dt>Phenotype tag(s)</dt>
+    <dd>
+      {% if tag_tagged_trait_pairs|length > 0%}
+        {% for tag, tagged_trait in tag_tagged_trait_pairs %}
+          <div class="btn-group btn-group-xs">
+            <a href="{{ tag.get_absolute_url }}" class="btn btn-default" role="button">{{ tag.title }}</a>
+            {% if perms.tags.add_taggedtrait %}
+              {% if user_is_study_tagger or request.user.is_staff %}
+                <a href="{% url 'tags:tagged-traits:delete' tagged_trait.pk %}" class="btn btn-default"
+                data-toggle="tooltip" data-placement="auto right" title="Remove {{ tag.title }} tag" role="button">
+                  <span class="glyphicon glyphicon-remove" aria-hidden="true"></a>
+              {% endif %}
             {% endif %}
-        </div>
-    </div>
+          </div>
+        {% endfor %}
+      {% else %}
+        &mdash;
+      {% endif %}
+    </dd>
+    {% if perms.tags.add_taggedtrait %}
+      {% if user_is_study_tagger or request.user.is_staff %}
+        {# End the table of detail fields #}
+        </dl>
+        {# Start a new table #}
+        <dl class="dl-horizontal">
+          <dt></dt>
+          <dd>
+            <a href="{% url 'trait_browser:source:traits:tagging' pk=source_trait.pk %}" class="btn btn-primary btn-md" role="button">
+              Tag this variable</a>
+          </dd>
+      {% endif %}
+    {% endif %}
+{% endblock detail_fields %}
 
-    <div class="panel panel-default">
-        <div class="panel-heading"><h4 class="panel-title">Links to dbGaP information</h4></div>
-        <div class="panel-body">
-            <dl class="dl-horizontal">
-                <dt>Phenotype variable</dt> <dd><a target="_blank" href="{{ source_trait.dbgap_variable_link }}">{{ source_trait.variable_accession }}</a></dd>
-                <dt>Dataset</dt> <dd><a target="_blank" href="{{ source_trait.dbgap_dataset_link }}">{{ source_trait.dataset_accession }}</a></dd>
-                <dt>Study</dt> <dd><a target="_blank" href="{{ source_trait.dbgap_study_link }}">{{ source_trait.study_accession }}</a></dd>
-            </dl>
-            <p>A study's questionnaires and related documents can be found on the dbGaP variable page.</p>
-            <p><mark>Please keep in mind that dbGaP data summaries might include many subjects who were not included in TOPMed sequencing.</mark></p>
-        </div>
-    </div>
+{% block after_panel %}
+  {% if source_trait.sourcetraitencodedvalue_set.all %}
+    {% include 'trait_browser/_encoded_values_table.html' with ev_set=source_trait.sourcetraitencodedvalue_set.all %}
+  {% endif %}
+  {% include 'trait_browser/_dbgap_link_panel.html' with variable_string=source_trait.variable_accession variable_link=source_trait.dbgap_variable_link dataset_string=source_trait.dataset_accession dataset_link=source_trait.dbgap_dataset_link study_string=source_trait.study_accession study_link=source_trait.dbgap_study_link %}
+{% endblock after_panel %}
 
-    </div>
-
-{% endblock %}
+{% block custom_javascript %}
+  <script src="{% static 'js/tooltip.js' %}"></script>
+{% endblock custom_javascript %}

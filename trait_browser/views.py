@@ -2,11 +2,14 @@
 
 from django.db.models import Q  # Allows complex queries when searching.
 from django.http import HttpResponseRedirect
+from django.core.urlresolvers import reverse
 from django.shortcuts import get_object_or_404
 from django.template.defaultfilters import pluralize    # Use pluralize in the views.
 from django.utils.safestring import mark_safe
 from django.views.generic import DetailView, FormView, ListView
 from django.views.generic.detail import SingleObjectMixin
+from django.views.generic.edit import FormMixin
+from django.views.generic.base import TemplateView
 
 from braces.views import (FormMessagesMixin, LoginRequiredMixin, MessageMixin, PermissionRequiredMixin,
                           UserPassesTestMixin)
@@ -25,6 +28,63 @@ from . import searches
 TABLE_PER_PAGE = 50    # Setting for per_page rows for all table views.
 
 
+class SearchFormMixin(FormMixin):
+    """Mixin to run a django-watson search for a view."""
+
+    def get_form_kwargs(self):
+        """Override method such that form kwargs are obtained from the get request."""
+        kwargs = {}
+        if self.request.GET:
+            kwargs.update({
+                'data': self.request.GET
+            })
+        return kwargs
+
+    def get(self, request, *args, **kwargs):
+        """Override get method for form and search processing."""
+        if 'reset' in self.request.GET:
+            # Instantiate a blank form, ignoring any current GET parameters.
+            form_class = self.get_form_class()
+            return HttpResponseRedirect(request.path, {'form': form_class()})
+        # Process the form.
+        form = self.get_form()
+        if form.is_valid():
+            return self.form_valid(form)
+        else:
+            return self.form_invalid(form)
+
+    def search(self, **search_kwargs):
+        """Define a search method to be implemented by Views using this Mixin."""
+        # Ensure that View classes implement their own search method by raising an exception.
+        raise NotImplementedError
+
+    def form_valid(self, form):
+        """Override form_valid method to process form and add results to the search page."""
+        self.table_data = self.search(**form.cleaned_data)
+        context = self.get_context_data(form=form)
+        context['has_results'] = True
+        # Add WatsonSearchField warning messages.
+        for field in form.fields:
+            try:
+                if form.fields[field].warning_message:
+                    self.messages.warning(form.fields[field].warning_message, fail_silently=True)
+            except AttributeError:
+                # If the field doesn't have a warning_message, then no message should be displayed.
+                pass
+        # Add an informational message about the number of results found.
+        msg = '{n} result{s} found.'.format(
+            n=self.table_data.count(),
+            s=pluralize(self.table_data.count()))
+        self.messages.info(msg, fail_silently=True)
+        return self.render_to_response(context)
+
+    def form_invalid(self, form):
+        """Override form_valid method to process form and redirect to the search page."""
+        context = self.get_context_data(form=form)
+        context['has_results'] = False
+        return self.render_to_response(context)
+
+
 class StudyDetail(LoginRequiredMixin, DetailView):
 
     model = models.Study
@@ -32,11 +92,9 @@ class StudyDetail(LoginRequiredMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super(StudyDetail, self).get_context_data(**kwargs)
-        traits = models.SourceTrait.objects.current().filter(
-            source_dataset__source_study_version__study=self.object)
+        traits = models.SourceTrait.objects.current().filter(source_dataset__source_study_version__study=self.object)
         trait_count = traits.count()
-        dataset_count = models.SourceDataset.objects.current().filter(
-            source_study_version__study=self.object).count()
+        dataset_count = models.SourceDataset.objects.current().filter(source_study_version__study=self.object).count()
         context['trait_count'] = '{:,}'.format(trait_count)
         context['dataset_count'] = '{:,}'.format(dataset_count)
         context['phs_link'] = traits[0].dbgap_study_link
@@ -52,52 +110,6 @@ class StudyList(LoginRequiredMixin, SingleTableMixin, ListView):
     table_pagination = {'per_page': TABLE_PER_PAGE}
 
 
-class StudySourceTraitList(LoginRequiredMixin, SingleTableMixin, DetailView):
-    """."""
-
-    template_name = 'trait_browser/study_sourcetrait_list.html'
-    model = models.Study
-    context_object_name = 'study'
-    context_table_name = 'source_trait_table'
-    table_class = tables.SourceTraitStudyTable
-    table_pagination = {'per_page': TABLE_PER_PAGE}
-
-    def get_table_data(self):
-        return models.SourceTrait.objects.current().filter(
-            source_dataset__source_study_version__study=self.object)
-
-    def get_context_data(self, **kwargs):
-        context = super(StudySourceTraitList, self).get_context_data(**kwargs)
-        traits = context['source_trait_table'].data
-        context['trait_count'] = '{:,}'.format(len(traits))
-        context['phs_link'] = traits[0].dbgap_study_link
-        context['phs'] = traits[0].study_accession
-        return context
-
-
-class StudySourceDatasetList(LoginRequiredMixin, SingleTableMixin, DetailView):
-    """."""
-
-    template_name = 'trait_browser/study_sourcedataset_list.html'
-    model = models.Study
-    context_object_name = 'study'
-    context_table_name = 'source_dataset_table'
-    table_class = tables.SourceDatasetTable
-    table_pagination = {'per_page': TABLE_PER_PAGE}
-
-    def get_table_data(self):
-        return models.SourceDataset.objects.current().filter(
-            source_study_version__study=self.object)
-
-    def get_context_data(self, **kwargs):
-        context = super(StudySourceDatasetList, self).get_context_data(**kwargs)
-        datasets = context['source_dataset_table'].data
-        context['dataset_count'] = '{:,}'.format(len(datasets))
-        context['phs_link'] = datasets[0].sourcetrait_set.first().dbgap_study_link
-        context['phs'] = datasets[0].sourcetrait_set.first().study_accession
-        return context
-
-
 class StudyNameAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
     """Auto-complete studies in a form field by i_study_name."""
 
@@ -105,6 +117,56 @@ class StudyNameAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView
         retrieved = models.Study.objects.all()
         if self.q:
             retrieved = retrieved.filter(i_study_name__icontains=r'{}'.format(self.q))
+        return retrieved
+
+
+class StudyPHSAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
+    """Auto-complete studies in a form field by phs string."""
+
+    def get_queryset(self):
+        retrieved = models.Study.objects.all()
+        if self.q:
+            # User can input a phs in several ways, e.g. 'phs597', '597', '000597', or 'phs000597'.
+            # Get rid of the phs.
+            phs_digits = self.q.replace('phs', '')
+            # Search against the phs string if user started the query with leading zeros.
+            if phs_digits.startswith('0'):
+                retrieved = retrieved.filter(phs__regex=r'^{}'.format('phs' + phs_digits))
+            # Search against the phs digits if user started the query with non-zero digits.
+            else:
+                retrieved = retrieved.filter(i_accession__regex=r'^{}'.format(phs_digits))
+        return retrieved
+
+
+class StudyNameOrPHSAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
+    """Auto-complete studies in a form field by phs string."""
+
+    def get_queryset(self):
+        retrieved = models.Study.objects.all()
+        if self.q:
+            q_no_phs = self.q.replace('phs', '')
+            # Study name should always be queried.
+            nameQ = Q(i_study_name__icontains=self.q)
+            # Process query for pht string.
+            phsQ = None
+            if self.q.lower().startswith('phs') and q_no_phs.isdigit():
+                if q_no_phs.startswith('0'):
+                    phsQ = Q(phs__regex=r'^{}'.format('phs' + q_no_phs))
+                else:
+                    phsQ = Q(i_accession__regex=r'^{}'.format(q_no_phs))
+            # Autocomplete using formatted phs if q is only digits.
+            # None of the study names should be all digits.
+            elif self.q.isdigit():
+                # Search against the pht string if user started the query with leading zeros.
+                if q_no_phs.startswith('0'):
+                    phsQ = Q(phs__regex=r'^{}'.format('phs' + q_no_phs))
+                # Search against the phs digits if user started the query with non-zero digits.
+                else:
+                    phsQ = Q(i_accession__regex=r'^{}'.format(q_no_phs))
+            if phsQ:
+                retrieved = retrieved.filter(nameQ | phsQ)
+            else:
+                retrieved = retrieved.filter(nameQ)
         return retrieved
 
 
@@ -142,11 +204,153 @@ class SourceDatasetList(LoginRequiredMixin, SingleTableView):
         return models.SourceDataset.objects.current()
 
 
-class HarmonizedTraitSetVersionDetail(LoginRequiredMixin, FormMessagesMixin, DetailView):
-    """Detail view class for HarmonizedTraitSetVersions. Inherits from django.views.generic.DetailView."""
+class StudySourceDatasetList(SingleTableMixin, StudyDetail):
+    """."""
 
-    model = models.HarmonizedTraitSetVersion
-    context_object_name = 'harmonized_trait_set_version'
+    template_name = 'trait_browser/study_sourcedataset_list.html'
+    context_table_name = 'source_dataset_table'
+    table_class = tables.SourceDatasetTable
+    table_pagination = {'per_page': TABLE_PER_PAGE}
+
+    def get_table_data(self):
+        return models.SourceDataset.objects.current().filter(
+            source_study_version__study=self.object)
+
+
+class SourceDatasetSearch(LoginRequiredMixin, SearchFormMixin, SingleTableMixin, MessageMixin, TemplateView):
+    """Class for searching source datasets."""
+
+    template_name = 'trait_browser/sourcedataset_search.html'
+    form_class = forms.SourceDatasetSearchMultipleStudiesForm
+    table_class = tables.SourceDatasetTableFull
+    context_table_name = 'results_table'
+    table_data = models.SourceDataset.objects.none()
+
+    def search(self, name='', description='', match_exact_name=True, studies=[]):
+        return searches.search_source_datasets(
+            name=name,
+            description=description,
+            match_exact_name=match_exact_name,
+            studies=studies
+        )
+
+
+class StudySourceDatasetSearch(LoginRequiredMixin, SearchFormMixin, SingleObjectMixin, SingleTableMixin, MessageMixin,
+                               TemplateView):
+    """Class for searching source datasets within a specific study."""
+
+    template_name = 'trait_browser/study_sourcedataset_search.html'
+    form_class = forms.SourceDatasetSearchForm
+    table_class = tables.SourceDatasetTableFull
+    context_table_name = 'results_table'
+    table_data = models.SourceDataset.objects.none()
+    context_object_name = 'study'
+    model = models.Study
+
+    def get(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        return super(StudySourceDatasetSearch, self).get(request, *args, **kwargs)
+
+    def search(self, name='', description='', match_exact_name=True):
+        return searches.search_source_datasets(
+            name=name,
+            description=description,
+            match_exact_name=match_exact_name,
+            studies=[self.object.pk]
+        )
+
+
+class SourceDatasetNameAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
+    """Auto-complete datasets in a form field by dataset_name."""
+
+    def get_queryset(self):
+        retrieved = models.SourceDataset.objects.current()
+        if self.q:
+            retrieved = retrieved.filter(dataset_name__icontains=r'{}'.format(self.q))
+        return retrieved
+
+
+class StudySourceDatasetNameAutocomplete(SourceDatasetNameAutocomplete):
+    """Auto-complete datasets begloning to a specific study in a form field by dataset_name."""
+
+    def get_queryset(self):
+        retrieved = super(StudySourceDatasetNameAutocomplete, self).get_queryset()
+        retrieved = retrieved.filter(
+            source_study_version__study=self.kwargs['pk']
+        )
+        return retrieved
+
+
+class SourceDatasetPHTAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
+    """Auto-complete datasets in a form field by dataset pht string."""
+
+    def get_queryset(self):
+        retrieved = models.SourceDataset.objects.current()
+        if self.q:
+            # User can input a pht in several ways, e.g. 'pht597', '597', '000597', or 'pht000597'.
+            # Get rid of the pht.
+            pht_digits = self.q.replace('pht', '')
+            # Search against the phv string if user started the query with leading zeros.
+            if pht_digits.startswith('0'):
+                retrieved = retrieved.filter(pht_version_string__regex=r'^{}'.format('pht' + pht_digits))
+            # Search against the pht digits if user started the query with non-zero digits.
+            else:
+                retrieved = retrieved.filter(i_accession__regex=r'^{}'.format(pht_digits))
+        return retrieved
+
+
+class StudySourceDatasetPHTAutocomplete(SourceDatasetPHTAutocomplete):
+    """Auto-complete datasets belonging to a specific study in a form field by dataset pht string."""
+
+    def get_queryset(self):
+        retrieved = super(StudySourceDatasetPHTAutocomplete, self).get_queryset()
+        retrieved = retrieved.filter(
+            source_study_version__study=self.kwargs['pk']
+        )
+        return retrieved
+
+
+class SourceDatasetNameOrPHTAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
+    """Auto-complete datasets in a form field by dataset name OR pht string."""
+
+    def get_queryset(self):
+        retrieved = models.SourceDataset.objects.current()
+        if self.q:
+            q_no_pht = self.q.replace('pht', '')
+            # Dataset name should always be queried.
+            nameQ = Q(dataset_name__icontains=self.q)
+            # Process query for pht string.
+            phtQ = None
+            if self.q.lower().startswith('pht') and q_no_pht.isdigit():
+                if q_no_pht.startswith('0'):
+                    phtQ = Q(pht_version_string__regex=r'^{}'.format('pht' + q_no_pht))
+                else:
+                    phtQ = Q(i_accession__regex=r'^{}'.format(q_no_pht))
+            # Autocomplete using formatted pht if q is only digits.
+            # Checked that none of the dataset names are all digits (as of 03/21/2018).
+            elif self.q.isdigit():
+                # Search against the pht string if user started the query with leading zeros.
+                if q_no_pht.startswith('0'):
+                    phtQ = Q(pht_version_string__regex=r'^{}'.format('pht' + q_no_pht))
+                # Search against the pht digits if user started the query with non-zero digits.
+                else:
+                    phtQ = Q(i_accession__regex=r'^{}'.format(q_no_pht))
+            if phtQ:
+                retrieved = retrieved.filter(nameQ | phtQ)
+            else:
+                retrieved = retrieved.filter(nameQ)
+        return retrieved
+
+
+class StudySourceDatasetNameOrPHTAutocomplete(SourceDatasetNameOrPHTAutocomplete):
+    """Auto-complete datasets belonging to a specific study in a form field by dataset name OR pht string."""
+
+    def get_queryset(self):
+        retrieved = super(StudySourceDatasetNameOrPHTAutocomplete, self).get_queryset()
+        retrieved = retrieved.filter(
+            source_study_version__study=self.kwargs['pk']
+        )
+        return retrieved
 
 
 class SourceTraitDetail(LoginRequiredMixin, DetailView):
@@ -159,7 +363,9 @@ class SourceTraitDetail(LoginRequiredMixin, DetailView):
         context = super(SourceTraitDetail, self).get_context_data(**kwargs)
         user_studies = list(self.request.user.profile.taggable_studies.all())
         context['user_is_study_tagger'] = self.object.source_dataset.source_study_version.study in user_studies
-        context['tags'] = list(Tag.objects.filter(traits=self.object))
+        tags = list(Tag.objects.filter(traits=self.object))
+        tagged_traits = [TaggedTrait.objects.get(trait=self.object) for tag in tags]
+        context['tag_tagged_trait_pairs'] = list(zip(tags, tagged_traits))
         return context
 
 
@@ -172,6 +378,19 @@ class SourceTraitList(LoginRequiredMixin, SingleTableMixin, ListView):
 
     def get_table_data(self):
         return models.SourceTrait.objects.current()
+
+
+class StudySourceTraitList(SingleTableMixin, StudyDetail):
+    """."""
+
+    template_name = 'trait_browser/study_sourcetrait_list.html'
+    context_table_name = 'source_trait_table'
+    table_class = tables.SourceTraitStudyTable
+    table_pagination = {'per_page': TABLE_PER_PAGE}
+
+    def get_table_data(self):
+        return models.SourceTrait.objects.current().filter(
+            source_dataset__source_study_version__study=self.object)
 
 
 class SourceTraitTagging(LoginRequiredMixin, PermissionRequiredMixin, UserPassesTestMixin, FormMessagesMixin,
@@ -219,7 +438,7 @@ class SourceTraitTagging(LoginRequiredMixin, PermissionRequiredMixin, UserPasses
         return mark_safe(msg)
 
 
-class SourceTraitSearch(LoginRequiredMixin, SingleTableMixin, MessageMixin, FormView):
+class SourceTraitSearch(LoginRequiredMixin, SearchFormMixin, SingleTableMixin, MessageMixin, TemplateView):
     """Form view class for searching for source traits."""
 
     template_name = 'trait_browser/sourcetrait_search.html'
@@ -228,64 +447,55 @@ class SourceTraitSearch(LoginRequiredMixin, SingleTableMixin, MessageMixin, Form
     context_table_name = 'results_table'
     table_data = models.SourceTrait.objects.none()
 
-    def __init__(self):
-        self.search_kwargs = {}
-
-    def get(self, request, *args, **kwargs):
-        """Override get method for form and search processing."""
-        form_class = self.get_form_class()
-        if 'reset' in request.GET:
-            return HttpResponseRedirect(request.path, {'form': self.get_form(form_class)})
-        if request.GET:
-            form = form_class(request.GET)
-        else:
-            form = self.get_form(form_class)
-
-        if form.is_valid():
-            return self.form_valid(form)
-        else:
-            return self.form_invalid(form)
-
-    def form_valid(self, form):
-        """Override form_valid method to process form and add results to the search page."""
-        self.search_kwargs.update(form.cleaned_data)
-        self.table_data = searches.search_source_traits(**self.search_kwargs)
-        context = self.get_context_data(form=form)
-        context['has_results'] = True
-        # Add field-specific messages.
-        # May need to figure out how to make this general to any form field that is a WatsonSearchField.
-        if form.fields['description'].warning_message:
-            self.messages.warning(form.fields['description'].warning_message, fail_silently=True)
-        # Add an informational message about the number of results found.
-        msg = '{n} result{s} found.'.format(
-            n=self.table_data.count(),
-            s=pluralize(self.table_data.count()))
-        self.messages.info(msg, fail_silently=True)
-        return self.render_to_response(context)
-
-    def form_invalid(self, form):
-        """Override form_valid method to process form and redirect to the search page."""
-        context = self.get_context_data(form=form)
-        context['has_results'] = False
-        return self.render_to_response(context)
+    def search(self, name='', description='', match_exact_name=False, dataset_name='', dataset_description='',
+               dataset_match_exact_name=False, studies=[]):
+        extra_kwargs = {}
+        if dataset_name or dataset_description or studies:
+            extra_kwargs['datasets'] = searches.search_source_datasets(
+                name=dataset_name,
+                description=dataset_description,
+                match_exact_name=dataset_match_exact_name,
+                studies=studies
+            )
+        results = searches.search_source_traits(
+            name=name,
+            description=description,
+            match_exact_name=match_exact_name,
+            **extra_kwargs
+        )
+        return results
 
 
-class SourceTraitSearchByStudy(SingleObjectMixin, SourceTraitSearch):
+class StudySourceTraitSearch(LoginRequiredMixin, SearchFormMixin, SingleObjectMixin, SingleTableMixin, MessageMixin,
+                             TemplateView):
     """Form view class for searching for source traits within a specific study."""
 
     template_name = 'trait_browser/study_sourcetrait_search.html'
-    form_class = forms.SourceTraitSearchForm
+    form_class = forms.SourceTraitSearchOneStudyForm
     table_class = tables.SourceTraitTableFull
     context_table_name = 'results_table'
     table_data = models.SourceTrait.objects.none()
     context_object_name = 'study'
     model = models.Study
 
+    def get_form(self, form_class=None):
+        if form_class is None:
+            form_class = self.get_form_class()
+        return form_class(self.object, **self.get_form_kwargs())
+
     def get(self, request, *args, **kwargs):
-        """Override get method for form and search processing."""
         self.object = self.get_object()
-        self.search_kwargs.update({'studies': [self.object.pk]})
-        return super(SourceTraitSearchByStudy, self).get(request, *args, **kwargs)
+        if 'reset' in self.request.GET:
+            # Instantiate a blank form, ignoring any current GET parameters.
+            form_class = self.get_form_class()
+            return HttpResponseRedirect(request.path, {'form': form_class(self.object)})
+        return super(StudySourceTraitSearch, self).get(request, *args, **kwargs)
+
+    def search(self, **search_kwargs):
+        datasets = search_kwargs.pop('datasets')
+        if len(datasets) == 0:
+            datasets = searches.search_source_datasets(studies=[self.object.pk])
+        return searches.search_source_traits(datasets=datasets, **search_kwargs)
 
 
 class SourceTraitPHVAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
@@ -436,6 +646,101 @@ class TaggableStudyFilteredSourceTraitNameOrPHVAutocomplete(LoginRequiredMixin, 
         return retrieved
 
 
+class SourceObjectLookup(LoginRequiredMixin, FormView):
+    """View to allow the user to select the type of object to look up by accession."""
+
+    template_name = 'trait_browser/object_lookup_select.html'
+    form_class = forms.SourceObjectLookupForm
+
+    def form_valid(self, form):
+        self.form = form
+        return super(SourceObjectLookup, self).form_valid(form)
+
+    def get_success_url(self):
+        type = self.form.cleaned_data['object_type']
+        # Account for pluralization
+        if type == 'study':
+            type = 'studies'
+        else:
+            type = type + 's'
+        url_string = 'trait_browser:source:{type}:lookup'.format(type=type)
+        return reverse(url_string)
+
+
+class StudyLookup(LoginRequiredMixin, FormView):
+    """View to look up a study by dbGaP accession."""
+
+    template_name = 'trait_browser/object_lookup.html'
+    form_class = forms.StudyLookupForm
+
+    def get_context_data(self, **kwargs):
+        if 'object_type' not in kwargs:
+            kwargs['object_type'] = 'study'
+        if 'text' not in kwargs:
+            kwargs['text'] = mark_safe(('<p>Each study on dbGaP is assigned a unique numeric identifier prefixed by '
+                                        'phs. The version of the study is indicated both by a .v# suffix and by a '
+                                        '.p# suffix describing the study participant set. An example of a study '
+                                        'accession is phs000001.v1.p1.</p>'))
+        return kwargs
+
+    def form_valid(self, form, **kwargs):
+        self.object = form.cleaned_data['object']
+        return HttpResponseRedirect(self.get_success_url())
+
+    def get_success_url(self, **kwargs):
+        url = reverse('trait_browser:source:studies:pk:detail', args=[self.object.pk])
+        return url
+
+
+class SourceDatasetLookup(LoginRequiredMixin, FormView):
+    """View to look up a dataset by dbGaP accession."""
+
+    template_name = 'trait_browser/object_lookup.html'
+    form_class = forms.SourceDatasetLookupForm
+
+    def get_context_data(self, **kwargs):
+        if 'object_type' not in kwargs:
+            kwargs['object_type'] = 'dataset'
+        if 'text' not in kwargs:
+            kwargs['text'] = mark_safe(('<p>Each dataset on dbGaP is assigned a unique numeric identifier prefixed '
+                                        'by pht. The version of the dataset is indicated by a .v# suffix. An example '
+                                        'of a dataset accession is pht000001.v1.</p>'))
+        return kwargs
+
+    def form_valid(self, form, **kwargs):
+        self.object = form.cleaned_data['object']
+        return HttpResponseRedirect(self.get_success_url())
+
+    def get_success_url(self, **kwargs):
+        url = reverse('trait_browser:source:datasets:detail', args=[self.object.pk])
+        return url
+
+
+class SourceTraitLookup(LoginRequiredMixin, FormView):
+    """View to look up a trait by dbGaP accession."""
+
+    template_name = 'trait_browser/object_lookup.html'
+    form_class = forms.SourceTraitLookupForm
+
+    def get_context_data(self, **kwargs):
+        if 'object_type' not in kwargs:
+            kwargs['object_type'] = 'variable'
+        if 'text' not in kwargs:
+            kwargs['text'] = mark_safe(('<p>Each variable on dbGaP is assigned a unique numeric identifier prefixed '
+                                        'by phv. The version of the variable is indicated by a .v# suffix. An '
+                                        'example of a variable accession is phv00000001.v1.</p>'))
+        return kwargs
+        return kwargs
+
+    def form_valid(self, form, **kwargs):
+        self.object = form.cleaned_data['object']
+        return HttpResponseRedirect(self.get_success_url())
+
+    def get_success_url(self, **kwargs):
+        url = reverse('trait_browser:source:traits:detail', args=[self.object.pk])
+        return url
+
+
 class HarmonizedTraitList(LoginRequiredMixin, SingleTableMixin, ListView):
 
     model = models.HarmonizedTrait
@@ -444,7 +749,7 @@ class HarmonizedTraitList(LoginRequiredMixin, SingleTableMixin, ListView):
     table_pagination = {'per_page': TABLE_PER_PAGE}
 
     def get_table_data(self):
-        return models.HarmonizedTrait.objects.current()
+        return models.HarmonizedTrait.objects.current().non_unique_keys()
 
 
 class HarmonizedTraitFlavorNameAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
@@ -461,7 +766,7 @@ class HarmonizedTraitFlavorNameAutocomplete(LoginRequiredMixin, autocomplete.Sel
         return retrieved
 
 
-class HarmonizedTraitSearch(LoginRequiredMixin, SingleTableMixin, MessageMixin, FormView):
+class HarmonizedTraitSearch(LoginRequiredMixin, SearchFormMixin, SingleTableMixin, MessageMixin, TemplateView):
     """Form view class for searching for source traits."""
 
     template_name = 'trait_browser/harmonizedtrait_search.html'
@@ -470,39 +775,20 @@ class HarmonizedTraitSearch(LoginRequiredMixin, SingleTableMixin, MessageMixin, 
     context_table_name = 'results_table'
     table_data = models.HarmonizedTrait.objects.none()
 
-    def get(self, request, *args, **kwargs):
-        """Override get method for form and search processing."""
-        form_class = self.get_form_class()
-        if 'reset' in request.GET:
-            return HttpResponseRedirect(request.path, {'form': self.get_form(form_class)})
-        if request.GET:
-            form = form_class(request.GET)
-        else:
-            form = self.get_form(form_class)
+    def search(self, **search_kwargs):
+        return searches.search_harmonized_traits(**search_kwargs)
 
-        if form.is_valid():
-            return self.form_valid(form)
-        else:
-            return self.form_invalid(form)
 
-    def form_valid(self, form):
-        """Override form_valid method to process form and add results to the search page."""
-        self.table_data = searches.search_harmonized_traits(**form.cleaned_data)
-        context = self.get_context_data(form=form)
-        context['has_results'] = True
-        # Add field-specific messages.
-        # May need to figure out how to make this general to any form field that is a WatsonSearchField.
-        if form.fields['description'].warning_message:
-            self.messages.warning(form.fields['description'].warning_message, fail_silently=True)
-        # Add an informational message about the number of results found.
-        msg = '{n} result{s} found.'.format(
-            n=self.table_data.count(),
-            s=pluralize(self.table_data.count()))
-        self.messages.info(msg, fail_silently=True)
-        return self.render_to_response(context)
+class HarmonizedTraitSetVersionDetail(LoginRequiredMixin, FormMessagesMixin, DetailView):
+    """Detail view class for HarmonizedTraitSetVersions. Inherits from django.views.generic.DetailView."""
 
-    def form_invalid(self, form):
-        """Override form_valid method to process form and redirect to the search page."""
-        context = self.get_context_data(form=form)
-        context['has_results'] = False
-        return self.render_to_response(context)
+    model = models.HarmonizedTraitSetVersion
+    context_object_name = 'harmonized_trait_set_version'
+
+    def get_context_data(self, **kwargs):
+        context = super(HarmonizedTraitSetVersionDetail, self).get_context_data(**kwargs)
+        harmonized_traits = self.object.harmonizedtrait_set.all()
+        context['harmonized_trait'] = harmonized_traits.get(i_is_unique_key=False)
+        context['unique_keys'] = harmonized_traits.filter(i_is_unique_key=True)
+        context['unique_key_names'] = ', '.join(context['unique_keys'].values_list('trait_flavor_name', flat=True))
+        return context

@@ -1,0 +1,30 @@
+{% extends '__base.html' %}
+{% load render_table from django_tables2 %}
+{% load crispy_forms_tags %}
+{% load staticfiles %}
+{% load static %}
+
+{% block head_title %}
+  | Search {{ study.i_study_name }} datasets
+{% endblock head_title %}
+
+
+{% block content %}
+  <h2> Search <a href="{{ study.get_absolute_url }}">{{ study.i_study_name }}</a> datasets</h2>
+  {% include 'trait_browser/_search_help.html' %}
+
+  {% crispy form %}
+
+  {% include '_messages.html' %}
+
+  {% if has_results %}
+    {% render_table results_table %}
+  {% endif %}
+
+{% endblock content %}
+
+{% block custom_javascript %}
+  {# script for django-autocomplete-light #}
+  <script type="text/javascript" src="{% static 'admin/js/vendor/jquery/jquery.js' %}"></script>
+  {{ form.media }}
+{% endblock custom_javascript %}

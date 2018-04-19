@@ -12,7 +12,7 @@ import trait_browser.models
 User = get_user_model()
 
 
-class UserFactoryTestCase(TestCase):
+class UserFactoryTest(TestCase):
 
     def test_user_factory_build(self):
         """Test that a User instance is returned by UserFactory.build()."""
@@ -43,7 +43,7 @@ class UserFactoryTestCase(TestCase):
             self.assertIsInstance(one.profile, Profile)
 
 
-class SuperUserFactoryTestCase(TestCase):
+class SuperUserFactoryTest(TestCase):
 
     def test_admin_user_factory_build(self):
         """Test that a User instance is returned by factories.SuperUserFactory.build()."""
@@ -74,7 +74,7 @@ class SuperUserFactoryTestCase(TestCase):
         self.assertTrue(user.is_staff)
 
 
-class BuildTestDbTestCase(TestCase):
+class BuildTestDbTest(TestCase):
 
     def test_build_db_global_studies_error(self):
         """Test that calling build_test_db() with too small a value for n_global_studies raises ValueError."""

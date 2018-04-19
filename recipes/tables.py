@@ -17,7 +17,7 @@ class UnitRecipeTable(tables.Table):
         model = models.UnitRecipe
         fields = ('name', 'version', 'modified', 'created', )
         attrs = {'class': 'table table-striped table-bordered table-hover table-condensed'}
-        template = 'bootstrap_tables2.html'
+        template = 'django_tables2/bootstrap-responsive.html'
 
 
 class HarmonizationRecipeTable(tables.Table):
@@ -33,4 +33,4 @@ class HarmonizationRecipeTable(tables.Table):
         model = models.HarmonizationRecipe
         fields = ('name', 'target_name', 'version', 'created', 'modified', )
         attrs = {'class': 'table table-striped table-bordered table-hover table-condensed'}
-        template = 'bootstrap_tables2.html'
+        template = 'django_tables2/bootstrap-responsive.html'

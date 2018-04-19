@@ -13,18 +13,18 @@ class StudyTable(tables.Table):
     """
 
     i_study_name = tables.LinkColumn(
-        'trait_browser:source:studies:detail:detail', args=[tables.utils.A('pk')], verbose_name='Study name',
+        'trait_browser:source:studies:pk:detail', args=[tables.utils.A('pk')], verbose_name='Study',
         orderable=False)
-    trait_count = tables.Column(accessor='study', verbose_name='Phenotype count', orderable=False, empty_values=())
+    trait_count = tables.Column(accessor='study', verbose_name='Number of variables', orderable=False, empty_values=())
     dbGaP_accession = tables.TemplateColumn(
-        orderable=False,
+        orderable=False, verbose_name='dbGaP study',
         template_code='<a target="_blank" href={{record.dbgap_latest_version_link}}>{{ record.phs }}</a>')
 
     class Meta:
         model = models.Study
         fields = ('i_study_name', )
         attrs = {'class': 'table table-striped table-hover table-bordered', 'style': 'width: auto;'}
-        template = 'bootstrap_tables2.html'
+        template = 'django_tables2/bootstrap-responsive.html'
         order_by = ('i_study_name', )
 
     def render_trait_count(self, record):
@@ -37,16 +37,16 @@ class SourceDatasetTable(tables.Table):
     """Class for table of source datasets for inheritance."""
 
     dataset_name = tables.LinkColumn(
-        'trait_browser:source:datasets:detail', args=[tables.utils.A('pk')], verbose_name='Dataset name',
+        'trait_browser:source:datasets:detail', args=[tables.utils.A('pk')], verbose_name='Dataset',
         text=lambda record: record.dataset_name)
-    i_dbgap_description = tables.Column(verbose_name='Dataset description', orderable=False)
-    trait_count = tables.Column(verbose_name='Variable count', orderable=False, empty_values=())
+    i_dbgap_description = tables.Column(verbose_name='Description', orderable=False)
+    trait_count = tables.Column(verbose_name='Number of variables', orderable=False, empty_values=())
 
     class Meta:
         model = models.SourceDataset
         fields = ('dataset_name', 'i_dbgap_description', 'trait_count', )
         attrs = {'class': 'table table-striped table-hover table-bordered', 'style': 'width: auto;'}
-        template = 'bootstrap_tables2.html'
+        template = 'django_tables2/bootstrap-responsive.html'
 
     def render_trait_count(self, record):
         return '{:,}'.format(record.sourcetrait_set.count())
@@ -56,7 +56,7 @@ class SourceDatasetTableFull(SourceDatasetTable):
     """Class for table of source datasets for listview."""
 
     study = tables.LinkColumn(
-        'trait_browser:source:studies:detail:detail', args=[tables.utils.A('source_study_version.study.pk')],
+        'trait_browser:source:studies:pk:detail', args=[tables.utils.A('source_study_version.study.pk')],
         text=lambda record: record.source_study_version.study.i_study_name, verbose_name='Study', orderable=False)
 
     class Meta(SourceDatasetTable.Meta):
@@ -68,24 +68,24 @@ class SourceTraitTable(tables.Table):
 
     # Set custom column values that need extra settings.
     i_trait_name = tables.LinkColumn(
-        'trait_browser:source:traits:detail', args=[tables.utils.A('pk')], verbose_name='Phenotype name')
-    i_description = tables.Column('Phenotype description', orderable=False)
+        'trait_browser:source:traits:detail', args=[tables.utils.A('pk')], verbose_name='Variable')
+    i_description = tables.Column('Description', orderable=False)
     dbGaP_variable = tables.TemplateColumn(
-        orderable=False,
+        orderable=False, verbose_name='dbGaP variable',
         template_code='<a target="_blank" href={{ record.dbgap_variable_link }}>{{ record.variable_accession }}</a>')
 
     class Meta:
         fields = ('i_trait_name', 'i_description', 'dbGaP_variable', )
         model = models.SourceTrait
         attrs = {'class': 'table table-striped table-bordered table-hover table-condensed'}
-        template = 'bootstrap_tables2.html'
+        template = 'django_tables2/bootstrap-responsive.html'
 
 
 class SourceTraitTableFull(SourceTraitTable):
     """Table for source traits with all information."""
 
     study = tables.LinkColumn(
-        'trait_browser:source:studies:detail:detail',
+        'trait_browser:source:studies:pk:detail',
         args=[tables.utils.A('source_dataset.source_study_version.study.pk')],
         text=lambda record: record.source_dataset.source_study_version.study.i_study_name,
         verbose_name='Study', orderable=False)
@@ -95,10 +95,10 @@ class SourceTraitTableFull(SourceTraitTable):
         text=lambda record: record.source_dataset.dataset_name,
         verbose_name='Dataset', orderable=False)
     dbGaP_study = tables.TemplateColumn(
-        orderable=False,
+        orderable=False, verbose_name='dbGaP study',
         template_code='<a target="_blank" href={{ record.dbgap_study_link }}>{{ record.study_accession }}</a>')
     dbGaP_dataset = tables.TemplateColumn(
-        orderable=False,
+        orderable=False, verbose_name='dbGaP dataset',
         template_code='<a target="_blank" href={{ record.dbgap_dataset_link }}>{{ record.dataset_accession }}</a>')
 
     class Meta(SourceTraitTable.Meta):
@@ -116,7 +116,7 @@ class SourceTraitStudyTable(SourceTraitTable):
         text=lambda record: record.source_dataset.dataset_name,
         verbose_name='Dataset', orderable=False)
     dbGaP_dataset = tables.TemplateColumn(
-        orderable=False,
+        orderable=False, verbose_name='dbGaP dataset',
         template_code='<a target="_blank" href={{ record.dbgap_dataset_link }}>{{ record.dataset_accession }}</a>')
 
     class Meta(SourceTraitTable.Meta):
@@ -128,7 +128,7 @@ class SourceTraitDatasetTable(SourceTraitTable):
     """Table for displaying SourceTraits that are restricted to one dataset (e.g. in dataset views)."""
 
     study = tables.LinkColumn(
-        'trait_browser:source:studies:detail:detail',
+        'trait_browser:source:studies:pk:detail',
         args=[tables.utils.A('source_dataset.source_study_version.study.pk')],
         text=lambda record: record.source_dataset.source_study_version.study.i_study_name,
         verbose_name='Study', orderable=False)
@@ -149,12 +149,12 @@ class HarmonizedTraitTable(tables.Table):
     # Set custom column values that need extra settings.
     trait_flavor_name = tables.LinkColumn(
         'trait_browser:harmonized:traits:detail', args=[tables.utils.A('harmonized_trait_set_version.pk')],
-        verbose_name='Phenotype name')
-    i_description = tables.Column('Phenotype description', orderable=False)
+        verbose_name='Variable')
+    i_description = tables.Column('Description', orderable=False)
 
     class Meta:
         model = models.HarmonizedTrait
         fields = ('trait_flavor_name', 'i_description', )
         attrs = {'class': 'table table-striped table-bordered table-hover table-condensed'}
-        template = 'bootstrap_tables2.html'
+        template = 'django_tables2/bootstrap-responsive.html'
         order_by = ('trait_flavor_name', )

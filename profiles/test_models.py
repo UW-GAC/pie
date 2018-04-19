@@ -4,30 +4,10 @@ from django.test import TestCase
 
 from core.factories import UserFactory
 from trait_browser.factories import StudyFactory
-from . import factories
 from . import models
 
 
-class SearchTestCase(TestCase):
-
-    def test_model_saving(self):
-        """Test that you can save a Search object."""
-        search = factories.SearchFactory.create()
-        self.assertIsInstance(models.Search.objects.get(pk=search.pk), models.Search)
-
-    def test_printing(self):
-        """Test the custom __str__ method."""
-        search = factories.SearchFactory.build()
-        self.assertIsInstance(search.__str__(), str)
-
-    def test_timestamps_added(self):
-        """Test that timestamps are added."""
-        search = factories.SearchFactory.create()
-        self.assertIsInstance(search.created, datetime)
-        self.assertIsInstance(search.modified, datetime)
-
-
-class ProfileTestCase(TestCase):
+class ProfileTest(TestCase):
 
     def test_model_saving(self):
         """Test that you can save a Profile object."""
@@ -52,28 +32,3 @@ class ProfileTestCase(TestCase):
         user.profile.taggable_studies.add(*studies)
         for st in studies:
             self.assertIn(st, user.profile.taggable_studies.all())
-
-
-class SavedSearchMetaTestCase(TestCase):
-
-    def test_model_saving(self):
-        """Test that you can save a SavedSearchMeta object."""
-        user = UserFactory.create()
-        search = factories.SearchFactory.create()
-        saved_search = models.SavedSearchMeta.objects.create(profile=user.profile, search=search)
-        self.assertIsInstance(models.SavedSearchMeta.objects.get(pk=saved_search.pk), models.SavedSearchMeta)
-
-    def test_printing(self):
-        """Test the custom __str__ method."""
-        user = UserFactory.create()
-        search = factories.SearchFactory.create()
-        saved_search = models.SavedSearchMeta.objects.create(profile=user.profile, search=search)
-        self.assertIsInstance(saved_search.__str__(), str)
-
-    def test_timestamps_added(self):
-        """Test that timestamps are added."""
-        user = UserFactory.create()
-        search = factories.SearchFactory.create()
-        saved_search = models.SavedSearchMeta.objects.create(profile=user.profile, search=search)
-        self.assertIsInstance(saved_search.created, datetime)
-        self.assertIsInstance(saved_search.modified, datetime)

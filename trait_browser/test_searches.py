@@ -23,7 +23,230 @@ class ClearSearchIndexMixin(object):
         SearchEntry.objects.all().delete()
 
 
-class SourceTraitSearchTest(ClearSearchIndexMixin, TestCase):
+class SearchSourceDatasetsTest(ClearSearchIndexMixin, TestCase):
+
+    def test_returns_all_datasets_with_no_input(self):
+        """All datasets are returned if nothing is passed to search."""
+        datasets = factories.SourceDatasetFactory.create_batch(10)
+        qs = searches.search_source_datasets()
+        self.assertEqual(qs.count(), models.SourceDataset.objects.current().count())
+
+    def test_does_not_find_deprecated_datasets(self):
+        """No deprecated datasets are returned if nothing is passed to search."""
+        dataset = factories.SourceDatasetFactory.create()
+        dataset.source_study_version.i_is_deprecated = True
+        dataset.source_study_version.save()
+        qs = searches.search_source_datasets()
+        self.assertEqual(qs.count(), 0)
+
+    def test_description_no_matches(self):
+        """No results are found if the search query doesn't match the dataset description."""
+        dataset = factories.SourceDatasetFactory.create(i_dbgap_description='lorem')
+        qs = searches.search_source_datasets(description='foobar')
+        self.assertQuerysetEqual(qs, [])
+
+    def test_description_one_word_exact_match(self):
+        """Only the dataset whose description that matches the search query is found."""
+        factories.SourceDatasetFactory.create(i_dbgap_description='other dataset')
+        dataset = factories.SourceDatasetFactory.create(i_dbgap_description='lorem')
+        qs = searches.search_source_datasets(description='lorem')
+        self.assertQuerysetEqual(qs, [repr(dataset)])
+
+    def test_description_one_word_substring_match(self):
+        """Only the dataset whose description contains words that begin with the search query is found."""
+        factories.SourceDatasetFactory.create(i_dbgap_description='other dataset')
+        dataset = factories.SourceDatasetFactory.create(i_dbgap_description='lorem')
+        qs = searches.search_source_datasets(description='lore')
+        self.assertQuerysetEqual(qs, [repr(dataset)])
+
+    def test_description_one_word_substring_matches_beginning_of_word_only(self):
+        """Only datasets whose descriptions contains words that end with the search query are not found."""
+        factories.SourceDatasetFactory.create(i_dbgap_description='other dataset')
+        dataset = factories.SourceDatasetFactory.create(i_dbgap_description='lorem')
+        qs = searches.search_source_datasets(description='orem')
+        self.assertEqual(qs.count(), 0)
+
+    def test_description_one_word_substring_match_short_search(self):
+        """Only datasets whose description contains words that begin with a (short) search query are found."""
+        factories.SourceDatasetFactory.create(i_dbgap_description='other dataset')
+        dataset = factories.SourceDatasetFactory.create(i_dbgap_description='lorem')
+        qs = searches.search_source_datasets(description='lo')
+        self.assertQuerysetEqual(qs, [repr(dataset)])
+
+    def test_description_one_word_substring_match_short_word(self):
+        """Short word with three letters in the description are found."""
+        factories.SourceDatasetFactory.create(i_dbgap_description='other dataset')
+        dataset = factories.SourceDatasetFactory.create(i_dbgap_description='abc')
+        qs = searches.search_source_datasets(description='abc')
+        self.assertQuerysetEqual(qs, [repr(dataset)])
+
+    def test_description_multiple_words_exact_match(self):
+        """Only datasets whose description contains words that exactly match multiple search terms is found."""
+        factories.SourceDatasetFactory.create(i_dbgap_description='other dataset')
+        dataset = factories.SourceDatasetFactory.create(i_dbgap_description='lorem ipsum')
+        qs = searches.search_source_datasets(description='lorem ipsum')
+        self.assertQuerysetEqual(qs, [repr(dataset)])
+
+    def test_description_multiple_words_substring_match(self):
+        """Only datasets whose description contains words that begin with multiple search terms is found."""
+        factories.SourceDatasetFactory.create(i_dbgap_description='other dataset')
+        dataset = factories.SourceDatasetFactory.create(i_dbgap_description='lorem ipsum')
+        qs = searches.search_source_datasets(description='lore ipsu')
+        self.assertQuerysetEqual(qs, [repr(dataset)])
+
+    def test_description_match_can_be_anywhere(self):
+        """Datasets are found when the search query term is not the first word."""
+        factories.SourceDatasetFactory.create(i_dbgap_description='other dataset')
+        dataset = factories.SourceDatasetFactory.create(i_dbgap_description='lorem ipsum')
+        qs = searches.search_source_datasets(description='ipsu')
+        self.assertQuerysetEqual(qs, [repr(dataset)])
+
+    def test_description_finds_only_descriptions_with_all_search_terms(self):
+        """Dataset whose descriptions contain all words in the search query is found."""
+        factories.SourceDatasetFactory.create(i_dbgap_description='lorem other words')
+        dataset = factories.SourceDatasetFactory.create(i_dbgap_description='lorem ipsum other words')
+        qs = searches.search_source_datasets(description='lorem ipsum')
+        self.assertQuerysetEqual(qs, [repr(dataset)])
+
+    def test_description_matches_search_terms_in_any_order(self):
+        """Datasets whose descriptions contain all search query words in any order are found."""
+        factories.SourceDatasetFactory.create(i_dbgap_description='lorem other words')
+        dataset_1 = factories.SourceDatasetFactory.create(i_dbgap_description='lorem ipsum other words')
+        dataset_2 = factories.SourceDatasetFactory.create(i_dbgap_description='ipsum lorem other words')
+        qs = searches.search_source_datasets(description='ipsum lorem')
+        self.assertIn(dataset_1, qs)
+        self.assertIn(dataset_2, qs)
+
+    def test_description_stop_words(self):
+        """Dataset whose description contains common default stop words is found."""
+        # However is a stopword in MySQL by default.
+        dataset = factories.SourceDatasetFactory.create(i_dbgap_description='however has stop words')
+        qs = searches.search_source_datasets(description='however')
+        self.assertQuerysetEqual(qs, [repr(dataset)])
+
+    def test_description_is_case_insensitive(self):
+        """Datasets whose descriptions match search term but with different case are found."""
+        dataset_1 = factories.SourceDatasetFactory.create(i_dbgap_description='lorem ipsum')
+        dataset_2 = factories.SourceDatasetFactory.create(i_dbgap_description='LOREM other')
+        qs = searches.search_source_datasets(description='lorem')
+        self.assertIn(dataset_1, qs)
+        self.assertIn(dataset_2, qs)
+
+    def test_description_does_not_match_dataset_name_field(self):
+        """Datasets whose name field matches description query are not found."""
+        factories.SourceDatasetFactory.create(
+            dataset_name='lorem',
+            i_dbgap_description='other description')
+        qs = searches.search_source_datasets(description='lorem')
+        self.assertEqual(len(qs), 0)
+
+    def test_dataset_name_does_not_match_description_field(self):
+        """Datasets whose description field matches name query are not found."""
+        factories.SourceDatasetFactory.create(
+            dataset_name='other',
+            i_dbgap_description='lorem')
+        qs = searches.search_source_datasets(name='lorem')
+        self.assertEqual(len(qs), 0)
+
+    def test_description_can_include_a_number(self):
+        """Can search for "words" that contain both letters and numbers."""
+        dataset = factories.SourceDatasetFactory.create(i_dbgap_description='abcd123')
+        qs = searches.search_source_datasets(description='abcd123')
+        self.assertQuerysetEqual(qs, [repr(dataset)])
+
+    def test_description_can_be_only_numbers(self):
+        """Can search for "words" that contain only letters."""
+        dataset = factories.SourceDatasetFactory.create(i_dbgap_description='123456')
+        qs = searches.search_source_datasets(description='123456')
+        self.assertQuerysetEqual(qs, [repr(dataset)])
+
+    def test_finds_matching_dataset_in_one_specified_study(self):
+        """Datasets only in the requested study are found."""
+        factories.StudyFactory.create()
+        dataset = factories.SourceDatasetFactory.create()
+        qs = searches.search_source_datasets(studies=[dataset.source_study_version.study.pk])
+        self.assertQuerysetEqual(qs, [repr(dataset)])
+
+    def test_finds_matching_dataset_in_two_specified_studies(self):
+        """Datasets in two requested studies are found."""
+        dataset_1 = factories.SourceDatasetFactory.create()
+        dataset_2 = factories.SourceDatasetFactory.create()
+        studies = [
+            dataset_1.source_study_version.study.pk,
+            dataset_2.source_study_version.study.pk,
+        ]
+        qs = searches.search_source_datasets(studies=studies)
+        self.assertEqual(qs.count(), 2)
+        self.assertIn(dataset_1, qs)
+        self.assertIn(dataset_2, qs)
+
+    def test_finds_only_exact_match_name(self):
+        """Dataset name must be an exact match."""
+        dataset = factories.SourceDatasetFactory.create(dataset_name='ipsum')
+        factories.SourceDatasetFactory.create(dataset_name='other')
+        qs = searches.search_source_datasets(name='ipsum')
+        self.assertQuerysetEqual(qs, [repr(dataset)])
+
+    def test_name_finds_case_insensitive_match(self):
+        """Dataset name can be case insensitive."""
+        dataset = factories.SourceDatasetFactory.create(dataset_name='IpSuM')
+        factories.SourceDatasetFactory.create(dataset_name='other')
+        qs = searches.search_source_datasets(name='ipsum')
+        self.assertQuerysetEqual(qs, [repr(dataset)])
+
+    def test_does_not_find_substring_name_match(self):
+        """Substrings of dataset names are not matched by default."""
+        dataset = factories.SourceDatasetFactory.create(dataset_name='ipsum')
+        qs = searches.search_source_datasets(name='ipsu')
+        self.assertEqual(len(qs), 0)
+
+    def test_finds_name_beginning_with_requested_string_if_specified(self):
+        """Substrings of at the beginning of dataset names are matched if requested."""
+        dataset = factories.SourceDatasetFactory.create(dataset_name='ipsum')
+        qs = searches.search_source_datasets(name='ipsu', match_exact_name=False)
+        self.assertQuerysetEqual(qs, [repr(dataset)])
+
+    def test_finds_name_containing_requested_string_if_specified(self):
+        """Substrings of dataset names are matched if requested."""
+        dataset = factories.SourceDatasetFactory.create(dataset_name='ipsum')
+        qs = searches.search_source_datasets(name='psu', match_exact_name=False)
+        self.assertQuerysetEqual(qs, [repr(dataset)])
+
+    def test_works_with_both_dataset_name_and_description(self):
+        """Searching works when dataset name and description are both specified."""
+        dataset = factories.SourceDatasetFactory.create(dataset_name='ipsum', i_dbgap_description='lorem')
+        factories.SourceDatasetFactory.create(dataset_name='ipsum', i_dbgap_description='other')
+        factories.SourceDatasetFactory.create(dataset_name='other', i_dbgap_description='lorem')
+        qs = searches.search_source_datasets(name='ipsum', description='lorem')
+        self.assertQuerysetEqual(qs, [repr(dataset)])
+
+    def test_works_with_dataset_name_description_and_study(self):
+        """Searching works when dataset name, description, and study are all specified."""
+        dataset = factories.SourceDatasetFactory.create(dataset_name='ipsum', i_dbgap_description='lorem')
+        factories.SourceDatasetFactory.create(dataset_name='ipsum', i_dbgap_description='lorem')
+        study = dataset.source_study_version.study
+        qs = searches.search_source_datasets(name='ipsum', description='lorem', studies=[study.pk])
+        self.assertQuerysetEqual(qs, [repr(dataset)])
+
+    def test_default_ordering_by_dataset_accession(self):
+        """Datasets are ordered by dataset accession."""
+        study = factories.StudyFactory.create()
+        dataset_1 = factories.SourceDatasetFactory.create(i_accession=2, source_study_version__study=study)
+        dataset_2 = factories.SourceDatasetFactory.create(i_accession=1, source_study_version__study=study)
+        qs = searches.search_source_datasets()
+        self.assertEqual(list(qs), [dataset_2, dataset_1])
+
+    def test_default_ordering_by_study_and_dataset_accession(self):
+        """Datasets are ordered by dataset accession."""
+        study_1 = factories.StudyFactory.create(i_accession=2)
+        study_2 = factories.StudyFactory.create(i_accession=1)
+        dataset_1 = factories.SourceDatasetFactory.create(i_accession=1, source_study_version__study=study_1)
+        dataset_2 = factories.SourceDatasetFactory.create(i_accession=2, source_study_version__study=study_2)
+        qs = searches.search_source_datasets()
+        self.assertEqual(list(qs), [dataset_2, dataset_1])
+
+
+class SearchSourceTraitsTest(ClearSearchIndexMixin, TestCase):
 
     def test_returns_all_traits_with_no_input(self):
         """All traits are returned if nothing is passed to search."""
@@ -160,22 +383,22 @@ class SourceTraitSearchTest(ClearSearchIndexMixin, TestCase):
         qs = searches.search_source_traits(description='123456')
         self.assertQuerysetEqual(qs, [repr(trait)])
 
-    def test_finds_matching_trait_in_one_specified_study(self):
-        """Traits only in the requested study are found."""
-        factories.StudyFactory.create()
+    def test_finds_matching_trait_in_one_specified_dataset(self):
+        """Traits only in the requested dataset are found."""
+        factories.SourceDatasetFactory.create()
         trait = factories.SourceTraitFactory.create()
-        qs = searches.search_source_traits(studies=[trait.source_dataset.source_study_version.study.pk])
+        qs = searches.search_source_traits(datasets=[trait.source_dataset])
         self.assertQuerysetEqual(qs, [repr(trait)])
 
-    def test_finds_matching_trait_in_two_specified_studies(self):
+    def test_finds_matching_trait_in_two_specified_datasets(self):
         """Traits in two requested studies are found."""
         trait_1 = factories.SourceTraitFactory.create()
         trait_2 = factories.SourceTraitFactory.create()
-        studies = [
-            trait_1.source_dataset.source_study_version.study.pk,
-            trait_2.source_dataset.source_study_version.study.pk,
+        datasets = [
+            trait_1.source_dataset,
+            trait_2.source_dataset,
         ]
-        qs = searches.search_source_traits(studies=studies)
+        qs = searches.search_source_traits(datasets=datasets)
         self.assertEqual(qs.count(), 2)
         self.assertIn(trait_1, qs)
         self.assertIn(trait_2, qs)
@@ -220,12 +443,12 @@ class SourceTraitSearchTest(ClearSearchIndexMixin, TestCase):
         qs = searches.search_source_traits(name='ipsum', description='lorem')
         self.assertQuerysetEqual(qs, [repr(trait)])
 
-    def test_works_with_trait_name_description_and_study(self):
+    def test_works_with_trait_name_description_and_dataset(self):
         """Searching works when trait name, description, and study are all specified."""
         trait = factories.SourceTraitFactory.create(i_trait_name='ipsum', i_description='lorem')
         factories.SourceTraitFactory.create(i_trait_name='ipsum', i_description='lorem')
-        study = trait.source_dataset.source_study_version.study
-        qs = searches.search_source_traits(name='ipsum', description='lorem', studies=[study.pk])
+        dataset = trait.source_dataset
+        qs = searches.search_source_traits(name='ipsum', description='lorem', datasets=[dataset])
         self.assertQuerysetEqual(qs, [repr(trait)])
 
     def test_default_ordering_by_trait(self):
@@ -242,8 +465,9 @@ class SourceTraitSearchTest(ClearSearchIndexMixin, TestCase):
 
     def test_default_ordering_by_dataset_and_trait(self):
         """Traits are ordered by dataset accession and then variable accession."""
-        dataset_1 = factories.SourceDatasetFactory.create(i_accession=2)
-        dataset_2 = factories.SourceDatasetFactory.create(i_accession=1)
+        study = factories.StudyFactory.create()
+        dataset_1 = factories.SourceDatasetFactory.create(i_accession=2, source_study_version__study=study)
+        dataset_2 = factories.SourceDatasetFactory.create(i_accession=1, source_study_version__study=study)
         trait_1 = factories.SourceTraitFactory.create(
             i_dbgap_variable_accession=1,
             source_dataset=dataset_1)
@@ -253,23 +477,59 @@ class SourceTraitSearchTest(ClearSearchIndexMixin, TestCase):
         qs = searches.search_source_traits()
         self.assertEqual(list(qs), [trait_2, trait_1])
 
-    def test_does_not_find_special_characters_in_description(self):
-        """Special characters are ignored."""
-        characters = ['\'', '%', '#', '<', '>', '=', '?', '-']
-        for character in characters:
-            description = "special{char}character".format(char=character)
-            trait = factories.SourceTraitFactory.create(i_trait_name=description)
-            qs = searches.search_source_traits(description=description)
-            msg = "found {char}".format(char=character)
-            self.assertNotIn(trait, qs, msg=msg)
+    def test_default_ordering_by_study_dataset_and_trait(self):
+        """Traits are ordered by study accession, dataset accession, and then variable accession."""
+        study_1 = factories.StudyFactory.create(i_accession=2)
+        study_2 = factories.StudyFactory.create(i_accession=1)
+        dataset_1 = factories.SourceDatasetFactory.create(i_accession=1, source_study_version__study=study_1)
+        dataset_2 = factories.SourceDatasetFactory.create(i_accession=2, source_study_version__study=study_2)
+        trait_1 = factories.SourceTraitFactory.create(
+            i_dbgap_variable_accession=1,
+            source_dataset=dataset_1)
+        trait_2 = factories.SourceTraitFactory.create(
+            i_dbgap_variable_accession=2,
+            source_dataset=dataset_2)
+        qs = searches.search_source_traits()
+        self.assertEqual(list(qs), [trait_2, trait_1])
 
     def test_does_not_find_harmonized_traits(self):
         """Source trait search function does not find matching harmonized traits."""
         trait = factories.HarmonizedTraitFactory.create(i_trait_name='lorem')
         self.assertEqual(searches.search_source_traits(name='lorem').count(), 0)
 
+    def test_filters_to_selected_datasets_only(self):
+        dataset = factories.SourceDatasetFactory.create()
+        traits = factories.SourceTraitFactory.create_batch(5, source_dataset=dataset)
+        other_dataset = factories.SourceDatasetFactory.create()
+        other_traits = factories.SourceTraitFactory.create_batch(5, source_dataset=other_dataset)
+        qs = searches.search_source_traits(datasets=[dataset])
+        self.assertEqual(len(qs), len(traits))
+        for trait in traits:
+            self.assertIn(trait, qs)
+        for trait in other_traits:
+            self.assertNotIn(trait, qs)
 
-class HarmonizedTraitSearchTest(ClearSearchIndexMixin, TestCase):
+    def test_works_with_dataset_querysets(self):
+        """Finds expected traits when a dataset queryset is passed."""
+        dataset = factories.SourceDatasetFactory.create()
+        traits = factories.SourceTraitFactory.create_batch(5, source_dataset=dataset)
+        other_dataset = factories.SourceDatasetFactory.create()
+        other_traits = factories.SourceTraitFactory.create_batch(5, source_dataset=other_dataset)
+        dataset_qs = models.SourceDataset.objects.filter(pk=dataset.pk)
+        qs = searches.search_source_traits(datasets=dataset_qs)
+        self.assertEqual(len(qs), len(traits))
+        for trait in traits:
+            self.assertIn(trait, qs)
+        for trait in other_traits:
+            self.assertNotIn(trait, qs)
+
+    def test_finds_no_matching_traits_with_empty_dataset_array(self):
+        trait = factories.SourceTraitFactory.create(i_trait_name='lorem')
+        qs = searches.search_source_traits(name='lorem', datasets=[])
+        self.assertEqual(len(qs), 0)
+
+
+class SearchHarmonizedTraitsTest(ClearSearchIndexMixin, TestCase):
     def test_returns_all_traits_with_no_input(self):
         """All traits are returned if nothing is passed to search."""
         traits = factories.HarmonizedTraitFactory.create_batch(10)
@@ -465,16 +725,6 @@ class HarmonizedTraitSearchTest(ClearSearchIndexMixin, TestCase):
         )
         qs = searches.search_harmonized_traits()
         self.assertEqual(list(qs), [trait_2, trait_1])
-
-    def test_does_not_find_special_characters_in_description(self):
-        """Special characters are ignored."""
-        characters = ['\'', '%', '#', '<', '>', '=', '?', '-']
-        for character in characters:
-            description = "special{char}character".format(char=character)
-            trait = factories.HarmonizedTraitFactory.create(i_trait_name=description)
-            qs = searches.search_harmonized_traits(description=description)
-            msg = "found {char}".format(char=character)
-            self.assertNotIn(trait, qs, msg=msg)
 
     def test_does_not_find_source_traits(self):
         """Harmonized trait search function does not find matching source traits."""

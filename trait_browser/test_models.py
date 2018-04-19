@@ -10,7 +10,7 @@ from . import factories
 from . import models
 
 
-class GlobalStudyTestCase(TestCase):
+class GlobalStudyTest(TestCase):
 
     def test_model_saving(self):
         """You can save a GlobalStudy object."""
@@ -29,7 +29,7 @@ class GlobalStudyTestCase(TestCase):
         self.assertIsInstance(global_study.modified, datetime)
 
 
-class StudyTestCase(TestCase):
+class StudyTest(TestCase):
 
     def test_model_saving(self):
         """You can save a Study object."""
@@ -58,6 +58,11 @@ class StudyTestCase(TestCase):
         study = factories.StudyFactory.create()
         url = study.get_search_url()
 
+    def test_get_dataset_search_url(self):
+        """Tests that the get_search_url method returns an appropriately constructed url."""
+        study = factories.StudyFactory.create()
+        url = study.get_dataset_search_url()
+
     def test_get_absolute_url(self):
         """get_absolute_url function doesn't fail."""
         instance = factories.StudyFactory.create()
@@ -69,7 +74,7 @@ class StudyTestCase(TestCase):
         self.assertIsInstance(study.get_name_link_html(), str)
 
 
-class SourceStudyVersionTestCase(TestCase):
+class SourceStudyVersionTest(TestCase):
 
     def test_model_saving(self):
         """You can save a SourceStudyVersion object."""
@@ -94,7 +99,7 @@ class SourceStudyVersionTestCase(TestCase):
         self.assertRegex(source_study_version.phs_version_string, 'phs\d{6}\.v\d{1,3}\.p\d{1,3}')
 
 
-class SourceDatasetTestCase(TestCase):
+class SourceDatasetTest(TestCase):
 
     def test_model_saving(self):
         """You can save a SourceDataset object."""
@@ -140,7 +145,7 @@ class SourceDatasetTestCase(TestCase):
         self.assertNotIn(deprecated_dataset, models.SourceDataset.objects.current())
 
 
-class HarmonizedTraitSetTestCase(TestCase):
+class HarmonizedTraitSetTest(TestCase):
 
     def test_model_saving(self):
         """You can save a HarmonizedTraitSet object."""
@@ -160,7 +165,7 @@ class HarmonizedTraitSetTestCase(TestCase):
         self.assertIsInstance(harmonized_trait_set.modified, datetime)
 
 
-class HarmonizedTraitSetVersionTestCase(TestCase):
+class HarmonizedTraitSetVersionTest(TestCase):
 
     def test_model_saving(self):
         """You can save a HarmonizedTraitSetVersion object."""
@@ -198,7 +203,7 @@ class HarmonizedTraitSetVersionTestCase(TestCase):
         self.assertIsInstance(htsv.get_component_html(), str)
 
 
-class HarmonizationUnitTestCase(TestCase):
+class HarmonizationUnitTest(TestCase):
 
     def test_model_saving(self):
         """You can save a HarmonizationUnit object."""
@@ -273,7 +278,7 @@ class HarmonizationUnitTestCase(TestCase):
         self.assertIsInstance(htsv.get_component_html(), str)
 
 
-class SourceTraitTestCase(TestCase):
+class SourceTraitTest(TestCase):
 
     def test_model_saving(self):
         """You can save a SourceTrait object."""
@@ -325,7 +330,7 @@ class SourceTraitTestCase(TestCase):
         self.assertNotIn(deprecated_trait, models.SourceTrait.objects.current())
 
 
-class HarmonizedTraitTestCase(TestCase):
+class HarmonizedTraitTest(TestCase):
 
     def test_model_saving(self):
         """You can save a HarmonizedTrait object."""
@@ -417,8 +422,15 @@ class HarmonizedTraitTestCase(TestCase):
         self.assertIn(current_trait, models.HarmonizedTrait.objects.current())
         self.assertNotIn(deprecated_trait, models.HarmonizedTrait.objects.current())
 
+    def test_non_unique_keys_queryset_method(self):
+        """HarmonizedTrait.objects.non_unique_keys() does not return unique key traits."""
+        non_uk_trait = factories.HarmonizedTraitFactory.create(i_is_unique_key=False)
+        uk_trait = factories.HarmonizedTraitFactory.create(i_is_unique_key=True)
+        self.assertIn(non_uk_trait, models.HarmonizedTrait.objects.non_unique_keys())
+        self.assertNotIn(uk_trait, models.HarmonizedTrait.objects.non_unique_keys())
 
-class SourceTraitEncodedValueTestCase(TestCase):
+
+class SourceTraitEncodedValueTest(TestCase):
 
     def test_model_saving(self):
         """You can save a SourceTraitEncodedValue object."""
@@ -439,7 +451,7 @@ class SourceTraitEncodedValueTestCase(TestCase):
         self.assertIsInstance(source_trait_encoded_value.modified, datetime)
 
 
-class HarmonizedTraitEncodedValueTestCase(TestCase):
+class HarmonizedTraitEncodedValueTest(TestCase):
 
     def test_model_saving(self):
         """You can save a HarmonizedTraitEncodedValue object."""

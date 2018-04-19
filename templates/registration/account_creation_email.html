@@ -1,12 +1,14 @@
-{% load i18n %}{% autoescape off %}
+{% load i18n %}
+{% autoescape off %}
+
 {% blocktrans %}
-An account has been created for you at {{ domain }}. Please follow the link
-below to set your password.
+  An account has been created for you at {{ domain }}. Please follow the link
+  below to set your password.
 {% endblocktrans %}
 
 {% block reset_link %}
-{{ protocol }}://{{ domain }}{% url 'password_reset_confirm' uidb64=uid token=token %}
-{% endblock %}
+  {{ protocol }}://{{ domain }}{% url 'password_reset_confirm' uidb64=uid token=token %}
+{% endblock reset_link %}
 
 {% trans "Your username, in case you've forgotten:" %} {{ user.get_username }}
 

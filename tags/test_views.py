@@ -10,6 +10,7 @@ from core.utils import (LoginRequiredTestCase, PhenotypeTaggerLoginTestCase, Use
                         DCCAnalystLoginTestCase, get_autocomplete_view_ids)
 from trait_browser.factories import SourceTraitFactory, StudyFactory
 from trait_browser.models import SourceTrait
+from trait_browser.tables import SourceTraitTableFull
 from . import factories
 from . import models
 from . import tables
@@ -43,12 +44,12 @@ class TagDetailTest(UserLoginTestCase):
         self.assertIn('tag', context)
         self.assertEqual(context['tag'], self.tag)
         self.assertIn('tagged_trait_table', context)
-        self.assertIsInstance(context['tagged_trait_table'], tables.TagDetailTraitTable)
+        self.assertIsInstance(context['tagged_trait_table'], SourceTraitTableFull)
 
     def test_no_tagging_button(self):
         """Regular user does not see a button to add tags on this detail page."""
         response = self.client.get(self.get_url(self.tag.pk))
-        self.assertNotContains(response, 'Tag phenotypes as "{}"'.format(self.tag.title))
+        self.assertNotContains(response, reverse('tags:add-many:by-tag', kwargs={'pk': self.tag.pk}))
 
 
 class TagDetailPhenotypeTaggerTest(PhenotypeTaggerLoginTestCase):
@@ -70,7 +71,7 @@ class TagDetailPhenotypeTaggerTest(PhenotypeTaggerLoginTestCase):
     def test_has_tagging_button(self):
         """A phenotype tagger does see a button to add tags on this detail page."""
         response = self.client.get(self.get_url(self.tag.pk))
-        self.assertContains(response, 'Tag phenotypes as "{}"'.format(self.tag.title))
+        self.assertContains(response, reverse('tags:add-many:by-tag', kwargs={'pk': self.tag.pk}))
 
 
 class TagDetailDCCAnalystTest(DCCAnalystLoginTestCase):
@@ -93,7 +94,7 @@ class TagDetailDCCAnalystTest(DCCAnalystLoginTestCase):
     def test_has_tagging_button(self):
         """A DCC analyst does see a button to add tags on this detail page."""
         response = self.client.get(self.get_url(self.tag.pk))
-        self.assertContains(response, 'Tag phenotypes as "{}"'.format(self.tag.title))
+        self.assertContains(response, reverse('tags:add-many:by-tag', kwargs={'pk': self.tag.pk}))
 
 
 class TagListTest(UserLoginTestCase):
@@ -149,7 +150,7 @@ class TaggedTraitByStudyListTest(UserLoginTestCase):
             10, trait__source_dataset__source_study_version__study=self.study)
 
     def get_url(self, *args):
-        return reverse('trait_browser:source:studies:detail:tagged', args=args)
+        return reverse('trait_browser:source:studies:pk:traits:tagged', args=args)
 
     def test_view_success_code(self):
         """View returns successful response code."""
@@ -186,7 +187,7 @@ class TaggedTraitByStudyListPhenotypeTaggerTest(PhenotypeTaggerLoginTestCase):
         self.user.profile.taggable_studies.add(self.study)
 
     def get_url(self, *args):
-        return reverse('trait_browser:source:studies:detail:tagged', args=args)
+        return reverse('trait_browser:source:studies:pk:traits:tagged', args=args)
 
     def test_view_success_code(self):
         """View returns successful response code."""
@@ -223,7 +224,7 @@ class TaggedTraitByStudyListDCCAnalystTest(DCCAnalystLoginTestCase):
         self.user.refresh_from_db()
 
     def get_url(self, *args):
-        return reverse('trait_browser:source:studies:detail:tagged', args=args)
+        return reverse('trait_browser:source:studies:pk:traits:tagged', args=args)
 
     def test_view_success_code(self):
         """View returns successful response code."""
@@ -494,7 +495,7 @@ class TaggedTraitDeleteTest(PhenotypeTaggerLoginTestCase):
     def test_deletes_object(self):
         """Posting 'submit' to the form correctly deletes the tagged_trait."""
         response = self.client.post(self.get_url(self.tagged_trait.pk), {'submit': ''})
-        self.assertRedirects(response, reverse('trait_browser:source:studies:detail:tagged',
+        self.assertRedirects(response, reverse('trait_browser:source:studies:pk:traits:tagged',
                                                args=[self.trait.source_dataset.source_study_version.study.pk]))
         with self.assertRaises(models.TaggedTrait.DoesNotExist):
             self.tagged_trait.refresh_from_db()
@@ -512,7 +513,7 @@ class TaggedTraitDeleteTest(PhenotypeTaggerLoginTestCase):
         other_user.profile.taggable_studies.add(self.study)
         other_user_tagged_trait = models.TaggedTrait.objects.create(trait=trait, tag=self.tag, creator=other_user)
         response = self.client.post(self.get_url(other_user_tagged_trait.pk), {'submit': ''})
-        self.assertRedirects(response, reverse('trait_browser:source:studies:detail:tagged',
+        self.assertRedirects(response, reverse('trait_browser:source:studies:pk:traits:tagged',
                                                args=[self.study.pk]))
         with self.assertRaises(models.TaggedTrait.DoesNotExist):
             other_user_tagged_trait.refresh_from_db()
@@ -527,7 +528,7 @@ class TaggedTraitDeleteTest(PhenotypeTaggerLoginTestCase):
         # Sounds like it might be:
         # https://stackoverflow.com/questions/17678689/how-to-add-a-cancel-button-to-deleteview-in-django
         response = self.client.post(self.get_url(self.tagged_trait.pk), {})
-        self.assertRedirects(response, reverse('trait_browser:source:studies:detail:tagged',
+        self.assertRedirects(response, reverse('trait_browser:source:studies:pk:traits:tagged',
                                                args=[self.trait.source_dataset.source_study_version.study.pk]))
         with self.assertRaises(models.TaggedTrait.DoesNotExist):
             self.tagged_trait.refresh_from_db()
@@ -583,7 +584,7 @@ class TaggedTraitDeleteDCCAnalystTest(DCCAnalystLoginTestCase):
     def test_deletes_object(self):
         """Posting 'submit' to the form correctly deletes the tagged_trait."""
         response = self.client.post(self.get_url(self.tagged_trait.pk), {'submit': ''})
-        self.assertRedirects(response, reverse('trait_browser:source:studies:detail:tagged',
+        self.assertRedirects(response, reverse('trait_browser:source:studies:pk:traits:tagged',
                                                args=[self.trait.source_dataset.source_study_version.study.pk]))
         with self.assertRaises(models.TaggedTrait.DoesNotExist):
             self.tagged_trait.refresh_from_db()
@@ -598,7 +599,7 @@ class TaggedTraitDeleteDCCAnalystTest(DCCAnalystLoginTestCase):
         # Sounds like it might be:
         # https://stackoverflow.com/questions/17678689/how-to-add-a-cancel-button-to-deleteview-in-django
         response = self.client.post(self.get_url(self.tagged_trait.pk), {})
-        self.assertRedirects(response, reverse('trait_browser:source:studies:detail:tagged',
+        self.assertRedirects(response, reverse('trait_browser:source:studies:pk:traits:tagged',
                                                args=[self.trait.source_dataset.source_study_version.study.pk]))
         with self.assertRaises(models.TaggedTrait.DoesNotExist):
             self.tagged_trait.refresh_from_db()
@@ -1424,9 +1425,9 @@ class ManyTaggedTraitsCreateByTagDCCAnalystTest(DCCAnalystLoginTestCase):
         self.assertEqual(response.status_code, 200)
 
 
-class TagsLoginRequiredTestCase(LoginRequiredTestCase):
+class TagsLoginRequiredTest(LoginRequiredTestCase):
 
-    def test_recipes_login_required(self):
+    def test_tags_login_required(self):
         """All recipes urls redirect to login page if no user is logged in."""
         self.assert_redirect_all_urls('tags')
 

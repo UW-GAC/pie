@@ -81,7 +81,7 @@ class SubcohortFactory(SourceDBTimeStampMixin, factory.DjangoModelFactory):
 
     global_study = factory.SubFactory(GlobalStudyFactory)
     i_id = factory.Sequence(lambda n: n)
-    i_name = factory.Faker('job')
+    i_name = factory.Faker('word')
 
     class Meta:
         model = models.Subcohort

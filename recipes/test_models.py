@@ -9,7 +9,7 @@ from . import factories
 from . import models
 
 
-class UnitRecipeTestCase(TestCase):
+class UnitRecipeTest(TestCase):
 
     def test_model_saving(self):
         """Test that you can save a UnitRecipe object."""
@@ -35,7 +35,7 @@ class UnitRecipeTestCase(TestCase):
             duplicate.full_clean()
 
 
-class HarmonizationRecipeTestCase(TestCase):
+class HarmonizationRecipeTest(TestCase):
 
     def test_model_saving(self):
         """Test that you can save a HarmonizationRecipe object."""

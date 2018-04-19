@@ -1,51 +1,18 @@
-{% extends 'base.html' %}
+{% extends 'trait_browser/__study_page.html' %}
 {% load render_table from django_tables2 %}
 
-
 {% block head_title %}
-     | {{ study.i_study_name }} datasets
-{% endblock %}
+  {{ block.super }} datasets
+{% endblock head_title %}
 
-{% block content %}
-    <div class="well">
-    
-    <h2>{{ study.i_study_name }} <small>dbGaP study datasets</small></h2>
+{% block subtitle %}
+  datasets
+{% endblock subtitle %}
 
-    <div class="panel panel-info">
-        <div class="panel-heading">
-            <h3 class="panel-title">Study: {{ study.i_study_name }}</h3>
-        </div>
-        <div class="panel-body">
-            <p><a class="btn btn-primary btn-lg" href="{{ study.get_search_url }}" role="button"><span class="glyphicon glyphicon-search" aria-hidden="true">
-            </span> Search variables from this study</a></p>
-            <dl class="dl-horizontal">
-                <dt>dbGaP accession</dt>
-                <dd>{{ study.phs }}</dd>
-                <dt>Dataset count</dt>
-                <dd>{{ dataset_count }}</dd>
-            </dl>
-
-        </div>
-    </div>
-
-    <div class="panel panel-default">
-        <div class="panel-heading"><h4 class="panel-title">Links to dbGaP information</h4></div>
-        <div class="panel-body">
-            <dl class="dl-horizontal">
-                <dt>Study</dt> <dd><a target="_blank" href="{{ phs_link }}">{{ phs }}</a></dd>
-            </dl>
-            <p>A study's data collection forms and and related documents can be found on dbGaP.</p>
-            <p><mark>Please keep in mind that dbGaP data summaries might include many subjects who were not included in TOPMed sequencing.</mark></p>
-        </div>
-    </div>
-
-    <div class="panel panel-default">
-        <div class="panel-heading"><h4 class="panel-title">dbGaP phenotype datasets in study</h4></div>
-        <div class="panel-body">
-            {% render_table source_dataset_table %}
-        </div>
-    </div>
-
-    </div>
-    
-{% endblock %}
+{% block after_panel %}
+  {{ block.super }}
+  <div class="panel panel-default">
+    <div class="panel-heading"><h4 class="panel-title">Datasets in this study</h4></div>
+    {% render_table source_dataset_table %}
+  </div>
+{% endblock after_panel %}

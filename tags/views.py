@@ -11,6 +11,7 @@ from dal import autocomplete
 from django_tables2 import SingleTableMixin
 
 from trait_browser.models import Study
+from trait_browser.tables import SourceTraitTableFull
 from . import forms
 from . import models
 from . import tables
@@ -27,13 +28,13 @@ class TagDetail(LoginRequiredMixin, SingleTableMixin, DetailView):
     model = models.Tag
     context_object_name = 'tag'
     template_name = 'tags/tag_detail.html'
-    table_class = tables.TagDetailTraitTable
+    table_class = SourceTraitTableFull
     context_table_name = 'tagged_trait_table'
     table_pagination = {'per_page': TABLE_PER_PAGE}
 
 
     def get_table_data(self):
-        return models.TaggedTrait.objects.filter(tag=self.object)
+        return self.object.traits.all()
 
     def get_context_data(self, **kwargs):
         context = super(TagDetail, self).get_context_data(**kwargs)
@@ -107,7 +108,7 @@ class TaggedTraitDelete(LoginRequiredMixin, PermissionRequiredMixin, TaggableStu
     redirect_unauthenticated_users = True
 
     def get_success_url(self):
-        return reverse('trait_browser:source:studies:detail:tagged',
+        return reverse('trait_browser:source:studies:pk:traits:tagged',
                        args=[self.object.trait.source_dataset.source_study_version.study.pk])
 
     def get_form_valid_message(self):
