@@ -474,14 +474,6 @@ class SourceTrait(Trait):
         # Call the "real" save method.
         super(SourceTrait, self).save(*args, **kwargs)
 
-    def is_latest_version(self):
-        """Test whether this is the latest version of a given trait.
-
-        Returns:
-            boolean True or False
-        """
-        pass
-
     def set_study_accession(self):
         """Automatically set study_accession field from the linked SourceStudyVersion."""
         return self.source_dataset.source_study_version.phs_version_string
