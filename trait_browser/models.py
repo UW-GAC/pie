@@ -109,7 +109,7 @@ class GlobalStudy(SourceDBTimeStampedModel):
     i_topmed_abbreviation = models.CharField('TOPMed abbreviation', max_length=45, blank=True, default='')
 
     class Meta:
-        verbose_name_plural = 'GlobalStudies'
+        verbose_name_plural = 'Global studies'
 
     def __str__(self):
         """Pretty printing."""
