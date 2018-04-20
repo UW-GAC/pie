@@ -730,7 +730,6 @@ class SourceTraitLookup(LoginRequiredMixin, FormView):
                                         'by phv. The version of the variable is indicated by a .v# suffix. An '
                                         'example of a variable accession is phv00000001.v1.</p>'))
         return kwargs
-        return kwargs
 
     def form_valid(self, form, **kwargs):
         self.object = form.cleaned_data['object']
