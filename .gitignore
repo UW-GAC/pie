@@ -10,3 +10,4 @@ htmlcov/*
 tmp*
 selenium_tests/chromedriver
 selenium_tests/*.jar
+*/.nfs*
