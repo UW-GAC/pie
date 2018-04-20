@@ -14,11 +14,12 @@ User = get_user_model()
 USER_FACTORY_PASSWORD = 'qwerty'
 
 
-def build_test_db(n_global_studies, n_subcohort_range, n_dataset_range, n_trait_range, n_enc_value_range):
+def build_test_db(n_global_studies=3, n_subcohort_range=(1, 2), n_dataset_range=(1, 2), n_trait_range=(3, 4),
+                  n_enc_value_range=(1, 4)):
     """Make a complete set of test data in the db, using the factory functions from above.
 
     n_subcohort_range -- tuple; (min, max) value to pick for n_subcohorts
-    n_global_studies -- int; number of global studies to simulate
+    n_global_studies -- int; number of global studies to simulate; must be 3 or more
     n_dataset_range -- tuple; (min, max) value to pick for n_datasets
     n_trait_range -- tuple; (min, max) value to pick for n_traits; min value must be 3 or more;
         number of harmonized traits will use this range, but add some for necessary test cases to include
@@ -27,7 +28,7 @@ def build_test_db(n_global_studies, n_subcohort_range, n_dataset_range, n_trait_
     if n_global_studies < 3:
         raise ValueError('{} is too small for the n_global_studies argument. Try a value higher than 2.'.format(n_global_studies))
     if n_trait_range[0] < 3:
-        raise ValueError('{} is too small for the minimum n_trait_range argument. Try a value higher than 1.'.format(n_trait_range[0]))
+        raise ValueError('{} is too small for the minimum n_trait_range argument. Try a value higher than 2.'.format(n_trait_range[0]))
     if (n_dataset_range[1] - n_dataset_range[0] < 1):
         raise ValueError('Values for n_dataset_range are too close together. max n_dataset_range must be greater than min n_dataset_range.')
     if (n_trait_range[1] - n_trait_range[0] < 1):
@@ -64,6 +65,7 @@ def build_test_db(n_global_studies, n_subcohort_range, n_dataset_range, n_trait_
         #     for sc in add_subcohorts:
         #         sd.subcohorts.add(sc)
     source_traits = trait_browser.models.SourceTrait.objects.all()
+    # Create encoded values for source traits of encoded data type.
     for st in trait_browser.models.SourceTrait.objects.filter(i_detected_type='encoded'):
         trait_browser.factories.SourceTraitEncodedValueFactory.create_batch(
             randrange(n_enc_value_range[0], n_enc_value_range[1]), source_trait=st)
@@ -238,10 +240,11 @@ def build_test_db(n_global_studies, n_subcohort_range, n_dataset_range, n_trait_
             hunit.component_batch_traits.add(source_traits[2])
     # If there's not a harmonized trait with encoded values already, make one.
     encoded_harmonized_traits = trait_browser.models.HarmonizedTrait.objects.filter(i_data_type='encoded')
-    if len(encoded_harmonized_traits) < 1:
-        htrait_to_encode = sample(list(trait_browser.models.HarmonizedTrait.objects.all()), 1)[0]
-        htrait_to_encode.i_data_type = 'encoded'
-        htrait_to_encode.save()
+    # Exclude these lines from coverage because they only sometimes run due to random choice of i_data_type in factory.
+    if len(encoded_harmonized_traits) < 1:  # pragma: no cover
+        htrait_to_encode = sample(list(trait_browser.models.HarmonizedTrait.objects.all()), 1)[0]  # pragma: no cover
+        htrait_to_encode.i_data_type = 'encoded'  # pragma: no cover
+        htrait_to_encode.save()  # pragma: no cover
     # Add encoded values to all of the encoded value traits.
     for htr in trait_browser.models.HarmonizedTrait.objects.filter(i_data_type='encoded'):
         trait_browser.factories.HarmonizedTraitEncodedValueFactory.create_batch(

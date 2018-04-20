@@ -88,6 +88,20 @@ class BuildTestDbTest(TestCase):
         with self.assertRaises(ValueError):
             build_test_db(
                 n_global_studies=3, n_subcohort_range=(2, 3), n_dataset_range=(3, 9),
+                n_trait_range=(23, 16), n_enc_value_range=(2, 9))
+
+    def test_build_db_trait_range_error2(self):
+        """Test that calling build_test_db() with invalid values for n_trait_range raises ValueError."""
+        with self.assertRaises(ValueError):
+            build_test_db(
+                n_global_studies=3, n_subcohort_range=(2, 3), n_dataset_range=(3, 9),
+                n_trait_range=(1, 16), n_enc_value_range=(2, 9))
+
+    def test_build_db_dataset_range_error(self):
+        """Test that calling build_test_db() with invalid values for n_dataset_range raises ValueError."""
+        with self.assertRaises(ValueError):
+            build_test_db(
+                n_global_studies=3, n_subcohort_range=(2, 3), n_dataset_range=(9, 3),
                 n_trait_range=(22, 16), n_enc_value_range=(2, 9))
 
     def test_build_db1(self):
@@ -128,7 +142,22 @@ class BuildTestDbTest(TestCase):
         """Test that building a db of fake data works. Run the same test several times with different values."""
         build_test_db(
             n_global_studies=3, n_subcohort_range=(1, 2), n_dataset_range=(1, 2),
-            n_trait_range=(3, 4), n_enc_value_range=(1, 2))
+            n_trait_range=(3, 3), n_enc_value_range=(1, 2))
+        # Make sure there are saved objects for each of the models.
+        self.assertTrue(trait_browser.models.GlobalStudy.objects.count() > 0)
+        self.assertTrue(trait_browser.models.Study.objects.count() > 0)
+        self.assertTrue(trait_browser.models.Subcohort.objects.count() > 0)
+        self.assertTrue(trait_browser.models.SourceStudyVersion.objects.count() > 0)
+        self.assertTrue(trait_browser.models.SourceDataset.objects.count() > 0)
+        self.assertTrue(trait_browser.models.SourceTrait.objects.count() > 0)
+        self.assertTrue(trait_browser.models.SourceTraitEncodedValue.objects.count() > 0)
+        self.assertTrue(trait_browser.models.HarmonizedTraitSet.objects.count() > 0)
+        self.assertTrue(trait_browser.models.HarmonizedTrait.objects.count() > 0)
+        self.assertTrue(trait_browser.models.HarmonizedTraitEncodedValue.objects.count() > 0)
+
+    def test_build_db_defaults(self):
+        """Test that building a db of fake data works with the default arg values."""
+        build_test_db()
         # Make sure there are saved objects for each of the models.
         self.assertTrue(trait_browser.models.GlobalStudy.objects.count() > 0)
         self.assertTrue(trait_browser.models.Study.objects.count() > 0)
