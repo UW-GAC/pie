@@ -177,7 +177,7 @@ class LoginRequiredTestCase(TestCase):
                     # Django 1.9+, so it will have to wait until the upgrade.
                     final_url = url.replace('<pk>', '1')
                 else:
-                    raise ValueError('URL {} has a regex that is not <pk>'.format(url))
+                    raise ValueError('URL {} has a regex that is not <pk>'.format(url))  # pragma: no cover
             response = self.client.get(final_url)
             self.assertRedirects(response, reverse('login') + '?next=' + final_url,
                                  msg_prefix='URL {} is not login required'.format(final_url))
