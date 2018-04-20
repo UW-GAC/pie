@@ -16,24 +16,6 @@ DELETE_BUTTON_TEMPLATE = """
 """
 
 
-class BootstrapBooleanColumn(tables.BooleanColumn):
-    """django-tables2 column class for nice display of boolean values with glyphicons.
-
-    Copied from phenotype_visit_recorder's visit_tracker.tables.
-    """
-
-    def render(self, value):
-        """Define a column using Bootstrap styling to display boolean data."""
-        value = bool(value)
-        html = "<span %s></span>"
-        class_name = ""
-        if value:
-            class_name = "glyphicon glyphicon-ok"
-        attrs = {'class': class_name}
-        attrs.update(self.attrs.get('span', {}))
-        return mark_safe(html % (AttributeDict(attrs).as_html()))
-
-
 class TagTable(tables.Table):
     """Table for displaying all tags."""
 
