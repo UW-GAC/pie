@@ -142,7 +142,7 @@ class BuildTestDbTest(TestCase):
         """Test that building a db of fake data works. Run the same test several times with different values."""
         build_test_db(
             n_global_studies=3, n_subcohort_range=(1, 2), n_dataset_range=(1, 2),
-            n_trait_range=(3, 3), n_enc_value_range=(1, 2))
+            n_trait_range=(3, 4), n_enc_value_range=(1, 2))
         # Make sure there are saved objects for each of the models.
         self.assertTrue(trait_browser.models.GlobalStudy.objects.count() > 0)
         self.assertTrue(trait_browser.models.Study.objects.count() > 0)
