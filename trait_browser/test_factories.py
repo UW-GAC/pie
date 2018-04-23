@@ -29,7 +29,7 @@ class GlobalStudyFactoryTest(TestCase):
 
     def test_global_study_factory_create_batch(self):
         """A GlobalStudy instance is returned by GlobalStudyFactory.create_batch."""
-        global_studies = factories.GlobalStudyFactory.create_batch(1000)
+        global_studies = factories.GlobalStudyFactory.create_batch(100)
         for one in global_studies:
             self.assertIsInstance(one, models.GlobalStudy)
 
@@ -54,7 +54,7 @@ class StudyFactoryTest(TestCase):
 
     def test_study_factory_create_batch(self):
         """A Study instance is returned by StudyFactory.create_batch."""
-        studies = factories.StudyFactory.create_batch(1000)
+        studies = factories.StudyFactory.create_batch(100)
         for one in studies:
             self.assertIsInstance(one, models.Study)
 
@@ -79,7 +79,7 @@ class SourceStudyVersionFactoryTest(TestCase):
 
     def test_source_study_version_factory_create_batch(self):
         """A SourceStudyVersion instance is returned by SourceStudyVersionFactory.create_batch."""
-        source_study_versions = factories.SourceStudyVersionFactory.create_batch(1000)
+        source_study_versions = factories.SourceStudyVersionFactory.create_batch(100)
         for one in source_study_versions:
             self.assertIsInstance(one, models.SourceStudyVersion)
 
@@ -104,7 +104,7 @@ class SubcohortFactoryTest(TestCase):
 
     def test_subcohort_factory_create_batch(self):
         """A Subcohort instance is returned by SubcohortFactory.create_batch."""
-        subcohorts = factories.SubcohortFactory.create_batch(1000)
+        subcohorts = factories.SubcohortFactory.create_batch(100)
         for one in subcohorts:
             self.assertIsInstance(one, models.Subcohort)
 
@@ -129,7 +129,7 @@ class SourceDatasetFactoryTest(TestCase):
 
     def test_source_dataset_factory_create_batch(self):
         """A SourceDataset instance is returned by SourceDatasetFactory.create_batch."""
-        source_datasets = factories.SourceDatasetFactory.create_batch(1000)
+        source_datasets = factories.SourceDatasetFactory.create_batch(100)
         for one in source_datasets:
             self.assertIsInstance(one, models.SourceDataset)
 
@@ -160,7 +160,7 @@ class HarmonizedTraitSetFactoryTest(TestCase):
 
     def test_harmonized_trait_set_factory_create_batch(self):
         """A HarmonizedTraitSet instance is returned by HarmonizedTraitSetFactory.create_batch."""
-        harmonized_trait_sets = factories.HarmonizedTraitSetFactory.create_batch(1000)
+        harmonized_trait_sets = factories.HarmonizedTraitSetFactory.create_batch(100)
         for one in harmonized_trait_sets:
             self.assertIsInstance(one, models.HarmonizedTraitSet)
 
@@ -185,7 +185,7 @@ class AllowedUpdateReasonFactoryTest(TestCase):
 
     def test_allowed_update_reason_factory_create_batch(self):
         """An AllowedUpdateReason instance is returned by AllowedUpdateReasonFactory.create_batch."""
-        allowed_update_reasons = factories.AllowedUpdateReasonFactory.create_batch(1000)
+        allowed_update_reasons = factories.AllowedUpdateReasonFactory.create_batch(100)
         for one in allowed_update_reasons:
             self.assertIsInstance(one, models.AllowedUpdateReason)
 
@@ -210,7 +210,7 @@ class HarmonizedTraitSetVersionFactoryTest(TestCase):
 
     def test_harmonized_trait_set_version_factory_create_batch(self):
         """A HarmonizedTraitSetVersion instance is returned by HarmonizedTraitSetVersionFactory.create_batch."""
-        harmonized_trait_set_versions = factories.HarmonizedTraitSetVersionFactory.create_batch(1000)
+        harmonized_trait_set_versions = factories.HarmonizedTraitSetVersionFactory.create_batch(100)
         for one in harmonized_trait_set_versions:
             self.assertIsInstance(one, models.HarmonizedTraitSetVersion)
 
@@ -235,7 +235,7 @@ class HarmonizationUnitFactoryTest(TestCase):
 
     def test_create_batch(self):
         """A HarmonizationUnit instance is returned by HarmonizationUnitFactory.create_batch."""
-        harmonization_units = factories.HarmonizationUnitFactory.create_batch(1000)
+        harmonization_units = factories.HarmonizationUnitFactory.create_batch(100)
         for one in harmonization_units:
             self.assertIsInstance(one, models.HarmonizationUnit)
 
@@ -261,8 +261,8 @@ class HarmonizationUnitFactoryTest(TestCase):
 
     def test_create_with_component_source_and_harmonized_and_batch_traits(self):
         """Passing component_source_traits and component_harmonized_trait_sets to factory creation works."""
-        source_traits = factories.SourceTraitFactory.create_batch(1000)
-        batch_traits = factories.SourceTraitFactory.create_batch(1000)
+        source_traits = factories.SourceTraitFactory.create_batch(100)
+        batch_traits = factories.SourceTraitFactory.create_batch(100)
         harmonized_trait_set_versions = factories.HarmonizedTraitSetVersionFactory.create_batch(10)
         harmonization_unit = factories.HarmonizationUnitFactory.create(
             component_source_traits=source_traits, component_batch_traits=batch_traits,
@@ -293,7 +293,7 @@ class SourceTraitFactoryTest(TestCase):
 
     def test_source_trait_factory_create_batch(self):
         """A SourceTrait instance is returned by SourceTraitFactory.create_batch."""
-        source_traits = factories.SourceTraitFactory.create_batch(1000)
+        source_traits = factories.SourceTraitFactory.create_batch(100)
         for one in source_traits:
             self.assertIsInstance(one, models.SourceTrait)
 
@@ -318,7 +318,7 @@ class HarmonizedTraitFactoryTest(TestCase):
 
     def test_create_batch(self):
         """A HarmonizedTrait instance is returned by HarmonizedTraitFactory.create_batch."""
-        harmonized_traits = factories.HarmonizedTraitFactory.create_batch(1000)
+        harmonized_traits = factories.HarmonizedTraitFactory.create_batch(100)
         for one in harmonized_traits:
             self.assertIsInstance(one, models.HarmonizedTrait)
 
@@ -350,8 +350,8 @@ class HarmonizedTraitFactoryTest(TestCase):
 
     def test_create_with_component_source_and_harmonized_and_batch_traits(self):
         """Passing component_batch_traits and component_source_traits to factory creation works."""
-        source_traits = factories.SourceTraitFactory.create_batch(1000)
-        batch_traits = factories.SourceTraitFactory.create_batch(1000)
+        source_traits = factories.SourceTraitFactory.create_batch(100)
+        batch_traits = factories.SourceTraitFactory.create_batch(100)
         harmonized_trait_set_versions = factories.HarmonizedTraitSetVersionFactory.create_batch(10)
         harmonized_trait = factories.HarmonizedTraitFactory.create(
             component_source_traits=source_traits, component_batch_traits=batch_traits,
@@ -382,7 +382,7 @@ class SourceTraitEncodedValueFactoryTest(TestCase):
 
     def test_source_trait_encoded_value_factory_create_batch(self):
         """A SourceTraitEncodedValue instance is returned by SourceTraitEncodedValueFactory.create_batch."""
-        source_trait_encoded_values = factories.SourceTraitEncodedValueFactory.create_batch(1000)
+        source_trait_encoded_values = factories.SourceTraitEncodedValueFactory.create_batch(100)
         for one in source_trait_encoded_values:
             self.assertIsInstance(one, models.SourceTraitEncodedValue)
 
@@ -407,6 +407,6 @@ class HarmonizedTraitEncodedValueFactoryTest(TestCase):
 
     def test_harmonized_trait_encoded_value_factory_create_batch(self):
         """A HarmonizedTraitEncodedValue instance is returned by HarmonizedTraitEncodedValueFactory.create_batch."""
-        harmonized_trait_encoded_values = factories.HarmonizedTraitEncodedValueFactory.create_batch(1000)
+        harmonized_trait_encoded_values = factories.HarmonizedTraitEncodedValueFactory.create_batch(100)
         for one in harmonized_trait_encoded_values:
             self.assertIsInstance(one, models.HarmonizedTraitEncodedValue)
