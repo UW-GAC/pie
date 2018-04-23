@@ -8,4 +8,6 @@ __pycache__
 htmlcov/*
 .*.cnf
 tmp*
-
+selenium_tests/chromedriver
+selenium_tests/*.jar
+*/.nfs*

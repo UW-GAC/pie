@@ -56,7 +56,7 @@ class SearchFormMixin(FormMixin):
     def search(self, **search_kwargs):
         """Define a search method to be implemented by Views using this Mixin."""
         # Ensure that View classes implement their own search method by raising an exception.
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: no cover
 
     def form_valid(self, form):
         """Override form_valid method to process form and add results to the search page."""
@@ -729,7 +729,6 @@ class SourceTraitLookup(LoginRequiredMixin, FormView):
             kwargs['text'] = mark_safe(('<p>Each variable on dbGaP is assigned a unique numeric identifier prefixed '
                                         'by phv. The version of the variable is indicated by a .v# suffix. An '
                                         'example of a variable accession is phv00000001.v1.</p>'))
-        return kwargs
         return kwargs
 
     def form_valid(self, form, **kwargs):

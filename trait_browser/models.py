@@ -109,7 +109,7 @@ class GlobalStudy(SourceDBTimeStampedModel):
     i_topmed_abbreviation = models.CharField('TOPMed abbreviation', max_length=45, blank=True, default='')
 
     class Meta:
-        verbose_name_plural = 'GlobalStudies'
+        verbose_name_plural = 'Global studies'
 
     def __str__(self):
         """Pretty printing."""
@@ -473,14 +473,6 @@ class SourceTrait(Trait):
         self.dbgap_dataset_link = self.set_dbgap_dataset_link()
         # Call the "real" save method.
         super(SourceTrait, self).save(*args, **kwargs)
-
-    def is_latest_version(self):
-        """Test whether this is the latest version of a given trait.
-
-        Returns:
-            boolean True or False
-        """
-        pass
 
     def set_study_accession(self):
         """Automatically set study_accession field from the linked SourceStudyVersion."""
