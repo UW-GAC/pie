@@ -14,9 +14,14 @@ def set_groups_and_permissions_for_tags(apps, schema_editor):
     # https://code.djangoproject.com/ticket/23422#comment:20
     db_alias = schema_editor.connection.alias
     try:
-        emit_post_migrate_signal(2, False, 'default', db_alias)
-    except TypeError:  # Django < 1.8
-        emit_post_migrate_signal([], 2, False, 'default', db_alias)
+        emit_post_migrate_signal(2, False, db_alias)
+    except TypeError:
+        # Django < 1.9
+        try:
+            # Django 1.8
+            emit_post_migrate_signal(2, False, 'default', db_alias)
+        except TypeError:  # Django < 1.8
+            emit_post_migrate_signal([], 2, False, 'default', db_alias)
     Group = apps.get_model('auth', 'Group')
     Permission = apps.get_model('auth', 'Permission')
     # Create the phenotype_taggers group.
