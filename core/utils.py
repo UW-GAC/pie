@@ -152,16 +152,45 @@ class SuperuserLoginTestCase(TestCase):
         self.client.login(username=self.user.email, password=self.user_password)
 
 
+# class LoginRequiredTestCase(TestCase):
+#     """Tests all views in an app to ensure that they are using login_required."""
+# 
+#     @classmethod
+#     def setUpClass(cls):
+#         super(LoginRequiredTestCase, cls).setUpClass()
+#         # Create a bunch of test data first, so that pk-specific URLs still work.
+#         build_test_db(
+#             n_global_studies=3, n_subcohort_range=(2, 3), n_dataset_range=(3, 9),
+#             n_trait_range=(3, 16), n_enc_value_range=(2, 9))
+# 
+#     def assert_redirect_all_urls(self, app_name):
+#         """Use this in a subclass to ensure all urls from urlpatterns redirect to login."""
+#         url_list = get_app_urls(app_name)
+#         for url in url_list:
+#             final_url = url
+#             if '<' in url and '>' in url:
+#                 if '<pk>' in url:
+#                     print(url)
+#                     # print(resolve(url.replace('<pk>', '1')).func.view_class)
+#                     # The URL test will fail if a pk of 1 doesn't exist. I can use the above call to get the view
+#                     # class from the URL, and then use that to get a valid pk. BUT it will only work in
+#                     # Django 1.9+, so it will have to wait until the upgrade.
+#                     final_url = url.replace('<pk>', '1')
+#                 else:
+#                     raise ValueError('URL {} has a regex that is not <pk>'.format(url))  # pragma: no cover
+#             response = self.client.get(final_url)
+#             self.assertRedirects(response, reverse('login') + '?next=' + final_url,
+#                                  msg_prefix='URL {} is not login required'.format(final_url))
+#             # print('URL {} passes login_required test...'.format(url))
+
 class LoginRequiredTestCase(TestCase):
-    """Tests all views in an app to ensure that they are using login_required."""
+    """Tests all views in this app to ensure that they are using login_required."""
 
     @classmethod
     def setUpClass(cls):
         super(LoginRequiredTestCase, cls).setUpClass()
         # Create a bunch of test data first, so that pk-specific URLs still work.
-        build_test_db(
-            n_global_studies=3, n_subcohort_range=(2, 3), n_dataset_range=(3, 9),
-            n_trait_range=(3, 16), n_enc_value_range=(2, 9))
+        build_test_db()
 
     def assert_redirect_all_urls(self, app_name):
         """Use this in a subclass to ensure all urls from urlpatterns redirect to login."""
@@ -170,14 +199,15 @@ class LoginRequiredTestCase(TestCase):
             final_url = url
             if '<' in url and '>' in url:
                 if '<pk>' in url:
-                    print(url)
-                    # print(resolve(url.replace('<pk>', '1')).func.view_class)
-                    # The URL test will fail if a pk of 1 doesn't exist. I can use the above call to get the view
-                    # class from the URL, and then use that to get a valid pk. BUT it will only work in
-                    # Django 1.9+, so it will have to wait until the upgrade.
-                    final_url = url.replace('<pk>', '1')
+                    pk = 1
+                    final_url = url.replace('<pk>', str(pk))
+                    # While the url response gives a 404 error...
+                    while self.client.get(final_url).status_code == 404:
+                        # ...increment the pk until you find something that gives a different response code
+                        pk += 1
+                        final_url = url.replace('<pk>', str(pk))
                 else:
-                    raise ValueError('URL {} has a regex that is not <pk>'.format(url))  # pragma: no cover
+                    raise ValueError('URL {} has a regex that is not <pk>'.format(url))
             response = self.client.get(final_url)
             self.assertRedirects(response, reverse('login') + '?next=' + final_url,
                                  msg_prefix='URL {} is not login required'.format(final_url))
