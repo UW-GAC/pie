@@ -674,14 +674,15 @@ class StudyLookup(LoginRequiredMixin, FormView):
     form_class = forms.StudyLookupForm
 
     def get_context_data(self, **kwargs):
-        if 'object_type' not in kwargs:
-            kwargs['object_type'] = 'study'
-        if 'text' not in kwargs:
-            kwargs['text'] = mark_safe(('<p>Each study on dbGaP is assigned a unique numeric identifier prefixed by '
-                                        'phs. The version of the study is indicated both by a .v# suffix and by a '
-                                        '.p# suffix describing the study participant set. An example of a study '
-                                        'accession is phs000001.v1.p1.</p>'))
-        return kwargs
+        context = super(StudyLookup, self).get_context_data(**kwargs)
+        if 'object_type' not in context:
+            context['object_type'] = 'study'
+        if 'text' not in context:
+            context['text'] = mark_safe(('<p>Each study on dbGaP is assigned a unique numeric identifier prefixed by '
+                                         'phs. The version of the study is indicated both by a .v# suffix and by a '
+                                         '.p# suffix describing the study participant set. An example of a study '
+                                         'accession is phs000001.v1.p1.</p>'))
+        return context
 
     def form_valid(self, form, **kwargs):
         self.object = form.cleaned_data['object']
@@ -699,13 +700,14 @@ class SourceDatasetLookup(LoginRequiredMixin, FormView):
     form_class = forms.SourceDatasetLookupForm
 
     def get_context_data(self, **kwargs):
-        if 'object_type' not in kwargs:
-            kwargs['object_type'] = 'dataset'
-        if 'text' not in kwargs:
-            kwargs['text'] = mark_safe(('<p>Each dataset on dbGaP is assigned a unique numeric identifier prefixed '
-                                        'by pht. The version of the dataset is indicated by a .v# suffix. An example '
-                                        'of a dataset accession is pht000001.v1.</p>'))
-        return kwargs
+        context = super(SourceDatasetLookup, self).get_context_data(**kwargs)
+        if 'object_type' not in context:
+            context['object_type'] = 'dataset'
+        if 'text' not in context:
+            context['text'] = mark_safe(('<p>Each dataset on dbGaP is assigned a unique numeric identifier prefixed '
+                                         'by pht. The version of the dataset is indicated by a .v# suffix. An example '
+                                         'of a dataset accession is pht000001.v1.</p>'))
+        return context
 
     def form_valid(self, form, **kwargs):
         self.object = form.cleaned_data['object']
@@ -723,13 +725,14 @@ class SourceTraitLookup(LoginRequiredMixin, FormView):
     form_class = forms.SourceTraitLookupForm
 
     def get_context_data(self, **kwargs):
-        if 'object_type' not in kwargs:
-            kwargs['object_type'] = 'variable'
-        if 'text' not in kwargs:
-            kwargs['text'] = mark_safe(('<p>Each variable on dbGaP is assigned a unique numeric identifier prefixed '
-                                        'by phv. The version of the variable is indicated by a .v# suffix. An '
-                                        'example of a variable accession is phv00000001.v1.</p>'))
-        return kwargs
+        context = super(SourceTraitLookup, self).get_context_data(**kwargs)
+        if 'object_type' not in context:
+            context['object_type'] = 'variable'
+        if 'text' not in context:
+            context['text'] = mark_safe(('<p>Each variable on dbGaP is assigned a unique numeric identifier prefixed '
+                                         'by phv. The version of the variable is indicated by a .v# suffix. An '
+                                         'example of a variable accession is phv00000001.v1.</p>'))
+        return context
 
     def form_valid(self, form, **kwargs):
         self.object = form.cleaned_data['object']
