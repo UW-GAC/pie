@@ -30,7 +30,7 @@ from .staging import *  # noqa: F403
 
 # DEBUG SETTINGS
 DEBUG = False
-ALLOWED_HOSTS = ['topmedphenotypes.org']
+ALLOWED_HOSTS = ('topmedphenotypes.org', )
 
 
 # DATABASE SETTINGS
