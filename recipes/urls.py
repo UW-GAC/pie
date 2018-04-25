@@ -8,19 +8,22 @@ from django.conf.urls import include, url
 
 from .views import *
 
-unit_patterns = [
+
+app_name = 'recipes'
+
+unit_patterns = ([
     url(r'^add/$', CreateUnitRecipe.as_view(), name='create'),
     url(r'^(?P<pk>\d+)/edit/$', UpdateUnitRecipe.as_view(), name='edit'),
     url(r'^(?P<pk>\d+)/$', UnitRecipeDetail.as_view(), name='detail'),
-]
+], 'unit', )
 
-harmonization_patterns = [
+harmonization_patterns = ([
     url(r'^add/$', CreateHarmonizationRecipe.as_view(), name='create'),
     url(r'^(?P<pk>\d+)/edit/$', UpdateHarmonizationRecipe.as_view(), name='edit'),
     url(r'^(?P<pk>\d+)/$', HarmonizationRecipeDetail.as_view(), name='detail'),
-]
+], 'harmonization', )
 
 urlpatterns = [
-    url(r'^unit/', include(unit_patterns, namespace='unit')),
-    url(r'^harmonization/', include(harmonization_patterns, namespace='harmonization')),
+    url(r'^unit/', include(unit_patterns)),
+    url(r'^harmonization/', include(harmonization_patterns)),
 ]

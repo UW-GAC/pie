@@ -33,10 +33,10 @@ urlpatterns = [
     # 3rd-party apps.
     url(r'^auth/', include('authtools.urls')),
     # Custom apps.
-    url(r'^phenotypes/', include('trait_browser.urls', namespace='trait_browser')),
-    url(r'^profiles/', include('profiles.urls', namespace='profiles')),
-    url(r'^recipes/', include('recipes.urls', namespace='recipes')),
-    url(r'^tags/', include('tags.urls', namespace='tags')),
+    url(r'^phenotypes/', include('trait_browser.urls')),
+    url(r'^profiles/', include('profiles.urls')),
+    url(r'^recipes/', include('recipes.urls')),
+    url(r'^tags/', include('tags.urls')),
 ]
 
 # Include URLs for django-debug-toolbar if DEBUG=True
