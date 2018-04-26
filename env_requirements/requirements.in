@@ -1,4 +1,4 @@
-Django==1.9.13
+Django==1.10.8
 coverage
 django-authtools
 django-autocomplete-light
