@@ -2,6 +2,7 @@
 from __future__ import unicode_literals
 
 from django.db import migrations, models
+import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
@@ -68,7 +69,7 @@ class Migration(migrations.Migration):
                 ('i_id', models.PositiveIntegerField(db_column='i_id', serialize=False, primary_key=True, verbose_name='id')),
                 ('i_category', models.CharField(max_length=45, verbose_name='category')),
                 ('i_value', models.CharField(max_length=1000, verbose_name='value')),
-                ('harmonized_trait', models.ForeignKey(to='trait_browser.HarmonizedTrait')),
+                ('harmonized_trait', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='trait_browser.HarmonizedTrait')),
             ],
             options={
                 'abstract': False,
@@ -166,7 +167,7 @@ class Migration(migrations.Migration):
                 ('dbgap_study_link', models.URLField()),
                 ('dbgap_variable_link', models.URLField()),
                 ('dbgap_dataset_link', models.URLField()),
-                ('source_dataset', models.ForeignKey(to='trait_browser.SourceDataset')),
+                ('source_dataset', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='trait_browser.SourceDataset')),
             ],
             options={
                 'abstract': False,
@@ -182,7 +183,7 @@ class Migration(migrations.Migration):
                 ('i_id', models.PositiveIntegerField(db_column='i_id', serialize=False, primary_key=True, verbose_name='id')),
                 ('i_category', models.CharField(max_length=45, verbose_name='category')),
                 ('i_value', models.CharField(max_length=1000, verbose_name='value')),
-                ('source_trait', models.ForeignKey(to='trait_browser.SourceTrait')),
+                ('source_trait', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='trait_browser.SourceTrait')),
             ],
             options={
                 'abstract': False,
@@ -199,7 +200,7 @@ class Migration(migrations.Migration):
                 ('i_study_name', models.CharField(max_length=200, verbose_name='study name')),
                 ('phs', models.CharField(max_length=9)),
                 ('dbgap_latest_version_link', models.CharField(max_length=200)),
-                ('global_study', models.ForeignKey(to='trait_browser.GlobalStudy')),
+                ('global_study', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='trait_browser.GlobalStudy')),
             ],
             options={
                 'verbose_name_plural': 'Studies',
@@ -214,7 +215,7 @@ class Migration(migrations.Migration):
                 ('i_date_changed', models.DateTimeField()),
                 ('i_id', models.PositiveIntegerField(db_column='i_id', serialize=False, primary_key=True, verbose_name='id')),
                 ('i_name', models.CharField(max_length=45, verbose_name='name')),
-                ('global_study', models.ForeignKey(to='trait_browser.GlobalStudy')),
+                ('global_study', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='trait_browser.GlobalStudy')),
             ],
             options={
                 'abstract': False,
@@ -223,12 +224,12 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='sourcestudyversion',
             name='study',
-            field=models.ForeignKey(to='trait_browser.Study'),
+            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='trait_browser.Study'),
         ),
         migrations.AddField(
             model_name='sourcedataset',
             name='source_study_version',
-            field=models.ForeignKey(to='trait_browser.SourceStudyVersion'),
+            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='trait_browser.SourceStudyVersion'),
         ),
         migrations.AddField(
             model_name='sourcedataset',
@@ -258,7 +259,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='harmonizedtrait',
             name='harmonized_trait_set',
-            field=models.ForeignKey(to='trait_browser.HarmonizedTraitSet'),
+            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='trait_browser.HarmonizedTraitSet'),
         ),
         migrations.AddField(
             model_name='harmonizationunit',
@@ -283,6 +284,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='harmonizationunit',
             name='harmonized_trait_set',
-            field=models.ForeignKey(to='trait_browser.HarmonizedTraitSet'),
+            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='trait_browser.HarmonizedTraitSet'),
         ),
     ]

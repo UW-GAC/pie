@@ -30,12 +30,15 @@ class UnitRecipe(TimeStampedModel):
     )
 
     age_variables = models.ManyToManyField('trait_browser.SourceTrait', related_name='units_as_age_trait', blank=True)
-    batch_variables = models.ManyToManyField('trait_browser.SourceTrait', related_name='units_as_batch_trait', blank=True)
-    phenotype_variables = models.ManyToManyField('trait_browser.SourceTrait', related_name='units_as_phenotype_trait', blank=True)
-    harmonized_phenotype_variables = models.ManyToManyField('trait_browser.HarmonizedTrait', related_name='units_as_phenotype_trait',
-                                                            blank=True)
-    creator = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='units_created_by')
-    last_modifier = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='units_last_modified_by')
+    batch_variables = models.ManyToManyField(
+        'trait_browser.SourceTrait', related_name='units_as_batch_trait', blank=True)
+    phenotype_variables = models.ManyToManyField(
+        'trait_browser.SourceTrait', related_name='units_as_phenotype_trait', blank=True)
+    harmonized_phenotype_variables = models.ManyToManyField(
+        'trait_browser.HarmonizedTrait', related_name='units_as_phenotype_trait', blank=True)
+    creator = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='units_created_by', on_delete=models.CASCADE)
+    last_modifier = models.ForeignKey(
+        settings.AUTH_USER_MODEL, related_name='units_last_modified_by', on_delete=models.CASCADE)
     instructions = models.TextField(verbose_name='harmonization instructions')
     version = models.IntegerField(default=1)
     name = models.CharField(max_length=255, verbose_name='harmonization unit name')
@@ -63,8 +66,10 @@ class HarmonizationRecipe(TimeStampedModel):
 
     name = models.CharField(max_length=255, verbose_name='harmonization recipe name')
     units = models.ManyToManyField(UnitRecipe, verbose_name='harmonization units')
-    creator = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='harmonization_recipes_created_by')
-    last_modifier = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='harmonization_recipes_last_modified_by')
+    creator = models.ForeignKey(
+        settings.AUTH_USER_MODEL, related_name='harmonization_recipes_created_by', on_delete=models.CASCADE)
+    last_modifier = models.ForeignKey(
+        settings.AUTH_USER_MODEL, related_name='harmonization_recipes_last_modified_by', on_delete=models.CASCADE)
     version = models.IntegerField(default=1)
     target_name = models.CharField(
         max_length=50, verbose_name='target phenotype variable name', validators=[validate_alphanumeric_underscore])
