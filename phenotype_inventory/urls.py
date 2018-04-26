@@ -28,7 +28,7 @@ urlpatterns = [
     # Django-provided apps.
     url(r'^pages/', include('django.contrib.flatpages.urls')),  # Flat pages.
     url(r'^admin/doc/', include('django.contrib.admindocs.urls')),  # Documentation in the admin.
-    url(r'^admin/', include(admin.site.urls)),  # Admin interface.
+    url(r'^admin/', admin.site.urls),  # Admin interface.
     url(r'^', include('django.contrib.auth.urls')),  # Authentication views.
     # 3rd-party apps.
     url(r'^auth/', include('authtools.urls')),
