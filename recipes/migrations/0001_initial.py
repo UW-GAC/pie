@@ -2,6 +2,7 @@
 from __future__ import unicode_literals
 
 from django.db import migrations, models
+import django.db.models.deletion
 from django.conf import settings
 import django.core.validators
 
@@ -26,8 +27,8 @@ class Migration(migrations.Migration):
                 ('target_description', models.TextField(verbose_name='target phenotype variable description')),
                 ('encoded_values', models.TextField(blank=True, validators=[django.core.validators.RegexValidator(message='Invalid format for encoded values definitions.', regex='^(.*: .*\\n)*(.*: .*)$')], verbose_name='definition of encoded values for target variable')),
                 ('measurement_unit', models.CharField(max_length=100, verbose_name='unit of measurement')),
-                ('creator', models.ForeignKey(related_name='harmonization_recipes_created_by', to=settings.AUTH_USER_MODEL)),
-                ('last_modifier', models.ForeignKey(related_name='harmonization_recipes_last_modified_by', to=settings.AUTH_USER_MODEL)),
+                ('creator', models.ForeignKey(related_name='harmonization_recipes_created_by', to=settings.AUTH_USER_MODEL, on_delete=django.db.models.deletion.CASCADE)),
+                ('last_modifier', models.ForeignKey(related_name='harmonization_recipes_last_modified_by', to=settings.AUTH_USER_MODEL, on_delete=django.db.models.deletion.CASCADE)),
             ],
         ),
         migrations.CreateModel(
@@ -42,9 +43,9 @@ class Migration(migrations.Migration):
                 ('type', models.CharField(max_length=100, choices=[('unit_recode', 'recode variable for different units of measurement'), ('category_recode', 'recode variable for new encoded value category definitions'), ('formula', 'calculate variable from a formula'), ('other', 'other')], verbose_name='harmonization type')),
                 ('age_variables', models.ManyToManyField(blank=True, related_name='units_as_age_trait', to='trait_browser.SourceTrait')),
                 ('batch_variables', models.ManyToManyField(blank=True, related_name='units_as_batch_trait', to='trait_browser.SourceTrait')),
-                ('creator', models.ForeignKey(related_name='units_created_by', to=settings.AUTH_USER_MODEL)),
+                ('creator', models.ForeignKey(related_name='units_created_by', to=settings.AUTH_USER_MODEL, on_delete=django.db.models.deletion.CASCADE)),
                 ('harmonized_phenotype_variables', models.ManyToManyField(blank=True, related_name='units_as_phenotype_trait', to='trait_browser.HarmonizedTrait')),
-                ('last_modifier', models.ForeignKey(related_name='units_last_modified_by', to=settings.AUTH_USER_MODEL)),
+                ('last_modifier', models.ForeignKey(related_name='units_last_modified_by', to=settings.AUTH_USER_MODEL, on_delete=django.db.models.deletion.CASCADE)),
                 ('phenotype_variables', models.ManyToManyField(blank=True, related_name='units_as_phenotype_trait', to='trait_browser.SourceTrait')),
             ],
             options={

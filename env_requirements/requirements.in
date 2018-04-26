@@ -1,6 +1,5 @@
-Django==1.8.19
+Django==1.9.13
 coverage
-django-admin-bootstrapped
 django-authtools
 django-autocomplete-light
 django-braces

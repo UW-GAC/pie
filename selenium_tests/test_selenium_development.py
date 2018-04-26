@@ -212,7 +212,7 @@ class AdminTestCase(SuperuserAutoLoginSeleniumTestCase):
         self.assertIn('administration', body.text)
 
     def test_trait_browser_admin(self):
-        self.selenium.find_element_by_link_text('Trait_Browser').click()
+        self.selenium.find_element_by_xpath("//a[@title='Models in the Trait_Browser application']").click()
         time.sleep(1)
 
         # Navigate to each of the admin model interfaces in turn.
@@ -267,7 +267,7 @@ class AdminTestCase(SuperuserAutoLoginSeleniumTestCase):
         self.selenium.find_element_by_link_text('Subcohorts').click()
 
     def test_recipes_admin(self):
-        self.selenium.find_element_by_link_text('Recipes').click()
+        self.selenium.find_element_by_xpath("//a[@title='Models in the Recipes application']").click()
         time.sleep(1)
 
         # Navigate to each of the admin model interfaces in turn.
@@ -278,7 +278,7 @@ class AdminTestCase(SuperuserAutoLoginSeleniumTestCase):
         self.selenium.find_element_by_link_text('Harmonization recipes').click()
 
     def test_tags_admin(self):
-        self.selenium.find_element_by_link_text('Tags').click()
+        self.selenium.find_element_by_xpath("//a[@title='Models in the Tags application']").click()
         time.sleep(1)
 
         # Navigate to each of the admin model interfaces in turn.
@@ -290,7 +290,7 @@ class AdminTestCase(SuperuserAutoLoginSeleniumTestCase):
 
     def test_profiles_admin(self):
         # Navigate to each of the admin model interfaces in turn.
-        self.selenium.find_element_by_link_text('Profiles').click()
+        self.selenium.find_element_by_xpath("//a[@title='Models in the Profiles application']").click()
         time.sleep(1)
 
         self.selenium.find_element_by_link_text('Profiles').click()

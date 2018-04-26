@@ -2,6 +2,7 @@
 from __future__ import unicode_literals
 
 from django.db import migrations, models
+import django.db.models.deletion
 from django.conf import settings
 
 
@@ -47,7 +48,7 @@ class Migration(migrations.Migration):
                 ('created', models.DateTimeField(auto_now_add=True)),
                 ('modified', models.DateTimeField(auto_now=True)),
                 ('saved_searches', models.ManyToManyField(through='profiles.SavedSearchMeta', to='profiles.Search')),
-                ('user', models.ForeignKey(to=settings.AUTH_USER_MODEL)),
+                ('user', models.ForeignKey(to=settings.AUTH_USER_MODEL, on_delete=django.db.models.deletion.CASCADE)),
             ],
             options={
                 'abstract': False,
@@ -56,11 +57,11 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='savedsearchmeta',
             name='search',
-            field=models.ForeignKey(to='profiles.Search'),
+            field=models.ForeignKey(to='profiles.Search', on_delete=django.db.models.deletion.CASCADE),
         ),
         migrations.AddField(
             model_name='savedsearchmeta',
             name='user_data',
-            field=models.ForeignKey(to='profiles.UserData'),
+            field=models.ForeignKey(to='profiles.UserData', on_delete=django.db.models.deletion.CASCADE),
         ),
     ]
