@@ -95,6 +95,7 @@ DATABASES = {
         'HOST': get_secret('DB_HOST'),
         'PORT': get_secret('DB_PORT'),
         'ATOMIC_REQUESTS': True,
+        'OPTIONS': {'sql_mode': 'strict_trans_tables', },
     }
 }
 

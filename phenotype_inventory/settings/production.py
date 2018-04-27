@@ -43,6 +43,7 @@ DATABASES = {
         'HOST': get_secret('DB_HOST'),  # noqa: F405
         'PORT': get_secret('DB_PORT'),  # noqa: F405
         'ATOMIC_REQUESTS': True,
+        'OPTIONS': {'sql_mode': 'strict_trans_tables', },
     }
 }
 
