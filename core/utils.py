@@ -9,7 +9,7 @@ from io import StringIO
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.core.management import call_command
-from django.core.urlresolvers import resolve, reverse
+from django.urls import resolve, reverse
 from django.test import TestCase, Client
 
 from .build_test_db import build_test_db
