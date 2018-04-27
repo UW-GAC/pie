@@ -7,7 +7,7 @@ import time
 
 from django.contrib.auth import get_user_model
 from django.contrib.staticfiles.testing import StaticLiveServerTestCase
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 
 from core.build_test_db import build_test_db
 import trait_browser.models

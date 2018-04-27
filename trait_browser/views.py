@@ -2,7 +2,7 @@
 
 from django.db.models import Q  # Allows complex queries when searching.
 from django.http import HttpResponseRedirect
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.shortcuts import get_object_or_404
 from django.template.defaultfilters import pluralize    # Use pluralize in the views.
 from django.utils.safestring import mark_safe

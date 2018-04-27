@@ -16,7 +16,7 @@ django-extensions==2.0.0
 django-maintenance-mode==0.7.2
 django-tables2==1.16.0
 django-watson==1.5.2
-django==1.9.13
+django==1.10.8
 docutils==0.14
 factory-boy==2.10.0
 faker==0.8.11             # via factory-boy
