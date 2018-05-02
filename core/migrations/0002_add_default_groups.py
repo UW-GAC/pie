@@ -56,7 +56,6 @@ class Migration(migrations.Migration):
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
         ('flatpages', '0001_initial'),
         ('trait_browser', '0001_initial'),
-        ('sites', '__latest__'),
     ]
 
     operations = [

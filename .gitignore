@@ -11,3 +11,5 @@ tmp*
 selenium_tests/chromedriver
 selenium_tests/*.jar
 */.nfs*
+phenotype_inventory/settings/maintenance_mode_state.txt
+
