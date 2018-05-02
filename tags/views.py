@@ -1,6 +1,6 @@
 """View functions and classes for the tags app."""
 
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.shortcuts import get_object_or_404
 from django.utils.safestring import mark_safe
 from django.views.generic import CreateView, DetailView, DeleteView, FormView, ListView

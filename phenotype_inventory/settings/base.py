@@ -102,23 +102,23 @@ STATIC_URL = '/static/'
 
 
 # TEMPLATE SETTINGS
-TEMPLATES = [
+TEMPLATES = (
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
         # Directories to search when loading templates.
-        'DIRS': [os.path.join(SITE_ROOT, 'templates')],
+        'DIRS': (os.path.join(SITE_ROOT, 'templates'), ),
         'APP_DIRS': True,
         'OPTIONS': {
-            'context_processors': [
+            'context_processors': (
                 'phenotype_inventory.context_processors.site',
                 'django.template.context_processors.debug',
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
-            ],
+            ),
         },
     },
-]
+)
 
 # Change the message tag name to match the bootstrap alert class name.
 MESSAGE_TAGS = {message_constants.DEBUG: 'alert-debug',
@@ -130,13 +130,12 @@ MESSAGE_TAGS = {message_constants.DEBUG: 'alert-debug',
 
 
 # MIDDLEWARE SETTINGS
-MIDDLEWARE_CLASSES = (
+MIDDLEWARE = (
     'debug_toolbar.middleware.DebugToolbarMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.auth.middleware.SessionAuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django.middleware.security.SecurityMiddleware',
@@ -149,7 +148,6 @@ INSTALLED_APPS = (
     # django-autocomplete-light, which must be loaded BEFORE django.contrib.admin
     'dal',
     'dal_select2',
-    'django_admin_bootstrapped',
     # Built-in apps.
     'django.contrib.admin',
     'django.contrib.admindocs',
@@ -202,5 +200,5 @@ AUTH_USER_MODEL = 'authtools.User'
 
 
 # PROJECT SETTINGS
-GAC_WEBSERVERS = ['modu', 'gcc-pc-004', ]
+GAC_WEBSERVERS = ('modu', 'gcc-pc-004', )
 DEVELOPMENT = not (gethostname() in GAC_WEBSERVERS)

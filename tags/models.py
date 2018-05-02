@@ -1,7 +1,7 @@
 """Models for the tags app."""
 
 from django.conf import settings
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.db import models
 
 from core.models import TimeStampedModel
@@ -15,7 +15,7 @@ class Tag(TimeStampedModel):
     lower_title = models.CharField(max_length=255, unique=True, blank=True)
     description = models.TextField()
     instructions = models.TextField()
-    creator = models.ForeignKey(settings.AUTH_USER_MODEL, blank=True)
+    creator = models.ForeignKey(settings.AUTH_USER_MODEL, blank=True, on_delete=models.CASCADE)
     traits = models.ManyToManyField('trait_browser.SourceTrait', through='TaggedTrait')
 
     class Meta:
@@ -44,9 +44,9 @@ class Tag(TimeStampedModel):
 class TaggedTrait(TimeStampedModel):
     """Intermediate model for connecting Tags and SourceTraits."""
 
-    trait = models.ForeignKey('trait_browser.SourceTrait')
-    tag = models.ForeignKey(Tag)
-    creator = models.ForeignKey(settings.AUTH_USER_MODEL, blank=True)
+    trait = models.ForeignKey('trait_browser.SourceTrait', on_delete=models.CASCADE)
+    tag = models.ForeignKey(Tag, on_delete=models.CASCADE)
+    creator = models.ForeignKey(settings.AUTH_USER_MODEL, blank=True, on_delete=models.CASCADE)
 
     class Meta:
         verbose_name = 'tagged phenotype'

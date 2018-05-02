@@ -71,6 +71,7 @@ class Command(BaseCommand):
     """Management command to pull data from the source phenotype db."""
 
     help = 'Import/update data from the source db (topmed_pheno) into the Django models.'
+    requires_migrations_checks = True
 
     def _get_source_db(self, which_db, cnf_path=settings.CNF_PATH, permissions='readonly', just_locking=False):
         """Get a connection to the source phenotype db.

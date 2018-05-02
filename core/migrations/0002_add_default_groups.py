@@ -14,9 +14,14 @@ def create_default_groups(apps, schema_editor):
     # https://code.djangoproject.com/ticket/23422#comment:20
     db_alias = schema_editor.connection.alias
     try:
-        emit_post_migrate_signal(2, False, 'default', db_alias)
-    except TypeError:  # Django < 1.8
-        emit_post_migrate_signal([], 2, False, 'default', db_alias)
+        emit_post_migrate_signal(2, False, db_alias)
+    except TypeError:
+        # Django < 1.9
+        try:
+            # Django 1.8
+            emit_post_migrate_signal(2, False, 'default', db_alias)
+        except TypeError:  # Django < 1.8
+            emit_post_migrate_signal([], 2, False, 'default', db_alias)
     Group = apps.get_model('auth', 'Group')
     Permission = apps.get_model('auth', 'Permission')
     custom_user_app = settings.AUTH_USER_MODEL.split('.')[0]

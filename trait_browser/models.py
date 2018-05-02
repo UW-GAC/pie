@@ -61,7 +61,7 @@
 
 from django.apps import apps
 from django.db import models
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 
 
 from core.models import TimeStampedModel
@@ -109,7 +109,7 @@ class GlobalStudy(SourceDBTimeStampedModel):
     i_topmed_abbreviation = models.CharField('TOPMed abbreviation', max_length=45, blank=True, default='')
 
     class Meta:
-        verbose_name_plural = 'GlobalStudies'
+        verbose_name_plural = 'Global studies'
 
     def __str__(self):
         """Pretty printing."""
@@ -119,7 +119,7 @@ class GlobalStudy(SourceDBTimeStampedModel):
 class Study(SourceDBTimeStampedModel):
     """Model for study from topmed_pheno."""
 
-    global_study = models.ForeignKey(GlobalStudy)
+    global_study = models.ForeignKey(GlobalStudy, on_delete=models.CASCADE)
     # Adds .global_study (object) and .global_study_id (pk).
     i_accession = models.PositiveIntegerField('study accession', primary_key=True, db_column='i_accession')
     i_study_name = models.CharField('study name', max_length=200)
@@ -198,7 +198,7 @@ class Study(SourceDBTimeStampedModel):
 class SourceStudyVersion(SourceDBTimeStampedModel):
     """Model for source_study_version from topmed_pheno."""
 
-    study = models.ForeignKey(Study)
+    study = models.ForeignKey(Study, on_delete=models.CASCADE)
     # Adds .study (object) and .study_id (pk).
     i_id = models.PositiveIntegerField('source study version id', primary_key=True, db_column='i_id')
     i_version = models.PositiveIntegerField('version')
@@ -229,7 +229,7 @@ class SourceStudyVersion(SourceDBTimeStampedModel):
 class Subcohort(SourceDBTimeStampedModel):
     """Model for subcohort from topmed_pheno."""
 
-    global_study = models.ForeignKey(GlobalStudy)
+    global_study = models.ForeignKey(GlobalStudy, on_delete=models.CASCADE)
     i_id = models.PositiveIntegerField('id', primary_key=True, db_column='i_id')
     i_name = models.CharField('name', max_length=45)
 
@@ -243,7 +243,7 @@ class Subcohort(SourceDBTimeStampedModel):
 class SourceDataset(SourceDBTimeStampedModel):
     """Model for source_dataset from topmed_pheno."""
 
-    source_study_version = models.ForeignKey(SourceStudyVersion)
+    source_study_version = models.ForeignKey(SourceStudyVersion, on_delete=models.CASCADE)
     # Adds .source_study_version (object) and .source_study_version_id (pk).
     i_id = models.PositiveIntegerField('dataset id', primary_key=True, db_column='i_id')
     i_accession = models.PositiveIntegerField('dataset accession')
@@ -314,7 +314,7 @@ class AllowedUpdateReason(models.Model):
 class HarmonizedTraitSetVersion(SourceDBTimeStampedModel):
     """Model for harmonized_trait_set_version from topmed_pheno."""
 
-    harmonized_trait_set = models.ForeignKey(HarmonizedTraitSet)
+    harmonized_trait_set = models.ForeignKey(HarmonizedTraitSet, on_delete=models.CASCADE)
     i_id = models.PositiveIntegerField('harmonized trait set version id', primary_key=True, db_column='i_id')
     i_version = models.PositiveIntegerField('version')
     i_git_commit_hash = models.CharField('git commit hash', max_length=40)
@@ -344,7 +344,8 @@ class HarmonizedTraitSetVersion(SourceDBTimeStampedModel):
 class HarmonizationUnit(SourceDBTimeStampedModel):
     """Model for harmonization_unit from topmed_pheno."""
 
-    harmonized_trait_set_version = models.ForeignKey(HarmonizedTraitSetVersion, null=True, default=None)
+    harmonized_trait_set_version = models.ForeignKey(
+        HarmonizedTraitSetVersion, null=True, default=None, on_delete=models.CASCADE)
     # TODO: make the fk non-nullable and remove the default.
     i_id = models.PositiveIntegerField('harmonization unit id', primary_key=True, db_column='i_id')
     i_tag = models.CharField('tag', max_length=100)
@@ -419,7 +420,7 @@ class SourceTrait(Trait):
     Extends the Trait abstract model.
     """
 
-    source_dataset = models.ForeignKey(SourceDataset)
+    source_dataset = models.ForeignKey(SourceDataset, on_delete=models.CASCADE)
     # Adds .source_dataset (object) and .source_dataset_id (pk).
     i_detected_type = models.CharField('detected type', max_length=100, blank=True)
     i_dbgap_type = models.CharField('dbGaP type', max_length=100, blank=True)
@@ -473,14 +474,6 @@ class SourceTrait(Trait):
         self.dbgap_dataset_link = self.set_dbgap_dataset_link()
         # Call the "real" save method.
         super(SourceTrait, self).save(*args, **kwargs)
-
-    def is_latest_version(self):
-        """Test whether this is the latest version of a given trait.
-
-        Returns:
-            boolean True or False
-        """
-        pass
 
     def set_study_accession(self):
         """Automatically set study_accession field from the linked SourceStudyVersion."""
@@ -536,7 +529,8 @@ class HarmonizedTrait(Trait):
     Extends the Trait abstract superclass.
     """
 
-    harmonized_trait_set_version = models.ForeignKey(HarmonizedTraitSetVersion, null=True, default=None)
+    harmonized_trait_set_version = models.ForeignKey(
+        HarmonizedTraitSetVersion, null=True, default=None, on_delete=models.CASCADE)
     # TODO: make the fk non-nullable and remove the default.
     # Adds .harmonized_trait_set (object) and .harmonized_trait_set_id (pk).
     i_data_type = models.CharField('data type', max_length=45)
@@ -643,7 +637,7 @@ class SourceTraitEncodedValue(TraitEncodedValue):
     Extends the TraitEncodedValue abstract superclass.
     """
 
-    source_trait = models.ForeignKey(SourceTrait)
+    source_trait = models.ForeignKey(SourceTrait, on_delete=models.CASCADE)
     # Adds .source_trait (object) and .source_trait_id (pk)
 
     def __str__(self):
@@ -657,7 +651,7 @@ class HarmonizedTraitEncodedValue(TraitEncodedValue):
     Extends the TraitEncodedValue superclass.
     """
 
-    harmonized_trait = models.ForeignKey(HarmonizedTrait)
+    harmonized_trait = models.ForeignKey(HarmonizedTrait, on_delete=models.CASCADE)
     # Adds .harmonized_trait (object) and .harmonized_trait_id (pk).
 
     def __str__(self):

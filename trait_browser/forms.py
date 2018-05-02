@@ -1,7 +1,7 @@
 """Form classes for the trait_browser app."""
 
 from django import forms
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 
 import string
 

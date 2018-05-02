@@ -3,5 +3,8 @@ source =
     .
     
 omit = 
-  */__init__.py
-  */test*.py
+    */__init__.py
+    */test*.py
+    */migrations/*.py
+    phenotype_inventory/*.py
+    core/management/commands/increment_version.py

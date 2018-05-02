@@ -1,6 +1,6 @@
 """Test the functions and classes for views.py."""
 
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.test import TestCase
 
 from core.utils import (DCCAnalystLoginTestCase, LoginRequiredTestCase, RecipeSubmitterLoginTestCase,

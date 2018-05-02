@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 
 from django.db import migrations, models
 from django.conf import settings
+import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
@@ -23,7 +24,7 @@ class Migration(migrations.Migration):
                 ('lower_title', models.CharField(blank=True, max_length=255, unique=True)),
                 ('description', models.TextField()),
                 ('instructions', models.TextField()),
-                ('creator', models.ForeignKey(blank=True, to=settings.AUTH_USER_MODEL)),
+                ('creator', models.ForeignKey(blank=True, to=settings.AUTH_USER_MODEL, on_delete=django.db.models.deletion.CASCADE)),
             ],
             options={
                 'verbose_name': 'phenotype tag',
@@ -36,9 +37,9 @@ class Migration(migrations.Migration):
                 ('created', models.DateTimeField(auto_now_add=True)),
                 ('modified', models.DateTimeField(auto_now=True)),
                 ('recommended', models.BooleanField()),
-                ('creator', models.ForeignKey(blank=True, to=settings.AUTH_USER_MODEL)),
-                ('tag', models.ForeignKey(to='tags.Tag')),
-                ('trait', models.ForeignKey(to='trait_browser.SourceTrait')),
+                ('creator', models.ForeignKey(blank=True, to=settings.AUTH_USER_MODEL, on_delete=django.db.models.deletion.CASCADE)),
+                ('tag', models.ForeignKey(to='tags.Tag', on_delete=django.db.models.deletion.CASCADE)),
+                ('trait', models.ForeignKey(to='trait_browser.SourceTrait', on_delete=django.db.models.deletion.CASCADE)),
             ],
             options={
                 'verbose_name': 'tagged phenotype',

@@ -78,7 +78,7 @@ CNF_PATH = get_secret('CNF_PATH')
 
 # DEBUG SETTINGS
 DEBUG = True
-ALLOWED_HOSTS = ['gcc-pc-004']
+ALLOWED_HOSTS = ('gcc-pc-004', )
 INTERNAL_IPS = ('10.208.179.74', )  # The IP for gcc-pc-004.
 # This IP is a "private network" IP, which is why the public IP for the client
 # doesn't work in this case.
@@ -95,6 +95,7 @@ DATABASES = {
         'HOST': get_secret('DB_HOST'),
         'PORT': get_secret('DB_PORT'),
         'ATOMIC_REQUESTS': True,
+        'OPTIONS': {'sql_mode': 'strict_trans_tables', },
     }
 }
 

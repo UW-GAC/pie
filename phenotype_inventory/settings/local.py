@@ -37,6 +37,7 @@ DATABASES = {
         'HOST': get_env_variable('DB_HOST'),  # noqa: F405
         'PORT': get_env_variable('DB_PORT'),  # noqa: F405
         'ATOMIC_REQUESTS': True,
+        'OPTIONS': {'sql_mode': 'strict_trans_tables', },
     }
 }
 
