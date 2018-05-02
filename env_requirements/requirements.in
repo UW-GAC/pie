@@ -1,4 +1,4 @@
-Django==1.10.8
+Django==1.11.12
 coverage
 django-authtools
 django-autocomplete-light
@@ -8,7 +8,7 @@ django-dbbackup
 django-debug-toolbar
 django-extensions
 django-maintenance-mode
-django-tables2==1.16.0
+django-tables2
 django-watson
 docutils
 factory-boy
