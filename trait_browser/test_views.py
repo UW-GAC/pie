@@ -9,7 +9,7 @@ from core.utils import (DCCAnalystLoginTestCase, LoginRequiredTestCase, Phenotyp
                         get_autocomplete_view_ids)
 
 from tags.models import TaggedTrait
-from tags.factories import TagFactory
+from tags.factories import TagFactory, TaggedTraitFactory
 from . import models
 from . import factories
 from . import forms
@@ -1707,22 +1707,24 @@ class SourceTraitDetailTest(UserLoginTestCase):
 
     def test_context_data(self):
         """View has appropriate data in the context."""
+        tagged_traits = TaggedTraitFactory.create_batch(2, trait=self.trait)
         response = self.client.get(self.get_url(self.trait.pk))
         context = response.context
         self.assertIn('source_trait', context)
         self.assertEqual(context['source_trait'], self.trait)
         self.assertIn('tag_tagged_trait_pairs', context)
-        self.assertEqual(context['tag_tagged_trait_pairs'], [])
+        self.assertEqual(context['tag_tagged_trait_pairs'],
+                         list(zip(self.trait.tag_set.all(), self.trait.taggedtrait_set.all())))
         self.assertIn('user_is_study_tagger', context)
         self.assertFalse(context['user_is_study_tagger'])
 
     def test_no_tagged_trait_remove_button(self):
         """The tag removal button shows up."""
-        tag = TagFactory.create()
-        tagged_trait = TaggedTrait.objects.create(tag=tag, trait=self.trait, creator=self.user)
+        tagged_traits = TaggedTraitFactory.create_batch(3, trait=self.trait)
         response = self.client.get(self.get_url(self.trait.pk))
         context = response.context
-        self.assertNotContains(response, reverse('tags:tagged-traits:delete', kwargs={'pk': tag.pk}))
+        for tt in tagged_traits:
+            self.assertNotContains(response, reverse('tags:tagged-traits:delete', kwargs={'pk': tt.pk}))
 
     def test_no_tagging_button(self):
         """Regular user does not see a button to add tags on this detail page."""
@@ -1746,19 +1748,28 @@ class SourceTraitDetailPhenotypeTaggerTest(PhenotypeTaggerLoginTestCase):
         response = self.client.get(self.get_url(self.trait.pk))
         self.assertEqual(response.status_code, 200)
 
-    def test_has_tagged_trait(self):
+    def test_has_one_tagged_trait(self):
         """The correct TaggedTrait is in the context."""
         tagged_trait = TaggedTrait.objects.create(tag=self.tag, trait=self.trait, creator=self.user)
         response = self.client.get(self.get_url(self.trait.pk))
         context = response.context
         self.assertEqual(context['tag_tagged_trait_pairs'][0], (self.tag, tagged_trait))
 
-    def test_has_tagged_trait_remove_button(self):
-        """The tag removal button shows up."""
-        tagged_trait = TaggedTrait.objects.create(tag=self.tag, trait=self.trait, creator=self.user)
+    def test_has_tagged_traits(self):
+        """The correct TaggedTraits are in the context."""
+        tagged_traits = TaggedTraitFactory.create_batch(2, trait=self.trait)
         response = self.client.get(self.get_url(self.trait.pk))
         context = response.context
-        self.assertContains(response, reverse('tags:tagged-traits:delete', kwargs={'pk': tagged_trait.pk}))
+        self.assertEqual(context['tag_tagged_trait_pairs'],
+                         list(zip(self.trait.tag_set.all(), self.trait.taggedtrait_set.all())))
+
+    def test_has_tagged_trait_remove_buttons(self):
+        """The tag removal buttons shows up."""
+        tagged_traits = TaggedTraitFactory.create_batch(2, trait=self.trait)
+        response = self.client.get(self.get_url(self.trait.pk))
+        context = response.context
+        for tt in tagged_traits:
+            self.assertContains(response, reverse('tags:tagged-traits:delete', kwargs={'pk': tt.pk}))
 
     def test_no_tagged_trait_remove_button_for_other_study(self):
         """The tag removal button does not show up for a trait from another study."""
@@ -1797,19 +1808,28 @@ class SourceTraitDetailDCCAnalystTest(DCCAnalystLoginTestCase):
         response = self.client.get(self.get_url(self.trait.pk))
         self.assertEqual(response.status_code, 200)
 
-    def test_has_tagged_trait(self):
+    def test_has_one_tagged_trait(self):
         """The correct TaggedTrait is in the context."""
         tagged_trait = TaggedTrait.objects.create(tag=self.tag, trait=self.trait, creator=self.user)
         response = self.client.get(self.get_url(self.trait.pk))
         context = response.context
         self.assertEqual(context['tag_tagged_trait_pairs'][0], (self.tag, tagged_trait))
 
-    def test_has_tagged_trait_remove_button(self):
-        """The tag removal button shows up."""
-        tagged_trait = TaggedTrait.objects.create(tag=self.tag, trait=self.trait, creator=self.user)
+    def test_has_tagged_traits(self):
+        """The correct TaggedTraits are in the context."""
+        tagged_traits = TaggedTraitFactory.create_batch(2, trait=self.trait)
         response = self.client.get(self.get_url(self.trait.pk))
         context = response.context
-        self.assertContains(response, reverse('tags:tagged-traits:delete', kwargs={'pk': tagged_trait.pk}))
+        self.assertEqual(context['tag_tagged_trait_pairs'],
+                         list(zip(self.trait.tag_set.all(), self.trait.taggedtrait_set.all())))
+
+    def test_has_tagged_trait_remove_buttons(self):
+        """The tag removal buttons shows up."""
+        tagged_traits = TaggedTraitFactory.create_batch(2, trait=self.trait)
+        response = self.client.get(self.get_url(self.trait.pk))
+        context = response.context
+        for tt in tagged_traits:
+            self.assertContains(response, reverse('tags:tagged-traits:delete', kwargs={'pk': tt.pk}))
 
     def test_has_tagging_button(self):
         """A phenotype tagger does see a button to add tags on this detail page."""
