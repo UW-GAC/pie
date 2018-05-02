@@ -587,7 +587,7 @@ class HarmonizedTrait(Trait):
 
     def get_name_link_html(self):
         """Get html for the trait name linked to the harmonized trait's detail page, with description as popover."""
-        url_text = "{{% url 'trait_browser:harmonized:traits:detail' pk={} %}} ".format(self.pk)
+        url_text = "{{% url 'trait_browser:harmonized:traits:detail' pk={} %}} ".format(self.harmonized_trait_set_version.pk)
         return POPOVER_URL_HTML.format(url=url_text, popover=self.i_description, name=self.trait_flavor_name)
 
     def get_component_html(self, harmonization_unit):
