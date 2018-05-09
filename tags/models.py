@@ -5,6 +5,7 @@ from django.urls import reverse
 from django.db import models
 
 from core.models import TimeStampedModel
+from . import querysets
 
 
 class Tag(TimeStampedModel):
@@ -47,6 +48,9 @@ class TaggedTrait(TimeStampedModel):
     trait = models.ForeignKey('trait_browser.SourceTrait', on_delete=models.CASCADE)
     tag = models.ForeignKey(Tag, on_delete=models.CASCADE)
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, blank=True, on_delete=models.CASCADE)
+
+    # Managers/custom querysets.
+    objects = querysets.TaggedTraitQuerySet.as_manager()
 
     class Meta:
         verbose_name = 'tagged phenotype'
