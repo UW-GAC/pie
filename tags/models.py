@@ -59,3 +59,21 @@ class TaggedTrait(TimeStampedModel):
     def __str__(self):
         """Pretty printing."""
         return 'Trait {} tagged {}'.format(self.trait.i_trait_name, self.tag.lower_title)
+
+
+class DCCReview(TimeStampedModel):
+    """Model to allow DCC staff to review a TaggedTrait."""
+
+    tagged_trait = models.OneToOneField(TaggedTrait, on_delete=models.CASCADE, related_name='dcc_review')
+    STATUS_FOLLOWUP = 0
+    STATUS_CONFIRMED = 1
+    STATUS_CHOICES = (
+        (STATUS_FOLLOWUP, 'Needs study followup'),
+        (STATUS_CONFIRMED, 'Confirmed'),
+    )
+    status = models.IntegerField(choices=STATUS_CHOICES)
+    comment = models.TextField(blank=True)
+    creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+
+    class Meta:
+        verbose_name = 'dcc review'

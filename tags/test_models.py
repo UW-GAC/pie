@@ -197,3 +197,39 @@ class TaggedTraitTest(TestCase):
         duplicate = factories.TaggedTraitFactory.build(tag=self.tag, trait=self.trait)
         with self.assertRaises(ValidationError):
             duplicate.full_clean()
+
+
+class DCCReviewTest(TestCase):
+    model = models.DCCReview
+    model_factory = factories.DCCReviewFactory
+
+    def setUp(self):
+        self.tagged_trait = factories.TaggedTraitFactory.create()
+        self.status = self.model.STATUS_CONFIRMED
+        self.comment = 'a test comment'
+        self.user = UserFactory.create()
+        self.model_args = {'tagged_trait': self.tagged_trait, 'status': self.status, 'comment': self.comment,
+                           'creator': self.user}
+
+    def test_model_saving(self):
+        """Creation using the model constructor and .save() works."""
+        instance = self.model(**self.model_args)
+        instance.save()
+        self.assertIsInstance(instance, self.model)
+
+    def test_model_saving_with_comment(self):
+        """Creation using the model constructor and .save() works."""
+        instance = self.model(**self.model_args)
+        instance.save()
+        self.assertIsInstance(instance, self.model)
+
+    def test_model_factory(self):
+        """Creation using the model factory."""
+        instance = self.model_factory.create()
+        self.assertIsInstance(self.model_factory._meta.model.objects.get(pk=instance.pk),
+                              self.model_factory._meta.model)
+
+    def test_printing(self):
+        """The custom __str__ method returns a string."""
+        instance = self.model_factory.create()
+        self.assertIsInstance(instance.__str__(), str)
