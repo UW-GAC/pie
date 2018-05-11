@@ -198,6 +198,18 @@ class TaggedTraitTest(TestCase):
         with self.assertRaises(ValidationError):
             duplicate.full_clean()
 
+    def test_unreviewed_queryset_method(self):
+        """Only TaggedTraits that have not been reviewed are returned by the .unreviewed() filter."""
+        tagged_trait_unreviewed = factories.TaggedTraitFactory.create()
+        tagged_trait_followup = factories.TaggedTraitFactory.create()
+        factories.DCCReviewFactory.create(tagged_trait=tagged_trait_followup, status=models.DCCReview.STATUS_FOLLOWUP,
+                                          comment='foo')
+        tagged_trait_confirmed = factories.TaggedTraitFactory.create()
+        factories.DCCReviewFactory.create(tagged_trait=tagged_trait_confirmed, status=models.DCCReview.STATUS_CONFIRMED)
+        qs = models.TaggedTrait.objects.unreviewed()
+        self.assertTrue(tagged_trait_unreviewed in qs)
+        self.assertFalse(tagged_trait_followup in qs)
+        self.assertFalse(tagged_trait_confirmed in qs)
 
 class DCCReviewTest(TestCase):
     model = models.DCCReview
