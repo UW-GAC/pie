@@ -22,8 +22,13 @@ add_many_patterns = ([
     url(r'^(?P<pk>\d+)/$', views.ManyTaggedTraitsCreateByTag.as_view(), name='by-tag'),
 ], 'add-many', )
 
+tag_study_patterns = ([
+    url(r'^$', views.TaggedTraitByTagAndStudyList.as_view(), name='list'),
+], 'study', )
+
 tag_patterns = ([
     url(r'^$', views.TagDetail.as_view(), name='detail'),
+    url(r'^studies/(?P<pk_study>\d+)/', include(tag_study_patterns)),
 ], 'tag', )
 
 tagged_trait_patterns = ([

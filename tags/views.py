@@ -3,7 +3,7 @@
 from django.urls import reverse
 from django.shortcuts import get_object_or_404
 from django.utils.safestring import mark_safe
-from django.views.generic import CreateView, DetailView, DeleteView, FormView, ListView
+from django.views.generic import CreateView, DetailView, DeleteView, FormView, ListView, TemplateView
 
 from braces.views import (FormMessagesMixin, LoginRequiredMixin, PermissionRequiredMixin, UserFormKwargsMixin,
                           UserPassesTestMixin)
@@ -88,6 +88,11 @@ class TaggedTraitByStudyList(LoginRequiredMixin, SingleTableMixin, ListView):
         context = super(TaggedTraitByStudyList, self).get_context_data(*args, **kwargs)
         context['study'] = self.study
         return context
+
+
+class TaggedTraitByTagAndStudyList(TemplateView):
+
+    template_name = 'tags/taggedtrait_tag_study_list.html'
 
 
 class TaggableStudiesRequiredMixin(UserPassesTestMixin):

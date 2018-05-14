@@ -3,6 +3,7 @@
 from faker import Faker
 
 from django.contrib.auth.models import Group
+from django.test import TestCase
 from django.urls import reverse
 
 from core.factories import UserFactory
@@ -249,6 +250,11 @@ class TaggedTraitByStudyListDCCAnalystTest(DCCAnalystLoginTestCase):
         response = self.client.get(self.get_url(self.study.pk))
         context = response.context
         self.assertIsInstance(context['tagged_trait_table'], tables.TaggedTraitTableWithDelete)
+
+
+class TaggedTraitByTagAndStudyListTest(TestCase):
+
+    pass
 
 
 class TaggedTraitCreateTest(PhenotypeTaggerLoginTestCase):
