@@ -50,6 +50,7 @@ class TaggedTrait(TimeStampedModel):
     trait = models.ForeignKey('trait_browser.SourceTrait', on_delete=models.CASCADE)
     tag = models.ForeignKey(Tag, on_delete=models.CASCADE)
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, blank=True, on_delete=models.CASCADE)
+    archived = models.BooleanField(default=False)
 
     # Managers/custom querysets.
     objects = querysets.TaggedTraitQuerySet.as_manager()
