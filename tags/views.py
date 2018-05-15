@@ -90,9 +90,27 @@ class TaggedTraitByStudyList(LoginRequiredMixin, SingleTableMixin, ListView):
         return context
 
 
-class TaggedTraitByTagAndStudyList(TemplateView):
+class TaggedTraitByTagAndStudyList(LoginRequiredMixin, SingleTableMixin, ListView):
 
+    model = models.TaggedTrait
+    context_table_name = 'tagged_trait_table'
     template_name = 'tags/taggedtrait_tag_study_list.html'
+    table_pagination = {'per_page': TABLE_PER_PAGE}
+    table_class = tables.TaggedTraitTable
+
+    def get(self, request, *args, **kwargs):
+        self.tag = get_object_or_404(models.Tag, pk=self.kwargs['pk'])
+        self.study = get_object_or_404(Study, pk=self.kwargs['pk_study'])
+        return super(TaggedTraitByTagAndStudyList, self).get(self, request, *args, **kwargs)
+
+    def get_table_data(self):
+        return self.study.get_tagged_traits().filter(tag=self.tag)
+
+    def get_context_data(self, *args, **kwargs):
+        context = super(TaggedTraitByTagAndStudyList, self).get_context_data(*args, **kwargs)
+        context['study'] = self.study
+        context['tag'] = self.tag
+        return context
 
 
 class TaggableStudiesRequiredMixin(UserPassesTestMixin):

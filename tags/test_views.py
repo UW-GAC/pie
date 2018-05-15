@@ -3,7 +3,6 @@
 from faker import Faker
 
 from django.contrib.auth.models import Group
-from django.test import TestCase
 from django.urls import reverse
 
 from core.factories import UserFactory
@@ -252,9 +251,80 @@ class TaggedTraitByStudyListDCCAnalystTest(DCCAnalystLoginTestCase):
         self.assertIsInstance(context['tagged_trait_table'], tables.TaggedTraitTableWithDelete)
 
 
-class TaggedTraitByTagAndStudyListTest(TestCase):
+class TaggedTraitByTagAndStudyListTest(UserLoginTestCase):
 
-    pass
+    def setUp(self):
+        super(TaggedTraitByTagAndStudyListTest, self).setUp()
+        self.study = StudyFactory.create()
+        self.tag = factories.TagFactory.create()
+        self.tagged_traits = factories.TaggedTraitFactory.create_batch(
+            10, tag=self.tag, trait__source_dataset__source_study_version__study=self.study)
+
+    def get_url(self, *args):
+        return reverse('tags:tag:study:list', args=args)
+
+    def test_view_success_code(self):
+        """View returns successful response code."""
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        self.assertEqual(response.status_code, 200)
+
+    def test_view_with_invalid_study_pk(self):
+        """View returns 404 response code when the study pk doesn't exist."""
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk + 1))
+        self.assertEqual(response.status_code, 404)
+
+    def test_view_with_invalid_tag_pk(self):
+        """View returns 404 response code when the pk doesn't exist."""
+        response = self.client.get(self.get_url(self.tag.pk + 1, self.study.pk))
+        self.assertEqual(response.status_code, 404)
+
+    def test_context_data(self):
+        """View has appropriate data in the context."""
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        context = response.context
+        self.assertIn('study', context)
+        self.assertIn('tag', context)
+        self.assertIn('tagged_trait_table', context)
+        self.assertEqual(context['study'], self.study)
+        self.assertEqual(context['tag'], self.tag)
+
+    def test_table_class(self):
+        """For non-taggers, the tagged trait table class does not have delete buttons."""
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        context = response.context
+        self.assertIsInstance(context['tagged_trait_table'], tables.TaggedTraitTable)
+
+    def test_view_table_contains_correct_records(self):
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        context = response.context
+        table = context['tagged_trait_table']
+        self.assertEqual(len(table.data), len(self.tagged_traits))
+        for tagged_trait in self.tagged_traits:
+            self.assertIn(tagged_trait, table.data, msg='tagged_trait_table does not contain {}'.format(tagged_trait))
+
+    def test_view_works_with_no_tagged_traits_in_study(self):
+        other_study = StudyFactory.create()
+        other_tag = factories.TagFactory.create()
+        response = self.client.get(self.get_url(other_tag.pk, other_study.pk))
+        self.assertEqual(response.status_code, 200)
+        context = response.context
+        self.assertEqual(len(context['tagged_trait_table'].data), 0)
+
+    def test_view_does_not_show_tagged_traits_from_a_different_study(self):
+        other_study = StudyFactory.create()
+        other_tagged_trait = factories.TaggedTraitFactory.create(
+            tag=self.tag, trait__source_dataset__source_study_version__study=other_study)
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        context = response.context
+        self.assertNotIn(other_tagged_trait, context['tagged_trait_table'].data)
+
+    def test_view_does_not_show_tagged_traits_from_a_different_tag(self):
+        other_tag = factories.TagFactory.create()
+        other_tagged_trait = factories.TaggedTraitFactory.create(
+            tag=other_tag, trait__source_dataset__source_study_version__study=self.study)
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        context = response.context
+        self.assertNotIn(other_tagged_trait, context['tagged_trait_table'].data)
 
 
 class TaggedTraitCreateTest(PhenotypeTaggerLoginTestCase):
