@@ -96,7 +96,6 @@ class TaggedTraitByTagAndStudyList(LoginRequiredMixin, SingleTableMixin, ListVie
     context_table_name = 'tagged_trait_table'
     template_name = 'tags/taggedtrait_tag_study_list.html'
     table_pagination = {'per_page': TABLE_PER_PAGE}
-    table_class = tables.TaggedTraitTable
 
     def get(self, request, *args, **kwargs):
         self.tag = get_object_or_404(models.Tag, pk=self.kwargs['pk'])
@@ -105,6 +104,14 @@ class TaggedTraitByTagAndStudyList(LoginRequiredMixin, SingleTableMixin, ListVie
 
     def get_table_data(self):
         return self.study.get_tagged_traits().filter(tag=self.tag)
+
+    def get_table_class(self):
+        """Determine whether to use tagged trait table with delete buttons or not."""
+        if self.request.user.is_staff or (self.request.user.groups.filter(name='phenotype_taggers').exists() and (
+                                          self.study in self.request.user.profile.taggable_studies.all())):
+            return tables.TaggedTraitTableWithDelete
+        else:
+            return tables.TaggedTraitTable
 
     def get_context_data(self, *args, **kwargs):
         context = super(TaggedTraitByTagAndStudyList, self).get_context_data(*args, **kwargs)

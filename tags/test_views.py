@@ -327,6 +327,96 @@ class TaggedTraitByTagAndStudyListTest(UserLoginTestCase):
         self.assertNotIn(other_tagged_trait, context['tagged_trait_table'].data)
 
 
+class TaggedTraitByTagAndStudyListPhenotypeTaggerTest(PhenotypeTaggerLoginTestCase):
+
+    def setUp(self):
+        super(TaggedTraitByTagAndStudyListPhenotypeTaggerTest, self).setUp()
+        self.tag = factories.TagFactory.create()
+        self.tagged_traits = factories.TaggedTraitFactory.create_batch(
+            10, trait__source_dataset__source_study_version__study=self.study, tag=self.tag)
+        self.user.refresh_from_db()
+        self.user.profile.taggable_studies.add(self.study)
+
+    def get_url(self, *args):
+        return reverse('tags:tag:study:list', args=args)
+
+    def test_view_success_code(self):
+        """View returns successful response code."""
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        self.assertEqual(response.status_code, 200)
+
+    def test_view_with_invalid_study_pk(self):
+        """View returns 404 response code when the study pk doesn't exist."""
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk + 1))
+        self.assertEqual(response.status_code, 404)
+
+    def test_view_with_invalid_tag_pk(self):
+        """View returns 404 response code when the tag pk doesn't exist."""
+        response = self.client.get(self.get_url(self.tag.pk + 1, self.study.pk))
+        self.assertEqual(response.status_code, 404)
+
+    def test_context_data(self):
+        """View has appropriate data in the context."""
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        context = response.context
+        self.assertIn('study', context)
+        self.assertIn('tag', context)
+        self.assertIn('tagged_trait_table', context)
+        self.assertEqual(context['study'], self.study)
+        self.assertEqual(context['tag'], self.tag)
+
+    def test_table_class(self):
+        """For taggers, the tagged trait table class has delete buttons."""
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        context = response.context
+        self.assertIsInstance(context['tagged_trait_table'], tables.TaggedTraitTableWithDelete)
+
+
+class TaggedTraitByTagAndStudyListDCCAnalystTest(DCCAnalystLoginTestCase):
+
+    def setUp(self):
+        super(TaggedTraitByTagAndStudyListDCCAnalystTest, self).setUp()
+        self.study = StudyFactory.create()
+        self.tag = factories.TagFactory.create()
+        self.tagged_traits = factories.TaggedTraitFactory.create_batch(
+            10, trait__source_dataset__source_study_version__study=self.study, tag=self.tag)
+        self.user.refresh_from_db()
+
+    def get_url(self, *args):
+        return reverse('tags:tag:study:list', args=args)
+
+    def test_view_success_code(self):
+        """View returns successful response code."""
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        self.assertEqual(response.status_code, 200)
+
+    def test_view_with_invalid_study_pk(self):
+        """View returns 404 response code when the study pk doesn't exist."""
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk + 1))
+        self.assertEqual(response.status_code, 404)
+
+    def test_view_with_invalid_tag_pk(self):
+        """View returns 404 response code when the tag pk doesn't exist."""
+        response = self.client.get(self.get_url(self.tag.pk + 1, self.study.pk))
+        self.assertEqual(response.status_code, 404)
+
+    def test_context_data(self):
+        """View has appropriate data in the context."""
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        context = response.context
+        self.assertIn('study', context)
+        self.assertIn('tag', context)
+        self.assertIn('tagged_trait_table', context)
+        self.assertEqual(context['study'], self.study)
+        self.assertEqual(context['tag'], self.tag)
+
+    def test_table_class(self):
+        """For DCC Analysts, the tagged trait table class has delete buttons."""
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        context = response.context
+        self.assertIsInstance(context['tagged_trait_table'], tables.TaggedTraitTableWithDelete)
+
+
 class TaggedTraitCreateTest(PhenotypeTaggerLoginTestCase):
 
     def setUp(self):
