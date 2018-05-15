@@ -65,6 +65,13 @@ class StudyTaggedTraitList(LoginRequiredMixin, SingleTableMixin, ListView):
     table_pagination = {'per_page': TABLE_PER_PAGE}
 
 
+class TaggedTraitDetail(LoginRequiredMixin, DetailView):
+
+    model = models.TaggedTrait
+    context_object_name = 'tagged_trait'
+    template_name = 'tags/taggedtrait_detail.html'
+
+
 class TaggedTraitByStudyList(LoginRequiredMixin, SingleTableMixin, ListView):
 
     model = models.TaggedTrait

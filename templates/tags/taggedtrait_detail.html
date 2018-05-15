@@ -1,0 +1,27 @@
+{% extends '__object_detail.html' %}
+{% load core_tags %}
+
+{% block head_title %}
+  | {{ tagged_trait }}
+{% endblock head_title %}
+
+{% block title %}
+  <a href="{{ tagged_trait.trait.get_absolute_url }}">{{ tagged_trait.trait.i_trait_name }}</a> tagged with
+  <a href="{{ tagged_trait.tag.get_absolute_url }}">{{ tagged_trait.tag.lower_title }}</a>
+{% endblock title %}
+
+{% block subtitle %}
+  tagged trait details
+{% endblock subtitle %}
+
+{% block before_panel %}
+  XXX
+{% endblock before_panel %}
+
+{% block detail_fields %}
+  <dt>Tagged by</dt><dd>{{ tagged_trait.creator }}</dd>
+{% endblock detail_fields %}
+
+{% block after_panel %}
+  XXX
+{% endblock after_panel %}

@@ -33,6 +33,7 @@ tag_patterns = ([
 
 tagged_trait_patterns = ([
     # url(r'^list', views.TagList.as_view(), name='list'),
+    url(r'^(?P<pk>\d+)$', views.TaggedTraitDetail.as_view(), name='detail'),
     url(r'^by-study', views.StudyTaggedTraitList.as_view(), name='by-study'),
     url(r'^(?P<pk>\d+)/delete$', views.TaggedTraitDelete.as_view(), name='delete'),
 ], 'tagged-traits', )

@@ -141,6 +141,33 @@ class StudyTaggedTraitListTest(UserLoginTestCase):
         self.assertIsInstance(context['study_table'], tables.StudyTaggedTraitTable)
 
 
+class TaggedTraitDetailTest(UserLoginTestCase):
+
+    def setUp(self):
+        super(TaggedTraitDetailTest, self).setUp()
+        self.tagged_trait = factories.TaggedTraitFactory.create()
+
+    def get_url(self, *args):
+        return reverse('tags:tagged-traits:detail', args=args)
+
+    def test_view_success_code(self):
+        """View returns successful response code."""
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        self.assertEqual(response.status_code, 200)
+
+    def test_view_with_invalid_pk(self):
+        """View returns 404 response code when the pk doesn't exist."""
+        response = self.client.get(self.get_url(self.tagged_trait.pk + 1))
+        self.assertEqual(response.status_code, 404)
+
+    def test_context_data(self):
+        """View has appropriate data in the context."""
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        context = response.context
+        self.assertIn('tagged_trait', context)
+        self.assertEqual(context['tagged_trait'], self.tagged_trait)
+
+
 class TaggedTraitByStudyListTest(UserLoginTestCase):
 
     def setUp(self):
