@@ -2168,6 +2168,15 @@ class PhenotypeTaggerSourceTraitTaggingTest(PhenotypeTaggerLoginTestCase):
         response = self.client.get(self.get_url(self.trait.pk))
         self.assertEqual(response.status_code, 403)
 
+    def test_fails_when_trait_is_already_tagged(self):
+        """Tagging a trait fails when the trait has already been tagged with this tag."""
+        tagged_trait = TaggedTraitFactory.create(tag=self.tag, trait=self.trait)
+        response = self.client.post(self.get_url(self.trait.pk), {'tag': self.tag.pk, })
+        self.assertEqual(response.status_code, 200)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertTrue('Oops!' in str(messages[0]))
+
 
 class DCCAnalystSourceTraitTaggingTest(DCCAnalystLoginTestCase):
 
@@ -2263,6 +2272,15 @@ class DCCAnalystSourceTraitTaggingTest(DCCAnalystLoginTestCase):
         self.user.profile.taggable_studies.add(another_study)
         response = self.client.get(self.get_url(self.trait.pk))
         self.assertEqual(response.status_code, 200)
+
+    def test_fails_when_trait_is_already_tagged(self):
+        """Tagging a trait fails when the trait has already been tagged with this tag."""
+        tagged_trait = TaggedTraitFactory.create(tag=self.tag, trait=self.trait)
+        response = self.client.post(self.get_url(self.trait.pk), {'tag': self.tag.pk, })
+        self.assertEqual(response.status_code, 200)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertTrue('Oops!' in str(messages[0]))
 
 
 class SourceTraitSearchTest(ClearSearchIndexMixin, UserLoginTestCase):

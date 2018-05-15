@@ -320,13 +320,21 @@ class TagSpecificTraitFormTest(TestCase):
     def test_valid(self):
         """Form is valid with all necessary input."""
         form_data = {'tag': self.tag.pk, }
-        form = self.form_class(data=form_data)
+        form = self.form_class(data=form_data, trait_pk=self.traits[0].pk)
         self.assertTrue(form.is_valid())
 
     def test_invalid_missing_tag(self):
         """Form is invalid if tag is omitted."""
         form_data = {'tag': '', }
-        form = self.form_class(data=form_data)
+        form = self.form_class(data=form_data, trait_pk=self.traits[0].pk)
+        self.assertFalse(form.is_valid())
+        self.assertTrue(form.has_error('tag'))
+
+    def test_invalid_trait_already_tagged(self):
+        """Form is invalid when the trait is already linked to the given tag."""
+        factories.TaggedTraitFactory.create(tag=self.tag, trait=self.traits[0])
+        form_data = {'tag': self.tag.pk}
+        form = self.form_class(data=form_data, trait_pk=self.traits[0].pk)
         self.assertFalse(form.is_valid())
         self.assertTrue(form.has_error('tag'))
 

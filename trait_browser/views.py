@@ -458,6 +458,12 @@ class SourceTraitTagging(LoginRequiredMixin, PermissionRequiredMixin, UserPasses
         context['trait'] = self.trait
         return context
 
+    def get_form_kwargs(self):
+        kwargs = super(SourceTraitTagging, self).get_form_kwargs()
+        kwargs['trait_pk'] = self.kwargs['pk']
+        get_object_or_404(models.SourceTrait, pk=kwargs['trait_pk'])
+        return kwargs
+
     def form_valid(self, form):
         """Create a TaggedTrait object for the trait and tag specified."""
         tagged_trait = TaggedTrait(tag=form.cleaned_data['tag'], trait=self.trait, creator=self.request.user)

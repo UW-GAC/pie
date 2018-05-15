@@ -15,7 +15,7 @@ from . import models
 
 
 EXISTING_TAGGED_TRAIT_ERROR_STRING = u"""The tag {tag_name} has already been applied to study variable {phv}
-                                         ({trait_name}). Select a different phenotype and try again.."""
+                                         ({trait_name}). Change your selection and try again."""
 LOWER_TITLE_EXISTS_ERROR = forms.ValidationError(
     u"""A tag with the same (case-insensitive) title already exists."""
 )
@@ -362,6 +362,8 @@ class TagSpecificTraitForm(forms.Form):
                                  help_text=TAG_HELP)
 
     def __init__(self, *args, **kwargs):
+        trait_pk = kwargs.pop('trait_pk')
+        self.trait = get_object_or_404(SourceTrait, pk=trait_pk)
         super(TagSpecificTraitForm, self).__init__(*args, **kwargs)
         # Form formatting and add a submit button.
         self.helper = FormHelper(self)
@@ -371,6 +373,19 @@ class TagSpecificTraitForm(forms.Form):
         self.helper.form_method = 'post'
         button_save = generate_button_html('submit', 'Save', btn_type='submit', css_class='btn-primary')
         self.helper.layout.append(button_save)
+
+    def clean(self):
+        """Custom cleaning to check that traits aren't already tagged."""
+        cleaned_data = super(TagSpecificTraitForm, self).clean()
+        tag = cleaned_data.get('tag', None)
+        if tag is not None:
+            if self.trait in tag.traits.all():
+                already_tagged_error = forms.ValidationError(
+                    EXISTING_TAGGED_TRAIT_ERROR_STRING.format(
+                        tag_name=tag.title, phv=self.trait.variable_accession, trait_name=self.trait.i_trait_name)
+                )
+                self.add_error('tag', already_tagged_error)
+        return cleaned_data
 
 
 class DCCReviewBaseForm(forms.ModelForm):
@@ -510,4 +525,4 @@ class DCCReviewTagAndStudySelectForm(forms.Form):
             ).count()
             if n == 0:
                 raise forms.ValidationError(self.ERROR_NO_TAGGED_TRAITS)
-        return cleaned_data
+    return cleaned_data
