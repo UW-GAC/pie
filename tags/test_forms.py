@@ -112,6 +112,15 @@ class TaggedTraitFormTest(TestCase):
         self.assertTrue(form.has_error('trait'))
         self.assertFalse(form.has_error('tag'))
 
+    def test_invalid_taggedtrait_archived(self):
+        """Form is invalid when the selected trait and tag are in an archived TaggedTrait."""
+        factories.TaggedTraitFactory.create(tag=self.tag, trait=self.trait, creator=self.user, archived=True)
+        form_data = {'trait': self.trait.pk, 'tag': self.tag.pk}
+        form = self.form_class(data=form_data, user=self.user)
+        self.assertFalse(form.is_valid())
+        self.assertTrue(form.has_error('trait'))
+        self.assertFalse(form.has_error('tag'))
+
 
 class TaggedTraitAdminFormTest(TestCase):
     form_class = forms.TaggedTraitAdminForm
@@ -144,6 +153,15 @@ class TaggedTraitAdminFormTest(TestCase):
     def test_invalid_trait_already_tagged(self):
         """Form is invalid when the selected trait is already linked to the selected tag."""
         factories.TaggedTraitFactory.create(tag=self.tag, trait=self.trait)
+        form_data = {'trait': self.trait.pk, 'tag': self.tag.pk}
+        form = self.form_class(data=form_data)
+        self.assertFalse(form.is_valid())
+        self.assertTrue(form.has_error('trait'))
+        self.assertFalse(form.has_error('tag'))
+
+    def test_invalid_taggedtrait_archived(self):
+        """Form is invalid when the selected trait and tag are in an archived TaggedTrait."""
+        factories.TaggedTraitFactory.create(tag=self.tag, trait=self.trait, archived=True)
         form_data = {'trait': self.trait.pk, 'tag': self.tag.pk}
         form = self.form_class(data=form_data)
         self.assertFalse(form.is_valid())
@@ -196,6 +214,15 @@ class TaggedTraitByTagFormTest(TestCase):
         self.assertFalse(form.is_valid())
         self.assertTrue(form.has_error('trait'))
 
+    def test_invalid_taggedtrait_archived(self):
+        """Form is invalid when the selected trait and tag are in an archived TaggedTrait."""
+        factories.TaggedTraitFactory.create(tag=self.tag, trait=self.trait, creator=self.user, archived=True)
+        form_data = {'trait': self.trait.pk}
+        form = self.form_class(data=form_data, user=self.user, tag_pk=self.tag.pk)
+        self.assertFalse(form.is_valid())
+        self.assertTrue(form.has_error('trait'))
+        self.assertFalse(form.has_error('tag'))
+
 
 class ManyTaggedTraitsFormTest(TestCase):
     form_class = forms.ManyTaggedTraitsForm
@@ -247,6 +274,14 @@ class ManyTaggedTraitsFormTest(TestCase):
     def test_invalid_trait_already_tagged(self):
         """Form is invalid when a trait in 'traits' is already linked to the given tag."""
         factories.TaggedTraitFactory.create(tag=self.tag, trait=self.traits[0], creator=self.user)
+        form_data = {'traits': [self.traits[0].pk], 'tag': self.tag.pk}
+        form = self.form_class(data=form_data, user=self.user)
+        self.assertFalse(form.is_valid())
+        self.assertTrue(form.has_error('traits'))
+
+    def test_invalid_taggedtrait_archived(self):
+        """Form is invalid when the selected trait and tag are in an archived TaggedTrait."""
+        factories.TaggedTraitFactory.create(tag=self.tag, trait=self.traits[0], creator=self.user, archived=True)
         form_data = {'traits': [self.traits[0].pk], 'tag': self.tag.pk}
         form = self.form_class(data=form_data, user=self.user)
         self.assertFalse(form.is_valid())
@@ -308,6 +343,14 @@ class ManyTaggedTraitsByTagFormTest(TestCase):
         self.assertFalse(form.is_valid())
         self.assertTrue(form.has_error('traits'))
 
+    def test_invalid_taggedtrait_archived(self):
+        """Form is invalid when the selected trait and tag are in an archived TaggedTrait."""
+        factories.TaggedTraitFactory.create(tag=self.tag, trait=self.traits[0], creator=self.user, archived=True)
+        form_data = {'traits': [self.traits[0].pk]}
+        form = self.form_class(data=form_data, user=self.user, tag_pk=self.tag.pk)
+        self.assertFalse(form.is_valid())
+        self.assertTrue(form.has_error('traits'))
+
 
 class TagSpecificTraitFormTest(TestCase):
     form_class = forms.TagSpecificTraitForm
@@ -333,6 +376,14 @@ class TagSpecificTraitFormTest(TestCase):
     def test_invalid_trait_already_tagged(self):
         """Form is invalid when the trait is already linked to the given tag."""
         factories.TaggedTraitFactory.create(tag=self.tag, trait=self.traits[0])
+        form_data = {'tag': self.tag.pk}
+        form = self.form_class(data=form_data, trait_pk=self.traits[0].pk)
+        self.assertFalse(form.is_valid())
+        self.assertTrue(form.has_error('tag'))
+
+    def test_invalid_taggedtrait_archived(self):
+        """Form is invalid when the selected trait and tag are in an archived TaggedTrait."""
+        factories.TaggedTraitFactory.create(tag=self.tag, trait=self.traits[0], archived=True)
         form_data = {'tag': self.tag.pk}
         form = self.form_class(data=form_data, trait_pk=self.traits[0].pk)
         self.assertFalse(form.is_valid())

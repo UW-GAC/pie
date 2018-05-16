@@ -713,6 +713,15 @@ class TaggedTraitCreateTest(PhenotypeTaggerLoginTestCase):
         self.assertEqual(len(messages), 1)
         self.assertTrue('Oops!' in str(messages[0]))
 
+    def test_fails_when_trait_is_already_tagged_but_archived(self):
+        """Tagging a trait fails when the trait has already been tagged with this tag and archived."""
+        tagged_trait = factories.TaggedTraitFactory.create(tag=self.tag, trait=self.trait, archived=True)
+        response = self.client.post(self.get_url(), {'trait': self.trait.pk, 'tag': self.tag.pk, })
+        self.assertEqual(response.status_code, 200)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertTrue('Oops!' in str(messages[0]))
+
     def test_forbidden_non_taggers(self):
         """View returns 403 code when the user is not in phenotype_taggers."""
         phenotype_taggers = Group.objects.get(name='phenotype_taggers')
@@ -804,6 +813,15 @@ class TaggedTraitCreateDCCAnalystTest(DCCAnalystLoginTestCase):
     def test_fails_when_trait_is_already_tagged(self):
         """Tagging a trait fails when the trait has already been tagged with this tag."""
         tagged_trait = factories.TaggedTraitFactory.create(tag=self.tag, trait=self.trait)
+        response = self.client.post(self.get_url(), {'trait': self.trait.pk, 'tag': self.tag.pk, })
+        self.assertEqual(response.status_code, 200)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertTrue('Oops!' in str(messages[0]))
+
+    def test_fails_when_trait_is_already_tagged_but_archived(self):
+        """Tagging a trait fails when the trait has already been tagged with this tag but archived."""
+        tagged_trait = factories.TaggedTraitFactory.create(tag=self.tag, trait=self.trait, archived=True)
         response = self.client.post(self.get_url(), {'trait': self.trait.pk, 'tag': self.tag.pk, })
         self.assertEqual(response.status_code, 200)
         messages = list(response.wsgi_request._messages)
@@ -1286,6 +1304,15 @@ class TaggedTraitCreateByTagTest(PhenotypeTaggerLoginTestCase):
         self.assertEqual(len(messages), 1)
         self.assertTrue('Oops!' in str(messages[0]))
 
+    def test_fails_when_trait_is_already_tagged_but_archived(self):
+        """Tagging a trait fails when the trait has already been tagged with this tag but archived."""
+        tagged_trait = factories.TaggedTraitFactory.create(tag=self.tag, trait=self.trait, archived=True)
+        response = self.client.post(self.get_url(self.tag.pk), {'trait': self.trait.pk, })
+        self.assertEqual(response.status_code, 200)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertTrue('Oops!' in str(messages[0]))
+
     def test_forbidden_non_taggers(self):
         """View returns 403 code when the user is not in phenotype_taggers."""
         phenotype_taggers = Group.objects.get(name='phenotype_taggers')
@@ -1380,6 +1407,15 @@ class TaggedTraitCreateByTagDCCAnalystTest(DCCAnalystLoginTestCase):
     def test_fails_when_trait_is_already_tagged(self):
         """Tagging a trait fails when the trait has already been tagged with this tag."""
         tagged_trait = factories.TaggedTraitFactory.create(tag=self.tag, trait=self.trait)
+        response = self.client.post(self.get_url(self.tag.pk), {'trait': self.trait.pk, })
+        self.assertEqual(response.status_code, 200)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertTrue('Oops!' in str(messages[0]))
+
+    def test_fails_when_trait_is_already_tagged_but_archived(self):
+        """Tagging a trait fails when the trait has already been tagged with this tag but archived."""
+        tagged_trait = factories.TaggedTraitFactory.create(tag=self.tag, trait=self.trait, archived=True)
         response = self.client.post(self.get_url(self.tag.pk), {'trait': self.trait.pk, })
         self.assertEqual(response.status_code, 200)
         messages = list(response.wsgi_request._messages)
@@ -1537,6 +1573,16 @@ class ManyTaggedTraitsCreateTest(PhenotypeTaggerLoginTestCase):
         self.assertEqual(len(messages), 1)
         self.assertTrue('Oops!' in str(messages[0]))
 
+    def test_fails_when_one_trait_is_already_tagged_but_archived(self):
+        """Tagging traits fails when a selected trait is already tagged with the tag but archived."""
+        already_tagged = factories.TaggedTraitFactory.create(tag=self.tag, trait=self.traits[0], archived=True)
+        response = self.client.post(self.get_url(),
+                                    {'traits': [t.pk for t in self.traits[0:5]], 'tag': self.tag.pk, })
+        self.assertEqual(response.status_code, 200)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertTrue('Oops!' in str(messages[0]))
+
     def test_forbidden_non_taggers(self):
         """View returns 403 code when the user is not in phenotype_taggers."""
         phenotype_taggers = Group.objects.get(name='phenotype_taggers')
@@ -1662,6 +1708,16 @@ class ManyTaggedTraitsCreateDCCAnalystTest(DCCAnalystLoginTestCase):
     def test_fails_when_one_trait_is_already_tagged(self):
         """Tagging traits fails when a selected trait is already tagged with the tag."""
         already_tagged = factories.TaggedTraitFactory.create(tag=self.tag, trait=self.traits[0])
+        response = self.client.post(self.get_url(),
+                                    {'traits': [t.pk for t in self.traits[0:5]], 'tag': self.tag.pk, })
+        self.assertEqual(response.status_code, 200)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertTrue('Oops!' in str(messages[0]))
+
+    def test_fails_when_one_trait_is_already_tagged_but_archived(self):
+        """Tagging traits fails when a selected trait is already tagged with the tag but archived."""
+        already_tagged = factories.TaggedTraitFactory.create(tag=self.tag, trait=self.traits[0], archived=True)
         response = self.client.post(self.get_url(),
                                     {'traits': [t.pk for t in self.traits[0:5]], 'tag': self.tag.pk, })
         self.assertEqual(response.status_code, 200)
@@ -1830,6 +1886,27 @@ class ManyTaggedTraitsCreateByTagTest(PhenotypeTaggerLoginTestCase):
         self.assertEqual(len(messages), 1)
         self.assertTrue('Oops!' in str(messages[0]))
 
+    def test_fails_when_one_trait_is_already_tagged_but_archived(self):
+        """Tagging traits fails when a selected trait is already tagged with the tag but archived."""
+        already_tagged = factories.TaggedTraitFactory.create(tag=self.tag, trait=self.traits[0], archived=True)
+        response = self.client.post(self.get_url(self.tag.pk),
+                                    {'traits': [t.pk for t in self.traits[0:5]], })
+        self.assertEqual(response.status_code, 200)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertTrue('Oops!' in str(messages[0]))
+
+    def test_fails_when_two_traits_are_already_tagged_but_archived(self):
+        """Tagging traits fails when two selected traits are already tagged with the tag but archived."""
+        already_tagged = factories.TaggedTraitFactory.create(tag=self.tag, trait=self.traits[0], archived=True)
+        already_tagged2 = factories.TaggedTraitFactory.create(tag=self.tag, trait=self.traits[1], archived=True)
+        response = self.client.post(self.get_url(self.tag.pk),
+                                    {'traits': [t.pk for t in self.traits[0:5]], })
+        self.assertEqual(response.status_code, 200)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertTrue('Oops!' in str(messages[0]))
+
     def test_forbidden_non_taggers(self):
         """View returns 403 code when the user is not in phenotype_taggers."""
         phenotype_taggers = Group.objects.get(name='phenotype_taggers')
@@ -1965,6 +2042,27 @@ class ManyTaggedTraitsCreateByTagDCCAnalystTest(DCCAnalystLoginTestCase):
         """Tagging traits fails when two selected traits are already tagged with the tag."""
         already_tagged = factories.TaggedTraitFactory.create(tag=self.tag, trait=self.traits[0])
         already_tagged2 = factories.TaggedTraitFactory.create(tag=self.tag, trait=self.traits[1])
+        response = self.client.post(self.get_url(self.tag.pk),
+                                    {'traits': [t.pk for t in self.traits[0:5]], })
+        self.assertEqual(response.status_code, 200)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertTrue('Oops!' in str(messages[0]))
+
+    def test_fails_when_one_trait_is_already_tagged_but_archived(self):
+        """Tagging traits fails when a selected trait is already tagged with the tag but archived."""
+        already_tagged = factories.TaggedTraitFactory.create(tag=self.tag, trait=self.traits[0], archived=True)
+        response = self.client.post(self.get_url(self.tag.pk),
+                                    {'traits': [t.pk for t in self.traits[0:5]], })
+        self.assertEqual(response.status_code, 200)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertTrue('Oops!' in str(messages[0]))
+
+    def test_fails_when_two_traits_are_already_tagged_but_archived(self):
+        """Tagging traits fails when two selected traits are already tagged with the tag but archived."""
+        already_tagged = factories.TaggedTraitFactory.create(tag=self.tag, trait=self.traits[0], archived=True)
+        already_tagged2 = factories.TaggedTraitFactory.create(tag=self.tag, trait=self.traits[1], archived=True)
         response = self.client.post(self.get_url(self.tag.pk),
                                     {'traits': [t.pk for t in self.traits[0:5]], })
         self.assertEqual(response.status_code, 200)
