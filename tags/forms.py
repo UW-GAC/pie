@@ -4,8 +4,9 @@ from django import forms
 from django.shortcuts import get_object_or_404
 from django.utils.safestring import mark_safe
 
+from crispy_forms.bootstrap import FormActions
 from crispy_forms.helper import FormHelper
-from crispy_forms.layout import HTML
+from crispy_forms.layout import HTML, Layout, Submit
 from dal import autocomplete
 
 from . import models
@@ -369,3 +370,43 @@ class TagSpecificTraitForm(forms.Form):
         self.helper.form_method = 'post'
         button_save = generate_button_html('submit', 'Save', btn_type='submit', css_class='btn-primary')
         self.helper.layout.append(button_save)
+
+
+class DCCReviewForm(forms.ModelForm):
+    """Form for creating a single DCCReview object."""
+
+    helper = FormHelper()
+    helper.form_class = 'form-horizontal'
+    helper.layout = Layout(
+        'status',
+        'comment',
+        FormActions(
+            Submit('confirm', 'Confirm'),
+            Submit('require-followup', 'Require study followup')
+        )
+    )
+
+    class Meta:
+        model = models.DCCReview
+        fields = ('status', 'comment', )
+        help_texts = {
+            'comment': 'Only required for tagged traits that need study followup.'
+        }
+        widgets = {
+            'status': forms.HiddenInput
+        }
+
+    def clean(self):
+        """Custom cleaning to check a comment is given for TaggedTraits that require followup."""
+        cleaned_data = super(DCCReviewForm, self).clean()
+        comment = cleaned_data.get('comment')
+        status = cleaned_data.get('status')
+        if status == models.DCCReview.STATUS_FOLLOWUP and not comment:
+            error = forms.ValidationError('Comment cannot be blank for tagged traits that require followup.',
+                                        code='followup_comment')
+            self.add_error('comment', error)
+        if status == models.DCCReview.STATUS_CONFIRMED and comment:
+            error = forms.ValidationError('Comment must be blank for tagged traits that are confirmed.',
+                                        code='confirmed_comment')
+            self.add_error('comment', error)
+        return cleaned_data
