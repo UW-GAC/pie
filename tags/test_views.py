@@ -141,11 +141,9 @@ class StudyTaggedTraitListTest(UserLoginTestCase):
         self.assertIsInstance(context['study_table'], tables.StudyTaggedTraitTable)
 
 
-class TaggedTraitDetailTest(UserLoginTestCase):
-
-    def setUp(self):
-        super(TaggedTraitDetailTest, self).setUp()
-        self.tagged_trait = factories.TaggedTraitFactory.create()
+class TaggedTraitDetailMixin(object):
+    """Mixin to run standard tests for the TaggedTraitDetail view. Must be used
+    with TestCase or a class that subclasses TestCase."""
 
     def get_url(self, *args):
         return reverse('tags:tagged-traits:detail', args=args)
@@ -166,6 +164,54 @@ class TaggedTraitDetailTest(UserLoginTestCase):
         context = response.context
         self.assertIn('tagged_trait', context)
         self.assertEqual(context['tagged_trait'], self.tagged_trait)
+
+
+class TaggedTraitDetailTest(TaggedTraitDetailMixin, UserLoginTestCase):
+
+    def setUp(self):
+        super(TaggedTraitDetailMixin, self).setUp()
+        self.tagged_trait = factories.TaggedTraitFactory.create()
+
+
+    def test_no_delete_button(self):
+        """Regular user does not see a button to delete the tagged trait on this detail page."""
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        self.assertNotContains(response, reverse('tags:tagged-traits:delete', kwargs={'pk': self.tagged_trait.pk}))
+
+
+class TaggedTraitDetailPhenotypeTaggerTest(TaggedTraitDetailMixin, PhenotypeTaggerLoginTestCase):
+
+    def setUp(self):
+        super(TaggedTraitDetailPhenotypeTaggerTest, self).setUp()
+        self.tagged_trait = factories.TaggedTraitFactory.create(
+            trait__source_dataset__source_study_version__study=self.study,
+            creator=self.user
+        )
+        self.user.refresh_from_db()
+
+    def test_delete_button(self):
+        """A phenotype tagger does see a button to delete the tagged trait."""
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        self.assertContains(response, reverse('tags:tagged-traits:delete', kwargs={'pk': self.tagged_trait.pk}))
+
+    def test_delete_button_for_other_studies(self):
+        """A phenotype tagger does see a button to delete the tagged trait."""
+        tagged_trait = factories.TaggedTraitFactory.create()
+        response = self.client.get(self.get_url(tagged_trait.pk))
+        self.assertNotContains(response, reverse('tags:tagged-traits:delete', kwargs={'pk': tagged_trait.pk}))
+
+
+class TaggedTraitDetailDCCAnalystTest(TaggedTraitDetailMixin, DCCAnalystLoginTestCase):
+
+    def setUp(self):
+        super(TaggedTraitDetailDCCAnalystTest, self).setUp()
+        self.tagged_trait = factories.TaggedTraitFactory.create()
+        self.user.refresh_from_db()
+
+    def test_delete_button(self):
+        """A DCC analyst does see a button to delete the tagged trait."""
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        self.assertContains(response, reverse('tags:tagged-traits:delete', kwargs={'pk': self.tagged_trait.pk}))
 
 
 class TaggedTraitByStudyListTest(UserLoginTestCase):

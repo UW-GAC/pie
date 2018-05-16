@@ -71,6 +71,12 @@ class TaggedTraitDetail(LoginRequiredMixin, DetailView):
     context_object_name = 'tagged_trait'
     template_name = 'tags/taggedtrait_detail.html'
 
+    def get_context_data(self, **kwargs):
+        context = super(TaggedTraitDetail, self).get_context_data(**kwargs)
+        user_studies = list(self.request.user.profile.taggable_studies.all())
+        context['user_is_study_tagger'] = self.object.trait.source_dataset.source_study_version.study in user_studies
+        return context
+
 
 class TaggedTraitByStudyList(LoginRequiredMixin, SingleTableMixin, ListView):
 
