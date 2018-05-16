@@ -172,11 +172,21 @@ class TaggedTraitDetailTest(TaggedTraitDetailMixin, UserLoginTestCase):
         super(TaggedTraitDetailMixin, self).setUp()
         self.tagged_trait = factories.TaggedTraitFactory.create()
 
-
     def test_no_delete_button(self):
         """Regular user does not see a button to delete the tagged trait on this detail page."""
         response = self.client.get(self.get_url(self.tagged_trait.pk))
         self.assertNotContains(response, reverse('tags:tagged-traits:delete', kwargs={'pk': self.tagged_trait.pk}))
+
+    def test_no_dcc_review_info(self):
+        """A regular user does not see DCC review info on this detail page."""
+        dcc_review = factories.DCCReviewFactory.create(
+            tagged_trait=self.tagged_trait,
+            status=models.DCCReview.STATUS_FOLLOWUP,
+            comment='dcc test comment'
+        )
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        self.assertNotContains(response, dcc_review.get_status_display())
+        self.assertNotContains(response, dcc_review.comment)
 
 
 class TaggedTraitDetailPhenotypeTaggerTest(TaggedTraitDetailMixin, PhenotypeTaggerLoginTestCase):
@@ -200,6 +210,17 @@ class TaggedTraitDetailPhenotypeTaggerTest(TaggedTraitDetailMixin, PhenotypeTagg
         response = self.client.get(self.get_url(tagged_trait.pk))
         self.assertNotContains(response, reverse('tags:tagged-traits:delete', kwargs={'pk': tagged_trait.pk}))
 
+    def test_dcc_review_info(self):
+        """A phenotype tagger does not see DCC review info on this detail page."""
+        dcc_review = factories.DCCReviewFactory.create(
+            tagged_trait=self.tagged_trait,
+            status=models.DCCReview.STATUS_FOLLOWUP,
+            comment='dcc test comment'
+        )
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        self.assertNotContains(response, dcc_review.get_status_display())
+        self.assertNotContains(response, dcc_review.comment)
+
 
 class TaggedTraitDetailDCCAnalystTest(TaggedTraitDetailMixin, DCCAnalystLoginTestCase):
 
@@ -212,6 +233,17 @@ class TaggedTraitDetailDCCAnalystTest(TaggedTraitDetailMixin, DCCAnalystLoginTes
         """A DCC analyst does see a button to delete the tagged trait."""
         response = self.client.get(self.get_url(self.tagged_trait.pk))
         self.assertContains(response, reverse('tags:tagged-traits:delete', kwargs={'pk': self.tagged_trait.pk}))
+
+    def test_dcc_review_info(self):
+        """A DCC analyst does see DCC review info on this detail page."""
+        dcc_review = factories.DCCReviewFactory.create(
+            tagged_trait=self.tagged_trait,
+            status=models.DCCReview.STATUS_FOLLOWUP,
+            comment='dcc test comment'
+        )
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        self.assertContains(response, dcc_review.get_status_display())
+        self.assertContains(response, dcc_review.comment)
 
 
 class TaggedTraitByStudyListTest(UserLoginTestCase):
