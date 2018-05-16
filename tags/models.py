@@ -61,6 +61,9 @@ class TaggedTrait(TimeStampedModel):
         """Pretty printing."""
         return 'Trait {} tagged {}'.format(self.trait.i_trait_name, self.tag.lower_title)
 
+    def get_absolute_url(self):
+        return reverse('tags:tagged-traits:detail', args=[self.pk])
+
 
 class DCCReview(TimeStampedModel):
     """Model to allow DCC staff to review a TaggedTrait."""

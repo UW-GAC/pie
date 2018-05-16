@@ -226,6 +226,12 @@ class TaggedTraitTest(TestCase):
         self.assertFalse(tagged_trait_unreviewed in qs)
         self.assertFalse(tagged_trait_confirmed in qs)
 
+    def test_get_absolute_url(self):
+        """get_absolute_url function doesn't fail."""
+        instance = self.model_factory.create()
+        url = instance.get_absolute_url()
+        # Just test that this function works.
+
 
 class DCCReviewTest(TestCase):
     model = models.DCCReview
