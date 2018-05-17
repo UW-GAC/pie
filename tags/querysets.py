@@ -29,3 +29,7 @@ class TaggedTraitQuerySet(models.query.QuerySet):
     def hard_delete(self, *args, **kwargs):
         """Delete the queryset objects regardless of review status."""
         super().delete(*args, **kwargs)
+
+    def non_archived(self):
+        """Filter to non-archived tagged traits."""
+        return self.filter(archived=False)

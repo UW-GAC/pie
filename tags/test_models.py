@@ -211,6 +211,26 @@ class TaggedTraitTest(TestCase):
         with self.assertRaises(ValidationError):
             duplicate.full_clean()
 
+    def test_non_archived_queryset_count(self):
+        """non_archived() queryset method returns correct number of tagged traits."""
+        n_archived = 12
+        n_non_archived = 16
+        archived_taggedtraits = self.model_factory.create_batch(n_archived, archived=True)
+        non_archived_taggedtraits = self.model_factory.create_batch(n_non_archived, archived=False)
+        retrieved_queryset = self.model.objects.non_archived()
+        self.assertEqual(n_non_archived, retrieved_queryset.count())
+
+    def test_non_archived_queryset_no_archived(self):
+        """non_archived() queryset method does not return archived tagged traits."""
+        n_archived = 3
+        n_non_archived = 4
+        archived_taggedtraits = self.model_factory.create_batch(n_archived, archived=True)
+        non_archived_taggedtraits = self.model_factory.create_batch(n_non_archived, archived=False)
+        retrieved_queryset = self.model.objects.non_archived()
+        for archivedtt in archived_taggedtraits:
+            self.assertNotIn(archivedtt, retrieved_queryset)
+        self.assertEqual(n_non_archived, retrieved_queryset.count())
+
     def test_unreviewed_queryset_method(self):
         """Only TaggedTraits that have not been reviewed are returned by the .unreviewed() filter."""
         tagged_trait_unreviewed = factories.TaggedTraitFactory.create()
