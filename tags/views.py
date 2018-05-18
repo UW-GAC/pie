@@ -311,6 +311,44 @@ class ManyTaggedTraitsCreateByTag(LoginRequiredMixin, PermissionRequiredMixin, T
         return mark_safe(msg)
 
 
+class TaggedTraitReviewMixin(object):
+    """Mixin to review TaggedTraits and add or update DCCReviews. Must be used with CreateView or UpdateView."""
+
+    model = models.DCCReview
+    form_class = forms.DCCReviewForm
+
+    def get_context_data(self, **kwargs):
+        if 'tagged_trait' not in kwargs:
+            kwargs['tagged_trait'] = self.tagged_trait
+        return super(TaggedTraitReviewMixin, self).get_context_data(**kwargs) 
+
+    def get_review_status(self):
+        """Return the DCCReview status based on which submit button was clicked."""
+        if self.request.POST:
+            print('posting')
+            if 'confirm' in self.request.POST:
+                return models.DCCReview.STATUS_CONFIRMED
+            elif 'require-followup' in self.request.POST:
+                return models.DCCReview.STATUS_FOLLOWUP
+
+    def get_form_kwargs(self):
+        kwargs = super(TaggedTraitReviewMixin, self).get_form_kwargs()
+        if 'data' in kwargs:
+            tmp = kwargs['data'].copy()
+            tmp.update({'status': self.get_review_status()})
+            kwargs['data'] = tmp
+        return kwargs
+
+    def form_valid(self, form):
+        """Create a DCCReview object linked to the given TaggedTrait."""
+        print('valid')
+        dcc_review = models.DCCReview(tagged_trait=self.tagged_trait)
+        form.instance.tagged_trait = self.tagged_trait
+        form.instance.creator = self.request.user
+        form.instance.status = self.get_review_status()
+        return super(TaggedTraitReviewMixin, self).form_valid(form)
+
+
 class TagAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
     """View for autocompleting tag model choice fields by title in a form. Case-insensitive."""
 
