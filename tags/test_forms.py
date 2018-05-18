@@ -382,3 +382,28 @@ class DCCReviewFormTest(TestCase):
         form = self.form_class(form_data)
         self.assertFalse(form.is_valid())
         self.assertTrue(form.has_error('status'))
+
+
+class TaggedTraitReviewSelectFormTest(TestCase):
+
+    form_class = forms.TaggedTraitReviewSelectForm
+
+    def setUp(self):
+        super(TaggedTraitReviewSelectFormTest, self).setUp()
+        self.tag = factories.TagFactory.create()
+        self.study = StudyFactory.create()
+
+    def test_valid(self):
+        """Form is valid with all necessary input."""
+        form = self.form_class({'tag': self.tag.pk, 'study': self.study.pk})
+        self.assertTrue(form.is_valid())
+
+    def test_invalid_missing_tag(self):
+        """Form is invalid if tag is omitted."""
+        form = self.form_class({'tag': '', 'study': self.study.pk})
+        self.assertFalse(form.is_valid())
+
+    def test_invalid_missing_trait(self):
+        """Form is invalid if study is omitted."""
+        form = self.form_class({'tag': self.tag.pk, 'study': ''})
+        self.assertFalse(form.is_valid())

@@ -410,3 +410,23 @@ class DCCReviewForm(forms.ModelForm):
                                         code='confirmed_comment')
             self.add_error('comment', error)
         return cleaned_data
+
+
+class TaggedTraitReviewSelectForm(forms.Form):
+
+    tag = forms.ModelChoiceField(queryset=models.Tag.objects.all(),
+                                 widget=autocomplete.ModelSelect2(url='tags:autocomplete'),
+                                 help_text=TAG_HELP)
+    study = forms.ModelChoiceField(queryset=Study.objects.all(),
+                                 widget=autocomplete.ModelSelect2(url='trait_browser:source:studies:autocomplete:by-name-or-phs'),
+                                 help_text="Select a study. Start typing the study name or phs to filter the list.")
+
+    helper = FormHelper()
+    helper.form_class = 'form-horizontal'
+    helper.layout = Layout(
+        'tag',
+        'study',
+        FormActions(
+            Submit('submit', 'Submit'),
+        )
+    )
