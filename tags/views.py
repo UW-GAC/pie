@@ -3,10 +3,10 @@
 from django.urls import reverse
 from django.shortcuts import get_object_or_404
 from django.utils.safestring import mark_safe
-from django.views.generic import CreateView, DetailView, DeleteView, FormView, ListView, TemplateView
+from django.views.generic import CreateView, DetailView, DeleteView, FormView, ListView, RedirectView, TemplateView
 
-from braces.views import (FormMessagesMixin, LoginRequiredMixin, PermissionRequiredMixin, UserFormKwargsMixin,
-                          UserPassesTestMixin)
+from braces.views import (FormMessagesMixin, FormValidMessageMixin, LoginRequiredMixin, PermissionRequiredMixin,
+                          UserFormKwargsMixin, UserPassesTestMixin)
 from dal import autocomplete
 from django_tables2 import SingleTableMixin
 
@@ -320,12 +320,11 @@ class TaggedTraitReviewMixin(object):
     def get_context_data(self, **kwargs):
         if 'tagged_trait' not in kwargs:
             kwargs['tagged_trait'] = self.tagged_trait
-        return super(TaggedTraitReviewMixin, self).get_context_data(**kwargs) 
+        return super(TaggedTraitReviewMixin, self).get_context_data(**kwargs)
 
     def get_review_status(self):
         """Return the DCCReview status based on which submit button was clicked."""
         if self.request.POST:
-            print('posting')
             if 'confirm' in self.request.POST:
                 return models.DCCReview.STATUS_CONFIRMED
             elif 'require-followup' in self.request.POST:
@@ -341,12 +340,80 @@ class TaggedTraitReviewMixin(object):
 
     def form_valid(self, form):
         """Create a DCCReview object linked to the given TaggedTrait."""
-        print('valid')
         dcc_review = models.DCCReview(tagged_trait=self.tagged_trait)
         form.instance.tagged_trait = self.tagged_trait
         form.instance.creator = self.request.user
         form.instance.status = self.get_review_status()
         return super(TaggedTraitReviewMixin, self).form_valid(form)
+
+
+class TaggedTraitReviewByTagAndStudySelect(LoginRequiredMixin, FormView):
+
+    template_name = 'tags/taggedtrait_review_select.html'
+    form_class = forms.TaggedTraitReviewSelectForm
+
+    def form_valid(self, form):
+        # Set session variables for use in the next view.
+        study = form.cleaned_data.get('study')
+        tag = form.cleaned_data.get('tag')
+        # Set session variables for use in the next view.
+        self.request.session['study_pk'] = study.pk
+        self.request.session['tag_pk'] = tag.pk
+        qs = models.TaggedTrait.objects.unreviewed().filter(
+             tag=tag,
+             trait__source_dataset__source_study_version__study=study
+        )
+        self.request.session['tagged_trait_pks'] = list(qs.values_list('pk', flat=True))
+        return(super(TaggedTraitReviewByTagAndStudySelect, self).form_valid(form))
+
+    def get_success_url(self):
+        return reverse('tags:tagged-traits:review:next')
+
+
+class TaggedTraitReviewByTagAndStudyNext(LoginRequiredMixin, RedirectView):
+    """Determine the next tagged trait to review and redirect to review page."""
+
+    def get_redirect_url(self, *args, **kwargs):
+        pks = self.request.session.get('tagged_trait_pks')
+        if pks is None:
+            # The expected session variable has not been set by the previous
+            # view, so redirect to that view.
+            return reverse('tags:tagged-traits:review:select')
+        elif len(pks) > 0:
+            # Set the session variable expected by the review view, then redirect.
+            self.request.session['pk'] = pks[0]
+            return reverse('tags:tagged-traits:review:review')
+        else:
+            # All TaggedTraits have been reviewed! Redirect to the tag-study table.
+            # Remove session variables related to this group of views.
+            tag_pk = self.request.session.pop('tag_pk')
+            study_pk = self.request.session.pop('study_pk')
+            del self.request.session['tagged_trait_pks']
+            return reverse('tags:tag:study:list', args=[tag_pk, study_pk])
+
+
+class TaggedTraitReviewByTagAndStudy(LoginRequiredMixin, TaggedTraitReviewMixin, FormValidMessageMixin, CreateView):
+
+    template_name = 'tags/dccreview_form.html'
+
+    def dispatch(self, request, *args, **kwargs):
+        pk = request.session['pk']
+        self.tagged_trait = get_object_or_404(models.TaggedTrait, pk=pk)
+        return super(TaggedTraitReviewByTagAndStudy, self).dispatch(request, *args, **kwargs)
+
+    def form_valid(self, form):
+        # Remove the reviewed tagged trait from the list of pks.
+        self.request.session['tagged_trait_pks'] = self.request.session['tagged_trait_pks'][1:]
+        # The view no longer needs the pk, since the form was valid.
+        del self.request.session['pk']
+        return super(TaggedTraitReviewByTagAndStudy, self).form_valid(form)
+
+    def get_form_valid_message(self):
+        msg = 'Successfully reviewed {}.'.format(self.tagged_trait)
+        return msg
+
+    def get_success_url(self):
+        return reverse('tags:tagged-traits:review:next')
 
 
 class TagAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):

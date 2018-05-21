@@ -1,0 +1,18 @@
+{% extends '__base.html' %}
+{% load crispy_forms_tags %}
+{% load staticfiles %}
+{% load static %}
+
+
+{% block content %}
+  <h1>XXX</h1>
+
+  {% crispy form %}
+
+{% endblock content %}
+
+{% block custom_javascript %}
+  {# script for django-autocomplete-light #}
+  <script type="text/javascript" src="{% static 'admin/js/vendor/jquery/jquery.js' %}"></script>
+  {{ form.media }}
+{% endblock custom_javascript %}
