@@ -1731,21 +1731,22 @@ class TaggedTraitReviewByTagAndStudySelectTest(DCCAnalystLoginTestCase):
         response = self.client.post(self.get_url(), {'tag': '', 'study': ''})
         self.assertFormError(response, 'form', 'tag', 'This field is required.')
         session = self.client.session
-        self.assertNotIn('study_pk', session)
-        self.assertNotIn('tag_pk', session)
-        self.assertNotIn('tagged_trait_pks', session)
+        self.assertNotIn('tagged_trait_review_by_tag_and_study_info', session)
 
     def test_post_valid_form(self):
         """Posting valid data to the form sets session variables and redirects appropriately."""
         response = self.client.post(self.get_url(), {'tag': self.tag.pk, 'study': self.study.pk})
+        # Check session variables.
         session = self.client.session
-        self.assertIn('study_pk', session)
-        self.assertEqual(session['study_pk'], self.study.pk)
-        self.assertIn('tag_pk', session)
-        self.assertEqual(session['tag_pk'], self.tag.pk)
-        self.assertIn('tagged_trait_pks', session)
+        self.assertIn('tagged_trait_review_by_tag_and_study_info', session)
+        session_info = session['tagged_trait_review_by_tag_and_study_info']
+        self.assertIn('study_pk', session_info)
+        self.assertEqual(session_info['study_pk'], self.study.pk)
+        self.assertIn('tag_pk', session_info)
+        self.assertEqual(session_info['tag_pk'], self.tag.pk)
+        self.assertIn('tagged_trait_pks', session_info)
         for tt in self.tagged_traits:
-            self.assertIn(tt.pk, session['tagged_trait_pks'],
+            self.assertIn(tt.pk, session_info['tagged_trait_pks'],
                           msg='TaggedTrait {} not in session tagged_trait_pks'.format(tt.pk))
         # The success url redirects again to a new page, so include the target_status_code argument.
         self.assertRedirects(response, reverse('tags:tagged-traits:review:next'), target_status_code=302)
@@ -1759,11 +1760,13 @@ class TaggedTraitReviewByTagAndStudySelectTest(DCCAnalystLoginTestCase):
         )
         response = self.client.post(self.get_url(), {'tag': self.tag.pk, 'study': self.study.pk})
         session = self.client.session
-        self.assertIn('tagged_trait_pks', session)
+        self.assertIn('tagged_trait_review_by_tag_and_study_info', session)
+        session_info = session['tagged_trait_review_by_tag_and_study_info']
+        self.assertIn('tagged_trait_pks', session_info)
         for tt in self.tagged_traits:
-            self.assertIn(tt.pk, session['tagged_trait_pks'],
+            self.assertIn(tt.pk, session_info['tagged_trait_pks'],
                           msg='TaggedTrait {} unexpectedly not in session tagged_trait_pks'.format(tt.pk))
-        self.assertNotIn(other_tagged_trait, session['tagged_trait_pks'],
+        self.assertNotIn(other_tagged_trait, session_info['tagged_trait_pks'],
                          msg='TaggedTrait {} unexpectedly in session tagged_trait_pks'.format(tt.pk))
 
     def test_session_variable_tagged_with_study(self):
@@ -1775,11 +1778,12 @@ class TaggedTraitReviewByTagAndStudySelectTest(DCCAnalystLoginTestCase):
         )
         response = self.client.post(self.get_url(), {'tag': self.tag.pk, 'study': self.study.pk})
         session = self.client.session
-        self.assertIn('tagged_trait_pks', session)
+        self.assertIn('tagged_trait_review_by_tag_and_study_info', session)
+        session_info = session['tagged_trait_review_by_tag_and_study_info']
         for tt in self.tagged_traits:
-            self.assertIn(tt.pk, session['tagged_trait_pks'],
+            self.assertIn(tt.pk, session_info['tagged_trait_pks'],
                           msg='TaggedTrait {} unexpectedly not in session tagged_trait_pks'.format(tt.pk))
-        self.assertNotIn(other_tagged_trait, session['tagged_trait_pks'],
+        self.assertNotIn(other_tagged_trait, session_info['tagged_trait_pks'],
                          msg='TaggedTrait {} unexpectedly in session tagged_trait_pks'.format(tt.pk))
 
     def test_session_variable_tagged_with_study_and_tag(self):
@@ -1792,11 +1796,12 @@ class TaggedTraitReviewByTagAndStudySelectTest(DCCAnalystLoginTestCase):
         )
         response = self.client.post(self.get_url(), {'tag': self.tag.pk, 'study': self.study.pk})
         session = self.client.session
-        self.assertIn('tagged_trait_pks', session)
+        self.assertIn('tagged_trait_review_by_tag_and_study_info', session)
+        session_info = session['tagged_trait_review_by_tag_and_study_info']
         for tt in self.tagged_traits:
-            self.assertIn(tt.pk, session['tagged_trait_pks'],
+            self.assertIn(tt.pk, session_info['tagged_trait_pks'],
                           msg='TaggedTrait {} unexpectedly not in session tagged_trait_pks'.format(tt.pk))
-        self.assertNotIn(other_tagged_trait, session['tagged_trait_pks'],
+        self.assertNotIn(other_tagged_trait, session_info['tagged_trait_pks'],
                          msg='TaggedTrait {} unexpectedly in session tagged_trait_pks'.format(tt.pk))
 
     def test_no_tagged_traits_with_study_and_tag(self):
@@ -1804,21 +1809,25 @@ class TaggedTraitReviewByTagAndStudySelectTest(DCCAnalystLoginTestCase):
         self.fail()
 
     def test_resets_session_variables(self):
-        """Posting valid data to the form sets session variables and redirects appropriately."""
-        self.client.session['study_pk'] = self.study.pk + 1
-        self.client.session['tag_pk'] = self.tag.pk + 1
-        self.client.session['tagged_trait_pks'] = [1]
+        """A preexisting session variable is overwritten with new data upon successful form submission."""
+        self.client.session['tagged_trait_review_by_tag_and_study_info'] = {
+            'study_pk': self.study.pk + 1,
+            'tag_pk': self.tag.pk + 1,
+            'tagged_trait_pks': [],
+        }
         self.client.session.save()
         response = self.client.post(self.get_url(), {'tag': self.tag.pk, 'study': self.study.pk})
         session = self.client.session
-        self.assertIn('study_pk', session)
-        self.assertEqual(session['study_pk'], self.study.pk)
-        self.assertIn('tag_pk', session)
-        self.assertEqual(session['tag_pk'], self.tag.pk)
-        self.assertIn('tagged_trait_pks', session)
-        self.assertEqual(len(session['tagged_trait_pks']), len(self.tagged_traits))
+        self.assertIn('tagged_trait_review_by_tag_and_study_info', session)
+        session_info = session['tagged_trait_review_by_tag_and_study_info']
+        self.assertIn('study_pk', session_info)
+        self.assertEqual(session_info['study_pk'], self.study.pk)
+        self.assertIn('tag_pk', session_info)
+        self.assertEqual(session_info['tag_pk'], self.tag.pk)
+        self.assertIn('tagged_trait_pks', session_info)
+        self.assertEqual(len(session_info['tagged_trait_pks']), len(self.tagged_traits))
         for tt in self.tagged_traits:
-            self.assertIn(tt.pk, session['tagged_trait_pks'],
+            self.assertIn(tt.pk, session_info['tagged_trait_pks'],
                           msg='TaggedTrait {} not in session tagged_trait_pks'.format(tt.pk))
 
 
@@ -1839,15 +1848,18 @@ class TaggedTraitReviewByTagAndStudyNextTest(DCCAnalystLoginTestCase):
         tag = tagged_trait.tag
         study = tagged_trait.trait.source_dataset.source_study_version.study
         session = self.client.session
-        session['tag_pk'] = tag.pk
-        session['study_pk'] = study.pk
-        session['tagged_trait_pks'] = [tagged_trait.pk]
+        session['tagged_trait_review_by_tag_and_study_info'] = {
+            'tag_pk': tag.pk,
+            'study_pk': study.pk,
+            'tagged_trait_pks': [tagged_trait.pk],
+        }
         session.save()
         response = self.client.get(self.get_url())
         # Make sure a pk session variable was set
         session = self.client.session
-        self.assertIn('pk', session)
-        self.assertEqual(session['pk'], tagged_trait.pk)
+        self.assertIn('tagged_trait_review_by_tag_and_study_info', session)
+        self.assertIn('pk', session['tagged_trait_review_by_tag_and_study_info'])
+        self.assertEqual(session['tagged_trait_review_by_tag_and_study_info']['pk'], tagged_trait.pk)
         self.assertRedirects(response, reverse('tags:tagged-traits:review:review'))
 
     def test_view_success_with_no_tagged_traits_left(self):
@@ -1855,9 +1867,11 @@ class TaggedTraitReviewByTagAndStudyNextTest(DCCAnalystLoginTestCase):
         tag = factories.TagFactory.create()
         study = StudyFactory.create()
         session = self.client.session
-        session['tag_pk'] = tag.pk
-        session['study_pk'] = study.pk
-        session['tagged_trait_pks'] = []
+        session['tagged_trait_review_by_tag_and_study_info'] = {
+            'tag_pk': tag.pk,
+            'study_pk': study.pk,
+            'tagged_trait_pks': [],
+        }
         session.save()
         response = self.client.get(self.get_url())
         self.assertRedirects(response, reverse('tags:tag:study:list', args=[tag.pk, study.pk]))
@@ -1867,14 +1881,14 @@ class TaggedTraitReviewByTagAndStudyNextTest(DCCAnalystLoginTestCase):
         tag = factories.TagFactory.create()
         study = StudyFactory.create()
         session = self.client.session
-        session['tag_pk'] = tag.pk
-        session['study_pk'] = study.pk
-        session['tagged_trait_pks'] = []
+        session['tagged_trait_review_by_tag_and_study_info'] = {
+            'tag_pk': tag.pk,
+            'study_pk': study.pk,
+            'tagged_trait_pks': [],
+        }
         session.save()
         response = self.client.get(self.get_url())
-        self.assertNotIn('tag_pk', self.client.session)
-        self.assertNotIn('study_pk', self.client.session)
-        self.assertNotIn('tagged_trait_pks', self.client.session)
+        self.assertNotIn('tagged_trait_review_by_tag_and_study_info', self.client.session)
 
     def test_session_variables_are_not_properly_set(self):
         """."""
@@ -1893,10 +1907,12 @@ class TaggedTraitReviewByTagAndStudyTest(DCCAnalystLoginTestCase):
         )
         # Set expected session variables.
         session = self.client.session
-        session['study_pk'] = self.study.pk
-        session['tag_pk'] = self.tag.pk
-        session['tagged_trait_pks'] = [self.tagged_trait.pk]
-        session['pk'] = self.tagged_trait.pk
+        session['tagged_trait_review_by_tag_and_study_info'] = {
+            'study_pk': self.study.pk,
+            'tag_pk': self.tag.pk,
+            'tagged_trait_pks': [self.tagged_trait.pk],
+            'pk': self.tagged_trait.pk,
+        }
         session.save()
 
     def get_url(self, *args):
@@ -1926,7 +1942,9 @@ class TaggedTraitReviewByTagAndStudyTest(DCCAnalystLoginTestCase):
         self.assertEqual(self.tagged_trait.dcc_review, dcc_review)
         # The pk session variable is correctly unset.
         session = self.client.session
-        self.assertNotIn('pk', session)
+        self.assertIn('tagged_trait_review_by_tag_and_study_info', session)
+        session_info = session['tagged_trait_review_by_tag_and_study_info']
+        self.assertNotIn('pk', session_info)
         # Check for success message.
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
@@ -1943,7 +1961,9 @@ class TaggedTraitReviewByTagAndStudyTest(DCCAnalystLoginTestCase):
         self.assertEqual(self.tagged_trait.dcc_review, dcc_review)
         # The pk session variable is correctly unset.
         session = self.client.session
-        self.assertNotIn('pk', session)
+        self.assertIn('tagged_trait_review_by_tag_and_study_info', session)
+        session_info = session['tagged_trait_review_by_tag_and_study_info']
+        self.assertNotIn('pk', session_info)
         # Check for success message.
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
@@ -1960,8 +1980,10 @@ class TaggedTraitReviewByTagAndStudyTest(DCCAnalystLoginTestCase):
         self.assertFalse(hasattr(self.tagged_trait, 'dcc_review'))
         # The pk session variable is not unset.
         session = self.client.session
-        self.assertIn('pk', session)
-        self.assertEqual(session['pk'], self.tagged_trait.pk)
+        self.assertIn('tagged_trait_review_by_tag_and_study_info', session)
+        session_info = session['tagged_trait_review_by_tag_and_study_info']
+        self.assertIn('pk', session_info)
+        self.assertEqual(session_info['pk'], self.tagged_trait.pk)
         # No messages.
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 0)
@@ -1973,9 +1995,12 @@ class TaggedTraitReviewByTagAndStudyTest(DCCAnalystLoginTestCase):
         # Does not create a DCCReview for this TaggedTrait.
         self.assertFalse(hasattr(self.tagged_trait, 'dcc_review'))
         # Session variables are properly set/unset.
-        self.assertNotIn('pk', self.client.session)
-        self.assertIn('tagged_trait_pks', self.client.session)
-        self.assertNotIn(self.tagged_trait.pk, self.client.session['tagged_trait_pks'])
+        session = self.client.session
+        self.assertIn('tagged_trait_review_by_tag_and_study_info', session)
+        session_info = session['tagged_trait_review_by_tag_and_study_info']
+        self.assertNotIn('pk', session_info)
+        self.assertIn('tagged_trait_pks', session_info)
+        self.assertNotIn(self.tagged_trait.pk, session_info['tagged_trait_pks'])
         # The redirect view unsets some session variables, so check it at the end.
         self.assertRedirects(response, reverse('tags:tagged-traits:review:next'), target_status_code=302)
 
@@ -1987,14 +2012,14 @@ class TaggedTraitReviewByTagAndStudyTest(DCCAnalystLoginTestCase):
 
     def test_session_variable_unset_with_get_request(self):
         """."""
-        del self.client.session['pk']
+        del self.client.session['tagged_trait_review_by_tag_and_study_info']['pk']
         # What should happen?
         response = self.client.get(self.get_url())
         self.fail()
 
     def test_session_variable_unset_with_post_request(self):
         """."""
-        del self.client.session['pk']
+        del self.client.session['tagged_trait_review_by_tag_and_study_info']['pk']
         # What should happen?
         response = self.client.get(self.get_url())
         self.fail()
@@ -2002,7 +2027,6 @@ class TaggedTraitReviewByTagAndStudyTest(DCCAnalystLoginTestCase):
     def test_already_reviewed_tagged_trait(self):
         """."""
         dcc_review = factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait)
-        self.client.session['pk'] = dcc_review
         self.fail()
 
 

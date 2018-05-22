@@ -357,14 +357,17 @@ class TaggedTraitReviewByTagAndStudySelect(LoginRequiredMixin, FormView):
         # Set session variables for use in the next view.
         study = form.cleaned_data.get('study')
         tag = form.cleaned_data.get('tag')
-        # Set session variables for use in the next view.
-        self.request.session['study_pk'] = study.pk
-        self.request.session['tag_pk'] = tag.pk
         qs = models.TaggedTrait.objects.unreviewed().filter(
              tag=tag,
              trait__source_dataset__source_study_version__study=study
         )
-        self.request.session['tagged_trait_pks'] = list(qs.values_list('pk', flat=True))
+        review_info = {
+            'study_pk': study.pk,
+            'tag_pk': tag.pk,
+            'tagged_trait_pks': list(qs.values_list('pk', flat=True)),
+        }
+        # Set a session variable for use in the next view.
+        self.request.session['tagged_trait_review_by_tag_and_study_info'] = review_info
         return(super(TaggedTraitReviewByTagAndStudySelect, self).form_valid(form))
 
     def get_success_url(self):
@@ -375,22 +378,25 @@ class TaggedTraitReviewByTagAndStudyNext(LoginRequiredMixin, RedirectView):
     """Determine the next tagged trait to review and redirect to review page."""
 
     def get_redirect_url(self, *args, **kwargs):
-        pks = self.request.session.get('tagged_trait_pks')
-        if pks is None:
+        info = self.request.session.get('tagged_trait_review_by_tag_and_study_info')
+        if info is None:
             # The expected session variable has not been set by the previous
             # view, so redirect to that view.
             return reverse('tags:tagged-traits:review:select')
-        elif len(pks) > 0:
+        pks = info.get('tagged_trait_pks')
+        if len(pks) > 0:
             # Set the session variable expected by the review view, then redirect.
-            self.request.session['pk'] = pks[0]
+            info['pk'] = pks[0]
+            self.request.session['tagged_trait_review_by_tag_and_study_info'] = info
             return reverse('tags:tagged-traits:review:review')
         else:
             # All TaggedTraits have been reviewed! Redirect to the tag-study table.
             # Remove session variables related to this group of views.
-            tag_pk = self.request.session.pop('tag_pk')
-            study_pk = self.request.session.pop('study_pk')
-            del self.request.session['tagged_trait_pks']
-            return reverse('tags:tag:study:list', args=[tag_pk, study_pk])
+            tag_pk = info.get('tag_pk')
+            study_pk = info.get('study_pk')
+            url = reverse('tags:tag:study:list', args=[tag_pk, study_pk])
+            del self.request.session['tagged_trait_review_by_tag_and_study_info']
+            return url
 
 
 class TaggedTraitReviewByTagAndStudy(LoginRequiredMixin, TaggedTraitReviewMixin, FormValidMessageMixin, CreateView):
@@ -398,24 +404,29 @@ class TaggedTraitReviewByTagAndStudy(LoginRequiredMixin, TaggedTraitReviewMixin,
     template_name = 'tags/dccreview_form.html'
 
     def dispatch(self, request, *args, **kwargs):
-        pk = request.session['pk']
+        info = request.session.get('tagged_trait_review_by_tag_and_study_info')
+        pk = info.get('pk')
         self.tagged_trait = get_object_or_404(models.TaggedTrait, pk=pk)
         return super(TaggedTraitReviewByTagAndStudy, self).dispatch(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
         if forms.DCCReviewForm.SUBMIT_SKIP in request.POST:
             # Remove the reviewed tagged trait from the list of pks.
-            request.session['tagged_trait_pks'] = request.session['tagged_trait_pks'][1:]
+            info = request.session['tagged_trait_review_by_tag_and_study_info']
+            info['tagged_trait_pks'] = info['tagged_trait_pks'][1:]
             # The view no longer needs the pk, since the form was valid.
-            del self.request.session['pk']
+            del info['pk']
+            request.session['tagged_trait_review_by_tag_and_study_info'] = info
             return HttpResponseRedirect(reverse('tags:tagged-traits:review:next'))
         return super(TaggedTraitReviewByTagAndStudy, self).post(request, *args, **kwargs)
 
     def form_valid(self, form):
         # Remove the reviewed tagged trait from the list of pks.
-        self.request.session['tagged_trait_pks'] = self.request.session['tagged_trait_pks'][1:]
+        info = self.request.session['tagged_trait_review_by_tag_and_study_info']
+        info['tagged_trait_pks'] = info['tagged_trait_pks'][1:]
         # The view no longer needs the pk, since the form was valid.
-        del self.request.session['pk']
+        del info['pk']
+        self.request.session['tagged_trait_review_by_tag_and_study_info'] = info
         return super(TaggedTraitReviewByTagAndStudy, self).form_valid(form)
 
     def get_form_valid_message(self):
