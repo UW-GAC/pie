@@ -375,14 +375,17 @@ class TagSpecificTraitForm(forms.Form):
 class DCCReviewForm(forms.ModelForm):
     """Form for creating a single DCCReview object."""
 
+    SUBMIT_CONFIRM = 'confirm'
+    SUBMIT_FOLLOWUP = 'require-followup'
+
     helper = FormHelper()
     helper.form_class = 'form-horizontal'
     helper.layout = Layout(
         'status',
         'comment',
         FormActions(
-            Submit('confirm', 'Confirm'),
-            Submit('require-followup', 'Require study followup')
+            Submit(SUBMIT_CONFIRM, 'Confirm'),
+            Submit(SUBMIT_FOLLOWUP, 'Require study followup')
         )
     )
 
