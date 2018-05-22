@@ -1805,8 +1805,15 @@ class TaggedTraitReviewByTagAndStudySelectTest(DCCAnalystLoginTestCase):
                          msg='TaggedTrait {} unexpectedly in session tagged_trait_pks'.format(tt.pk))
 
     def test_no_tagged_traits_with_study_and_tag(self):
-        """."""
-        self.fail()
+        """Redirects to list view of no tagged traits for this study and tag."""
+        study = StudyFactory.create()
+        tag = factories.TagFactory.create()
+        response = self.client.post(self.get_url(), {'tag': tag.pk, 'study': study.pk})
+        self.assertRedirects(response, reverse('tags:tagged-traits:review:next'), target_status_code=302)
+        # Check the message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Oops!', str(messages[0]))
 
     def test_resets_session_variables(self):
         """A preexisting session variable is overwritten with new data upon successful form submission."""
