@@ -1966,6 +1966,19 @@ class TaggedTraitReviewByTagAndStudyTest(DCCAnalystLoginTestCase):
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 0)
 
+    def test_skip_tagged_trait(self):
+        """Skipping a TaggedTrait unsets pk and redirects to the next view."""
+        form_data = {forms.DCCReviewForm.SUBMIT_SKIP: 'Skip'}
+        response = self.client.post(self.get_url(), form_data)
+        # Does not create a DCCReview for this TaggedTrait.
+        self.assertFalse(hasattr(self.tagged_trait, 'dcc_review'))
+        # Session variables are properly set/unset.
+        self.assertNotIn('pk', self.client.session)
+        self.assertIn('tagged_trait_pks', self.client.session)
+        self.assertNotIn(self.tagged_trait.pk, self.client.session['tagged_trait_pks'])
+        # The redirect view unsets some session variables, so check it at the end.
+        self.assertRedirects(response, reverse('tags:tagged-traits:review:next'), target_status_code=302)
+
     def test_non_existent_tagged_trait(self):
         """Returns a 404 page if the session varaible pk doesn't exist."""
         self.tagged_trait.delete()

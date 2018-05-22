@@ -1,5 +1,6 @@
 """View functions and classes for the tags app."""
 
+from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django.shortcuts import get_object_or_404
 from django.utils.safestring import mark_safe
@@ -400,6 +401,15 @@ class TaggedTraitReviewByTagAndStudy(LoginRequiredMixin, TaggedTraitReviewMixin,
         pk = request.session['pk']
         self.tagged_trait = get_object_or_404(models.TaggedTrait, pk=pk)
         return super(TaggedTraitReviewByTagAndStudy, self).dispatch(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        if forms.DCCReviewForm.SUBMIT_SKIP in request.POST:
+            # Remove the reviewed tagged trait from the list of pks.
+            request.session['tagged_trait_pks'] = request.session['tagged_trait_pks'][1:]
+            # The view no longer needs the pk, since the form was valid.
+            del self.request.session['pk']
+            return HttpResponseRedirect(reverse('tags:tagged-traits:review:next'))
+        return super(TaggedTraitReviewByTagAndStudy, self).post(request, *args, **kwargs)
 
     def form_valid(self, form):
         # Remove the reviewed tagged trait from the list of pks.

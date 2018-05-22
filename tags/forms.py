@@ -377,6 +377,7 @@ class DCCReviewForm(forms.ModelForm):
 
     SUBMIT_CONFIRM = 'confirm'
     SUBMIT_FOLLOWUP = 'require-followup'
+    SUBMIT_SKIP = 'skip'
 
     helper = FormHelper()
     helper.form_class = 'form-horizontal'
@@ -385,7 +386,8 @@ class DCCReviewForm(forms.ModelForm):
         'comment',
         FormActions(
             Submit(SUBMIT_CONFIRM, 'Confirm'),
-            Submit(SUBMIT_FOLLOWUP, 'Require study followup')
+            Submit(SUBMIT_FOLLOWUP, 'Require study followup'),
+            Submit(SUBMIT_SKIP, 'Skip')
         )
     )
 
