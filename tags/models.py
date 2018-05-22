@@ -63,6 +63,16 @@ class TaggedTrait(TimeStampedModel):
         """Pretty printing."""
         return 'variable {} tagged {}'.format(self.trait.i_trait_name, self.tag.lower_title)
 
+    def archive(self):
+        """Set the TaggedTrait to archived."""
+        self.archived = True
+        self.save()
+
+    def unarchive(self):
+        """Set the TaggedTrait to unarchived."""
+        self.archived = False
+        self.save()
+
     def get_absolute_url(self):
         return reverse('tags:tagged-traits:pk:detail', args=[self.pk])
 

@@ -231,6 +231,38 @@ class TaggedTraitTest(TestCase):
             self.assertNotIn(archivedtt, retrieved_queryset)
         self.assertEqual(n_non_archived, retrieved_queryset.count())
 
+    def test_archive_unarchived_taggedtrait(self):
+        """Archive method sets an unarchived taggedtrait to archived."""
+        taggedtrait = self.model(archived=False, **self.model_args)
+        taggedtrait.save()
+        taggedtrait.archive()
+        taggedtrait.refresh_from_db()
+        self.assertTrue(taggedtrait.archived)
+
+    def test_unarchive_archived_taggedtrait(self):
+        """Archive method sets an unarchived taggedtrait to archived."""
+        taggedtrait = self.model(archived=True, **self.model_args)
+        taggedtrait.save()
+        taggedtrait.unarchive()
+        taggedtrait.refresh_from_db()
+        self.assertFalse(taggedtrait.archived)
+
+    def test_archive_archived_taggedtrait(self):
+        """Archive method sets an unarchived taggedtrait to archived."""
+        taggedtrait = self.model(archived=True, **self.model_args)
+        taggedtrait.save()
+        taggedtrait.archive()
+        taggedtrait.refresh_from_db()
+        self.assertTrue(taggedtrait.archived)
+
+    def test_unarchive_unarchived_taggedtrait(self):
+        """Archive method sets an unarchived taggedtrait to archived."""
+        taggedtrait = self.model(archived=False, **self.model_args)
+        taggedtrait.save()
+        taggedtrait.unarchive()
+        taggedtrait.refresh_from_db()
+        self.assertFalse(taggedtrait.archived)
+
     def test_unreviewed_queryset_method(self):
         """Only TaggedTraits that have not been reviewed are returned by the .unreviewed() filter."""
         tagged_trait_unreviewed = factories.TaggedTraitFactory.create()
