@@ -14,6 +14,7 @@ from trait_browser.tables import SourceTraitTableFull
 from . import factories
 from . import models
 from . import tables
+from . import forms
 
 fake = Faker()
 
@@ -1694,6 +1695,302 @@ class ManyTaggedTraitsCreateByTagDCCAnalystTest(DCCAnalystLoginTestCase):
         self.user.profile.taggable_studies.remove(self.traits[0].source_dataset.source_study_version.study)
         response = self.client.get(self.get_url(self.tag.pk))
         self.assertEqual(response.status_code, 200)
+
+
+class TaggedTraitReviewByTagAndStudySelectTest(DCCAnalystLoginTestCase):
+
+    def setUp(self):
+        super(TaggedTraitReviewByTagAndStudySelectTest, self).setUp()
+        self.tag = factories.TagFactory.create()
+        self.study = StudyFactory.create()
+        self.tagged_traits = factories.TaggedTraitFactory.create_batch(
+            10,
+            tag=self.tag,
+            trait__source_dataset__source_study_version__study=self.study
+        )
+
+    def get_url(self, *args):
+        """Get the url for the view this class is supposed to test."""
+        return reverse('tags:tagged-traits:review:select', args=args)
+
+    def test_view_success_code(self):
+        """View returns successful response code."""
+        response = self.client.get(self.get_url())
+        print(response)
+        self.assertEqual(response.status_code, 200)
+
+    def test_context_data(self):
+        """View has appropriate data in the context."""
+        response = self.client.get(self.get_url())
+        context = response.context
+        self.assertTrue('form' in context)
+        self.assertIsInstance(context['form'], forms.TaggedTraitReviewSelectForm)
+
+    def test_post_blank_trait(self):
+        """Posting bad data to the form shows a form error and doesn't set session variables."""
+        response = self.client.post(self.get_url(), {'tag': '', 'study': ''})
+        self.assertFormError(response, 'form', 'tag', 'This field is required.')
+        session = self.client.session
+        self.assertNotIn('study_pk', session)
+        self.assertNotIn('tag_pk', session)
+        self.assertNotIn('tagged_trait_pks', session)
+
+    def test_post_valid_form(self):
+        """Posting valid data to the form sets session variables and redirects appropriately."""
+        response = self.client.post(self.get_url(), {'tag': self.tag.pk, 'study': self.study.pk})
+        session = self.client.session
+        self.assertIn('study_pk', session)
+        self.assertEqual(session['study_pk'], self.study.pk)
+        self.assertIn('tag_pk', session)
+        self.assertEqual(session['tag_pk'], self.tag.pk)
+        self.assertIn('tagged_trait_pks', session)
+        for tt in self.tagged_traits:
+            self.assertIn(tt.pk, session['tagged_trait_pks'],
+                          msg='TaggedTrait {} not in session tagged_trait_pks'.format(tt.pk))
+        # The success url redirects again to a new page, so include the target_status_code argument.
+        self.assertRedirects(response, reverse('tags:tagged-traits:review:next'), target_status_code=302)
+
+    def test_session_variable_tagged_with_tag(self):
+        """Posting valid data to the form sets tagged_trait_pks to only those from the given tag."""
+        other_tag = factories.TagFactory.create()
+        other_tagged_trait = factories.TaggedTraitFactory.create(
+            tag=other_tag,
+            trait__source_dataset__source_study_version__study=self.study
+        )
+        response = self.client.post(self.get_url(), {'tag': self.tag.pk, 'study': self.study.pk})
+        session = self.client.session
+        self.assertIn('tagged_trait_pks', session)
+        for tt in self.tagged_traits:
+            self.assertIn(tt.pk, session['tagged_trait_pks'],
+                          msg='TaggedTrait {} unexpectedly not in session tagged_trait_pks'.format(tt.pk))
+        self.assertNotIn(other_tagged_trait, session['tagged_trait_pks'],
+                         msg='TaggedTrait {} unexpectedly in session tagged_trait_pks'.format(tt.pk))
+
+    def test_session_variable_tagged_with_study(self):
+        """Posting valid data to the form sets tagged_trait_pks to only those from the given study."""
+        other_study = StudyFactory.create()
+        other_tagged_trait = factories.TaggedTraitFactory.create(
+            tag=self.tag,
+            trait__source_dataset__source_study_version__study=other_study
+        )
+        response = self.client.post(self.get_url(), {'tag': self.tag.pk, 'study': self.study.pk})
+        session = self.client.session
+        self.assertIn('tagged_trait_pks', session)
+        for tt in self.tagged_traits:
+            self.assertIn(tt.pk, session['tagged_trait_pks'],
+                          msg='TaggedTrait {} unexpectedly not in session tagged_trait_pks'.format(tt.pk))
+        self.assertNotIn(other_tagged_trait, session['tagged_trait_pks'],
+                         msg='TaggedTrait {} unexpectedly in session tagged_trait_pks'.format(tt.pk))
+
+    def test_session_variable_tagged_with_study_and_tag(self):
+        """Posting valid data to the form sets tagged_trait_pks to only those from the given study and tag."""
+        other_tag = factories.TagFactory.create()
+        other_study = StudyFactory.create()
+        other_tagged_trait = factories.TaggedTraitFactory.create(
+            tag=other_tag,
+            trait__source_dataset__source_study_version__study=other_study
+        )
+        response = self.client.post(self.get_url(), {'tag': self.tag.pk, 'study': self.study.pk})
+        session = self.client.session
+        self.assertIn('tagged_trait_pks', session)
+        for tt in self.tagged_traits:
+            self.assertIn(tt.pk, session['tagged_trait_pks'],
+                          msg='TaggedTrait {} unexpectedly not in session tagged_trait_pks'.format(tt.pk))
+        self.assertNotIn(other_tagged_trait, session['tagged_trait_pks'],
+                         msg='TaggedTrait {} unexpectedly in session tagged_trait_pks'.format(tt.pk))
+
+    def test_no_tagged_traits_with_study_and_tag(self):
+        """."""
+        self.fail()
+
+    def test_resets_session_variables(self):
+        """Posting valid data to the form sets session variables and redirects appropriately."""
+        self.client.session['study_pk'] = self.study.pk + 1
+        self.client.session['tag_pk'] = self.tag.pk + 1
+        self.client.session['tagged_trait_pks'] = [1]
+        self.client.session.save()
+        response = self.client.post(self.get_url(), {'tag': self.tag.pk, 'study': self.study.pk})
+        session = self.client.session
+        self.assertIn('study_pk', session)
+        self.assertEqual(session['study_pk'], self.study.pk)
+        self.assertIn('tag_pk', session)
+        self.assertEqual(session['tag_pk'], self.tag.pk)
+        self.assertIn('tagged_trait_pks', session)
+        self.assertEqual(len(session['tagged_trait_pks']), len(self.tagged_traits))
+        for tt in self.tagged_traits:
+            self.assertIn(tt.pk, session['tagged_trait_pks'],
+                          msg='TaggedTrait {} not in session tagged_trait_pks'.format(tt.pk))
+
+
+class TaggedTraitReviewByTagAndStudyNextTest(DCCAnalystLoginTestCase):
+
+    def get_url(self, *args):
+        """Get the url for the view this class is supposed to test."""
+        return reverse('tags:tagged-traits:review:next', args=args)
+
+    def test_view_success_with_no_session_variables(self):
+        """View redirects correctly when no session variables are set."""
+        response = self.client.get(self.get_url())
+        self.assertRedirects(response, reverse('tags:tagged-traits:review:select'))
+
+    def test_view_success_with_tagged_traits_to_review(self):
+        """View redirects correctly when there are tagged traits to review."""
+        tagged_trait = factories.TaggedTraitFactory.create()
+        tag = tagged_trait.tag
+        study = tagged_trait.trait.source_dataset.source_study_version.study
+        session = self.client.session
+        session['tag_pk'] = tag.pk
+        session['study_pk'] = study.pk
+        session['tagged_trait_pks'] = [tagged_trait.pk]
+        session.save()
+        response = self.client.get(self.get_url())
+        # Make sure a pk session variable was set
+        session = self.client.session
+        self.assertIn('pk', session)
+        self.assertEqual(session['pk'], tagged_trait.pk)
+        self.assertRedirects(response, reverse('tags:tagged-traits:review:review'))
+
+    def test_view_success_with_no_tagged_traits_left(self):
+        """View redirects correctly when no tagged traits are left to review."""
+        tag = factories.TagFactory.create()
+        study = StudyFactory.create()
+        session = self.client.session
+        session['tag_pk'] = tag.pk
+        session['study_pk'] = study.pk
+        session['tagged_trait_pks'] = []
+        session.save()
+        response = self.client.get(self.get_url())
+        self.assertRedirects(response, reverse('tags:tag:study:list', args=[tag.pk, study.pk]))
+
+    def test_session_variables_are_unset_when_reviewing_completed(self):
+        """View unsets session variables when no tagged traits are left to review."""
+        tag = factories.TagFactory.create()
+        study = StudyFactory.create()
+        session = self.client.session
+        session['tag_pk'] = tag.pk
+        session['study_pk'] = study.pk
+        session['tagged_trait_pks'] = []
+        session.save()
+        response = self.client.get(self.get_url())
+        self.assertNotIn('tag_pk', self.client.session)
+        self.assertNotIn('study_pk', self.client.session)
+        self.assertNotIn('tagged_trait_pks', self.client.session)
+
+    def test_session_variables_are_not_properly_set(self):
+        """."""
+        self.fail()
+
+
+class TaggedTraitReviewByTagAndStudyTest(DCCAnalystLoginTestCase):
+
+    def setUp(self):
+        super(TaggedTraitReviewByTagAndStudyTest, self).setUp()
+        self.tag = factories.TagFactory.create()
+        self.study = StudyFactory.create()
+        self.tagged_trait = factories.TaggedTraitFactory.create(
+            tag=self.tag,
+            trait__source_dataset__source_study_version__study=self.study
+        )
+        # Set expected session variables.
+        session = self.client.session
+        session['study_pk'] = self.study.pk
+        session['tag_pk'] = self.tag.pk
+        session['tagged_trait_pks'] = [self.tagged_trait.pk]
+        session['pk'] = self.tagged_trait.pk
+        session.save()
+
+    def get_url(self, *args):
+        """Get the url for the view this class is supposed to test."""
+        return reverse('tags:tagged-traits:review:review', args=args)
+
+    def test_view_success_code(self):
+        """View returns successful response code."""
+        response = self.client.get(self.get_url())
+        self.assertEqual(response.status_code, 200)
+
+    def test_context_data(self):
+        """View has appropriate data in the context."""
+        response = self.client.get(self.get_url())
+        context = response.context
+        self.assertIn('form', context)
+        self.assertIsInstance(context['form'], forms.DCCReviewForm)
+        self.assertIn('tagged_trait', context)
+        self.assertEqual(context['tagged_trait'], self.tagged_trait)
+
+    def test_successful_post_with_confirmed_tagged_trait(self):
+        """Posting valid data to the form correctly creates a DCCReview."""
+        form_data = {forms.DCCReviewForm.SUBMIT_CONFIRM: 'Confirm', 'comment': ''}
+        response = self.client.post(self.get_url(), form_data)
+        # Correctly creates a DCCReview for this TaggedTrait.
+        dcc_review = models.DCCReview.objects.all().latest('created')
+        self.assertEqual(self.tagged_trait.dcc_review, dcc_review)
+        # The pk session variable is correctly unset.
+        session = self.client.session
+        self.assertNotIn('pk', session)
+        # Check for success message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Successfully reviewed', str(messages[0]))
+        # Correctly redirects to the next view (remembering that it is a redirect view).
+        self.assertRedirects(response, reverse('tags:tagged-traits:review:next'), target_status_code=302)
+
+    def test_successful_post_with_needs_followup_tagged_trait(self):
+        """Posting valid data to the form correctly creates a DCCReview."""
+        form_data = {forms.DCCReviewForm.SUBMIT_FOLLOWUP: 'Require study followup', 'comment': 'foo'}
+        response = self.client.post(self.get_url(), form_data)
+        # Correctly creates a DCCReview for this TaggedTrait.
+        dcc_review = models.DCCReview.objects.all().latest('created')
+        self.assertEqual(self.tagged_trait.dcc_review, dcc_review)
+        # The pk session variable is correctly unset.
+        session = self.client.session
+        self.assertNotIn('pk', session)
+        # Check for success message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Successfully reviewed', str(messages[0]))
+        # Correctly redirects to the next view (remembering that it is a redirect view).
+        self.assertRedirects(response, reverse('tags:tagged-traits:review:next'), target_status_code=302)
+
+    def test_post_bad_data(self):
+        """Posting bad data to the form shows a form error and doesn't unset session variables."""
+        form_data = {forms.DCCReviewForm.SUBMIT_FOLLOWUP: 'Require study followup', 'comment': ''}
+        response = self.client.post(self.get_url(), form_data)
+        self.assertEqual(response.status_code, 200)
+        # Does not create a DCCReview for this TaggedTrait.
+        self.assertFalse(hasattr(self.tagged_trait, 'dcc_review'))
+        # The pk session variable is not unset.
+        session = self.client.session
+        self.assertIn('pk', session)
+        self.assertEqual(session['pk'], self.tagged_trait.pk)
+        # No messages.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 0)
+
+    def test_non_existent_tagged_trait(self):
+        """Returns a 404 page if the session varaible pk doesn't exist."""
+        self.tagged_trait.delete()
+        response = self.client.get(self.get_url())
+        self.assertEqual(response.status_code, 404)
+
+    def test_session_variable_unset_with_get_request(self):
+        """."""
+        del self.client.session['pk']
+        # What should happen?
+        response = self.client.get(self.get_url())
+        self.fail()
+
+    def test_session_variable_unset_with_post_request(self):
+        """."""
+        del self.client.session['pk']
+        # What should happen?
+        response = self.client.get(self.get_url())
+        self.fail()
+
+    def test_already_reviewed_tagged_trait(self):
+        """."""
+        dcc_review = factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait)
+        self.client.session['pk'] = dcc_review
+        self.fail()
 
 
 class TagsLoginRequiredTest(LoginRequiredTestCase):
