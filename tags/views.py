@@ -395,7 +395,11 @@ class TaggedTraitReviewByTagAndStudyNext(LoginRequiredMixin, RedirectView):
         if len(pks) > 0:
             # Set the session variable expected by the review view, then redirect.
             pk = pks[0]
-            tt = models.TaggedTrait.objects.get(pk=pk)
+            try:
+                tt = models.TaggedTrait.objects.get(pk=pk)
+            except ObjectDoesNotExist:
+                self._skip_next_tagged_trait()
+                return reverse('tags:tagged-traits:review:next')
             if hasattr(tt, 'dcc_review'):
                 self._skip_next_tagged_trait()
                 return reverse('tags:tagged-traits:review:next')
