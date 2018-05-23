@@ -380,6 +380,19 @@ class TaggedTraitReviewByTagAndStudySelect(LoginRequiredMixin, MessageMixin, For
 class TaggedTraitReviewByTagAndStudyNext(LoginRequiredMixin, RedirectView):
     """Determine the next tagged trait to review and redirect to review page."""
 
+    def dispatch(self, request, *args, **kwargs):
+        # Check that expected session variables are set.
+        if 'tagged_trait_review_by_tag_and_study_info' not in request.session:
+            return HttpResponseRedirect(reverse('tags:tagged-traits:review:select'))
+        # check for required variables.
+        required_keys = ('tag_pk', 'study_pk', 'tagged_trait_pks')
+        session_info = request.session['tagged_trait_review_by_tag_and_study_info']
+        for key in required_keys:
+            if key not in session_info:
+                del request.session['tagged_trait_review_by_tag_and_study_info']
+                return HttpResponseRedirect(reverse('tags:tagged-traits:review:select'))
+        return super(TaggedTraitReviewByTagAndStudyNext, self).dispatch(request, *args, **kwargs)
+
     def _skip_next_tagged_trait(self):
         info = self.request.session['tagged_trait_review_by_tag_and_study_info']
         info['tagged_trait_pks'] = info['tagged_trait_pks'][1:]
@@ -421,8 +434,20 @@ class TaggedTraitReviewByTagAndStudy(LoginRequiredMixin, TaggedTraitReviewMixin,
     template_name = 'tags/dccreview_form.html'
 
     def dispatch(self, request, *args, **kwargs):
-        info = request.session.get('tagged_trait_review_by_tag_and_study_info')
-        pk = info.get('pk')
+        # Check that expected session variables are set.
+        if 'tagged_trait_review_by_tag_and_study_info' not in request.session:
+            return HttpResponseRedirect(reverse('tags:tagged-traits:review:select'))
+        # check for required variables.
+        required_keys = ('tag_pk', 'study_pk', 'tagged_trait_pks')
+        session_info = request.session['tagged_trait_review_by_tag_and_study_info']
+        for key in required_keys:
+            if key not in session_info:
+                del request.session['tagged_trait_review_by_tag_and_study_info']
+                return HttpResponseRedirect(reverse('tags:tagged-traits:review:select'))
+        # Check for pk
+        if 'pk' not in session_info:
+            return HttpResponseRedirect(reverse('tags:tagged-traits:review:next'))
+        pk = session_info.get('pk')
         self.tagged_trait = get_object_or_404(models.TaggedTrait, pk=pk)
         return super(TaggedTraitReviewByTagAndStudy, self).dispatch(request, *args, **kwargs)
 

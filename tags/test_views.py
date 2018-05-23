@@ -1,5 +1,6 @@
 """Tests of views in the tags app."""
 
+import copy
 from faker import Faker
 
 from django.contrib.auth.models import Group
@@ -1947,8 +1948,34 @@ class TaggedTraitReviewByTagAndStudyNextTest(DCCAnalystLoginTestCase):
         self.assertRedirects(response, reverse('tags:tagged-traits:review:next'), target_status_code=302)
 
     def test_session_variables_are_not_properly_set(self):
-        """."""
-        self.fail()
+        """Redirects to select view if expected session variable is not set."""
+        response = self.client.get(self.get_url())
+        self.assertRedirects(response, reverse('tags:tagged-traits:review:select'))
+
+    def test_session_variable_missing_required_keys(self):
+        """Redirects to select view if expected session variable dictionary keys are missing."""
+        tag = factories.TagFactory.create()
+        study = StudyFactory.create()
+        tagged_traits = factories.TaggedTraitFactory.create_batch(
+            2,
+            tag=tag,
+            trait__source_dataset__source_study_version__study=study
+        )
+        template = {
+            'study_pk': study.pk,
+            'tag_pk': tag.pk,
+            'tagged_trait_pks': [x.pk for x in tagged_traits]
+        }
+        for key in template.keys():
+            session_info = copy.copy(template)
+            session_info.pop(key)
+            session = self.client.session
+            session['tagged_trait_review_by_tag_and_study_info'] = session_info
+            session.save()
+            response = self.client.get(self.get_url())
+            self.assertNotIn('tagged_trait_review_by_tag_and_study_info', self.client.session)
+            self.assertRedirects(response, reverse('tags:tagged-traits:review:select'),
+                                 msg_prefix='did not redirect when missing {} in session'.format(key))
 
 
 class TaggedTraitReviewByTagAndStudyTest(DCCAnalystLoginTestCase):
@@ -2066,20 +2093,6 @@ class TaggedTraitReviewByTagAndStudyTest(DCCAnalystLoginTestCase):
         response = self.client.get(self.get_url())
         self.assertEqual(response.status_code, 404)
 
-    def test_session_variable_unset_with_get_request(self):
-        """."""
-        del self.client.session['tagged_trait_review_by_tag_and_study_info']['pk']
-        # What should happen?
-        response = self.client.get(self.get_url())
-        self.fail()
-
-    def test_session_variable_unset_with_post_request(self):
-        """."""
-        del self.client.session['tagged_trait_review_by_tag_and_study_info']['pk']
-        # What should happen?
-        response = self.client.get(self.get_url())
-        self.fail()
-
     def test_already_reviewed_tagged_trait(self):
         """Shows warning message and does not save review if TaggedTrait is already reviewed."""
         dcc_review = factories.DCCReviewFactory.create(
@@ -2149,6 +2162,92 @@ class TaggedTraitReviewByTagAndStudyTest(DCCAnalystLoginTestCase):
         self.assertEqual(len(messages), 0)
         # The previous DCCReview was not updated.
         self.assertEqual(self.tagged_trait.dcc_review, dcc_review)
+        self.assertRedirects(response, reverse('tags:tagged-traits:review:next'), target_status_code=302)
+
+    def test_session_variables_are_not_properly_set_with_get_request(self):
+        """Redirects to select view if expected session variable is not set."""
+        session = self.client.session
+        del session['tagged_trait_review_by_tag_and_study_info']
+        session.save()
+        response = self.client.get(self.get_url())
+        self.assertRedirects(response, reverse('tags:tagged-traits:review:select'))
+
+    def test_session_variables_are_not_properly_set_with_post_request(self):
+        """Redirects to select view if expected session variable is not set."""
+        session = self.client.session
+        del session['tagged_trait_review_by_tag_and_study_info']
+        session.save()
+        response = self.client.post(self.get_url(), {})
+        self.assertRedirects(response, reverse('tags:tagged-traits:review:select'))
+
+    def test_session_variable_missing_key_tag_pk_with_get_request(self):
+        """Redirects to select view if expected session variable dictionary keys are missing."""
+        session = self.client.session
+        session['tagged_trait_review_by_tag_and_study_info'].pop('tag_pk')
+        session.save()
+        response = self.client.get(self.get_url())
+        self.assertNotIn('tagged_trait_review_by_tag_and_study_info', self.client.session)
+        self.assertRedirects(response, reverse('tags:tagged-traits:review:select'))
+
+    def test_session_variable_missing_key_study_pk_with_get_request(self):
+        """Redirects to select view if expected session variable dictionary keys are missing."""
+        session = self.client.session
+        session['tagged_trait_review_by_tag_and_study_info'].pop('study_pk')
+        session.save()
+        response = self.client.get(self.get_url())
+        self.assertNotIn('tagged_trait_review_by_tag_and_study_info', self.client.session)
+        self.assertRedirects(response, reverse('tags:tagged-traits:review:select'))
+
+    def test_session_variable_missing_key_tagged_trait_pks_with_get_request(self):
+        """Redirects to select view if expected session variable dictionary keys are missing."""
+        session = self.client.session
+        session['tagged_trait_review_by_tag_and_study_info'].pop('tagged_trait_pks')
+        session.save()
+        response = self.client.get(self.get_url())
+        self.assertNotIn('tagged_trait_review_by_tag_and_study_info', self.client.session)
+        self.assertRedirects(response, reverse('tags:tagged-traits:review:select'))
+
+    def test_session_variable_missing_key_pk_with_get_request(self):
+        """Redirects to select view if expected session variable dictionary keys are missing."""
+        session = self.client.session
+        session['tagged_trait_review_by_tag_and_study_info'].pop('pk')
+        session.save()
+        response = self.client.get(self.get_url())
+        self.assertRedirects(response, reverse('tags:tagged-traits:review:next'), target_status_code=302)
+
+    def test_session_variable_missing_key_tag_pk_with_post_request(self):
+        """Redirects to select view if expected session variable dictionary keys are missing."""
+        session = self.client.session
+        session['tagged_trait_review_by_tag_and_study_info'].pop('tag_pk')
+        session.save()
+        response = self.client.post(self.get_url(), {})
+        self.assertNotIn('tagged_trait_review_by_tag_and_study_info', self.client.session)
+        self.assertRedirects(response, reverse('tags:tagged-traits:review:select'))
+
+    def test_session_variable_missing_key_study_pk_with_post_request(self):
+        """Redirects to select view if expected session variable dictionary keys are missing."""
+        session = self.client.session
+        session['tagged_trait_review_by_tag_and_study_info'].pop('study_pk')
+        session.save()
+        response = self.client.post(self.get_url(), {})
+        self.assertNotIn('tagged_trait_review_by_tag_and_study_info', self.client.session)
+        self.assertRedirects(response, reverse('tags:tagged-traits:review:select'))
+
+    def test_session_variable_missing_key_tagged_trait_pks_with_post_request(self):
+        """Redirects to select view if expected session variable dictionary keys are missing."""
+        session = self.client.session
+        session['tagged_trait_review_by_tag_and_study_info'].pop('tagged_trait_pks')
+        session.save()
+        response = self.client.post(self.get_url(), {})
+        self.assertNotIn('tagged_trait_review_by_tag_and_study_info', self.client.session)
+        self.assertRedirects(response, reverse('tags:tagged-traits:review:select'))
+
+    def test_session_variable_missing_key_pk_with_post_request(self):
+        """Redirects to select view if expected session variable dictionary keys are missing."""
+        session = self.client.session
+        session['tagged_trait_review_by_tag_and_study_info'].pop('pk')
+        session.save()
+        response = self.client.post(self.get_url(), {})
         self.assertRedirects(response, reverse('tags:tagged-traits:review:next'), target_status_code=302)
 
 
