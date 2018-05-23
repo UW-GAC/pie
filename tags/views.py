@@ -422,24 +422,29 @@ class TaggedTraitReviewByTagAndStudy(LoginRequiredMixin, TaggedTraitReviewMixin,
         self.tagged_trait = get_object_or_404(models.TaggedTrait, pk=pk)
         return super(TaggedTraitReviewByTagAndStudy, self).dispatch(request, *args, **kwargs)
 
+    def _update_session_variables(self):
+        """Update session variables used in this series of views."""
+        info = self.request.session['tagged_trait_review_by_tag_and_study_info']
+        info['tagged_trait_pks'] = info['tagged_trait_pks'][1:]
+        del info['pk']
+        self.request.session['tagged_trait_review_by_tag_and_study_info'] = info
+
     def post(self, request, *args, **kwargs):
         if forms.DCCReviewForm.SUBMIT_SKIP in request.POST:
             # Remove the reviewed tagged trait from the list of pks.
-            info = request.session['tagged_trait_review_by_tag_and_study_info']
-            info['tagged_trait_pks'] = info['tagged_trait_pks'][1:]
-            # The view no longer needs the pk, since the form was valid.
-            del info['pk']
-            request.session['tagged_trait_review_by_tag_and_study_info'] = info
+            self._update_session_variables()
+            return HttpResponseRedirect(reverse('tags:tagged-traits:review:next'))
+        # Check if this trait has already been reviewed.
+        if hasattr(self.tagged_trait, 'dcc_review'):
+            self._update_session_variables()
+            # Add an informational message.
+            self.messages.warning('{} has already been reviewed.'.format(self.tagged_trait))
             return HttpResponseRedirect(reverse('tags:tagged-traits:review:next'))
         return super(TaggedTraitReviewByTagAndStudy, self).post(request, *args, **kwargs)
 
     def form_valid(self, form):
         # Remove the reviewed tagged trait from the list of pks.
-        info = self.request.session['tagged_trait_review_by_tag_and_study_info']
-        info['tagged_trait_pks'] = info['tagged_trait_pks'][1:]
-        # The view no longer needs the pk, since the form was valid.
-        del info['pk']
-        self.request.session['tagged_trait_review_by_tag_and_study_info'] = info
+        self._update_session_variables()
         return super(TaggedTraitReviewByTagAndStudy, self).form_valid(form)
 
     def get_form_valid_message(self):

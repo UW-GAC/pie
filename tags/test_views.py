@@ -2056,9 +2056,75 @@ class TaggedTraitReviewByTagAndStudyTest(DCCAnalystLoginTestCase):
         self.fail()
 
     def test_already_reviewed_tagged_trait(self):
-        """."""
-        dcc_review = factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait)
-        self.fail()
+        """Shows warning message and does not save review if TaggedTrait is already reviewed."""
+        dcc_review = factories.DCCReviewFactory.create(
+            tagged_trait=self.tagged_trait,
+            status=models.DCCReview.STATUS_FOLLOWUP,
+            comment='a comment'
+        )
+        # Now try to review it through the web interface.
+        form_data = {forms.DCCReviewForm.SUBMIT_CONFIRM: 'Confirm', 'comment': ''}
+        response = self.client.post(self.get_url(), form_data)
+        # Check session variables.
+        self.assertIn('tagged_trait_review_by_tag_and_study_info', self.client.session)
+        session_info = self.client.session['tagged_trait_review_by_tag_and_study_info']
+        self.assertNotIn('pk', session_info)
+        self.assertIn('tagged_trait_pks', session_info)
+        self.assertNotIn(self.tagged_trait.pk, session_info['tagged_trait_pks'])
+        # Check for success message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('already been reviewed', str(messages[0]))
+        # The previous DCCReview was not updated.
+        self.assertEqual(self.tagged_trait.dcc_review, dcc_review)
+        self.assertRedirects(response, reverse('tags:tagged-traits:review:next'), target_status_code=302)
+
+    def test_already_reviewed_tagged_trait_with_form_error(self):
+        """Shows warning message and redirects if TaggedTrait is already reviewed."""
+        dcc_review = factories.DCCReviewFactory.create(
+            tagged_trait=self.tagged_trait,
+            status=models.DCCReview.STATUS_CONFIRMED,
+            comment=''
+        )
+        # Now try to review it through the web interface.
+        form_data = {forms.DCCReviewForm.SUBMIT_FOLLOWUP: 'Require study followup', 'comment': ''}
+        response = self.client.post(self.get_url(), form_data)
+        # Check session variables.
+        self.assertIn('tagged_trait_review_by_tag_and_study_info', self.client.session)
+        session_info = self.client.session['tagged_trait_review_by_tag_and_study_info']
+        self.assertNotIn('pk', session_info)
+        self.assertIn('tagged_trait_pks', session_info)
+        self.assertNotIn(self.tagged_trait.pk, session_info['tagged_trait_pks'])
+        # Check for success message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('already been reviewed', str(messages[0]))
+        # The previous DCCReview was not updated.
+        self.assertEqual(self.tagged_trait.dcc_review, dcc_review)
+        self.assertRedirects(response, reverse('tags:tagged-traits:review:next'), target_status_code=302)
+
+    def test_can_skip_already_reviewed_tagged_trait(self):
+        """Redirects without a message if an already-reviewed tagged trait is skipped."""
+        dcc_review = factories.DCCReviewFactory.create(
+            tagged_trait=self.tagged_trait,
+            status=models.DCCReview.STATUS_CONFIRMED,
+            comment=''
+        )
+        # Now try to review it through the web interface.
+        form_data = {forms.DCCReviewForm.SUBMIT_SKIP: 'Skip', 'comment': ''}
+        response = self.client.post(self.get_url(), form_data)
+        # Check session variables.
+        self.assertIn('tagged_trait_review_by_tag_and_study_info', self.client.session)
+        session_info = self.client.session['tagged_trait_review_by_tag_and_study_info']
+        self.assertNotIn('pk', session_info)
+        self.assertIn('tagged_trait_pks', session_info)
+        self.assertNotIn(self.tagged_trait.pk, session_info['tagged_trait_pks'])
+        # Check that no message was generated.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 0)
+        # The previous DCCReview was not updated.
+        self.assertEqual(self.tagged_trait.dcc_review, dcc_review)
+        self.assertRedirects(response, reverse('tags:tagged-traits:review:next'), target_status_code=302)
 
 
 class TagsLoginRequiredTest(LoginRequiredTestCase):
