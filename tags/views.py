@@ -342,7 +342,6 @@ class TaggedTraitReviewMixin(object):
 
     def form_valid(self, form):
         """Create a DCCReview object linked to the given TaggedTrait."""
-        dcc_review = models.DCCReview(tagged_trait=self.tagged_trait)
         form.instance.tagged_trait = self.tagged_trait
         form.instance.creator = self.request.user
         form.instance.status = self.get_review_status()
