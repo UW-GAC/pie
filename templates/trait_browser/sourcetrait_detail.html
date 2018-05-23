@@ -65,7 +65,7 @@
   {% if source_trait.sourcetraitencodedvalue_set.all %}
     {% include 'trait_browser/_encoded_values_table.html' with ev_set=source_trait.sourcetraitencodedvalue_set.all %}
   {% endif %}
-  {% include 'trait_browser/_dbgap_link_panel.html' with variable_string=source_trait.variable_accession variable_link=source_trait.dbgap_variable_link dataset_string=source_trait.dataset_accession dataset_link=source_trait.dbgap_dataset_link study_string=source_trait.study_accession study_link=source_trait.dbgap_study_link %}
+  {% include 'trait_browser/_dbgap_link_panel.html' with variable_string=source_trait.full_accession variable_link=source_trait.dbgap_link dataset_string=source_trait.source_dataset.full_accession dataset_link=source_trait.source_dataset.dbgap_link study_string=source_trait.source_dataset.source_study_version.full_accession study_link=source_trait.source_dataset.source_study_version.dbgap_link %}
 {% endblock after_panel %}
 
 {% block custom_javascript %}

@@ -97,8 +97,6 @@ class StudyDetail(LoginRequiredMixin, DetailView):
         dataset_count = models.SourceDataset.objects.current().filter(source_study_version__study=self.object).count()
         context['trait_count'] = '{:,}'.format(trait_count)
         context['dataset_count'] = '{:,}'.format(dataset_count)
-        context['phs_link'] = traits[0].dbgap_study_link
-        context['phs'] = traits[0].study_accession
         return context
 
 
@@ -185,9 +183,6 @@ class SourceDatasetDetail(LoginRequiredMixin, SingleTableMixin, DetailView):
     def get_context_data(self, **kwargs):
         context = super(SourceDatasetDetail, self).get_context_data(**kwargs)
         trait = self.object.sourcetrait_set.first()
-        context['phs'] = trait.study_accession
-        context['phs_link'] = trait.dbgap_study_link
-        context['pht_link'] = trait.dbgap_dataset_link
         context['trait_count'] = '{:,}'.format(self.object.sourcetrait_set.count())
         return context
 
@@ -292,7 +287,7 @@ class SourceDatasetPHTAutocomplete(LoginRequiredMixin, autocomplete.Select2Query
             pht_digits = self.q.replace('pht', '')
             # Search against the phv string if user started the query with leading zeros.
             if pht_digits.startswith('0'):
-                retrieved = retrieved.filter(pht_version_string__regex=r'^{}'.format('pht' + pht_digits))
+                retrieved = retrieved.filter(full_accession__regex=r'^{}'.format('pht' + pht_digits))
             # Search against the pht digits if user started the query with non-zero digits.
             else:
                 retrieved = retrieved.filter(i_accession__regex=r'^{}'.format(pht_digits))
@@ -323,7 +318,7 @@ class SourceDatasetNameOrPHTAutocomplete(LoginRequiredMixin, autocomplete.Select
             phtQ = None
             if self.q.lower().startswith('pht') and q_no_pht.isdigit():
                 if q_no_pht.startswith('0'):
-                    phtQ = Q(pht_version_string__regex=r'^{}'.format('pht' + q_no_pht))
+                    phtQ = Q(full_accession__regex=r'^{}'.format('pht' + q_no_pht))
                 else:
                     phtQ = Q(i_accession__regex=r'^{}'.format(q_no_pht))
             # Autocomplete using formatted pht if q is only digits.
@@ -331,7 +326,7 @@ class SourceDatasetNameOrPHTAutocomplete(LoginRequiredMixin, autocomplete.Select
             elif self.q.isdigit():
                 # Search against the pht string if user started the query with leading zeros.
                 if q_no_pht.startswith('0'):
-                    phtQ = Q(pht_version_string__regex=r'^{}'.format('pht' + q_no_pht))
+                    phtQ = Q(full_accession__regex=r'^{}'.format('pht' + q_no_pht))
                 # Search against the pht digits if user started the query with non-zero digits.
                 else:
                     phtQ = Q(i_accession__regex=r'^{}'.format(q_no_pht))
@@ -509,7 +504,7 @@ class SourceTraitPHVAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySe
             phv_digits = self.q.replace('phv', '')
             # Search against the phv string if user started the query with leading zeros.
             if phv_digits.startswith('0'):
-                retrieved = retrieved.filter(variable_accession__regex=r'^{}'.format('phv' + phv_digits))
+                retrieved = retrieved.filter(full_accession__regex=r'^{}'.format('phv' + phv_digits))
             # Search against the phv digits if user started the query with non-zero digits.
             else:
                 retrieved = retrieved.filter(i_dbgap_variable_accession__regex=r'^{}'.format(phv_digits))
@@ -537,7 +532,7 @@ class TaggableStudyFilteredSourceTraitPHVAutocomplete(LoginRequiredMixin, Taggab
             phv_digits = self.q.replace('phv', '')
             # Search against the phv string if user started the query with leading zeros.
             if phv_digits.startswith('0'):
-                retrieved = retrieved.filter(variable_accession__regex=r'^{}'.format('phv' + phv_digits))
+                retrieved = retrieved.filter(full_accession__regex=r'^{}'.format('phv' + phv_digits))
             # Search against the phv digits if user started the query with non-zero digits.
             else:
                 retrieved = retrieved.filter(i_dbgap_variable_accession__regex=r'^{}'.format(phv_digits))
@@ -588,7 +583,7 @@ class SourceTraitNameOrPHVAutocomplete(LoginRequiredMixin, autocomplete.Select2Q
             # Autocomplete using name AND phv if q fits "phv\d+".
             if self.q.lower().startswith('phv') and q_no_phv.isdigit():
                 if q_no_phv.startswith('0'):
-                    phvQ = Q(variable_accession__regex=r'^{}'.format('phv' + q_no_phv))
+                    phvQ = Q(full_accession__regex=r'^{}'.format('phv' + q_no_phv))
                 else:
                     phvQ = Q(i_dbgap_variable_accession__regex=r'^{}'.format(q_no_phv))
                 retrieved = retrieved.filter(phvQ | Q(i_trait_name__iregex=r'^{}'.format(self.q)))
@@ -597,7 +592,7 @@ class SourceTraitNameOrPHVAutocomplete(LoginRequiredMixin, autocomplete.Select2Q
             elif self.q.isdigit():
                 # Search against the phv string if user started the query with leading zeros.
                 if q_no_phv.startswith('0'):
-                    retrieved = retrieved.filter(variable_accession__regex=r'^{}'.format('phv' + q_no_phv))
+                    retrieved = retrieved.filter(full_accession__regex=r'^{}'.format('phv' + q_no_phv))
                 # Search against the phv digits if user started the query with non-zero digits.
                 else:
                     retrieved = retrieved.filter(i_dbgap_variable_accession__regex=r'^{}'.format(q_no_phv))
@@ -627,7 +622,7 @@ class TaggableStudyFilteredSourceTraitNameOrPHVAutocomplete(LoginRequiredMixin, 
             # Autocomplete using name AND phv if q fits "phv\d+".
             if self.q.lower().startswith('phv') and q_no_phv.isdigit():
                 if q_no_phv.startswith('0'):
-                    phvQ = Q(variable_accession__regex=r'^{}'.format('phv' + q_no_phv))
+                    phvQ = Q(full_accession__regex=r'^{}'.format('phv' + q_no_phv))
                 else:
                     phvQ = Q(i_dbgap_variable_accession__regex=r'^{}'.format(q_no_phv))
                 retrieved = retrieved.filter(phvQ | Q(i_trait_name__iregex=r'^{}'.format(self.q)))
@@ -636,7 +631,7 @@ class TaggableStudyFilteredSourceTraitNameOrPHVAutocomplete(LoginRequiredMixin, 
             elif self.q.isdigit():
                 # Search against the phv string if user started the query with leading zeros.
                 if q_no_phv.startswith('0'):
-                    retrieved = retrieved.filter(variable_accession__regex=r'^{}'.format('phv' + q_no_phv))
+                    retrieved = retrieved.filter(full_accession__regex=r'^{}'.format('phv' + q_no_phv))
                 # Search against the phv digits if user started the query with non-zero digits.
                 else:
                     retrieved = retrieved.filter(i_dbgap_variable_accession__regex=r'^{}'.format(q_no_phv))

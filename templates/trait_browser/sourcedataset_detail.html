@@ -28,7 +28,7 @@
 {% endblock detail_fields %}
 
 {% block after_panel %}
-  {% include 'trait_browser/_dbgap_link_panel.html' with dataset_string=source_dataset.pht_version_string dataset_link=pht_link study_string=phs study_link=phs_link %}
+  {% include 'trait_browser/_dbgap_link_panel.html' with dataset_string=source_dataset.full_accession dataset_link=source_dataset.dbgap_link study_string=source_dataset.source_study_version.full_accession study_link=source_dataset.source_study_version.dbgap_link %}
   {# Table of variables #}
   <div class="panel panel-default">
     <div class="panel-heading"><h4 class="panel-title">Variables in this dataset</h4></div>

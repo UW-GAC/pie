@@ -54,14 +54,10 @@ class StudyDetailTest(UserLoginTestCase):
         self.assertIn('study', context)
         self.assertIn('trait_count', context)
         self.assertIn('dataset_count', context)
-        self.assertIn('phs_link', context)
-        self.assertIn('phs', context)
         self.assertEqual(context['study'], self.study)
         self.assertEqual(context['trait_count'], '{:,}'.format(len(self.source_traits)))
         dataset_count = models.SourceDataset.objects.filter(source_study_version__study=self.study).count()
         self.assertEqual(context['dataset_count'], '{:,}'.format(dataset_count))
-        self.assertEqual(context['phs_link'], self.source_traits[0].dbgap_study_link)
-        self.assertEqual(context['phs'], self.source_traits[0].study_accession)
 
 
 class StudyListTest(UserLoginTestCase):
@@ -402,9 +398,6 @@ class SourceDatasetDetailTest(UserLoginTestCase):
         self.assertEqual(context['source_dataset'], self.dataset)
         self.assertIn('trait_table', context)
         self.assertIsInstance(context['trait_table'], tables.SourceTraitDatasetTable)
-        self.assertIn('phs', context)
-        self.assertIn('phs_link', context)
-        self.assertIn('pht_link', context)
         self.assertIn('trait_count', context)
 
 
@@ -485,15 +478,11 @@ class StudySourceDatasetListTest(UserLoginTestCase):
         self.assertIn('study', context)
         self.assertIn('trait_count', context)
         self.assertIn('dataset_count', context)
-        self.assertIn('phs_link', context)
-        self.assertIn('phs', context)
         self.assertEqual(context['study'], self.study)
         traits = models.SourceTrait.objects.filter(source_dataset__source_study_version__study=self.study)
         self.assertEqual(context['trait_count'], '{:,}'.format(traits.count()))
         dataset_count = models.SourceDataset.objects.filter(source_study_version__study=self.study).count()
         self.assertEqual(context['dataset_count'], '{:,}'.format(dataset_count))
-        self.assertEqual(context['phs_link'], traits[0].dbgap_study_link)
-        self.assertEqual(context['phs'], traits[0].study_accession)
 
     def test_no_deprecated_traits_in_table(self):
         """No deprecated datasets are shown in the table."""
@@ -509,15 +498,13 @@ class StudySourceDatasetListTest(UserLoginTestCase):
         for dataset in self.datasets:
             self.assertIn(dataset, table.data)
 
-    # Commenting out this test for now. It currently fails because the phs_link and phs are accessed via the list
-    # of source traits, so when there are no traits this fails.
-    # def test_table_has_no_rows(self):
-    #     """When there are no source traits, there are no rows in the table, but the view still works."""
-    #     models.SourceDataset.objects.all().delete()
-    #     response = self.client.get(self.get_url(self.study.pk))
-    #     context = response.context
-    #     table = context['source_dataset_table']
-    #     self.assertEqual(len(table.rows), 0)
+    def test_table_has_no_rows(self):
+        """When there are no source traits, there are no rows in the table, but the view still works."""
+        models.SourceDataset.objects.all().delete()
+        response = self.client.get(self.get_url(self.study.pk))
+        context = response.context
+        table = context['source_dataset_table']
+        self.assertEqual(len(table.rows), 0)
 
 
 class SourceDatasetSearchTest(UserLoginTestCase):
@@ -1912,14 +1899,10 @@ class StudySourceTraitListTest(UserLoginTestCase):
         self.assertIn('study', context)
         self.assertIn('trait_count', context)
         self.assertIn('dataset_count', context)
-        self.assertIn('phs_link', context)
-        self.assertIn('phs', context)
         self.assertEqual(context['study'], self.study)
         self.assertEqual(context['trait_count'], '{:,}'.format(len(self.source_traits)))
         dataset_count = models.SourceDataset.objects.filter(source_study_version__study=self.study).count()
         self.assertEqual(context['dataset_count'], '{:,}'.format(dataset_count))
-        self.assertEqual(context['phs_link'], self.source_traits[0].dbgap_study_link)
-        self.assertEqual(context['phs'], self.source_traits[0].study_accession)
 
     def test_no_deprecated_traits_in_table(self):
         """No deprecated traits are shown in the table."""
@@ -1934,15 +1917,13 @@ class StudySourceTraitListTest(UserLoginTestCase):
         for trait in self.source_traits:
             self.assertIn(trait, table.data)
 
-    # Commenting out this test for now. It currently fails because the phs_link and phs are accessed via the list
-    # of source traits, so when there are no traits this fails.
-    # def test_table_has_no_rows(self):
-    #     """When there are no source traits, there are no rows in the table, but the view still works."""
-    #     models.SourceTrait.objects.all().delete()
-    #     response = self.client.get(self.get_url(self.study.pk))
-    #     context = response.context
-    #     table = context['source_trait_table']
-    #     self.assertEqual(len(table.rows), 0)
+    def test_table_has_no_rows(self):
+        """When there are no source traits, there are no rows in the table, but the view still works."""
+        models.SourceTrait.objects.all().delete()
+        response = self.client.get(self.get_url(self.study.pk))
+        context = response.context
+        table = context['source_trait_table']
+        self.assertEqual(len(table.rows), 0)
 
 
 class PhenotypeTaggerSourceTraitTaggingTest(PhenotypeTaggerLoginTestCase):
