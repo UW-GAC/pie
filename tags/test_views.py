@@ -2015,6 +2015,10 @@ class TaggedTraitReviewByTagAndStudyTest(DCCAnalystLoginTestCase):
         self.assertIsInstance(context['form'], forms.DCCReviewForm)
         self.assertIn('tagged_trait', context)
         self.assertEqual(context['tagged_trait'], self.tagged_trait)
+        self.assertIn('tag', context)
+        self.assertEqual(context['tag'], self.tag)
+        self.assertIn('study', context)
+        self.assertEqual(context['study'], self.study)
 
     def test_successful_post_with_confirmed_tagged_trait(self):
         """Posting valid data to the form correctly creates a DCCReview."""

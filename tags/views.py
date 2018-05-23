@@ -458,6 +458,14 @@ class TaggedTraitReviewByTagAndStudy(LoginRequiredMixin, TaggedTraitReviewMixin,
         del info['pk']
         self.request.session['tagged_trait_review_by_tag_and_study_info'] = info
 
+    def get_context_data(self, **kwargs):
+        context = super(TaggedTraitReviewByTagAndStudy, self).get_context_data(**kwargs)
+        if 'tag' not in context:
+            context['tag'] = self.tagged_trait.tag
+        if 'study' not in context:
+            context['study'] = self.tagged_trait.trait.source_dataset.source_study_version.study
+        return context
+
     def post(self, request, *args, **kwargs):
         if forms.DCCReviewForm.SUBMIT_SKIP in request.POST:
             # Remove the reviewed tagged trait from the list of pks.

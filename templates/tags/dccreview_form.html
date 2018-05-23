@@ -1,21 +1,19 @@
-{% extends '__object_detail.html' %}
+{% extends '__base.html' %}
 
 {% load crispy_forms_tags %}
 
 {% block head_title %}
-  | XXX
+  | Tagged trait review
 {% endblock head_title %}
-
-{% block title %}
-  <h1></h1>
-{% endblock title %}
-
 
 {% block content %}
 
   {% include '_messages.html' %}
 
-  <h2>Review {{ tagged_trait }}</h2>
+  <h2>
+    Review {{ tagged_trait }}
+  </h2>
+  <h3>Reviewing tag <a href="{{ tag.get_absolute_url }}">{{ tag.lower_title }}</a> and study <a href="study.get_absolute_url">{{ study.i_study_name }}</a></h3>
 
   <div class="panel panel-default">
     <div class="panel-heading"><strong>Trait info</strong></div>
