@@ -1,5 +1,6 @@
 """View functions and classes for the tags app."""
 
+from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django.shortcuts import get_object_or_404
@@ -379,6 +380,11 @@ class TaggedTraitReviewByTagAndStudySelect(LoginRequiredMixin, MessageMixin, For
 class TaggedTraitReviewByTagAndStudyNext(LoginRequiredMixin, RedirectView):
     """Determine the next tagged trait to review and redirect to review page."""
 
+    def _skip_next_tagged_trait(self):
+        info = self.request.session['tagged_trait_review_by_tag_and_study_info']
+        info['tagged_trait_pks'] = info['tagged_trait_pks'][1:]
+        self.request.session['tagged_trait_review_by_tag_and_study_info'] = info
+
     def get_redirect_url(self, *args, **kwargs):
         info = self.request.session.get('tagged_trait_review_by_tag_and_study_info')
         if info is None:
@@ -388,7 +394,12 @@ class TaggedTraitReviewByTagAndStudyNext(LoginRequiredMixin, RedirectView):
         pks = info.get('tagged_trait_pks')
         if len(pks) > 0:
             # Set the session variable expected by the review view, then redirect.
-            info['pk'] = pks[0]
+            pk = pks[0]
+            tt = models.TaggedTrait.objects.get(pk=pk)
+            if hasattr(tt, 'dcc_review'):
+                self._skip_next_tagged_trait()
+                return reverse('tags:tagged-traits:review:next')
+            info['pk'] = pk
             self.request.session['tagged_trait_review_by_tag_and_study_info'] = info
             return reverse('tags:tagged-traits:review:review')
         else:

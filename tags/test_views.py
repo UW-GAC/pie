@@ -1897,6 +1897,30 @@ class TaggedTraitReviewByTagAndStudyNextTest(DCCAnalystLoginTestCase):
         response = self.client.get(self.get_url())
         self.assertNotIn('tagged_trait_review_by_tag_and_study_info', self.client.session)
 
+    def test_skips_tagged_trait_that_has_been_reviewed(self):
+        tag = factories.TagFactory.create()
+        study = StudyFactory.create()
+        tagged_traits = factories.TaggedTraitFactory.create_batch(
+            2,
+            tag=tag,
+            trait__source_dataset__source_study_version__study=study
+        )
+        session = self.client.session
+        session['tagged_trait_review_by_tag_and_study_info'] = {
+            'tag_pk': tag.pk,
+            'study_pk': study.pk,
+            'tagged_trait_pks': [x.pk for x in tagged_traits],
+        }
+        session.save()
+        factories.DCCReviewFactory.create(tagged_trait=tagged_traits[0])
+        response = self.client.get(self.get_url())
+        self.assertIn('tagged_trait_review_by_tag_and_study_info', self.client.session)
+        session_info = self.client.session['tagged_trait_review_by_tag_and_study_info']
+        self.assertIn('tagged_trait_pks', session_info)
+        self.assertEqual(session_info['tagged_trait_pks'], [tagged_traits[1].pk])
+        self.assertNotIn('pk', session_info)
+        self.assertRedirects(response, reverse('tags:tagged-traits:review:next'), target_status_code=302)
+
     def test_session_variables_are_not_properly_set(self):
         """."""
         self.fail()
