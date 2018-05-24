@@ -421,12 +421,14 @@ class TaggedTraitReviewSelectForm(forms.Form):
 
     tag = forms.ModelChoiceField(queryset=models.Tag.objects.all(),
                                  widget=autocomplete.ModelSelect2(url='tags:autocomplete'),
-                                 help_text=TAG_HELP)
+                                 help_text="""First select a phenotype tag. Start typing the tag name to filter the list.""")
     study = forms.ModelChoiceField(queryset=Study.objects.all(),
                                  widget=autocomplete.ModelSelect2(url='trait_browser:source:studies:autocomplete:by-name-or-phs',
                                                                   forward=('tag', )),
-                                 help_text="Select a study. Start typing the study name or phs to filter the list.")
-
+                                 help_text=("Then select a study. Start typing the study name or phs to filter the "
+                                            "list. Only studies with at least one phenotype variable tagged with the "
+                                            "selected tag will be shown.")
+                                  )
     helper = FormHelper()
     helper.form_class = 'form-horizontal'
     helper.layout = Layout(
@@ -436,3 +438,6 @@ class TaggedTraitReviewSelectForm(forms.Form):
             Submit('submit', 'Submit'),
         )
     )
+
+    class Media:
+        js = ('js/taggedtrait_review_select_form.js', )
