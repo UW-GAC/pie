@@ -32,26 +32,6 @@ class Migration(migrations.Migration):
             old_name='variable_accession',
             new_name='full_accession',
         ),
-        migrations.RemoveField(
-            model_name='sourcetrait',
-            name='dataset_accession',
-        ),
-        migrations.RemoveField(
-            model_name='sourcetrait',
-            name='dbgap_dataset_link',
-        ),
-        migrations.RemoveField(
-            model_name='sourcetrait',
-            name='dbgap_study_link',
-        ),
-        migrations.RemoveField(
-            model_name='sourcetrait',
-            name='study_accession',
-        ),
-        migrations.RemoveField(
-            model_name='study',
-            name='dbgap_latest_version_link',
-        ),
         migrations.AddField(
             model_name='sourcedataset',
             name='dbgap_link',

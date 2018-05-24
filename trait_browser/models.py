@@ -203,7 +203,7 @@ class SourceStudyVersion(SourceDBTimeStampedModel):
     i_is_prerelease = models.BooleanField('is prerelease?')
     i_is_deprecated = models.BooleanField('is deprecated?')
     full_accession = models.CharField(max_length=20)
-    dbgap_link = models.URLField(max_length=200, default='')
+    dbgap_link = models.URLField(max_length=200)
 
     def __str__(self):
         """Pretty printing."""
@@ -257,7 +257,7 @@ class SourceDataset(SourceDBTimeStampedModel):
     full_accession = models.CharField(max_length=20)
     dbgap_filename = models.CharField(max_length=255, default='')
     dataset_name = models.CharField(max_length=255, default='')
-    dbgap_link = models.URLField(max_length=200, default='')
+    dbgap_link = models.URLField(max_length=200)
 
     # Managers/custom querysets.
     objects = querysets.SourceDatasetQuerySet.as_manager()
