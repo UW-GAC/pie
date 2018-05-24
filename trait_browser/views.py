@@ -167,6 +167,11 @@ class StudyNameOrPHSAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySe
                 retrieved = retrieved.filter(nameQ | phsQ)
             else:
                 retrieved = retrieved.filter(nameQ)
+        # Add filtering for studies traits tagged with a specific tag, using data forwarded from a form.
+        tag_pk = self.forwarded.get('tag', None)
+        # tag_pk is a string, so "is not None" is not needed.
+        if tag_pk:
+            retrieved = retrieved.filter(sourcestudyversion__sourcedataset__sourcetrait__tag__pk=tag_pk).distinct()
         return retrieved
 
 

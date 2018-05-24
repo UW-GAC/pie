@@ -330,6 +330,17 @@ class StudyNameOrPHSAutocompleteTest(UserLoginTestCase):
         self.assertEqual(sorted(returned_pks),
                          sorted([name_match.i_accession, phs_match.i_accession]))
 
+    def test_subsets_to_studies_with_traits_with_forwarded_tag(self):
+        study = self.studies[0]
+        tag = TagFactory.create()
+        tagged_trait = TaggedTraitFactory.create(trait__source_dataset__source_study_version__study=study,
+                                                           tag=tag)
+        get_data = {'q': '', 'forward': ['{"tag":"' + str(tag.pk) + '"}']}
+        response = self.client.get(self.get_url(), get_data)
+        pk = get_autocomplete_view_ids(response)
+        self.assertEqual(len(pk), 1)
+        self.assertEqual(pk, [study.pk])
+
 
 class StudySourceTableViewsTest(UserLoginTestCase):
     """Unit tests for the SourceTrait by Study views."""

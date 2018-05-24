@@ -6,7 +6,7 @@ from django.utils.safestring import mark_safe
 
 from crispy_forms.bootstrap import FormActions
 from crispy_forms.helper import FormHelper
-from crispy_forms.layout import HTML, Layout, Submit
+from crispy_forms.layout import HTML, Layout, Reset, Submit
 from dal import autocomplete
 
 from . import models
@@ -423,7 +423,8 @@ class TaggedTraitReviewSelectForm(forms.Form):
                                  widget=autocomplete.ModelSelect2(url='tags:autocomplete'),
                                  help_text=TAG_HELP)
     study = forms.ModelChoiceField(queryset=Study.objects.all(),
-                                 widget=autocomplete.ModelSelect2(url='trait_browser:source:studies:autocomplete:by-name-or-phs'),
+                                 widget=autocomplete.ModelSelect2(url='trait_browser:source:studies:autocomplete:by-name-or-phs',
+                                                                  forward=('tag', )),
                                  help_text="Select a study. Start typing the study name or phs to filter the list.")
 
     helper = FormHelper()
