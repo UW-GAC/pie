@@ -392,6 +392,10 @@ class TaggedTraitReviewSelectFormTest(TestCase):
         super(TaggedTraitReviewSelectFormTest, self).setUp()
         self.tag = factories.TagFactory.create()
         self.study = StudyFactory.create()
+        self.tagged_trait = factories.TaggedTraitFactory.create(
+            tag=self.tag,
+            trait__source_dataset__source_study_version__study=self.study
+        )
 
     def test_valid(self):
         """Form is valid with all necessary input."""
@@ -406,4 +410,16 @@ class TaggedTraitReviewSelectFormTest(TestCase):
     def test_invalid_missing_trait(self):
         """Form is invalid if study is omitted."""
         form = self.form_class({'tag': self.tag.pk, 'study': ''})
+        self.assertFalse(form.is_valid())
+
+    def test_no_tagged_traits(self):
+        """Form is invalid if there are no tagged traits matching the selected tag and study."""
+        self.tagged_trait.delete()
+        form = self.form_class({'tag': self.tag.pk, 'study': self.study.pk})
+        self.assertFalse(form.is_valid())
+
+    def test_no_unreviewed_tagged_traits(self):
+        """Form is invalid if there are no unreviewed tagged traits matching the selected tag and study."""
+        dcc_review = factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait)
+        form = self.form_class({'tag': self.tag.pk, 'study': self.study.pk})
         self.assertFalse(form.is_valid())

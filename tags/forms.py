@@ -419,6 +419,8 @@ class DCCReviewForm(forms.ModelForm):
 
 class TaggedTraitReviewSelectForm(forms.Form):
 
+    ERROR_NO_TAGGED_TRAITS = 'No tagged traits for this tag and study!'
+
     tag = forms.ModelChoiceField(queryset=models.Tag.objects.all(),
                                  widget=autocomplete.ModelSelect2(url='tags:autocomplete'),
                                  help_text="""First select a phenotype tag. Start typing the tag name to filter the list.""")
@@ -431,9 +433,8 @@ class TaggedTraitReviewSelectForm(forms.Form):
                 forward.Const(True, 'unreviewed_tagged_traits_only'),
             )
         ),
-        help_text=("Then select a study. Start typing the study name or phs to filter the "
-                   "list. Only studies with at least one phenotype variable tagged with the "
-                   "selected tag will be shown.")
+        help_text=("Then select a study. Start typing the study name or phs to filter the list. Only studies with at "
+                   "least one unreviewed phenotype variable tagged with the selected tag will be shown.")
     )
     helper = FormHelper()
     helper.form_class = 'form-horizontal'
@@ -447,3 +448,17 @@ class TaggedTraitReviewSelectForm(forms.Form):
 
     class Media:
         js = ('js/taggedtrait_review_select_form.js', )
+
+    def clean(self):
+        cleaned_data = super(TaggedTraitReviewSelectForm, self).clean()
+        tag = cleaned_data.get('tag')
+        study = cleaned_data.get('study')
+        if tag and study:
+            # Check that some TaggedTraits exist.
+            n = models.TaggedTrait.objects.unreviewed().filter(
+                tag=tag,
+                trait__source_dataset__source_study_version__study=study
+            ).count()
+            if n == 0:
+                raise forms.ValidationError(self.ERROR_NO_TAGGED_TRAITS)
+        return cleaned_data

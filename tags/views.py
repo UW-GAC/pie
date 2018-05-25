@@ -366,8 +366,6 @@ class TaggedTraitReviewByTagAndStudySelect(LoginRequiredMixin, MessageMixin, For
             'tag_pk': tag.pk,
             'tagged_trait_pks': list(qs.values_list('pk', flat=True)),
         }
-        if not qs.count():
-            self.messages.error("Oops! No TaggedTraits to review for this tag and study.")
         # Set a session variable for use in the next view.
         self.request.session['tagged_trait_review_by_tag_and_study_info'] = review_info
         return(super(TaggedTraitReviewByTagAndStudySelect, self).form_valid(form))

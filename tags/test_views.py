@@ -1810,11 +1810,13 @@ class TaggedTraitReviewByTagAndStudySelectTest(DCCAnalystLoginTestCase):
         study = StudyFactory.create()
         tag = factories.TagFactory.create()
         response = self.client.post(self.get_url(), {'tag': tag.pk, 'study': study.pk})
-        self.assertRedirects(response, reverse('tags:tagged-traits:review:next'), target_status_code=302)
-        # Check the message.
-        messages = list(response.wsgi_request._messages)
-        self.assertEqual(len(messages), 1)
-        self.assertIn('Oops!', str(messages[0]))
+        self.assertEqual(response.status_code, 200)
+        # Form errors.
+        self.assertIn('form', response.context)
+        self.assertFormError(response, 'form', None, forms.TaggedTraitReviewSelectForm.ERROR_NO_TAGGED_TRAITS)
+        # Make sure no variables were set.
+        session = self.client.session
+        self.assertNotIn('tagged_trait_review_by_tag_and_study_info', session)
 
     def test_resets_session_variables(self):
         """A preexisting session variable is overwritten with new data upon successful form submission."""
