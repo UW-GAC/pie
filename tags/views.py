@@ -1,6 +1,6 @@
 """View functions and classes for the tags app."""
 
-from django.core.exceptions import ObjectDoesNotExist
+from django.core.exceptions import ImproperlyConfigured, ObjectDoesNotExist
 from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django.shortcuts import get_object_or_404
@@ -348,6 +348,22 @@ class TaggedTraitReviewMixin(object):
         return super(TaggedTraitReviewMixin, self).form_valid(form)
 
 
+class SessionVariableMixin(object):
+    """A mixin to handle checking and setting session variables."""
+
+    def dispatch(self, request, *args, **kwargs):
+        res = self.handle_session_variables()
+        if res is not None:
+            return res
+        return super(SessionVariableMixin, self).dispatch(request, *args, **kwargs)
+
+    def handle_session_variables(self):
+        """Process session variables and either return None or a response."""
+        raise ImproperlyConfigured(
+            "SessionVariableMixin requires a definition for 'handle_session_variables()'"
+        )
+
+
 class TaggedTraitReviewByTagAndStudySelect(LoginRequiredMixin, MessageMixin, FormView):
 
     template_name = 'tags/taggedtrait_review_select.html'
@@ -374,21 +390,20 @@ class TaggedTraitReviewByTagAndStudySelect(LoginRequiredMixin, MessageMixin, For
         return reverse('tags:tagged-traits:review:next')
 
 
-class TaggedTraitReviewByTagAndStudyNext(LoginRequiredMixin, RedirectView):
+class TaggedTraitReviewByTagAndStudyNext(LoginRequiredMixin, SessionVariableMixin, RedirectView):
     """Determine the next tagged trait to review and redirect to review page."""
 
-    def dispatch(self, request, *args, **kwargs):
+    def handle_session_variables(self):
         # Check that expected session variables are set.
-        if 'tagged_trait_review_by_tag_and_study_info' not in request.session:
+        if 'tagged_trait_review_by_tag_and_study_info' not in self.request.session:
             return HttpResponseRedirect(reverse('tags:tagged-traits:review:select'))
         # check for required variables.
         required_keys = ('tag_pk', 'study_pk', 'tagged_trait_pks')
-        session_info = request.session['tagged_trait_review_by_tag_and_study_info']
+        session_info = self.request.session['tagged_trait_review_by_tag_and_study_info']
         for key in required_keys:
             if key not in session_info:
-                del request.session['tagged_trait_review_by_tag_and_study_info']
+                del self.request.session['tagged_trait_review_by_tag_and_study_info']
                 return HttpResponseRedirect(reverse('tags:tagged-traits:review:select'))
-        return super(TaggedTraitReviewByTagAndStudyNext, self).dispatch(request, *args, **kwargs)
 
     def _skip_next_tagged_trait(self):
         info = self.request.session['tagged_trait_review_by_tag_and_study_info']
@@ -426,27 +441,26 @@ class TaggedTraitReviewByTagAndStudyNext(LoginRequiredMixin, RedirectView):
             return url
 
 
-class TaggedTraitReviewByTagAndStudy(LoginRequiredMixin, TaggedTraitReviewMixin, FormValidMessageMixin, CreateView):
+class TaggedTraitReviewByTagAndStudy(LoginRequiredMixin, SessionVariableMixin, TaggedTraitReviewMixin, FormValidMessageMixin, CreateView):
 
     template_name = 'tags/dccreview_form.html'
 
-    def dispatch(self, request, *args, **kwargs):
+    def handle_session_variables(self):
         # Check that expected session variables are set.
-        if 'tagged_trait_review_by_tag_and_study_info' not in request.session:
+        if 'tagged_trait_review_by_tag_and_study_info' not in self.request.session:
             return HttpResponseRedirect(reverse('tags:tagged-traits:review:select'))
         # check for required variables.
         required_keys = ('tag_pk', 'study_pk', 'tagged_trait_pks')
-        session_info = request.session['tagged_trait_review_by_tag_and_study_info']
+        session_info = self.request.session['tagged_trait_review_by_tag_and_study_info']
         for key in required_keys:
             if key not in session_info:
-                del request.session['tagged_trait_review_by_tag_and_study_info']
+                del self.request.session['tagged_trait_review_by_tag_and_study_info']
                 return HttpResponseRedirect(reverse('tags:tagged-traits:review:select'))
         # Check for pk
         if 'pk' not in session_info:
             return HttpResponseRedirect(reverse('tags:tagged-traits:review:next'))
         pk = session_info.get('pk')
         self.tagged_trait = get_object_or_404(models.TaggedTrait, pk=pk)
-        return super(TaggedTraitReviewByTagAndStudy, self).dispatch(request, *args, **kwargs)
 
     def _update_session_variables(self):
         """Update session variables used in this series of views."""
