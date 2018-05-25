@@ -1,7 +1,6 @@
 """Custom QuerySets for the tags app."""
 
 from django.db import models
-from . import constants
 
 
 class TaggedTraitQuerySet(models.query.QuerySet):
@@ -17,4 +16,5 @@ class TaggedTraitQuerySet(models.query.QuerySet):
         # querysets.py. There might be a way to get the DCCReview model
         # constants without importing models.py, but I haven't been able to
         # figure out how.
-        return self.filter(dcc_review__status=constants.DCC_REVIEW_STATUS_FOLLOWUP)
+        followup_code = self.model._meta.get_field('dcc_review').related_model.STATUS_FOLLOWUP
+        return self.filter(dcc_review__status=followup_code)

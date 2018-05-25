@@ -6,7 +6,6 @@ from django.db import models
 
 from core.models import TimeStampedModel
 from . import querysets
-from . import constants
 
 
 class Tag(TimeStampedModel):
@@ -69,8 +68,8 @@ class DCCReview(TimeStampedModel):
     """Model to allow DCC staff to review a TaggedTrait."""
 
     tagged_trait = models.OneToOneField(TaggedTrait, on_delete=models.CASCADE, related_name='dcc_review')
-    STATUS_FOLLOWUP = constants.DCC_REVIEW_STATUS_FOLLOWUP
-    STATUS_CONFIRMED = constants.DCC_REVIEW_STATUS_CONFIRMED
+    STATUS_FOLLOWUP = 0
+    STATUS_CONFIRMED = 1
     STATUS_CHOICES = (
         (STATUS_FOLLOWUP, 'Needs study followup'),
         (STATUS_CONFIRMED, 'Confirmed'),
