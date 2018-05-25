@@ -7,7 +7,7 @@ from django.utils.safestring import mark_safe
 from crispy_forms.bootstrap import FormActions
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import HTML, Layout, Reset, Submit
-from dal import autocomplete
+from dal import autocomplete, forward
 
 from . import models
 from trait_browser.models import SourceTrait, Study
@@ -422,13 +422,19 @@ class TaggedTraitReviewSelectForm(forms.Form):
     tag = forms.ModelChoiceField(queryset=models.Tag.objects.all(),
                                  widget=autocomplete.ModelSelect2(url='tags:autocomplete'),
                                  help_text="""First select a phenotype tag. Start typing the tag name to filter the list.""")
-    study = forms.ModelChoiceField(queryset=Study.objects.all(),
-                                 widget=autocomplete.ModelSelect2(url='trait_browser:source:studies:autocomplete:by-name-or-phs',
-                                                                  forward=('tag', )),
-                                 help_text=("Then select a study. Start typing the study name or phs to filter the "
-                                            "list. Only studies with at least one phenotype variable tagged with the "
-                                            "selected tag will be shown.")
-                                  )
+    study = forms.ModelChoiceField(
+        queryset=Study.objects.all(),
+        widget=autocomplete.ModelSelect2(
+            url='trait_browser:source:studies:autocomplete:by-name-or-phs',
+            forward=(
+                'tag',
+                forward.Const(True, 'unreviewed_tagged_traits_only'),
+            )
+        ),
+        help_text=("Then select a study. Start typing the study name or phs to filter the "
+                   "list. Only studies with at least one phenotype variable tagged with the "
+                   "selected tag will be shown.")
+    )
     helper = FormHelper()
     helper.form_class = 'form-horizontal'
     helper.layout = Layout(

@@ -9,7 +9,7 @@ from core.utils import (DCCAnalystLoginTestCase, LoginRequiredTestCase, Phenotyp
                         get_autocomplete_view_ids)
 
 from tags.models import TaggedTrait
-from tags.factories import TagFactory, TaggedTraitFactory
+from tags.factories import DCCReviewFactory, TagFactory, TaggedTraitFactory
 from . import models
 from . import factories
 from . import forms
@@ -340,6 +340,28 @@ class StudyNameOrPHSAutocompleteTest(UserLoginTestCase):
         pk = get_autocomplete_view_ids(response)
         self.assertEqual(len(pk), 1)
         self.assertEqual(pk, [study.pk])
+
+    def test_subsets_to_studies_with_unreviewed_tagged_traits_if_requested(self):
+        study = self.studies[0]
+        tag = TagFactory.create()
+        tagged_trait = TaggedTraitFactory.create(trait__source_dataset__source_study_version__study=study,
+                                                 tag=tag)
+        dcc_review = DCCReviewFactory.create(tagged_trait=tagged_trait)
+        get_data = {'q': '', 'forward': ['{"tag":"' + str(tag.pk) + '","unreviewed_tagged_traits_only":true}']}
+        response = self.client.get(self.get_url(), get_data)
+        pk = get_autocomplete_view_ids(response)
+        self.assertEqual(len(pk), 0)
+
+    def test_subsets_to_studies_with_any_tagged_trait_if_not_requested(self):
+        study = self.studies[0]
+        tag = TagFactory.create()
+        tagged_trait = TaggedTraitFactory.create(trait__source_dataset__source_study_version__study=study,
+                                                 tag=tag)
+        dcc_review = DCCReviewFactory.create(tagged_trait=tagged_trait)
+        get_data = {'q': '', 'forward': ['{"tag":"' + str(tag.pk) + '"}']}
+        response = self.client.get(self.get_url(), get_data)
+        pk = get_autocomplete_view_ids(response)
+        self.assertEqual(len(pk), 1)
 
 
 class StudySourceTableViewsTest(UserLoginTestCase):
