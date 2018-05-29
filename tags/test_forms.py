@@ -384,6 +384,66 @@ class DCCReviewFormTest(TestCase):
         self.assertTrue(form.has_error('status'))
 
 
+class DCCReviewAdminFormTest(TestCase):
+    form_class = forms.DCCReviewAdminForm
+
+    def setUp(self):
+        self.tagged_trait = factories.TaggedTraitFactory.create()
+
+    def test_valid_if_need_review_with_comment(self):
+        """Form is valid if the tagged trait needs followup and a comment is given."""
+        form_data = {'tagged_trait': self.tagged_trait.pk, 'comment': 'foo',
+                     'status': models.DCCReview.STATUS_FOLLOWUP}
+        form = self.form_class(form_data)
+        print(form.errors)
+        self.assertTrue(form.is_valid())
+
+    def test_invalid_if_need_review_with_no_comment(self):
+        """Form is invalid if the tagged trait needs followup and no comment is given."""
+        form_data = {'tagged_trait': self.tagged_trait.pk, 'comment': '', 'status': models.DCCReview.STATUS_FOLLOWUP}
+        form = self.form_class(form_data)
+        self.assertFalse(form.is_valid())
+        self.assertTrue(form.has_error('comment', code='followup_comment'))
+
+    def test_invalid_if_need_review_with_whitespace_comment(self):
+        """Form is invalid if the tagged trait needs followup and no comment is given."""
+        form_data = {'tagged_trait': self.tagged_trait.pk, 'comment': ' ', 'status': models.DCCReview.STATUS_FOLLOWUP}
+        form = self.form_class(form_data)
+        self.assertFalse(form.is_valid())
+        self.assertTrue(form.has_error('comment', code='followup_comment'))
+
+    def test_valid_if_confirmed_with_no_comment(self):
+        """Form is valid if the tagged trait is confirmed and no comment is given."""
+        form_data = {'tagged_trait': self.tagged_trait.pk, 'comment': '', 'status': models.DCCReview.STATUS_CONFIRMED}
+        form = self.form_class(form_data)
+        self.assertTrue(form.is_valid())
+
+    def test_valid_if_confirmed_with_whitespace_comment(self):
+        """Form is valid if the tagged trait is confirmed and a whitespace-only comment is given."""
+        form_data = {'tagged_trait': self.tagged_trait.pk, 'comment': '  ', 'status': models.DCCReview.STATUS_CONFIRMED}
+        form = self.form_class(form_data)
+        self.assertTrue(form.is_valid())
+
+    def test_invalid_if_confirmed_with_comment(self):
+        """Form is invalid if the tagged trait is confirmed and a comment is given."""
+        form_data = {'tagged_trait': self.tagged_trait.pk, 'comment': 'foo', 'status': models.DCCReview.STATUS_CONFIRMED}
+        form = self.form_class(form_data)
+        self.assertFalse(form.is_valid())
+        self.assertTrue(form.has_error('comment', code='confirmed_comment'))
+
+    def test_invalid_missing_status(self):
+        form_data = {'tagged_trait': self.tagged_trait.pk, 'comment': ''}
+        form = self.form_class(form_data)
+        self.assertFalse(form.is_valid())
+        self.assertTrue(form.has_error('status'))
+
+    def test_invalid_missing_tagged_trait(self):
+        form_data = {'status': models.DCCReview.STATUS_CONFIRMED, 'comment': ''}
+        form = self.form_class(form_data)
+        self.assertFalse(form.is_valid())
+        self.assertTrue(form.has_error('tagged_trait'))
+
+
 class TaggedTraitReviewSelectFormTest(TestCase):
 
     form_class = forms.TaggedTraitReviewSelectForm

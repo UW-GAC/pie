@@ -372,7 +372,25 @@ class TagSpecificTraitForm(forms.Form):
         self.helper.layout.append(button_save)
 
 
-class DCCReviewForm(forms.ModelForm):
+class DCCReviewCleanForm(forms.ModelForm):
+
+    def clean(self):
+        """Custom cleaning to check a comment is given for TaggedTraits that require followup."""
+        cleaned_data = super().clean()
+        comment = cleaned_data.get('comment')
+        status = cleaned_data.get('status')
+        if status == models.DCCReview.STATUS_FOLLOWUP and not comment:
+            error = forms.ValidationError('Comment cannot be blank for tagged traits that require followup.',
+                                        code='followup_comment')
+            self.add_error('comment', error)
+        if status == models.DCCReview.STATUS_CONFIRMED and comment:
+            error = forms.ValidationError('Comment must be blank for tagged traits that are confirmed.',
+                                        code='confirmed_comment')
+            self.add_error('comment', error)
+        return cleaned_data
+
+
+class DCCReviewForm(DCCReviewCleanForm):
     """Form for creating a single DCCReview object."""
 
     SUBMIT_CONFIRM = 'confirm'
@@ -401,20 +419,12 @@ class DCCReviewForm(forms.ModelForm):
             'status': forms.HiddenInput
         }
 
-    def clean(self):
-        """Custom cleaning to check a comment is given for TaggedTraits that require followup."""
-        cleaned_data = super(DCCReviewForm, self).clean()
-        comment = cleaned_data.get('comment')
-        status = cleaned_data.get('status')
-        if status == models.DCCReview.STATUS_FOLLOWUP and not comment:
-            error = forms.ValidationError('Comment cannot be blank for tagged traits that require followup.',
-                                        code='followup_comment')
-            self.add_error('comment', error)
-        if status == models.DCCReview.STATUS_CONFIRMED and comment:
-            error = forms.ValidationError('Comment must be blank for tagged traits that are confirmed.',
-                                        code='confirmed_comment')
-            self.add_error('comment', error)
-        return cleaned_data
+
+class DCCReviewAdminForm(DCCReviewCleanForm):
+
+    class Meta:
+        model = models.DCCReview
+        fields = ('tagged_trait', 'status', 'comment', )
 
 
 class TaggedTraitReviewSelectForm(forms.Form):
