@@ -39,6 +39,14 @@ class TaggedTraitAdmin(admin.ModelAdmin):
         return obj.dcc_review.get_status_display()
 
 
+class DCCReviewAdmin(admin.ModelAdmin):
+
+    list_display = ('tagged_trait', 'status', 'comment', 'creator', 'created', 'modified', )
+    list_filter = ('status', 'creator', )
+    search_fields = ('tagged_trait__tag__title', 'tagged_trait__trait__i_trait_name', )
+
+
 # Register models for showing them in the admin interface.
 admin.site.register(models.Tag, TagAdmin)
 admin.site.register(models.TaggedTrait, TaggedTraitAdmin)
+admin.site.register(models.DCCReview, DCCReviewAdmin)
