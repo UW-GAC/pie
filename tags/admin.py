@@ -24,8 +24,8 @@ class TagAdmin(admin.ModelAdmin):
 class TaggedTraitAdmin(admin.ModelAdmin):
     """Admin class for TaggedTrait objects."""
 
-    list_display = ('tag', 'trait', 'creator', 'created', 'modified', )
-    list_filter = ('tag', 'creator', )
+    list_display = ('tag', 'trait', 'dcc_review_status', 'creator', 'created', 'modified', )
+    list_filter = ('tag', 'creator', 'dcc_review__status')
     search_fields = ('tag', 'trait', )
     form = forms.TaggedTraitAdminForm
 
@@ -34,6 +34,9 @@ class TaggedTraitAdmin(admin.ModelAdmin):
         if obj.pk is None:
             obj.creator = request.user
         obj.save()
+
+    def dcc_review_status(self, obj):
+        return obj.dcc_review.get_status_display()
 
 
 # Register models for showing them in the admin interface.
