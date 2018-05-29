@@ -22,6 +22,9 @@ from . import tables
 TABLE_PER_PAGE = 50    # Setting for per_page rows for all table views.
 TAGGING_ERROR_MESSAGE = 'Oops! Applying the tag to a dbGaP phenotype variable failed.'
 TAGGING_MULTIPLE_ERROR_MESSAGE = 'Oops! Applying the tag to dbGaP phenotype variables failed.'
+CONFIRMED_TAGGED_TRAIT_DELETE_ERROR_MESSAGE = (
+    "Oops! Tagged dbGaP phenotype variables that have been confirmed by the DCC can't be deleted."
+)
 
 
 class TagDetail(LoginRequiredMixin, SingleTableMixin, DetailView):
@@ -142,8 +145,35 @@ class TaggableStudiesRequiredMixin(UserPassesTestMixin):
         return user.profile.taggable_studies.count() > 0 or user.is_staff
 
 
-class TaggedTraitDelete(LoginRequiredMixin, PermissionRequiredMixin, TaggableStudiesRequiredMixin, FormMessagesMixin,
-                        DeleteView):
+class ValidateObjectMixin(object):
+    """Run a check on an object before dispatching a request to the proper method."""
+
+    validation_failure_url = None
+
+    def validate_object(self):
+        """Method that returns True or False after checking some property of an object."""
+        raise ImproperlyConfigured(
+            "ValidateObjectMixin requires a definition for 'validate_object()'"
+        )
+
+    def get_validation_failure_url(self):
+        """Method that returns the url to load upon failing validate_object()."""
+        if self.validation_failure_url is not None:
+            return self.validation_failure_url
+        else:
+            raise ImproperlyConfigured(
+                "No URL to redirect to after failing object validation. Provide a validation_failure_url."
+            )
+
+    def dispatch(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        if not self.validate_object():
+            return HttpResponseRedirect(self.get_validation_failure_url())
+        return super(ValidateObjectMixin, self).dispatch(request, *args, **kwargs)
+
+
+class TaggedTraitDelete(LoginRequiredMixin, PermissionRequiredMixin, TaggableStudiesRequiredMixin,
+                        ValidateObjectMixin, FormMessagesMixin, DeleteView):
     """Delete view class for TaggedTrait objects."""
 
     model = models.TaggedTrait
@@ -161,6 +191,16 @@ class TaggedTraitDelete(LoginRequiredMixin, PermissionRequiredMixin, TaggableStu
             self.object.tag.get_absolute_url(), self.object.tag.title,
             self.object.trait.get_absolute_url(), self.object.trait.i_trait_name)
         return mark_safe(msg)
+
+    def get_validation_failure_url(self):
+        return self.get_success_url()
+
+    def validate_object(self):
+        if hasattr(self.object, 'dcc_review'):
+            if self.object.dcc_review.status == models.DCCReview.STATUS_CONFIRMED:
+                self.messages.error(CONFIRMED_TAGGED_TRAIT_DELETE_ERROR_MESSAGE)
+                return False
+        return True
 
 
 class TaggedTraitCreate(LoginRequiredMixin, PermissionRequiredMixin, TaggableStudiesRequiredMixin, UserFormKwargsMixin,
