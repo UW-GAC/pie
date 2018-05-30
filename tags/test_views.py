@@ -1779,10 +1779,10 @@ class ManyTaggedTraitsCreateByTagDCCAnalystTest(DCCAnalystLoginTestCase):
         self.assertEqual(response.status_code, 200)
 
 
-class TaggedTraitReviewByTagAndStudySelectTest(DCCAnalystLoginTestCase):
+class TaggedTraitReviewByTagAndStudySelectDCCAnalystTest(DCCAnalystLoginTestCase):
 
     def setUp(self):
-        super(TaggedTraitReviewByTagAndStudySelectTest, self).setUp()
+        super().setUp()
         self.tag = factories.TagFactory.create()
         self.study = StudyFactory.create()
         self.tagged_traits = factories.TaggedTraitFactory.create_batch(
@@ -1922,7 +1922,7 @@ class TaggedTraitReviewByTagAndStudySelectTest(DCCAnalystLoginTestCase):
                           msg='TaggedTrait {} not in session tagged_trait_pks'.format(tt.pk))
 
 
-class TaggedTraitReviewByTagAndStudyNextTest(DCCAnalystLoginTestCase):
+class TaggedTraitReviewByTagAndStudyNextDCCAnalystTest(DCCAnalystLoginTestCase):
 
     def get_url(self, *args):
         """Get the url for the view this class is supposed to test."""
@@ -2061,10 +2061,10 @@ class TaggedTraitReviewByTagAndStudyNextTest(DCCAnalystLoginTestCase):
                                  msg_prefix='did not redirect when missing {} in session'.format(key))
 
 
-class TaggedTraitReviewByTagAndStudyTest(DCCAnalystLoginTestCase):
+class TaggedTraitReviewByTagAndStudyDCCAnalystTest(DCCAnalystLoginTestCase):
 
     def setUp(self):
-        super(TaggedTraitReviewByTagAndStudyTest, self).setUp()
+        super().setUp()
         self.tag = factories.TagFactory.create()
         self.study = StudyFactory.create()
         self.tagged_trait = factories.TaggedTraitFactory.create(
