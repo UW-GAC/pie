@@ -144,7 +144,7 @@ class StudyTaggedTraitListTest(UserLoginTestCase):
         self.assertIsInstance(context['study_table'], tables.StudyTaggedTraitTable)
 
 
-class TaggedTraitDetailMixin(object):
+class TaggedTraitDetailTestsMixin(object):
     """Mixin to run standard tests for the TaggedTraitDetail view. Must be used
     with TestCase or a class that subclasses TestCase."""
 
@@ -169,10 +169,10 @@ class TaggedTraitDetailMixin(object):
         self.assertEqual(context['tagged_trait'], self.tagged_trait)
 
 
-class TaggedTraitDetailTest(TaggedTraitDetailMixin, UserLoginTestCase):
+class TaggedTraitDetailTest(TaggedTraitDetailTestsMixin, UserLoginTestCase):
 
     def setUp(self):
-        super(TaggedTraitDetailMixin, self).setUp()
+        super().setUp()
         self.tagged_trait = factories.TaggedTraitFactory.create()
 
     def test_no_delete_button(self):
@@ -192,10 +192,10 @@ class TaggedTraitDetailTest(TaggedTraitDetailMixin, UserLoginTestCase):
         self.assertNotContains(response, dcc_review.comment)
 
 
-class TaggedTraitDetailPhenotypeTaggerTest(TaggedTraitDetailMixin, PhenotypeTaggerLoginTestCase):
+class TaggedTraitDetailPhenotypeTaggerTest(TaggedTraitDetailTestsMixin, PhenotypeTaggerLoginTestCase):
 
     def setUp(self):
-        super(TaggedTraitDetailPhenotypeTaggerTest, self).setUp()
+        super().setUp()
         self.tagged_trait = factories.TaggedTraitFactory.create(
             trait__source_dataset__source_study_version__study=self.study,
             creator=self.user
@@ -225,10 +225,10 @@ class TaggedTraitDetailPhenotypeTaggerTest(TaggedTraitDetailMixin, PhenotypeTagg
         self.assertNotContains(response, dcc_review.comment)
 
 
-class TaggedTraitDetailDCCAnalystTest(TaggedTraitDetailMixin, DCCAnalystLoginTestCase):
+class TaggedTraitDetailDCCAnalystTest(TaggedTraitDetailTestsMixin, DCCAnalystLoginTestCase):
 
     def setUp(self):
-        super(TaggedTraitDetailDCCAnalystTest, self).setUp()
+        super().setUp()
         self.tagged_trait = factories.TaggedTraitFactory.create()
         self.user.refresh_from_db()
 
