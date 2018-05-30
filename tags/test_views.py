@@ -8,7 +8,7 @@ from django.urls import reverse
 
 from core.factories import UserFactory
 from core.utils import (LoginRequiredTestCase, PhenotypeTaggerLoginTestCase, UserLoginTestCase,
-                        DCCAnalystLoginTestCase, get_autocomplete_view_ids)
+                        DCCAnalystLoginTestCase, DCCDeveloperLoginTestCase, get_autocomplete_view_ids)
 from trait_browser.factories import SourceTraitFactory, StudyFactory
 from trait_browser.models import SourceTrait
 from trait_browser.tables import SourceTraitTableFull
@@ -1779,7 +1779,7 @@ class ManyTaggedTraitsCreateByTagDCCAnalystTest(DCCAnalystLoginTestCase):
         self.assertEqual(response.status_code, 200)
 
 
-class TaggedTraitReviewByTagAndStudySelectDCCAnalystTest(DCCAnalystLoginTestCase):
+class TaggedTraitReviewByTagAndStudySelectDCCTestsMixin(object):
 
     def setUp(self):
         super().setUp()
@@ -1922,7 +1922,21 @@ class TaggedTraitReviewByTagAndStudySelectDCCAnalystTest(DCCAnalystLoginTestCase
                           msg='TaggedTrait {} not in session tagged_trait_pks'.format(tt.pk))
 
 
-class TaggedTraitReviewByTagAndStudyNextDCCAnalystTest(DCCAnalystLoginTestCase):
+class TaggedTraitReviewByTagAndStudySelectDCCAnalystTest(TaggedTraitReviewByTagAndStudySelectDCCTestsMixin,
+                                                         DCCAnalystLoginTestCase):
+
+    # Run all tests in TaggedTraitReviewByTagAndStudySelectDCCTestsMixin, as a DCC analyst.
+    pass
+
+
+class TaggedTraitReviewByTagAndStudySelectDCCDeveloperTest(TaggedTraitReviewByTagAndStudySelectDCCTestsMixin,
+                                                           DCCDeveloperLoginTestCase):
+
+    # Run all tests in TaggedTraitReviewByTagAndStudySelectDCCTestsMixin, as a DCC developer.
+    pass
+
+
+class TaggedTraitReviewByTagAndStudyNextDCCTestsMixin(object):
 
     def get_url(self, *args):
         """Get the url for the view this class is supposed to test."""
@@ -2061,7 +2075,21 @@ class TaggedTraitReviewByTagAndStudyNextDCCAnalystTest(DCCAnalystLoginTestCase):
                                  msg_prefix='did not redirect when missing {} in session'.format(key))
 
 
-class TaggedTraitReviewByTagAndStudyDCCAnalystTest(DCCAnalystLoginTestCase):
+class TaggedTraitReviewByTagAndStudyNextDCCAnalystTest(TaggedTraitReviewByTagAndStudyNextDCCTestsMixin,
+                                                       DCCAnalystLoginTestCase):
+
+    # Run all tests in TaggedTraitReviewByTagAndStudyNextDCCTestsMixin, as a DCC analyst.
+    pass
+
+
+class TaggedTraitReviewByTagAndStudyNextDCCDeveloperTest(TaggedTraitReviewByTagAndStudyNextDCCTestsMixin,
+                                                         DCCDeveloperLoginTestCase):
+
+    # Run all tests in TaggedTraitReviewByTagAndStudyNextDCCTestsMixin, as a DCC developer.
+    pass
+
+
+class TaggedTraitReviewByTagAndStudyDCCTestsMixin(object):
 
     def setUp(self):
         super().setUp()
@@ -2336,6 +2364,20 @@ class TaggedTraitReviewByTagAndStudyDCCAnalystTest(DCCAnalystLoginTestCase):
         session.save()
         response = self.client.post(self.get_url(), {})
         self.assertRedirects(response, reverse('tags:tagged-traits:review:next'), target_status_code=302)
+
+
+class TaggedTraitReviewByTagAndStudyDCCAnalystTest(TaggedTraitReviewByTagAndStudyDCCTestsMixin,
+                                                   DCCAnalystLoginTestCase):
+
+    # Run all tests in TaggedTraitReviewByTagAndStudyDCCTestsMixin, as a DCC analyst.
+    pass
+
+
+class TaggedTraitReviewByTagAndStudyDCCDeveloperTest(TaggedTraitReviewByTagAndStudyDCCTestsMixin,
+                                                   DCCDeveloperLoginTestCase):
+
+    # Run all tests in TaggedTraitReviewByTagAndStudyDCCTestsMixin, as a DCC developer.
+    pass
 
 
 class TagsLoginRequiredTest(LoginRequiredTestCase):
