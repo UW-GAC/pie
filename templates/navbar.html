@@ -85,6 +85,13 @@
                   How to apply tags</a>
               </li>
             {% endif %}
+            {% if perms.tags.add_dccreview %}
+              <li>
+                <a href="{% url 'tags:tagged-traits:review:select' %}"><span class="glyphicon glyphicon-edit"></span>
+                  Review tagged traits
+                </a>
+              </li>
+            {% endif %}
           </ul>
         </li>
         {# Harmonization Recipes dropdown #}

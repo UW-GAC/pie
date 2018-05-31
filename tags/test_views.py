@@ -1920,6 +1920,13 @@ class TaggedTraitReviewByTagAndStudySelectDCCTestsMixin(object):
             self.assertIn(tt.pk, session_info['tagged_trait_pks'],
                           msg='TaggedTrait {} not in session tagged_trait_pks'.format(tt.pk))
 
+    def test_link_to_review_views(self):
+        """The harmonization recipe elements do appear on the home page for DCC users."""
+        url = reverse('home')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, """<a href="/tags/tagged/review/select">""")
+
 
 class TaggedTraitReviewByTagAndStudySelectDCCAnalystTest(TaggedTraitReviewByTagAndStudySelectDCCTestsMixin,
                                                          DCCAnalystLoginTestCase):
@@ -1950,6 +1957,14 @@ class TaggedTraitReviewByTagAndStudySelectOtherUserTest(UserLoginTestCase):
         """Returns a response with a forbidden status code for non-DCC users."""
         response = self.client.post(self.get_url(), {})
         self.assertEqual(response.status_code, 403)
+
+    def test_link_not_in_navbar(self):
+        """The harmonization recipe elements don't appear on the home page for non-DCC users."""
+        url = reverse('home')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        expected_html = """<a href="{}">""".format(self.get_url())
+        self.assertNotContains(response, """<a href="/tags/tagged/review/select">""")
 
 
 class TaggedTraitReviewByTagAndStudyNextDCCTestsMixin(object):
