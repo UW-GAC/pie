@@ -3,9 +3,19 @@
 {% load staticfiles %}
 {% load static %}
 
+{% block head_title %}
+  | Selected tagged phenotypes to review
+{% endblock head_title %}
+
 
 {% block content %}
-  <h1>XXX</h1>
+  <h1>Review tagged variables for a specific tag and study</h1>
+
+    <p>
+      To begin reviewing tagged phenotype variables, select a specific tag and
+      study. You will then be able to start reviewing all phenotype variables from
+      the selected study that have been tagged with the selected tag.
+    </p>
 
   {% crispy form %}
 
