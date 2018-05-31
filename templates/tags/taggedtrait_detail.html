@@ -2,7 +2,7 @@
 {% load core_tags %}
 
 {% block head_title %}
-  | {{ tagged_trait }}
+  | {{ tagged_trait }} details
 {% endblock head_title %}
 
 {% block title %}
@@ -13,10 +13,6 @@
 {% block subtitle %}
   tagged trait details
 {% endblock subtitle %}
-
-{% block before_panel %}
-  XXX
-{% endblock before_panel %}
 
 {% block detail_fields %}
   <dt>Tagged by</dt><dd>{{ tagged_trait.creator }}</dd>
