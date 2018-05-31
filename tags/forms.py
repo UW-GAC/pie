@@ -6,7 +6,7 @@ from django.utils.safestring import mark_safe
 
 from crispy_forms.bootstrap import FormActions
 from crispy_forms.helper import FormHelper
-from crispy_forms.layout import HTML, Layout, Reset, Submit
+from crispy_forms.layout import HTML, Layout, Reset, Submit, Button
 from dal import autocomplete, forward
 
 from . import models
@@ -390,6 +390,16 @@ class DCCReviewCleanForm(forms.ModelForm):
         return cleaned_data
 
 
+class SubmitCssClass(Submit):
+    """Create a submit button with a different class than the default."""
+
+    def __init__(self, *args, **kwargs):
+        css_class = kwargs.get('css_class')
+        super().__init__(*args, **kwargs)
+        if css_class is not None:
+            self.field_classes = 'btn {}'.format(css_class)
+
+
 class DCCReviewForm(DCCReviewCleanForm):
     """Form for creating a single DCCReview object."""
 
@@ -404,8 +414,8 @@ class DCCReviewForm(DCCReviewCleanForm):
         'comment',
         FormActions(
             Submit(SUBMIT_CONFIRM, 'Confirm'),
-            Submit(SUBMIT_FOLLOWUP, 'Require study followup'),
-            Submit(SUBMIT_SKIP, 'Skip')
+            SubmitCssClass(SUBMIT_FOLLOWUP, 'Require study followup', css_class='btn-warning'),
+            SubmitCssClass(SUBMIT_SKIP, 'Skip', css_class='btn-default')
         )
     )
 
@@ -413,7 +423,7 @@ class DCCReviewForm(DCCReviewCleanForm):
         model = models.DCCReview
         fields = ('status', 'comment', )
         help_texts = {
-            'comment': 'Only required for tagged traits that need study followup.'
+            'comment': 'Only include a comment for traits that require followup.'
         }
         widgets = {
             'status': forms.HiddenInput

@@ -3,36 +3,52 @@
 {% load crispy_forms_tags %}
 
 {% block head_title %}
-  | Tagged trait review
+  | Review a tagged phenotype
 {% endblock head_title %}
 
 {% block content %}
 
   {% include '_messages.html' %}
 
+  <div class="alert alert-info" role="alert">
+    You are reviewing variables tagged with <a href="{{ tag.get_absolute_url }}">{{ tag.lower_title }}</a>
+    from study <a href="study.get_absolute_url">{{ study.i_study_name }}</a>.
+  </div>
+
   <h2>
-    Review {{ tagged_trait }}
+    Review <a href='{{ tagged_trait.get_absolute_url }}'>{{ tagged_trait }}</a>
   </h2>
-  <h3>Reviewing tag <a href="{{ tag.get_absolute_url }}">{{ tag.lower_title }}</a> and study <a href="study.get_absolute_url">{{ study.i_study_name }}</a></h3>
 
   <div class="panel panel-default">
-    <div class="panel-heading"><strong>Trait info</strong></div>
+    <div class="panel-heading"><strong>Tag information</strong></div>
     <div class="panel-body">
       <dl class="dl-horizontal">
-        <dt>Trait description</dt><dd>{{ tagged_trait.trait.i_trait_name }}</dd>
-        <dt>Trait description</dt><dd>{{ tagged_trait.trait.i_description }}</dd>
-        <dt>Dataset description</dt><dd>{{ tagged_trait.trait.source_dataset.i_dbgap_description }}
+        <dt>Tag name</dt><dd><a href="{{ tagged_trait.tag.get_absolute_url }}">{{ tagged_trait.tag.lower_title }}</a></dd>
+        <dt>Tag description</dt><dd>{{ tagged_trait.tag.description }}</dd>
+        <dt>Tag instructions</dt><dd>{{ tagged_trait.tag.instructions }}</dd>
       </dl>
     </div>
   </div>
 
   <div class="panel panel-default">
-    <div class="panel-heading"><strong>Tag info</strong></div>
+    <div class="panel-heading"><strong>Variable information</strong></div>
     <div class="panel-body">
       <dl class="dl-horizontal">
-        <dt>Tag description</dt><dd>{{ tagged_trait.tag.description }}</dd>
-        <dt>Tag instructions</dt><dd>{{ tagged_trait.tag.instructions }}</dd>
+        <dt>Variable</dt><dd><a href='{{ tagged_trait.trait.get_absolute_url }}'>{{ tagged_trait.trait.i_trait_name }}</a></dd>
+        <dt>Variable description</dt><dd>{{ tagged_trait.trait.i_description }}</dd>
+        <dt>Dataset name</dt><dd>{{ tagged_trait.trait.source_dataset.dataset_name }}</dd>
+        <dt>Dataset description</dt><dd>{{ tagged_trait.trait.source_dataset.i_dbgap_description }}</dd>
+
       </dl>
+    </div>
+  </div>
+
+  <div class="panel panel-default">
+    <div class="panel-heading"><strong>Instructions</strong></div>
+    <div class="panel-body">
+      If this variable is appropriately tagged, select the "Confirm" button. Otherwise,
+      type a reason in the "Comment" box and select the "Require study followup"
+      button.
     </div>
   </div>
 
