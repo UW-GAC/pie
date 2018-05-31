@@ -341,7 +341,6 @@ class DCCReviewFormTest(TestCase):
         """Form is valid if the tagged trait needs followup and a comment is given."""
         form_data = {'comment': 'foo', 'status': models.DCCReview.STATUS_FOLLOWUP}
         form = self.form_class(form_data)
-        print(form.errors)
         self.assertTrue(form.is_valid())
 
     def test_invalid_if_need_review_with_no_comment(self):
@@ -395,7 +394,6 @@ class DCCReviewAdminFormTest(TestCase):
         form_data = {'tagged_trait': self.tagged_trait.pk, 'comment': 'foo',
                      'status': models.DCCReview.STATUS_FOLLOWUP}
         form = self.form_class(form_data)
-        print(form.errors)
         self.assertTrue(form.is_valid())
 
     def test_invalid_if_need_review_with_no_comment(self):

@@ -1798,7 +1798,6 @@ class TaggedTraitReviewByTagAndStudySelectDCCTestsMixin(object):
     def test_view_success_code(self):
         """View returns successful response code."""
         response = self.client.get(self.get_url())
-        print(response)
         self.assertEqual(response.status_code, 200)
 
     def test_context_data(self):
