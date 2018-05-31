@@ -329,7 +329,7 @@ class HarmonizedTraitSetVersion(SourceDBTimeStampedModel):
 
     def __str__(self):
         """Pretty printing."""
-        return 'Harm. trait set {} version {}, id='.format(
+        return 'Harm. trait set {} version {}, id={}'.format(
             self.harmonized_trait_set.i_trait_set_name, self.i_version, self.i_id)
 
     def get_trait_names(self):
