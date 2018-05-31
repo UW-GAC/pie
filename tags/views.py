@@ -404,10 +404,13 @@ class SessionVariableMixin(object):
         )
 
 
-class TaggedTraitReviewByTagAndStudySelect(LoginRequiredMixin, MessageMixin, FormView):
+class TaggedTraitReviewByTagAndStudySelect(LoginRequiredMixin, PermissionRequiredMixin, MessageMixin, FormView):
 
     template_name = 'tags/taggedtrait_review_select.html'
     form_class = forms.TaggedTraitReviewSelectForm
+    permission_required = 'tags.add_dccreview'
+    raise_exception = True
+    redirect_unauthenticated_users = True
 
     def form_valid(self, form):
         # Set session variables for use in the next view.
@@ -430,8 +433,12 @@ class TaggedTraitReviewByTagAndStudySelect(LoginRequiredMixin, MessageMixin, For
         return reverse('tags:tagged-traits:review:next')
 
 
-class TaggedTraitReviewByTagAndStudyNext(LoginRequiredMixin, SessionVariableMixin, RedirectView):
+class TaggedTraitReviewByTagAndStudyNext(LoginRequiredMixin, PermissionRequiredMixin, SessionVariableMixin, RedirectView):
     """Determine the next tagged trait to review and redirect to review page."""
+
+    permission_required = 'tags.add_dccreview'
+    raise_exception = True
+    redirect_unauthenticated_users = True
 
     def handle_session_variables(self):
         # Check that expected session variables are set.
@@ -481,9 +488,12 @@ class TaggedTraitReviewByTagAndStudyNext(LoginRequiredMixin, SessionVariableMixi
             return url
 
 
-class TaggedTraitReviewByTagAndStudy(LoginRequiredMixin, SessionVariableMixin, TaggedTraitReviewMixin, FormValidMessageMixin, CreateView):
+class TaggedTraitReviewByTagAndStudy(LoginRequiredMixin, PermissionRequiredMixin, SessionVariableMixin, TaggedTraitReviewMixin, FormValidMessageMixin, CreateView):
 
     template_name = 'tags/dccreview_form.html'
+    permission_required = 'tags.add_dccreview'
+    raise_exception = True
+    redirect_unauthenticated_users = True
 
     def handle_session_variables(self):
         # Check that expected session variables are set.

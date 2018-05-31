@@ -1936,6 +1936,23 @@ class TaggedTraitReviewByTagAndStudySelectDCCDeveloperTest(TaggedTraitReviewByTa
     pass
 
 
+class TaggedTraitReviewByTagAndStudySelectOtherUserTest(UserLoginTestCase):
+
+    def get_url(self, *args):
+        """Get the url for the view this class is supposed to test."""
+        return reverse('tags:tagged-traits:review:select', args=args)
+
+    def test_forbidden_get_request(self):
+        """Returns a response with a forbidden status code for non-DCC users."""
+        response = self.client.get(self.get_url())
+        self.assertEqual(response.status_code, 403)
+
+    def test_forbidden_post_request(self):
+        """Returns a response with a forbidden status code for non-DCC users."""
+        response = self.client.post(self.get_url(), {})
+        self.assertEqual(response.status_code, 403)
+
+
 class TaggedTraitReviewByTagAndStudyNextDCCTestsMixin(object):
 
     def get_url(self, *args):
@@ -2087,6 +2104,23 @@ class TaggedTraitReviewByTagAndStudyNextDCCDeveloperTest(TaggedTraitReviewByTagA
 
     # Run all tests in TaggedTraitReviewByTagAndStudyNextDCCTestsMixin, as a DCC developer.
     pass
+
+
+class TaggedTraitReviewByTagAndStudyNextOtherUserTest(UserLoginTestCase):
+
+    def get_url(self, *args):
+        """Get the url for the view this class is supposed to test."""
+        return reverse('tags:tagged-traits:review:next', args=args)
+
+    def test_forbidden_get_request(self):
+        """Returns a response with a forbidden status code for non-DCC users."""
+        response = self.client.get(self.get_url())
+        self.assertEqual(response.status_code, 403)
+
+    def test_forbidden_post_request(self):
+        """Returns a response with a forbidden status code for non-DCC users."""
+        response = self.client.post(self.get_url(), {})
+        self.assertEqual(response.status_code, 403)
 
 
 class TaggedTraitReviewByTagAndStudyDCCTestsMixin(object):
@@ -2378,6 +2412,23 @@ class TaggedTraitReviewByTagAndStudyDCCDeveloperTest(TaggedTraitReviewByTagAndSt
 
     # Run all tests in TaggedTraitReviewByTagAndStudyDCCTestsMixin, as a DCC developer.
     pass
+
+
+class TaggedTraitReviewByTagAndStudyOtherUserTest(UserLoginTestCase):
+
+    def get_url(self, *args):
+        """Get the url for the view this class is supposed to test."""
+        return reverse('tags:tagged-traits:review:review', args=args)
+
+    def test_forbidden_get_request(self):
+        """Returns a response with a forbidden status code for non-DCC users."""
+        response = self.client.get(self.get_url())
+        self.assertEqual(response.status_code, 403)
+
+    def test_forbidden_post_request(self):
+        """Returns a response with a forbidden status code for non-DCC users."""
+        response = self.client.post(self.get_url(), {})
+        self.assertEqual(response.status_code, 403)
 
 
 class TagsLoginRequiredTest(LoginRequiredTestCase):
