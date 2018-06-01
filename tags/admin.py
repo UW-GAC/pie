@@ -45,7 +45,7 @@ class DCCReviewAdmin(admin.ModelAdmin):
     list_filter = ('status', 'creator', )
     search_fields = ('tagged_trait__tag__title', 'tagged_trait__trait__i_trait_name', )
     form = forms.DCCReviewAdminForm
-    
+
 
 # Register models for showing them in the admin interface.
 admin.site.register(models.Tag, TagAdmin)

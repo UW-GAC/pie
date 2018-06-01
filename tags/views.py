@@ -5,7 +5,7 @@ from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django.shortcuts import get_object_or_404
 from django.utils.safestring import mark_safe
-from django.views.generic import CreateView, DetailView, DeleteView, FormView, ListView, RedirectView, TemplateView
+from django.views.generic import CreateView, DetailView, DeleteView, FormView, ListView, RedirectView
 
 from braces.views import (FormMessagesMixin, FormValidMessageMixin, LoginRequiredMixin, MessageMixin,
                           PermissionRequiredMixin, UserFormKwargsMixin, UserPassesTestMixin)
@@ -36,7 +36,6 @@ class TagDetail(LoginRequiredMixin, SingleTableMixin, DetailView):
     table_class = SourceTraitTableFull
     context_table_name = 'tagged_trait_table'
     table_pagination = {'per_page': TABLE_PER_PAGE}
-
 
     def get_table_data(self):
         return self.object.traits.all()
@@ -419,8 +418,8 @@ class TaggedTraitReviewByTagAndStudySelect(LoginRequiredMixin, PermissionRequire
         study = form.cleaned_data.get('study')
         tag = form.cleaned_data.get('tag')
         qs = models.TaggedTrait.objects.unreviewed().filter(
-             tag=tag,
-             trait__source_dataset__source_study_version__study=study
+            tag=tag,
+            trait__source_dataset__source_study_version__study=study
         )
         review_info = {
             'study_pk': study.pk,
@@ -435,7 +434,8 @@ class TaggedTraitReviewByTagAndStudySelect(LoginRequiredMixin, PermissionRequire
         return reverse('tags:tagged-traits:review:next')
 
 
-class TaggedTraitReviewByTagAndStudyNext(LoginRequiredMixin, PermissionRequiredMixin, SessionVariableMixin, RedirectView):
+class TaggedTraitReviewByTagAndStudyNext(LoginRequiredMixin, PermissionRequiredMixin, SessionVariableMixin,
+                                         RedirectView):
     """Determine the next tagged trait to review and redirect to review page."""
 
     permission_required = 'tags.add_dccreview'
@@ -490,7 +490,8 @@ class TaggedTraitReviewByTagAndStudyNext(LoginRequiredMixin, PermissionRequiredM
             return url
 
 
-class TaggedTraitReviewByTagAndStudy(LoginRequiredMixin, PermissionRequiredMixin, SessionVariableMixin, TaggedTraitReviewMixin, FormValidMessageMixin, CreateView):
+class TaggedTraitReviewByTagAndStudy(LoginRequiredMixin, PermissionRequiredMixin, SessionVariableMixin,
+                                     TaggedTraitReviewMixin, FormValidMessageMixin, CreateView):
 
     template_name = 'tags/dccreview_form.html'
     permission_required = 'tags.add_dccreview'

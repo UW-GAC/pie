@@ -145,8 +145,7 @@ class StudyTaggedTraitListTest(UserLoginTestCase):
 
 
 class TaggedTraitDetailTestsMixin(object):
-    """Mixin to run standard tests for the TaggedTraitDetail view. Must be used
-    with TestCase or a class that subclasses TestCase."""
+    """Mixin to run standard tests for the TaggedTraitDetail view, for use with TestCase or subclass of TestCase."""
 
     def get_url(self, *args):
         return reverse('tags:tagged-traits:detail', args=args)
@@ -2422,7 +2421,7 @@ class TaggedTraitReviewByTagAndStudyDCCAnalystTest(TaggedTraitReviewByTagAndStud
 
 
 class TaggedTraitReviewByTagAndStudyDCCDeveloperTest(TaggedTraitReviewByTagAndStudyDCCTestsMixin,
-                                                   DCCDeveloperLoginTestCase):
+                                                     DCCDeveloperLoginTestCase):
 
     # Run all tests in TaggedTraitReviewByTagAndStudyDCCTestsMixin, as a DCC developer.
     pass

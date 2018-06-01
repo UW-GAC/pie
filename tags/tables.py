@@ -20,6 +20,7 @@ DETAIL_BUTTON_TEMPLATE = """
 </a>
 """
 
+
 class TagTable(tables.Table):
     """Table for displaying all tags."""
 

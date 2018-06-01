@@ -6,7 +6,7 @@ from django.utils.safestring import mark_safe
 
 from crispy_forms.bootstrap import FormActions
 from crispy_forms.helper import FormHelper
-from crispy_forms.layout import HTML, Layout, Reset, Submit, Button
+from crispy_forms.layout import HTML, Layout, Submit
 from dal import autocomplete, forward
 
 from . import models
@@ -381,11 +381,11 @@ class DCCReviewCleanForm(forms.ModelForm):
         status = cleaned_data.get('status')
         if status == models.DCCReview.STATUS_FOLLOWUP and not comment:
             error = forms.ValidationError('Comment cannot be blank for tagged traits that require followup.',
-                                        code='followup_comment')
+                                          code='followup_comment')
             self.add_error('comment', error)
         if status == models.DCCReview.STATUS_CONFIRMED and comment:
             error = forms.ValidationError('Comment must be blank for tagged traits that are confirmed.',
-                                        code='confirmed_comment')
+                                          code='confirmed_comment')
             self.add_error('comment', error)
         return cleaned_data
 
@@ -441,9 +441,11 @@ class TaggedTraitReviewSelectForm(forms.Form):
 
     ERROR_NO_TAGGED_TRAITS = 'No tagged traits for this tag and study!'
 
-    tag = forms.ModelChoiceField(queryset=models.Tag.objects.all(),
-                                 widget=autocomplete.ModelSelect2(url='tags:autocomplete'),
-                                 help_text="""First select a phenotype tag. Start typing the tag name to filter the list.""")
+    tag = forms.ModelChoiceField(
+        queryset=models.Tag.objects.all(),
+        widget=autocomplete.ModelSelect2(url='tags:autocomplete'),
+        help_text="""First select a phenotype tag. Start typing the tag name to filter the list."""
+    )
     study = forms.ModelChoiceField(
         queryset=Study.objects.all(),
         widget=autocomplete.ModelSelect2(
