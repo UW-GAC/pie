@@ -380,11 +380,11 @@ class DCCReviewCleanForm(forms.ModelForm):
         comment = cleaned_data.get('comment')
         status = cleaned_data.get('status')
         if status == models.DCCReview.STATUS_FOLLOWUP and not comment:
-            error = forms.ValidationError('Comment cannot be blank for tagged traits that require followup.',
+            error = forms.ValidationError('Comment cannot be blank for tagged variables that require followup.',
                                           code='followup_comment')
             self.add_error('comment', error)
         if status == models.DCCReview.STATUS_CONFIRMED and comment:
-            error = forms.ValidationError('Comment must be blank for tagged traits that are confirmed.',
+            error = forms.ValidationError('Comment must be blank for tagged variables that are confirmed.',
                                           code='confirmed_comment')
             self.add_error('comment', error)
         return cleaned_data
@@ -423,7 +423,7 @@ class DCCReviewForm(DCCReviewCleanForm):
         model = models.DCCReview
         fields = ('status', 'comment', )
         help_texts = {
-            'comment': 'Only include a comment for traits that require followup.'
+            'comment': 'Only include a comment for tagged variables that require followup.'
         }
         widgets = {
             'status': forms.HiddenInput
