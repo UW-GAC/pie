@@ -1,11 +1,12 @@
 """View functions and classes for the tags app."""
 
+from django.db.models import Count
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django.shortcuts import get_object_or_404
 from django.utils.safestring import mark_safe
-from django.views.generic import CreateView, DetailView, DeleteView, FormView, ListView, RedirectView
+from django.views.generic import CreateView, DetailView, DeleteView, FormView, ListView, TemplateView, RedirectView
 
 from braces.views import (FormMessagesMixin, FormValidMessageMixin, LoginRequiredMixin, MessageMixin,
                           PermissionRequiredMixin, UserFormKwargsMixin, UserPassesTestMixin)
@@ -68,6 +69,17 @@ class StudyTaggedTraitList(LoginRequiredMixin, SingleTableMixin, ListView):
     context_table_name = 'study_table'
     template_name = 'tags/studytaggedtrait_list.html'
     table_pagination = {'per_page': TABLE_PER_PAGE}
+
+
+class TaggedTraitTally(LoginRequiredMixin, TemplateView):
+
+    template_name = 'tags/taggedtrait_tally.html'
+
+    def get_context_data(self, **kwargs):
+        context = super(TaggedTraitTally, self).get_context_data(**kwargs)
+        context['annotated_tags'] = models.Tag.objects.annotate(Count('traits'))
+        # q[0].title, q[0].traits__count
+        return context
 
 
 class TaggedTraitDetail(LoginRequiredMixin, DetailView):

@@ -1,0 +1,22 @@
+{% extends '__base.html' %}
+
+{% block head_title %}
+  | Tagged phenotype tallies
+{% endblock head_title %}
+
+{% block content %}
+  {% include '_messages.html' %}
+
+  <table class='table-bordered'>
+    <tr>
+        <td>Tag</td><td>Count</td>
+    </tr>
+    {% for tag in annotated_tags %}
+      <tr>
+          <td>{{tag.title}}</td>
+          <td>{{tag.traits__count}}</td>
+      </tr>
+    {% endfor %}
+  </table>
+
+{% endblock content %}

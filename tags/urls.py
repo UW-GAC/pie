@@ -43,6 +43,7 @@ tagged_trait_patterns = ([
     url(r'^(?P<pk>\d+)$', views.TaggedTraitDetail.as_view(), name='detail'),
     url(r'^(?P<pk>\d+)/delete$', views.TaggedTraitDelete.as_view(), name='delete'),
     url(r'^by-study', views.StudyTaggedTraitList.as_view(), name='by-study'),
+    url(r'^tally', views.TaggedTraitTally.as_view(), name='tally'),
 ], 'tagged-traits', )
 
 urlpatterns = [
