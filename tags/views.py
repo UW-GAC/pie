@@ -70,6 +70,12 @@ class StudyTaggedTraitList(LoginRequiredMixin, SingleTableMixin, ListView):
     template_name = 'tags/studytaggedtrait_list.html'
     table_pagination = {'per_page': TABLE_PER_PAGE}
 
+    def get_table_data(self):
+        return Study.objects.annotate(
+            tag_count=Count('sourcestudyversion__sourcedataset__sourcetrait__taggedtrait__tag', distinct=True),
+            taggedtrait_count=Count('sourcestudyversion__sourcedataset__sourcetrait__taggedtrait', distinct=True)
+        )
+
 
 class TaggedTraitTally(LoginRequiredMixin, TemplateView):
 
