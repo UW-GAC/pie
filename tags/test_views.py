@@ -522,7 +522,7 @@ class TaggedTraitByTagAndStudyListDCCAnalystTest(DCCAnalystLoginTestCase):
         """For DCC Analysts, the tagged trait table class has delete buttons."""
         response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
         context = response.context
-        self.assertIsInstance(context['tagged_trait_table'], tables.TaggedTraitTableWithDelete)
+        self.assertIsInstance(context['tagged_trait_table'], tables.TaggedTraitTableWithDCCReview)
 
 
 class TaggedTraitCreateTest(PhenotypeTaggerLoginTestCase):

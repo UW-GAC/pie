@@ -14,7 +14,11 @@ DELETE_BUTTON_TEMPLATE = """
     <span class="glyphicon glyphicon-remove" aria-hidden="true"></span> Remove tag
 </a>
 """
-
+DETAIL_BUTTON_TEMPLATE = """
+<a class="btn btn-xs btn-info" href="{% url 'tags:tagged-traits:detail' record.pk %}" role="button">
+  Details
+</a>
+"""
 
 class TagTable(tables.Table):
     """Table for displaying all tags."""
@@ -84,6 +88,19 @@ class TaggedTraitTableWithDelete(TaggedTraitTable):
 
     class Meta(TaggedTraitTable.Meta):
         fields = ('tag', 'trait', 'description', 'dataset', 'creator', 'delete',)
+
+
+class TaggedTraitTableWithDCCReview(TaggedTraitTable):
+    """Table for displaying TaggedTraits with DCCReview information."""
+
+    status = tables.Column('Status', accessor='dcc_review.status')
+    details = tables.TemplateColumn(verbose_name='', orderable=False,
+                                    template_code=DETAIL_BUTTON_TEMPLATE)
+    delete = tables.TemplateColumn(verbose_name='', orderable=False,
+                                   template_code=DELETE_BUTTON_TEMPLATE)
+
+    class Meta(TaggedTraitTable.Meta):
+        fields = ('tag', 'trait', 'description', 'dataset', 'status', 'details', 'delete')
 
 
 class UserTaggedTraitTable(TaggedTraitTable):
