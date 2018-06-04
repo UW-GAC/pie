@@ -6,8 +6,8 @@ from django.core.management.sql import emit_post_migrate_signal
 from django.db import migrations, models
 
 
-def set_permissions_for_profiles(apps, schema_editor):
-    """Add permissions for the profiles.Profile model."""
+def set_permissions_for_dccreview(apps, schema_editor):
+    """Add permissions for the tags.DCCReview model."""
     # In a migration from scratch, Django creates all of the models from all of the migrations, then runs
     # post-migrate signals that create the matching contenttypes and permissions for those models. So to
     # have the permissions available as needed, force the post-migrate signal to run now.
@@ -34,8 +34,8 @@ def set_permissions_for_profiles(apps, schema_editor):
     analysts.permissions.add(*dcc_review_permissions)
 
 
-def delete_permissions_for_profiles(apps, schema_editor):
-    """Delete permissions for the profiles.Profile model."""
+def delete_permissions_for_dccreview(apps, schema_editor):
+    """Delete permissions for the tags.DCCReview model."""
     Group = apps.get_model('auth', 'Group')
     Permission = apps.get_model('auth', 'Permission')
     dcc_review_permissions = Permission.objects.filter(content_type__app_label='tags',
@@ -56,5 +56,5 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunPython(set_permissions_for_profiles, reverse_code=delete_permissions_for_profiles),
+        migrations.RunPython(set_permissions_for_dccreview, reverse_code=delete_permissions_for_dccreview),
     ]
