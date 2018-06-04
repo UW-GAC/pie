@@ -20,10 +20,10 @@ from . import tables
 
 
 TABLE_PER_PAGE = 50    # Setting for per_page rows for all table views.
-TAGGING_ERROR_MESSAGE = 'Oops! Applying the tag to a dbGaP phenotype variable failed.'
-TAGGING_MULTIPLE_ERROR_MESSAGE = 'Oops! Applying the tag to dbGaP phenotype variables failed.'
+TAGGING_ERROR_MESSAGE = 'Oops! Applying the tag to a dbGaP study variable failed.'
+TAGGING_MULTIPLE_ERROR_MESSAGE = 'Oops! Applying the tag to dbGaP study variables failed.'
 CONFIRMED_TAGGED_TRAIT_DELETE_ERROR_MESSAGE = (
-    "Oops! Tagged dbGaP phenotype variables that have been confirmed by the DCC can't be deleted."
+    "Oops! Tagged dbGaP study variables that have been confirmed by the DCC can't be deleted."
 )
 
 
@@ -188,7 +188,7 @@ class TaggedTraitDelete(LoginRequiredMixin, PermissionRequiredMixin, TaggableStu
                        args=[self.object.trait.source_dataset.source_study_version.study.pk])
 
     def get_form_valid_message(self):
-        msg = 'Tag <a href="{}">{}</a> has been removed from dbGaP phenotype variable <a href="{}">{}</a>'.format(
+        msg = 'Tag <a href="{}">{}</a> has been removed from dbGaP study variable <a href="{}">{}</a>'.format(
             self.object.tag.get_absolute_url(), self.object.tag.title,
             self.object.trait.get_absolute_url(), self.object.trait.i_trait_name)
         return mark_safe(msg)
@@ -224,7 +224,7 @@ class TaggedTraitCreate(LoginRequiredMixin, PermissionRequiredMixin, TaggableStu
         return self.object.tag.get_absolute_url()
 
     def get_form_valid_message(self):
-        msg = 'Tag {} has been applied to dbGaP phenotype variable <a href="{}">{}</a>'.format(
+        msg = 'Tag {} has been applied to dbGaP study variable <a href="{}">{}</a>'.format(
             self.object.tag.title, self.object.trait.get_absolute_url(), self.object.trait.i_trait_name)
         return mark_safe(msg)
 
@@ -268,7 +268,7 @@ class TaggedTraitCreateByTag(LoginRequiredMixin, PermissionRequiredMixin, Taggab
         return self.tag.get_absolute_url()
 
     def get_form_valid_message(self):
-        msg = 'Tag {} has been applied to dbGaP phenotype variable <a href="{}">{}</a>'.format(
+        msg = 'Tag {} has been applied to dbGaP study variable <a href="{}">{}</a>'.format(
             self.tag.title, self.trait.get_absolute_url(), self.trait.i_trait_name)
         return mark_safe(msg)
 
@@ -302,7 +302,7 @@ class ManyTaggedTraitsCreate(LoginRequiredMixin, PermissionRequiredMixin, Taggab
     def get_form_valid_message(self):
         msg = ''
         for trait in self.traits:
-            msg += 'Tag {} has been applied to dbGaP phenotype variable <a href="{}">{}</a> <br>'.format(
+            msg += 'Tag {} has been applied to dbGaP study variable <a href="{}">{}</a> <br>'.format(
                 self.tag.title, trait.get_absolute_url(), trait.i_trait_name)
         return mark_safe(msg)
 
@@ -349,7 +349,7 @@ class ManyTaggedTraitsCreateByTag(LoginRequiredMixin, PermissionRequiredMixin, T
     def get_form_valid_message(self):
         msg = ''
         for trait in self.traits:
-            msg += 'Tag {} has been applied to dbGaP phenotype variable <a href="{}">{}</a> <br>'.format(
+            msg += 'Tag {} has been applied to dbGaP study variable <a href="{}">{}</a> <br>'.format(
                 self.tag.title, trait.get_absolute_url(), trait.i_trait_name)
         return mark_safe(msg)
 

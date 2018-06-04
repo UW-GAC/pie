@@ -439,7 +439,7 @@ class DCCReviewAdminForm(DCCReviewCleanForm):
 
 class TaggedTraitReviewSelectForm(forms.Form):
 
-    ERROR_NO_TAGGED_TRAITS = 'No tagged traits for this tag and study!'
+    ERROR_NO_TAGGED_TRAITS = 'No tagged variables for this tag and study!'
 
     tag = forms.ModelChoiceField(
         queryset=models.Tag.objects.all(),
@@ -456,7 +456,7 @@ class TaggedTraitReviewSelectForm(forms.Form):
             )
         ),
         help_text=("Then select a study. Start typing the study name or phs to filter the list. Only studies with at "
-                   "least one unreviewed phenotype variable tagged with the selected tag will be shown.")
+                   "least one unreviewed study variable tagged with the selected tag will be shown.")
     )
     helper = FormHelper()
     helper.form_class = 'form-horizontal'
