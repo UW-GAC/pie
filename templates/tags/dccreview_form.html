@@ -31,14 +31,13 @@
   </div>
 
   <div class="panel panel-default">
-    <div class="panel-heading"><strong>Variable information</strong></div>
+    <div class="panel-heading"><strong>Study variable information</strong></div>
     <div class="panel-body">
       <dl class="dl-horizontal">
         <dt>Variable</dt><dd><a href='{{ tagged_trait.trait.get_absolute_url }}'>{{ tagged_trait.trait.i_trait_name }}</a></dd>
         <dt>Variable description</dt><dd>{{ tagged_trait.trait.i_description }}</dd>
         <dt>Dataset name</dt><dd>{{ tagged_trait.trait.source_dataset.dataset_name }}</dd>
         <dt>Dataset description</dt><dd>{{ tagged_trait.trait.source_dataset.i_dbgap_description }}</dd>
-
       </dl>
     </div>
   </div>

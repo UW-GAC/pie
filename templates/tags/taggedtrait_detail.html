@@ -16,7 +16,7 @@
 
 {% block detail_fields %}
   <dt>Tagged by</dt><dd>{{ tagged_trait.creator }}</dd>
-    {% if request.user.is_staff %}
+  {% if request.user.is_staff %}
       <dt>DCC status</dt><dd>{{ tagged_trait.dcc_review.get_status_display }}</dd>
       <dt>DCC comment</dt><dd>{{ tagged_trait.dcc_review.comment }}</dd>
   {% endif %}
