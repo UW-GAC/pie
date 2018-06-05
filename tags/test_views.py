@@ -2177,6 +2177,27 @@ class TaggedTraitReviewByTagAndStudyDCCTestsMixin(object):
         self.assertEqual(context['tag'], self.tag)
         self.assertIn('study', context)
         self.assertEqual(context['study'], self.study)
+        self.assertIn('n_tagged_traits_remaining', context)
+        self.assertEqual(context['n_tagged_traits_remaining'], 1)
+
+    def test_context_data_with_multiple_remaining_tagged_traits(self):
+        """View has appropriate data in the context if there are multiple tagged traits to review."""
+        session = self.client.session
+        info = session['tagged_trait_review_by_tag_and_study_info']
+        info['tagged_trait_pks'] = [self.tagged_trait.pk, self.tagged_trait.pk + 1]
+        session.save()
+        response = self.client.get(self.get_url())
+        context = response.context
+        self.assertIn('form', context)
+        self.assertIsInstance(context['form'], forms.DCCReviewForm)
+        self.assertIn('tagged_trait', context)
+        self.assertEqual(context['tagged_trait'], self.tagged_trait)
+        self.assertIn('tag', context)
+        self.assertEqual(context['tag'], self.tag)
+        self.assertIn('study', context)
+        self.assertEqual(context['study'], self.study)
+        self.assertIn('n_tagged_traits_remaining', context)
+        self.assertEqual(context['n_tagged_traits_remaining'], 2)
 
     def test_successful_post_with_confirmed_tagged_trait(self):
         """Posting valid data to the form correctly creates a DCCReview."""

@@ -485,6 +485,9 @@ class TaggedTraitReviewByTagAndStudy(LoginRequiredMixin, PermissionRequiredMixin
             context['tag'] = self.tagged_trait.tag
         if 'study' not in context:
             context['study'] = self.tagged_trait.trait.source_dataset.source_study_version.study
+        if 'n_tagged_traits_remaining' not in context:
+            n_remaining = len(self.request.session['tagged_trait_review_by_tag_and_study_info']['tagged_trait_pks'])
+            context['n_tagged_traits_remaining'] = n_remaining
         return context
 
     def post(self, request, *args, **kwargs):
