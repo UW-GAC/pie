@@ -171,10 +171,9 @@ class TaggedTraitDelete(LoginRequiredMixin, PermissionRequiredMixin, TaggableStu
         return self.get_success_url()
 
     def validate_object(self):
-        if hasattr(self.object, 'dcc_review'):
-            if self.object.dcc_review.status == models.DCCReview.STATUS_CONFIRMED:
-                self.messages.error(CONFIRMED_TAGGED_TRAIT_DELETE_ERROR_MESSAGE)
-                return False
+        if hasattr(self.object, 'dcc_review') and self.object.dcc_review.status == models.DCCReview.STATUS_CONFIRMED:
+            self.messages.error(CONFIRMED_TAGGED_TRAIT_DELETE_ERROR_MESSAGE)
+            return False
         return True
 
 
