@@ -12,6 +12,7 @@ from braces.views import (FormMessagesMixin, FormValidMessageMixin, LoginRequire
 from dal import autocomplete
 from django_tables2 import SingleTableMixin
 
+from core.utils import SessionVariableMixin
 from trait_browser.models import Study
 from trait_browser.tables import SourceTraitTableFull
 from . import forms
@@ -387,22 +388,6 @@ class TaggedTraitReviewMixin(object):
         form.instance.creator = self.request.user
         form.instance.status = self.get_review_status()
         return super(TaggedTraitReviewMixin, self).form_valid(form)
-
-
-class SessionVariableMixin(object):
-    """A mixin to handle checking and setting session variables."""
-
-    def dispatch(self, request, *args, **kwargs):
-        res = self.handle_session_variables()
-        if res is not None:
-            return res
-        return super(SessionVariableMixin, self).dispatch(request, *args, **kwargs)
-
-    def handle_session_variables(self):
-        """Process session variables and either return None or a response."""
-        raise ImproperlyConfigured(
-            "SessionVariableMixin requires a definition for 'handle_session_variables()'"
-        )
 
 
 class TaggedTraitReviewByTagAndStudySelect(LoginRequiredMixin, PermissionRequiredMixin, MessageMixin, FormView):

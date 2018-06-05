@@ -43,6 +43,22 @@ def get_autocomplete_view_ids(response):
     return ids
 
 
+class SessionVariableMixin(object):
+    """A mixin to handle checking and setting session variables."""
+
+    def dispatch(self, request, *args, **kwargs):
+        res = self.handle_session_variables()
+        if res is not None:
+            return res
+        return super(SessionVariableMixin, self).dispatch(request, *args, **kwargs)
+
+    def handle_session_variables(self):
+        """Process session variables and either return None or a response."""
+        raise ImproperlyConfigured(
+            "SessionVariableMixin requires a definition for 'handle_session_variables()'"
+        )
+
+
 class UserLoginTestCase(TestCase):
     """TestCase that creates a user and logs in as that user.
 
