@@ -408,7 +408,6 @@ class DCCReviewForm(DCCReviewCleanForm):
     SUBMIT_SKIP = 'skip'
 
     helper = FormHelper()
-    helper.form_class = 'form-horizontal'
     helper.layout = Layout(
         'status',
         'comment',
