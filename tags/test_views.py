@@ -1924,7 +1924,8 @@ class TaggedTraitReviewByTagAndStudySelectDCCTestsMixin(object):
         url = reverse('home')
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, """<a href="/tags/tagged/review/select">""")
+        link = reverse('tags:tagged-traits:review:select')
+        self.assertContains(response, """<a href="{}">""".format(self.get_url()))
 
 
 class TaggedTraitReviewByTagAndStudySelectDCCAnalystTest(TaggedTraitReviewByTagAndStudySelectDCCTestsMixin,
@@ -1962,8 +1963,7 @@ class TaggedTraitReviewByTagAndStudySelectOtherUserTest(UserLoginTestCase):
         url = reverse('home')
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        expected_html = """<a href="{}">""".format(self.get_url())
-        self.assertNotContains(response, """<a href="/tags/tagged/review/select">""")
+        self.assertNotContains(response, """<a href="{}">""".format(self.get_url()))
 
 
 class TaggedTraitReviewByTagAndStudyNextDCCTestsMixin(object):
