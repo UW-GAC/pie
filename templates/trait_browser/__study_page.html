@@ -41,5 +41,5 @@
       </p>
     </div>
   </div>
-  {% include 'trait_browser/_dbgap_link_panel.html' with study_string=phs study_link=phs_link %}
+  {% include 'trait_browser/_dbgap_link_panel.html' with study_string=study.get_latest_version.full_accession study_link=study.get_latest_version_link %}
 {% endblock after_panel %}
