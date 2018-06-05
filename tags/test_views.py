@@ -1920,7 +1920,7 @@ class TaggedTraitReviewByTagAndStudySelectDCCTestsMixin(object):
                           msg='TaggedTrait {} not in session tagged_trait_pks'.format(tt.pk))
 
     def test_link_to_review_views(self):
-        """The harmonization recipe elements do appear on the home page for DCC users."""
+        """The link to review tagged traits appears on the home page for DCC users."""
         url = reverse('home')
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
@@ -1959,7 +1959,7 @@ class TaggedTraitReviewByTagAndStudySelectOtherUserTest(UserLoginTestCase):
         self.assertEqual(response.status_code, 403)
 
     def test_link_not_in_navbar(self):
-        """The harmonization recipe elements don't appear on the home page for non-DCC users."""
+        """The link to review tagged traits doesn't appear on the home page for non-DCC users."""
         url = reverse('home')
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
