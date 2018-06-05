@@ -11,7 +11,9 @@ from io import StringIO
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
+from django.core.exceptions import ImproperlyConfigured
 from django.core.management import call_command
+from django.http import HttpResponseRedirect
 from django.urls import resolve, reverse
 from django.test import TestCase, Client
 
@@ -57,6 +59,33 @@ class SessionVariableMixin(object):
         raise ImproperlyConfigured(
             "SessionVariableMixin requires a definition for 'handle_session_variables()'"
         )
+
+
+class ValidateObjectMixin(object):
+    """Run a check on an object before dispatching a request to the proper method."""
+
+    validation_failure_url = None
+
+    def validate_object(self):
+        """Method that returns True or False after checking some property of an object."""
+        raise ImproperlyConfigured(
+            "ValidateObjectMixin requires a definition for 'validate_object()'"
+        )
+
+    def get_validation_failure_url(self):
+        """Method that returns the url to load upon failing validate_object()."""
+        if self.validation_failure_url is not None:
+            return self.validation_failure_url
+        else:
+            raise ImproperlyConfigured(
+                "No URL to redirect to after failing object validation. Provide a validation_failure_url."
+            )
+
+    def dispatch(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        if not self.validate_object():
+            return HttpResponseRedirect(self.get_validation_failure_url())
+        return super(ValidateObjectMixin, self).dispatch(request, *args, **kwargs)
 
 
 class UserLoginTestCase(TestCase):
