@@ -9,14 +9,30 @@
 
   <table class='table-bordered'>
     <tr>
-        <td>Tag</td><td>Count</td>
+      <td>Tag</td><td>Count</td>
     </tr>
     {% for tag in annotated_tags %}
       <tr>
-          <td>{{tag.title}}</td>
-          <td>{{tag.traits__count}}</td>
+        <td>{{tag.title}}</td>
+        <td>{{tag.traits__count}}</td>
       </tr>
     {% endfor %}
   </table>
+
+<br>
+  
+  <dl class="dl-horizontal">
+      <dt>Study</dt><dd>Tag counts</dd>
+    {% for row in annotated_studies %}
+        <dt><a href="{{ row.0.get_absolute_url }}">{{ row.0.i_study_name }}</a></dt>
+        <dd>
+            {% for tag_tuple in row.1 %}
+              <a href="{{ tag_tuple.0.get_absolute_url }}" class="btn btn-default btn-xs" role="button">
+                  {{ tag_tuple.0.title }}
+              <span class="badge">{{ tag_tuple.1 }}</span></a>
+            {% endfor %}
+        </dd>
+    {% endfor %}
+    </dl>
 
 {% endblock content %}

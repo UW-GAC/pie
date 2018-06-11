@@ -84,6 +84,14 @@ class TaggedTraitTally(LoginRequiredMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super(TaggedTraitTally, self).get_context_data(**kwargs)
         context['annotated_tags'] = models.Tag.objects.annotate(Count('traits'))
+        study_tag_counts_dict = dict(
+            (study,
+             models.TaggedTrait.objects.filter(trait__source_dataset__source_study_version__study=study).values(
+                'tag__pk').annotate(
+                    count=Count('pk', distinct=True))
+            ) for study in Study.objects.all()
+        )
+        context['annotated_studies'] = [(study, [(models.Tag.objects.get(pk=tag['tag__pk']), tag['count']) for tag in study_tag_counts_dict[study]]) for study in study_tag_counts_dict]
         # q[0].title, q[0].traits__count
         return context
 
