@@ -341,9 +341,9 @@ class TaggedTraitReviewMixin(object):
     def get_review_status(self):
         """Return the DCCReview status based on which submit button was clicked."""
         if self.request.POST:
-            if 'confirm' in self.request.POST:
+            if self.form_class.SUBMIT_CONFIRM in self.request.POST:
                 return self.model.STATUS_CONFIRMED
-            elif 'require-followup' in self.request.POST:
+            elif self.form_class.SUBMIT_FOLLOWUP in self.request.POST:
                 return self.model.STATUS_FOLLOWUP
 
     def get_form_kwargs(self):
