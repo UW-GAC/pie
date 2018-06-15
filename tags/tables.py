@@ -83,12 +83,12 @@ class TaggedTraitTable(tables.Table):
 class TaggedTraitTableWithDelete(TaggedTraitTable):
     """Table for displaying TaggedTraits with delete buttons."""
 
-    delete = tables.TemplateColumn(verbose_name='', orderable=False,
+    delete_button = tables.TemplateColumn(verbose_name='', orderable=False,
                                    template_code=DELETE_BUTTON_TEMPLATE)
     creator = tables.Column('Tagged by', accessor='creator.name')
 
     class Meta(TaggedTraitTable.Meta):
-        fields = ('tag', 'trait', 'description', 'dataset', 'creator', 'delete',)
+        fields = ('tag', 'trait', 'description', 'dataset', 'creator', 'delete_button',)
 
 
 class TaggedTraitTableWithDCCReview(TaggedTraitTable):
@@ -97,11 +97,11 @@ class TaggedTraitTableWithDCCReview(TaggedTraitTable):
     status = tables.Column('Status', accessor='dcc_review.status')
     details = tables.TemplateColumn(verbose_name='', orderable=False,
                                     template_code=DETAIL_BUTTON_TEMPLATE)
-    delete = tables.TemplateColumn(verbose_name='', orderable=False,
+    delete_button = tables.TemplateColumn(verbose_name='', orderable=False,
                                    template_code=DELETE_BUTTON_TEMPLATE)
 
     class Meta(TaggedTraitTable.Meta):
-        fields = ('tag', 'trait', 'description', 'dataset', 'status', 'details', 'delete')
+        fields = ('tag', 'trait', 'description', 'dataset', 'status', 'details', 'delete_button')
 
 
 class UserTaggedTraitTable(TaggedTraitTable):
@@ -110,8 +110,8 @@ class UserTaggedTraitTable(TaggedTraitTable):
     Displays user information that is not displayed in the plain old TaggedTraitTable.
     """
 
-    delete = tables.TemplateColumn(verbose_name='', orderable=False,
+    delete_button = tables.TemplateColumn(verbose_name='', orderable=False,
                                    template_code=DELETE_BUTTON_TEMPLATE)
 
     class Meta(TaggedTraitTableWithDelete.Meta):
-        fields = ('tag', 'trait', 'description', 'dataset', 'delete',)
+        fields = ('tag', 'trait', 'description', 'dataset', 'delete_button',)
