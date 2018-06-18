@@ -354,6 +354,15 @@ class TaggedTraitDetailDCCAnalystTest(TaggedTraitDetailTestsMixin, DCCAnalystLog
         response = self.client.get(self.get_url(self.tagged_trait.pk))
         self.assertContains(response, reverse('tags:tagged-traits:pk:dcc-review:update', args=[self.tagged_trait.pk]))
 
+    def test_archived_taggedtraits(self):
+        """Archived tagged traits do not appear in the table."""
+        tagged_trait = self.tagged_traits[0]
+        tagged_trait.archive()
+        response = self.client.get(self.get_url(self.study.pk))
+        self.assertIn('tagged_trait_table', response.context)
+        table = response.context['tagged_trait_table']
+        self.assertNotIn(tagged_trait, table.data)
+
 
 class TaggedTraitTagCountsByStudyTest(UserLoginTestCase):
 
@@ -397,6 +406,15 @@ class TaggedTraitTagCountsByStudyTest(UserLoginTestCase):
                     trait__source_dataset__source_study_version__study__pk=study[0]['study_pk']).count()
                 self.assertEqual(tag['tt_count'], tag_study_count)
 
+    def test_archived_taggedtraits(self):
+        """Archived tagged traits do not appear in the table."""
+        tagged_trait = self.tagged_traits[0]
+        tagged_trait.archive()
+        response = self.client.get(self.get_url(self.study.pk))
+        self.assertIn('tagged_trait_table', response.context)
+        table = response.context['tagged_trait_table']
+        self.assertNotIn(tagged_trait, table.data)
+
 
 class TaggedTraitStudyCountsByTagTest(UserLoginTestCase):
 
@@ -439,6 +457,15 @@ class TaggedTraitStudyCountsByTagTest(UserLoginTestCase):
                     tag__pk=tag[0]['tag_pk'],
                     trait__source_dataset__source_study_version__study__pk=study['study_pk']).count()
                 self.assertEqual(study['tt_count'], study_tag_count)
+
+    def test_archived_taggedtraits(self):
+        """Archived tagged traits do not appear in the table."""
+        tagged_trait = self.tagged_traits[0]
+        tagged_trait.archive()
+        response = self.client.get(self.get_url(self.study.pk))
+        self.assertIn('tagged_trait_table', response.context)
+        table = response.context['tagged_trait_table']
+        self.assertNotIn(tagged_trait, table.data)
 
 
 class TaggedTraitByTagAndStudyListTest(UserLoginTestCase):
@@ -518,6 +545,15 @@ class TaggedTraitByTagAndStudyListTest(UserLoginTestCase):
         context = response.context
         self.assertNotIn(other_tagged_trait, context['tagged_trait_table'].data)
 
+    def test_archived_taggedtraits(self):
+        """Archived tagged traits do not appear in the table."""
+        tagged_trait = self.tagged_traits[0]
+        tagged_trait.archive()
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        self.assertIn('tagged_trait_table', response.context)
+        table = response.context['tagged_trait_table']
+        self.assertNotIn(tagged_trait, table.data)
+
 
 class TaggedTraitByTagAndStudyListPhenotypeTaggerTest(PhenotypeTaggerLoginTestCase):
 
@@ -565,6 +601,15 @@ class TaggedTraitByTagAndStudyListPhenotypeTaggerTest(PhenotypeTaggerLoginTestCa
         context = response.context
         self.assertIsInstance(context['tagged_trait_table'], tables.TaggedTraitTableWithDCCReviewStatus)
 
+    def test_archived_taggedtraits(self):
+        """Archived tagged traits do not appear in the table."""
+        tagged_trait = self.tagged_traits[0]
+        tagged_trait.archive()
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        self.assertIn('tagged_trait_table', response.context)
+        table = response.context['tagged_trait_table']
+        self.assertNotIn(tagged_trait, table.data)
+
 
 class TaggedTraitByTagAndStudyListDCCAnalystTest(DCCAnalystLoginTestCase):
 
@@ -611,6 +656,15 @@ class TaggedTraitByTagAndStudyListDCCAnalystTest(DCCAnalystLoginTestCase):
         response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
         context = response.context
         self.assertIsInstance(context['tagged_trait_table'], tables.TaggedTraitTableWithDCCReviewButton)
+
+    def test_archived_taggedtraits(self):
+        """Archived tagged traits do not appear in the table."""
+        tagged_trait = self.tagged_traits[0]
+        tagged_trait.archive()
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        self.assertIn('tagged_trait_table', response.context)
+        table = response.context['tagged_trait_table']
+        self.assertNotIn(tagged_trait, table.data)
 
 
 class TaggedTraitCreateTest(PhenotypeTaggerLoginTestCase):
