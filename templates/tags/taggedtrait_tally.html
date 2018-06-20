@@ -7,11 +7,14 @@
 {% block content %}
   {% include '_messages.html' %}
 
+<h2>Tagged variables by study</h2>
+
+<div class="panel panel-default">
   <div class="table-responsive">
-    <table class='table'>
+    <table class='table table-bordered table-striped table-hover'>
       <tr>
         <th class='text-right'>Study</th>
-        <th class='text-left'>Tag counts</th>
+        <th class='text-left'>Variable count by tag</th>
       </tr>
       {% for row in annotated_studies %}
         <tr>
@@ -27,4 +30,6 @@
       {% endfor %}
     </table>
   </div>
+</div>
+
 {% endblock content %}
