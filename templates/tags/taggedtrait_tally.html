@@ -1,38 +1,30 @@
 {% extends '__base.html' %}
 
 {% block head_title %}
-  | Tagged phenotype tallies
+| Tagged phenotype tallies
 {% endblock head_title %}
 
 {% block content %}
   {% include '_messages.html' %}
 
-  <table class='table-bordered'>
-    <tr>
-      <td>Tag</td><td>Count</td>
-    </tr>
-    {% for tag in annotated_tags %}
+  <div class="table-responsive">
+    <table class='table'>
       <tr>
-        <td>{{tag.title}}</td>
-        <td>{{tag.traits__count}}</td>
+        <th class='text-right'>Study</th>
+        <th class='text-left'>Tag counts</th>
       </tr>
-    {% endfor %}
-  </table>
-
-<br>
-  
-  <dl class="dl-horizontal">
-      <dt>Study</dt><dd>Tag counts</dd>
-    {% for row in annotated_studies %}
-        <dt><a href="{{ row.0.get_absolute_url }}">{{ row.0.i_study_name }}</a></dt>
-        <dd>
+      {% for row in annotated_studies %}
+        <tr>
+          <td class='text-right'><a href="{{ row.0.get_absolute_url }}">{{ row.0.i_study_name }}</a></td>
+          <td class='text-left'>
             {% for tag_tuple in row.1 %}
               <a href="{{ tag_tuple.0.get_absolute_url }}" class="btn btn-default btn-xs" role="button">
-                  {{ tag_tuple.0.title }}
+              {{ tag_tuple.0.title }}
               <span class="badge">{{ tag_tuple.1 }}</span></a>
             {% endfor %}
-        </dd>
-    {% endfor %}
-    </dl>
-
+          </td>
+        </tr>
+      {% endfor %}
+    </table>
+  </div>
 {% endblock content %}
