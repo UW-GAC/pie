@@ -122,14 +122,14 @@ class TagListTest(UserLoginTestCase):
         self.assertIsInstance(context['tag_table'], tables.TagTable)
 
 
-class StudyTaggedTraitListTest(UserLoginTestCase):
+class TaggedTraitStudyCountsTest(UserLoginTestCase):
 
     def setUp(self):
-        super(StudyTaggedTraitListTest, self).setUp()
+        super(TaggedTraitStudyCountsTest, self).setUp()
         self.tagged_traits = factories.TaggedTraitFactory.create_batch(20)
 
     def get_url(self, *args):
-        return reverse('tags:tagged-traits:by-study')
+        return reverse('tags:tagged-traits:study-counts')
 
     def test_view_success_code(self):
         """View returns successful response code."""
@@ -274,10 +274,10 @@ class TaggedTraitDetailDCCAnalystTest(TaggedTraitDetailTestsMixin, DCCAnalystLog
         self.assertContains(response, dcc_review.comment)
 
 
-class TaggedTraitByStudyListTest(UserLoginTestCase):
+class StudyTaggedTraitListTest(UserLoginTestCase):
 
     def setUp(self):
-        super(TaggedTraitByStudyListTest, self).setUp()
+        super(StudyTaggedTraitListTest, self).setUp()
         self.study = StudyFactory.create()
         self.tagged_traits = factories.TaggedTraitFactory.create_batch(
             10, trait__source_dataset__source_study_version__study=self.study)
@@ -310,10 +310,10 @@ class TaggedTraitByStudyListTest(UserLoginTestCase):
         self.assertIsInstance(context['tagged_trait_table'], tables.TaggedTraitTable)
 
 
-class TaggedTraitByStudyListPhenotypeTaggerTest(PhenotypeTaggerLoginTestCase):
+class StudyTaggedTraitListPhenotypeTaggerTest(PhenotypeTaggerLoginTestCase):
 
     def setUp(self):
-        super(TaggedTraitByStudyListPhenotypeTaggerTest, self).setUp()
+        super(StudyTaggedTraitListPhenotypeTaggerTest, self).setUp()
         self.tagged_traits = factories.TaggedTraitFactory.create_batch(
             10, trait__source_dataset__source_study_version__study=self.study)
         self.user.refresh_from_db()
@@ -347,10 +347,10 @@ class TaggedTraitByStudyListPhenotypeTaggerTest(PhenotypeTaggerLoginTestCase):
         self.assertIsInstance(context['tagged_trait_table'], tables.TaggedTraitTableWithDelete)
 
 
-class TaggedTraitByStudyListDCCAnalystTest(DCCAnalystLoginTestCase):
+class StudyTaggedTraitListDCCAnalystTest(DCCAnalystLoginTestCase):
 
     def setUp(self):
-        super(TaggedTraitByStudyListDCCAnalystTest, self).setUp()
+        super(StudyTaggedTraitListDCCAnalystTest, self).setUp()
         self.study = StudyFactory.create()
         self.tagged_traits = factories.TaggedTraitFactory.create_batch(
             10, trait__source_dataset__source_study_version__study=self.study)

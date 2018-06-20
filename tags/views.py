@@ -62,12 +62,12 @@ class TagList(LoginRequiredMixin, SingleTableMixin, ListView):
     table_pagination = {'per_page': TABLE_PER_PAGE}
 
 
-class StudyTaggedTraitList(LoginRequiredMixin, SingleTableMixin, ListView):
+class TaggedTraitStudyCounts(LoginRequiredMixin, SingleTableMixin, ListView):
 
     model = Study
     table_class = tables.StudyTaggedTraitTable
     context_table_name = 'study_table'
-    template_name = 'tags/studytaggedtrait_list.html'
+    template_name = 'tags/taggedtrait_studycounts.html'
     table_pagination = {'per_page': TABLE_PER_PAGE}
 
     def get_table_data(self):
@@ -111,11 +111,11 @@ class TaggedTraitDetail(LoginRequiredMixin, DetailView):
         return context
 
 
-class TaggedTraitByStudyList(LoginRequiredMixin, SingleTableMixin, ListView):
+class StudyTaggedTraitList(LoginRequiredMixin, SingleTableMixin, ListView):
 
     model = models.TaggedTrait
     context_table_name = 'tagged_trait_table'
-    template_name = 'tags/taggedtrait_list.html'
+    template_name = 'tags/study_taggedtrait_list.html'
     table_pagination = {'per_page': TABLE_PER_PAGE}
 
     def get_table_class(self):
@@ -131,7 +131,7 @@ class TaggedTraitByStudyList(LoginRequiredMixin, SingleTableMixin, ListView):
         return self.study.get_tagged_traits()
 
     def get_context_data(self, *args, **kwargs):
-        context = super(TaggedTraitByStudyList, self).get_context_data(*args, **kwargs)
+        context = super(StudyTaggedTraitList, self).get_context_data(*args, **kwargs)
         context['study'] = self.study
         return context
 

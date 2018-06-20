@@ -18,7 +18,10 @@
       </tr>
       {% for row in annotated_studies %}
         <tr>
-          <td class='text-right'><a href="{{ row.0.get_absolute_url }}">{{ row.0.i_study_name }}</a></td>
+          <td class='text-right'>
+            <a href="{{ row.0.get_absolute_url }}">{{ row.0.i_study_name }}</a>
+            
+          </td>
           <td class='text-left'>
             {% for tag_tuple in row.1 %}
               <a href="{{ tag_tuple.0.get_absolute_url }}" class="btn btn-default btn-xs" role="button">
