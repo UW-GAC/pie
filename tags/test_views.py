@@ -834,7 +834,7 @@ class TaggedTraitDeleteTest(PhenotypeTaggerLoginTestCase):
         self.assertIn(self.tagged_trait, models.TaggedTrait.objects.all())
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
-        self.assertIn(views.CONFIRMED_TAGGED_TRAIT_DELETE_ERROR_MESSAGE, str(messages[0]))
+        self.assertIn(views.REVIEWED_TAGGED_TRAIT_DELETE_ERROR_MESSAGE, str(messages[0]))
 
     def test_cannot_delete_a_confirmed_trait(self):
         """Cannot delete a TaggedTrait that has been confirmed by the DCC."""
@@ -847,21 +847,33 @@ class TaggedTraitDeleteTest(PhenotypeTaggerLoginTestCase):
         self.assertIn(self.tagged_trait, models.TaggedTrait.objects.all())
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
-        self.assertIn(views.CONFIRMED_TAGGED_TRAIT_DELETE_ERROR_MESSAGE, str(messages[0]))
+        self.assertIn(views.REVIEWED_TAGGED_TRAIT_DELETE_ERROR_MESSAGE, str(messages[0]))
 
-    def test_can_delete_a_trait_that_needs_followup(self):
-        """Can delete a TaggedTrait that has been marked as needing followup."""
+    def test_needs_followup_tagged_trait_get_request_redirects_before_confirmation_view(self):
+        """Redirect when trying to delete a TaggedTrait that was reviewed with needs followup."""
+        dcc_review = factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait, comment='foo',
+                                                       status=models.DCCReview.STATUS_FOLLOWUP)
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        self.assertRedirects(response, reverse('trait_browser:source:studies:pk:traits:tagged',
+                                               args=[self.trait.source_dataset.source_study_version.study.pk]))
+        # Make sure it wasn't deleted.
+        self.assertIn(self.tagged_trait, models.TaggedTrait.objects.all())
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn(views.REVIEWED_TAGGED_TRAIT_DELETE_ERROR_MESSAGE, str(messages[0]))
+
+    def test_cannot_delete_a_reviewed_trait(self):
+        """Cannot delete a TaggedTrait that was reviewed with needs followup."""
         dcc_review = factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait, comment='foo',
                                                        status=models.DCCReview.STATUS_FOLLOWUP)
         response = self.client.post(self.get_url(self.tagged_trait.pk), {'submit': ''})
         self.assertRedirects(response, reverse('trait_browser:source:studies:pk:traits:tagged',
                                                args=[self.trait.source_dataset.source_study_version.study.pk]))
-        with self.assertRaises(models.TaggedTrait.DoesNotExist):
-            self.tagged_trait.refresh_from_db()
-        self.assertEqual(models.TaggedTrait.objects.count(), 0)
+        # Make sure it wasn't deleted.
+        self.assertIn(self.tagged_trait, models.TaggedTrait.objects.all())
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
-        self.assertFalse('Oops!' in str(messages[0]))
+        self.assertIn(views.REVIEWED_TAGGED_TRAIT_DELETE_ERROR_MESSAGE, str(messages[0]))
 
 
 class TaggedTraitDeleteDCCAnalystTest(DCCAnalystLoginTestCase):
@@ -945,21 +957,7 @@ class TaggedTraitDeleteDCCAnalystTest(DCCAnalystLoginTestCase):
         self.assertIn(self.tagged_trait, models.TaggedTrait.objects.all())
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
-        self.assertIn(views.CONFIRMED_TAGGED_TRAIT_DELETE_ERROR_MESSAGE, str(messages[0]))
-
-    def test_can_delete_a_trait_that_needs_followup(self):
-        """Can delete a TaggedTrait that has been marked as needing followup."""
-        dcc_review = factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait, comment='foo',
-                                                       status=models.DCCReview.STATUS_FOLLOWUP)
-        response = self.client.post(self.get_url(self.tagged_trait.pk), {'submit': ''})
-        self.assertRedirects(response, reverse('trait_browser:source:studies:pk:traits:tagged',
-                                               args=[self.trait.source_dataset.source_study_version.study.pk]))
-        with self.assertRaises(models.TaggedTrait.DoesNotExist):
-            self.tagged_trait.refresh_from_db()
-        self.assertEqual(models.TaggedTrait.objects.count(), 0)
-        messages = list(response.wsgi_request._messages)
-        self.assertEqual(len(messages), 1)
-        self.assertFalse('Oops!' in str(messages[0]))
+        self.assertIn(views.REVIEWED_TAGGED_TRAIT_DELETE_ERROR_MESSAGE, str(messages[0]))
 
     def test_confirmed_tagged_trait_get_request_redirects_before_confirmation_view(self):
         """Cannot delete a TaggedTrait that has been confirmed by the DCC."""
@@ -972,7 +970,34 @@ class TaggedTraitDeleteDCCAnalystTest(DCCAnalystLoginTestCase):
         self.assertIn(self.tagged_trait, models.TaggedTrait.objects.all())
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
-        self.assertIn(views.CONFIRMED_TAGGED_TRAIT_DELETE_ERROR_MESSAGE, str(messages[0]))
+        self.assertIn(views.REVIEWED_TAGGED_TRAIT_DELETE_ERROR_MESSAGE, str(messages[0]))
+
+
+    def test_needs_followup_tagged_trait_get_request_redirects_before_confirmation_view(self):
+        """Redirect when trying to delete a TaggedTrait that was reviewed with needs followup."""
+        dcc_review = factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait, comment='foo',
+                                                       status=models.DCCReview.STATUS_FOLLOWUP)
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        self.assertRedirects(response, reverse('trait_browser:source:studies:pk:traits:tagged',
+                                               args=[self.trait.source_dataset.source_study_version.study.pk]))
+        # Make sure it wasn't deleted.
+        self.assertIn(self.tagged_trait, models.TaggedTrait.objects.all())
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn(views.REVIEWED_TAGGED_TRAIT_DELETE_ERROR_MESSAGE, str(messages[0]))
+
+    def test_cannot_delete_a_reviewed_trait(self):
+        """Cannot delete a TaggedTrait that was reviewed with needs followup."""
+        dcc_review = factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait, comment='foo',
+                                                       status=models.DCCReview.STATUS_FOLLOWUP)
+        response = self.client.post(self.get_url(self.tagged_trait.pk), {'submit': ''})
+        self.assertRedirects(response, reverse('trait_browser:source:studies:pk:traits:tagged',
+                                               args=[self.trait.source_dataset.source_study_version.study.pk]))
+        # Make sure it wasn't deleted.
+        self.assertIn(self.tagged_trait, models.TaggedTrait.objects.all())
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn(views.REVIEWED_TAGGED_TRAIT_DELETE_ERROR_MESSAGE, str(messages[0]))
 
 
 class TaggedTraitCreateByTagTest(PhenotypeTaggerLoginTestCase):

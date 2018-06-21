@@ -23,8 +23,8 @@ from . import tables
 TABLE_PER_PAGE = 50    # Setting for per_page rows for all table views.
 TAGGING_ERROR_MESSAGE = 'Oops! Applying the tag to a dbGaP study variable failed.'
 TAGGING_MULTIPLE_ERROR_MESSAGE = 'Oops! Applying the tag to dbGaP study variables failed.'
-CONFIRMED_TAGGED_TRAIT_DELETE_ERROR_MESSAGE = (
-    "Oops! Tagged dbGaP study variables that have been confirmed by the DCC can't be deleted."
+REVIEWED_TAGGED_TRAIT_DELETE_ERROR_MESSAGE = (
+    "Oops! Tagged dbGaP study variables that have been reviewed by the DCC can't be deleted."
 )
 
 
@@ -171,8 +171,8 @@ class TaggedTraitDelete(LoginRequiredMixin, PermissionRequiredMixin, TaggableStu
         return self.get_success_url()
 
     def validate_object(self):
-        if hasattr(self.object, 'dcc_review') and self.object.dcc_review.status == models.DCCReview.STATUS_CONFIRMED:
-            self.messages.error(CONFIRMED_TAGGED_TRAIT_DELETE_ERROR_MESSAGE)
+        if hasattr(self.object, 'dcc_review'):
+            self.messages.error(REVIEWED_TAGGED_TRAIT_DELETE_ERROR_MESSAGE)
             return False
         return True
 
