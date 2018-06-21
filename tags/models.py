@@ -70,6 +70,10 @@ class TaggedTrait(TimeStampedModel):
             raise DeleteNotAllowedError("Cannot delete a reviewed TaggedTrait.")
         super().delete(*args, **kwargs)
 
+    def hard_delete(self, *args, **kwargs):
+        """Delete objects that cannot be deleted with overriden delete method."""
+        super().delete(*args, **kwargs)
+
 
 class DCCReview(TimeStampedModel):
     """Model to allow DCC staff to review a TaggedTrait."""

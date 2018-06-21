@@ -257,6 +257,30 @@ class TaggedTraitTest(TestCase):
         with self.assertRaises(ObjectDoesNotExist):
             tagged_trait.refresh_from_db()
 
+    def test_can_hard_delete_tagged_trait_with_dccreview_need_followup(self):
+        """A reviewed TaggedTrait with needs followup status can be deleted with hard_delete."""
+        tagged_trait = self.model_factory.create(**self.model_args)
+        factories.DCCReviewFactory.create(tagged_trait=tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP,
+                                          comment='foo')
+        tagged_trait.hard_delete()
+        with self.assertRaises(ObjectDoesNotExist):
+            tagged_trait.refresh_from_db()
+
+    def test_can_hard_delete_tagged_trait_with_dccreview_confirmed(self):
+        """A reviewed TaggedTrait with confirmed status can be deleted with hard_delete."""
+        tagged_trait = self.model_factory.create(**self.model_args)
+        factories.DCCReviewFactory.create(tagged_trait=tagged_trait, status=models.DCCReview.STATUS_CONFIRMED)
+        tagged_trait.hard_delete()
+        with self.assertRaises(ObjectDoesNotExist):
+            tagged_trait.refresh_from_db()
+
+    def test_can_hard_delete_unreviewed_tagged_trait(self):
+        """An unreviewed TaggedTrait can be deleted with hard_delete."""
+        tagged_trait = self.model_factory.create(**self.model_args)
+        tagged_trait.hard_delete()
+        with self.assertRaises(ObjectDoesNotExist):
+            tagged_trait.refresh_from_db()
+
 
 class DCCReviewTest(TestCase):
     model = models.DCCReview
