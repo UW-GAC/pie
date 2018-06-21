@@ -23,3 +23,7 @@ class TaggedTraitQuerySet(models.query.QuerySet):
         if n_reviewed > 0:
             raise DeleteNotAllowedError("Cannot delete TaggedTraits that have been reviewed.")
         super().delete(*args, **kwargs)
+
+    def hard_delete(self, *args, **kwargs):
+        """Delete the queryset objects regardless of review status."""
+        super().delete(*args, **kwargs)
