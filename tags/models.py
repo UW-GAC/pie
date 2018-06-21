@@ -4,6 +4,7 @@ from django.conf import settings
 from django.urls import reverse
 from django.db import models
 
+from core.exceptions import DeleteNotAllowedError
 from core.models import TimeStampedModel
 from . import querysets
 
@@ -62,6 +63,12 @@ class TaggedTrait(TimeStampedModel):
 
     def get_absolute_url(self):
         return reverse('tags:tagged-traits:detail', args=[self.pk])
+
+    def delete(self, *args, **kwargs):
+        """Only allow unreviewed TaggedTrait objects to be deleted."""
+        if hasattr(self, 'dcc_review'):
+            raise DeleteNotAllowedError("Cannot delete a reviewed TaggedTrait.")
+        super().delete(*args, **kwargs)
 
 
 class DCCReview(TimeStampedModel):

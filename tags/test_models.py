@@ -1,9 +1,10 @@
 """Tests of models for the tags app."""
 
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db.utils import IntegrityError
 from django.test import TestCase
 
+from core.exceptions import DeleteNotAllowedError
 from core.factories import UserFactory
 # from core.utils import UserLoginTestCase
 from trait_browser.factories import SourceTraitFactory, StudyFactory
@@ -231,6 +232,30 @@ class TaggedTraitTest(TestCase):
         instance = self.model_factory.create()
         url = instance.get_absolute_url()
         # Just test that this function works.
+
+    def test_unable_to_delete_with_dccreview_need_followup(self):
+        """A reviewed TaggedTrait with needs followup status cannot be deleted."""
+        tagged_trait = self.model_factory.create(**self.model_args)
+        factories.DCCReviewFactory.create(tagged_trait=tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP,
+                                          comment='foo')
+        with self.assertRaises(DeleteNotAllowedError):
+            tagged_trait.delete()
+        tagged_trait.refresh_from_db()
+
+    def test_unable_to_delete_with_dccreview_confirmed(self):
+        """A reviewed TaggedTrait with confirmed status cannot be deleted."""
+        tagged_trait = self.model_factory.create(**self.model_args)
+        factories.DCCReviewFactory.create(tagged_trait=tagged_trait, status=models.DCCReview.STATUS_CONFIRMED)
+        with self.assertRaises(DeleteNotAllowedError):
+            tagged_trait.delete()
+        tagged_trait.refresh_from_db()
+
+    def test_can_delete_unreviewed_object(self):
+        """A unreviewed TaggedTrait can be deleted."""
+        tagged_trait = self.model_factory.create(**self.model_args)
+        tagged_trait.delete()
+        with self.assertRaises(ObjectDoesNotExist):
+            tagged_trait.refresh_from_db()
 
 
 class DCCReviewTest(TestCase):
