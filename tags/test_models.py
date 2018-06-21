@@ -281,6 +281,32 @@ class TaggedTraitTest(TestCase):
         with self.assertRaises(ObjectDoesNotExist):
             tagged_trait.refresh_from_db()
 
+    def test_can_delete_queryset_with_no_reviewed_tagged_traits(self):
+        """The TaggedTrait queryset method deletes unreviewed tagged traits."""
+        tagged_traits = factories.TaggedTraitFactory.create_batch(5)
+        models.TaggedTrait.objects.all().delete()
+        self.assertEqual(models.TaggedTrait.objects.count(), 0)
+
+    def test_queryset_delete_with_one_reviewed_tagged_trait_followup(self):
+        """The TaggedTrait queryset method does not delete anything if any tagged traits are reviewed."""
+        tagged_traits = factories.TaggedTraitFactory.create_batch(5)
+        tagged_trait_to_review = tagged_traits[1]
+        factories.DCCReviewFactory.create(tagged_trait=tagged_trait_to_review, comment='foo',
+                                          status=models.DCCReview.STATUS_FOLLOWUP)
+        with self.assertRaises(DeleteNotAllowedError):
+            models.TaggedTrait.objects.all().delete()
+        self.assertEqual(models.TaggedTrait.objects.count(), 5)
+
+    def test_queryset_delete_with_one_reviewed_tagged_trait_confirmed(self):
+        """The TaggedTrait queryset method does not delete anything if any tagged traits are reviewed."""
+        tagged_traits = factories.TaggedTraitFactory.create_batch(5)
+        tagged_trait_to_review = tagged_traits[1]
+        factories.DCCReviewFactory.create(tagged_trait=tagged_trait_to_review,
+                                          status=models.DCCReview.STATUS_CONFIRMED)
+        with self.assertRaises(DeleteNotAllowedError):
+            models.TaggedTrait.objects.all().delete()
+        self.assertEqual(models.TaggedTrait.objects.count(), 5)
+
 
 class DCCReviewTest(TestCase):
     model = models.DCCReview
