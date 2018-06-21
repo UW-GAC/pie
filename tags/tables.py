@@ -80,38 +80,38 @@ class TaggedTraitTable(tables.Table):
         order_by = ('tag', )
 
 
-class TaggedTraitTableWithDelete(TaggedTraitTable):
-    """Table for displaying TaggedTraits with delete buttons."""
+class TaggedTraitDeleteButtonMixin(tables.Table):
+    """Mixin to include a delete button in a TaggedTrait table."""
 
     delete_button = tables.TemplateColumn(verbose_name='', orderable=False,
                                    template_code=DELETE_BUTTON_TEMPLATE)
+
+
+class TaggedTraitTableWithDelete(TaggedTraitDeleteButtonMixin, TaggedTraitTable):
+    """Table for displaying TaggedTraits with delete buttons."""
+
     creator = tables.Column('Tagged by', accessor='creator.name')
 
     class Meta(TaggedTraitTable.Meta):
         fields = ('tag', 'trait', 'description', 'dataset', 'creator', 'delete_button',)
 
 
-class TaggedTraitTableWithDCCReview(TaggedTraitTable):
+class TaggedTraitTableWithDCCReview(TaggedTraitDeleteButtonMixin, TaggedTraitTable):
     """Table for displaying TaggedTraits with DCCReview information."""
 
     status = tables.Column('Status', accessor='dcc_review.status')
     details = tables.TemplateColumn(verbose_name='', orderable=False,
                                     template_code=DETAIL_BUTTON_TEMPLATE)
-    delete_button = tables.TemplateColumn(verbose_name='', orderable=False,
-                                   template_code=DELETE_BUTTON_TEMPLATE)
 
     class Meta(TaggedTraitTable.Meta):
         fields = ('tag', 'trait', 'description', 'dataset', 'status', 'details', 'delete_button')
 
 
-class UserTaggedTraitTable(TaggedTraitTable):
+class UserTaggedTraitTable(TaggedTraitDeleteButtonMixin, TaggedTraitTable):
     """Table for displaying TaggedTraits on a user's profile page.
 
     Displays user information that is not displayed in the plain old TaggedTraitTable.
     """
-
-    delete_button = tables.TemplateColumn(verbose_name='', orderable=False,
-                                   template_code=DELETE_BUTTON_TEMPLATE)
 
     class Meta(TaggedTraitTableWithDelete.Meta):
         fields = ('tag', 'trait', 'description', 'dataset', 'delete_button',)
