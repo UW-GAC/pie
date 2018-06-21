@@ -38,6 +38,11 @@ class TaggedTraitAdmin(admin.ModelAdmin):
     def dcc_review_status(self, obj):
         return obj.dcc_review.get_status_display()
 
+    def has_delete_permission(self, request, obj=None):
+        if obj is not None and hasattr(obj, 'dcc_review'):
+            return False
+        return super().has_delete_permission(request, obj=obj)
+
 
 class DCCReviewAdmin(admin.ModelAdmin):
 
