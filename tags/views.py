@@ -1,6 +1,6 @@
 """View functions and classes for the tags app."""
 
-from django.db.models import Count
+from django.db.models import Count, F
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponseRedirect
 from django.urls import reverse
@@ -62,6 +62,19 @@ class TagList(LoginRequiredMixin, SingleTableMixin, ListView):
     table_pagination = {'per_page': TABLE_PER_PAGE}
 
 
+class TaggedTraitDetail(LoginRequiredMixin, DetailView):
+
+    model = models.TaggedTrait
+    context_object_name = 'tagged_trait'
+    template_name = 'tags/taggedtrait_detail.html'
+
+    def get_context_data(self, **kwargs):
+        context = super(TaggedTraitDetail, self).get_context_data(**kwargs)
+        user_studies = list(self.request.user.profile.taggable_studies.all())
+        context['user_is_study_tagger'] = self.object.trait.source_dataset.source_study_version.study in user_studies
+        return context
+
+
 class TaggedTraitStudyCounts(LoginRequiredMixin, SingleTableMixin, ListView):
 
     model = Study
@@ -98,16 +111,22 @@ class TaggedTraitListByStudy(LoginRequiredMixin, TemplateView):
         return context
 
 
-class TaggedTraitDetail(LoginRequiredMixin, DetailView):
+class TaggedTraitListByTag(LoginRequiredMixin, TemplateView):
 
-    model = models.TaggedTrait
-    context_object_name = 'tagged_trait'
-    template_name = 'tags/taggedtrait_detail.html'
+    template_name = 'tags/taggedtrait_list_bytag.html'
 
     def get_context_data(self, **kwargs):
-        context = super(TaggedTraitDetail, self).get_context_data(**kwargs)
-        user_studies = list(self.request.user.profile.taggable_studies.all())
-        context['user_is_study_tagger'] = self.object.trait.source_dataset.source_study_version.study in user_studies
+        context = super(TaggedTraitListByTag, self).get_context_data(**kwargs)
+        tag_study_counts_dict = dict(
+            (tag, models.TaggedTrait.objects.filter(tag=tag).values(
+                study_pk=F('trait__source_dataset__source_study_version__study__pk')).annotate(
+                    count=Count('pk', distinct=True))) for tag in models.Tag.objects.all()
+        )
+        context['annotated_tags'] = [
+            (tag,
+             [(Study.objects.get(pk=study['study_pk']), study['count']) for study in tag_study_counts_dict[tag]])
+            for tag in tag_study_counts_dict
+        ]
         return context
 
 
