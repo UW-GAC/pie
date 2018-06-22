@@ -35,9 +35,11 @@
             <a href="{{ tag.get_absolute_url }}" class="btn btn-default" role="button">{{ tag.title }}</a>
             {% if perms.tags.add_taggedtrait %}
               {% if user_is_study_tagger or request.user.is_staff %}
-                <a href="{% url 'tags:tagged-traits:delete' tagged_trait.pk %}" class="btn btn-default"
-                data-toggle="tooltip" data-placement="auto right" title="Remove {{ tag.title }} tag" role="button">
-                  <span class="glyphicon glyphicon-remove" aria-hidden="true"></a>
+                {% if not tagged_trait.dcc_review %}
+                  <a href="{% url 'tags:tagged-traits:delete' tagged_trait.pk %}" class="btn btn-default"
+                  data-toggle="tooltip" data-placement="auto right" title="Remove {{ tag.title }} tag" role="button">
+                    <span class="glyphicon glyphicon-remove" aria-hidden="true"></a>
+                {% endif %}
               {% endif %}
             {% endif %}
           </div>

@@ -8,7 +8,7 @@ from django.urls import reverse
 from core.utils import (DCCAnalystLoginTestCase, LoginRequiredTestCase, PhenotypeTaggerLoginTestCase, UserLoginTestCase,
                         get_autocomplete_view_ids)
 
-from tags.models import TaggedTrait
+from tags.models import TaggedTrait, DCCReview
 from tags.factories import DCCReviewFactory, TagFactory, TaggedTraitFactory
 from . import models
 from . import factories
@@ -1804,6 +1804,24 @@ class SourceTraitDetailPhenotypeTaggerTest(PhenotypeTaggerLoginTestCase):
         for tt in tagged_traits:
             self.assertContains(response, reverse('tags:tagged-traits:delete', kwargs={'pk': tt.pk}))
 
+    def test_no_tagged_trait_remove_buttons_if_reviewed(self):
+        """The tag removal button does not show up for reviewed tagged traits that need followup."""
+        tagged_traits = TaggedTraitFactory.create_batch(3, trait=self.trait)
+        DCCReviewFactory.create(tagged_trait=tagged_traits[0], status=DCCReview.STATUS_FOLLOWUP, comment='foo')
+        response = self.client.get(self.get_url(self.trait.pk))
+        context = response.context
+        self.assertNotContains(response, reverse('tags:tagged-traits:delete', kwargs={'pk': tagged_traits[0].pk}))
+        self.assertContains(response, reverse('tags:tagged-traits:delete', kwargs={'pk': tagged_traits[1].pk}))
+
+    def test_no_tagged_trait_remove_buttons_if_confirmed(self):
+        """The tag removal button does not show up for confirmed tagged traits."""
+        tagged_traits = TaggedTraitFactory.create_batch(3, trait=self.trait)
+        DCCReviewFactory.create(tagged_trait=tagged_traits[0], status=DCCReview.STATUS_CONFIRMED)
+        response = self.client.get(self.get_url(self.trait.pk))
+        context = response.context
+        self.assertNotContains(response, reverse('tags:tagged-traits:delete', kwargs={'pk': tagged_traits[0].pk}))
+        self.assertContains(response, reverse('tags:tagged-traits:delete', kwargs={'pk': tagged_traits[1].pk}))
+
     def test_no_tagged_trait_remove_button_for_other_study(self):
         """The tag removal button does not show up for a trait from another study."""
         other_trait = factories.SourceTraitFactory.create()
@@ -1863,6 +1881,24 @@ class SourceTraitDetailDCCAnalystTest(DCCAnalystLoginTestCase):
         context = response.context
         for tt in tagged_traits:
             self.assertContains(response, reverse('tags:tagged-traits:delete', kwargs={'pk': tt.pk}))
+
+    def test_no_tagged_trait_remove_buttons_if_reviewed(self):
+        """The tag removal button does not show up for reviewed tagged traits that need followup."""
+        tagged_traits = TaggedTraitFactory.create_batch(3, trait=self.trait)
+        DCCReviewFactory.create(tagged_trait=tagged_traits[0], status=DCCReview.STATUS_FOLLOWUP, comment='foo')
+        response = self.client.get(self.get_url(self.trait.pk))
+        context = response.context
+        self.assertNotContains(response, reverse('tags:tagged-traits:delete', kwargs={'pk': tagged_traits[0].pk}))
+        self.assertContains(response, reverse('tags:tagged-traits:delete', kwargs={'pk': tagged_traits[1].pk}))
+
+    def test_no_tagged_trait_remove_buttons_if_confirmed(self):
+        """The tag removal button does not show up for confirmed tagged traits."""
+        tagged_traits = TaggedTraitFactory.create_batch(3, trait=self.trait)
+        DCCReviewFactory.create(tagged_trait=tagged_traits[0], status=DCCReview.STATUS_CONFIRMED)
+        response = self.client.get(self.get_url(self.trait.pk))
+        context = response.context
+        self.assertNotContains(response, reverse('tags:tagged-traits:delete', kwargs={'pk': tagged_traits[0].pk}))
+        self.assertContains(response, reverse('tags:tagged-traits:delete', kwargs={'pk': tagged_traits[1].pk}))
 
     def test_has_tagging_button(self):
         """A phenotype tagger does see a button to add tags on this detail page."""
