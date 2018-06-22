@@ -26,9 +26,11 @@
 {% block after_panel %}
   {% if perms.tags.add_taggedtrait %}
     {% if user_is_study_tagger or request.user.is_staff %}
-      <a class="btn btn-danger" href="{% url 'tags:tagged-traits:delete' tagged_trait.pk %}" role="button">
-          <span class="glyphicon glyphicon-remove" aria-hidden="true"></span> Remove tag
-      </a>
+      {% if not tagged_trait.dcc_review %}
+        <a class="btn btn-danger" href="{% url 'tags:tagged-traits:delete' tagged_trait.pk %}" role="button">
+            <span class="glyphicon glyphicon-remove" aria-hidden="true"></span> Remove tag
+        </a>
+      {% endif %}
     {% endif %}
   {% endif %}
 {% endblock after_panel %}
