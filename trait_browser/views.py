@@ -17,7 +17,7 @@ from dal import autocomplete
 from django_tables2 import SingleTableMixin, SingleTableView
 
 from tags.forms import TagSpecificTraitForm
-from tags.models import Tag, TaggedTrait
+from tags.models import TaggedTrait
 from tags.views import TAGGING_ERROR_MESSAGE, TaggableStudiesRequiredMixin
 from . import models
 from . import tables

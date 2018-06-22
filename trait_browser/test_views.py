@@ -334,7 +334,7 @@ class StudyNameOrPHSAutocompleteTest(UserLoginTestCase):
         study = self.studies[0]
         tag = TagFactory.create()
         tagged_trait = TaggedTraitFactory.create(trait__source_dataset__source_study_version__study=study,
-                                                           tag=tag)
+                                                 tag=tag)
         get_data = {'q': '', 'forward': ['{"tag":"' + str(tag.pk) + '"}']}
         response = self.client.get(self.get_url(), get_data)
         pk = get_autocomplete_view_ids(response)

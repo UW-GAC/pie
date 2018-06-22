@@ -998,7 +998,6 @@ class TaggedTraitDeleteDCCAnalystTest(DCCAnalystLoginTestCase):
         self.assertEqual(len(messages), 1)
         self.assertIn(views.REVIEWED_TAGGED_TRAIT_DELETE_ERROR_MESSAGE, str(messages[0]))
 
-
     def test_needs_followup_tagged_trait_get_request_redirects_before_confirmation_view(self):
         """Redirect when trying to delete a TaggedTrait that was reviewed with needs followup."""
         dcc_review = factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait, comment='foo',
