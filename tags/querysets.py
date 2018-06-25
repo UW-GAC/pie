@@ -19,9 +19,11 @@ class TaggedTraitQuerySet(models.query.QuerySet):
 
     def delete(self, *args, **kwargs):
         """Only allow deletion if no objects have an associated DCCReview."""
-        n_reviewed = self.filter(dcc_review__isnull=False).count()
+        reviewed_objects = self.filter(dcc_review__isnull=False)
+        n_reviewed = reviewed_objects.count()
         if n_reviewed > 0:
-            raise DeleteNotAllowedError("Cannot delete TaggedTraits that have been reviewed.")
+            msg_part = ', '.join([str(x) for x in reviewed_objects])
+            raise DeleteNotAllowedError("Cannot delete TaggedTraits that have been reviewed: {}.".format(msg_part))
         super().delete(*args, **kwargs)
 
     def hard_delete(self, *args, **kwargs):

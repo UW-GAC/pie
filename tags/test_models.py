@@ -307,6 +307,17 @@ class TaggedTraitTest(TestCase):
             models.TaggedTrait.objects.all().delete()
         self.assertEqual(models.TaggedTrait.objects.count(), 5)
 
+    def test_queryset_delete_with_multiple_reviewed_tagged_traits(self):
+        """The TaggedTrait queryset method does not delete anything if any tagged traits are reviewed."""
+        tagged_traits = factories.TaggedTraitFactory.create_batch(5)
+        factories.DCCReviewFactory.create(tagged_trait=tagged_traits[1],
+                                          status=models.DCCReview.STATUS_CONFIRMED)
+        factories.DCCReviewFactory.create(tagged_trait=tagged_traits[3], comment='foo',
+                                          status=models.DCCReview.STATUS_FOLLOWUP)
+        with self.assertRaises(DeleteNotAllowedError):
+            models.TaggedTrait.objects.all().delete()
+        self.assertEqual(models.TaggedTrait.objects.count(), 5)
+
     def test_can_hard_delete_queryset_with_no_reviewed_tagged_traits(self):
         """The TaggedTrait queryset hard_delete method deletes unreviewed tagged traits."""
         tagged_traits = factories.TaggedTraitFactory.create_batch(5)
