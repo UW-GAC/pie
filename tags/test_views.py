@@ -1974,7 +1974,6 @@ class TaggedTraitReviewByTagAndStudySelectDCCTestsMixin(object):
         url = reverse('home')
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        link = reverse('tags:tagged-traits:review:select')
         self.assertContains(response, """<a href="{}">""".format(self.get_url()))
 
 
