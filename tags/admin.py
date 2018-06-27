@@ -24,8 +24,8 @@ class TagAdmin(admin.ModelAdmin):
 class TaggedTraitAdmin(admin.ModelAdmin):
     """Admin class for TaggedTrait objects."""
 
-    list_display = ('tag', 'trait', 'creator', 'created', 'modified', )
-    list_filter = ('tag', 'creator', )
+    list_display = ('tag', 'trait', 'dcc_review_status', 'creator', 'created', 'modified', )
+    list_filter = ('tag', 'creator', 'dcc_review__status')
     search_fields = ('tag', 'trait', )
     form = forms.TaggedTraitAdminForm
 
@@ -35,7 +35,24 @@ class TaggedTraitAdmin(admin.ModelAdmin):
             obj.creator = request.user
         obj.save()
 
+    def dcc_review_status(self, obj):
+        return obj.dcc_review.get_status_display()
+
+    def has_delete_permission(self, request, obj=None):
+        if obj is not None and hasattr(obj, 'dcc_review'):
+            return False
+        return super().has_delete_permission(request, obj=obj)
+
+
+class DCCReviewAdmin(admin.ModelAdmin):
+
+    list_display = ('tagged_trait', 'status', 'comment', 'creator', 'created', 'modified', )
+    list_filter = ('status', 'creator', )
+    search_fields = ('tagged_trait__tag__title', 'tagged_trait__trait__i_trait_name', )
+    form = forms.DCCReviewAdminForm
+
 
 # Register models for showing them in the admin interface.
 admin.site.register(models.Tag, TagAdmin)
 admin.site.register(models.TaggedTrait, TaggedTraitAdmin)
+admin.site.register(models.DCCReview, DCCReviewAdmin)

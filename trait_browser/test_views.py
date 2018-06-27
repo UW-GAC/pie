@@ -8,8 +8,8 @@ from django.urls import reverse
 from core.utils import (DCCAnalystLoginTestCase, LoginRequiredTestCase, PhenotypeTaggerLoginTestCase, UserLoginTestCase,
                         get_autocomplete_view_ids)
 
-from tags.models import TaggedTrait
-from tags.factories import TagFactory, TaggedTraitFactory
+from tags.models import TaggedTrait, DCCReview
+from tags.factories import DCCReviewFactory, TagFactory, TaggedTraitFactory
 from . import models
 from . import factories
 from . import forms
@@ -325,6 +325,39 @@ class StudyNameOrPHSAutocompleteTest(UserLoginTestCase):
         returned_pks = get_autocomplete_view_ids(response)
         self.assertEqual(sorted(returned_pks),
                          sorted([name_match.i_accession, phs_match.i_accession]))
+
+    def test_subsets_to_studies_with_traits_with_forwarded_tag(self):
+        study = self.studies[0]
+        tag = TagFactory.create()
+        tagged_trait = TaggedTraitFactory.create(trait__source_dataset__source_study_version__study=study,
+                                                 tag=tag)
+        get_data = {'q': '', 'forward': ['{"tag":"' + str(tag.pk) + '"}']}
+        response = self.client.get(self.get_url(), get_data)
+        pk = get_autocomplete_view_ids(response)
+        self.assertEqual(len(pk), 1)
+        self.assertEqual(pk, [study.pk])
+
+    def test_subsets_to_studies_with_unreviewed_tagged_traits_if_requested(self):
+        study = self.studies[0]
+        tag = TagFactory.create()
+        tagged_trait = TaggedTraitFactory.create(trait__source_dataset__source_study_version__study=study,
+                                                 tag=tag)
+        dcc_review = DCCReviewFactory.create(tagged_trait=tagged_trait)
+        get_data = {'q': '', 'forward': ['{"tag":"' + str(tag.pk) + '","unreviewed_tagged_traits_only":true}']}
+        response = self.client.get(self.get_url(), get_data)
+        pk = get_autocomplete_view_ids(response)
+        self.assertEqual(len(pk), 0)
+
+    def test_subsets_to_studies_with_any_tagged_trait_if_not_requested(self):
+        study = self.studies[0]
+        tag = TagFactory.create()
+        tagged_trait = TaggedTraitFactory.create(trait__source_dataset__source_study_version__study=study,
+                                                 tag=tag)
+        dcc_review = DCCReviewFactory.create(tagged_trait=tagged_trait)
+        get_data = {'q': '', 'forward': ['{"tag":"' + str(tag.pk) + '"}']}
+        response = self.client.get(self.get_url(), get_data)
+        pk = get_autocomplete_view_ids(response)
+        self.assertEqual(len(pk), 1)
 
 
 class StudySourceTableViewsTest(UserLoginTestCase):
@@ -1758,6 +1791,24 @@ class SourceTraitDetailPhenotypeTaggerTest(PhenotypeTaggerLoginTestCase):
         for tt in tagged_traits:
             self.assertContains(response, reverse('tags:tagged-traits:delete', kwargs={'pk': tt.pk}))
 
+    def test_no_tagged_trait_remove_buttons_if_reviewed(self):
+        """The tag removal button does not show up for reviewed tagged traits that need followup."""
+        tagged_traits = TaggedTraitFactory.create_batch(3, trait=self.trait)
+        DCCReviewFactory.create(tagged_trait=tagged_traits[0], status=DCCReview.STATUS_FOLLOWUP, comment='foo')
+        response = self.client.get(self.get_url(self.trait.pk))
+        context = response.context
+        self.assertNotContains(response, reverse('tags:tagged-traits:delete', kwargs={'pk': tagged_traits[0].pk}))
+        self.assertContains(response, reverse('tags:tagged-traits:delete', kwargs={'pk': tagged_traits[1].pk}))
+
+    def test_no_tagged_trait_remove_buttons_if_confirmed(self):
+        """The tag removal button does not show up for confirmed tagged traits."""
+        tagged_traits = TaggedTraitFactory.create_batch(3, trait=self.trait)
+        DCCReviewFactory.create(tagged_trait=tagged_traits[0], status=DCCReview.STATUS_CONFIRMED)
+        response = self.client.get(self.get_url(self.trait.pk))
+        context = response.context
+        self.assertNotContains(response, reverse('tags:tagged-traits:delete', kwargs={'pk': tagged_traits[0].pk}))
+        self.assertContains(response, reverse('tags:tagged-traits:delete', kwargs={'pk': tagged_traits[1].pk}))
+
     def test_no_tagged_trait_remove_button_for_other_study(self):
         """The tag removal button does not show up for a trait from another study."""
         other_trait = factories.SourceTraitFactory.create()
@@ -1817,6 +1868,24 @@ class SourceTraitDetailDCCAnalystTest(DCCAnalystLoginTestCase):
         context = response.context
         for tt in tagged_traits:
             self.assertContains(response, reverse('tags:tagged-traits:delete', kwargs={'pk': tt.pk}))
+
+    def test_no_tagged_trait_remove_buttons_if_reviewed(self):
+        """The tag removal button does not show up for reviewed tagged traits that need followup."""
+        tagged_traits = TaggedTraitFactory.create_batch(3, trait=self.trait)
+        DCCReviewFactory.create(tagged_trait=tagged_traits[0], status=DCCReview.STATUS_FOLLOWUP, comment='foo')
+        response = self.client.get(self.get_url(self.trait.pk))
+        context = response.context
+        self.assertNotContains(response, reverse('tags:tagged-traits:delete', kwargs={'pk': tagged_traits[0].pk}))
+        self.assertContains(response, reverse('tags:tagged-traits:delete', kwargs={'pk': tagged_traits[1].pk}))
+
+    def test_no_tagged_trait_remove_buttons_if_confirmed(self):
+        """The tag removal button does not show up for confirmed tagged traits."""
+        tagged_traits = TaggedTraitFactory.create_batch(3, trait=self.trait)
+        DCCReviewFactory.create(tagged_trait=tagged_traits[0], status=DCCReview.STATUS_CONFIRMED)
+        response = self.client.get(self.get_url(self.trait.pk))
+        context = response.context
+        self.assertNotContains(response, reverse('tags:tagged-traits:delete', kwargs={'pk': tagged_traits[0].pk}))
+        self.assertContains(response, reverse('tags:tagged-traits:delete', kwargs={'pk': tagged_traits[1].pk}))
 
     def test_has_tagging_button(self):
         """A phenotype tagger does see a button to add tags on this detail page."""

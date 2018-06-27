@@ -22,14 +22,27 @@ add_many_patterns = ([
     url(r'^(?P<pk>\d+)/$', views.ManyTaggedTraitsCreateByTag.as_view(), name='by-tag'),
 ], 'add-many', )
 
+tag_study_patterns = ([
+    url(r'^$', views.TaggedTraitByTagAndStudyList.as_view(), name='list'),
+], 'study', )
+
 tag_patterns = ([
     url(r'^$', views.TagDetail.as_view(), name='detail'),
+    url(r'^studies/(?P<pk_study>\d+)/', include(tag_study_patterns)),
 ], 'tag', )
+
+tagged_trait_review_by_tag_and_study_patterns = ([
+    url(r'^select/$', views.TaggedTraitReviewByTagAndStudySelect.as_view(), name='select'),
+    url(r'^next/$', views.TaggedTraitReviewByTagAndStudyNext.as_view(), name='next'),
+    url(r'^review/$', views.TaggedTraitReviewByTagAndStudy.as_view(), name='review'),
+], 'review')
 
 tagged_trait_patterns = ([
     # url(r'^list', views.TagList.as_view(), name='list'),
-    url(r'^by-study', views.StudyTaggedTraitList.as_view(), name='by-study'),
+    url(r'^review/', include(tagged_trait_review_by_tag_and_study_patterns)),
+    url(r'^(?P<pk>\d+)$', views.TaggedTraitDetail.as_view(), name='detail'),
     url(r'^(?P<pk>\d+)/delete$', views.TaggedTraitDelete.as_view(), name='delete'),
+    url(r'^by-study', views.StudyTaggedTraitList.as_view(), name='by-study'),
 ], 'tagged-traits', )
 
 urlpatterns = [

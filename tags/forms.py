@@ -4,9 +4,10 @@ from django import forms
 from django.shortcuts import get_object_or_404
 from django.utils.safestring import mark_safe
 
+from crispy_forms.bootstrap import FormActions
 from crispy_forms.helper import FormHelper
-from crispy_forms.layout import HTML
-from dal import autocomplete
+from crispy_forms.layout import HTML, Layout, Submit
+from dal import autocomplete, forward
 
 from . import models
 from trait_browser.models import SourceTrait, Study
@@ -369,3 +370,118 @@ class TagSpecificTraitForm(forms.Form):
         self.helper.form_method = 'post'
         button_save = generate_button_html('submit', 'Save', btn_type='submit', css_class='btn-primary')
         self.helper.layout.append(button_save)
+
+
+class DCCReviewCleanForm(forms.ModelForm):
+
+    def clean(self):
+        """Custom cleaning to check a comment is given for TaggedTraits that require followup."""
+        cleaned_data = super().clean()
+        comment = cleaned_data.get('comment')
+        status = cleaned_data.get('status')
+        if status == models.DCCReview.STATUS_FOLLOWUP and not comment:
+            error = forms.ValidationError('Comment cannot be blank for tagged variables that require followup.',
+                                          code='followup_comment')
+            self.add_error('comment', error)
+        if status == models.DCCReview.STATUS_CONFIRMED and comment:
+            error = forms.ValidationError('Comment must be blank for tagged variables that are confirmed.',
+                                          code='confirmed_comment')
+            self.add_error('comment', error)
+        return cleaned_data
+
+
+class SubmitCssClass(Submit):
+    """Create a submit button with a different class than the default."""
+
+    def __init__(self, *args, **kwargs):
+        css_class = kwargs.get('css_class')
+        super().__init__(*args, **kwargs)
+        if css_class is not None:
+            self.field_classes = 'btn {}'.format(css_class)
+
+
+class DCCReviewForm(DCCReviewCleanForm):
+    """Form for creating a single DCCReview object."""
+
+    SUBMIT_CONFIRM = 'confirm'
+    SUBMIT_FOLLOWUP = 'require-followup'
+    SUBMIT_SKIP = 'skip'
+
+    helper = FormHelper()
+    helper.layout = Layout(
+        'status',
+        'comment',
+        FormActions(
+            Submit(SUBMIT_CONFIRM, 'Confirm'),
+            SubmitCssClass(SUBMIT_FOLLOWUP, 'Require study followup', css_class='btn-warning'),
+            SubmitCssClass(SUBMIT_SKIP, 'Skip', css_class='btn-default')
+        )
+    )
+
+    class Meta:
+        model = models.DCCReview
+        fields = ('status', 'comment', )
+        help_texts = {
+            'comment': 'Only include a comment for tagged variables that require followup.'
+        }
+        widgets = {
+            'status': forms.HiddenInput
+        }
+
+
+class DCCReviewAdminForm(DCCReviewCleanForm):
+
+    class Meta:
+        model = models.DCCReview
+        fields = ('tagged_trait', 'status', 'comment', )
+
+
+class TaggedTraitReviewSelectForm(forms.Form):
+
+    ERROR_NO_TAGGED_TRAITS = 'No tagged variables for this tag and study!'
+
+    tag = forms.ModelChoiceField(
+        queryset=models.Tag.objects.all(),
+        widget=autocomplete.ModelSelect2(url='tags:autocomplete'),
+        help_text="""First select a phenotype tag. Start typing the tag name to filter the list."""
+    )
+    study = forms.ModelChoiceField(
+        queryset=Study.objects.all(),
+        widget=autocomplete.ModelSelect2(
+            url='trait_browser:source:studies:autocomplete:by-name-or-phs',
+            forward=(
+                'tag',
+                forward.Const(True, 'unreviewed_tagged_traits_only'),
+            )
+        ),
+        help_text=("Then select a study. Start typing the study name or phs to filter the list. Only studies with at "
+                   "least one unreviewed study variable tagged with the selected tag will be shown.")
+    )
+    helper = FormHelper()
+    helper.form_class = 'form-horizontal'
+    helper.label_class = 'col-sm-2'
+    helper.field_class = 'col-sm-8'
+    helper.layout = Layout(
+        'tag',
+        'study',
+        FormActions(
+            Submit('submit', 'Submit'),
+        )
+    )
+
+    class Media:
+        js = ('js/taggedtrait_review_select_form.js', )
+
+    def clean(self):
+        cleaned_data = super(TaggedTraitReviewSelectForm, self).clean()
+        tag = cleaned_data.get('tag')
+        study = cleaned_data.get('study')
+        if tag and study:
+            # Check that some TaggedTraits exist.
+            n = models.TaggedTrait.objects.unreviewed().filter(
+                tag=tag,
+                trait__source_dataset__source_study_version__study=study
+            ).count()
+            if n == 0:
+                raise forms.ValidationError(self.ERROR_NO_TAGGED_TRAITS)
+        return cleaned_data

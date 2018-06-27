@@ -30,3 +30,14 @@ class TaggedTraitFactory(factory.DjangoModelFactory):
 
     class Meta:
         model = models.TaggedTrait
+
+
+class DCCReviewFactory(factory.DjangoModelFactory):
+    """Factory for DCCReview objects using Faker data."""
+
+    tagged_trait = factory.SubFactory(TaggedTraitFactory)
+    status = models.DCCReview.STATUS_CONFIRMED
+    creator = factory.SubFactory(UserFactory)
+
+    class Meta:
+        model = models.DCCReview

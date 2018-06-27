@@ -1,7 +1,10 @@
 {% extends '__base.html' %}
 
 {% block content %}
-  <h2>{% block title %}{% endblock title%}</h2>
+  <h2>
+    {% block title %}{% endblock title%}
+    <small>{% block subtitle %}{% endblock subtitle %}</small>
+  </h2>
   {% block table %}
   {% endblock table %}
 {% endblock content %}
