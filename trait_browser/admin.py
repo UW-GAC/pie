@@ -46,11 +46,11 @@ class SourceStudyVersionAdmin(admin.ModelAdmin):
 
     # Set fields to display, filter, and search on.
     list_display = (
-        'i_id', 'study', 'i_version', 'i_is_prerelease', 'i_is_deprecated', 'phs_version_string', 'created',
+        'i_id', 'study', 'i_version', 'i_is_prerelease', 'i_is_deprecated', 'full_accession', 'created',
         'modified',
     )
     list_filter = ('study__i_accession', 'i_is_prerelease', 'i_is_deprecated', )
-    search_fields = ('i_id', 'phs_version_string', )
+    search_fields = ('i_id', 'full_accession', )
 
 
 class SubcohortAdmin(admin.ModelAdmin):
@@ -66,12 +66,12 @@ class SourceDatasetAdmin(admin.ModelAdmin):
     """Admin class for SourceDataset objects."""
 
     # Set fields to display, filter, and search on.
-    list_display = ('i_id', 'dataset_name', 'i_dbgap_description', 'pht_version_string',
+    list_display = ('i_id', 'dataset_name', 'i_dbgap_description', 'full_accession',
                     'created', 'modified', )
     list_filter = ('source_study_version__study__i_accession',
                    'source_study_version__study__global_study__i_name',
                    'i_is_subject_file', )
-    search_fields = ('i_id', 'i_accession', 'dataset_name', 'pht_version_string', )
+    search_fields = ('i_id', 'i_accession', 'dataset_name', 'full_accession', )
 
 
 class HarmonizedTraitSetAdmin(admin.ModelAdmin):
@@ -114,12 +114,12 @@ class SourceTraitAdmin(admin.ModelAdmin):
     """Admin class for SourceTrait objects."""
 
     # Set fields to display, filter, and search on.
-    list_display = ('i_trait_id', 'i_trait_name', 'variable_accession', 'i_description',
+    list_display = ('i_trait_id', 'i_trait_name', 'full_accession', 'i_description',
                     'i_is_unique_key', 'created', 'modified')
     list_filter = ('source_dataset__source_study_version__study__i_accession',
                    'source_dataset__source_study_version__study__global_study__i_name',
                    'i_is_unique_key', )
-    search_fields = ('i_trait_id', 'i_trait_name', 'i_description', 'variable_accession', )
+    search_fields = ('i_trait_id', 'i_trait_name', 'i_description', 'full_accession', )
 
 
 class HarmonizedTraitAdmin(admin.ModelAdmin):

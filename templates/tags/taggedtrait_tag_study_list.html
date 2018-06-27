@@ -1,0 +1,19 @@
+{% extends '__list.html' %}
+{% load render_table from django_tables2 %}
+
+{% block head_title %}
+  | Tagged phenotypes by tag and study
+{% endblock head_title %}
+
+{% block title %}
+  Variables tagged with <a href="{{ tag.get_absolute_url }}">{{ tag.lower_title }}</a>
+{% endblock title %}
+
+{% block subtitle %}
+  from <a href="{{ study.get_absolute_url }}">{{ study.i_study_name }}</a>
+{% endblock subtitle %}
+
+{% block table %}
+  {% include '_messages.html' %}
+  {% render_table tagged_trait_table %}
+{% endblock table %}

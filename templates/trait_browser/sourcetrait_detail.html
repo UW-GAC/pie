@@ -35,9 +35,11 @@
             <a href="{{ tag.get_absolute_url }}" class="btn btn-default" role="button">{{ tag.title }}</a>
             {% if perms.tags.add_taggedtrait %}
               {% if user_is_study_tagger or request.user.is_staff %}
-                <a href="{% url 'tags:tagged-traits:delete' tagged_trait.pk %}" class="btn btn-default"
-                data-toggle="tooltip" data-placement="auto right" title="Remove {{ tag.title }} tag" role="button">
-                  <span class="glyphicon glyphicon-remove" aria-hidden="true"></a>
+                {% if not tagged_trait.dcc_review %}
+                  <a href="{% url 'tags:tagged-traits:delete' tagged_trait.pk %}" class="btn btn-default"
+                  data-toggle="tooltip" data-placement="auto right" title="Remove {{ tag.title }} tag" role="button">
+                    <span class="glyphicon glyphicon-remove" aria-hidden="true"></a>
+                {% endif %}
               {% endif %}
             {% endif %}
           </div>
@@ -65,7 +67,7 @@
   {% if source_trait.sourcetraitencodedvalue_set.all %}
     {% include 'trait_browser/_encoded_values_table.html' with ev_set=source_trait.sourcetraitencodedvalue_set.all %}
   {% endif %}
-  {% include 'trait_browser/_dbgap_link_panel.html' with variable_string=source_trait.variable_accession variable_link=source_trait.dbgap_variable_link dataset_string=source_trait.dataset_accession dataset_link=source_trait.dbgap_dataset_link study_string=source_trait.study_accession study_link=source_trait.dbgap_study_link %}
+  {% include 'trait_browser/_dbgap_link_panel.html' with variable_string=source_trait.full_accession variable_link=source_trait.dbgap_link dataset_string=source_trait.source_dataset.full_accession dataset_link=source_trait.source_dataset.dbgap_link study_string=source_trait.source_dataset.source_study_version.full_accession study_link=source_trait.source_dataset.source_study_version.dbgap_link %}
 {% endblock after_panel %}
 
 {% block custom_javascript %}

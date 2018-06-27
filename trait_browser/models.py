@@ -119,12 +119,13 @@ class GlobalStudy(SourceDBTimeStampedModel):
 class Study(SourceDBTimeStampedModel):
     """Model for study from topmed_pheno."""
 
+    STUDY_URL = 'http://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id={}'
+
     global_study = models.ForeignKey(GlobalStudy, on_delete=models.CASCADE)
     # Adds .global_study (object) and .global_study_id (pk).
     i_accession = models.PositiveIntegerField('study accession', primary_key=True, db_column='i_accession')
     i_study_name = models.CharField('study name', max_length=200)
     phs = models.CharField(max_length=9)
-    dbgap_latest_version_link = models.CharField(max_length=200)
 
     class Meta:
         # Fix pluralization of this model, because grammar.
@@ -135,13 +136,8 @@ class Study(SourceDBTimeStampedModel):
         return '{}, {}'.format(self.phs, self.i_study_name)
 
     def save(self, *args, **kwargs):
-        """Custom save method for default dbGaP latest version study link.
-
-        Automatically sets the value for the study's latest version dbGaP link.
-        """
+        """Custom save method to auto-set the phs field."""
         self.phs = self.set_phs()
-        self.dbgap_latest_version_link = self.set_dbgap_latest_version_link()
-        # Call the "real" save method.
         super(Study, self).save(*args, **kwargs)
 
     def set_phs(self):
@@ -151,17 +147,6 @@ class Study(SourceDBTimeStampedModel):
         in templates.
         """
         return 'phs{:06}'.format(self.i_accession)
-
-    STUDY_URL = 'http://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id={}'
-
-    def set_dbgap_latest_version_link(self):
-        """Automatically set dbgap_latest_version_link from the study's phs.
-
-        Construct a URL to the dbGaP study information page using a base URL.
-        Without a specified version number, the dbGaP link takes you to the
-        latest version.
-        """
-        return self.STUDY_URL.format(self.phs)
 
     def get_absolute_url(self):
         """Gets the absolute URL of the detail page for a given Study instance."""
@@ -194,9 +179,20 @@ class Study(SourceDBTimeStampedModel):
         """Return the count of traits that have been tagged in this study."""
         return self.get_tagged_traits().distinct().count()
 
+    def get_latest_version(self):
+        """Return the most recent SourceStudyVersion linked to this study."""
+        return self.sourcestudyversion_set.filter(i_is_deprecated=False).latest('i_version')
+
+    def get_latest_version_link(self):
+        """Return a dbGaP link to the page for the latest SourceStudyVersion."""
+        return self.get_latest_version().dbgap_link
+
 
 class SourceStudyVersion(SourceDBTimeStampedModel):
     """Model for source_study_version from topmed_pheno."""
+
+    STUDY_VERSION_URL = 'http://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id={}'
+    STUDY_VERSION_ACCESSION = '{}.v{}.p{}'
 
     study = models.ForeignKey(Study, on_delete=models.CASCADE)
     # Adds .study (object) and .study_id (pk).
@@ -206,24 +202,26 @@ class SourceStudyVersion(SourceDBTimeStampedModel):
     i_dbgap_date = models.DateTimeField('dbGaP date')
     i_is_prerelease = models.BooleanField('is prerelease?')
     i_is_deprecated = models.BooleanField('is deprecated?')
-    phs_version_string = models.CharField(max_length=20)
+    full_accession = models.CharField(max_length=20)
+    dbgap_link = models.URLField(max_length=200)
 
     def __str__(self):
         """Pretty printing."""
         return 'study {} version {}, id='.format(self.study, self.i_version, self.i_id)
 
     def save(self, *args, **kwargs):
-        """Custom save method for setting default dbGaP accession strings.
-
-        Automatically sets the value for phs_version_string.
-        """
-        self.phs_version_string = self.set_phs_version_string()
-        # Call the "real" save method.
+        """Custom save method to auto-set full_accession and dbgap_link."""
+        self.full_accession = self.set_full_accession()
+        self.dbgap_link = self.set_dbgap_link()
         super(SourceStudyVersion, self).save(*args, **kwargs)
 
-    def set_phs_version_string(self):
-        """Automatically set phs_version_string from the study's phs value."""
-        return '{}.v{}.p{}'.format(self.study.phs, self.i_version, self.i_participant_set)
+    def set_full_accession(self):
+        """Automatically set full_accession from the study's phs value."""
+        return self.STUDY_VERSION_ACCESSION.format(self.study.phs, self.i_version, self.i_participant_set)
+
+    def set_dbgap_link(self):
+        """Automatically set dbgap_link from dbGaP identifier information."""
+        return self.STUDY_VERSION_URL.format(self.full_accession)
 
 
 class Subcohort(SourceDBTimeStampedModel):
@@ -243,6 +241,9 @@ class Subcohort(SourceDBTimeStampedModel):
 class SourceDataset(SourceDBTimeStampedModel):
     """Model for source_dataset from topmed_pheno."""
 
+    DATASET_URL = 'http://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/dataset.cgi?study_id={}&pht={}'
+    DATASET_ACCESSION = 'pht{:06}.v{}.p{}'
+
     source_study_version = models.ForeignKey(SourceStudyVersion, on_delete=models.CASCADE)
     # Adds .source_study_version (object) and .source_study_version_id (pk).
     i_id = models.PositiveIntegerField('dataset id', primary_key=True, db_column='i_id')
@@ -253,9 +254,10 @@ class SourceDataset(SourceDBTimeStampedModel):
     # The TextField uses longtext in MySQL rather than just text, like in topmed_pheno.
     i_dbgap_description = models.TextField('dbGaP description', blank=True)
     i_dbgap_date_created = models.DateTimeField('dbGaP date created', null=True, blank=True)
-    pht_version_string = models.CharField(max_length=20)
+    full_accession = models.CharField(max_length=20)
     dbgap_filename = models.CharField(max_length=255, default='')
     dataset_name = models.CharField(max_length=255, default='')
+    dbgap_link = models.URLField(max_length=200)
 
     # Managers/custom querysets.
     objects = querysets.SourceDatasetQuerySet.as_manager()
@@ -263,24 +265,26 @@ class SourceDataset(SourceDBTimeStampedModel):
     def __str__(self):
         """Pretty printing."""
         return 'dataset {} of study {}, id={}, pht={}'.format(
-            self.dataset_name, self.source_study_version.study, self.i_id, self.pht_version_string)
+            self.dataset_name, self.source_study_version.study, self.i_id, self.full_accession)
 
     def save(self, *args, **kwargs):
-        """Custom save method for setting default dbGaP accession strings.
-
-        Automatically sets the value for pht_version_string.
-        """
-        self.pht_version_string = self.set_pht_version_string()
-        # Call the "real" save method.
+        """Custom save method to auto-set full_accession and dbgap_link."""
+        self.full_accession = self.set_full_accession()
+        self.dbgap_link = self.set_dbgap_link()
         super(SourceDataset, self).save(*args, **kwargs)
-
-    def set_pht_version_string(self):
-        """Automatically set pht_version_string from the accession, version, and particpant set."""
-        return 'pht{:06}.v{}.p{}'.format(self.i_accession, self.i_version, self.source_study_version.i_participant_set)
 
     def get_absolute_url(self):
         """Gets the absolute URL of the detail page for a given SourceDataset instance."""
         return reverse('trait_browser:source:datasets:detail', kwargs={'pk': self.pk})
+
+    def set_full_accession(self):
+        """Automatically set full_accession from the dataset's dbGaP identifiers."""
+        return self.DATASET_ACCESSION.format(
+            self.i_accession, self.i_version, self.source_study_version.i_participant_set)
+
+    def set_dbgap_link(self):
+        """Automatically set dbgap_link from dbGaP identifier information."""
+        return self.DATASET_URL.format(self.source_study_version.full_accession, self.full_accession)
 
 
 class HarmonizedTraitSet(SourceDBTimeStampedModel):
@@ -420,6 +424,9 @@ class SourceTrait(Trait):
     Extends the Trait abstract model.
     """
 
+    VARIABLE_URL = 'http://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/variable.cgi?study_id={}&phv={:08}'
+    VARIABLE_ACCESSION = 'phv{:08}.v{}.p{}'
+
     source_dataset = models.ForeignKey(SourceDataset, on_delete=models.CASCADE)
     # Adds .source_dataset (object) and .source_dataset_id (pk).
     i_detected_type = models.CharField('detected type', max_length=100, blank=True)
@@ -434,20 +441,8 @@ class SourceTrait(Trait):
     i_is_unique_key = models.NullBooleanField('is unique key?', blank=True)
     i_are_values_truncated = models.NullBooleanField('are values truncated?', default=None)
     # TODO: remove the default.
-    # dbGaP accession numbers
-    study_accession = models.CharField(max_length=20)
-    dataset_accession = models.CharField(max_length=20)
-    variable_accession = models.CharField(max_length=23)
-    # dbGaP links.
-    # Since these are URLFields, they will be validated as well-formed URLs.
-    dbgap_study_link = models.URLField(max_length=200)
-    dbgap_variable_link = models.URLField(max_length=200)
-    dbgap_dataset_link = models.URLField(max_length=200)
-
-    # Constants for custom save methods.
-    VARIABLE_URL = 'http://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/variable.cgi?study_id={}&phv={:08}'
-    STUDY_URL = 'http://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id={}'
-    DATASET_URL = 'http://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/dataset.cgi?study_id={}&pht={}'
+    full_accession = models.CharField(max_length=23)
+    dbgap_link = models.URLField(max_length=200)
 
     # Managers/custom querysets.
     objects = querysets.SourceTraitQuerySet.as_manager()
@@ -455,63 +450,25 @@ class SourceTrait(Trait):
     def __str__(self):
         """Pretty printing of SourceTrait objects."""
         return '{trait_name} ({phv}): dataset {pht}'.format(trait_name=self.i_trait_name,
-                                                            phv=self.variable_accession,
-                                                            pht=self.dataset_accession)
+                                                            phv=self.full_accession,
+                                                            pht=self.source_dataset.full_accession)
 
     def save(self, *args, **kwargs):
-        """Custom save method for default dbGaP accessions and links.
-
-        Automatically sets values for various dbGaP accession numbers and dbGaP
-        link URLs.
-        """
-        # Set values for dbGaP accession numbers.
-        self.study_accession = self.set_study_accession()
-        self.dataset_accession = self.set_dataset_accession()
-        self.variable_accession = self.set_variable_accession()
-        # Set values for dbGaP links.
-        self.dbgap_study_link = self.set_dbgap_study_link()
-        self.dbgap_variable_link = self.set_dbgap_variable_link()
-        self.dbgap_dataset_link = self.set_dbgap_dataset_link()
-        # Call the "real" save method.
+        """Custom save method to auto-set full_accession and dbgap_link."""
+        self.full_accession = self.set_full_accession()
+        self.dbgap_link = self.set_dbgap_link()
         super(SourceTrait, self).save(*args, **kwargs)
 
-    def set_study_accession(self):
-        """Automatically set study_accession field from the linked SourceStudyVersion."""
-        return self.source_dataset.source_study_version.phs_version_string
+    def set_full_accession(self):
+        """Automatically set full_accession from the variable's dbGaP identifiers."""
+        return self.VARIABLE_ACCESSION.format(
+            self.i_dbgap_variable_accession, self.i_dbgap_variable_version,
+            self.source_dataset.source_study_version.i_participant_set)
 
-    def set_dataset_accession(self):
-        """Automatically set dataset_accession field from the linked SourceDataset."""
-        return self.source_dataset.pht_version_string
-
-    def set_variable_accession(self):
-        """Automatically set variable_accession from the linked SourceStudyVersion and dbGaP accession."""
-        return 'phv{:08}.v{}.p{}'.format(self.i_dbgap_variable_accession,
-                                         self.i_dbgap_variable_version,
-                                         self.source_dataset.source_study_version.i_participant_set)
-
-    def set_dbgap_variable_link(self):
-        """Automatically set dbgap_variable_link from study_accession and dbgap_variable_accession.
-
-        Construct a URL to the dbGaP variable information page using a base URL
-        and some fields from this SourceTrait.
-        """
-        return self.VARIABLE_URL.format(self.study_accession, self.i_dbgap_variable_accession)
-
-    def set_dbgap_study_link(self):
-        """Automatically set dbgap_study_link from study_accession.
-
-        Construct a URL to the dbGaP study information page using a base URL
-        and some fields from this SourceTrait.
-        """
-        return self.STUDY_URL.format(self.study_accession)
-
-    def set_dbgap_dataset_link(self):
-        """Automatically set dbgap_dataset_link from accession information.
-
-        Construct a URL to the dbGaP dataset information page using a base URL and
-        some fields from this SourceTrait.
-        """
-        return self.DATASET_URL.format(self.study_accession, self.source_dataset.i_accession)
+    def set_dbgap_link(self):
+        """Automatically set dbgap_link from dbGaP identifier information."""
+        return self.VARIABLE_URL.format(
+            self.source_dataset.source_study_version.full_accession, self.i_dbgap_variable_accession)
 
     def get_absolute_url(self):
         """Gets the absolute URL of the detail page for a given SourceTrait instance."""

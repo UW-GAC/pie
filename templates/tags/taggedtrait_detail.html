@@ -1,0 +1,36 @@
+{% extends '__object_detail.html' %}
+{% load core_tags %}
+
+{% block head_title %}
+  | {{ tagged_trait }} details
+{% endblock head_title %}
+
+{% block title %}
+  <a href="{{ tagged_trait.trait.get_absolute_url }}">{{ tagged_trait.trait.i_trait_name }}</a> tagged with
+  <a href="{{ tagged_trait.tag.get_absolute_url }}">{{ tagged_trait.tag.lower_title }}</a>
+{% endblock title %}
+
+{% block subtitle %}
+  tagged variable details
+{% endblock subtitle %}
+
+{% block detail_fields %}
+  <dt>Tagged by</dt><dd>{{ tagged_trait.creator }}</dd>
+  {% if request.user.is_staff %}
+      <dt>DCC status</dt><dd>{{ tagged_trait.dcc_review.get_status_display }}</dd>
+      <dt>DCC comment</dt><dd>{{ tagged_trait.dcc_review.comment }}</dd>
+  {% endif %}
+
+{% endblock detail_fields %}
+
+{% block after_panel %}
+  {% if perms.tags.add_taggedtrait %}
+    {% if user_is_study_tagger or request.user.is_staff %}
+      {% if not tagged_trait.dcc_review %}
+        <a class="btn btn-danger" href="{% url 'tags:tagged-traits:delete' tagged_trait.pk %}" role="button">
+            <span class="glyphicon glyphicon-remove" aria-hidden="true"></span> Remove tag
+        </a>
+      {% endif %}
+    {% endif %}
+  {% endif %}
+{% endblock after_panel %}

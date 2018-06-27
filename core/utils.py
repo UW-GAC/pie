@@ -3,12 +3,17 @@
 Following a suggestion from Two Scoops of Django 1.8.
 """
 
+import itertools
 import json
+import re
+from functools import reduce
 from io import StringIO
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
+from django.core.exceptions import ImproperlyConfigured
 from django.core.management import call_command
+from django.http import HttpResponseRedirect
 from django.urls import resolve, reverse
 from django.test import TestCase, Client
 
@@ -38,6 +43,49 @@ def get_autocomplete_view_ids(response):
     results = content['results']
     ids = [int(el['id']) for el in results]
     return ids
+
+
+class SessionVariableMixin(object):
+    """A mixin to handle checking and setting session variables."""
+
+    def dispatch(self, request, *args, **kwargs):
+        res = self.handle_session_variables()
+        if res is not None:
+            return res
+        return super(SessionVariableMixin, self).dispatch(request, *args, **kwargs)
+
+    def handle_session_variables(self):
+        """Process session variables and either return None or a response."""
+        raise ImproperlyConfigured(
+            "SessionVariableMixin requires a definition for 'handle_session_variables()'"
+        )
+
+
+class ValidateObjectMixin(object):
+    """Run a check on an object before dispatching a request to the proper method."""
+
+    validation_failure_url = None
+
+    def validate_object(self):
+        """Method that returns True or False after checking some property of an object."""
+        raise ImproperlyConfigured(
+            "ValidateObjectMixin requires a definition for 'validate_object()'"
+        )
+
+    def get_validation_failure_url(self):
+        """Method that returns the url to load upon failing validate_object()."""
+        if self.validation_failure_url is not None:
+            return self.validation_failure_url
+        else:
+            raise ImproperlyConfigured(
+                "No URL to redirect to after failing object validation. Provide a validation_failure_url."
+            )
+
+    def dispatch(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        if not self.validate_object():
+            return HttpResponseRedirect(self.get_validation_failure_url())
+        return super(ValidateObjectMixin, self).dispatch(request, *args, **kwargs)
 
 
 class UserLoginTestCase(TestCase):
@@ -154,7 +202,7 @@ class SuperuserLoginTestCase(TestCase):
 
 # class LoginRequiredTestCase(TestCase):
 #     """Tests all views in an app to ensure that they are using login_required."""
-# 
+#
 #     @classmethod
 #     def setUpClass(cls):
 #         super(LoginRequiredTestCase, cls).setUpClass()
@@ -162,7 +210,7 @@ class SuperuserLoginTestCase(TestCase):
 #         build_test_db(
 #             n_global_studies=3, n_subcohort_range=(2, 3), n_dataset_range=(3, 9),
 #             n_trait_range=(3, 16), n_enc_value_range=(2, 9))
-# 
+#
 #     def assert_redirect_all_urls(self, app_name):
 #         """Use this in a subclass to ensure all urls from urlpatterns redirect to login."""
 #         url_list = get_app_urls(app_name)
@@ -193,22 +241,45 @@ class LoginRequiredTestCase(TestCase):
         build_test_db()
 
     def assert_redirect_all_urls(self, app_name):
-        """Use this in a subclass to ensure all urls from urlpatterns redirect to login."""
+        """Use this in a subclass to ensure all urls from urlpatterns redirect to login.
+
+        The url patterns must have <pk> or <pk...> for this function to work
+        properly. For example, <pk> and <pk_study> are ok, but <study> is not).
+        For each url, the regex patterns are replaced by integers, which
+        represent the objects' primary keys. Sequential integers are chosen
+        until one works (that is, it does not have a status code of 404). For
+        patterns that involve multiple <pk...> patterns, the most efficient
+        way to choose these sequential integers is with a zig-zag algorithm as
+        described here:
+        https://stackoverflow.com/questions/41099274/python-product-of-infinite-generators
+        It has not been implemented in itertools, but it is equivalent to
+        looping over i and finding all n-dimensional tuples whose values sum to
+        i.
+        """
         url_list = get_app_urls(app_name)
+        pattern = '<pk.{0,}?>'
         for url in url_list:
-            final_url = url
-            if '<' in url and '>' in url:
-                if '<pk>' in url:
-                    pk = 1
-                    final_url = url.replace('<pk>', str(pk))
-                    # While the url response gives a 404 error...
-                    while self.client.get(final_url).status_code == 404:
-                        # ...increment the pk until you find something that gives a different response code
-                        pk += 1
-                        final_url = url.replace('<pk>', str(pk))
-                else:
-                    raise ValueError('URL {} has a regex that is not <pk>'.format(url))
-            response = self.client.get(final_url)
+            matches = re.findall(pattern, url)
+            i = 0
+            done = False
+            while not done:
+                # Implement the zig-zag algorithm in n-dimensional space.
+                # This may not be the most efficient way.
+                for idx in filter(lambda x: sum(x) == i, itertools.product(range(i + 1), repeat=len(matches))):
+                    replacements = [str(x) for x in idx]
+                    # Replace all matching patterns with object pks.
+                    final_url = reduce(lambda x, y: x.replace(y[0], y[1]),
+                                       zip(matches, replacements),
+                                       url)
+                    # Make sure there are no other regular expression patterns left.
+                    if re.search('<.+?>', final_url):
+                        raise ValueError('URL {} has a regex that is not {}'.format(url, pattern))
+                    response = self.client.get(final_url)
+                    if response.status_code != 404:
+                        done = True
+                        break
+                # None of the pk combinations succeeded, so try again.
+                i += 1
             self.assertRedirects(response, reverse('login') + '?next=' + final_url,
                                  msg_prefix='URL {} is not login required'.format(final_url))
             # print('URL {} passes login_required test...'.format(url))

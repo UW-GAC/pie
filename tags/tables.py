@@ -1,5 +1,6 @@
 """Table classes for tags app, using django-tables2."""
 
+from django.urls import reverse
 from django.utils.safestring import mark_safe
 
 import django_tables2 as tables
@@ -9,9 +10,9 @@ from trait_browser.models import Study
 from . import models
 
 
-DELETE_BUTTON_TEMPLATE = """
-<a class="btn btn-xs btn-danger" href="{% url 'tags:tagged-traits:delete' record.pk %}" role="button">
-    <span class="glyphicon glyphicon-remove" aria-hidden="true"></span> Remove tag
+DETAIL_BUTTON_TEMPLATE = """
+<a class="btn btn-xs btn-info" href="{% url 'tags:tagged-traits:detail' record.pk %}" role="button">
+  Details
 </a>
 """
 
@@ -75,25 +76,52 @@ class TaggedTraitTable(tables.Table):
         order_by = ('tag', )
 
 
-class TaggedTraitTableWithDelete(TaggedTraitTable):
+class TaggedTraitDeleteButtonMixin(tables.Table):
+    """Mixin to include a delete button in a TaggedTrait table."""
+
+    delete_button = tables.Column(empty_values=(), verbose_name='', orderable=False)
+
+    def render_delete_button(self, record):
+        html_template = """
+        <a class="{classes}" href="{url}" role="button">
+            <span class="glyphicon glyphicon-remove" aria-hidden="true"></span> Remove tag
+        </a>
+        """
+        url = '#'
+        classes = ['btn', 'btn-xs', 'btn-danger']
+        if hasattr(record, 'dcc_review'):
+            classes.append('disabled')
+        else:
+            url = reverse('tags:tagged-traits:delete', args=[record.pk])
+        html = html_template.format(classes=' '.join(classes), url=url)
+        return mark_safe(html)
+
+
+class TaggedTraitTableWithDelete(TaggedTraitDeleteButtonMixin, TaggedTraitTable):
     """Table for displaying TaggedTraits with delete buttons."""
 
-    delete = tables.TemplateColumn(verbose_name='', orderable=False,
-                                   template_code=DELETE_BUTTON_TEMPLATE)
     creator = tables.Column('Tagged by', accessor='creator.name')
 
     class Meta(TaggedTraitTable.Meta):
-        fields = ('tag', 'trait', 'description', 'dataset', 'creator', 'delete',)
+        fields = ('tag', 'trait', 'description', 'dataset', 'creator', 'delete_button',)
 
 
-class UserTaggedTraitTable(TaggedTraitTable):
+class TaggedTraitTableWithDCCReview(TaggedTraitDeleteButtonMixin, TaggedTraitTable):
+    """Table for displaying TaggedTraits with DCCReview information."""
+
+    status = tables.Column('Status', accessor='dcc_review.status')
+    details = tables.TemplateColumn(verbose_name='', orderable=False,
+                                    template_code=DETAIL_BUTTON_TEMPLATE)
+
+    class Meta(TaggedTraitTable.Meta):
+        fields = ('tag', 'trait', 'description', 'dataset', 'status', 'details', 'delete_button')
+
+
+class UserTaggedTraitTable(TaggedTraitDeleteButtonMixin, TaggedTraitTable):
     """Table for displaying TaggedTraits on a user's profile page.
 
     Displays user information that is not displayed in the plain old TaggedTraitTable.
     """
 
-    delete = tables.TemplateColumn(verbose_name='', orderable=False,
-                                   template_code=DELETE_BUTTON_TEMPLATE)
-
     class Meta(TaggedTraitTableWithDelete.Meta):
-        fields = ('tag', 'trait', 'description', 'dataset', 'delete',)
+        fields = ('tag', 'trait', 'description', 'dataset', 'delete_button',)

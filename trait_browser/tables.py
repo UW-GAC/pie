@@ -72,7 +72,7 @@ class SourceTraitTable(tables.Table):
     i_description = tables.Column('Description', orderable=False)
     dbGaP_variable = tables.TemplateColumn(
         orderable=False, verbose_name='dbGaP variable',
-        template_code='<a target="_blank" href={{ record.dbgap_variable_link }}>{{ record.variable_accession }}</a>')
+        template_code='<a target="_blank" href={{ record.dbgap_link }}>{{ record.full_accession }}</a>')
 
     class Meta:
         fields = ('i_trait_name', 'i_description', 'dbGaP_variable', )
@@ -96,10 +96,10 @@ class SourceTraitTableFull(SourceTraitTable):
         verbose_name='Dataset', orderable=False)
     dbGaP_study = tables.TemplateColumn(
         orderable=False, verbose_name='dbGaP study',
-        template_code='<a target="_blank" href={{ record.dbgap_study_link }}>{{ record.study_accession }}</a>')
+        template_code='<a target="_blank" href={{ record.source_dataset.source_study_version.dbgap_link }}>{{ record.source_dataset.source_study_version.full_accession }}</a>')
     dbGaP_dataset = tables.TemplateColumn(
         orderable=False, verbose_name='dbGaP dataset',
-        template_code='<a target="_blank" href={{ record.dbgap_dataset_link }}>{{ record.dataset_accession }}</a>')
+        template_code='<a target="_blank" href={{ record.source_dataset.dbgap_link }}>{{ record.source_dataset.full_accession }}</a>')
 
     class Meta(SourceTraitTable.Meta):
         fields = (
@@ -117,7 +117,7 @@ class SourceTraitStudyTable(SourceTraitTable):
         verbose_name='Dataset', orderable=False)
     dbGaP_dataset = tables.TemplateColumn(
         orderable=False, verbose_name='dbGaP dataset',
-        template_code='<a target="_blank" href={{ record.dbgap_dataset_link }}>{{ record.dataset_accession }}</a>')
+        template_code='<a target="_blank" href={{ record.source_dataset.dbgap_link }}>{{ record.source_dataset.full_accession }}</a>')
 
     class Meta(SourceTraitTable.Meta):
         fields = ('i_trait_name', 'i_description', 'dataset', 'dbGaP_dataset', 'dbGaP_variable', )

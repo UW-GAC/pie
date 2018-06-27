@@ -1,0 +1,28 @@
+{% extends '__base.html' %}
+{% load crispy_forms_tags %}
+{% load staticfiles %}
+{% load static %}
+
+{% block head_title %}
+  | Selected tagged phenotypes to review
+{% endblock head_title %}
+
+
+{% block content %}
+  <h1>Review tagged variables for a specific tag and study</h1>
+
+    <p>
+      To begin reviewing tagged study variables, select a specific tag and
+      study. You will then be able to start reviewing all variables from
+      the selected study that have been tagged with the selected tag.
+    </p>
+
+  {% crispy form %}
+
+{% endblock content %}
+
+{% block custom_javascript %}
+  {# script for django-autocomplete-light #}
+  <script type="text/javascript" src="{% static 'admin/js/vendor/jquery/jquery.js' %}"></script>
+  {{ form.media }}
+{% endblock custom_javascript %}
