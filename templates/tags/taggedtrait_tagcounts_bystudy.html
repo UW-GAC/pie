@@ -24,7 +24,7 @@
           </td>
           <td class='text-left'>
             {% for tag in study_data.1 %}
-              <a href="{% url 'tags:tag:detail' pk=tag.tag_pk %}" class="btn btn-default btn-xs" role="button">
+              <a href="{% url 'tags:tag:study:list' pk=tag.tag_pk pk_study=tag.study_pk %}" class="btn btn-default btn-xs" role="button">
               {{ tag.tag_name }}
               <span class="badge">{{ tag.tt_count }}</span></a>
             {% endfor %}

@@ -23,7 +23,7 @@
           </td>
           <td class='text-left'>
             {% for study in tag_data.1 %}
-              <a href="{% url 'trait_browser:source:studies:pk:detail' pk=study.study_pk %}" class="btn btn-default btn-xs" role="button">
+              <a href="{% url 'tags:tag:study:list' pk=study.tag_pk pk_study=study.study_pk %}" class="btn btn-default btn-xs" role="button">
               {{ study.study_name }}
               <span class="badge">{{ study.tt_count }}</span></a>
             {% endfor %}
