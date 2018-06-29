@@ -92,12 +92,12 @@ class TaggedTraitStudyCounts(LoginRequiredMixin, SingleTableMixin, ListView):
         )
 
 
-class TaggedTraitListByStudy(LoginRequiredMixin, TemplateView):
+class TaggedTraitTagCountsByStudy(LoginRequiredMixin, TemplateView):
 
-    template_name = 'tags/taggedtrait_list_bystudy.html'
+    template_name = 'tags/taggedtrait_tagcounts_bystudy.html'
 
     def get_context_data(self, **kwargs):
-        context = super(TaggedTraitListByStudy, self).get_context_data(**kwargs)
+        context = super(TaggedTraitTagCountsByStudy, self).get_context_data(**kwargs)
         annotated_studies = models.TaggedTrait.objects.values(
             study_name=F('trait__source_dataset__source_study_version__study__i_study_name'),
             study_pk=F('trait__source_dataset__source_study_version__study__pk'),
@@ -113,12 +113,12 @@ class TaggedTraitListByStudy(LoginRequiredMixin, TemplateView):
         return context
 
 
-class TaggedTraitListByTag(LoginRequiredMixin, TemplateView):
+class TaggedTraitStudyCountsByTag(LoginRequiredMixin, TemplateView):
 
-    template_name = 'tags/taggedtrait_list_bytag.html'
+    template_name = 'tags/taggedtrait_studycounts_bytag.html'
 
     def get_context_data(self, **kwargs):
-        context = super(TaggedTraitListByTag, self).get_context_data(**kwargs)
+        context = super(TaggedTraitStudyCountsByTag, self).get_context_data(**kwargs)
         annotated_tags = models.TaggedTrait.objects.values(
             study_name=F('trait__source_dataset__source_study_version__study__i_study_name'),
             study_pk=F('trait__source_dataset__source_study_version__study__pk'),
