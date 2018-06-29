@@ -1,6 +1,6 @@
 {% extends '__object_detail.html' %}
 {% load core_tags %}
-{% load render_table from django_tables2 %}
+
 
 {% block head_title %}
   | {{ tag.lower_title }} details
@@ -31,9 +31,15 @@
 
 {% block after_panel %}
   <div class="panel panel-default">
-    <div class="panel-heading"><h4 class="panel-title">Tagged study variables</h4></div>
+    <div class="panel-heading"><h4 class="panel-title">Tagged variables by study</h4></div>
     <div class="panel-body">
-      {% render_table tagged_trait_table %}
+      {% for study in study_counts %}
+        <p>
+          <a href="{% url 'tags:tag:study:list' pk=tag.pk pk_study=study.study_pk %}" class="btn btn-default btn-xs" role="button">
+          {{ study.study_name }}
+          <span class="badge">{{ study.tt_count }}</span></a>
+        </p>
+      {% endfor %}
      </div>
   </div>
 {% endblock after_panel %}

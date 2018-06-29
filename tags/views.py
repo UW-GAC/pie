@@ -31,28 +31,25 @@ REVIEWED_TAGGED_TRAIT_DELETE_ERROR_MESSAGE = (
 )
 
 
-class TagDetail(LoginRequiredMixin, SingleTableMixin, DetailView):
+class TagDetail(LoginRequiredMixin, DetailView):
     """Detail view class for Tag."""
 
     model = models.Tag
     context_object_name = 'tag'
-    template_name = 'tags/tag_detail.html'
-    table_class = SourceTraitTableFull
-    context_table_name = 'tagged_trait_table'
-    table_pagination = {'per_page': TABLE_PER_PAGE}
 
     def get_table_data(self):
         return self.object.traits.all()
 
     def get_context_data(self, **kwargs):
         context = super(TagDetail, self).get_context_data(**kwargs)
-        # study_counts = self.object.traits.values(
-        #     'source_dataset__source_study_version__study').annotate(
-        #     total=Count('source_dataset__source_study_version__study')).order_by()
-        # study_names = [get_object_or_404(Study, pk=d['source_dataset__source_study_version__study']).i_study_name
-        #                for d in study_counts]
-        # totals = [d['total'] for d in study_counts]
-        # context['study_counts'] = zip(study_names, totals)
+        study_counts = models.TaggedTrait.objects.filter(tag=self.object).values(
+            study_name=F('trait__source_dataset__source_study_version__study__i_study_name'),
+            study_pk=F('trait__source_dataset__source_study_version__study__pk')
+        ).annotate(
+            tt_count=Count('pk')
+        ).values(
+            'study_name', 'study_pk', 'tt_count').order_by('study_name')
+        context['study_counts'] = study_counts
         return context
 
 
