@@ -1995,6 +1995,35 @@ class StudySourceTraitListTest(UserLoginTestCase):
         self.assertEqual(len(table.rows), 0)
 
 
+class StudyTaggedTraitListTest(UserLoginTestCase):
+
+    def setUp(self):
+        super(StudyTaggedTraitListTest, self).setUp()
+        self.study = factories.StudyFactory.create()
+        self.tagged_traits = TaggedTraitFactory.create_batch(
+            10, trait__source_dataset__source_study_version__study=self.study)
+
+    def get_url(self, *args):
+        return reverse('trait_browser:source:studies:pk:traits:tagged', args=args)
+
+    def test_view_success_code(self):
+        """View returns successful response code."""
+        response = self.client.get(self.get_url(self.study.pk))
+        self.assertEqual(response.status_code, 200)
+
+    def test_view_with_invalid_pk(self):
+        """View returns 404 response code when the pk doesn't exist."""
+        response = self.client.get(self.get_url(self.study.pk + 1))
+        self.assertEqual(response.status_code, 404)
+
+    def test_context_data(self):
+        """View has appropriate data in the context."""
+        response = self.client.get(self.get_url(self.study.pk))
+        context = response.context
+        self.assertIn('study', context)
+        self.assertEqual(context['study'], self.study)
+
+
 class PhenotypeTaggerSourceTraitTaggingTest(PhenotypeTaggerLoginTestCase):
 
     def setUp(self):

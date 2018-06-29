@@ -17,7 +17,6 @@ from django_tables2 import SingleTableMixin
 
 from core.utils import SessionVariableMixin, ValidateObjectMixin
 from trait_browser.models import Study
-from trait_browser.tables import SourceTraitTableFull
 from . import forms
 from . import models
 from . import tables
@@ -127,31 +126,6 @@ class TaggedTraitStudyCountsByTag(LoginRequiredMixin, TemplateView):
         grouped_annotated_tags = groupby(annotated_tags, lambda x: {'tag_name': x['tag_name'], 'tag_pk': x['tag_pk']})
         grouped_annotated_tags = [(key, list(group)) for key, group in grouped_annotated_tags]
         context['taggedtrait_study_counts_by_tag'] = grouped_annotated_tags
-        return context
-
-
-class StudyTaggedTraitList(LoginRequiredMixin, SingleTableMixin, ListView):
-
-    model = models.TaggedTrait
-    context_table_name = 'tagged_trait_table'
-    template_name = 'tags/study_taggedtrait_list.html'
-    table_pagination = {'per_page': TABLE_PER_PAGE}
-
-    def get_table_class(self):
-        """Determine whether to use tagged trait table with delete buttons or not."""
-        self.study = get_object_or_404(Study, pk=self.kwargs['pk'])
-        if self.request.user.is_staff or (self.request.user.groups.filter(name='phenotype_taggers').exists() and (
-                                          self.study in self.request.user.profile.taggable_studies.all())):
-            return tables.TaggedTraitTableWithDelete
-        else:
-            return tables.TaggedTraitTable
-
-    def get_table_data(self):
-        return self.study.get_tagged_traits()
-
-    def get_context_data(self, *args, **kwargs):
-        context = super(StudyTaggedTraitList, self).get_context_data(*args, **kwargs)
-        context['study'] = self.study
         return context
 
 
