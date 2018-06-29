@@ -1,5 +1,7 @@
 """View functions and classes for the tags app."""
 
+from itertools import groupby
+
 from django.db.models import Count, F
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponseRedirect
@@ -96,18 +98,18 @@ class TaggedTraitListByStudy(LoginRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super(TaggedTraitListByStudy, self).get_context_data(**kwargs)
-        context['annotated_tags'] = models.Tag.objects.annotate(Count('traits'))
-        study_tag_counts_dict = dict(
-            (study,
-             models.TaggedTrait.objects.filter(
-                 trait__source_dataset__source_study_version__study=study
-             ).values('tag__pk').annotate(count=Count('pk', distinct=True))) for study in Study.objects.all()
-        )
-        context['annotated_studies'] = [
-            (study,
-             [(models.Tag.objects.get(pk=tag['tag__pk']), tag['count']) for tag in study_tag_counts_dict[study]])
-            for study in study_tag_counts_dict
-        ]
+        annotated_studies = models.TaggedTrait.objects.values(
+            study_name=F('trait__source_dataset__source_study_version__study__i_study_name'),
+            study_pk=F('trait__source_dataset__source_study_version__study__pk'),
+            tag_name=F('tag__title'),
+            tag_pk=F('tag__pk')).annotate(
+                tt_count=Count('pk')).values(
+                    'study_name', 'study_pk', 'tag_name', 'tt_count', 'tag_pk').order_by(
+                        'study_pk')
+        grouped_annotated_studies = groupby(annotated_studies,
+                                            lambda x: {'study_name': x['study_name'], 'study_pk': x['study_pk']})
+        grouped_annotated_studies = [(key, list(group)) for key, group in grouped_annotated_studies]
+        context['taggedtrait_tag_counts_by_study'] = grouped_annotated_studies
         return context
 
 
@@ -117,16 +119,17 @@ class TaggedTraitListByTag(LoginRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super(TaggedTraitListByTag, self).get_context_data(**kwargs)
-        tag_study_counts_dict = dict(
-            (tag, models.TaggedTrait.objects.filter(tag=tag).values(
-                study_pk=F('trait__source_dataset__source_study_version__study__pk')).annotate(
-                    count=Count('pk', distinct=True))) for tag in models.Tag.objects.all()
-        )
-        context['annotated_tags'] = [
-            (tag,
-             [(Study.objects.get(pk=study['study_pk']), study['count']) for study in tag_study_counts_dict[tag]])
-            for tag in tag_study_counts_dict
-        ]
+        annotated_tags = models.TaggedTrait.objects.values(
+            study_name=F('trait__source_dataset__source_study_version__study__i_study_name'),
+            study_pk=F('trait__source_dataset__source_study_version__study__pk'),
+            tag_name=F('tag__title'),
+            tag_pk=F('tag__pk')).annotate(
+                tt_count=Count('pk')).values(
+                    'study_name', 'study_pk', 'tag_name', 'tt_count', 'tag_pk').order_by(
+                        'tag_pk')
+        grouped_annotated_tags = groupby(annotated_tags, lambda x: {'tag_name': x['tag_name'], 'tag_pk': x['tag_pk']})
+        grouped_annotated_tags = [(key, list(group)) for key, group in grouped_annotated_tags]
+        context['taggedtrait_study_counts_by_tag'] = grouped_annotated_tags
         return context
 
 

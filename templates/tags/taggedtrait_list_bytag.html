@@ -16,17 +16,16 @@
         <th class='text-right'>Tag</th>
         <th class='text-left'>Variable count by study</th>
       </tr>
-      {% for row in annotated_tags %}
+      {% for tag_data in taggedtrait_study_counts_by_tag %}
         <tr>
           <td class='text-right'>
-            <a href="{{ row.0.get_absolute_url }}">{{ row.0.title }}</a>
-            
+            <a href="{% url 'tags:tag:detail' pk=tag_data.0.tag_pk %}">{{ tag_data.0.tag_name }}</a>
           </td>
           <td class='text-left'>
-            {% for study_tuple in row.1 %}
-              <a href="{{ study_tuple.0.get_absolute_url }}" class="btn btn-default btn-xs" role="button">
-              {{ study_tuple.0.i_study_name }}
-              <span class="badge">{{ study_tuple.1 }}</span></a>
+            {% for study in tag_data.1 %}
+              <a href="{% url 'trait_browser:source:studies:pk:detail' pk=study.study_pk %}" class="btn btn-default btn-xs" role="button">
+              {{ study.study_name }}
+              <span class="badge">{{ study.tt_count }}</span></a>
             {% endfor %}
           </td>
         </tr>
