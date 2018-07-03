@@ -2153,6 +2153,30 @@ class TaggedTraitReviewByTagAndStudyNextDCCTestsMixin(object):
             self.assertRedirects(response, reverse('tags:tagged-traits:review:select'),
                                  msg_prefix='did not redirect when missing {} in session'.format(key))
 
+    def test_continue_reviewing_link_in_navbar_if_session_variable_is_present(self):
+        """The link to continue reviewing traits appears on the home page for DCC users if session variable exists."""
+        tagged_trait = factories.TaggedTraitFactory.create()
+        tag = tagged_trait.tag
+        study = tagged_trait.trait.source_dataset.source_study_version.study
+        session = self.client.session
+        session['tagged_trait_review_by_tag_and_study_info'] = {
+            'tag_pk': tag.pk,
+            'study_pk': study.pk,
+            'tagged_trait_pks': [tagged_trait.pk],
+        }
+        session.save()
+        url = reverse('home')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, """<a href="{}">""".format(self.get_url()))
+
+    def test_continue_reviewing_link_not_in_navbar_if_session_variable_is_missing(self):
+        """The link to continue reviewing doesn't appear on the home page for DCC users if no session variable."""
+        url = reverse('home')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, """<a href="{}">""".format(self.get_url()))
+
 
 class TaggedTraitReviewByTagAndStudyNextDCCAnalystTest(TaggedTraitReviewByTagAndStudyNextDCCTestsMixin,
                                                        DCCAnalystLoginTestCase):
@@ -2183,6 +2207,23 @@ class TaggedTraitReviewByTagAndStudyNextOtherUserTest(UserLoginTestCase):
         """Returns a response with a forbidden status code for non-DCC users."""
         response = self.client.post(self.get_url(), {})
         self.assertEqual(response.status_code, 403)
+
+    def test_continue_reviewing_link_in_navbar_if_session_variable_is_present(self):
+        """The link to continue reviewing traits doesn't appear on the home page for non-DCC users."""
+        tagged_trait = factories.TaggedTraitFactory.create()
+        tag = tagged_trait.tag
+        study = tagged_trait.trait.source_dataset.source_study_version.study
+        session = self.client.session
+        session['tagged_trait_review_by_tag_and_study_info'] = {
+            'tag_pk': tag.pk,
+            'study_pk': study.pk,
+            'tagged_trait_pks': [tagged_trait.pk],
+        }
+        session.save()
+        url = reverse('home')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, """<a href="{}">""".format(self.get_url()))
 
 
 class TaggedTraitReviewByTagAndStudyDCCTestsMixin(object):
@@ -2512,6 +2553,13 @@ class TaggedTraitReviewByTagAndStudyOtherUserTest(UserLoginTestCase):
         """Returns a response with a forbidden status code for non-DCC users."""
         response = self.client.post(self.get_url(), {})
         self.assertEqual(response.status_code, 403)
+
+    def test_link_not_in_navbar(self):
+        """The link to continue reviewing traits doesn't appear on the home page for non-DCC users."""
+        url = reverse('home')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, """<a href="{}">""".format(self.get_url()))
 
 
 class TagsLoginRequiredTest(LoginRequiredTestCase):

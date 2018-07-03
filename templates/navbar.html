@@ -91,6 +91,13 @@
                   Review tagged variables
                 </a>
               </li>
+              {% if request.session.tagged_trait_review_by_tag_and_study_info %}
+                <li>
+                  <a href="{% url 'tags:tagged-traits:review:next' %}"><span class="glyphicon glyphicon-repeat"></span>
+                    Continue reviewing
+                  </a>
+                </li>
+              {% endif %}
             {% endif %}
           </ul>
         </li>
