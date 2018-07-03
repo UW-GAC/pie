@@ -177,7 +177,7 @@ class Study(SourceDBTimeStampedModel):
 
     def get_tagged_trait_count(self):
         """Return the count of traits that have been tagged in this study."""
-        return self.get_tagged_traits().distinct().count()
+        return SourceTrait.objects.filter(source_dataset__source_study_version__study=self).exclude(tag=None).count()
 
     def get_latest_version(self):
         """Return the most recent SourceStudyVersion linked to this study."""
