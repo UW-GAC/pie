@@ -13,13 +13,19 @@
   <div class="panel panel-default">
     <div class="panel-heading"><h4 class="panel-title">Tagged variables in this study</h4></div>
     <div class="panel-body">
-      {% for tag in tag_counts %}
+      {% if study.get_tagged_trait_count > 0 %}
+        {% for tag in tag_counts %}
+          <p>
+            <a href="{% url 'tags:tag:study:list' pk=tag.tag_pk pk_study=study.pk %}" class="btn btn-default btn-xs" role="button">
+            {{ tag.tag_name }}
+            <span class="badge">{{ tag.tt_count }}</span></a>
+          </p>
+        {% endfor %}
+      {% else %}
         <p>
-          <a href="{% url 'tags:tag:study:list' pk=tag.tag_pk pk_study=study.pk %}" class="btn btn-default btn-xs" role="button">
-          {{ tag.tag_name }}
-          <span class="badge">{{ tag.tt_count }}</span></a>
+          There are no tagged variables for this study.
         </p>
-      {% endfor %}
+      {% endif %}
     </div>
   </div>
 {% endblock after_panel %}

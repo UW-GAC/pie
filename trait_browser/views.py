@@ -407,7 +407,7 @@ class StudySourceTraitList(SingleTableMixin, StudyDetail):
 
 class StudyTaggedTraitList(StudyDetail):
 
-    template_name = 'tags/study_taggedtrait_list.html'
+    template_name = 'trait_browser/study_taggedtrait_list.html'
 
     def get_context_data(self, *args, **kwargs):
         context = super(StudyTaggedTraitList, self).get_context_data(*args, **kwargs)

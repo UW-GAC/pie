@@ -2022,6 +2022,23 @@ class StudyTaggedTraitListTest(UserLoginTestCase):
         context = response.context
         self.assertIn('study', context)
         self.assertEqual(context['study'], self.study)
+        self.assertIn('tag_counts', context)
+        # Spot-check one of the tag counts.
+        self.assertEqual(context['tag_counts'][0]['tt_count'], 1)
+        # The button linking to this view should be present.
+        self.assertIn(self.get_url(self.study.pk), str(response.content))
+
+    def test_context_data_no_taggedtraits(self):
+        """View has appropriate data in the context and works when there are no tagged traits for the study."""
+        TaggedTrait.objects.all().delete()
+        response = self.client.get(self.get_url(self.study.pk))
+        context = response.context
+        self.assertIn('study', context)
+        self.assertEqual(context['study'], self.study)
+        self.assertIn('tag_counts', context)
+        self.assertEqual(len(context['tag_counts']), 0)
+        # The button linking to this view should not be present.
+        self.assertNotIn(self.get_url(self.study.pk), str(response.content))
 
 
 class PhenotypeTaggerSourceTraitTaggingTest(PhenotypeTaggerLoginTestCase):
