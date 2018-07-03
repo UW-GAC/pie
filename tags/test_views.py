@@ -249,6 +249,92 @@ class TaggedTraitDetailDCCAnalystTest(TaggedTraitDetailTestsMixin, DCCAnalystLog
         self.assertContains(response, dcc_review.comment)
 
 
+class TaggedTraitTagCountsByStudyTest(UserLoginTestCase):
+
+    def setUp(self):
+        super(TaggedTraitTagCountsByStudyTest, self).setUp()
+
+    def make_fake_data(self):
+        self.tags = factories.TagFactory.create_batch(2)
+        self.studies = StudyFactory.create_batch(2)
+        self.taggedtraits = []
+        for tag in self.tags:
+            for study in self.studies:
+                self.taggedtraits.append(
+                    factories.TaggedTraitFactory.create_batch(
+                        2, tag=tag, trait__source_dataset__source_study_version__study=study)
+                )
+
+    def get_url(self, *args):
+        return reverse('tags:tagged-traits:by-study')
+
+    def test_view_success_code(self):
+        """View returns successful response code."""
+        response = self.client.get(self.get_url())
+        self.assertEqual(response.status_code, 200)
+
+    def test_context_data(self):
+        """View has appropriate data in the context."""
+        response = self.client.get(self.get_url())
+        context = response.context
+        self.assertIn('taggedtrait_tag_counts_by_study', context)
+
+    def test_context_data_is_correct(self):
+        """Data in the context is correct."""
+        self.make_fake_data()
+        response = self.client.get(self.get_url())
+        context = response.context
+        for study in context['taggedtrait_tag_counts_by_study']:
+            for tag in study[1]:
+                tag_study_count = models.TaggedTrait.objects.filter(
+                    tag__pk=tag['tag_pk'],
+                    trait__source_dataset__source_study_version__study__pk=study[0]['study_pk']).count()
+                self.assertEqual(tag['tt_count'], tag_study_count)
+
+
+class TaggedTraitStudyCountsByTagTest(UserLoginTestCase):
+
+    def setUp(self):
+        super(TaggedTraitStudyCountsByTagTest, self).setUp()
+
+    def make_fake_data(self):
+        self.tags = factories.TagFactory.create_batch(2)
+        self.studies = StudyFactory.create_batch(2)
+        self.taggedtraits = []
+        for tag in self.tags:
+            for study in self.studies:
+                self.taggedtraits.append(
+                    factories.TaggedTraitFactory.create_batch(
+                        2, tag=tag, trait__source_dataset__source_study_version__study=study)
+                )
+
+    def get_url(self, *args):
+        return reverse('tags:tagged-traits:by-tag')
+
+    def test_view_success_code(self):
+        """View returns successful response code."""
+        response = self.client.get(self.get_url())
+        self.assertEqual(response.status_code, 200)
+
+    def test_context_data(self):
+        """View has appropriate data in the context."""
+        response = self.client.get(self.get_url())
+        context = response.context
+        self.assertIn('taggedtrait_study_counts_by_tag', context)
+
+    def test_context_data_is_correct(self):
+        """Data in the context is correct."""
+        self.make_fake_data()
+        response = self.client.get(self.get_url())
+        context = response.context
+        for tag in context['taggedtrait_study_counts_by_tag']:
+            for study in tag[1]:
+                study_tag_count = models.TaggedTrait.objects.filter(
+                    tag__pk=tag[0]['tag_pk'],
+                    trait__source_dataset__source_study_version__study__pk=study['study_pk']).count()
+                self.assertEqual(study['tt_count'], study_tag_count)
+
+
 class TaggedTraitByTagAndStudyListTest(UserLoginTestCase):
 
     def setUp(self):
