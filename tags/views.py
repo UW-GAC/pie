@@ -73,21 +73,6 @@ class TaggedTraitDetail(LoginRequiredMixin, DetailView):
         return context
 
 
-class TaggedTraitStudyCounts(LoginRequiredMixin, SingleTableMixin, ListView):
-
-    model = Study
-    table_class = tables.StudyTaggedTraitTable
-    context_table_name = 'study_table'
-    template_name = 'tags/taggedtrait_studycounts.html'
-    table_pagination = {'per_page': TABLE_PER_PAGE}
-
-    def get_table_data(self):
-        return Study.objects.annotate(
-            tag_count=Count('sourcestudyversion__sourcedataset__sourcetrait__taggedtrait__tag', distinct=True),
-            taggedtrait_count=Count('sourcestudyversion__sourcedataset__sourcetrait__taggedtrait', distinct=True)
-        )
-
-
 class TaggedTraitTagCountsByStudy(LoginRequiredMixin, TemplateView):
 
     template_name = 'tags/taggedtrait_tagcounts_bystudy.html'

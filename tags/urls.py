@@ -44,7 +44,6 @@ tagged_trait_patterns = ([
     url(r'^(?P<pk>\d+)/delete$', views.TaggedTraitDelete.as_view(), name='delete'),
     url(r'^by-study/$', views.TaggedTraitTagCountsByStudy.as_view(), name='by-study'),
     url(r'^by-tag/$', views.TaggedTraitStudyCountsByTag.as_view(), name='by-tag'),
-    url(r'^study-counts', views.TaggedTraitStudyCounts.as_view(), name='study-counts'),
 ], 'tagged-traits', )
 
 urlpatterns = [
