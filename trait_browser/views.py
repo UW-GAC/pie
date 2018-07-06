@@ -2,14 +2,14 @@
 
 from django.db.models import Count, F, Q
 from django.http import HttpResponseRedirect
-from django.urls import reverse
 from django.shortcuts import get_object_or_404
 from django.template.defaultfilters import pluralize    # Use pluralize in the views.
+from django.urls import reverse
 from django.utils.safestring import mark_safe
 from django.views.generic import DetailView, FormView, ListView
+from django.views.generic.base import TemplateView
 from django.views.generic.detail import SingleObjectMixin
 from django.views.generic.edit import FormMixin
-from django.views.generic.base import TemplateView
 
 from braces.views import (FormMessagesMixin, LoginRequiredMixin, MessageMixin, PermissionRequiredMixin,
                           UserPassesTestMixin)
@@ -19,10 +19,11 @@ from django_tables2 import SingleTableMixin, SingleTableView
 from tags.forms import TagSpecificTraitForm
 from tags.models import TaggedTrait
 from tags.views import TAGGING_ERROR_MESSAGE, TaggableStudiesRequiredMixin
-from . import models
-from . import tables
+
 from . import forms
+from . import models
 from . import searches
+from . import tables
 
 
 TABLE_PER_PAGE = 50    # Setting for per_page rows for all table views.

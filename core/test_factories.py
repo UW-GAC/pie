@@ -3,10 +3,11 @@
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 
-from . import factories
-from .build_test_db import build_test_db
 from profiles.models import Profile
 import trait_browser.models
+
+from . import factories
+from .build_test_db import build_test_db
 
 
 User = get_user_model()

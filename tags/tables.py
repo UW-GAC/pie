@@ -4,9 +4,9 @@ from django.urls import reverse
 from django.utils.safestring import mark_safe
 
 import django_tables2 as tables
-from django_tables2.utils import AttributeDict
 
 from trait_browser.models import Study
+
 from . import models
 
 

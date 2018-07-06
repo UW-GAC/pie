@@ -1,8 +1,8 @@
 """Automated testing of the entire site interactively."""
 
+import re
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
-import re
 import time
 
 from django.contrib.auth import get_user_model

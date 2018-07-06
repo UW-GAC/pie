@@ -3,9 +3,10 @@
 from django.test import TestCase
 
 from trait_browser.models import Study
-from . import tables
+
 from . import factories
 from . import models
+from . import tables
 
 
 class TagTableTest(TestCase):

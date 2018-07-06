@@ -5,9 +5,9 @@ from itertools import groupby
 from django.db.models import Count, F
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponseRedirect
-from django.urls import reverse
 from django.shortcuts import get_object_or_404
 from django.utils.safestring import mark_safe
+from django.urls import reverse
 from django.views.generic import CreateView, DetailView, DeleteView, FormView, ListView, TemplateView, RedirectView
 
 from braces.views import (FormMessagesMixin, FormValidMessageMixin, LoginRequiredMixin, MessageMixin,
@@ -17,6 +17,7 @@ from django_tables2 import SingleTableMixin
 
 from core.utils import SessionVariableMixin, ValidateObjectMixin
 from trait_browser.models import Study
+
 from . import forms
 from . import models
 from . import tables

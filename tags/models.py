@@ -1,11 +1,12 @@
 """Models for the tags app."""
 
 from django.conf import settings
-from django.urls import reverse
 from django.db import models
+from django.urls import reverse
 
 from core.exceptions import DeleteNotAllowedError
 from core.models import TimeStampedModel
+
 from . import querysets
 
 

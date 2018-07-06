@@ -3,23 +3,24 @@
 Following a suggestion from Two Scoops of Django 1.8.
 """
 
+from functools import reduce
+from io import StringIO
 import itertools
 import json
 import re
-from functools import reduce
-from io import StringIO
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.core.exceptions import ImproperlyConfigured
 from django.core.management import call_command
 from django.http import HttpResponseRedirect
-from django.urls import resolve, reverse
 from django.test import TestCase, Client
+from django.urls import reverse
 
-from .build_test_db import build_test_db
-from . import factories
 from trait_browser.factories import StudyFactory
+
+from . import factories
+from .build_test_db import build_test_db
 
 User = get_user_model()
 

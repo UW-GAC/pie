@@ -5,6 +5,7 @@ from django.test import TestCase
 
 from core.factories import UserFactory
 from trait_browser.factories import SourceTraitFactory, StudyFactory
+
 from . import forms
 from . import factories
 from . import models

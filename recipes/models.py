@@ -1,9 +1,9 @@
 """Models for the recipes app."""
 
 from django.conf import settings
-from django.urls import reverse
 from django.core.validators import RegexValidator
 from django.db import models
+from django.urls import reverse
 
 from core.models import TimeStampedModel
 

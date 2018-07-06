@@ -9,8 +9,9 @@ from crispy_forms.helper import FormHelper
 from crispy_forms.layout import HTML, Layout, Submit
 from dal import autocomplete, forward
 
-from . import models
 from trait_browser.models import SourceTrait, Study
+
+from . import models
 
 
 EXISTING_TAGGED_TRAIT_ERROR_STRING = u"""The tag {tag_name} has already been applied to study variable {phv}

@@ -11,10 +11,11 @@ from core.utils import (LoginRequiredTestCase, PhenotypeTaggerLoginTestCase, Use
                         DCCAnalystLoginTestCase, DCCDeveloperLoginTestCase, get_autocomplete_view_ids)
 from trait_browser.factories import SourceTraitFactory, StudyFactory
 from trait_browser.models import SourceTrait
+
 from . import factories
+from . import forms
 from . import models
 from . import tables
-from . import forms
 from . import views
 
 fake = Faker()

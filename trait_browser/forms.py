@@ -5,9 +5,9 @@ from django.urls import reverse
 
 import string
 
+from crispy_forms.bootstrap import Accordion, AccordionGroup, FormActions
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Layout, Submit, Div, Field, Row
-from crispy_forms.bootstrap import Accordion, AccordionGroup, FormActions
 from dal import autocomplete
 
 from . import models

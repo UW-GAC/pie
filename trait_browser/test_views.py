@@ -5,19 +5,18 @@ from copy import copy
 from django.contrib.auth.models import Group
 from django.urls import reverse
 
-from core.utils import (DCCAnalystLoginTestCase, LoginRequiredTestCase, PhenotypeTaggerLoginTestCase, UserLoginTestCase,
-                        get_autocomplete_view_ids)
-
+from core.utils import (DCCAnalystLoginTestCase, get_autocomplete_view_ids, LoginRequiredTestCase,
+                        PhenotypeTaggerLoginTestCase, UserLoginTestCase)
 from tags.models import TaggedTrait, DCCReview
 from tags.factories import DCCReviewFactory, TagFactory, TaggedTraitFactory
-from . import models
+
 from . import factories
 from . import forms
+from . import models
 from . import tables
 from . import searches
-from .views import TABLE_PER_PAGE
-
 from .test_searches import ClearSearchIndexMixin
+from .views import TABLE_PER_PAGE
 
 # NB: The database is reset for each test method within a class!
 # NB: for test methods with multiple assertions, the first failed assert statement
