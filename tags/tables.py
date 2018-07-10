@@ -39,15 +39,12 @@ class StudyTaggedTraitTable(tables.Table):
     i_study_name = tables.LinkColumn(
         'trait_browser:source:studies:pk:traits:tagged', args=[tables.utils.A('pk')], verbose_name='Study name',
         orderable=False)
-    number_tags = tables.Column(
-        accessor='get_tag_count', verbose_name='Number of tags', orderable=False)
-    number_traits = tables.Column(
-        accessor='get_tagged_trait_count', orderable=False,
-        verbose_name='Number of tagged study variables')
+    tag_count = tables.Column(verbose_name='Number of tags')
+    taggedtrait_count = tables.Column(verbose_name='Number of tagged study variables')
 
     class Meta:
         model = Study
-        fields = ('i_study_name', )
+        fields = ('i_study_name', 'tag_count', 'taggedtrait_count', )
         attrs = {'class': 'table table-striped table-bordered table-hover'}
         template = 'django_tables2/bootstrap-responsive.html'
         order_by = ('i_study_name', )

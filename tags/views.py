@@ -1,11 +1,14 @@
 """View functions and classes for the tags app."""
 
+from itertools import groupby
+
+from django.db.models import Count, F
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django.shortcuts import get_object_or_404
 from django.utils.safestring import mark_safe
-from django.views.generic import CreateView, DetailView, DeleteView, FormView, ListView, RedirectView
+from django.views.generic import CreateView, DetailView, DeleteView, FormView, ListView, TemplateView, RedirectView
 
 from braces.views import (FormMessagesMixin, FormValidMessageMixin, LoginRequiredMixin, MessageMixin,
                           PermissionRequiredMixin, UserFormKwargsMixin, UserPassesTestMixin)
@@ -14,7 +17,6 @@ from django_tables2 import SingleTableMixin
 
 from core.utils import SessionVariableMixin, ValidateObjectMixin
 from trait_browser.models import Study
-from trait_browser.tables import SourceTraitTableFull
 from . import forms
 from . import models
 from . import tables
@@ -28,28 +30,25 @@ REVIEWED_TAGGED_TRAIT_DELETE_ERROR_MESSAGE = (
 )
 
 
-class TagDetail(LoginRequiredMixin, SingleTableMixin, DetailView):
+class TagDetail(LoginRequiredMixin, DetailView):
     """Detail view class for Tag."""
 
     model = models.Tag
     context_object_name = 'tag'
-    template_name = 'tags/tag_detail.html'
-    table_class = SourceTraitTableFull
-    context_table_name = 'tagged_trait_table'
-    table_pagination = {'per_page': TABLE_PER_PAGE}
 
     def get_table_data(self):
         return self.object.traits.all()
 
     def get_context_data(self, **kwargs):
         context = super(TagDetail, self).get_context_data(**kwargs)
-        # study_counts = self.object.traits.values(
-        #     'source_dataset__source_study_version__study').annotate(
-        #     total=Count('source_dataset__source_study_version__study')).order_by()
-        # study_names = [get_object_or_404(Study, pk=d['source_dataset__source_study_version__study']).i_study_name
-        #                for d in study_counts]
-        # totals = [d['total'] for d in study_counts]
-        # context['study_counts'] = zip(study_names, totals)
+        study_counts = models.TaggedTrait.objects.filter(tag=self.object).values(
+            study_name=F('trait__source_dataset__source_study_version__study__i_study_name'),
+            study_pk=F('trait__source_dataset__source_study_version__study__pk')
+        ).annotate(
+            tt_count=Count('pk')
+        ).values(
+            'study_name', 'study_pk', 'tt_count').order_by('study_name')
+        context['study_counts'] = study_counts
         return context
 
 
@@ -58,15 +57,6 @@ class TagList(LoginRequiredMixin, SingleTableMixin, ListView):
     model = models.Tag
     table_class = tables.TagTable
     context_table_name = 'tag_table'
-    table_pagination = {'per_page': TABLE_PER_PAGE}
-
-
-class StudyTaggedTraitList(LoginRequiredMixin, SingleTableMixin, ListView):
-
-    model = Study
-    table_class = tables.StudyTaggedTraitTable
-    context_table_name = 'study_table'
-    template_name = 'tags/studytaggedtrait_list.html'
     table_pagination = {'per_page': TABLE_PER_PAGE}
 
 
@@ -83,28 +73,44 @@ class TaggedTraitDetail(LoginRequiredMixin, DetailView):
         return context
 
 
-class TaggedTraitByStudyList(LoginRequiredMixin, SingleTableMixin, ListView):
+class TaggedTraitTagCountsByStudy(LoginRequiredMixin, TemplateView):
 
-    model = models.TaggedTrait
-    context_table_name = 'tagged_trait_table'
-    template_name = 'tags/taggedtrait_list.html'
-    table_pagination = {'per_page': TABLE_PER_PAGE}
+    template_name = 'tags/taggedtrait_tagcounts_bystudy.html'
 
-    def get_table_class(self):
-        """Determine whether to use tagged trait table with delete buttons or not."""
-        self.study = get_object_or_404(Study, pk=self.kwargs['pk'])
-        if self.request.user.is_staff or (self.request.user.groups.filter(name='phenotype_taggers').exists() and (
-                                          self.study in self.request.user.profile.taggable_studies.all())):
-            return tables.TaggedTraitTableWithDelete
-        else:
-            return tables.TaggedTraitTable
+    def get_context_data(self, **kwargs):
+        context = super(TaggedTraitTagCountsByStudy, self).get_context_data(**kwargs)
+        annotated_studies = models.TaggedTrait.objects.values(
+            study_name=F('trait__source_dataset__source_study_version__study__i_study_name'),
+            study_pk=F('trait__source_dataset__source_study_version__study__pk'),
+            tag_name=F('tag__title'),
+            tag_pk=F('tag__pk')).annotate(
+                tt_count=Count('pk')).values(
+                    'study_name', 'study_pk', 'tag_name', 'tt_count', 'tag_pk').order_by(
+                        'study_name', 'tag_name')
+        grouped_annotated_studies = groupby(annotated_studies,
+                                            lambda x: {'study_name': x['study_name'], 'study_pk': x['study_pk']})
+        grouped_annotated_studies = [(key, list(group)) for key, group in grouped_annotated_studies]
+        context['taggedtrait_tag_counts_by_study'] = grouped_annotated_studies
+        return context
 
-    def get_table_data(self):
-        return self.study.get_tagged_traits()
 
-    def get_context_data(self, *args, **kwargs):
-        context = super(TaggedTraitByStudyList, self).get_context_data(*args, **kwargs)
-        context['study'] = self.study
+class TaggedTraitStudyCountsByTag(LoginRequiredMixin, TemplateView):
+
+    template_name = 'tags/taggedtrait_studycounts_bytag.html'
+
+    def get_context_data(self, **kwargs):
+        context = super(TaggedTraitStudyCountsByTag, self).get_context_data(**kwargs)
+        annotated_tags = models.TaggedTrait.objects.values(
+            study_name=F('trait__source_dataset__source_study_version__study__i_study_name'),
+            study_pk=F('trait__source_dataset__source_study_version__study__pk'),
+            tag_name=F('tag__title'),
+            tag_pk=F('tag__pk')).annotate(
+                tt_count=Count('pk')).values(
+                    'study_name', 'study_pk', 'tag_name', 'tt_count', 'tag_pk').order_by(
+                        'tag_name', 'study_name')
+        grouped_annotated_tags = groupby(annotated_tags, lambda x: {'tag_name': x['tag_name'], 'tag_pk': x['tag_pk']})
+        grouped_annotated_tags = [(key, list(group)) for key, group in grouped_annotated_tags]
+        context['taggedtrait_study_counts_by_tag'] = grouped_annotated_tags
         return context
 
 

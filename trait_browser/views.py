@@ -1,6 +1,6 @@
 """View functions and classes for the trait_browser app."""
 
-from django.db.models import Q  # Allows complex queries when searching.
+from django.db.models import Count, F, Q
 from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django.shortcuts import get_object_or_404
@@ -403,6 +403,25 @@ class StudySourceTraitList(SingleTableMixin, StudyDetail):
     def get_table_data(self):
         return models.SourceTrait.objects.current().filter(
             source_dataset__source_study_version__study=self.object)
+
+
+class StudyTaggedTraitList(StudyDetail):
+
+    template_name = 'trait_browser/study_taggedtrait_list.html'
+
+    def get_context_data(self, *args, **kwargs):
+        context = super(StudyTaggedTraitList, self).get_context_data(*args, **kwargs)
+        tag_counts = TaggedTrait.objects.filter(
+            trait__source_dataset__source_study_version__study=self.object
+        ).values(
+            tag_name=F('tag__title'),
+            tag_pk=F('tag__pk')
+        ).annotate(
+            tt_count=Count('pk')
+        ).values(
+            'tag_name', 'tt_count', 'tag_pk').order_by('tag_name')
+        context['tag_counts'] = tag_counts
+        return context
 
 
 class SourceTraitTagging(LoginRequiredMixin, PermissionRequiredMixin, UserPassesTestMixin, FormMessagesMixin,

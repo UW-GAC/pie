@@ -29,7 +29,7 @@
     <dt>Study</dt> <dd><a href="{{ source_trait.source_dataset.source_study_version.study.get_absolute_url }}">{{ source_trait.source_dataset.source_study_version.study.i_study_name }}</a></dd>
   <dt>Phenotype tag(s)</dt>
     <dd>
-      {% if tag_tagged_trait_pairs|length > 0%}
+      {% if tag_tagged_trait_pairs|length > 0 %}
         {% for tag, tagged_trait in tag_tagged_trait_pairs %}
           <div class="btn-group btn-group-xs">
             <a href="{{ tag.get_absolute_url }}" class="btn btn-default" role="button">{{ tag.title }}</a>

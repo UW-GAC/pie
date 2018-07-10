@@ -1,12 +1,12 @@
 """Test the functions and classes for views.py."""
 
 from django.urls import reverse
-from django.test import TestCase
 
 from core.utils import (DCCAnalystLoginTestCase, LoginRequiredTestCase, RecipeSubmitterLoginTestCase,
                         PhenotypeTaggerLoginTestCase, UserLoginTestCase)
 from recipes.factories import HarmonizationRecipeFactory, UnitRecipeFactory
 from tags.factories import TaggedTraitFactory
+from tags.models import TaggedTrait
 from trait_browser.factories import StudyFactory
 
 
@@ -33,8 +33,8 @@ class ProfileTest(UserLoginTestCase):
         self.assertFalse(context['show_study_tagged'])
         self.assertNotIn('unit_recipe_table', context)
         self.assertNotIn('harmonization_recipe_table', context)
-        self.assertNotIn('user_tagged_tables', context)
-        self.assertNotIn('taggable_study_tagged_tables', context)
+        self.assertNotIn('user_taggedtraits', context)
+        self.assertNotIn('study_taggedtrait_counts', context)
         self.assertEqual(context['user'], self.user)
 
     def test_no_tagged_phenotypes(self):
@@ -78,18 +78,18 @@ class DCCAnalystLoginTestCaseProfileTest(DCCAnalystLoginTestCase):
         self.assertEqual(len(context['unit_recipe_table'].rows), 0)
         self.assertIn('harmonization_recipe_table', context)
         self.assertEqual(len(context['harmonization_recipe_table'].rows), 0)
-        self.assertIn('user_tagged_tables', context)
-        self.assertEqual(len(context['user_tagged_tables']), 0)
-        self.assertNotIn('taggable_study_tagged_tables', context)
+        self.assertIn('user_taggedtraits', context)
+        self.assertEqual(len(context['user_taggedtraits']), 0)
+        self.assertNotIn('study_taggedtrait_counts', context)
 
-    def test_has_tagged_phenotypes(self):
+    def test_has_correct_tagged_phenotypes_tabs(self):
         """Staff user does see My Tagged Phenotypes, but not study tagged phenotypes."""
         response = self.client.get(self.get_url())
         context = response.context
         self.assertContains(response, 'id="user_tagged_phenotypes"')
         self.assertNotContains(response, 'id="study_tagged_phenotypes"')
 
-    def test_has_recipes(self):
+    def test_has_recipes_tabs(self):
         """Staff user does see any recipes."""
         response = self.client.get(self.get_url())
         context = response.context
@@ -110,23 +110,45 @@ class DCCAnalystLoginTestCaseProfileTest(DCCAnalystLoginTestCase):
         self.assertEqual(len(context['unit_recipe_table'].rows), len(unit_recipes))
         self.assertEqual(len(context['harmonization_recipe_table'].rows), len(harmonization_recipes))
 
-    def test_has_correct_taggedtrait_count(self):
-        """Table of tagged traits has the correct number of rows for this user."""
-        # There are no tables at all (an empty tab) when there are no tagged traits for this DCC analyst.
+    def test_my_tagged_variables_correct_empty(self):
+        """The list of 'my tagged traits' is correct when the user has no taggedtraits."""
         response = self.client.get(self.get_url())
         context = response.context
-        self.assertEqual(context['user_tagged_tables'], [])
-        # Count in one table is correct when the user has tagged studies.
+        self.assertEqual(context['user_taggedtraits'], [])
+
+    def test_my_tagged_variables_correct_count(self):
+        """The list of 'my tagged traits' has the correct count of taggedtraits."""
         study = StudyFactory.create()
         tagged_traits = TaggedTraitFactory.create_batch(
-            10, creator=self.user,
+            2, creator=self.user,
+            trait__source_dataset__source_study_version__study=study)
+        response = self.client.get(self.get_url())
+        context = response.context
+        study_data = context['user_taggedtraits'][0][0]
+        study_tag_data = context['user_taggedtraits'][0][1]
+        all_tagged_trait_pks = [[[el['taggedtrait_pk'] for el in taggedtraits] for tag, taggedtraits in tag_taggedtraits] for study, tag_taggedtraits in context['user_taggedtraits']]  # noqa
+        all_tagged_trait_pks = [x for y in all_tagged_trait_pks for x in y]  # Unnest once.
+        all_tagged_trait_pks = [x for y in all_tagged_trait_pks for x in y]  # Unnest twice.
+        self.assertEqual(sorted(all_tagged_trait_pks),
+                         list(TaggedTrait.objects.filter(creator=self.user).values_list('pk', flat=True)))
+
+    def test_my_tagged_variables_excludes_trait_tagged_by_other_user(self):
+        """The list of 'my tagged traits' does not include traits tagged by another user."""
+        study = StudyFactory.create()
+        tagged_traits = TaggedTraitFactory.create_batch(
+            2, creator=self.user,
             trait__source_dataset__source_study_version__study=study)
         other_tagged_trait = TaggedTraitFactory.create(trait__source_dataset__source_study_version__study=study)
         response = self.client.get(self.get_url())
         context = response.context
-        user_table = context['user_tagged_tables'][0][1]
-        self.assertNotIn(other_tagged_trait, user_table.data)
-        self.assertEqual(len(tagged_traits), len(user_table.rows))
+        study_data = context['user_taggedtraits'][0][0]
+        study_tag_data = context['user_taggedtraits'][0][1]
+        all_tagged_trait_pks = [[[el['taggedtrait_pk'] for el in taggedtraits] for tag, taggedtraits in tag_taggedtraits] for study, tag_taggedtraits in context['user_taggedtraits']]  # noqa
+        all_tagged_trait_pks = [x for y in all_tagged_trait_pks for x in y]  # Unnest once.
+        all_tagged_trait_pks = [x for y in all_tagged_trait_pks for x in y]  # Unnest twice.
+        self.assertNotIn(other_tagged_trait.pk, all_tagged_trait_pks)
+        self.assertEqual(sorted(all_tagged_trait_pks),
+                         list(TaggedTrait.objects.filter(creator=self.user).values_list('pk', flat=True)))
 
 
 class RecipeSubmitterLoginTestCaseProfileTest(RecipeSubmitterLoginTestCase):
@@ -151,18 +173,18 @@ class RecipeSubmitterLoginTestCaseProfileTest(RecipeSubmitterLoginTestCase):
         self.assertIn('show_recipes', context)
         self.assertIn('unit_recipe_table', context)
         self.assertIn('harmonization_recipe_table', context)
-        self.assertNotIn('user_tagged_tables', context)
-        self.assertNotIn('taggable_study_tagged_tables', context)
+        self.assertNotIn('user_taggedtraits', context)
+        self.assertNotIn('study_taggedtrait_counts', context)
 
-    def test_no_tagged_phenotypes(self):
-        """Regular user does not see My Tagged Phenotypes."""
+    def test_has_no_tagged_phenotypes_tabs(self):
+        """Recipe submitter does not see 'my tagged variables' or 'tagged variables in my studies'."""
         response = self.client.get(self.get_url())
         context = response.context
         self.assertNotContains(response, 'id="user_tagged_phenotypes"')
         self.assertNotContains(response, 'id="study_tagged_phenotypes"')
 
-    def test_no_recipes(self):
-        """Regular user does not see any recipes."""
+    def test_has_recipes_tabs(self):
+        """Recipe submitter sees both recipes tabs."""
         response = self.client.get(self.get_url())
         context = response.context
         self.assertTrue(context['show_recipes'])
@@ -206,17 +228,17 @@ class PhenotypeTaggerLoginTestCaseProfileTest(PhenotypeTaggerLoginTestCase):
         self.assertTrue(context['show_study_tagged'])
         self.assertNotIn('unit_recipe_table', context)
         self.assertNotIn('harmonization_recipe_table', context)
-        self.assertIn('user_tagged_tables', context)
-        self.assertIn('taggable_study_tagged_tables', context)
+        self.assertIn('user_taggedtraits', context)
+        self.assertIn('study_taggedtrait_counts', context)
 
-    def test_no_tagged_phenotypes(self):
+    def test_has_correct_tagged_phenotypes_tabs(self):
         """Tagger user does see My Tagged Phenotypes."""
         response = self.client.get(self.get_url())
         context = response.context
         self.assertContains(response, 'id="user_tagged_phenotypes"')
         self.assertContains(response, 'id="study_tagged_phenotypes"')
 
-    def test_no_recipes(self):
+    def test_has_no_recipes_tabs(self):
         """Regular user does not see any recipes."""
         response = self.client.get(self.get_url())
         context = response.context
@@ -224,25 +246,80 @@ class PhenotypeTaggerLoginTestCaseProfileTest(PhenotypeTaggerLoginTestCase):
         self.assertNotContains(response, 'id="unitrecipes"')
         self.assertNotContains(response, 'id="harmonizationrecipes"')
 
-    def test_has_correct_taggedtrait_count(self):
-        """Table of tagged traits by user and by study have the correct number of rows."""
-        # There are no tables at all (an empty tab) when there are no tagged traits for this DCC analyst.
+    def test_my_tagged_variables_correct_empty(self):
+        """The list of 'my tagged traits' is correct when the user has no taggedtraits."""
         response = self.client.get(self.get_url())
         context = response.context
-        self.assertEqual(context['user_tagged_tables'], [])
-        # Count in one table is correct when the user has tagged studies.
+        self.assertEqual(context['user_taggedtraits'], [])
+
+    def test_my_tagged_variables_correct_count(self):
+        """The list of 'my tagged traits' has the correct count of taggedtraits."""
+        study = StudyFactory.create()
         tagged_traits = TaggedTraitFactory.create_batch(
-            10, creator=self.user,
-            trait__source_dataset__source_study_version__study=self.study)
-        other_tagged_trait = TaggedTraitFactory.create(trait__source_dataset__source_study_version__study=self.study)
+            2, creator=self.user,
+            trait__source_dataset__source_study_version__study=study)
         response = self.client.get(self.get_url())
         context = response.context
-        user_table = context['user_tagged_tables'][0][1]
-        self.assertNotIn(other_tagged_trait, user_table.data)
-        self.assertEqual(len(tagged_traits), len(user_table.rows))
-        study_table = context['taggable_study_tagged_tables'][0][1]
-        self.assertIn(other_tagged_trait, study_table.data)
-        self.assertEqual(len(tagged_traits) + 1, len(study_table.rows))
+        study_data = context['user_taggedtraits'][0][0]
+        study_tag_data = context['user_taggedtraits'][0][1]
+        all_tagged_trait_pks = [[[el['taggedtrait_pk'] for el in taggedtraits] for tag, taggedtraits in tag_taggedtraits] for study, tag_taggedtraits in context['user_taggedtraits']]  # noqa
+        all_tagged_trait_pks = [x for y in all_tagged_trait_pks for x in y]  # Unnest once.
+        all_tagged_trait_pks = [x for y in all_tagged_trait_pks for x in y]  # Unnest twice.
+        self.assertEqual(sorted(all_tagged_trait_pks),
+                         list(TaggedTrait.objects.filter(creator=self.user).values_list('pk', flat=True)))
+
+    def test_my_tagged_variables_excludes_trait_tagged_by_other_user(self):
+        """The list of 'my tagged traits' does not include traits tagged by another user."""
+        study = StudyFactory.create()
+        tagged_traits = TaggedTraitFactory.create_batch(
+            2, creator=self.user,
+            trait__source_dataset__source_study_version__study=study)
+        other_tagged_trait = TaggedTraitFactory.create(trait__source_dataset__source_study_version__study=study)
+        response = self.client.get(self.get_url())
+        context = response.context
+        study_data = context['user_taggedtraits'][0][0]
+        study_tag_data = context['user_taggedtraits'][0][1]
+        all_tagged_trait_pks = [[[el['taggedtrait_pk'] for el in taggedtraits] for tag, taggedtraits in tag_taggedtraits] for study, tag_taggedtraits in context['user_taggedtraits']]  # noqa
+        all_tagged_trait_pks = [x for y in all_tagged_trait_pks for x in y]  # Unnest once.
+        all_tagged_trait_pks = [x for y in all_tagged_trait_pks for x in y]  # Unnest twice.
+        self.assertNotIn(other_tagged_trait.pk, all_tagged_trait_pks)
+        self.assertEqual(sorted(all_tagged_trait_pks),
+                         list(TaggedTrait.objects.filter(creator=self.user).values_list('pk', flat=True)))
+
+    def test_study_tagged_variables_correct_empty(self):
+        """The counts of 'tagged variables from my studies' is correct when the study and user have no taggedtraits."""
+        response = self.client.get(self.get_url())
+        context = response.context
+        self.assertEqual(context['study_taggedtrait_counts'], [])
+
+    def test_study_tagged_variables_correct_count(self):
+        """The counts of 'tagged variables from my studies' has the correct count of taggedtraits."""
+        user_tagged_trait = TaggedTraitFactory.create(creator=self.user,
+                                                      trait__source_dataset__source_study_version__study=self.study)
+        other_study_taggedtrait = TaggedTraitFactory.create()
+        response = self.client.get(self.get_url())
+        context = response.context
+        study_data = context['study_taggedtrait_counts']
+        self.assertEqual(self.user.profile.taggable_studies.count(), len(study_data))
+        study1_tag_pks = [el['tag_pk'] for el in study_data[0][1]]
+        self.assertIn(user_tagged_trait.tag.pk, study1_tag_pks)
+        self.assertNotIn(other_study_taggedtrait.tag.pk, study1_tag_pks)
+        self.assertEqual(study_data[0][1][0]['tt_count'], 1)
+
+    def test_study_tagged_variables_includes_trait_tagged_by_other_user(self):
+        """The counts of 'tagged variables from my studies' does include traits tagged by another user."""
+        user_tagged_trait = TaggedTraitFactory.create(creator=self.user,
+                                                      trait__source_dataset__source_study_version__study=self.study)
+        other_user_taggedtrait = TaggedTraitFactory.create(
+            tag=user_tagged_trait.tag,
+            trait__source_dataset__source_study_version__study=self.study)
+        response = self.client.get(self.get_url())
+        context = response.context
+        study_data = context['study_taggedtrait_counts']
+        self.assertEqual(self.user.profile.taggable_studies.count(), len(study_data))
+        study1_tag_pks = [el['tag_pk'] for el in study_data[0][1]]
+        self.assertIn(user_tagged_trait.tag.pk, study1_tag_pks)
+        self.assertEqual(study_data[0][1][0]['tt_count'], 2)
 
 
 class ProfilesLoginRequiredTestCase(LoginRequiredTestCase):

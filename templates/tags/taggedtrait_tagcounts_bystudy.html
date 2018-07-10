@@ -1,0 +1,38 @@
+{% extends '__base.html' %}
+
+{% block head_title %}
+| Tagged by study
+{% endblock head_title %}
+
+{% block content %}
+  {% include '_messages.html' %}
+
+<h2>Tagged variables by study</h2>
+
+<div class="panel panel-default">
+  <div class="table-responsive">
+    <table class='table table-bordered table-striped table-hover'>
+      <tr>
+        <th class='text-right'>Study</th>
+        <th class='text-left'>Variable count by tag</th>
+      </tr>
+
+      {% for study_data in taggedtrait_tag_counts_by_study %}
+        <tr>
+          <td class='text-right'>
+            <a href="{% url 'trait_browser:source:studies:pk:detail' pk=study_data.0.study_pk %}">{{ study_data.0.study_name }}</a>
+          </td>
+          <td class='text-left'>
+            {% for tag in study_data.1 %}
+              <a href="{% url 'tags:tag:study:list' pk=tag.tag_pk pk_study=tag.study_pk %}" class="btn btn-default btn-xs" role="button">
+              {{ tag.tag_name }}
+              <span class="badge">{{ tag.tt_count }}</span></a>
+            {% endfor %}
+          </td>
+        </tr>
+      {% endfor %}
+    </table>
+  </div>
+</div>
+
+{% endblock content %}

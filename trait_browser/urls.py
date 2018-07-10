@@ -6,7 +6,6 @@ urls will show up under /phenotypes.
 
 from django.conf.urls import include, url
 
-from tags.views import TaggedTraitByStudyList
 from . import views
 
 
@@ -67,7 +66,7 @@ source_study_dataset_patterns = ([
 source_study_trait_patterns = ([
     url(r'^$', views.StudySourceTraitList.as_view(), name='list'),
     url(r'^search/', views.StudySourceTraitSearch.as_view(), name='search'),
-    url(r'^tagged/$', TaggedTraitByStudyList.as_view(), name='tagged'),
+    url(r'^tagged/$', views.StudyTaggedTraitList.as_view(), name='tagged'),
 ], 'traits', )
 
 source_study_detail_patterns = ([

@@ -68,12 +68,16 @@
             Phenotype tags<span class="caret"></span></a>
           <ul class="dropdown-menu">
             <li>
-              <a href="{% url 'tags:list' %}"><span class="glyphicon glyphicon-list"></span>
+              <a href="{% url 'tags:list' %}"><span class="glyphicon glyphicon-tags"></span>
                 Phenotype tags</a>
             </li>
             <li>
-              <a href="{% url 'tags:tagged-traits:by-study' %}"><span class="glyphicon glyphicon-list"></span>
+              <a href="{% url 'tags:tagged-traits:by-study' %}"><span class="glyphicon glyphicon-th-large"></span>
                 Tagged variables by study</a>
+            </li>
+            <li>
+              <a href="{% url 'tags:tagged-traits:by-tag' %}"><span class="glyphicon glyphicon-th"></span>
+                Tagged variables by tag</a>
             </li>
             {% if perms.tags.add_taggedtrait %}
               <li>

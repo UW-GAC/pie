@@ -1995,6 +1995,52 @@ class StudySourceTraitListTest(UserLoginTestCase):
         self.assertEqual(len(table.rows), 0)
 
 
+class StudyTaggedTraitListTest(UserLoginTestCase):
+
+    def setUp(self):
+        super(StudyTaggedTraitListTest, self).setUp()
+        self.study = factories.StudyFactory.create()
+        self.tagged_traits = TaggedTraitFactory.create_batch(
+            10, trait__source_dataset__source_study_version__study=self.study)
+
+    def get_url(self, *args):
+        return reverse('trait_browser:source:studies:pk:traits:tagged', args=args)
+
+    def test_view_success_code(self):
+        """View returns successful response code."""
+        response = self.client.get(self.get_url(self.study.pk))
+        self.assertEqual(response.status_code, 200)
+
+    def test_view_with_invalid_pk(self):
+        """View returns 404 response code when the pk doesn't exist."""
+        response = self.client.get(self.get_url(self.study.pk + 1))
+        self.assertEqual(response.status_code, 404)
+
+    def test_context_data(self):
+        """View has appropriate data in the context."""
+        response = self.client.get(self.get_url(self.study.pk))
+        context = response.context
+        self.assertIn('study', context)
+        self.assertEqual(context['study'], self.study)
+        self.assertIn('tag_counts', context)
+        # Spot-check one of the tag counts.
+        self.assertEqual(context['tag_counts'][0]['tt_count'], 1)
+        # The button linking to this view should be present.
+        self.assertIn(self.get_url(self.study.pk), str(response.content))
+
+    def test_context_data_no_taggedtraits(self):
+        """View has appropriate data in the context and works when there are no tagged traits for the study."""
+        TaggedTrait.objects.all().delete()
+        response = self.client.get(self.get_url(self.study.pk))
+        context = response.context
+        self.assertIn('study', context)
+        self.assertEqual(context['study'], self.study)
+        self.assertIn('tag_counts', context)
+        self.assertEqual(len(context['tag_counts']), 0)
+        # The button linking to this view should not be present.
+        self.assertNotIn(self.get_url(self.study.pk), str(response.content))
+
+
 class PhenotypeTaggerSourceTraitTaggingTest(PhenotypeTaggerLoginTestCase):
 
     def setUp(self):

@@ -11,7 +11,6 @@ from core.utils import (LoginRequiredTestCase, PhenotypeTaggerLoginTestCase, Use
                         DCCAnalystLoginTestCase, DCCDeveloperLoginTestCase, get_autocomplete_view_ids)
 from trait_browser.factories import SourceTraitFactory, StudyFactory
 from trait_browser.models import SourceTrait
-from trait_browser.tables import SourceTraitTableFull
 from . import factories
 from . import models
 from . import tables
@@ -46,8 +45,6 @@ class TagDetailTest(UserLoginTestCase):
         context = response.context
         self.assertIn('tag', context)
         self.assertEqual(context['tag'], self.tag)
-        self.assertIn('tagged_trait_table', context)
-        self.assertIsInstance(context['tagged_trait_table'], SourceTraitTableFull)
 
     def test_no_tagging_button(self):
         """Regular user does not see a button to add tags on this detail page."""
@@ -120,28 +117,6 @@ class TagListTest(UserLoginTestCase):
         context = response.context
         self.assertTrue('tag_table' in context)
         self.assertIsInstance(context['tag_table'], tables.TagTable)
-
-
-class StudyTaggedTraitListTest(UserLoginTestCase):
-
-    def setUp(self):
-        super(StudyTaggedTraitListTest, self).setUp()
-        self.tagged_traits = factories.TaggedTraitFactory.create_batch(20)
-
-    def get_url(self, *args):
-        return reverse('tags:tagged-traits:by-study')
-
-    def test_view_success_code(self):
-        """View returns successful response code."""
-        response = self.client.get(self.get_url())
-        self.assertEqual(response.status_code, 200)
-
-    def test_context_data(self):
-        """View has appropriate data in the context."""
-        response = self.client.get(self.get_url())
-        context = response.context
-        self.assertTrue('study_table' in context)
-        self.assertIsInstance(context['study_table'], tables.StudyTaggedTraitTable)
 
 
 class TaggedTraitDetailTestsMixin(object):
@@ -274,114 +249,90 @@ class TaggedTraitDetailDCCAnalystTest(TaggedTraitDetailTestsMixin, DCCAnalystLog
         self.assertContains(response, dcc_review.comment)
 
 
-class TaggedTraitByStudyListTest(UserLoginTestCase):
+class TaggedTraitTagCountsByStudyTest(UserLoginTestCase):
 
     def setUp(self):
-        super(TaggedTraitByStudyListTest, self).setUp()
-        self.study = StudyFactory.create()
-        self.tagged_traits = factories.TaggedTraitFactory.create_batch(
-            10, trait__source_dataset__source_study_version__study=self.study)
+        super(TaggedTraitTagCountsByStudyTest, self).setUp()
+
+    def make_fake_data(self):
+        self.tags = factories.TagFactory.create_batch(2)
+        self.studies = StudyFactory.create_batch(2)
+        self.taggedtraits = []
+        for tag in self.tags:
+            for study in self.studies:
+                self.taggedtraits.append(
+                    factories.TaggedTraitFactory.create_batch(
+                        2, tag=tag, trait__source_dataset__source_study_version__study=study)
+                )
 
     def get_url(self, *args):
-        return reverse('trait_browser:source:studies:pk:traits:tagged', args=args)
+        return reverse('tags:tagged-traits:by-study')
 
     def test_view_success_code(self):
         """View returns successful response code."""
-        response = self.client.get(self.get_url(self.study.pk))
+        response = self.client.get(self.get_url())
         self.assertEqual(response.status_code, 200)
-
-    def test_view_with_invalid_pk(self):
-        """View returns 404 response code when the pk doesn't exist."""
-        response = self.client.get(self.get_url(self.study.pk + 1))
-        self.assertEqual(response.status_code, 404)
 
     def test_context_data(self):
         """View has appropriate data in the context."""
-        response = self.client.get(self.get_url(self.study.pk))
+        response = self.client.get(self.get_url())
         context = response.context
-        self.assertIn('study', context)
-        self.assertIn('tagged_trait_table', context)
-        self.assertEqual(context['study'], self.study)
+        self.assertIn('taggedtrait_tag_counts_by_study', context)
 
-    def test_table_class(self):
-        """For non-taggers, the tagged trait table class does not have delete buttons."""
-        response = self.client.get(self.get_url(self.study.pk))
+    def test_context_data_is_correct(self):
+        """Data in the context is correct."""
+        self.make_fake_data()
+        response = self.client.get(self.get_url())
         context = response.context
-        self.assertIsInstance(context['tagged_trait_table'], tables.TaggedTraitTable)
+        for study in context['taggedtrait_tag_counts_by_study']:
+            for tag in study[1]:
+                tag_study_count = models.TaggedTrait.objects.filter(
+                    tag__pk=tag['tag_pk'],
+                    trait__source_dataset__source_study_version__study__pk=study[0]['study_pk']).count()
+                self.assertEqual(tag['tt_count'], tag_study_count)
 
 
-class TaggedTraitByStudyListPhenotypeTaggerTest(PhenotypeTaggerLoginTestCase):
+class TaggedTraitStudyCountsByTagTest(UserLoginTestCase):
 
     def setUp(self):
-        super(TaggedTraitByStudyListPhenotypeTaggerTest, self).setUp()
-        self.tagged_traits = factories.TaggedTraitFactory.create_batch(
-            10, trait__source_dataset__source_study_version__study=self.study)
-        self.user.refresh_from_db()
-        self.user.profile.taggable_studies.add(self.study)
+        super(TaggedTraitStudyCountsByTagTest, self).setUp()
+
+    def make_fake_data(self):
+        self.tags = factories.TagFactory.create_batch(2)
+        self.studies = StudyFactory.create_batch(2)
+        self.taggedtraits = []
+        for tag in self.tags:
+            for study in self.studies:
+                self.taggedtraits.append(
+                    factories.TaggedTraitFactory.create_batch(
+                        2, tag=tag, trait__source_dataset__source_study_version__study=study)
+                )
 
     def get_url(self, *args):
-        return reverse('trait_browser:source:studies:pk:traits:tagged', args=args)
+        return reverse('tags:tagged-traits:by-tag')
 
     def test_view_success_code(self):
         """View returns successful response code."""
-        response = self.client.get(self.get_url(self.study.pk))
+        response = self.client.get(self.get_url())
         self.assertEqual(response.status_code, 200)
-
-    def test_view_with_invalid_pk(self):
-        """View returns 404 response code when the pk doesn't exist."""
-        response = self.client.get(self.get_url(self.study.pk + 1))
-        self.assertEqual(response.status_code, 404)
 
     def test_context_data(self):
         """View has appropriate data in the context."""
-        response = self.client.get(self.get_url(self.study.pk))
+        response = self.client.get(self.get_url())
         context = response.context
-        self.assertIn('study', context)
-        self.assertIn('tagged_trait_table', context)
-        self.assertEqual(context['study'], self.study)
+        self.assertIn('taggedtrait_study_counts_by_tag', context)
 
-    def test_table_class(self):
-        """For taggers, the tagged trait table class has delete buttons."""
-        response = self.client.get(self.get_url(self.study.pk))
+    def test_context_data_is_correct(self):
+        """Data in the context is correct."""
+        self.make_fake_data()
+        response = self.client.get(self.get_url())
         context = response.context
-        self.assertIsInstance(context['tagged_trait_table'], tables.TaggedTraitTableWithDelete)
-
-
-class TaggedTraitByStudyListDCCAnalystTest(DCCAnalystLoginTestCase):
-
-    def setUp(self):
-        super(TaggedTraitByStudyListDCCAnalystTest, self).setUp()
-        self.study = StudyFactory.create()
-        self.tagged_traits = factories.TaggedTraitFactory.create_batch(
-            10, trait__source_dataset__source_study_version__study=self.study)
-        self.user.refresh_from_db()
-
-    def get_url(self, *args):
-        return reverse('trait_browser:source:studies:pk:traits:tagged', args=args)
-
-    def test_view_success_code(self):
-        """View returns successful response code."""
-        response = self.client.get(self.get_url(self.study.pk))
-        self.assertEqual(response.status_code, 200)
-
-    def test_view_with_invalid_pk(self):
-        """View returns 404 response code when the pk doesn't exist."""
-        response = self.client.get(self.get_url(self.study.pk + 1))
-        self.assertEqual(response.status_code, 404)
-
-    def test_context_data(self):
-        """View has appropriate data in the context."""
-        response = self.client.get(self.get_url(self.study.pk))
-        context = response.context
-        self.assertIn('study', context)
-        self.assertIn('tagged_trait_table', context)
-        self.assertEqual(context['study'], self.study)
-
-    def test_table_class(self):
-        """For DCC Analysts, the tagged trait table class has delete buttons."""
-        response = self.client.get(self.get_url(self.study.pk))
-        context = response.context
-        self.assertIsInstance(context['tagged_trait_table'], tables.TaggedTraitTableWithDelete)
+        for tag in context['taggedtrait_study_counts_by_tag']:
+            for study in tag[1]:
+                study_tag_count = models.TaggedTrait.objects.filter(
+                    tag__pk=tag[0]['tag_pk'],
+                    trait__source_dataset__source_study_version__study__pk=study['study_pk']).count()
+                self.assertEqual(study['tt_count'], study_tag_count)
 
 
 class TaggedTraitByTagAndStudyListTest(UserLoginTestCase):
