@@ -26,11 +26,11 @@
         <div class="panel-body">
           {# Nav tabs #}
           <ul class="nav nav-tabs" role="tablist">
-            {% if show_my_tagged %}
-              <li role="presentation" class="active"><a href="#user_tagged_phenotypes" role="tab" data-toggle="tab">My Tagged Variables</a></li>
-            {% endif %}
             {% if show_study_tagged %}
-              <li role="presentation"><a href="#study_tagged_phenotypes" role="tab" data-toggle="tab">Tagged Variables in My Studies</a></li>
+              <li role="presentation" class="active"><a href="#study_tagged_phenotypes" role="tab" data-toggle="tab">Tagged Variables in My Studies</a></li>
+            {% endif %}
+            {% if show_my_tagged %}
+              <li role="presentation"><a href="#user_tagged_phenotypes" role="tab" data-toggle="tab">My Tagged Variables</a></li>
             {% endif %}
             {% if show_recipes %}
               <li role="presentation"><a href="#unitrecipes" role="tab" data-toggle="tab">My Unit Recipes</a></li>
@@ -41,19 +41,69 @@
           {# Tab panes #}
           <div class="tab-content">
             {% if show_my_tagged %}
-              <div role="tabpanel" class="tab-pane fade in active" id="user_tagged_phenotypes">
-                {% for study,taggedtrait_table in user_tagged_tables %}
-                  <h4><a href="{{ study.get_absolute_url }}">{{ study.i_study_name }}</a></h4>
-                  {% render_table taggedtrait_table %}
-                {% endfor %}
+              <div role="tabpanel" class="tab-pane fade" id="user_tagged_phenotypes">
+                <div class="table-responsive">
+                  <table class='table table-bordered table-striped'>
+                    <tr>
+                      <th class='text-center'>Study</th>
+                      <th class='text-center'>Tag</th>
+                      <th class='text-left'>Variables</th>
+                    </tr>
+                    {% for study_data in user_taggedtraits %}
+                      {% for tag_data in study_data.1 %}
+                        <tr>
+                          {% if forloop.first %}
+                            <td class='text-center' rowspan={{ study_data.1|length }}>
+                              <a href="{% url 'trait_browser:source:studies:pk:detail' pk=study_data.0.study_pk %}">
+                                {{ study_data.0.study_name }}
+                              </a>
+                            </td>
+                          {% endif %}
+                          <td class='text-center'>
+                            <a href="{% url 'tags:tag:study:list' pk=tag_data.0.tag_pk pk_study=study_data.0.study_pk %}">
+                              {{tag_data.0.tag_name}}
+                            </a>
+                          </td>
+                          <td class='text-left'>
+                            {% for variable in tag_data.1 %}
+                                <a class="btn btn-primary btn-xs" role="button" href="{% url 'tags:tagged-traits:detail' pk=variable.taggedtrait_pk %}">
+                                  {{ variable.variable_name }}</a>
+                            {% endfor %}
+                          </td>
+                        </tr>
+                      {% endfor %}
+                    {% endfor %}
+                  </table>
+                </div>
               </div>
             {% endif %}
             {% if show_study_tagged %}
-              <div role="tabpanel" class="tab-pane fade" id="study_tagged_phenotypes">
-                {% for study,taggedtrait_table in taggable_study_tagged_tables %}
-                  <h4><a href="{{ study.get_absolute_url }}">{{ study.i_study_name }}</a></h4>
-                  {% render_table taggedtrait_table %}
-                {% endfor %}
+              <div role="tabpanel" class="tab-pane fade in active" id="study_tagged_phenotypes">
+
+                <div class="table-responsive">
+                  <table class='table table-bordered table-striped table-hover'>
+                    <tr>
+                      <th class='text-right'>Study</th>
+                      <th class='text-left'>Variable count by tag</th>
+                    </tr>
+
+                    {% for study_data in study_taggedtrait_counts %}
+                      <tr>
+                        <td class='text-right'>
+                          <a href="{% url 'trait_browser:source:studies:pk:detail' pk=study_data.0.study_pk %}">{{ study_data.0.study_name }}</a>
+                        </td>
+                        <td class='text-left'>
+                          {% for tag in study_data.1 %}
+                            <a href="{% url 'tags:tag:study:list' pk=tag.tag_pk pk_study=tag.study_pk %}" class="btn btn-default btn-xs" role="button">
+                            {{ tag.tag_name }}
+                            <span class="badge">{{ tag.tt_count }}</span></a>
+                          {% endfor %}
+                        </td>
+                      </tr>
+                    {% endfor %}
+                  </table>
+                </div>
+
               </div>
             {% endif %}
             {% if show_recipes %}
