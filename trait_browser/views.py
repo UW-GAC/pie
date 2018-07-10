@@ -1,5 +1,6 @@
 """View functions and classes for the trait_browser app."""
 
+from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Count, F, Q
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404
@@ -376,9 +377,22 @@ class SourceTraitDetail(LoginRequiredMixin, DetailView):
         context = super(SourceTraitDetail, self).get_context_data(**kwargs)
         user_studies = list(self.request.user.profile.taggable_studies.all())
         context['user_is_study_tagger'] = self.object.source_dataset.source_study_version.study in user_studies
-        tagged_traits = self.object.taggedtrait_set.all()
+        context['show_tag_button'] = context['user_is_study_tagger'] or self.request.user.is_staff
+        tagged_traits = self.object.taggedtrait_set.all().order_by('tag__lower_title')
         tags = self.object.tag_set.all()
-        context['tag_tagged_trait_pairs'] = list(zip(tags, tagged_traits))
+        # If tagging is allowed, check on whether to show the delete button for each tag.
+        if context['show_tag_button']:
+            show_delete_buttons = []
+            for tt in tagged_traits:
+                try:
+                    tt.dcc_review
+                    show_delete_buttons.append(False)
+                except ObjectDoesNotExist:
+                    show_delete_buttons.append(True)
+        # Don't show the delete button to anyone if tagging is not allowed.
+        else:
+            show_delete_buttons = [False] * len(tagged_traits)
+        context['tag_tagged_trait_pairs'] = list(zip(tags, tagged_traits, show_delete_buttons))
         return context
 
 
