@@ -78,7 +78,7 @@ class Profile(LoginRequiredMixin, TemplateView):
                     tag_pk=F('tag__pk')).annotate(
                         tt_count=Count('pk')).values(
                             'study_name', 'study_pk', 'tag_name', 'tt_count', 'tag_pk').order_by(
-                                'study_name')
+                                'study_name', 'tag_name')
                 # Group by study and count.
                 study_taggedtrait_counts = groupby(study_taggedtrait_counts,
                                                    lambda x: {'study_name': x['study_name'],

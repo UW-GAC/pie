@@ -86,7 +86,7 @@ class TaggedTraitTagCountsByStudy(LoginRequiredMixin, TemplateView):
             tag_pk=F('tag__pk')).annotate(
                 tt_count=Count('pk')).values(
                     'study_name', 'study_pk', 'tag_name', 'tt_count', 'tag_pk').order_by(
-                        'study_name')
+                        'study_name', 'tag_name')
         grouped_annotated_studies = groupby(annotated_studies,
                                             lambda x: {'study_name': x['study_name'], 'study_pk': x['study_pk']})
         grouped_annotated_studies = [(key, list(group)) for key, group in grouped_annotated_studies]
@@ -107,7 +107,7 @@ class TaggedTraitStudyCountsByTag(LoginRequiredMixin, TemplateView):
             tag_pk=F('tag__pk')).annotate(
                 tt_count=Count('pk')).values(
                     'study_name', 'study_pk', 'tag_name', 'tt_count', 'tag_pk').order_by(
-                        'tag_name')
+                        'tag_name', 'study_name')
         grouped_annotated_tags = groupby(annotated_tags, lambda x: {'tag_name': x['tag_name'], 'tag_pk': x['tag_pk']})
         grouped_annotated_tags = [(key, list(group)) for key, group in grouped_annotated_tags]
         context['taggedtrait_study_counts_by_tag'] = grouped_annotated_tags
