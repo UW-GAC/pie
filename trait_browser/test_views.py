@@ -1744,7 +1744,7 @@ class SourceTraitDetailTest(UserLoginTestCase):
         response = self.client.get(self.get_url(self.trait.pk))
         context = response.context
         for tt in tagged_traits:
-            self.assertNotContains(response, reverse('tags:tagged-traits:delete', kwargs={'pk': tt.pk}))
+            self.assertNotContains(response, reverse('tags:tagged-traits:pk:delete', kwargs={'pk': tt.pk}))
 
     def test_no_tagging_button(self):
         """Regular user does not see a button to add tags on this detail page."""
@@ -1789,7 +1789,7 @@ class SourceTraitDetailPhenotypeTaggerTest(PhenotypeTaggerLoginTestCase):
         response = self.client.get(self.get_url(self.trait.pk))
         context = response.context
         for tt in tagged_traits:
-            self.assertContains(response, reverse('tags:tagged-traits:delete', kwargs={'pk': tt.pk}))
+            self.assertContains(response, reverse('tags:tagged-traits:pk:delete', kwargs={'pk': tt.pk}))
 
     def test_no_tagged_trait_remove_buttons_if_reviewed(self):
         """The tag removal button does not show up for reviewed tagged traits that need followup."""
@@ -1797,8 +1797,8 @@ class SourceTraitDetailPhenotypeTaggerTest(PhenotypeTaggerLoginTestCase):
         DCCReviewFactory.create(tagged_trait=tagged_traits[0], status=DCCReview.STATUS_FOLLOWUP, comment='foo')
         response = self.client.get(self.get_url(self.trait.pk))
         context = response.context
-        self.assertNotContains(response, reverse('tags:tagged-traits:delete', kwargs={'pk': tagged_traits[0].pk}))
-        self.assertContains(response, reverse('tags:tagged-traits:delete', kwargs={'pk': tagged_traits[1].pk}))
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:delete', kwargs={'pk': tagged_traits[0].pk}))
+        self.assertContains(response, reverse('tags:tagged-traits:pk:delete', kwargs={'pk': tagged_traits[1].pk}))
 
     def test_no_tagged_trait_remove_buttons_if_confirmed(self):
         """The tag removal button does not show up for confirmed tagged traits."""
@@ -1806,8 +1806,8 @@ class SourceTraitDetailPhenotypeTaggerTest(PhenotypeTaggerLoginTestCase):
         DCCReviewFactory.create(tagged_trait=tagged_traits[0], status=DCCReview.STATUS_CONFIRMED)
         response = self.client.get(self.get_url(self.trait.pk))
         context = response.context
-        self.assertNotContains(response, reverse('tags:tagged-traits:delete', kwargs={'pk': tagged_traits[0].pk}))
-        self.assertContains(response, reverse('tags:tagged-traits:delete', kwargs={'pk': tagged_traits[1].pk}))
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:delete', kwargs={'pk': tagged_traits[0].pk}))
+        self.assertContains(response, reverse('tags:tagged-traits:pk:delete', kwargs={'pk': tagged_traits[1].pk}))
 
     def test_no_tagged_trait_remove_button_for_other_study(self):
         """The tag removal button does not show up for a trait from another study."""
@@ -1815,7 +1815,7 @@ class SourceTraitDetailPhenotypeTaggerTest(PhenotypeTaggerLoginTestCase):
         tagged_trait = TaggedTrait.objects.create(tag=self.tag, trait=other_trait, creator=self.user)
         response = self.client.get(self.get_url(other_trait.pk))
         context = response.context
-        self.assertNotContains(response, reverse('tags:tagged-traits:delete', kwargs={'pk': self.tag.pk}))
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:delete', kwargs={'pk': self.tag.pk}))
 
     def test_has_tagging_button(self):
         """A phenotype tagger does see a button to add tags on this detail page."""
@@ -1867,7 +1867,7 @@ class SourceTraitDetailDCCAnalystTest(DCCAnalystLoginTestCase):
         response = self.client.get(self.get_url(self.trait.pk))
         context = response.context
         for tt in tagged_traits:
-            self.assertContains(response, reverse('tags:tagged-traits:delete', kwargs={'pk': tt.pk}))
+            self.assertContains(response, reverse('tags:tagged-traits:pk:delete', kwargs={'pk': tt.pk}))
 
     def test_no_tagged_trait_remove_buttons_if_reviewed(self):
         """The tag removal button does not show up for reviewed tagged traits that need followup."""
@@ -1875,8 +1875,8 @@ class SourceTraitDetailDCCAnalystTest(DCCAnalystLoginTestCase):
         DCCReviewFactory.create(tagged_trait=tagged_traits[0], status=DCCReview.STATUS_FOLLOWUP, comment='foo')
         response = self.client.get(self.get_url(self.trait.pk))
         context = response.context
-        self.assertNotContains(response, reverse('tags:tagged-traits:delete', kwargs={'pk': tagged_traits[0].pk}))
-        self.assertContains(response, reverse('tags:tagged-traits:delete', kwargs={'pk': tagged_traits[1].pk}))
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:delete', kwargs={'pk': tagged_traits[0].pk}))
+        self.assertContains(response, reverse('tags:tagged-traits:pk:delete', kwargs={'pk': tagged_traits[1].pk}))
 
     def test_no_tagged_trait_remove_buttons_if_confirmed(self):
         """The tag removal button does not show up for confirmed tagged traits."""
@@ -1884,8 +1884,8 @@ class SourceTraitDetailDCCAnalystTest(DCCAnalystLoginTestCase):
         DCCReviewFactory.create(tagged_trait=tagged_traits[0], status=DCCReview.STATUS_CONFIRMED)
         response = self.client.get(self.get_url(self.trait.pk))
         context = response.context
-        self.assertNotContains(response, reverse('tags:tagged-traits:delete', kwargs={'pk': tagged_traits[0].pk}))
-        self.assertContains(response, reverse('tags:tagged-traits:delete', kwargs={'pk': tagged_traits[1].pk}))
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:delete', kwargs={'pk': tagged_traits[0].pk}))
+        self.assertContains(response, reverse('tags:tagged-traits:pk:delete', kwargs={'pk': tagged_traits[1].pk}))
 
     def test_has_tagging_button(self):
         """A phenotype tagger does see a button to add tags on this detail page."""

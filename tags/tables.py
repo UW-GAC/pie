@@ -11,7 +11,7 @@ from . import models
 
 
 DETAIL_BUTTON_TEMPLATE = """
-<a class="btn btn-xs btn-info" href="{% url 'tags:tagged-traits:detail' record.pk %}" role="button">
+<a class="btn btn-xs btn-info" href="{% url 'tags:tagged-traits:pk:detail' record.pk %}" role="button">
   Details
 </a>
 """
@@ -89,7 +89,7 @@ class TaggedTraitDeleteButtonMixin(tables.Table):
         if hasattr(record, 'dcc_review'):
             classes.append('disabled')
         else:
-            url = reverse('tags:tagged-traits:delete', args=[record.pk])
+            url = reverse('tags:tagged-traits:pk:delete', args=[record.pk])
         html = html_template.format(classes=' '.join(classes), url=url)
         return mark_safe(html)
 

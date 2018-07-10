@@ -123,7 +123,7 @@ class TaggedTraitDetailTestsMixin(object):
     """Mixin to run standard tests for the TaggedTraitDetail view, for use with TestCase or subclass of TestCase."""
 
     def get_url(self, *args):
-        return reverse('tags:tagged-traits:detail', args=args)
+        return reverse('tags:tagged-traits:pk:detail', args=args)
 
     def test_view_success_code(self):
         """View returns successful response code."""
@@ -152,7 +152,7 @@ class TaggedTraitDetailTest(TaggedTraitDetailTestsMixin, UserLoginTestCase):
     def test_no_delete_button(self):
         """Regular user does not see a button to delete the tagged trait on this detail page."""
         response = self.client.get(self.get_url(self.tagged_trait.pk))
-        self.assertNotContains(response, reverse('tags:tagged-traits:delete', kwargs={'pk': self.tagged_trait.pk}))
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:delete', kwargs={'pk': self.tagged_trait.pk}))
 
     def test_no_dcc_review_info(self):
         """A regular user does not see DCC review info on this detail page."""
@@ -179,26 +179,26 @@ class TaggedTraitDetailPhenotypeTaggerTest(TaggedTraitDetailTestsMixin, Phenotyp
     def test_delete_button(self):
         """A phenotype tagger does see a button to delete the tagged trait."""
         response = self.client.get(self.get_url(self.tagged_trait.pk))
-        self.assertContains(response, reverse('tags:tagged-traits:delete', kwargs={'pk': self.tagged_trait.pk}))
+        self.assertContains(response, reverse('tags:tagged-traits:pk:delete', kwargs={'pk': self.tagged_trait.pk}))
 
     def test_delete_button_for_other_studies(self):
         """A phenotype tagger does see a button to delete the tagged trait."""
         tagged_trait = factories.TaggedTraitFactory.create()
         response = self.client.get(self.get_url(tagged_trait.pk))
-        self.assertNotContains(response, reverse('tags:tagged-traits:delete', kwargs={'pk': tagged_trait.pk}))
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:delete', kwargs={'pk': tagged_trait.pk}))
 
     def test_disabled_delete_button_for_reviewed_tagged_trait(self):
         """A phenotype tagger sees a disabled button to delete the tagged trait."""
         factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP,
                                           comment='foo')
         response = self.client.get(self.get_url(self.tagged_trait.pk))
-        self.assertNotContains(response, reverse('tags:tagged-traits:delete', kwargs={'pk': self.tagged_trait.pk}))
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:delete', kwargs={'pk': self.tagged_trait.pk}))
 
     def test_disabled_delete_button_for_confirmed_tagged_trait(self):
         """A phenotype tagger sees a disabled button to delete the tagged trait."""
         factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait, status=models.DCCReview.STATUS_CONFIRMED)
         response = self.client.get(self.get_url(self.tagged_trait.pk))
-        self.assertNotContains(response, reverse('tags:tagged-traits:delete', kwargs={'pk': self.tagged_trait.pk}))
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:delete', kwargs={'pk': self.tagged_trait.pk}))
 
     def test_dcc_review_info(self):
         """A phenotype tagger does not see DCC review info on this detail page."""
@@ -222,20 +222,20 @@ class TaggedTraitDetailDCCAnalystTest(TaggedTraitDetailTestsMixin, DCCAnalystLog
     def test_delete_button(self):
         """A DCC analyst does see a button to delete the tagged trait."""
         response = self.client.get(self.get_url(self.tagged_trait.pk))
-        self.assertContains(response, reverse('tags:tagged-traits:delete', kwargs={'pk': self.tagged_trait.pk}))
+        self.assertContains(response, reverse('tags:tagged-traits:pk:delete', kwargs={'pk': self.tagged_trait.pk}))
 
     def test_disabled_delete_button_for_reviewed_tagged_trait(self):
         """A phenotype tagger sees a disabled button to delete the tagged trait."""
         factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP,
                                           comment='foo')
         response = self.client.get(self.get_url(self.tagged_trait.pk))
-        self.assertNotContains(response, reverse('tags:tagged-traits:delete', kwargs={'pk': self.tagged_trait.pk}))
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:delete', kwargs={'pk': self.tagged_trait.pk}))
 
     def test_disabled_delete_button_for_confirmed_tagged_trait(self):
         """A phenotype tagger sees a disabled button to delete the tagged trait."""
         factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait, status=models.DCCReview.STATUS_CONFIRMED)
         response = self.client.get(self.get_url(self.tagged_trait.pk))
-        self.assertNotContains(response, reverse('tags:tagged-traits:delete', kwargs={'pk': self.tagged_trait.pk}))
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:delete', kwargs={'pk': self.tagged_trait.pk}))
 
     def test_dcc_review_info(self):
         """A DCC analyst does see DCC review info on this detail page."""
@@ -723,7 +723,7 @@ class TaggedTraitDeleteTest(PhenotypeTaggerLoginTestCase):
 
     def get_url(self, *args):
         """Get the url for the view this class is supposed to test."""
-        return reverse('tags:tagged-traits:delete', args=args)
+        return reverse('tags:tagged-traits:pk:delete', args=args)
 
     def test_view_success_code(self):
         """View returns successful response code."""
@@ -864,7 +864,7 @@ class TaggedTraitDeleteDCCAnalystTest(DCCAnalystLoginTestCase):
 
     def get_url(self, *args):
         """Get the url for the view this class is supposed to test."""
-        return reverse('tags:tagged-traits:delete', args=args)
+        return reverse('tags:tagged-traits:pk:delete', args=args)
 
     def test_view_success_code(self):
         """View returns successful response code."""
