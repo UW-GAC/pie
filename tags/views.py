@@ -337,8 +337,6 @@ class TaggedTraitReviewMixin(object):
     """Mixin to review TaggedTraits and add or update DCCReviews. Must be used with CreateView or UpdateView."""
 
     model = models.DCCReview
-    form_class = forms.DCCReviewByTagAndStudyForm
-
 
     def get_context_data(self, **kwargs):
         if 'tagged_trait' not in kwargs:
@@ -461,6 +459,7 @@ class TaggedTraitReviewByTagAndStudy(LoginRequiredMixin, PermissionRequiredMixin
     permission_required = 'tags.add_dccreview'
     raise_exception = True
     redirect_unauthenticated_users = True
+    form_class = forms.DCCReviewByTagAndStudyForm
 
     def handle_session_variables(self):
         # Check that expected session variables are set.
