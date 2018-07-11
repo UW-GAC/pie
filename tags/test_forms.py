@@ -330,11 +330,7 @@ class TagSpecificTraitFormTest(TestCase):
         self.assertTrue(form.has_error('tag'))
 
 
-class DCCReviewFormTest(TestCase):
-    form_class = forms.DCCReviewForm
-
-    def setUp(self):
-        self.tagged_trait = factories.TaggedTraitFactory.create()
+class DCCReviewFormTestMixin(object):
 
     def test_valid_if_need_review_with_comment(self):
         """Form is valid if the tagged trait needs followup and a comment is given."""
@@ -380,6 +376,15 @@ class DCCReviewFormTest(TestCase):
         form = self.form_class(form_data)
         self.assertFalse(form.is_valid())
         self.assertTrue(form.has_error('status'))
+
+
+class DCCReviewFormTest(DCCReviewFormTestMixin, TestCase):
+
+    form_class = forms.DCCReviewForm
+
+    def setUp(self):
+        self.tagged_trait = factories.TaggedTraitFactory.create()
+
 
 
 class DCCReviewAdminFormTest(TestCase):
