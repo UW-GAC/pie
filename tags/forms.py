@@ -436,6 +436,24 @@ class DCCReviewByTagAndStudyForm(DCCReviewBaseForm):
         pass
 
 
+class DCCReviewForm(DCCReviewBaseForm):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.layout = Layout(
+            'status',
+            'comment',
+            FormActions(
+                Submit(self.SUBMIT_CONFIRM, 'Confirm'),
+                SubmitCssClass(self.SUBMIT_FOLLOWUP, 'Require study followup', css_class='btn-warning')
+            )
+        )
+
+    class Meta(DCCReviewBaseForm.Meta):
+        pass
+
+
 class DCCReviewAdminForm(DCCReviewBaseForm):
 
     class Meta:

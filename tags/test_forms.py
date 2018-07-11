@@ -386,6 +386,14 @@ class DCCReviewByTagAndStudyFormTest(DCCReviewFormTestMixin, TestCase):
         self.tagged_trait = factories.TaggedTraitFactory.create()
 
 
+class DCCReviewFormTest(DCCReviewFormTestMixin, TestCase):
+
+    form_class = forms.DCCReviewForm
+
+    def setUp(self):
+        self.tagged_trait = factories.TaggedTraitFactory.create()
+
+
 class DCCReviewAdminFormTest(TestCase):
     form_class = forms.DCCReviewAdminForm
 
