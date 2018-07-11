@@ -10,14 +10,14 @@
 {% block content %}
   <h1>
     {{ form.title }}
-    {% if trait %}
+    {% if trait is not None %}
       <small><mark>{{ trait.i_trait_name }}</mark></small>
     {% endif %}
     
     <p><small>{{ form.subtitle }}</small></p>
   </h1>
   <p>{{ form.subtitle2 }}</p>
-  {% if trait %}
+  {% if trait is not None %}
     <p>Study variable <a href="{{ trait.get_absolute_url }}">{{ trait.i_trait_name }}</a>
       from dataset <a href="{{ trait.source_dataset.get_absolute_url }}">{{ trait.source_dataset.dataset_name }}</a></p>
   {% endif %}
