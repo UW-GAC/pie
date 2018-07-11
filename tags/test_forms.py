@@ -378,13 +378,12 @@ class DCCReviewFormTestMixin(object):
         self.assertTrue(form.has_error('status'))
 
 
-class DCCReviewFormTest(DCCReviewFormTestMixin, TestCase):
+class DCCReviewByTagAndStudyFormTest(DCCReviewFormTestMixin, TestCase):
 
-    form_class = forms.DCCReviewForm
+    form_class = forms.DCCReviewByTagAndStudyForm
 
     def setUp(self):
         self.tagged_trait = factories.TaggedTraitFactory.create()
-
 
 
 class DCCReviewAdminFormTest(TestCase):

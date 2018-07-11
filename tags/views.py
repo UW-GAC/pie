@@ -337,7 +337,8 @@ class TaggedTraitReviewMixin(object):
     """Mixin to review TaggedTraits and add or update DCCReviews. Must be used with CreateView or UpdateView."""
 
     model = models.DCCReview
-    form_class = forms.DCCReviewForm
+    form_class = forms.DCCReviewByTagAndStudyForm
+
 
     def get_context_data(self, **kwargs):
         if 'tagged_trait' not in kwargs:
@@ -497,7 +498,7 @@ class TaggedTraitReviewByTagAndStudy(LoginRequiredMixin, PermissionRequiredMixin
         return context
 
     def post(self, request, *args, **kwargs):
-        if forms.DCCReviewForm.SUBMIT_SKIP in request.POST:
+        if self.form_class.SUBMIT_SKIP in request.POST:
             # Remove the reviewed tagged trait from the list of pks.
             self._update_session_variables()
             return HttpResponseRedirect(reverse('tags:tagged-traits:review:next'))

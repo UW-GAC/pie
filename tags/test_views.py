@@ -2211,7 +2211,7 @@ class TaggedTraitReviewByTagAndStudyDCCTestsMixin(object):
         response = self.client.get(self.get_url())
         context = response.context
         self.assertIn('form', context)
-        self.assertIsInstance(context['form'], forms.DCCReviewForm)
+        self.assertIsInstance(context['form'], forms.DCCReviewByTagAndStudyForm)
         self.assertIn('tagged_trait', context)
         self.assertEqual(context['tagged_trait'], self.tagged_trait)
         self.assertIn('tag', context)
@@ -2230,7 +2230,7 @@ class TaggedTraitReviewByTagAndStudyDCCTestsMixin(object):
         response = self.client.get(self.get_url())
         context = response.context
         self.assertIn('form', context)
-        self.assertIsInstance(context['form'], forms.DCCReviewForm)
+        self.assertIsInstance(context['form'], forms.DCCReviewByTagAndStudyForm)
         self.assertIn('tagged_trait', context)
         self.assertEqual(context['tagged_trait'], self.tagged_trait)
         self.assertIn('tag', context)
@@ -2242,7 +2242,7 @@ class TaggedTraitReviewByTagAndStudyDCCTestsMixin(object):
 
     def test_successful_post_with_confirmed_tagged_trait(self):
         """Posting valid data to the form correctly creates a DCCReview."""
-        form_data = {forms.DCCReviewForm.SUBMIT_CONFIRM: 'Confirm', 'comment': ''}
+        form_data = {forms.DCCReviewByTagAndStudyForm.SUBMIT_CONFIRM: 'Confirm', 'comment': ''}
         response = self.client.post(self.get_url(), form_data)
         # Correctly creates a DCCReview for this TaggedTrait.
         dcc_review = models.DCCReview.objects.all().latest('created')
@@ -2261,7 +2261,7 @@ class TaggedTraitReviewByTagAndStudyDCCTestsMixin(object):
 
     def test_successful_post_with_needs_followup_tagged_trait(self):
         """Posting valid data to the form correctly creates a DCCReview."""
-        form_data = {forms.DCCReviewForm.SUBMIT_FOLLOWUP: 'Require study followup', 'comment': 'foo'}
+        form_data = {forms.DCCReviewByTagAndStudyForm.SUBMIT_FOLLOWUP: 'Require study followup', 'comment': 'foo'}
         response = self.client.post(self.get_url(), form_data)
         # Correctly creates a DCCReview for this TaggedTrait.
         dcc_review = models.DCCReview.objects.all().latest('created')
@@ -2280,7 +2280,7 @@ class TaggedTraitReviewByTagAndStudyDCCTestsMixin(object):
 
     def test_post_bad_data(self):
         """Posting bad data to the form shows a form error and doesn't unset session variables."""
-        form_data = {forms.DCCReviewForm.SUBMIT_FOLLOWUP: 'Require study followup', 'comment': ''}
+        form_data = {forms.DCCReviewByTagAndStudyForm.SUBMIT_FOLLOWUP: 'Require study followup', 'comment': ''}
         response = self.client.post(self.get_url(), form_data)
         self.assertEqual(response.status_code, 200)
         # Does not create a DCCReview for this TaggedTrait.
@@ -2297,7 +2297,7 @@ class TaggedTraitReviewByTagAndStudyDCCTestsMixin(object):
 
     def test_skip_tagged_trait(self):
         """Skipping a TaggedTrait unsets pk and redirects to the next view."""
-        form_data = {forms.DCCReviewForm.SUBMIT_SKIP: 'Skip'}
+        form_data = {forms.DCCReviewByTagAndStudyForm.SUBMIT_SKIP: 'Skip'}
         response = self.client.post(self.get_url(), form_data)
         # Does not create a DCCReview for this TaggedTrait.
         self.assertFalse(hasattr(self.tagged_trait, 'dcc_review'))
@@ -2325,7 +2325,7 @@ class TaggedTraitReviewByTagAndStudyDCCTestsMixin(object):
             comment='a comment'
         )
         # Now try to review it through the web interface.
-        form_data = {forms.DCCReviewForm.SUBMIT_CONFIRM: 'Confirm', 'comment': ''}
+        form_data = {forms.DCCReviewByTagAndStudyForm.SUBMIT_CONFIRM: 'Confirm', 'comment': ''}
         response = self.client.post(self.get_url(), form_data)
         # Check session variables.
         self.assertIn('tagged_trait_review_by_tag_and_study_info', self.client.session)
@@ -2349,7 +2349,7 @@ class TaggedTraitReviewByTagAndStudyDCCTestsMixin(object):
             comment=''
         )
         # Now try to review it through the web interface.
-        form_data = {forms.DCCReviewForm.SUBMIT_FOLLOWUP: 'Require study followup', 'comment': ''}
+        form_data = {forms.DCCReviewByTagAndStudyForm.SUBMIT_FOLLOWUP: 'Require study followup', 'comment': ''}
         response = self.client.post(self.get_url(), form_data)
         # Check session variables.
         self.assertIn('tagged_trait_review_by_tag_and_study_info', self.client.session)
@@ -2373,7 +2373,7 @@ class TaggedTraitReviewByTagAndStudyDCCTestsMixin(object):
             comment=''
         )
         # Now try to review it through the web interface.
-        form_data = {forms.DCCReviewForm.SUBMIT_SKIP: 'Skip', 'comment': ''}
+        form_data = {forms.DCCReviewByTagAndStudyForm.SUBMIT_SKIP: 'Skip', 'comment': ''}
         response = self.client.post(self.get_url(), form_data)
         # Check session variables.
         self.assertIn('tagged_trait_review_by_tag_and_study_info', self.client.session)

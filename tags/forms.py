@@ -413,7 +413,7 @@ class SubmitCssClass(Submit):
             self.field_classes = 'btn {}'.format(css_class)
 
 
-class DCCReviewForm(DCCReviewBaseForm):
+class DCCReviewByTagAndStudyForm(DCCReviewBaseForm):
     """Form for creating a single DCCReview object."""
 
     SUBMIT_SKIP = 'skip'
