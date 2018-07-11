@@ -522,6 +522,10 @@ class TaggedTraitReviewByTagAndStudy(LoginRequiredMixin, PermissionRequiredMixin
         return reverse('tags:tagged-traits:review:next')
 
 
+class TaggedTraitReviewCreate(TemplateView):
+    template_name = 'home.html'
+
+
 class TagAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
     """View for autocompleting tag model choice fields by title in a form. Case-insensitive."""
 
