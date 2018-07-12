@@ -2029,6 +2029,10 @@ class TaggedTraitReviewByTagAndStudyNextDCCTestsMixin(object):
         self.assertIn('pk', session['tagged_trait_review_by_tag_and_study_info'])
         self.assertEqual(session['tagged_trait_review_by_tag_and_study_info']['pk'], tagged_trait.pk)
         self.assertRedirects(response, reverse('tags:tagged-traits:review:review'))
+        # Check messages.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('You have 1 tagged variable left to review.', str(messages[0]))
 
     def test_view_success_with_no_tagged_traits_left(self):
         """View redirects correctly when no tagged traits are left to review."""
@@ -2043,6 +2047,9 @@ class TaggedTraitReviewByTagAndStudyNextDCCTestsMixin(object):
         session.save()
         response = self.client.get(self.get_url())
         self.assertRedirects(response, reverse('tags:tag:study:list', args=[tag.pk, study.pk]))
+        # Check that there are no messages.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 0)
 
     def test_session_variables_are_unset_when_reviewing_completed(self):
         """View unsets session variables when no tagged traits are left to review."""
@@ -2081,6 +2088,9 @@ class TaggedTraitReviewByTagAndStudyNextDCCTestsMixin(object):
         self.assertEqual(session_info['tagged_trait_pks'], [tagged_traits[1].pk])
         self.assertNotIn('pk', session_info)
         self.assertRedirects(response, reverse('tags:tagged-traits:review:next'), target_status_code=302)
+        # Check that there are no messages.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 0)
 
     def test_skips_deleted_tagged_trait(self):
         tag = factories.TagFactory.create()

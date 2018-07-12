@@ -397,7 +397,7 @@ class TaggedTraitReviewByTagAndStudySelect(LoginRequiredMixin, PermissionRequire
 
 
 class TaggedTraitReviewByTagAndStudyNext(LoginRequiredMixin, PermissionRequiredMixin, SessionVariableMixin,
-                                         RedirectView):
+                                         MessageMixin, RedirectView):
     """Determine the next tagged trait to review and redirect to review page."""
 
     permission_required = 'tags.add_dccreview'
@@ -415,6 +415,10 @@ class TaggedTraitReviewByTagAndStudyNext(LoginRequiredMixin, PermissionRequiredM
             if key not in session_info:
                 del self.request.session['tagged_trait_review_by_tag_and_study_info']
                 return HttpResponseRedirect(reverse('tags:tagged-traits:review:select'))
+        # All variables exist; set view attributes.
+        self.tag = get_object_or_404(models.Tag, pk=session_info['tag_pk'])
+        self.study = get_object_or_404(Study, pk=session_info['study_pk'])
+        self.pks = session_info['tagged_trait_pks']
 
     def _skip_next_tagged_trait(self):
         info = self.request.session['tagged_trait_review_by_tag_and_study_info']
@@ -427,10 +431,9 @@ class TaggedTraitReviewByTagAndStudyNext(LoginRequiredMixin, PermissionRequiredM
             # The expected session variable has not been set by the previous
             # view, so redirect to that view.
             return reverse('tags:tagged-traits:review:select')
-        pks = info.get('tagged_trait_pks')
-        if len(pks) > 0:
+        if len(self.pks) > 0:
             # Set the session variable expected by the review view, then redirect.
-            pk = pks[0]
+            pk = self.pks[0]
             try:
                 tt = models.TaggedTrait.objects.get(pk=pk)
             except ObjectDoesNotExist:
@@ -441,6 +444,19 @@ class TaggedTraitReviewByTagAndStudyNext(LoginRequiredMixin, PermissionRequiredM
                 return reverse('tags:tagged-traits:review:next')
             info['pk'] = pk
             self.request.session['tagged_trait_review_by_tag_and_study_info'] = info
+            # Add a message.
+            msg = ("""You are reviewing variables tagged with <a href="{tag_url}">{tag}</a> """
+                   """from study <a href="{study_url}">{study_name}</a>. You have {n_pks} """
+                   """tagged variable{s} left to review.""")
+            msg = msg.format(
+                tag_url=self.tag.get_absolute_url(),
+                tag=self.tag.lower_title,
+                study_url=self.study.get_absolute_url(),
+                study_name=self.study.i_study_name,
+                n_pks=len(self.pks),
+                s='s' if len(self.pks) > 1 else ''
+            )
+            self.messages.info(mark_safe(msg))
             return reverse('tags:tagged-traits:review:review')
         else:
             # All TaggedTraits have been reviewed! Redirect to the tag-study table.

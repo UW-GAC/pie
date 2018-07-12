@@ -10,12 +10,6 @@
 
   {% include '_messages.html' %}
 
-  <div class="alert alert-info" role="alert">
-    You are reviewing variables tagged with <a href="{{ tag.get_absolute_url }}">{{ tag.lower_title }}</a>
-    from study <a href="{{ study.get_absolute_url }}">{{ study.i_study_name }}</a>. You have {{ n_tagged_traits_remaining }}
-    tagged variable{{ n_tagged_traits_remaining|pluralize }} left to review.
-  </div>
-
   <h2>
     Review <a href='{{ tagged_trait.get_absolute_url }}'>{{ tagged_trait }}</a>
   </h2>
