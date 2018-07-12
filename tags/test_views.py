@@ -165,6 +165,17 @@ class TaggedTraitDetailTest(TaggedTraitDetailTestsMixin, UserLoginTestCase):
         self.assertNotContains(response, dcc_review.get_status_display())
         self.assertNotContains(response, dcc_review.comment)
 
+    def test_unreviewed_tagged_trait_missing_link_to_review(self):
+        """An unreviewed tagged trait does not include a link to review for regular users."""
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:review:new', args=[self.tagged_trait.pk]))
+
+    def test_reviewed_tagged_trait_missing_link_to_udpate(self):
+        """A reviewed tagged trait does not include a link to update the DCCReview for regular users."""
+        factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait)
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:review:update', args=[self.tagged_trait.pk]))
+
 
 class TaggedTraitDetailPhenotypeTaggerTest(TaggedTraitDetailTestsMixin, PhenotypeTaggerLoginTestCase):
 
@@ -211,6 +222,17 @@ class TaggedTraitDetailPhenotypeTaggerTest(TaggedTraitDetailTestsMixin, Phenotyp
         self.assertNotContains(response, dcc_review.get_status_display())
         self.assertNotContains(response, dcc_review.comment)
 
+    def test_unreviewed_tagged_trait_missing_link_to_review(self):
+        """An unreviewed tagged trait does not include a link to review for Phenotype taggers."""
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:review:new', args=[self.tagged_trait.pk]))
+
+    def test_reviewed_tagged_trait_missing_link_to_udpate(self):
+        """A reviewed tagged trait does not include a link to update the DCCReview for Phenotype taggers."""
+        factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait)
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:review:update', args=[self.tagged_trait.pk]))
+
 
 class TaggedTraitDetailDCCAnalystTest(TaggedTraitDetailTestsMixin, DCCAnalystLoginTestCase):
 
@@ -247,6 +269,17 @@ class TaggedTraitDetailDCCAnalystTest(TaggedTraitDetailTestsMixin, DCCAnalystLog
         response = self.client.get(self.get_url(self.tagged_trait.pk))
         self.assertContains(response, dcc_review.get_status_display())
         self.assertContains(response, dcc_review.comment)
+
+    def test_unreviewed_tagged_trait_includes_link_to_review(self):
+        """An unreviewed tagged trait includes a link to review for DCC users."""
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        self.assertContains(response, reverse('tags:tagged-traits:pk:review:new', args=[self.tagged_trait.pk]))
+
+    def test_reviewed_tagged_trait_includes_link_to_udpate(self):
+        """A reviewed tagged trait includes a link to update the DCCReview for DCC users."""
+        factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait)
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        self.assertContains(response, reverse('tags:tagged-traits:pk:review:update', args=[self.tagged_trait.pk]))
 
 
 class TaggedTraitTagCountsByStudyTest(UserLoginTestCase):
