@@ -522,8 +522,35 @@ class TaggedTraitReviewByTagAndStudy(LoginRequiredMixin, PermissionRequiredMixin
         return reverse('tags:tagged-traits:review:next')
 
 
-class TaggedTraitReviewCreate(TemplateView):
-    template_name = 'home.html'
+class TaggedTraitReviewCreate(LoginRequiredMixin, PermissionRequiredMixin, FormValidMessageMixin,
+                              TaggedTraitReviewMixin, CreateView):
+
+    template_name = 'tags/dccreview_form.html'
+    permission_required = 'tags.add_dccreview'
+    raise_exception = True
+    redirect_unauthenticated_users = True
+    form_class = forms.DCCReviewForm
+
+    def get(self, request, *args, **kwargs):
+        self.tagged_trait = get_object_or_404(models.TaggedTrait, pk=kwargs['pk'])
+        if hasattr(self.tagged_trait, 'dcc_review'):
+            self.messages.warning('{} has already been reviewed.'.format(self.tagged_trait))
+            return HttpResponseRedirect(self.tagged_trait.get_absolute_url())
+        return super().get(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        self.tagged_trait = get_object_or_404(models.TaggedTrait, pk=kwargs['pk'])
+        if hasattr(self.tagged_trait, 'dcc_review'):
+            self.messages.warning('{} has already been reviewed.'.format(self.tagged_trait))
+            return HttpResponseRedirect(self.tagged_trait.get_absolute_url())
+        return super().post(request, *args, **kwargs)
+
+    def get_form_valid_message(self):
+        msg = 'Successfully reviewed {}.'.format(self.tagged_trait)
+        return msg
+
+    def get_success_url(self):
+        return self.tagged_trait.get_absolute_url()
 
 
 class TagAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
