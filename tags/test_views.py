@@ -2513,7 +2513,7 @@ class TaggedTraitReviewByTagAndStudyOtherUserTest(UserLoginTestCase):
         self.assertNotContains(response, """<a href="{}">""".format(self.get_url()))
 
 
-class TaggedTraitReviewDCCTestsMixin(object):
+class DCCReviewCreateDCCTestsMixin(object):
 
     def setUp(self):
         super().setUp()
@@ -2643,19 +2643,19 @@ class TaggedTraitReviewDCCTestsMixin(object):
         self.assertEqual(self.tagged_trait.dcc_review, dcc_review)
 
 
-class TaggedTraitReviewDCCAnalystTest(TaggedTraitReviewDCCTestsMixin, DCCAnalystLoginTestCase):
+class DCCReviewCreateDCCAnalystTest(DCCReviewCreateDCCTestsMixin, DCCAnalystLoginTestCase):
 
-    # Run all tests in TaggedTraitReviewDCCTestsMixin, as a DCC analyst.
+    # Run all tests in DCCReviewCreateDCCTestsMixin, as a DCC analyst.
     pass
 
 
-class TaggedTraitReviewDCCDeveloperTest(TaggedTraitReviewDCCTestsMixin, DCCDeveloperLoginTestCase):
+class DCCReviewCreateDCCDeveloperTest(DCCReviewCreateDCCTestsMixin, DCCDeveloperLoginTestCase):
 
-    # Run all tests in TaggedTraitReviewDCCTestsMixin, as a DCC developer.
+    # Run all tests in DCCReviewCreateDCCTestsMixin, as a DCC developer.
     pass
 
 
-class TaggedTraitReviewOtherUserTest(UserLoginTestCase):
+class DCCReviewCreateOtherUserTest(UserLoginTestCase):
 
     def setUp(self):
         super().setUp()
@@ -2688,7 +2688,7 @@ class TaggedTraitReviewOtherUserTest(UserLoginTestCase):
         self.assertEqual(response.status_code, 403)
 
 
-class TaggedTraitReviewUpdateDCCTestsMixin(object):
+class DCCReviewUpdateDCCTestsMixin(object):
 
     def setUp(self):
         super().setUp()
@@ -2787,19 +2787,19 @@ class TaggedTraitReviewUpdateDCCTestsMixin(object):
         self.assertEqual(response.status_code, 404)
 
 
-class TaggedTraitReviewUpdateDCCAnalystTest(TaggedTraitReviewUpdateDCCTestsMixin, DCCAnalystLoginTestCase):
+class DCCReviewUpdateDCCAnalystTest(DCCReviewUpdateDCCTestsMixin, DCCAnalystLoginTestCase):
 
-    # Run all tests in TaggedTraitReviewDCCTestsMixin, as a DCC analyst.
+    # Run all tests in DCCReviewDCCTestsMixin, as a DCC analyst.
     pass
 
 
-class TaggedTraitReviewUpdateDCCDeveloperTest(TaggedTraitReviewUpdateDCCTestsMixin, DCCDeveloperLoginTestCase):
+class DCCReviewUpdateDCCDeveloperTest(DCCReviewUpdateDCCTestsMixin, DCCDeveloperLoginTestCase):
 
-    # Run all tests in TaggedTraitReviewDCCTestsMixin, as a DCC developer.
+    # Run all tests in DCCReviewDCCTestsMixin, as a DCC developer.
     pass
 
 
-class TaggedTraitReviewUpdateOtherUserTest(UserLoginTestCase):
+class DCCReviewUpdateOtherUserTest(UserLoginTestCase):
 
     def setUp(self):
         super().setUp()

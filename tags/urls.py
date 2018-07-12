@@ -38,8 +38,8 @@ tagged_trait_review_by_tag_and_study_patterns = ([
 ], 'review')
 
 single_tagged_trait_review_patterns = ([
-    url(r'^new/$', views.TaggedTraitReviewCreate.as_view(), name='new'),
-    url(r'^update/$', views.TaggedTraitReviewUpdate.as_view(), name='update'),
+    url(r'^new/$', views.DCCReviewCreate.as_view(), name='new'),
+    url(r'^update/$', views.DCCReviewUpdate.as_view(), name='update'),
 ], 'review')
 
 single_tagged_trait_patterns = ([

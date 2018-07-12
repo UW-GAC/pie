@@ -522,8 +522,8 @@ class TaggedTraitReviewByTagAndStudy(LoginRequiredMixin, PermissionRequiredMixin
         return reverse('tags:tagged-traits:review:next')
 
 
-class TaggedTraitReviewCreate(LoginRequiredMixin, PermissionRequiredMixin, FormValidMessageMixin,
-                              TaggedTraitReviewMixin, CreateView):
+class DCCReviewCreate(LoginRequiredMixin, PermissionRequiredMixin, FormValidMessageMixin, TaggedTraitReviewMixin,
+                      CreateView):
 
     template_name = 'tags/dccreview_form.html'
     permission_required = 'tags.add_dccreview'
@@ -553,8 +553,8 @@ class TaggedTraitReviewCreate(LoginRequiredMixin, PermissionRequiredMixin, FormV
         return self.tagged_trait.get_absolute_url()
 
 
-class TaggedTraitReviewUpdate(LoginRequiredMixin, PermissionRequiredMixin, FormValidMessageMixin,
-                              TaggedTraitReviewMixin, UpdateView):
+class DCCReviewUpdate(LoginRequiredMixin, PermissionRequiredMixin, FormValidMessageMixin, TaggedTraitReviewMixin,
+                      UpdateView):
 
     template_name = 'tags/dccreview_form.html'
     permission_required = 'tags.add_dccreview'
