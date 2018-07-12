@@ -8,7 +8,7 @@ from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django.shortcuts import get_object_or_404
 from django.utils.safestring import mark_safe
-from django.views.generic import CreateView, DetailView, DeleteView, FormView, ListView, TemplateView, RedirectView
+from django.views.generic import CreateView, DetailView, DeleteView, FormView, ListView, TemplateView, UpdateView, RedirectView
 
 from braces.views import (FormMessagesMixin, FormValidMessageMixin, LoginRequiredMixin, MessageMixin,
                           PermissionRequiredMixin, UserFormKwargsMixin, UserPassesTestMixin)
@@ -553,8 +553,26 @@ class TaggedTraitReviewCreate(LoginRequiredMixin, PermissionRequiredMixin, FormV
         return self.tagged_trait.get_absolute_url()
 
 
-class TaggedTraitReviewUpdate(TemplateView):
-    template_name = 'home.html'
+class TaggedTraitReviewUpdate(LoginRequiredMixin, PermissionRequiredMixin, FormValidMessageMixin,
+                              TaggedTraitReviewMixin, UpdateView):
+
+    template_name = 'tags/dccreview_form.html'
+    permission_required = 'tags.add_dccreview'
+    raise_exception = True
+    redirect_unauthenticated_users = True
+    form_class = forms.DCCReviewForm
+
+    def get_object(self, queryset=None):
+        self.tagged_trait = get_object_or_404(models.TaggedTrait, pk=self.kwargs['pk'])
+        obj = get_object_or_404(models.DCCReview, tagged_trait=self.tagged_trait)
+        return obj
+
+    def get_form_valid_message(self):
+        msg = 'Successfully updated {}.'.format(self.tagged_trait)
+        return msg
+
+    def get_success_url(self):
+        return self.tagged_trait.get_absolute_url()
 
 
 class TagAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):

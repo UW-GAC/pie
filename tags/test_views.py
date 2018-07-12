@@ -2688,6 +2688,139 @@ class TaggedTraitReviewOtherUserTest(UserLoginTestCase):
         self.assertEqual(response.status_code, 403)
 
 
+class TaggedTraitReviewUpdateDCCTestsMixin(object):
+
+    def setUp(self):
+        super().setUp()
+        self.tagged_trait = factories.TaggedTraitFactory.create()
+        factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait)
+
+    def get_url(self, *args):
+        """Get the url for the view this class is supposed to test."""
+        return reverse('tags:tagged-traits:pk:review:update', args=args)
+
+    def test_view_success_code(self):
+        """View returns successful response code."""
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        self.assertEqual(response.status_code, 200)
+
+    def test_context_data(self):
+        """View has appropriate data in the context."""
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        context = response.context
+        self.assertIn('form', context)
+        self.assertIsInstance(context['form'], forms.DCCReviewForm)
+        self.assertIn('tagged_trait', context)
+        self.assertEqual(context['tagged_trait'], self.tagged_trait)
+
+    def test_successful_post_with_confirmed_tagged_trait(self):
+        """Posting valid data to the form correctly updates an existing DCCReview."""
+        self.tagged_trait.dcc_review.delete()
+        factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP,
+                                          comment='foo')
+        form_data = {forms.DCCReviewForm.SUBMIT_CONFIRM: 'Confirm', 'comment': ''}
+        response = self.client.post(self.get_url(self.tagged_trait.pk), form_data)
+        self.assertRedirects(response, self.tagged_trait.get_absolute_url())
+        # Correctly updates the DCCReview for this TaggedTrait.
+        self.tagged_trait.dcc_review.refresh_from_db()
+        self.assertEqual(self.tagged_trait.dcc_review.status, models.DCCReview.STATUS_CONFIRMED)
+        self.assertEqual(self.tagged_trait.dcc_review.comment, '')
+        # Check for success message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Successfully updated', str(messages[0]))
+
+    def test_successful_post_with_needs_followup_tagged_trait(self):
+        """Posting valid data to the form correctly updates a DCCReview."""
+        comment = 'a new comment'
+        form_data = {forms.DCCReviewForm.SUBMIT_FOLLOWUP: 'Confirm', 'comment': comment}
+        response = self.client.post(self.get_url(self.tagged_trait.pk), form_data)
+        self.assertRedirects(response, self.tagged_trait.get_absolute_url())
+        # Correctly updates the DCCReview for this TaggedTrait.
+        self.tagged_trait.dcc_review.refresh_from_db()
+        self.assertEqual(self.tagged_trait.dcc_review.status, models.DCCReview.STATUS_FOLLOWUP)
+        self.assertEqual(self.tagged_trait.dcc_review.comment, comment)
+        # Check for success message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Successfully updated', str(messages[0]))
+
+    def test_post_bad_data(self):
+        """Posting bad data to the form shows a form error."""
+        existing_review = self.tagged_trait.dcc_review
+        form_data = {forms.DCCReviewForm.SUBMIT_FOLLOWUP: 'Require study followup', 'comment': ''}
+        response = self.client.post(self.get_url(self.tagged_trait.pk), form_data)
+        self.assertEqual(response.status_code, 200)
+        # Does not update the DCCReview for this TaggedTrait.
+        self.tagged_trait.dcc_review.refresh_from_db()
+        self.assertEqual(self.tagged_trait.dcc_review, existing_review)
+        # No messages.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 0)
+
+    def test_get_non_existent_tagged_trait(self):
+        """Returns a 404 page with a get request if the tagged trait doesn't exist."""
+        url = self.get_url(self.tagged_trait.pk)
+        self.tagged_trait.hard_delete()
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 404)
+
+    def test_post_non_existent_tagged_trait(self):
+        """Returns a 404 page with a post request if the tagged trait doesn't exist."""
+        url = self.get_url(self.tagged_trait.pk)
+        self.tagged_trait.hard_delete()
+        form_data = {forms.DCCReviewForm.SUBMIT_CONFIRM: 'Confirm', 'comment': ''}
+        response = self.client.post(url, form_data)
+        self.assertEqual(response.status_code, 404)
+
+    def test_get_nonexistent_dcc_review(self):
+        """Returns a 404 page with a get request if the dcc_review doesn't exist."""
+        self.tagged_trait.dcc_review.delete()
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        self.assertEqual(response.status_code, 404)
+
+    def test_post_nonexistent_dcc_review(self):
+        """Returns a 404 page with a post request if the dcc_review doesn't exist."""
+        self.tagged_trait.dcc_review.delete()
+        form_data = {forms.DCCReviewForm.SUBMIT_CONFIRM: 'Confirm', 'comment': ''}
+        response = self.client.post(self.get_url(self.tagged_trait.pk), form_data)
+        self.assertEqual(response.status_code, 404)
+
+
+class TaggedTraitReviewUpdateDCCAnalystTest(TaggedTraitReviewUpdateDCCTestsMixin, DCCAnalystLoginTestCase):
+
+    # Run all tests in TaggedTraitReviewDCCTestsMixin, as a DCC analyst.
+    pass
+
+
+class TaggedTraitReviewUpdateDCCDeveloperTest(TaggedTraitReviewUpdateDCCTestsMixin, DCCDeveloperLoginTestCase):
+
+    # Run all tests in TaggedTraitReviewDCCTestsMixin, as a DCC developer.
+    pass
+
+
+class TaggedTraitReviewUpdateOtherUserTest(UserLoginTestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.tagged_trait = factories.TaggedTraitFactory.create()
+        factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait)
+
+    def get_url(self, *args):
+        """Get the url for the view this class is supposed to test."""
+        return reverse('tags:tagged-traits:pk:review:update', args=args)
+
+    def test_forbidden_get_request(self):
+        """Returns a response with a forbidden status code for non-DCC users."""
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        self.assertEqual(response.status_code, 403)
+
+    def test_forbidden_post_request(self):
+        """Returns a response with a forbidden status code for non-DCC users."""
+        response = self.client.post(self.get_url(self.tagged_trait.pk), {})
+        self.assertEqual(response.status_code, 403)
+
+
 class TagsLoginRequiredTest(LoginRequiredTestCase):
 
     def test_tags_login_required(self):
