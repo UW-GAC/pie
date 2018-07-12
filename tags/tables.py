@@ -15,6 +15,11 @@ DETAIL_BUTTON_TEMPLATE = """
   Details
 </a>
 """
+REVIEW_BUTTON_TEMPLATE = """
+<a class="btn btn-xs btn-primary" href="{% url 'tags:tagged-traits:pk:review:new' record.pk %}" role="button">
+  Review
+</a>
+"""
 
 
 class TagTable(tables.Table):
@@ -106,9 +111,19 @@ class TaggedTraitTableWithDelete(TaggedTraitDeleteButtonMixin, TaggedTraitTable)
 class TaggedTraitTableWithDCCReview(TaggedTraitDeleteButtonMixin, TaggedTraitTable):
     """Table for displaying TaggedTraits with DCCReview information."""
 
-    status = tables.Column('Status', accessor='dcc_review.status')
+    # Create a "hybrid" status column that will show either the review status (if th tagged trait)
+    # has been reviewed or a button to review it. Use 'pk' instead of dcc_review as the accessor
+    # because the render_status method is skipped if the record doesn't have a DCCReview (because
+    # its the value is None).
+    status = tables.Column('Status', accessor='pk')
     details = tables.TemplateColumn(verbose_name='', orderable=False,
                                     template_code=DETAIL_BUTTON_TEMPLATE)
+
+    def render_status(self, record):
+        if not hasattr(record, 'dcc_review'):
+            return mark_safe(REVIEW_BUTTON_TEMPLATE)
+        else:
+            return record.dcc_review.get_status_display()
 
     class Meta(TaggedTraitTable.Meta):
         fields = ('tag', 'trait', 'description', 'dataset', 'status', 'details', 'delete_button')

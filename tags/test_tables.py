@@ -88,3 +88,19 @@ class TaggedTraitDeleteButtonMixinTest(TestCase):
                                           status=models.DCCReview.STATUS_FOLLOWUP)
         table = self.table_class(models.TaggedTrait.objects.all())
         self.assertIn('disabled', table.render_delete_button(tagged_trait))
+
+
+class TaggedTraitTableWithDCCReviewTest(TestCase):
+
+    table_class = tables.TaggedTraitTableWithDCCReview
+
+    def test_shows_status_when_review_exists(self):
+        dcc_review = factories.DCCReviewFactory.create()
+        tagged_trait = dcc_review.tagged_trait
+        table = self.table_class(models.TaggedTrait.objects.all())
+        self.assertEqual(table.render_status(tagged_trait), dcc_review.get_status_display())
+
+    def test_shows_review_button_when_no_review_exists(self):
+        tagged_trait = factories.TaggedTraitFactory.create()
+        table = self.table_class(models.TaggedTrait.objects.all())
+        self.assertIn('tags:tagged-traits:pk:review:new', table.render_status(tagged_trait))
