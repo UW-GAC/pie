@@ -553,6 +553,10 @@ class TaggedTraitReviewCreate(LoginRequiredMixin, PermissionRequiredMixin, FormV
         return self.tagged_trait.get_absolute_url()
 
 
+class TaggedTraitReviewUpdate(TemplateView):
+    template_name = 'home.html'
+
+
 class TagAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
     """View for autocompleting tag model choice fields by title in a form. Case-insensitive."""
 
