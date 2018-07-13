@@ -33,6 +33,19 @@
         <dt>Variable description</dt><dd>{{ tagged_trait.trait.i_description }}</dd>
         <dt>Dataset name</dt><dd>{{ tagged_trait.trait.source_dataset.dataset_name }}</dd>
         <dt>Dataset description</dt><dd>{{ tagged_trait.trait.source_dataset.i_dbgap_description }}</dd>
+        <dt>All phenotype tags</dt>
+          <dd>
+            {% for tag in tagged_trait.trait.tag_set.all %}
+              <div class="btn-group btn-group-xs">
+                <a href="{{ tag.get_absolute_url }}"
+                   class="btn btn-{% if tagged_trait.tag.pk == tag.pk%}info{% else %}default{% endif %}"
+                   role="button">
+                  {{ tag.title }}
+                </a>
+              </div>
+            {% endfor %}
+          </dd>
+        <dt></dt><dd><p class="text-muted"><small>Some variables have multiple tags applied to them. The tag being reviewed here is highlighted in blue.</small></p></dd>
       </dl>
     </div>
   </div>
