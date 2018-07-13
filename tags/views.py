@@ -58,7 +58,7 @@ class TagList(LoginRequiredMixin, SingleTableMixin, ListView):
     model = models.Tag
     table_class = tables.TagTable
     context_table_name = 'tag_table'
-    table_pagination = {'per_page': TABLE_PER_PAGE}
+    table_pagination = {'per_page': TABLE_PER_PAGE * 2}
 
 
 class TaggedTraitDetail(LoginRequiredMixin, DetailView):
