@@ -15,8 +15,8 @@ DETAIL_BUTTON_TEMPLATE = """
   Details
 </a>
 """
-REVIEW_BUTTON_TEMPLATE = """
-<a class="btn btn-xs btn-primary" href="{% url 'tags:tagged-traits:pk:review:new' record.pk %}" role="button">
+REVIEW_BUTTON_HTML = """
+<a class="btn btn-xs btn-primary" href="{url}" role="button">
   Review
 </a>
 """
@@ -121,7 +121,9 @@ class TaggedTraitTableWithDCCReview(TaggedTraitDeleteButtonMixin, TaggedTraitTab
 
     def render_status(self, record):
         if not hasattr(record, 'dcc_review'):
-            return mark_safe(REVIEW_BUTTON_TEMPLATE)
+            url = reverse('tags:tagged-traits:pk:review:new', args=[record.pk])
+            html = REVIEW_BUTTON_HTML.format(url=url)
+            return mark_safe(html)
         else:
             return record.dcc_review.get_status_display()
 

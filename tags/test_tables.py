@@ -1,6 +1,7 @@
 """Tests of tables from the tags app."""
 
 from django.test import TestCase
+from django.urls import reverse
 
 from trait_browser.models import Study
 from . import tables
@@ -103,4 +104,5 @@ class TaggedTraitTableWithDCCReviewTest(TestCase):
     def test_shows_review_button_when_no_review_exists(self):
         tagged_trait = factories.TaggedTraitFactory.create()
         table = self.table_class(models.TaggedTrait.objects.all())
-        self.assertIn('tags:tagged-traits:pk:review:new', table.render_status(tagged_trait))
+        expected_url = reverse('tags:tagged-traits:pk:review:new', args=[tagged_trait.pk])
+        self.assertIn(expected_url, table.render_status(tagged_trait))
