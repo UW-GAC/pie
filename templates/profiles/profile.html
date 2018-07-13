@@ -66,7 +66,7 @@
                           </td>
                           <td class='text-left'>
                             {% for variable in tag_data.1 %}
-                                <a class="btn btn-primary btn-xs" role="button" href="{% url 'tags:tagged-traits:detail' pk=variable.taggedtrait_pk %}">
+                                <a class="btn btn-primary btn-xs" role="button" href="{% url 'tags:tagged-traits:pk:detail' pk=variable.taggedtrait_pk %}">
                                   {{ variable.variable_name }}</a>
                             {% endfor %}
                           </td>
