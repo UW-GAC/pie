@@ -95,14 +95,15 @@ class TaggedTraitTableWithDCCReviewTest(TestCase):
 
     table_class = tables.TaggedTraitTableWithDCCReview
 
-    def test_shows_status_when_review_exists(self):
-        dcc_review = factories.DCCReviewFactory.create()
-        tagged_trait = dcc_review.tagged_trait
+    def test_proper_link_with_reviewed_tagged_trait(self):
+        tagged_trait = factories.TaggedTraitFactory.create()
+        dcc_review = factories.DCCReviewFactory.create(tagged_trait=tagged_trait)
         table = self.table_class(models.TaggedTrait.objects.all())
-        self.assertEqual(table.render_status(tagged_trait), dcc_review.get_status_display())
+        expected_url = reverse('tags:tagged-traits:pk:review:update', args=[tagged_trait.pk])
+        self.assertIn(expected_url, table.render_review_button(tagged_trait))
 
-    def test_shows_review_button_when_no_review_exists(self):
+    def test_proper_link_with_unreviewed_tagged_trait(self):
         tagged_trait = factories.TaggedTraitFactory.create()
         table = self.table_class(models.TaggedTrait.objects.all())
         expected_url = reverse('tags:tagged-traits:pk:review:new', args=[tagged_trait.pk])
-        self.assertIn(expected_url, table.render_status(tagged_trait))
+        self.assertIn(expected_url, table.render_review_button(tagged_trait))

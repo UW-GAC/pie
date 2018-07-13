@@ -16,8 +16,8 @@ DETAIL_BUTTON_TEMPLATE = """
 </a>
 """
 REVIEW_BUTTON_HTML = """
-<a class="btn btn-xs btn-primary" href="{url}" role="button">
-  Review
+<a class="btn btn-xs {btn_class}" href="{url}" role="button">
+  {btn_text}
 </a>
 """
 
@@ -111,24 +111,27 @@ class TaggedTraitTableWithDelete(TaggedTraitDeleteButtonMixin, TaggedTraitTable)
 class TaggedTraitTableWithDCCReview(TaggedTraitDeleteButtonMixin, TaggedTraitTable):
     """Table for displaying TaggedTraits with DCCReview information."""
 
-    # Create a "hybrid" status column that will show either the review status (if th tagged trait)
-    # has been reviewed or a button to review it. Use 'pk' instead of dcc_review as the accessor
-    # because the render_status method is skipped if the record doesn't have a DCCReview (because
-    # its the value is None).
-    status = tables.Column('Status', accessor='pk')
+    status = tables.Column('Status', accessor='dcc_review.status')
+    # This column will display a button to either create a new review or update an existing review.
+    review_button = tables.Column(verbose_name='', accessor='pk')
     details = tables.TemplateColumn(verbose_name='', orderable=False,
                                     template_code=DETAIL_BUTTON_TEMPLATE)
 
-    def render_status(self, record):
+    def render_review_button(self, record):
         if not hasattr(record, 'dcc_review'):
             url = reverse('tags:tagged-traits:pk:review:new', args=[record.pk])
-            html = REVIEW_BUTTON_HTML.format(url=url)
-            return mark_safe(html)
+            btn_text = "Add a DCC review"
+            btn_class = 'btn-primary'
         else:
-            return record.dcc_review.get_status_display()
+            url = reverse('tags:tagged-traits:pk:review:update', args=[record.pk])
+            btn_text = "Update DCC review"
+            btn_class = 'btn-warning'
+        html = REVIEW_BUTTON_HTML.format(url=url, btn_text=btn_text, btn_class=btn_class)
+        return mark_safe(html)
 
     class Meta(TaggedTraitTable.Meta):
-        fields = ('tag', 'trait', 'description', 'dataset', 'status', 'details', 'delete_button')
+        fields = ('tag', 'trait', 'description', 'dataset', 'status',
+        'review_button', 'details', 'delete_button')
 
 
 class UserTaggedTraitTable(TaggedTraitDeleteButtonMixin, TaggedTraitTable):
