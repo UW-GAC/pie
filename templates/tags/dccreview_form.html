@@ -35,12 +35,12 @@
         <dt>Dataset description</dt><dd>{{ tagged_trait.trait.source_dataset.i_dbgap_description }}</dd>
         <dt>All phenotype tags</dt>
           <dd>
-            {% for tag in tagged_trait.trait.tag_set.all %}
+            {% for other_tag in tagged_trait.trait.tag_set.all %}
               <div class="btn-group btn-group-xs">
-                <a href="{{ tag.get_absolute_url }}"
-                   class="btn btn-{% if tagged_trait.tag.pk == tag.pk%}info{% else %}default{% endif %}"
+                <a href="{{ other_tag.get_absolute_url }}"
+                   class="btn btn-{% if tagged_trait.tag.pk == other_tag.pk%}info{% else %}default{% endif %}"
                    role="button">
-                  {{ tag.title }}
+                  {{ other_tag.title }}
                 </a>
               </div>
             {% endfor %}
