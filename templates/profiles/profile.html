@@ -66,8 +66,15 @@
                           </td>
                           <td class='text-left'>
                             {% for variable in tag_data.1 %}
-                                <a class="btn btn-primary btn-xs" role="button" href="{% url 'tags:tagged-traits:detail' pk=variable.taggedtrait_pk %}">
-                                  {{ variable.variable_name }}</a>
+                              <div class="btn-group btn-group-xs">
+                                <a href="{% url 'tags:tagged-traits:detail' pk=variable.taggedtrait_pk %}" class="btn btn-default" role="button"
+                                data-toggle="tooltip" data-placement="auto right" title="{{ variable.variable_name }} from dataset {{ variable.dataset_name }}">
+                                  {{ variable.variable_name }}
+                                </a>
+                                <a href="{% url 'tags:tagged-traits:delete' variable.taggedtrait_pk %}" class="btn btn-default"
+                                data-toggle="tooltip" data-placement="auto right" title="Remove {{ tag.title }} tag from {{ variable.variable_name }}" role="button">
+                                  <span class="glyphicon glyphicon-remove" aria-hidden="true"></a>
+                              </div>
                             {% endfor %}
                           </td>
                         </tr>
@@ -122,4 +129,5 @@
 {% endblock content %}
 {% block custom_javascript %}
   <script src="{% static 'js/popover.js' %}"></script>
+  <script src="{% static 'js/tooltip.js' %}"></script>
 {% endblock custom_javascript %}

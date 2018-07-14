@@ -51,6 +51,7 @@ class Profile(LoginRequiredMixin, TemplateView):
                 tag_name=F('tag__title'),
                 tag_pk=F('tag__pk'),
                 variable_name=F('trait__i_trait_name'),
+                dataset_name=F('trait__source_dataset__dataset_name'),
                 taggedtrait_pk=F('pk')).order_by('study_name', 'tag_name', 'variable_name')
             # Group by study.
             user_taggedtraits = groupby(user_taggedtraits,
