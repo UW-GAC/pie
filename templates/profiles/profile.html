@@ -27,7 +27,7 @@
           {# Nav tabs #}
           <ul class="nav nav-tabs" role="tablist">
             {% if show_study_tagged %}
-              <li role="presentation" class="active"><a href="#study_tagged_phenotypes" role="tab" data-toggle="tab">Tagged Variables in My Studies</a></li>
+              <li role="presentation"><a href="#study_tagged_phenotypes" role="tab" data-toggle="tab">Tagged Variables in My Studies</a></li>
             {% endif %}
             {% if show_my_tagged %}
               <li role="presentation"><a href="#user_tagged_phenotypes" role="tab" data-toggle="tab">My Tagged Variables</a></li>
@@ -85,7 +85,7 @@
               </div>
             {% endif %}
             {% if show_study_tagged %}
-              <div role="tabpanel" class="tab-pane fade in active" id="study_tagged_phenotypes">
+              <div role="tabpanel" class="tab-pane fade" id="study_tagged_phenotypes">
 
                 <div class="table-responsive">
                   <table class='table table-bordered table-striped table-hover'>
