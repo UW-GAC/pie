@@ -1731,9 +1731,9 @@ class SourceTraitDetailTest(UserLoginTestCase):
         context = response.context
         self.assertIn('source_trait', context)
         self.assertEqual(context['source_trait'], self.trait)
-        self.assertIn('tag_tagged_trait_pairs', context)
-        self.assertEqual([(el[0], el[1]) for el in context['tag_tagged_trait_pairs']],
-                         list(zip(self.trait.tag_set.all(), self.trait.taggedtrait_set.all())))
+        self.assertIn('tagged_traits_with_xs', context)
+        self.assertEqual([el[0] for el in context['tagged_traits_with_xs']],
+                         list(self.trait.taggedtrait_set.all()))
         self.assertIn('user_is_study_tagger', context)
         self.assertFalse(context['user_is_study_tagger'])
 
@@ -1742,8 +1742,8 @@ class SourceTraitDetailTest(UserLoginTestCase):
         tagged_traits = TaggedTraitFactory.create_batch(3, trait=self.trait)
         response = self.client.get(self.get_url(self.trait.pk))
         context = response.context
-        for (a, b, c) in context['tag_tagged_trait_pairs']:
-            self.assertFalse(c)
+        for (a, b) in context['tagged_traits_with_xs']:
+            self.assertFalse(b)
         for tt in tagged_traits:
             self.assertNotContains(response, reverse('tags:tagged-traits:delete', kwargs={'pk': tt.pk}))
 
@@ -1776,24 +1776,23 @@ class SourceTraitDetailPhenotypeTaggerTest(PhenotypeTaggerLoginTestCase):
         tagged_trait = TaggedTrait.objects.create(tag=self.tag, trait=self.trait, creator=self.user)
         response = self.client.get(self.get_url(self.trait.pk))
         context = response.context
-        self.assertEqual(context['tag_tagged_trait_pairs'][0][0], self.tag)
-        self.assertEqual(context['tag_tagged_trait_pairs'][0][1], tagged_trait)
+        self.assertEqual(context['tagged_traits_with_xs'][0][0], tagged_trait)
 
     def test_has_tagged_traits(self):
         """The correct TaggedTraits are in the context."""
         tagged_traits = TaggedTraitFactory.create_batch(2, trait=self.trait)
         response = self.client.get(self.get_url(self.trait.pk))
         context = response.context
-        self.assertEqual([(el[0], el[1]) for el in context['tag_tagged_trait_pairs']],
-                         list(zip(self.trait.tag_set.all(), self.trait.taggedtrait_set.all())))
+        self.assertEqual([el[0] for el in context['tagged_traits_with_xs']],
+                         list(self.trait.taggedtrait_set.all()))
 
     def test_has_tagged_trait_remove_buttons(self):
         """The tag removal buttons shows up."""
         tagged_traits = TaggedTraitFactory.create_batch(2, trait=self.trait)
         response = self.client.get(self.get_url(self.trait.pk))
         context = response.context
-        for (a, b, c) in context['tag_tagged_trait_pairs']:
-            self.assertTrue(c)
+        for (a, b) in context['tagged_traits_with_xs']:
+            self.assertTrue(b)
         for tt in tagged_traits:
             self.assertContains(response, reverse('tags:tagged-traits:delete', kwargs={'pk': tt.pk}))
 
@@ -1804,11 +1803,11 @@ class SourceTraitDetailPhenotypeTaggerTest(PhenotypeTaggerLoginTestCase):
             tagged_trait=tagged_traits[0], status=DCCReview.STATUS_FOLLOWUP, comment='foo')
         response = self.client.get(self.get_url(self.trait.pk))
         context = response.context
-        for (a, b, c) in context['tag_tagged_trait_pairs']:
-            if b == dcc_review.tagged_trait:
-                self.assertFalse(c)
+        for (a, b) in context['tagged_traits_with_xs']:
+            if a == dcc_review.tagged_trait:
+                self.assertFalse(b)
             else:
-                self.assertTrue(c)
+                self.assertTrue(b)
         self.assertNotContains(response, reverse('tags:tagged-traits:delete', kwargs={'pk': tagged_traits[0].pk}))
         self.assertContains(response, reverse('tags:tagged-traits:delete', kwargs={'pk': tagged_traits[1].pk}))
 
@@ -1818,11 +1817,11 @@ class SourceTraitDetailPhenotypeTaggerTest(PhenotypeTaggerLoginTestCase):
         dcc_review = DCCReviewFactory.create(tagged_trait=tagged_traits[0], status=DCCReview.STATUS_CONFIRMED)
         response = self.client.get(self.get_url(self.trait.pk))
         context = response.context
-        for (a, b, c) in context['tag_tagged_trait_pairs']:
-            if b == dcc_review.tagged_trait:
-                self.assertFalse(c)
+        for (a, b) in context['tagged_traits_with_xs']:
+            if a == dcc_review.tagged_trait:
+                self.assertFalse(b)
             else:
-                self.assertTrue(c)
+                self.assertTrue(b)
         self.assertNotContains(response, reverse('tags:tagged-traits:delete', kwargs={'pk': tagged_traits[0].pk}))
         self.assertContains(response, reverse('tags:tagged-traits:delete', kwargs={'pk': tagged_traits[1].pk}))
 
@@ -1832,8 +1831,8 @@ class SourceTraitDetailPhenotypeTaggerTest(PhenotypeTaggerLoginTestCase):
         tagged_trait = TaggedTrait.objects.create(tag=self.tag, trait=other_trait, creator=self.user)
         response = self.client.get(self.get_url(other_trait.pk))
         context = response.context
-        for (a, b, c) in context['tag_tagged_trait_pairs']:
-            self.assertFalse(c)
+        for (a, b) in context['tagged_traits_with_xs']:
+            self.assertFalse(b)
         self.assertNotContains(response, reverse('tags:tagged-traits:delete', kwargs={'pk': self.tag.pk}))
 
     def test_has_tagging_button(self):
@@ -1872,24 +1871,23 @@ class SourceTraitDetailDCCAnalystTest(DCCAnalystLoginTestCase):
         tagged_trait = TaggedTrait.objects.create(tag=self.tag, trait=self.trait, creator=self.user)
         response = self.client.get(self.get_url(self.trait.pk))
         context = response.context
-        self.assertEqual(context['tag_tagged_trait_pairs'][0][0], self.tag)
-        self.assertEqual(context['tag_tagged_trait_pairs'][0][1], tagged_trait)
+        self.assertEqual(context['tagged_traits_with_xs'][0][0], tagged_trait)
 
     def test_has_tagged_traits(self):
         """The correct TaggedTraits are in the context."""
         tagged_traits = TaggedTraitFactory.create_batch(2, trait=self.trait)
         response = self.client.get(self.get_url(self.trait.pk))
         context = response.context
-        self.assertEqual([(el[0], el[1]) for el in context['tag_tagged_trait_pairs']],
-                         list(zip(self.trait.tag_set.all(), self.trait.taggedtrait_set.all())))
+        self.assertEqual([el[0] for el in context['tagged_traits_with_xs']],
+                         list(self.trait.taggedtrait_set.all()))
 
     def test_has_tagged_trait_remove_buttons(self):
         """The tag removal buttons shows up."""
         tagged_traits = TaggedTraitFactory.create_batch(2, trait=self.trait)
         response = self.client.get(self.get_url(self.trait.pk))
         context = response.context
-        for (a, b, c) in context['tag_tagged_trait_pairs']:
-            self.assertTrue(c)
+        for (a, b) in context['tagged_traits_with_xs']:
+            self.assertTrue(b)
         for tt in tagged_traits:
             self.assertContains(response, reverse('tags:tagged-traits:delete', kwargs={'pk': tt.pk}))
 
@@ -1900,11 +1898,11 @@ class SourceTraitDetailDCCAnalystTest(DCCAnalystLoginTestCase):
             tagged_trait=tagged_traits[0], status=DCCReview.STATUS_FOLLOWUP, comment='foo')
         response = self.client.get(self.get_url(self.trait.pk))
         context = response.context
-        for (a, b, c) in context['tag_tagged_trait_pairs']:
-            if b == dcc_review.tagged_trait:
-                self.assertFalse(c)
+        for (a, b) in context['tagged_traits_with_xs']:
+            if a == dcc_review.tagged_trait:
+                self.assertFalse(b)
             else:
-                self.assertTrue(c)
+                self.assertTrue(b)
         self.assertNotContains(response, reverse('tags:tagged-traits:delete', kwargs={'pk': tagged_traits[0].pk}))
         self.assertContains(response, reverse('tags:tagged-traits:delete', kwargs={'pk': tagged_traits[1].pk}))
 
@@ -1915,11 +1913,11 @@ class SourceTraitDetailDCCAnalystTest(DCCAnalystLoginTestCase):
             tagged_trait=tagged_traits[0], status=DCCReview.STATUS_CONFIRMED)
         response = self.client.get(self.get_url(self.trait.pk))
         context = response.context
-        for (a, b, c) in context['tag_tagged_trait_pairs']:
-            if b == dcc_review.tagged_trait:
-                self.assertFalse(c)
+        for (a, b) in context['tagged_traits_with_xs']:
+            if a == dcc_review.tagged_trait:
+                self.assertFalse(b)
             else:
-                self.assertTrue(c)
+                self.assertTrue(b)
         self.assertNotContains(response, reverse('tags:tagged-traits:delete', kwargs={'pk': tagged_traits[0].pk}))
         self.assertContains(response, reverse('tags:tagged-traits:delete', kwargs={'pk': tagged_traits[1].pk}))
 

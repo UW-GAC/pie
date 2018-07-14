@@ -29,13 +29,13 @@
     <dt>Study</dt> <dd><a href="{{ source_trait.source_dataset.source_study_version.study.get_absolute_url }}">{{ source_trait.source_dataset.source_study_version.study.i_study_name }}</a></dd>
   <dt>Phenotype tag(s)</dt>
     <dd>
-      {% if tag_tagged_trait_pairs|length > 0 %}
-        {% for tag, tagged_trait, show_delete in tag_tagged_trait_pairs %}
+      {% if tagged_traits_with_xs|length > 0 %}
+        {% for tagged_trait, show_delete in tagged_traits_with_xs %}
           <div class="btn-group btn-group-xs">
-            <a href="{{ tag.get_absolute_url }}" class="btn btn-default" role="button">{{ tag.title }}</a>
+            <a href="{{ tagged_trait.tag.get_absolute_url }}" class="btn btn-default" role="button">{{ tagged_trait.tag.title }}</a>
             {% if show_delete %}
                   <a href="{% url 'tags:tagged-traits:delete' tagged_trait.pk %}" class="btn btn-default"
-                  data-toggle="tooltip" data-placement="auto right" title="Remove {{ tag.title }} tag" role="button">
+                  data-toggle="tooltip" data-placement="auto right" title="Remove {{ tagged_trait.tag.title }} tag" role="button">
                     <span class="glyphicon glyphicon-remove" aria-hidden="true"></a>
             {% endif %}
           </div>

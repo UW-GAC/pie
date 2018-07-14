@@ -379,7 +379,6 @@ class SourceTraitDetail(LoginRequiredMixin, DetailView):
         context['user_is_study_tagger'] = self.object.source_dataset.source_study_version.study in user_studies
         context['show_tag_button'] = context['user_is_study_tagger'] or self.request.user.is_staff
         tagged_traits = self.object.taggedtrait_set.all().order_by('tag__lower_title')
-        tags = self.object.tag_set.all()
         # If tagging is allowed, check on whether to show the delete button for each tag.
         if context['show_tag_button']:
             show_delete_buttons = []
@@ -392,7 +391,7 @@ class SourceTraitDetail(LoginRequiredMixin, DetailView):
         # Don't show the delete button to anyone if tagging is not allowed.
         else:
             show_delete_buttons = [False] * len(tagged_traits)
-        context['tag_tagged_trait_pairs'] = list(zip(tags, tagged_traits, show_delete_buttons))
+        context['tagged_traits_with_xs'] = list(zip(tagged_traits, show_delete_buttons))
         return context
 
 
