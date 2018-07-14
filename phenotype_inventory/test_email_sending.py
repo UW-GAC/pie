@@ -2,8 +2,8 @@
 
 
 from time import sleep
-import urllib.request
 import urllib.error
+import urllib.request
 from uuid import uuid4
 
 from django.conf import settings

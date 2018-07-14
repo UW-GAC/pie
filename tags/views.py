@@ -5,9 +5,9 @@ from itertools import groupby
 from django.db.models import Count, F
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponseRedirect
-from django.urls import reverse
 from django.shortcuts import get_object_or_404
 from django.utils.safestring import mark_safe
+from django.urls import reverse
 from django.views.generic import CreateView, DetailView, DeleteView, FormView, ListView, TemplateView, RedirectView
 
 from braces.views import (FormMessagesMixin, FormValidMessageMixin, LoginRequiredMixin, MessageMixin,
@@ -17,16 +17,17 @@ from django_tables2 import SingleTableMixin
 
 from core.utils import SessionVariableMixin, ValidateObjectMixin
 from trait_browser.models import Study
+
 from . import forms
 from . import models
 from . import tables
 
 
 TABLE_PER_PAGE = 50    # Setting for per_page rows for all table views.
-TAGGING_ERROR_MESSAGE = 'Oops! Applying the tag to a dbGaP study variable failed.'
-TAGGING_MULTIPLE_ERROR_MESSAGE = 'Oops! Applying the tag to dbGaP study variables failed.'
+TAGGING_ERROR_MESSAGE = 'Oops! Applying the tag to a study variable failed.'
+TAGGING_MULTIPLE_ERROR_MESSAGE = 'Oops! Applying the tag to study variables failed.'
 REVIEWED_TAGGED_TRAIT_DELETE_ERROR_MESSAGE = (
-    "Oops! Tagged dbGaP study variables that have been reviewed by the DCC can't be deleted."
+    "Oops! Tagged study variables that have been reviewed by the DCC can't be deleted."
 )
 
 
@@ -57,7 +58,7 @@ class TagList(LoginRequiredMixin, SingleTableMixin, ListView):
     model = models.Tag
     table_class = tables.TagTable
     context_table_name = 'tag_table'
-    table_pagination = {'per_page': TABLE_PER_PAGE}
+    table_pagination = {'per_page': TABLE_PER_PAGE * 2}
 
 
 class TaggedTraitDetail(LoginRequiredMixin, DetailView):
@@ -168,7 +169,7 @@ class TaggedTraitDelete(LoginRequiredMixin, PermissionRequiredMixin, TaggableStu
                        args=[self.object.trait.source_dataset.source_study_version.study.pk])
 
     def get_form_valid_message(self):
-        msg = 'Tag <a href="{}">{}</a> has been removed from dbGaP study variable <a href="{}">{}</a>'.format(
+        msg = 'Tag <a href="{}">{}</a> has been removed from study variable <a href="{}">{}</a>'.format(
             self.object.tag.get_absolute_url(), self.object.tag.title,
             self.object.trait.get_absolute_url(), self.object.trait.i_trait_name)
         return mark_safe(msg)
@@ -203,7 +204,7 @@ class TaggedTraitCreate(LoginRequiredMixin, PermissionRequiredMixin, TaggableStu
         return self.object.tag.get_absolute_url()
 
     def get_form_valid_message(self):
-        msg = 'Tag {} has been applied to dbGaP study variable <a href="{}">{}</a>'.format(
+        msg = 'Tag {} has been applied to study variable <a href="{}">{}</a>'.format(
             self.object.tag.title, self.object.trait.get_absolute_url(), self.object.trait.i_trait_name)
         return mark_safe(msg)
 
@@ -247,7 +248,7 @@ class TaggedTraitCreateByTag(LoginRequiredMixin, PermissionRequiredMixin, Taggab
         return self.tag.get_absolute_url()
 
     def get_form_valid_message(self):
-        msg = 'Tag {} has been applied to dbGaP study variable <a href="{}">{}</a>'.format(
+        msg = 'Tag {} has been applied to study variable <a href="{}">{}</a>'.format(
             self.tag.title, self.trait.get_absolute_url(), self.trait.i_trait_name)
         return mark_safe(msg)
 
@@ -281,7 +282,7 @@ class ManyTaggedTraitsCreate(LoginRequiredMixin, PermissionRequiredMixin, Taggab
     def get_form_valid_message(self):
         msg = ''
         for trait in self.traits:
-            msg += 'Tag {} has been applied to dbGaP study variable <a href="{}">{}</a> <br>'.format(
+            msg += 'Tag {} has been applied to study variable <a href="{}">{}</a> <br>'.format(
                 self.tag.title, trait.get_absolute_url(), trait.i_trait_name)
         return mark_safe(msg)
 
@@ -328,7 +329,7 @@ class ManyTaggedTraitsCreateByTag(LoginRequiredMixin, PermissionRequiredMixin, T
     def get_form_valid_message(self):
         msg = ''
         for trait in self.traits:
-            msg += 'Tag {} has been applied to dbGaP study variable <a href="{}">{}</a> <br>'.format(
+            msg += 'Tag {} has been applied to study variable <a href="{}">{}</a> <br>'.format(
                 self.tag.title, trait.get_absolute_url(), trait.i_trait_name)
         return mark_safe(msg)
 

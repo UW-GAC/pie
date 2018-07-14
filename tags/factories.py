@@ -5,6 +5,7 @@ import factory.fuzzy
 
 from core.factories import UserFactory
 from trait_browser.factories import SourceTraitFactory
+
 from . import models
 
 

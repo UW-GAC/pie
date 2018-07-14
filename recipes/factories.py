@@ -4,6 +4,7 @@ import factory
 import factory.fuzzy
 
 from core.factories import UserFactory
+
 from . import models
 
 

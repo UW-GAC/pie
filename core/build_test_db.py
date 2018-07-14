@@ -7,8 +7,8 @@ from django.contrib.auth import get_user_model
 
 import recipes.factories
 import tags.factories
-import trait_browser.models
 import trait_browser.factories
+import trait_browser.models
 
 User = get_user_model()
 USER_FACTORY_PASSWORD = 'qwerty'

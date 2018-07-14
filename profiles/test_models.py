@@ -4,6 +4,7 @@ from django.test import TestCase
 
 from core.factories import UserFactory
 from trait_browser.factories import StudyFactory
+
 from . import models
 
 

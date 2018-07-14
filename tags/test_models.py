@@ -9,6 +9,7 @@ from core.factories import UserFactory
 # from core.utils import UserLoginTestCase
 from trait_browser.factories import SourceTraitFactory, StudyFactory
 from trait_browser.models import SourceTrait
+
 from . import factories
 from . import models
 

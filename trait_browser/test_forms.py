@@ -4,7 +4,6 @@ from django.test import TestCase
 
 from . import factories
 from . import forms
-from . import models
 
 
 class SourceDatasetSearchFormTest(TestCase):

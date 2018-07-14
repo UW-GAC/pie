@@ -1,15 +1,16 @@
 """View functions and classes for the trait_browser app."""
 
+from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Count, F, Q
 from django.http import HttpResponseRedirect
-from django.urls import reverse
 from django.shortcuts import get_object_or_404
 from django.template.defaultfilters import pluralize    # Use pluralize in the views.
+from django.urls import reverse
 from django.utils.safestring import mark_safe
 from django.views.generic import DetailView, FormView, ListView
+from django.views.generic.base import TemplateView
 from django.views.generic.detail import SingleObjectMixin
 from django.views.generic.edit import FormMixin
-from django.views.generic.base import TemplateView
 
 from braces.views import (FormMessagesMixin, LoginRequiredMixin, MessageMixin, PermissionRequiredMixin,
                           UserPassesTestMixin)
@@ -19,10 +20,11 @@ from django_tables2 import SingleTableMixin, SingleTableView
 from tags.forms import TagSpecificTraitForm
 from tags.models import TaggedTrait
 from tags.views import TAGGING_ERROR_MESSAGE, TaggableStudiesRequiredMixin
-from . import models
-from . import tables
+
 from . import forms
+from . import models
 from . import searches
+from . import tables
 
 
 TABLE_PER_PAGE = 50    # Setting for per_page rows for all table views.
@@ -375,9 +377,21 @@ class SourceTraitDetail(LoginRequiredMixin, DetailView):
         context = super(SourceTraitDetail, self).get_context_data(**kwargs)
         user_studies = list(self.request.user.profile.taggable_studies.all())
         context['user_is_study_tagger'] = self.object.source_dataset.source_study_version.study in user_studies
-        tagged_traits = self.object.taggedtrait_set.all()
-        tags = self.object.tag_set.all()
-        context['tag_tagged_trait_pairs'] = list(zip(tags, tagged_traits))
+        context['show_tag_button'] = context['user_is_study_tagger'] or self.request.user.is_staff
+        tagged_traits = self.object.taggedtrait_set.all().order_by('tag__lower_title')
+        # If tagging is allowed, check on whether to show the delete button for each tag.
+        if context['show_tag_button']:
+            show_delete_buttons = []
+            for tt in tagged_traits:
+                try:
+                    tt.dcc_review
+                    show_delete_buttons.append(False)
+                except ObjectDoesNotExist:
+                    show_delete_buttons.append(True)
+        # Don't show the delete button to anyone if tagging is not allowed.
+        else:
+            show_delete_buttons = [False] * len(tagged_traits)
+        context['tagged_traits_with_xs'] = list(zip(tagged_traits, show_delete_buttons))
         return context
 
 

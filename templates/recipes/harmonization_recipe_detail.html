@@ -27,7 +27,7 @@
           <dt>Unit of measurement</dt><dd>{{ h_recipe.measurement_unit }}</dd>
         </dl>
         
-        {% if h_recipe.encoded_values %}
+        {% if h_recipe.encoded_values != '' %}
         <table class="table table-nonfluid table-condensed table-sm">
           <caption><strong>Encoded value definitions</strong></caption>
            <tr>
