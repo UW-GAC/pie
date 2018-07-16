@@ -176,6 +176,29 @@ class TaggedTraitDetailTest(TaggedTraitDetailTestsMixin, UserLoginTestCase):
         response = self.client.get(self.get_url(self.tagged_trait.pk))
         self.assertNotContains(response, reverse('tags:tagged-traits:pk:review:update', args=[self.tagged_trait.pk]))
 
+    def test_context_with_unreviewed_trait(self):
+        """The context contains the proper flags for the add/update review buttons."""
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        context = response.context
+        self.assertIn('show_dcc_review_info', context)
+        self.assertEqual(context['show_dcc_review_info'], False)
+        self.assertIn('show_dcc_review_add_button', context)
+        self.assertEqual(context['show_dcc_review_add_button'], False)
+        self.assertIn('show_dcc_review_update_button', context)
+        self.assertEqual(context['show_dcc_review_update_button'], False)
+
+    def test_context_with_reviewed_trait(self):
+        """The context contains the proper flags for the add/update review buttons."""
+        factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait)
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        context = response.context
+        self.assertIn('show_dcc_review_info', context)
+        self.assertEqual(context['show_dcc_review_info'], False)
+        self.assertIn('show_dcc_review_add_button', context)
+        self.assertEqual(context['show_dcc_review_add_button'], False)
+        self.assertIn('show_dcc_review_update_button', context)
+        self.assertEqual(context['show_dcc_review_update_button'], False)
+
 
 class TaggedTraitDetailPhenotypeTaggerTest(TaggedTraitDetailTestsMixin, PhenotypeTaggerLoginTestCase):
 
@@ -233,6 +256,29 @@ class TaggedTraitDetailPhenotypeTaggerTest(TaggedTraitDetailTestsMixin, Phenotyp
         response = self.client.get(self.get_url(self.tagged_trait.pk))
         self.assertNotContains(response, reverse('tags:tagged-traits:pk:review:update', args=[self.tagged_trait.pk]))
 
+    def test_context_with_unreviewed_trait(self):
+        """The context contains the proper flags for the add/update review buttons."""
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        context = response.context
+        self.assertIn('show_dcc_review_info', context)
+        self.assertEqual(context['show_dcc_review_info'], False)
+        self.assertIn('show_dcc_review_add_button', context)
+        self.assertEqual(context['show_dcc_review_add_button'], False)
+        self.assertIn('show_dcc_review_update_button', context)
+        self.assertEqual(context['show_dcc_review_update_button'], False)
+
+    def test_context_with_reviewed_trait(self):
+        """The context contains the proper flags for the add/update review buttons."""
+        factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait)
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        context = response.context
+        self.assertIn('show_dcc_review_info', context)
+        self.assertEqual(context['show_dcc_review_info'], False)
+        self.assertIn('show_dcc_review_add_button', context)
+        self.assertEqual(context['show_dcc_review_add_button'], False)
+        self.assertIn('show_dcc_review_update_button', context)
+        self.assertEqual(context['show_dcc_review_update_button'], False)
+
 
 class TaggedTraitDetailDCCAnalystTest(TaggedTraitDetailTestsMixin, DCCAnalystLoginTestCase):
 
@@ -270,13 +316,36 @@ class TaggedTraitDetailDCCAnalystTest(TaggedTraitDetailTestsMixin, DCCAnalystLog
         self.assertContains(response, dcc_review.get_status_display())
         self.assertContains(response, dcc_review.comment)
 
+    def test_context_with_unreviewed_trait(self):
+        """The context contains the proper flags for the add/update review buttons."""
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        context = response.context
+        self.assertIn('show_dcc_review_info', context)
+        self.assertEqual(context['show_dcc_review_info'], True)
+        self.assertIn('show_dcc_review_add_button', context)
+        self.assertEqual(context['show_dcc_review_add_button'], True)
+        self.assertIn('show_dcc_review_update_button', context)
+        self.assertEqual(context['show_dcc_review_update_button'], False)
+
     def test_unreviewed_tagged_trait_includes_link_to_review(self):
         """An unreviewed tagged trait includes a link to review for DCC users."""
         response = self.client.get(self.get_url(self.tagged_trait.pk))
         self.assertContains(response, reverse('tags:tagged-traits:pk:review:new', args=[self.tagged_trait.pk]))
 
+    def test_context_with_reviewed_trait(self):
+        """The context contains the proper flags when the tagged trait has been reviewed.."""
+        factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait)
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        context = response.context
+        self.assertIn('show_dcc_review_info', context)
+        self.assertEqual(context['show_dcc_review_info'], True)
+        self.assertIn('show_dcc_review_add_button', context)
+        self.assertEqual(context['show_dcc_review_add_button'], False)
+        self.assertIn('show_dcc_review_update_button', context)
+        self.assertEqual(context['show_dcc_review_update_button'], True)
+
     def test_reviewed_tagged_trait_includes_link_to_udpate(self):
-        """A reviewed tagged trait includes a link to update the DCCReview for DCC users."""
+        """The context contains the proper flags when the tagged trait has not been reviewed.."""
         factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait)
         response = self.client.get(self.get_url(self.tagged_trait.pk))
         self.assertContains(response, reverse('tags:tagged-traits:pk:review:update', args=[self.tagged_trait.pk]))

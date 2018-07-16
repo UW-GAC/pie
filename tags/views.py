@@ -70,6 +70,13 @@ class TaggedTraitDetail(LoginRequiredMixin, DetailView):
         context = super(TaggedTraitDetail, self).get_context_data(**kwargs)
         user_studies = list(self.request.user.profile.taggable_studies.all())
         context['user_is_study_tagger'] = self.object.trait.source_dataset.source_study_version.study in user_studies
+        # Check if DCCReview info should be shown.
+        context['show_dcc_review_info'] = self.request.user.is_staff
+        # Check if the review add or update buttons should be shown.
+        context['show_dcc_review_add_button'] = (not hasattr(self.object, 'dcc_review')) and \
+            self.request.user.has_perm('tags.add_dccreview')
+        context['show_dcc_review_update_button'] = hasattr(self.object, 'dcc_review') and \
+            self.request.user.has_perm('tags.change_dccreview')
         return context
 
 
