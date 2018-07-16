@@ -595,7 +595,7 @@ class DCCReviewUpdate(LoginRequiredMixin, PermissionRequiredMixin, FormValidMess
             self.messages.warning(self._get_already_reviewed_warning_message())
             return HttpResponseRedirect(reverse('tags:tagged-traits:pk:review:new', args=[self.tagged_trait.pk]))
 
-    def get(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs):
         try:
             return super().post(request, *args, **kwargs)
         except ObjectDoesNotExist:
