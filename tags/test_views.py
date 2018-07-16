@@ -2702,7 +2702,7 @@ class DCCReviewCreateDCCTestsMixin(object):
         self.assertEqual(response.status_code, 404)
 
     def test_get_already_reviewed_tagged_trait(self):
-        """Shows warning message and does not save review if TaggedTrait is already reviewed."""
+        """Shows warning message and redirects to update page if TaggedTrait is already reviewed."""
         dcc_review = factories.DCCReviewFactory.create(
             tagged_trait=self.tagged_trait,
             status=models.DCCReview.STATUS_FOLLOWUP,
@@ -2710,7 +2710,7 @@ class DCCReviewCreateDCCTestsMixin(object):
         )
         # Now try to review it through the web interface.
         response = self.client.get(self.get_url(self.tagged_trait.pk))
-        self.assertRedirects(response, self.tagged_trait.get_absolute_url())
+        self.assertRedirects(response, reverse('tags:tagged-traits:pk:review:update', args=[self.tagged_trait.pk]))
         # Check for warning message.
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
@@ -2728,7 +2728,7 @@ class DCCReviewCreateDCCTestsMixin(object):
         # Now try to review it through the web interface.
         form_data = {forms.DCCReviewForm.SUBMIT_CONFIRM: 'Confirm', 'comment': ''}
         response = self.client.post(self.get_url(self.tagged_trait.pk), form_data)
-        self.assertRedirects(response, self.tagged_trait.get_absolute_url())
+        self.assertRedirects(response, reverse('tags:tagged-traits:pk:review:update', args=[self.tagged_trait.pk]))
         # Check for warning message.
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
@@ -2746,7 +2746,7 @@ class DCCReviewCreateDCCTestsMixin(object):
         # Now try to review it through the web interface.
         form_data = {forms.DCCReviewForm.SUBMIT_FOLLOWUP: 'Confirm', 'comment': ''}
         response = self.client.post(self.get_url(self.tagged_trait.pk), form_data)
-        self.assertRedirects(response, self.tagged_trait.get_absolute_url())
+        self.assertRedirects(response, reverse('tags:tagged-traits:pk:review:update', args=[self.tagged_trait.pk]))
         # Check for warning message.
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
@@ -2886,17 +2886,25 @@ class DCCReviewUpdateDCCTestsMixin(object):
         self.assertEqual(response.status_code, 404)
 
     def test_get_nonexistent_dcc_review(self):
-        """Returns a 404 page with a get request if the dcc_review doesn't exist."""
+        """Redirects to the create view with a warning if the DCCReview doesn't exist."""
         self.tagged_trait.dcc_review.delete()
         response = self.client.get(self.get_url(self.tagged_trait.pk))
-        self.assertEqual(response.status_code, 404)
+        self.assertRedirects(response, reverse('tags:tagged-traits:pk:review:new', args=[self.tagged_trait.pk]))
+        # Check for warning message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('has not been reviewed yet', str(messages[0]))
 
     def test_post_nonexistent_dcc_review(self):
         """Returns a 404 page with a post request if the dcc_review doesn't exist."""
+        """Redirects to the create view with a warning if the DCCReview doesn't exist."""
         self.tagged_trait.dcc_review.delete()
-        form_data = {forms.DCCReviewForm.SUBMIT_CONFIRM: 'Confirm', 'comment': ''}
-        response = self.client.post(self.get_url(self.tagged_trait.pk), form_data)
-        self.assertEqual(response.status_code, 404)
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        self.assertRedirects(response, reverse('tags:tagged-traits:pk:review:new', args=[self.tagged_trait.pk]))
+        # Check for warning message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('has not been reviewed yet', str(messages[0]))
 
 
 class DCCReviewUpdateDCCAnalystTest(DCCReviewUpdateDCCTestsMixin, DCCAnalystLoginTestCase):
