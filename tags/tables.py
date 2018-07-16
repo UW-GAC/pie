@@ -11,8 +11,13 @@ from . import models
 
 
 DETAIL_BUTTON_TEMPLATE = """
-<a class="btn btn-xs btn-info" href="{% url 'tags:tagged-traits:detail' record.pk %}" role="button">
+<a class="btn btn-xs btn-info" href="{% url 'tags:tagged-traits:pk:detail' record.pk %}" role="button">
   Details
+</a>
+"""
+REVIEW_BUTTON_HTML = """
+<a class="btn btn-xs {btn_class}" href="{url}" role="button">
+  {btn_text}
 </a>
 """
 
@@ -89,7 +94,7 @@ class TaggedTraitDeleteButtonMixin(tables.Table):
         if hasattr(record, 'dcc_review'):
             classes.append('disabled')
         else:
-            url = reverse('tags:tagged-traits:delete', args=[record.pk])
+            url = reverse('tags:tagged-traits:pk:delete', args=[record.pk])
         html = html_template.format(classes=' '.join(classes), url=url)
         return mark_safe(html)
 
@@ -107,11 +112,25 @@ class TaggedTraitTableWithDCCReview(TaggedTraitDeleteButtonMixin, TaggedTraitTab
     """Table for displaying TaggedTraits with DCCReview information."""
 
     status = tables.Column('Status', accessor='dcc_review.status')
+    # This column will display a button to either create a new review or update an existing review.
+    review_button = tables.Column(verbose_name='', accessor='pk')
     details = tables.TemplateColumn(verbose_name='', orderable=False,
                                     template_code=DETAIL_BUTTON_TEMPLATE)
 
+    def render_review_button(self, record):
+        if not hasattr(record, 'dcc_review'):
+            url = reverse('tags:tagged-traits:pk:review:new', args=[record.pk])
+            btn_text = "Add a DCC review"
+            btn_class = 'btn-primary'
+        else:
+            url = reverse('tags:tagged-traits:pk:review:update', args=[record.pk])
+            btn_text = "Update DCC review"
+            btn_class = 'btn-warning'
+        html = REVIEW_BUTTON_HTML.format(url=url, btn_text=btn_text, btn_class=btn_class)
+        return mark_safe(html)
+
     class Meta(TaggedTraitTable.Meta):
-        fields = ('tag', 'trait', 'description', 'dataset', 'status', 'details', 'delete_button')
+        fields = ('tag', 'trait', 'description', 'dataset', 'status', 'review_button', 'details', 'delete_button')
 
 
 class UserTaggedTraitTable(TaggedTraitDeleteButtonMixin, TaggedTraitTable):

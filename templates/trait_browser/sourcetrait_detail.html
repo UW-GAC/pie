@@ -34,7 +34,7 @@
           <div class="btn-group btn-group-xs">
             <a href="{{ tagged_trait.tag.get_absolute_url }}" class="btn btn-default" role="button">{{ tagged_trait.tag.title }}</a>
             {% if show_delete %}
-                  <a href="{% url 'tags:tagged-traits:delete' tagged_trait.pk %}" class="btn btn-default"
+                  <a href="{% url 'tags:tagged-traits:pk:delete' tagged_trait.pk %}" class="btn btn-default"
                   data-toggle="tooltip" data-placement="auto right" title="Remove {{ tagged_trait.tag.title }} tag" role="button">
                     <span class="glyphicon glyphicon-remove" aria-hidden="true"></a>
             {% endif %}
