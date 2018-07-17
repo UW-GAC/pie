@@ -14,41 +14,7 @@
     Review <a href='{{ tagged_trait.get_absolute_url }}'>{{ tagged_trait }}</a>
   </h2>
 
-  <div class="panel panel-default">
-    <div class="panel-heading"><strong>Tag information</strong></div>
-    <div class="panel-body">
-      <dl class="dl-horizontal">
-        <dt>Tag name</dt><dd><a href="{{ tagged_trait.tag.get_absolute_url }}">{{ tagged_trait.tag.lower_title }}</a></dd>
-        <dt>Tag description</dt><dd>{{ tagged_trait.tag.description }}</dd>
-        <dt>Tag instructions</dt><dd>{{ tagged_trait.tag.instructions }}</dd>
-      </dl>
-    </div>
-  </div>
-
-  <div class="panel panel-default">
-    <div class="panel-heading"><strong>Study variable information</strong></div>
-    <div class="panel-body">
-      <dl class="dl-horizontal">
-        <dt>Variable</dt><dd><a href='{{ tagged_trait.trait.get_absolute_url }}'>{{ tagged_trait.trait.i_trait_name }}</a></dd>
-        <dt>Variable description</dt><dd>{{ tagged_trait.trait.i_description }}</dd>
-        <dt>Dataset</dt><dd><a href="{{ tagged_trait.trait.source_dataset.get_absolute_url }}">{{ tagged_trait.trait.source_dataset.dataset_name }}</a></dd>
-        <dt>Dataset description</dt><dd>{{ tagged_trait.trait.source_dataset.i_dbgap_description }}</dd>
-        <dt>All phenotype tags</dt>
-          <dd>
-            {% for other_tag in tagged_trait.trait.tag_set.all %}
-              <div class="btn-group btn-group-xs">
-                <a href="{{ other_tag.get_absolute_url }}"
-                   class="btn btn-{% if tagged_trait.tag.pk == other_tag.pk%}info{% else %}default{% endif %}"
-                   role="button">
-                  {{ other_tag.title }}
-                </a>
-              </div>
-            {% endfor %}
-          </dd>
-        <dt></dt><dd><p class="text-muted"><small>Some variables have multiple tags applied to them. The tag being reviewed here is highlighted in blue.</small></p></dd>
-      </dl>
-    </div>
-  </div>
+  {% include 'tags/_taggedtrait_info.html' with show_all_tags=True %}
 
   <div class="panel panel-default">
     <div class="panel-heading"><strong>Instructions</strong></div>

@@ -14,14 +14,18 @@
   tagged variable details
 {% endblock subtitle %}
 
+{% block before_panel %}
+  {% include 'tags/_taggedtrait_info.html' with show_all_tags=False %}
+{% endblock before_panel %}
+
 {% block detail_fields %}
   <dt>Tagged by</dt><dd>{{ tagged_trait.creator }}</dd>
   {% if show_dcc_review_info %}
-      <dt>DCC status</dt><dd>{{ tagged_trait.dcc_review.get_status_display }}</dd>
-      <dt>DCC comment</dt><dd>{{ tagged_trait.dcc_review.comment }}</dd>
+    <dt>DCC status</dt><dd>{{ tagged_trait.dcc_review.get_status_display }}</dd>
+    <dt>DCC comment</dt><dd>{{ tagged_trait.dcc_review.comment }}</dd>
   {% endif %}
-
 {% endblock detail_fields %}
+
 
 {% block after_panel %}
   {% if show_dcc_review_add_button %}
