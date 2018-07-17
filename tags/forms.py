@@ -462,7 +462,7 @@ class DCCReviewAdminForm(DCCReviewBaseForm):
         fields = ('tagged_trait', 'status', 'comment', )
 
 
-class TaggedTraitReviewSelectForm(forms.Form):
+class DCCReviewTagAndStudySelectForm(forms.Form):
 
     ERROR_NO_TAGGED_TRAITS = 'No tagged variables for this tag and study!'
 
@@ -499,7 +499,7 @@ class TaggedTraitReviewSelectForm(forms.Form):
         js = ('js/taggedtrait_review_select_form.js', )
 
     def clean(self):
-        cleaned_data = super(TaggedTraitReviewSelectForm, self).clean()
+        cleaned_data = super().clean()
         tag = cleaned_data.get('tag')
         study = cleaned_data.get('study')
         if tag and study:

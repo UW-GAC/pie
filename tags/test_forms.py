@@ -458,12 +458,12 @@ class DCCReviewAdminFormTest(TestCase):
         self.assertTrue(form.has_error('tagged_trait'))
 
 
-class TaggedTraitReviewSelectFormTest(TestCase):
+class DCCReviewTagAndStudySelectFormTest(TestCase):
 
-    form_class = forms.TaggedTraitReviewSelectForm
+    form_class = forms.DCCReviewTagAndStudySelectForm
 
     def setUp(self):
-        super(TaggedTraitReviewSelectFormTest, self).setUp()
+        super(DCCReviewTagAndStudySelectFormTest, self).setUp()
         self.tag = factories.TagFactory.create()
         self.study = StudyFactory.create()
         self.tagged_trait = factories.TaggedTraitFactory.create(

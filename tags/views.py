@@ -378,7 +378,7 @@ class DCCReviewMixin(object):
 class DCCReviewByTagAndStudySelect(LoginRequiredMixin, PermissionRequiredMixin, MessageMixin, FormView):
 
     template_name = 'tags/taggedtrait_review_select.html'
-    form_class = forms.TaggedTraitReviewSelectForm
+    form_class = forms.DCCReviewTagAndStudySelectForm
     permission_required = 'tags.add_dccreview'
     raise_exception = True
     redirect_unauthenticated_users = True

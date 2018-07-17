@@ -1908,7 +1908,7 @@ class DCCReviewByTagAndStudySelectDCCTestsMixin(object):
         response = self.client.get(self.get_url())
         context = response.context
         self.assertTrue('form' in context)
-        self.assertIsInstance(context['form'], forms.TaggedTraitReviewSelectForm)
+        self.assertIsInstance(context['form'], forms.DCCReviewTagAndStudySelectForm)
 
     def test_post_blank_trait(self):
         """Posting bad data to the form shows a form error and doesn't set session variables."""
@@ -1996,7 +1996,7 @@ class DCCReviewByTagAndStudySelectDCCTestsMixin(object):
         self.assertEqual(response.status_code, 200)
         # Form errors.
         self.assertIn('form', response.context)
-        self.assertFormError(response, 'form', None, forms.TaggedTraitReviewSelectForm.ERROR_NO_TAGGED_TRAITS)
+        self.assertFormError(response, 'form', None, forms.DCCReviewTagAndStudySelectForm.ERROR_NO_TAGGED_TRAITS)
         # Make sure no variables were set.
         session = self.client.session
         self.assertNotIn('tagged_trait_review_by_tag_and_study_info', session)
