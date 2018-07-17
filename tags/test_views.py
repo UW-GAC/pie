@@ -169,13 +169,13 @@ class TaggedTraitDetailTest(TaggedTraitDetailTestsMixin, UserLoginTestCase):
     def test_unreviewed_tagged_trait_missing_link_to_review(self):
         """An unreviewed tagged trait does not include a link to review for regular users."""
         response = self.client.get(self.get_url(self.tagged_trait.pk))
-        self.assertNotContains(response, reverse('tags:tagged-traits:pk:review:new', args=[self.tagged_trait.pk]))
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-review:new', args=[self.tagged_trait.pk]))
 
     def test_reviewed_tagged_trait_missing_link_to_udpate(self):
         """A reviewed tagged trait does not include a link to update the DCCReview for regular users."""
         factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait)
         response = self.client.get(self.get_url(self.tagged_trait.pk))
-        self.assertNotContains(response, reverse('tags:tagged-traits:pk:review:update', args=[self.tagged_trait.pk]))
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-review:update', args=[self.tagged_trait.pk]))
 
     def test_context_with_unreviewed_trait(self):
         """The context contains the proper flags for the add/update review buttons."""
@@ -249,13 +249,13 @@ class TaggedTraitDetailPhenotypeTaggerTest(TaggedTraitDetailTestsMixin, Phenotyp
     def test_unreviewed_tagged_trait_missing_link_to_review(self):
         """An unreviewed tagged trait does not include a link to review for Phenotype taggers."""
         response = self.client.get(self.get_url(self.tagged_trait.pk))
-        self.assertNotContains(response, reverse('tags:tagged-traits:pk:review:new', args=[self.tagged_trait.pk]))
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-review:new', args=[self.tagged_trait.pk]))
 
     def test_reviewed_tagged_trait_missing_link_to_udpate(self):
         """A reviewed tagged trait does not include a link to update the DCCReview for Phenotype taggers."""
         factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait)
         response = self.client.get(self.get_url(self.tagged_trait.pk))
-        self.assertNotContains(response, reverse('tags:tagged-traits:pk:review:update', args=[self.tagged_trait.pk]))
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-review:update', args=[self.tagged_trait.pk]))
 
     def test_context_with_unreviewed_trait(self):
         """The context contains the proper flags for the add/update review buttons."""
@@ -331,7 +331,7 @@ class TaggedTraitDetailDCCAnalystTest(TaggedTraitDetailTestsMixin, DCCAnalystLog
     def test_unreviewed_tagged_trait_includes_link_to_review(self):
         """An unreviewed tagged trait includes a link to review for DCC users."""
         response = self.client.get(self.get_url(self.tagged_trait.pk))
-        self.assertContains(response, reverse('tags:tagged-traits:pk:review:new', args=[self.tagged_trait.pk]))
+        self.assertContains(response, reverse('tags:tagged-traits:pk:dcc-review:new', args=[self.tagged_trait.pk]))
 
     def test_context_with_reviewed_trait(self):
         """The context contains the proper flags when the tagged trait has been reviewed.."""
@@ -349,7 +349,7 @@ class TaggedTraitDetailDCCAnalystTest(TaggedTraitDetailTestsMixin, DCCAnalystLog
         """The context contains the proper flags when the tagged trait has not been reviewed.."""
         factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait)
         response = self.client.get(self.get_url(self.tagged_trait.pk))
-        self.assertContains(response, reverse('tags:tagged-traits:pk:review:update', args=[self.tagged_trait.pk]))
+        self.assertContains(response, reverse('tags:tagged-traits:pk:dcc-review:update', args=[self.tagged_trait.pk]))
 
 
 class TaggedTraitTagCountsByStudyTest(UserLoginTestCase):
@@ -2634,7 +2634,7 @@ class DCCReviewCreateDCCTestsMixin(object):
 
     def get_url(self, *args):
         """Get the url for the view this class is supposed to test."""
-        return reverse('tags:tagged-traits:pk:review:new', args=args)
+        return reverse('tags:tagged-traits:pk:dcc-review:new', args=args)
 
     def test_view_success_code(self):
         """View returns successful response code."""
@@ -2711,7 +2711,7 @@ class DCCReviewCreateDCCTestsMixin(object):
         )
         # Now try to review it through the web interface.
         response = self.client.get(self.get_url(self.tagged_trait.pk))
-        self.assertRedirects(response, reverse('tags:tagged-traits:pk:review:update', args=[self.tagged_trait.pk]))
+        self.assertRedirects(response, reverse('tags:tagged-traits:pk:dcc-review:update', args=[self.tagged_trait.pk]))
         # Check for warning message.
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
@@ -2729,7 +2729,7 @@ class DCCReviewCreateDCCTestsMixin(object):
         # Now try to review it through the web interface.
         form_data = {forms.DCCReviewForm.SUBMIT_CONFIRM: 'Confirm', 'comment': ''}
         response = self.client.post(self.get_url(self.tagged_trait.pk), form_data)
-        self.assertRedirects(response, reverse('tags:tagged-traits:pk:review:update', args=[self.tagged_trait.pk]))
+        self.assertRedirects(response, reverse('tags:tagged-traits:pk:dcc-review:update', args=[self.tagged_trait.pk]))
         # Check for warning message.
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
@@ -2747,7 +2747,7 @@ class DCCReviewCreateDCCTestsMixin(object):
         # Now try to review it through the web interface.
         form_data = {forms.DCCReviewForm.SUBMIT_FOLLOWUP: 'Confirm', 'comment': ''}
         response = self.client.post(self.get_url(self.tagged_trait.pk), form_data)
-        self.assertRedirects(response, reverse('tags:tagged-traits:pk:review:update', args=[self.tagged_trait.pk]))
+        self.assertRedirects(response, reverse('tags:tagged-traits:pk:dcc-review:update', args=[self.tagged_trait.pk]))
         # Check for warning message.
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
@@ -2776,7 +2776,7 @@ class DCCReviewCreateOtherUserTest(UserLoginTestCase):
 
     def get_url(self, *args):
         """Get the url for the view this class is supposed to test."""
-        return reverse('tags:tagged-traits:pk:review:new', args=args)
+        return reverse('tags:tagged-traits:pk:dcc-review:new', args=args)
 
     def test_forbidden_get_request(self):
         """Returns a response with a forbidden status code for non-DCC users."""
@@ -2810,7 +2810,7 @@ class DCCReviewUpdateDCCTestsMixin(object):
 
     def get_url(self, *args):
         """Get the url for the view this class is supposed to test."""
-        return reverse('tags:tagged-traits:pk:review:update', args=args)
+        return reverse('tags:tagged-traits:pk:dcc-review:update', args=args)
 
     def test_view_success_code(self):
         """View returns successful response code."""
@@ -2890,7 +2890,7 @@ class DCCReviewUpdateDCCTestsMixin(object):
         """Redirects to the create view with a warning if the DCCReview doesn't exist."""
         self.tagged_trait.dcc_review.delete()
         response = self.client.get(self.get_url(self.tagged_trait.pk))
-        self.assertRedirects(response, reverse('tags:tagged-traits:pk:review:new', args=[self.tagged_trait.pk]))
+        self.assertRedirects(response, reverse('tags:tagged-traits:pk:dcc-review:new', args=[self.tagged_trait.pk]))
         # Check for warning message.
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
@@ -2901,7 +2901,7 @@ class DCCReviewUpdateDCCTestsMixin(object):
         """Redirects to the create view with a warning if the DCCReview doesn't exist."""
         self.tagged_trait.dcc_review.delete()
         response = self.client.get(self.get_url(self.tagged_trait.pk))
-        self.assertRedirects(response, reverse('tags:tagged-traits:pk:review:new', args=[self.tagged_trait.pk]))
+        self.assertRedirects(response, reverse('tags:tagged-traits:pk:dcc-review:new', args=[self.tagged_trait.pk]))
         # Check for warning message.
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
@@ -2929,7 +2929,7 @@ class DCCReviewUpdateOtherUserTest(UserLoginTestCase):
 
     def get_url(self, *args):
         """Get the url for the view this class is supposed to test."""
-        return reverse('tags:tagged-traits:pk:review:update', args=args)
+        return reverse('tags:tagged-traits:pk:dcc-review:update', args=args)
 
     def test_forbidden_get_request(self):
         """Returns a response with a forbidden status code for non-DCC users."""

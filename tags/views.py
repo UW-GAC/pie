@@ -559,14 +559,14 @@ class DCCReviewCreate(LoginRequiredMixin, PermissionRequiredMixin, FormValidMess
         self.tagged_trait = get_object_or_404(models.TaggedTrait, pk=kwargs['pk'])
         if hasattr(self.tagged_trait, 'dcc_review'):
             self.messages.warning('{} has already been reviewed.'.format(self.tagged_trait))
-            return HttpResponseRedirect(reverse('tags:tagged-traits:pk:review:update', args=[self.tagged_trait.pk]))
+            return HttpResponseRedirect(reverse('tags:tagged-traits:pk:dcc-review:update', args=[self.tagged_trait.pk]))
         return super().get(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
         self.tagged_trait = get_object_or_404(models.TaggedTrait, pk=kwargs['pk'])
         if hasattr(self.tagged_trait, 'dcc_review'):
             self.messages.warning('{} has already been reviewed.'.format(self.tagged_trait))
-            return HttpResponseRedirect(reverse('tags:tagged-traits:pk:review:update', args=[self.tagged_trait.pk]))
+            return HttpResponseRedirect(reverse('tags:tagged-traits:pk:dcc-review:update', args=[self.tagged_trait.pk]))
         return super().post(request, *args, **kwargs)
 
     def get_form_valid_message(self):
@@ -594,14 +594,14 @@ class DCCReviewUpdate(LoginRequiredMixin, PermissionRequiredMixin, FormValidMess
             return super().get(request, *args, **kwargs)
         except ObjectDoesNotExist:
             self.messages.warning(self._get_already_reviewed_warning_message())
-            return HttpResponseRedirect(reverse('tags:tagged-traits:pk:review:new', args=[self.tagged_trait.pk]))
+            return HttpResponseRedirect(reverse('tags:tagged-traits:pk:dcc-review:new', args=[self.tagged_trait.pk]))
 
     def post(self, request, *args, **kwargs):
         try:
             return super().post(request, *args, **kwargs)
         except ObjectDoesNotExist:
             self.messages.warning(self._get_already_reviewed_warning_message())
-            return HttpResponseRedirect(reverse('tags:tagged-traits:pk:review:new', args=[self.tagged_trait.pk]))
+            return HttpResponseRedirect(reverse('tags:tagged-traits:pk:dcc-review:new', args=[self.tagged_trait.pk]))
 
     def get_object(self, queryset=None):
         self.tagged_trait = get_object_or_404(models.TaggedTrait, pk=self.kwargs['pk'])

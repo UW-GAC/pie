@@ -119,11 +119,11 @@ class TaggedTraitTableWithDCCReview(TaggedTraitDeleteButtonMixin, TaggedTraitTab
 
     def render_review_button(self, record):
         if not hasattr(record, 'dcc_review'):
-            url = reverse('tags:tagged-traits:pk:review:new', args=[record.pk])
+            url = reverse('tags:tagged-traits:pk:dcc-review:new', args=[record.pk])
             btn_text = "Add a DCC review"
             btn_class = 'btn-primary'
         else:
-            url = reverse('tags:tagged-traits:pk:review:update', args=[record.pk])
+            url = reverse('tags:tagged-traits:pk:dcc-review:update', args=[record.pk])
             btn_text = "Update DCC review"
             btn_class = 'btn-warning'
         html = REVIEW_BUTTON_HTML.format(url=url, btn_text=btn_text, btn_class=btn_class)

@@ -100,11 +100,11 @@ class TaggedTraitTableWithDCCReviewTest(TestCase):
         tagged_trait = factories.TaggedTraitFactory.create()
         dcc_review = factories.DCCReviewFactory.create(tagged_trait=tagged_trait)
         table = self.table_class(models.TaggedTrait.objects.all())
-        expected_url = reverse('tags:tagged-traits:pk:review:update', args=[tagged_trait.pk])
+        expected_url = reverse('tags:tagged-traits:pk:dcc-review:update', args=[tagged_trait.pk])
         self.assertIn(expected_url, table.render_review_button(tagged_trait))
 
     def test_proper_link_with_unreviewed_tagged_trait(self):
         tagged_trait = factories.TaggedTraitFactory.create()
         table = self.table_class(models.TaggedTrait.objects.all())
-        expected_url = reverse('tags:tagged-traits:pk:review:new', args=[tagged_trait.pk])
+        expected_url = reverse('tags:tagged-traits:pk:dcc-review:new', args=[tagged_trait.pk])
         self.assertIn(expected_url, table.render_review_button(tagged_trait))
