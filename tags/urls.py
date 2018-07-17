@@ -32,9 +32,9 @@ tag_patterns = ([
 ], 'tag', )
 
 dcc_review_by_tag_and_study_patterns = ([
-    url(r'^select/$', views.TaggedTraitReviewByTagAndStudySelect.as_view(), name='select'),
-    url(r'^next/$', views.TaggedTraitReviewByTagAndStudyNext.as_view(), name='next'),
-    url(r'^review/$', views.TaggedTraitReviewByTagAndStudy.as_view(), name='review'),
+    url(r'^select/$', views.DCCReviewByTagAndStudySelect.as_view(), name='select'),
+    url(r'^next/$', views.DCCReviewByTagAndStudyNext.as_view(), name='next'),
+    url(r'^review/$', views.DCCReviewByTagAndStudy.as_view(), name='review'),
 ], 'dcc-review')
 
 single_dcc_review_patterns = ([

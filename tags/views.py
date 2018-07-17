@@ -341,7 +341,7 @@ class ManyTaggedTraitsCreateByTag(LoginRequiredMixin, PermissionRequiredMixin, T
         return mark_safe(msg)
 
 
-class TaggedTraitReviewMixin(object):
+class DCCReviewMixin(object):
     """Mixin to review TaggedTraits and add or update DCCReviews. Must be used with CreateView or UpdateView."""
 
     model = models.DCCReview
@@ -349,7 +349,7 @@ class TaggedTraitReviewMixin(object):
     def get_context_data(self, **kwargs):
         if 'tagged_trait' not in kwargs:
             kwargs['tagged_trait'] = self.tagged_trait
-        return super(TaggedTraitReviewMixin, self).get_context_data(**kwargs)
+        return super(DCCReviewMixin, self).get_context_data(**kwargs)
 
     def get_review_status(self):
         """Return the DCCReview status based on which submit button was clicked."""
@@ -360,7 +360,7 @@ class TaggedTraitReviewMixin(object):
                 return self.model.STATUS_FOLLOWUP
 
     def get_form_kwargs(self):
-        kwargs = super(TaggedTraitReviewMixin, self).get_form_kwargs()
+        kwargs = super(DCCReviewMixin, self).get_form_kwargs()
         if 'data' in kwargs:
             tmp = kwargs['data'].copy()
             tmp.update({'status': self.get_review_status()})
@@ -372,10 +372,10 @@ class TaggedTraitReviewMixin(object):
         form.instance.tagged_trait = self.tagged_trait
         form.instance.creator = self.request.user
         form.instance.status = self.get_review_status()
-        return super(TaggedTraitReviewMixin, self).form_valid(form)
+        return super(DCCReviewMixin, self).form_valid(form)
 
 
-class TaggedTraitReviewByTagAndStudySelect(LoginRequiredMixin, PermissionRequiredMixin, MessageMixin, FormView):
+class DCCReviewByTagAndStudySelect(LoginRequiredMixin, PermissionRequiredMixin, MessageMixin, FormView):
 
     template_name = 'tags/taggedtrait_review_select.html'
     form_class = forms.TaggedTraitReviewSelectForm
@@ -398,13 +398,13 @@ class TaggedTraitReviewByTagAndStudySelect(LoginRequiredMixin, PermissionRequire
         }
         # Set a session variable for use in the next view.
         self.request.session['tagged_trait_review_by_tag_and_study_info'] = review_info
-        return(super(TaggedTraitReviewByTagAndStudySelect, self).form_valid(form))
+        return(super(DCCReviewByTagAndStudySelect, self).form_valid(form))
 
     def get_success_url(self):
         return reverse('tags:tagged-traits:dcc-review:next')
 
 
-class TaggedTraitReviewByTagAndStudyNext(LoginRequiredMixin, PermissionRequiredMixin, SessionVariableMixin,
+class DCCReviewByTagAndStudyNext(LoginRequiredMixin, PermissionRequiredMixin, SessionVariableMixin,
                                          MessageMixin, RedirectView):
     """Determine the next tagged trait to review and redirect to review page."""
 
@@ -476,8 +476,8 @@ class TaggedTraitReviewByTagAndStudyNext(LoginRequiredMixin, PermissionRequiredM
             return url
 
 
-class TaggedTraitReviewByTagAndStudy(LoginRequiredMixin, PermissionRequiredMixin, SessionVariableMixin,
-                                     TaggedTraitReviewMixin, FormValidMessageMixin, CreateView):
+class DCCReviewByTagAndStudy(LoginRequiredMixin, PermissionRequiredMixin, SessionVariableMixin,
+                                     DCCReviewMixin, FormValidMessageMixin, CreateView):
 
     template_name = 'tags/dccreview_form.html'
     permission_required = 'tags.add_dccreview'
@@ -510,7 +510,7 @@ class TaggedTraitReviewByTagAndStudy(LoginRequiredMixin, PermissionRequiredMixin
         self.request.session['tagged_trait_review_by_tag_and_study_info'] = info
 
     def get_context_data(self, **kwargs):
-        context = super(TaggedTraitReviewByTagAndStudy, self).get_context_data(**kwargs)
+        context = super(DCCReviewByTagAndStudy, self).get_context_data(**kwargs)
         if 'tag' not in context:
             context['tag'] = self.tagged_trait.tag
         if 'study' not in context:
@@ -531,12 +531,12 @@ class TaggedTraitReviewByTagAndStudy(LoginRequiredMixin, PermissionRequiredMixin
             # Add an informational message.
             self.messages.warning('{} has already been reviewed.'.format(self.tagged_trait))
             return HttpResponseRedirect(reverse('tags:tagged-traits:dcc-review:next'))
-        return super(TaggedTraitReviewByTagAndStudy, self).post(request, *args, **kwargs)
+        return super(DCCReviewByTagAndStudy, self).post(request, *args, **kwargs)
 
     def form_valid(self, form):
         # Remove the reviewed tagged trait from the list of pks.
         self._update_session_variables()
-        return super(TaggedTraitReviewByTagAndStudy, self).form_valid(form)
+        return super(DCCReviewByTagAndStudy, self).form_valid(form)
 
     def get_form_valid_message(self):
         msg = 'Successfully reviewed {}.'.format(self.tagged_trait)
@@ -546,8 +546,7 @@ class TaggedTraitReviewByTagAndStudy(LoginRequiredMixin, PermissionRequiredMixin
         return reverse('tags:tagged-traits:dcc-review:next')
 
 
-class DCCReviewCreate(LoginRequiredMixin, PermissionRequiredMixin, FormValidMessageMixin, TaggedTraitReviewMixin,
-                      CreateView):
+class DCCReviewCreate(LoginRequiredMixin, PermissionRequiredMixin, FormValidMessageMixin, DCCReviewMixin, CreateView):
 
     template_name = 'tags/dccreview_form.html'
     permission_required = 'tags.add_dccreview'
@@ -577,8 +576,7 @@ class DCCReviewCreate(LoginRequiredMixin, PermissionRequiredMixin, FormValidMess
         return self.tagged_trait.get_absolute_url()
 
 
-class DCCReviewUpdate(LoginRequiredMixin, PermissionRequiredMixin, FormValidMessageMixin, TaggedTraitReviewMixin,
-                      UpdateView):
+class DCCReviewUpdate(LoginRequiredMixin, PermissionRequiredMixin, FormValidMessageMixin, DCCReviewMixin, UpdateView):
 
     template_name = 'tags/dccreview_form.html'
     permission_required = 'tags.add_dccreview'

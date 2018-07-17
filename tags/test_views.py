@@ -1882,7 +1882,7 @@ class ManyTaggedTraitsCreateByTagDCCAnalystTest(DCCAnalystLoginTestCase):
         self.assertEqual(response.status_code, 200)
 
 
-class TaggedTraitReviewByTagAndStudySelectDCCTestsMixin(object):
+class DCCReviewByTagAndStudySelectDCCTestsMixin(object):
 
     def setUp(self):
         super().setUp()
@@ -2031,21 +2031,20 @@ class TaggedTraitReviewByTagAndStudySelectDCCTestsMixin(object):
         self.assertContains(response, """<a href="{}">""".format(self.get_url()))
 
 
-class TaggedTraitReviewByTagAndStudySelectDCCAnalystTest(TaggedTraitReviewByTagAndStudySelectDCCTestsMixin,
-                                                         DCCAnalystLoginTestCase):
+class DCCReviewByTagAndStudySelectDCCAnalystTest(DCCReviewByTagAndStudySelectDCCTestsMixin, DCCAnalystLoginTestCase):
 
-    # Run all tests in TaggedTraitReviewByTagAndStudySelectDCCTestsMixin, as a DCC analyst.
+    # Run all tests in DCCReviewByTagAndStudySelectDCCTestsMixin, as a DCC analyst.
     pass
 
 
-class TaggedTraitReviewByTagAndStudySelectDCCDeveloperTest(TaggedTraitReviewByTagAndStudySelectDCCTestsMixin,
-                                                           DCCDeveloperLoginTestCase):
+class DCCReviewByTagAndStudySelectDCCDeveloperTest(DCCReviewByTagAndStudySelectDCCTestsMixin,
+                                                   DCCDeveloperLoginTestCase):
 
-    # Run all tests in TaggedTraitReviewByTagAndStudySelectDCCTestsMixin, as a DCC developer.
+    # Run all tests in DCCReviewByTagAndStudySelectDCCTestsMixin, as a DCC developer.
     pass
 
 
-class TaggedTraitReviewByTagAndStudySelectOtherUserTest(UserLoginTestCase):
+class DCCReviewByTagAndStudySelectOtherUserTest(UserLoginTestCase):
 
     def get_url(self, *args):
         """Get the url for the view this class is supposed to test."""
@@ -2069,7 +2068,7 @@ class TaggedTraitReviewByTagAndStudySelectOtherUserTest(UserLoginTestCase):
         self.assertNotContains(response, """<a href="{}">""".format(self.get_url()))
 
 
-class TaggedTraitReviewByTagAndStudyNextDCCTestsMixin(object):
+class DCCReviewByTagAndStudyNextDCCTestsMixin(object):
 
     def get_url(self, *args):
         """Get the url for the view this class is supposed to test."""
@@ -2242,21 +2241,20 @@ class TaggedTraitReviewByTagAndStudyNextDCCTestsMixin(object):
         self.assertNotContains(response, """<a href="{}">""".format(self.get_url()))
 
 
-class TaggedTraitReviewByTagAndStudyNextDCCAnalystTest(TaggedTraitReviewByTagAndStudyNextDCCTestsMixin,
-                                                       DCCAnalystLoginTestCase):
+class DCCReviewByTagAndStudyNextDCCAnalystTest(DCCReviewByTagAndStudyNextDCCTestsMixin,
+                                               DCCAnalystLoginTestCase):
 
-    # Run all tests in TaggedTraitReviewByTagAndStudyNextDCCTestsMixin, as a DCC analyst.
+    # Run all tests in DCCReviewByTagAndStudyNextDCCTestsMixin, as a DCC analyst.
     pass
 
 
-class TaggedTraitReviewByTagAndStudyNextDCCDeveloperTest(TaggedTraitReviewByTagAndStudyNextDCCTestsMixin,
-                                                         DCCDeveloperLoginTestCase):
+class DCCReviewByTagAndStudyNextDCCDeveloperTest(DCCReviewByTagAndStudyNextDCCTestsMixin, DCCDeveloperLoginTestCase):
 
-    # Run all tests in TaggedTraitReviewByTagAndStudyNextDCCTestsMixin, as a DCC developer.
+    # Run all tests in DCCReviewByTagAndStudyNextDCCTestsMixin, as a DCC developer.
     pass
 
 
-class TaggedTraitReviewByTagAndStudyNextOtherUserTest(UserLoginTestCase):
+class DCCReviewByTagAndStudyNextOtherUserTest(UserLoginTestCase):
 
     def get_url(self, *args):
         """Get the url for the view this class is supposed to test."""
@@ -2290,7 +2288,7 @@ class TaggedTraitReviewByTagAndStudyNextOtherUserTest(UserLoginTestCase):
         self.assertNotContains(response, """<a href="{}">""".format(self.get_url()))
 
 
-class TaggedTraitReviewByTagAndStudyDCCTestsMixin(object):
+class DCCReviewByTagAndStudyDCCTestsMixin(object):
 
     def setUp(self):
         super().setUp()
@@ -2588,21 +2586,19 @@ class TaggedTraitReviewByTagAndStudyDCCTestsMixin(object):
         self.assertRedirects(response, reverse('tags:tagged-traits:dcc-review:next'), target_status_code=302)
 
 
-class TaggedTraitReviewByTagAndStudyDCCAnalystTest(TaggedTraitReviewByTagAndStudyDCCTestsMixin,
-                                                   DCCAnalystLoginTestCase):
+class DCCReviewByTagAndStudyDCCAnalystTest(DCCReviewByTagAndStudyDCCTestsMixin, DCCAnalystLoginTestCase):
 
-    # Run all tests in TaggedTraitReviewByTagAndStudyDCCTestsMixin, as a DCC analyst.
+    # Run all tests in DCCReviewByTagAndStudyDCCTestsMixin, as a DCC analyst.
     pass
 
 
-class TaggedTraitReviewByTagAndStudyDCCDeveloperTest(TaggedTraitReviewByTagAndStudyDCCTestsMixin,
-                                                     DCCDeveloperLoginTestCase):
+class DCCReviewByTagAndStudyDCCDeveloperTest(DCCReviewByTagAndStudyDCCTestsMixin, DCCDeveloperLoginTestCase):
 
-    # Run all tests in TaggedTraitReviewByTagAndStudyDCCTestsMixin, as a DCC developer.
+    # Run all tests in DCCReviewByTagAndStudyDCCTestsMixin, as a DCC developer.
     pass
 
 
-class TaggedTraitReviewByTagAndStudyOtherUserTest(UserLoginTestCase):
+class DCCReviewByTagAndStudyOtherUserTest(UserLoginTestCase):
 
     def get_url(self, *args):
         """Get the url for the view this class is supposed to test."""
