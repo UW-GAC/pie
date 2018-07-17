@@ -80,6 +80,7 @@
                 Tagged variables by tag</a>
             </li>
             {% if perms.tags.add_taggedtrait %}
+              <li role="separator" class="divider"></li>
               <li>
                 <a href="{% url 'tags:add-many:main' %}"><span class="glyphicon glyphicon-tag"></span>
                   Apply tag to variables</a>
@@ -90,6 +91,7 @@
               </li>
             {% endif %}
             {% if perms.tags.add_dccreview %}
+              <li role="separator" class="divider"></li>
               <li>
                 <a href="{% url 'tags:tagged-traits:dcc-review:select' %}"><span class="glyphicon glyphicon-sunglasses"></span>
                   Review tagged variables
