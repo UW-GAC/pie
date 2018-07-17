@@ -14,14 +14,22 @@
     Review <a href='{{ tagged_trait.get_absolute_url }}'>{{ tagged_trait }}</a>
   </h2>
 
-  {% include 'tags/_taggedtrait_info.html' with show_all_tags=True %}
+  {% include 'tags/_taggedtrait_info.html' with show_all_tags=True collapse_tag_panel=True %}
 
-  <div class="panel panel-default">
-    <div class="panel-heading"><strong>Instructions</strong></div>
-    <div class="panel-body">
-      If this variable is appropriately tagged, select the "Confirm" button. Otherwise,
-      type a reason in the "Comment" box and select the "Require study followup"
-      button.
+  <div class="panel-group">
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <h4 class="panel-title">
+          <a data-toggle="collapse" href="#collapse-instructions">Instructions</a>
+        </h4>
+      </div>
+      <div id="collapse-instructions" class="panel-collapse collapse">
+        <div class="panel-body">
+          If this variable is appropriately tagged, select the "Confirm" button. Otherwise,
+          type a reason in the "Comment" box and select the "Require study followup"
+          button.
+        </div>
+      </div>
     </div>
   </div>
 
