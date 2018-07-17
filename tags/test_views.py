@@ -1896,7 +1896,7 @@ class TaggedTraitReviewByTagAndStudySelectDCCTestsMixin(object):
 
     def get_url(self, *args):
         """Get the url for the view this class is supposed to test."""
-        return reverse('tags:tagged-traits:review:select', args=args)
+        return reverse('tags:tagged-traits:dcc-review:select', args=args)
 
     def test_view_success_code(self):
         """View returns successful response code."""
@@ -1933,7 +1933,7 @@ class TaggedTraitReviewByTagAndStudySelectDCCTestsMixin(object):
             self.assertIn(tt.pk, session_info['tagged_trait_pks'],
                           msg='TaggedTrait {} not in session tagged_trait_pks'.format(tt.pk))
         # The success url redirects again to a new page, so include the target_status_code argument.
-        self.assertRedirects(response, reverse('tags:tagged-traits:review:next'), target_status_code=302)
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-review:next'), target_status_code=302)
 
     def test_session_variable_tagged_with_tag(self):
         """Posting valid data to the form sets tagged_trait_pks to only those from the given tag."""
@@ -2049,7 +2049,7 @@ class TaggedTraitReviewByTagAndStudySelectOtherUserTest(UserLoginTestCase):
 
     def get_url(self, *args):
         """Get the url for the view this class is supposed to test."""
-        return reverse('tags:tagged-traits:review:select', args=args)
+        return reverse('tags:tagged-traits:dcc-review:select', args=args)
 
     def test_forbidden_get_request(self):
         """Returns a response with a forbidden status code for non-DCC users."""
@@ -2073,12 +2073,12 @@ class TaggedTraitReviewByTagAndStudyNextDCCTestsMixin(object):
 
     def get_url(self, *args):
         """Get the url for the view this class is supposed to test."""
-        return reverse('tags:tagged-traits:review:next', args=args)
+        return reverse('tags:tagged-traits:dcc-review:next', args=args)
 
     def test_view_success_with_no_session_variables(self):
         """View redirects correctly when no session variables are set."""
         response = self.client.get(self.get_url())
-        self.assertRedirects(response, reverse('tags:tagged-traits:review:select'))
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-review:select'))
 
     def test_view_success_with_tagged_traits_to_review(self):
         """View redirects correctly when there are tagged traits to review."""
@@ -2098,7 +2098,7 @@ class TaggedTraitReviewByTagAndStudyNextDCCTestsMixin(object):
         self.assertIn('tagged_trait_review_by_tag_and_study_info', session)
         self.assertIn('pk', session['tagged_trait_review_by_tag_and_study_info'])
         self.assertEqual(session['tagged_trait_review_by_tag_and_study_info']['pk'], tagged_trait.pk)
-        self.assertRedirects(response, reverse('tags:tagged-traits:review:review'))
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-review:review'))
         # Check messages.
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
@@ -2157,7 +2157,7 @@ class TaggedTraitReviewByTagAndStudyNextDCCTestsMixin(object):
         self.assertIn('tagged_trait_pks', session_info)
         self.assertEqual(session_info['tagged_trait_pks'], [tagged_traits[1].pk])
         self.assertNotIn('pk', session_info)
-        self.assertRedirects(response, reverse('tags:tagged-traits:review:next'), target_status_code=302)
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-review:next'), target_status_code=302)
         # Check that there are no messages.
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 0)
@@ -2185,12 +2185,12 @@ class TaggedTraitReviewByTagAndStudyNextDCCTestsMixin(object):
         self.assertIn('tagged_trait_pks', session_info)
         self.assertEqual(session_info['tagged_trait_pks'], [tagged_traits[1].pk])
         self.assertNotIn('pk', session_info)
-        self.assertRedirects(response, reverse('tags:tagged-traits:review:next'), target_status_code=302)
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-review:next'), target_status_code=302)
 
     def test_session_variables_are_not_properly_set(self):
         """Redirects to select view if expected session variable is not set."""
         response = self.client.get(self.get_url())
-        self.assertRedirects(response, reverse('tags:tagged-traits:review:select'))
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-review:select'))
 
     def test_session_variable_missing_required_keys(self):
         """Redirects to select view if expected session variable dictionary keys are missing."""
@@ -2214,7 +2214,7 @@ class TaggedTraitReviewByTagAndStudyNextDCCTestsMixin(object):
             session.save()
             response = self.client.get(self.get_url())
             self.assertNotIn('tagged_trait_review_by_tag_and_study_info', self.client.session)
-            self.assertRedirects(response, reverse('tags:tagged-traits:review:select'),
+            self.assertRedirects(response, reverse('tags:tagged-traits:dcc-review:select'),
                                  msg_prefix='did not redirect when missing {} in session'.format(key))
 
     def test_continue_reviewing_link_in_navbar_if_session_variable_is_present(self):
@@ -2260,7 +2260,7 @@ class TaggedTraitReviewByTagAndStudyNextOtherUserTest(UserLoginTestCase):
 
     def get_url(self, *args):
         """Get the url for the view this class is supposed to test."""
-        return reverse('tags:tagged-traits:review:next', args=args)
+        return reverse('tags:tagged-traits:dcc-review:next', args=args)
 
     def test_forbidden_get_request(self):
         """Returns a response with a forbidden status code for non-DCC users."""
@@ -2312,7 +2312,7 @@ class TaggedTraitReviewByTagAndStudyDCCTestsMixin(object):
 
     def get_url(self, *args):
         """Get the url for the view this class is supposed to test."""
-        return reverse('tags:tagged-traits:review:review', args=args)
+        return reverse('tags:tagged-traits:dcc-review:review', args=args)
 
     def test_view_success_code(self):
         """View returns successful response code."""
@@ -2370,7 +2370,7 @@ class TaggedTraitReviewByTagAndStudyDCCTestsMixin(object):
         self.assertEqual(len(messages), 1)
         self.assertIn('Successfully reviewed', str(messages[0]))
         # Correctly redirects to the next view (remembering that it is a redirect view).
-        self.assertRedirects(response, reverse('tags:tagged-traits:review:next'), target_status_code=302)
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-review:next'), target_status_code=302)
 
     def test_successful_post_with_needs_followup_tagged_trait(self):
         """Posting valid data to the form correctly creates a DCCReview."""
@@ -2389,7 +2389,7 @@ class TaggedTraitReviewByTagAndStudyDCCTestsMixin(object):
         self.assertEqual(len(messages), 1)
         self.assertIn('Successfully reviewed', str(messages[0]))
         # Correctly redirects to the next view (remembering that it is a redirect view).
-        self.assertRedirects(response, reverse('tags:tagged-traits:review:next'), target_status_code=302)
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-review:next'), target_status_code=302)
 
     def test_post_bad_data(self):
         """Posting bad data to the form shows a form error and doesn't unset session variables."""
@@ -2422,7 +2422,7 @@ class TaggedTraitReviewByTagAndStudyDCCTestsMixin(object):
         self.assertIn('tagged_trait_pks', session_info)
         self.assertNotIn(self.tagged_trait.pk, session_info['tagged_trait_pks'])
         # The redirect view unsets some session variables, so check it at the end.
-        self.assertRedirects(response, reverse('tags:tagged-traits:review:next'), target_status_code=302)
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-review:next'), target_status_code=302)
 
     def test_non_existent_tagged_trait(self):
         """Returns a 404 page if the session varaible pk doesn't exist."""
@@ -2452,7 +2452,7 @@ class TaggedTraitReviewByTagAndStudyDCCTestsMixin(object):
         self.assertIn('already been reviewed', str(messages[0]))
         # The previous DCCReview was not updated.
         self.assertEqual(self.tagged_trait.dcc_review, dcc_review)
-        self.assertRedirects(response, reverse('tags:tagged-traits:review:next'), target_status_code=302)
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-review:next'), target_status_code=302)
 
     def test_already_reviewed_tagged_trait_with_form_error(self):
         """Shows warning message and redirects if TaggedTrait is already reviewed."""
@@ -2476,7 +2476,7 @@ class TaggedTraitReviewByTagAndStudyDCCTestsMixin(object):
         self.assertIn('already been reviewed', str(messages[0]))
         # The previous DCCReview was not updated.
         self.assertEqual(self.tagged_trait.dcc_review, dcc_review)
-        self.assertRedirects(response, reverse('tags:tagged-traits:review:next'), target_status_code=302)
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-review:next'), target_status_code=302)
 
     def test_can_skip_already_reviewed_tagged_trait(self):
         """Redirects without a message if an already-reviewed tagged trait is skipped."""
@@ -2499,7 +2499,7 @@ class TaggedTraitReviewByTagAndStudyDCCTestsMixin(object):
         self.assertEqual(len(messages), 0)
         # The previous DCCReview was not updated.
         self.assertEqual(self.tagged_trait.dcc_review, dcc_review)
-        self.assertRedirects(response, reverse('tags:tagged-traits:review:next'), target_status_code=302)
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-review:next'), target_status_code=302)
 
     def test_session_variables_are_not_properly_set_with_get_request(self):
         """Redirects to select view if expected session variable is not set."""
@@ -2507,7 +2507,7 @@ class TaggedTraitReviewByTagAndStudyDCCTestsMixin(object):
         del session['tagged_trait_review_by_tag_and_study_info']
         session.save()
         response = self.client.get(self.get_url())
-        self.assertRedirects(response, reverse('tags:tagged-traits:review:select'))
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-review:select'))
 
     def test_session_variables_are_not_properly_set_with_post_request(self):
         """Redirects to select view if expected session variable is not set."""
@@ -2515,7 +2515,7 @@ class TaggedTraitReviewByTagAndStudyDCCTestsMixin(object):
         del session['tagged_trait_review_by_tag_and_study_info']
         session.save()
         response = self.client.post(self.get_url(), {})
-        self.assertRedirects(response, reverse('tags:tagged-traits:review:select'))
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-review:select'))
 
     def test_session_variable_missing_key_tag_pk_with_get_request(self):
         """Redirects to select view if expected session variable dictionary keys are missing."""
@@ -2524,7 +2524,7 @@ class TaggedTraitReviewByTagAndStudyDCCTestsMixin(object):
         session.save()
         response = self.client.get(self.get_url())
         self.assertNotIn('tagged_trait_review_by_tag_and_study_info', self.client.session)
-        self.assertRedirects(response, reverse('tags:tagged-traits:review:select'))
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-review:select'))
 
     def test_session_variable_missing_key_study_pk_with_get_request(self):
         """Redirects to select view if expected session variable dictionary keys are missing."""
@@ -2533,7 +2533,7 @@ class TaggedTraitReviewByTagAndStudyDCCTestsMixin(object):
         session.save()
         response = self.client.get(self.get_url())
         self.assertNotIn('tagged_trait_review_by_tag_and_study_info', self.client.session)
-        self.assertRedirects(response, reverse('tags:tagged-traits:review:select'))
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-review:select'))
 
     def test_session_variable_missing_key_tagged_trait_pks_with_get_request(self):
         """Redirects to select view if expected session variable dictionary keys are missing."""
@@ -2542,7 +2542,7 @@ class TaggedTraitReviewByTagAndStudyDCCTestsMixin(object):
         session.save()
         response = self.client.get(self.get_url())
         self.assertNotIn('tagged_trait_review_by_tag_and_study_info', self.client.session)
-        self.assertRedirects(response, reverse('tags:tagged-traits:review:select'))
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-review:select'))
 
     def test_session_variable_missing_key_pk_with_get_request(self):
         """Redirects to select view if expected session variable dictionary keys are missing."""
@@ -2550,7 +2550,7 @@ class TaggedTraitReviewByTagAndStudyDCCTestsMixin(object):
         session['tagged_trait_review_by_tag_and_study_info'].pop('pk')
         session.save()
         response = self.client.get(self.get_url())
-        self.assertRedirects(response, reverse('tags:tagged-traits:review:next'), target_status_code=302)
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-review:next'), target_status_code=302)
 
     def test_session_variable_missing_key_tag_pk_with_post_request(self):
         """Redirects to select view if expected session variable dictionary keys are missing."""
@@ -2559,7 +2559,7 @@ class TaggedTraitReviewByTagAndStudyDCCTestsMixin(object):
         session.save()
         response = self.client.post(self.get_url(), {})
         self.assertNotIn('tagged_trait_review_by_tag_and_study_info', self.client.session)
-        self.assertRedirects(response, reverse('tags:tagged-traits:review:select'))
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-review:select'))
 
     def test_session_variable_missing_key_study_pk_with_post_request(self):
         """Redirects to select view if expected session variable dictionary keys are missing."""
@@ -2568,7 +2568,7 @@ class TaggedTraitReviewByTagAndStudyDCCTestsMixin(object):
         session.save()
         response = self.client.post(self.get_url(), {})
         self.assertNotIn('tagged_trait_review_by_tag_and_study_info', self.client.session)
-        self.assertRedirects(response, reverse('tags:tagged-traits:review:select'))
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-review:select'))
 
     def test_session_variable_missing_key_tagged_trait_pks_with_post_request(self):
         """Redirects to select view if expected session variable dictionary keys are missing."""
@@ -2577,7 +2577,7 @@ class TaggedTraitReviewByTagAndStudyDCCTestsMixin(object):
         session.save()
         response = self.client.post(self.get_url(), {})
         self.assertNotIn('tagged_trait_review_by_tag_and_study_info', self.client.session)
-        self.assertRedirects(response, reverse('tags:tagged-traits:review:select'))
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-review:select'))
 
     def test_session_variable_missing_key_pk_with_post_request(self):
         """Redirects to select view if expected session variable dictionary keys are missing."""
@@ -2585,7 +2585,7 @@ class TaggedTraitReviewByTagAndStudyDCCTestsMixin(object):
         session['tagged_trait_review_by_tag_and_study_info'].pop('pk')
         session.save()
         response = self.client.post(self.get_url(), {})
-        self.assertRedirects(response, reverse('tags:tagged-traits:review:next'), target_status_code=302)
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-review:next'), target_status_code=302)
 
 
 class TaggedTraitReviewByTagAndStudyDCCAnalystTest(TaggedTraitReviewByTagAndStudyDCCTestsMixin,
@@ -2606,7 +2606,7 @@ class TaggedTraitReviewByTagAndStudyOtherUserTest(UserLoginTestCase):
 
     def get_url(self, *args):
         """Get the url for the view this class is supposed to test."""
-        return reverse('tags:tagged-traits:review:review', args=args)
+        return reverse('tags:tagged-traits:dcc-review:review', args=args)
 
     def test_forbidden_get_request(self):
         """Returns a response with a forbidden status code for non-DCC users."""

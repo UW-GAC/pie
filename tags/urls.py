@@ -31,11 +31,11 @@ tag_patterns = ([
     url(r'^studies/(?P<pk_study>\d+)/', include(tag_study_patterns)),
 ], 'tag', )
 
-tagged_trait_review_by_tag_and_study_patterns = ([
+dcc_review_by_tag_and_study_patterns = ([
     url(r'^select/$', views.TaggedTraitReviewByTagAndStudySelect.as_view(), name='select'),
     url(r'^next/$', views.TaggedTraitReviewByTagAndStudyNext.as_view(), name='next'),
     url(r'^review/$', views.TaggedTraitReviewByTagAndStudy.as_view(), name='review'),
-], 'review')
+], 'dcc-review')
 
 single_dcc_review_patterns = ([
     url(r'^new/$', views.DCCReviewCreate.as_view(), name='new'),
@@ -50,7 +50,7 @@ single_tagged_trait_patterns = ([
 
 tagged_trait_patterns = ([
     # url(r'^list', views.TagList.as_view(), name='list'),
-    url(r'^review/', include(tagged_trait_review_by_tag_and_study_patterns)),
+    url(r'^dcc-review/', include(dcc_review_by_tag_and_study_patterns)),
     url(r'^(?P<pk>\d+)/', include(single_tagged_trait_patterns)),
     url(r'^by-study/$', views.TaggedTraitTagCountsByStudy.as_view(), name='by-study'),
     url(r'^by-tag/$', views.TaggedTraitStudyCountsByTag.as_view(), name='by-tag'),

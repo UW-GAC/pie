@@ -91,13 +91,13 @@
             {% endif %}
             {% if perms.tags.add_dccreview %}
               <li>
-                <a href="{% url 'tags:tagged-traits:review:select' %}"><span class="glyphicon glyphicon-sunglasses"></span>
+                <a href="{% url 'tags:tagged-traits:dcc-review:select' %}"><span class="glyphicon glyphicon-sunglasses"></span>
                   Review tagged variables
                 </a>
               </li>
               {% if request.session.tagged_trait_review_by_tag_and_study_info is not None %}
                 <li>
-                  <a href="{% url 'tags:tagged-traits:review:next' %}"><span class="glyphicon glyphicon-repeat"></span>
+                  <a href="{% url 'tags:tagged-traits:dcc-review:next' %}"><span class="glyphicon glyphicon-repeat"></span>
                     Continue reviewing
                   </a>
                 </li>
