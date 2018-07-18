@@ -1,0 +1,62 @@
+{# Includable snippet to display tag and trait info about a tagged trait. #}
+{% comment %}
+  Usage: {% include 'tags/_taggedtrait_info.html' with show_all_tags=XXX collapse_tag_panel=XXX collapse_trait_panel=XXX%}
+  Arguments:
+    show_all_tags: logical indicator if all tags applied to this trait should be shown.
+    collapse_tag_panel: logical indicator if the tag information should be collapsed.
+    collapse_trait_panel: logical indicator if the trait information panel should be collapsed.
+{% endcomment %}
+
+<div class="panel-group">
+  <div class="panel panel-default">
+    <div class="panel-heading">
+      <h4 class="panel-title">
+        <a data-toggle="collapse" href="#collapse-tag">Tag information</a>
+      </h4>
+    </div>
+    <div id="collapse-tag" class="panel-collapse {% if collapse_tag_panel %}collapse{% else %}in{% endif %}">
+      <div class="panel-body">
+        <dl class="dl-horizontal">
+          <dt>Tag name</dt><dd><a href="{{ tagged_trait.tag.get_absolute_url }}">{{ tagged_trait.tag.lower_title }}</a></dd>
+          <dt>Tag description</dt><dd>{{ tagged_trait.tag.description }}</dd>
+          <dt>Tag instructions</dt><dd>{{ tagged_trait.tag.instructions }}</dd>
+        </dl>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="panel-group">
+  <div class="panel panel-default">
+    <div class="panel-heading">
+      <h4 class="panel-title">
+        <a data-toggle="collapse" href="#collapse-trait">Study variable information</a>
+      </h4>
+    </div>
+    <div id="collapse-trait" class="panel-collapse {% if collapse_trait_panel %}collapse{% else %}in{% endif %}">
+      <div class="panel-body">
+        <dl class="dl-horizontal">
+          <dt>Variable</dt><dd><a href='{{ tagged_trait.trait.get_absolute_url }}'>{{ tagged_trait.trait.i_trait_name }}</a></dd>
+          <dt>Variable description</dt><dd>{{ tagged_trait.trait.i_description }}</dd>
+          <dt>Dataset</dt><dd><a href="{{ tagged_trait.trait.source_dataset.get_absolute_url }}">{{ tagged_trait.trait.source_dataset.dataset_name }}</a></dd>
+          <dt>Dataset description</dt><dd>{{ tagged_trait.trait.source_dataset.i_dbgap_description }}</dd>
+          {% if show_all_tags %}
+            <dt>All phenotype tags</dt>
+              <dd>
+                {% for other_tag in tagged_trait.trait.tag_set.all %}
+                  <div class="btn-group btn-group-xs">
+                    <a href="{{ other_tag.get_absolute_url }}"
+                       class="btn btn-{% if tagged_trait.tag.pk == other_tag.pk%}info{% else %}default{% endif %}"
+                       role="button">
+                      {{ other_tag.title }}
+                    </a>
+                  </div>
+                {% endfor %}
+              </dd>
+            <dt></dt><dd><p class="text-muted"><small>Some study variables have multiple tags applied to them. The tag for this tagged trait is highlighted in blue.</small></p></dd>
+          {% endif %}
+        </dl>
+      </div>
+    </div>
+  </div>
+</div>
