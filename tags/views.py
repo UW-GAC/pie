@@ -172,9 +172,22 @@ class TaggedTraitDelete(LoginRequiredMixin, PermissionRequiredMixin, TaggableStu
     raise_exception = True
     redirect_unauthenticated_users = True
 
+    def get_context_data(self, *args, **kwargs):
+        context = super(TaggedTraitDelete, self).get_context_data(*args, **kwargs)
+        # Get the url from the "next" parameter, so you can return the user to the page they came from.
+        context['next_url'] = self.request.GET.get('next')
+        return context
+
     def get_success_url(self):
-        return reverse('trait_browser:source:studies:pk:traits:tagged',
-                       args=[self.object.trait.source_dataset.source_study_version.study.pk])
+        """Redirect the user back to wherever they came from."""
+        next_url = self.request.GET.get('next')
+        # The next_url can't be the absolute url because that page will give a 404 after the TaggedTrait is deleted.
+        if next_url is not None and next_url != self.object.get_absolute_url():
+            return next_url
+        else:
+            return reverse('tags:tag:study:list',
+                           kwargs={'pk_study': self.object.trait.source_dataset.source_study_version.study.pk,
+                                   'pk': self.object.tag.pk})
 
     def get_form_valid_message(self):
         msg = 'Tag <a href="{}">{}</a> has been removed from study variable <a href="{}">{}</a>'.format(
