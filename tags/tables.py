@@ -122,13 +122,3 @@ class TaggedTraitTableWithDCCReview(TaggedTraitDeleteButtonMixin, TaggedTraitTab
 
     class Meta(TaggedTraitTable.Meta):
         fields = ('tag', 'trait', 'description', 'dataset', 'status', 'review_button', 'details', 'delete_button')
-
-
-class UserTaggedTraitTable(TaggedTraitDeleteButtonMixin, TaggedTraitTable):
-    """Table for displaying TaggedTraits on a user's profile page.
-
-    Displays user information that is not displayed in the plain old TaggedTraitTable.
-    """
-
-    class Meta(TaggedTraitTable.Meta):
-        fields = ('tag', 'trait', 'description', 'dataset', 'delete_button',)
