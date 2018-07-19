@@ -37,9 +37,6 @@ class TagDetail(LoginRequiredMixin, DetailView):
     model = models.Tag
     context_object_name = 'tag'
 
-    def get_table_data(self):
-        return self.object.traits.all()
-
     def get_context_data(self, **kwargs):
         context = super(TagDetail, self).get_context_data(**kwargs)
         study_counts = models.TaggedTrait.objects.filter(tag=self.object).values(
