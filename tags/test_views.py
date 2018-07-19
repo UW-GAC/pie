@@ -556,7 +556,7 @@ class TaggedTraitByTagAndStudyListPhenotypeTaggerTest(PhenotypeTaggerLoginTestCa
         """For taggers, the tagged trait table class is correct."""
         response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
         context = response.context
-        self.assertIsInstance(context['tagged_trait_table'], tables.TaggedTraitTable)
+        self.assertIsInstance(context['tagged_trait_table'], tables.TaggedTraitTableWithDCCReviewStatus)
 
 
 class TaggedTraitByTagAndStudyListDCCAnalystTest(DCCAnalystLoginTestCase):
@@ -601,7 +601,7 @@ class TaggedTraitByTagAndStudyListDCCAnalystTest(DCCAnalystLoginTestCase):
         """For DCC Analysts, the tagged trait table class has delete buttons."""
         response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
         context = response.context
-        self.assertIsInstance(context['tagged_trait_table'], tables.TaggedTraitTableWithDCCReview)
+        self.assertIsInstance(context['tagged_trait_table'], tables.TaggedTraitTableWithDCCReviewButton)
 
 
 class TaggedTraitCreateTest(PhenotypeTaggerLoginTestCase):

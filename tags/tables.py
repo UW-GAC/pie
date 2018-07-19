@@ -99,14 +99,17 @@ class TaggedTraitDeleteButtonMixin(tables.Table):
         return mark_safe(html)
 
 
-class TaggedTraitTableWithDCCReview(TaggedTraitTable):
-    """Table for displaying TaggedTraits with DCCReview information."""
+class TaggedTraitTableDCCReviewStatusMixin(tables.Table):
+    """Mixin to show DCCReview status in a TaggedTrait table."""
 
     status = tables.Column('Status', accessor='dcc_review.status')
+
+
+class TaggedTraitTableDCCReviewButtonMixin(TaggedTraitTableDCCReviewStatusMixin):
+    """Mixin to show DCCReview status and a button to review a TaggedTrait."""
+
     # This column will display a button to either create a new review or update an existing review.
     review_button = tables.Column(verbose_name='', accessor='pk')
-    details = tables.TemplateColumn(verbose_name='', orderable=False,
-                                    template_code=DETAIL_BUTTON_TEMPLATE)
 
     def render_review_button(self, record):
         if not hasattr(record, 'dcc_review'):
@@ -119,6 +122,23 @@ class TaggedTraitTableWithDCCReview(TaggedTraitTable):
             btn_class = 'btn-warning'
         html = REVIEW_BUTTON_HTML.format(url=url, btn_text=btn_text, btn_class=btn_class)
         return mark_safe(html)
+
+
+class TaggedTraitTableWithDCCReviewStatus(TaggedTraitTableDCCReviewStatusMixin, TaggedTraitTable):
+    """Table for displaying TaggedTraits with DCCReview information."""
+
+    details = tables.TemplateColumn(verbose_name='', orderable=False,
+                                    template_code=DETAIL_BUTTON_TEMPLATE)
+
+    class Meta(TaggedTraitTable.Meta):
+        fields = ('tag', 'trait', 'description', 'dataset', 'status', 'details')
+
+
+class TaggedTraitTableWithDCCReviewButton(TaggedTraitTableDCCReviewButtonMixin, TaggedTraitTable):
+    """Table for displaying TaggedTraits with DCCReview information and review button."""
+
+    details = tables.TemplateColumn(verbose_name='', orderable=False,
+                                    template_code=DETAIL_BUTTON_TEMPLATE)
 
     class Meta(TaggedTraitTable.Meta):
         fields = ('tag', 'trait', 'description', 'dataset', 'status', 'review_button', 'details')
