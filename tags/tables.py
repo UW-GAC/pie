@@ -99,7 +99,7 @@ class TaggedTraitDeleteButtonMixin(tables.Table):
         return mark_safe(html)
 
 
-class TaggedTraitTableWithDCCReview(TaggedTraitDeleteButtonMixin, TaggedTraitTable):
+class TaggedTraitTableWithDCCReview(TaggedTraitTable):
     """Table for displaying TaggedTraits with DCCReview information."""
 
     status = tables.Column('Status', accessor='dcc_review.status')
@@ -121,4 +121,4 @@ class TaggedTraitTableWithDCCReview(TaggedTraitDeleteButtonMixin, TaggedTraitTab
         return mark_safe(html)
 
     class Meta(TaggedTraitTable.Meta):
-        fields = ('tag', 'trait', 'description', 'dataset', 'status', 'review_button', 'details', 'delete_button')
+        fields = ('tag', 'trait', 'description', 'dataset', 'status', 'review_button', 'details')
