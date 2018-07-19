@@ -175,7 +175,8 @@ class TaggedTraitDetailTest(TaggedTraitDetailTestsMixin, UserLoginTestCase):
         """A reviewed tagged trait does not include a link to update the DCCReview for regular users."""
         factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait)
         response = self.client.get(self.get_url(self.tagged_trait.pk))
-        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-review:update', args=[self.tagged_trait.pk]))
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-review:update',
+                                                 args=[self.tagged_trait.pk]))
 
     def test_context_with_unreviewed_trait(self):
         """The context contains the proper flags for the add/update review buttons."""
@@ -255,7 +256,8 @@ class TaggedTraitDetailPhenotypeTaggerTest(TaggedTraitDetailTestsMixin, Phenotyp
         """A reviewed tagged trait does not include a link to update the DCCReview for Phenotype taggers."""
         factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait)
         response = self.client.get(self.get_url(self.tagged_trait.pk))
-        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-review:update', args=[self.tagged_trait.pk]))
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-review:update',
+                                                 args=[self.tagged_trait.pk]))
 
     def test_context_with_unreviewed_trait(self):
         """The context contains the proper flags for the add/update review buttons."""

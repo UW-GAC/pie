@@ -55,7 +55,6 @@ class TaggedTraitTable(tables.Table):
     details = tables.TemplateColumn(verbose_name='', orderable=False,
                                     template_code=DETAIL_BUTTON_TEMPLATE)
 
-
     class Meta:
         model = models.TaggedTrait
         fields = ('tag', 'trait', 'description', 'dataset', 'details', )
