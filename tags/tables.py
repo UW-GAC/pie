@@ -69,10 +69,13 @@ class TaggedTraitTable(tables.Table):
     tag = tables.LinkColumn(
         'tags:tag:detail', args=[tables.utils.A('tag.pk')], verbose_name='Tag',
         text=lambda record: record.tag.title, orderable=True)
+    details = tables.TemplateColumn(verbose_name='', orderable=False,
+                                    template_code=DETAIL_BUTTON_TEMPLATE)
+
 
     class Meta:
         model = models.TaggedTrait
-        fields = ('tag', 'trait', 'description', 'dataset', )
+        fields = ('tag', 'trait', 'description', 'dataset', 'details', )
         attrs = {'class': 'table table-striped table-bordered table-hover', 'style': 'width: auto;'}
         template = 'django_tables2/bootstrap-responsive.html'
         order_by = ('tag', )
@@ -131,14 +134,11 @@ class TaggedTraitTableWithDCCReviewStatus(TaggedTraitTableDCCReviewStatusMixin, 
                                     template_code=DETAIL_BUTTON_TEMPLATE)
 
     class Meta(TaggedTraitTable.Meta):
-        fields = ('tag', 'trait', 'description', 'dataset', 'status', 'details')
+        fields = ('tag', 'trait', 'description', 'dataset', 'details', 'status', )
 
 
 class TaggedTraitTableWithDCCReviewButton(TaggedTraitTableDCCReviewButtonMixin, TaggedTraitTable):
     """Table for displaying TaggedTraits with DCCReview information and review button."""
 
-    details = tables.TemplateColumn(verbose_name='', orderable=False,
-                                    template_code=DETAIL_BUTTON_TEMPLATE)
-
     class Meta(TaggedTraitTable.Meta):
-        fields = ('tag', 'trait', 'description', 'dataset', 'status', 'review_button', 'details')
+        fields = ('tag', 'trait', 'description', 'dataset', 'details', 'status', 'review_button', )
