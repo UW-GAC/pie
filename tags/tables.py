@@ -99,15 +99,6 @@ class TaggedTraitDeleteButtonMixin(tables.Table):
         return mark_safe(html)
 
 
-class TaggedTraitTableWithDelete(TaggedTraitDeleteButtonMixin, TaggedTraitTable):
-    """Table for displaying TaggedTraits with delete buttons."""
-
-    creator = tables.Column('Tagged by', accessor='creator.name')
-
-    class Meta(TaggedTraitTable.Meta):
-        fields = ('tag', 'trait', 'description', 'dataset', 'creator', 'delete_button',)
-
-
 class TaggedTraitTableWithDCCReview(TaggedTraitDeleteButtonMixin, TaggedTraitTable):
     """Table for displaying TaggedTraits with DCCReview information."""
 
@@ -139,5 +130,5 @@ class UserTaggedTraitTable(TaggedTraitDeleteButtonMixin, TaggedTraitTable):
     Displays user information that is not displayed in the plain old TaggedTraitTable.
     """
 
-    class Meta(TaggedTraitTableWithDelete.Meta):
+    class Meta(TaggedTraitTable.Meta):
         fields = ('tag', 'trait', 'description', 'dataset', 'delete_button',)

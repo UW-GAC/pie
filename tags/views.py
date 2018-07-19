@@ -143,7 +143,7 @@ class TaggedTraitByTagAndStudyList(LoginRequiredMixin, SingleTableMixin, ListVie
             return tables.TaggedTraitTableWithDCCReview
         elif (self.request.user.groups.filter(name='phenotype_taggers').exists() and
               self.study in self.request.user.profile.taggable_studies.all()):
-            return tables.TaggedTraitTableWithDelete
+            return tables.TaggedTraitTable
         else:
             return tables.TaggedTraitTable
 

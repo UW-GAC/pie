@@ -553,10 +553,10 @@ class TaggedTraitByTagAndStudyListPhenotypeTaggerTest(PhenotypeTaggerLoginTestCa
         self.assertEqual(context['tag'], self.tag)
 
     def test_table_class(self):
-        """For taggers, the tagged trait table class has delete buttons."""
+        """For taggers, the tagged trait table class is correct."""
         response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
         context = response.context
-        self.assertIsInstance(context['tagged_trait_table'], tables.TaggedTraitTableWithDelete)
+        self.assertIsInstance(context['tagged_trait_table'], tables.TaggedTraitTable)
 
 
 class TaggedTraitByTagAndStudyListDCCAnalystTest(DCCAnalystLoginTestCase):
