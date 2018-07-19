@@ -38,23 +38,6 @@ class TagTable(tables.Table):
         order_by = ('title', )
 
 
-class StudyTaggedTraitTable(tables.Table):
-    """Table for displaying studies with tagged traits and totals."""
-
-    i_study_name = tables.LinkColumn(
-        'trait_browser:source:studies:pk:traits:tagged', args=[tables.utils.A('pk')], verbose_name='Study name',
-        orderable=False)
-    tag_count = tables.Column(verbose_name='Number of tags')
-    taggedtrait_count = tables.Column(verbose_name='Number of tagged study variables')
-
-    class Meta:
-        model = Study
-        fields = ('i_study_name', 'tag_count', 'taggedtrait_count', )
-        attrs = {'class': 'table table-striped table-bordered table-hover'}
-        template = 'django_tables2/bootstrap-responsive.html'
-        order_by = ('i_study_name', )
-
-
 class TaggedTraitTable(tables.Table):
     """Table for displaying TaggedTraits."""
 

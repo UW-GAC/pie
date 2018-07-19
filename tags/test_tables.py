@@ -24,20 +24,6 @@ class TagTableTest(TestCase):
         self.assertEqual(self.model_class.objects.count(), len(table.rows))
 
 
-class StudyTaggedTraitTableTest(TestCase):
-    table_class = tables.StudyTaggedTraitTable
-    model_class = Study
-
-    def setUp(self):
-        super(StudyTaggedTraitTableTest, self).setUp()
-        self.tagged_traits = factories.TaggedTraitFactory.create_batch(10)
-
-    def test_row_count(self):
-        """Number of rows in table matches number of studies."""
-        table = self.table_class(Study.objects.all())
-        self.assertEqual(self.model_class.objects.count(), len(table.rows))
-
-
 class TaggedTraitTableTest(TestCase):
     table_class = tables.TaggedTraitTable
     model_class = models.TaggedTrait
