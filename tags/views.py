@@ -405,7 +405,7 @@ class DCCReviewByTagAndStudySelect(LoginRequiredMixin, PermissionRequiredMixin, 
         return reverse('tags:tagged-traits:dcc-review:next')
 
 
-class DCCReviewByTagAndStudySelectFromURL(LoginRequiredMixin, PermissionRequiredMixin, RedirectView):
+class DCCReviewByTagAndStudySelectFromURL(LoginRequiredMixin, PermissionRequiredMixin, MessageMixin, RedirectView):
     """View to begin the DCC Reviewing loop using url parameters."""
 
     permission_required = 'tags.add_dccreview'
@@ -424,6 +424,8 @@ class DCCReviewByTagAndStudySelectFromURL(LoginRequiredMixin, PermissionRequired
             'tag_pk': tag.pk,
             'tagged_trait_pks': list(qs.values_list('pk', flat=True)),
         }
+        if qs.count() == 0:
+            self.messages.warning('No tagged variables to review for this tag and study.')
         # Set a session variable for use in the next view.
         self.request.session['tagged_trait_review_by_tag_and_study_info'] = review_info
         return super().get(self, request, *args, **kwargs)

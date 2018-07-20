@@ -2215,6 +2215,14 @@ class DCCReviewByTagAndStudySelectFromURLDCCTestsMixin(object):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, """<a href="{}">""".format(reverse('tags:tagged-traits:dcc-review:next')))
 
+    def test_no_tagged_traits_to_review(self):
+        models.TaggedTrait.objects.all().delete()
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        # Check for message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('No tagged variables to review', str(messages[0]))
+
 
 class DCCReviewByTagAndStudySelectFromURLDCCAnalystTest(DCCReviewByTagAndStudySelectFromURLDCCTestsMixin,
                                                         DCCAnalystLoginTestCase):
