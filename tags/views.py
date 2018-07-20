@@ -404,6 +404,33 @@ class DCCReviewByTagAndStudySelect(LoginRequiredMixin, PermissionRequiredMixin, 
         return reverse('tags:tagged-traits:dcc-review:next')
 
 
+class DCCReviewByTagAndStudySelectFromURL(LoginRequiredMixin, PermissionRequiredMixin, RedirectView):
+    """View to begin the DCC Reviewing loop using url parameters."""
+
+    permission_required = 'tags.add_dccreview'
+    raise_exception = True
+    redirect_unauthenticated_users = True
+
+    def get(self, request, *args, **kwargs):
+        tag = get_object_or_404(models.Tag, pk=self.kwargs['pk'])
+        study = get_object_or_404(Study, pk=self.kwargs['pk_study'])
+        qs = models.TaggedTrait.objects.unreviewed().filter(
+            tag=tag,
+            trait__source_dataset__source_study_version__study=study
+        )
+        review_info = {
+            'study_pk': study.pk,
+            'tag_pk': tag.pk,
+            'tagged_trait_pks': list(qs.values_list('pk', flat=True)),
+        }
+        # Set a session variable for use in the next view.
+        self.request.session['tagged_trait_review_by_tag_and_study_info'] = review_info
+        return super().get(self, request, *args, **kwargs)
+
+    def get_redirect_url(self, *args, **kwargs):
+        return reverse('tags:tagged-traits:dcc-review:next')
+
+
 class DCCReviewByTagAndStudyNext(LoginRequiredMixin, PermissionRequiredMixin, SessionVariableMixin,
                                          MessageMixin, RedirectView):
     """Determine the next tagged trait to review and redirect to review page."""
