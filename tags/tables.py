@@ -38,23 +38,6 @@ class TagTable(tables.Table):
         order_by = ('title', )
 
 
-class StudyTaggedTraitTable(tables.Table):
-    """Table for displaying studies with tagged traits and totals."""
-
-    i_study_name = tables.LinkColumn(
-        'trait_browser:source:studies:pk:traits:tagged', args=[tables.utils.A('pk')], verbose_name='Study name',
-        orderable=False)
-    tag_count = tables.Column(verbose_name='Number of tags')
-    taggedtrait_count = tables.Column(verbose_name='Number of tagged study variables')
-
-    class Meta:
-        model = Study
-        fields = ('i_study_name', 'tag_count', 'taggedtrait_count', )
-        attrs = {'class': 'table table-striped table-bordered table-hover'}
-        template = 'django_tables2/bootstrap-responsive.html'
-        order_by = ('i_study_name', )
-
-
 class TaggedTraitTable(tables.Table):
     """Table for displaying TaggedTraits."""
 
@@ -69,10 +52,12 @@ class TaggedTraitTable(tables.Table):
     tag = tables.LinkColumn(
         'tags:tag:detail', args=[tables.utils.A('tag.pk')], verbose_name='Tag',
         text=lambda record: record.tag.title, orderable=True)
+    details = tables.TemplateColumn(verbose_name='', orderable=False,
+                                    template_code=DETAIL_BUTTON_TEMPLATE)
 
     class Meta:
         model = models.TaggedTrait
-        fields = ('tag', 'trait', 'description', 'dataset', )
+        fields = ('tag', 'trait', 'description', 'dataset', 'details', )
         attrs = {'class': 'table table-striped table-bordered table-hover', 'style': 'width: auto;'}
         template = 'django_tables2/bootstrap-responsive.html'
         order_by = ('tag', )
@@ -99,23 +84,17 @@ class TaggedTraitDeleteButtonMixin(tables.Table):
         return mark_safe(html)
 
 
-class TaggedTraitTableWithDelete(TaggedTraitDeleteButtonMixin, TaggedTraitTable):
-    """Table for displaying TaggedTraits with delete buttons."""
-
-    creator = tables.Column('Tagged by', accessor='creator.name')
-
-    class Meta(TaggedTraitTable.Meta):
-        fields = ('tag', 'trait', 'description', 'dataset', 'creator', 'delete_button',)
-
-
-class TaggedTraitTableWithDCCReview(TaggedTraitDeleteButtonMixin, TaggedTraitTable):
-    """Table for displaying TaggedTraits with DCCReview information."""
+class TaggedTraitTableDCCReviewStatusMixin(tables.Table):
+    """Mixin to show DCCReview status in a TaggedTrait table."""
 
     status = tables.Column('Status', accessor='dcc_review.status')
+
+
+class TaggedTraitTableDCCReviewButtonMixin(TaggedTraitTableDCCReviewStatusMixin):
+    """Mixin to show DCCReview status and a button to review a TaggedTrait."""
+
     # This column will display a button to either create a new review or update an existing review.
     review_button = tables.Column(verbose_name='', accessor='pk')
-    details = tables.TemplateColumn(verbose_name='', orderable=False,
-                                    template_code=DETAIL_BUTTON_TEMPLATE)
 
     def render_review_button(self, record):
         if not hasattr(record, 'dcc_review'):
@@ -129,15 +108,19 @@ class TaggedTraitTableWithDCCReview(TaggedTraitDeleteButtonMixin, TaggedTraitTab
         html = REVIEW_BUTTON_HTML.format(url=url, btn_text=btn_text, btn_class=btn_class)
         return mark_safe(html)
 
+
+class TaggedTraitTableWithDCCReviewStatus(TaggedTraitTableDCCReviewStatusMixin, TaggedTraitTable):
+    """Table for displaying TaggedTraits with DCCReview information."""
+
+    details = tables.TemplateColumn(verbose_name='', orderable=False,
+                                    template_code=DETAIL_BUTTON_TEMPLATE)
+
     class Meta(TaggedTraitTable.Meta):
-        fields = ('tag', 'trait', 'description', 'dataset', 'status', 'review_button', 'details', 'delete_button')
+        fields = ('tag', 'trait', 'description', 'dataset', 'details', 'status', )
 
 
-class UserTaggedTraitTable(TaggedTraitDeleteButtonMixin, TaggedTraitTable):
-    """Table for displaying TaggedTraits on a user's profile page.
+class TaggedTraitTableWithDCCReviewButton(TaggedTraitTableDCCReviewButtonMixin, TaggedTraitTable):
+    """Table for displaying TaggedTraits with DCCReview information and review button."""
 
-    Displays user information that is not displayed in the plain old TaggedTraitTable.
-    """
-
-    class Meta(TaggedTraitTableWithDelete.Meta):
-        fields = ('tag', 'trait', 'description', 'dataset', 'delete_button',)
+    class Meta(TaggedTraitTable.Meta):
+        fields = ('tag', 'trait', 'description', 'dataset', 'details', 'status', 'review_button', )

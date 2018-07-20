@@ -175,7 +175,8 @@ class TaggedTraitDetailTest(TaggedTraitDetailTestsMixin, UserLoginTestCase):
         """A reviewed tagged trait does not include a link to update the DCCReview for regular users."""
         factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait)
         response = self.client.get(self.get_url(self.tagged_trait.pk))
-        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-review:update', args=[self.tagged_trait.pk]))
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-review:update',
+                                                 args=[self.tagged_trait.pk]))
 
     def test_context_with_unreviewed_trait(self):
         """The context contains the proper flags for the add/update review buttons."""
@@ -255,7 +256,8 @@ class TaggedTraitDetailPhenotypeTaggerTest(TaggedTraitDetailTestsMixin, Phenotyp
         """A reviewed tagged trait does not include a link to update the DCCReview for Phenotype taggers."""
         factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait)
         response = self.client.get(self.get_url(self.tagged_trait.pk))
-        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-review:update', args=[self.tagged_trait.pk]))
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-review:update',
+                                                 args=[self.tagged_trait.pk]))
 
     def test_context_with_unreviewed_trait(self):
         """The context contains the proper flags for the add/update review buttons."""
@@ -553,10 +555,10 @@ class TaggedTraitByTagAndStudyListPhenotypeTaggerTest(PhenotypeTaggerLoginTestCa
         self.assertEqual(context['tag'], self.tag)
 
     def test_table_class(self):
-        """For taggers, the tagged trait table class has delete buttons."""
+        """For taggers, the tagged trait table class is correct."""
         response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
         context = response.context
-        self.assertIsInstance(context['tagged_trait_table'], tables.TaggedTraitTableWithDelete)
+        self.assertIsInstance(context['tagged_trait_table'], tables.TaggedTraitTableWithDCCReviewStatus)
 
 
 class TaggedTraitByTagAndStudyListDCCAnalystTest(DCCAnalystLoginTestCase):
@@ -601,7 +603,7 @@ class TaggedTraitByTagAndStudyListDCCAnalystTest(DCCAnalystLoginTestCase):
         """For DCC Analysts, the tagged trait table class has delete buttons."""
         response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
         context = response.context
-        self.assertIsInstance(context['tagged_trait_table'], tables.TaggedTraitTableWithDCCReview)
+        self.assertIsInstance(context['tagged_trait_table'], tables.TaggedTraitTableWithDCCReviewButton)
 
 
 class TaggedTraitCreateTest(PhenotypeTaggerLoginTestCase):
