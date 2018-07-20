@@ -151,6 +151,7 @@ class TaggedTraitByTagAndStudyList(LoginRequiredMixin, SingleTableMixin, ListVie
         context = super(TaggedTraitByTagAndStudyList, self).get_context_data(*args, **kwargs)
         context['study'] = self.study
         context['tag'] = self.tag
+        context['show_review_button'] = self.request.user.is_staff
         return context
 
 

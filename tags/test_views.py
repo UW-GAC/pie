@@ -474,6 +474,8 @@ class TaggedTraitByTagAndStudyListTest(UserLoginTestCase):
         self.assertIn('tagged_trait_table', context)
         self.assertEqual(context['study'], self.study)
         self.assertEqual(context['tag'], self.tag)
+        self.assertIn('show_review_button', context)
+        self.assertFalse(context['show_review_button'])
 
     def test_table_class(self):
         """For non-taggers, the tagged trait table class does not have delete buttons."""
@@ -551,6 +553,8 @@ class TaggedTraitByTagAndStudyListPhenotypeTaggerTest(PhenotypeTaggerLoginTestCa
         self.assertIn('tagged_trait_table', context)
         self.assertEqual(context['study'], self.study)
         self.assertEqual(context['tag'], self.tag)
+        self.assertIn('show_review_button', context)
+        self.assertFalse(context['show_review_button'])
 
     def test_table_class(self):
         """For taggers, the tagged trait table class has delete buttons."""
@@ -596,6 +600,8 @@ class TaggedTraitByTagAndStudyListDCCAnalystTest(DCCAnalystLoginTestCase):
         self.assertIn('tagged_trait_table', context)
         self.assertEqual(context['study'], self.study)
         self.assertEqual(context['tag'], self.tag)
+        self.assertIn('show_review_button', context)
+        self.assertTrue(context['show_review_button'])
 
     def test_table_class(self):
         """For DCC Analysts, the tagged trait table class has delete buttons."""
