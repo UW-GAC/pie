@@ -4,15 +4,20 @@ from django.urls import reverse
 from django.utils.safestring import mark_safe
 
 import django_tables2 as tables
-from django_tables2.utils import AttributeDict
 
 from trait_browser.models import Study
+
 from . import models
 
 
 DETAIL_BUTTON_TEMPLATE = """
-<a class="btn btn-xs btn-info" href="{% url 'tags:tagged-traits:detail' record.pk %}" role="button">
+<a class="btn btn-xs btn-info" href="{% url 'tags:tagged-traits:pk:detail' record.pk %}" role="button">
   Details
+</a>
+"""
+REVIEW_BUTTON_HTML = """
+<a class="btn btn-xs {btn_class}" href="{url}" role="button">
+  {btn_text}
 </a>
 """
 
@@ -33,26 +38,6 @@ class TagTable(tables.Table):
         order_by = ('title', )
 
 
-class StudyTaggedTraitTable(tables.Table):
-    """Table for displaying studies with tagged traits and totals."""
-
-    i_study_name = tables.LinkColumn(
-        'trait_browser:source:studies:pk:traits:tagged', args=[tables.utils.A('pk')], verbose_name='Study name',
-        orderable=False)
-    number_tags = tables.Column(
-        accessor='get_tag_count', verbose_name='Number of tags', orderable=False)
-    number_traits = tables.Column(
-        accessor='get_tagged_trait_count', orderable=False,
-        verbose_name='Number of tagged study variables')
-
-    class Meta:
-        model = Study
-        fields = ('i_study_name', )
-        attrs = {'class': 'table table-striped table-bordered table-hover'}
-        template = 'django_tables2/bootstrap-responsive.html'
-        order_by = ('i_study_name', )
-
-
 class TaggedTraitTable(tables.Table):
     """Table for displaying TaggedTraits."""
 
@@ -67,10 +52,12 @@ class TaggedTraitTable(tables.Table):
     tag = tables.LinkColumn(
         'tags:tag:detail', args=[tables.utils.A('tag.pk')], verbose_name='Tag',
         text=lambda record: record.tag.title, orderable=True)
+    details = tables.TemplateColumn(verbose_name='', orderable=False,
+                                    template_code=DETAIL_BUTTON_TEMPLATE)
 
     class Meta:
         model = models.TaggedTrait
-        fields = ('tag', 'trait', 'description', 'dataset', )
+        fields = ('tag', 'trait', 'description', 'dataset', 'details', )
         attrs = {'class': 'table table-striped table-bordered table-hover', 'style': 'width: auto;'}
         template = 'django_tables2/bootstrap-responsive.html'
         order_by = ('tag', )
@@ -92,36 +79,48 @@ class TaggedTraitDeleteButtonMixin(tables.Table):
         if hasattr(record, 'dcc_review'):
             classes.append('disabled')
         else:
-            url = reverse('tags:tagged-traits:delete', args=[record.pk])
+            url = reverse('tags:tagged-traits:pk:delete', args=[record.pk])
         html = html_template.format(classes=' '.join(classes), url=url)
         return mark_safe(html)
 
 
-class TaggedTraitTableWithDelete(TaggedTraitDeleteButtonMixin, TaggedTraitTable):
-    """Table for displaying TaggedTraits with delete buttons."""
-
-    creator = tables.Column('Tagged by', accessor='creator.name')
-
-    class Meta(TaggedTraitTable.Meta):
-        fields = ('tag', 'trait', 'description', 'dataset', 'creator', 'delete_button',)
-
-
-class TaggedTraitTableWithDCCReview(TaggedTraitDeleteButtonMixin, TaggedTraitTable):
-    """Table for displaying TaggedTraits with DCCReview information."""
+class TaggedTraitTableDCCReviewStatusMixin(tables.Table):
+    """Mixin to show DCCReview status in a TaggedTrait table."""
 
     status = tables.Column('Status', accessor='dcc_review.status')
+
+
+class TaggedTraitTableDCCReviewButtonMixin(TaggedTraitTableDCCReviewStatusMixin):
+    """Mixin to show DCCReview status and a button to review a TaggedTrait."""
+
+    # This column will display a button to either create a new review or update an existing review.
+    review_button = tables.Column(verbose_name='', accessor='pk')
+
+    def render_review_button(self, record):
+        if not hasattr(record, 'dcc_review'):
+            url = reverse('tags:tagged-traits:pk:dcc-review:new', args=[record.pk])
+            btn_text = "Add a DCC review"
+            btn_class = 'btn-primary'
+        else:
+            url = reverse('tags:tagged-traits:pk:dcc-review:update', args=[record.pk])
+            btn_text = "Update DCC review"
+            btn_class = 'btn-warning'
+        html = REVIEW_BUTTON_HTML.format(url=url, btn_text=btn_text, btn_class=btn_class)
+        return mark_safe(html)
+
+
+class TaggedTraitTableWithDCCReviewStatus(TaggedTraitTableDCCReviewStatusMixin, TaggedTraitTable):
+    """Table for displaying TaggedTraits with DCCReview information."""
+
     details = tables.TemplateColumn(verbose_name='', orderable=False,
                                     template_code=DETAIL_BUTTON_TEMPLATE)
 
     class Meta(TaggedTraitTable.Meta):
-        fields = ('tag', 'trait', 'description', 'dataset', 'status', 'details', 'delete_button')
+        fields = ('tag', 'trait', 'description', 'dataset', 'details', 'status', )
 
 
-class UserTaggedTraitTable(TaggedTraitDeleteButtonMixin, TaggedTraitTable):
-    """Table for displaying TaggedTraits on a user's profile page.
+class TaggedTraitTableWithDCCReviewButton(TaggedTraitTableDCCReviewButtonMixin, TaggedTraitTable):
+    """Table for displaying TaggedTraits with DCCReview information and review button."""
 
-    Displays user information that is not displayed in the plain old TaggedTraitTable.
-    """
-
-    class Meta(TaggedTraitTableWithDelete.Meta):
-        fields = ('tag', 'trait', 'description', 'dataset', 'delete_button',)
+    class Meta(TaggedTraitTable.Meta):
+        fields = ('tag', 'trait', 'description', 'dataset', 'details', 'status', 'review_button', )

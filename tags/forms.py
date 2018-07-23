@@ -9,8 +9,9 @@ from crispy_forms.helper import FormHelper
 from crispy_forms.layout import HTML, Layout, Submit
 from dal import autocomplete, forward
 
-from . import models
 from trait_browser.models import SourceTrait, Study
+
+from . import models
 
 
 EXISTING_TAGGED_TRAIT_ERROR_STRING = u"""The tag {tag_name} has already been applied to study variable {phv}
@@ -372,7 +373,10 @@ class TagSpecificTraitForm(forms.Form):
         self.helper.layout.append(button_save)
 
 
-class DCCReviewCleanForm(forms.ModelForm):
+class DCCReviewBaseForm(forms.ModelForm):
+
+    SUBMIT_CONFIRM = 'confirm'
+    SUBMIT_FOLLOWUP = 'require-followup'
 
     def clean(self):
         """Custom cleaning to check a comment is given for TaggedTraits that require followup."""
@@ -389,35 +393,6 @@ class DCCReviewCleanForm(forms.ModelForm):
             self.add_error('comment', error)
         return cleaned_data
 
-
-class SubmitCssClass(Submit):
-    """Create a submit button with a different class than the default."""
-
-    def __init__(self, *args, **kwargs):
-        css_class = kwargs.get('css_class')
-        super().__init__(*args, **kwargs)
-        if css_class is not None:
-            self.field_classes = 'btn {}'.format(css_class)
-
-
-class DCCReviewForm(DCCReviewCleanForm):
-    """Form for creating a single DCCReview object."""
-
-    SUBMIT_CONFIRM = 'confirm'
-    SUBMIT_FOLLOWUP = 'require-followup'
-    SUBMIT_SKIP = 'skip'
-
-    helper = FormHelper()
-    helper.layout = Layout(
-        'status',
-        'comment',
-        FormActions(
-            Submit(SUBMIT_CONFIRM, 'Confirm'),
-            SubmitCssClass(SUBMIT_FOLLOWUP, 'Require study followup', css_class='btn-warning'),
-            SubmitCssClass(SUBMIT_SKIP, 'Skip', css_class='btn-default')
-        )
-    )
-
     class Meta:
         model = models.DCCReview
         fields = ('status', 'comment', )
@@ -429,14 +404,65 @@ class DCCReviewForm(DCCReviewCleanForm):
         }
 
 
-class DCCReviewAdminForm(DCCReviewCleanForm):
+class SubmitCssClass(Submit):
+    """Create a submit button with a different class than the default."""
+
+    def __init__(self, *args, **kwargs):
+        css_class = kwargs.get('css_class')
+        super().__init__(*args, **kwargs)
+        if css_class is not None:
+            self.field_classes = 'btn {}'.format(css_class)
+
+
+class DCCReviewByTagAndStudyForm(DCCReviewBaseForm):
+    """Form for creating a single DCCReview object."""
+
+    SUBMIT_SKIP = 'skip'
+
+    def __init__(self, *args, **kwargs):
+
+        super().__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.layout = Layout(
+            'status',
+            'comment',
+            FormActions(
+                Submit(self.SUBMIT_CONFIRM, 'Confirm'),
+                SubmitCssClass(self.SUBMIT_FOLLOWUP, 'Require study followup', css_class='btn-warning'),
+                SubmitCssClass(self.SUBMIT_SKIP, 'Skip', css_class='btn-default')
+            )
+        )
+
+    class Meta(DCCReviewBaseForm.Meta):
+        pass
+
+
+class DCCReviewForm(DCCReviewBaseForm):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.layout = Layout(
+            'status',
+            'comment',
+            FormActions(
+                Submit(self.SUBMIT_CONFIRM, 'Confirm'),
+                SubmitCssClass(self.SUBMIT_FOLLOWUP, 'Require study followup', css_class='btn-warning')
+            )
+        )
+
+    class Meta(DCCReviewBaseForm.Meta):
+        pass
+
+
+class DCCReviewAdminForm(DCCReviewBaseForm):
 
     class Meta:
         model = models.DCCReview
         fields = ('tagged_trait', 'status', 'comment', )
 
 
-class TaggedTraitReviewSelectForm(forms.Form):
+class DCCReviewTagAndStudySelectForm(forms.Form):
 
     ERROR_NO_TAGGED_TRAITS = 'No tagged variables for this tag and study!'
 
@@ -473,7 +499,7 @@ class TaggedTraitReviewSelectForm(forms.Form):
         js = ('js/taggedtrait_review_select_form.js', )
 
     def clean(self):
-        cleaned_data = super(TaggedTraitReviewSelectForm, self).clean()
+        cleaned_data = super().clean()
         tag = cleaned_data.get('tag')
         study = cleaned_data.get('study')
         if tag and study:

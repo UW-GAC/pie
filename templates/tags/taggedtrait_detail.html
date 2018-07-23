@@ -16,18 +16,31 @@
 
 {% block detail_fields %}
   <dt>Tagged by</dt><dd>{{ tagged_trait.creator }}</dd>
-  {% if request.user.is_staff %}
-      <dt>DCC status</dt><dd>{{ tagged_trait.dcc_review.get_status_display }}</dd>
-      <dt>DCC comment</dt><dd>{{ tagged_trait.dcc_review.comment }}</dd>
+  {% if show_dcc_review_info %}
+    <dt>DCC status</dt><dd>{{ tagged_trait.dcc_review.get_status_display }}</dd>
+    <dt>DCC comment</dt><dd>{{ tagged_trait.dcc_review.comment }}</dd>
   {% endif %}
-
 {% endblock detail_fields %}
 
+
 {% block after_panel %}
+
+  {% include 'tags/_taggedtrait_info.html' with show_all_tags=False %}
+
+  {% if show_dcc_review_add_button %}
+    <a class="btn btn-primary" href="{% url 'tags:tagged-traits:pk:dcc-review:new' tagged_trait.pk %}" role="button">
+        <span class="glyphicon glyphicon-sunglasses" aria-hidden="true"></span> Review this tagged variable
+    </a>
+  {% endif %}
+  {% if show_dcc_review_update_button %}
+    <a class="btn btn-primary" href="{% url 'tags:tagged-traits:pk:dcc-review:update' tagged_trait.pk %}" role="button">
+        <span class="glyphicon glyphicon-sunglasses" aria-hidden="true"></span> Update review
+    </a>
+  {% endif %}
   {% if perms.tags.add_taggedtrait %}
     {% if user_is_study_tagger or request.user.is_staff %}
       {% if not tagged_trait.dcc_review %}
-        <a class="btn btn-danger" href="{% url 'tags:tagged-traits:delete' tagged_trait.pk %}" role="button">
+        <a class="btn btn-danger" href="{% url 'tags:tagged-traits:pk:delete' tagged_trait.pk %}" role="button">
             <span class="glyphicon glyphicon-remove" aria-hidden="true"></span> Remove tag
         </a>
       {% endif %}

@@ -10,45 +10,26 @@
 
   {% include '_messages.html' %}
 
-  <div class="alert alert-info" role="alert">
-    You are reviewing variables tagged with <a href="{{ tag.get_absolute_url }}">{{ tag.lower_title }}</a>
-    from study <a href="{{ study.get_absolute_url }}">{{ study.i_study_name }}</a>. You have {{ n_tagged_traits_remaining }}
-    tagged variable{{ n_tagged_traits_remaining|pluralize }} left to review.
-  </div>
-
   <h2>
     Review <a href='{{ tagged_trait.get_absolute_url }}'>{{ tagged_trait }}</a>
   </h2>
 
-  <div class="panel panel-default">
-    <div class="panel-heading"><strong>Tag information</strong></div>
-    <div class="panel-body">
-      <dl class="dl-horizontal">
-        <dt>Tag name</dt><dd><a href="{{ tagged_trait.tag.get_absolute_url }}">{{ tagged_trait.tag.lower_title }}</a></dd>
-        <dt>Tag description</dt><dd>{{ tagged_trait.tag.description }}</dd>
-        <dt>Tag instructions</dt><dd>{{ tagged_trait.tag.instructions }}</dd>
-      </dl>
-    </div>
-  </div>
+  {% include 'tags/_taggedtrait_info.html' with show_all_tags=True collapse_tag_panel=True %}
 
-  <div class="panel panel-default">
-    <div class="panel-heading"><strong>Study variable information</strong></div>
-    <div class="panel-body">
-      <dl class="dl-horizontal">
-        <dt>Variable</dt><dd><a href='{{ tagged_trait.trait.get_absolute_url }}'>{{ tagged_trait.trait.i_trait_name }}</a></dd>
-        <dt>Variable description</dt><dd>{{ tagged_trait.trait.i_description }}</dd>
-        <dt>Dataset name</dt><dd>{{ tagged_trait.trait.source_dataset.dataset_name }}</dd>
-        <dt>Dataset description</dt><dd>{{ tagged_trait.trait.source_dataset.i_dbgap_description }}</dd>
-      </dl>
-    </div>
-  </div>
-
-  <div class="panel panel-default">
-    <div class="panel-heading"><strong>Instructions</strong></div>
-    <div class="panel-body">
-      If this variable is appropriately tagged, select the "Confirm" button. Otherwise,
-      type a reason in the "Comment" box and select the "Require study followup"
-      button.
+  <div class="panel-group">
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <h4 class="panel-title">
+          <a data-toggle="collapse" href="#collapse-instructions">Instructions</a>
+        </h4>
+      </div>
+      <div id="collapse-instructions" class="panel-collapse collapse">
+        <div class="panel-body">
+          If this variable is appropriately tagged, select the "Confirm" button. Otherwise,
+          type a reason in the "Comment" box and select the "Require study followup"
+          button.
+        </div>
+      </div>
     </div>
   </div>
 

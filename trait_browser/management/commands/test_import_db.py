@@ -11,6 +11,9 @@ This test module runs several unit tests and one integration test.
 """
 
 from datetime import datetime, timedelta
+import mysql.connector
+# Use the mysql-connector-python-rf package from pypi.
+# (Advice via this SO post http://stackoverflow.com/q/34168651/2548371)
 from os.path import exists, join
 from os import listdir, stat
 from re import compile
@@ -19,9 +22,6 @@ from subprocess import call
 from tempfile import mkdtemp
 from time import sleep
 
-import mysql.connector
-# Use the mysql-connector-python-rf package from pypi.
-# (Advice via this SO post http://stackoverflow.com/q/34168651/2548371)
 from django.conf import settings
 from django.core import management
 from django.test import TestCase

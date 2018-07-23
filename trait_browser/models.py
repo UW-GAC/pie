@@ -63,8 +63,8 @@ from django.apps import apps
 from django.db import models
 from django.urls import reverse
 
-
 from core.models import TimeStampedModel
+
 from . import querysets
 
 
@@ -177,7 +177,7 @@ class Study(SourceDBTimeStampedModel):
 
     def get_tagged_trait_count(self):
         """Return the count of traits that have been tagged in this study."""
-        return self.get_tagged_traits().distinct().count()
+        return SourceTrait.objects.filter(source_dataset__source_study_version__study=self).exclude(tag=None).count()
 
     def get_latest_version(self):
         """Return the most recent SourceStudyVersion linked to this study."""
@@ -329,7 +329,7 @@ class HarmonizedTraitSetVersion(SourceDBTimeStampedModel):
 
     def __str__(self):
         """Pretty printing."""
-        return 'Harm. trait set {} version {}, id='.format(
+        return 'Harm. trait set {} version {}, id={}'.format(
             self.harmonized_trait_set.i_trait_set_name, self.i_version, self.i_id)
 
     def get_trait_names(self):

@@ -5,6 +5,7 @@ from django.test import TestCase
 
 from core.factories import UserFactory
 from trait_browser.factories import SourceTraitFactory, StudyFactory
+
 from . import forms
 from . import factories
 from . import models
@@ -330,11 +331,7 @@ class TagSpecificTraitFormTest(TestCase):
         self.assertTrue(form.has_error('tag'))
 
 
-class DCCReviewFormTest(TestCase):
-    form_class = forms.DCCReviewForm
-
-    def setUp(self):
-        self.tagged_trait = factories.TaggedTraitFactory.create()
+class DCCReviewFormTestMixin(object):
 
     def test_valid_if_need_review_with_comment(self):
         """Form is valid if the tagged trait needs followup and a comment is given."""
@@ -380,6 +377,22 @@ class DCCReviewFormTest(TestCase):
         form = self.form_class(form_data)
         self.assertFalse(form.is_valid())
         self.assertTrue(form.has_error('status'))
+
+
+class DCCReviewByTagAndStudyFormTest(DCCReviewFormTestMixin, TestCase):
+
+    form_class = forms.DCCReviewByTagAndStudyForm
+
+    def setUp(self):
+        self.tagged_trait = factories.TaggedTraitFactory.create()
+
+
+class DCCReviewFormTest(DCCReviewFormTestMixin, TestCase):
+
+    form_class = forms.DCCReviewForm
+
+    def setUp(self):
+        self.tagged_trait = factories.TaggedTraitFactory.create()
 
 
 class DCCReviewAdminFormTest(TestCase):
@@ -445,12 +458,12 @@ class DCCReviewAdminFormTest(TestCase):
         self.assertTrue(form.has_error('tagged_trait'))
 
 
-class TaggedTraitReviewSelectFormTest(TestCase):
+class DCCReviewTagAndStudySelectFormTest(TestCase):
 
-    form_class = forms.TaggedTraitReviewSelectForm
+    form_class = forms.DCCReviewTagAndStudySelectForm
 
     def setUp(self):
-        super(TaggedTraitReviewSelectFormTest, self).setUp()
+        super(DCCReviewTagAndStudySelectFormTest, self).setUp()
         self.tag = factories.TagFactory.create()
         self.study = StudyFactory.create()
         self.tagged_trait = factories.TaggedTraitFactory.create(

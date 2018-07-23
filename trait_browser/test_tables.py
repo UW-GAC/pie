@@ -2,9 +2,9 @@
 
 from django.test import TestCase
 
-from . import tables
 from . import factories
 from . import models
+from . import tables
 
 
 class StudyTableTest(TestCase):

@@ -8,6 +8,8 @@ from core.exceptions import DeleteNotAllowedError
 from core.factories import UserFactory
 # from core.utils import UserLoginTestCase
 from trait_browser.factories import SourceTraitFactory, StudyFactory
+from trait_browser.models import SourceTrait
+
 from . import factories
 from . import models
 
@@ -134,6 +136,16 @@ class StudyTaggedTraitsTest(TestCase):
             10, trait__source_dataset__source_study_version__study=another_study)
         self.assertEqual(self.study.get_tagged_trait_count(), len(self.tagged_traits))
         self.assertEqual(another_study.get_tagged_trait_count(), len(more_tagged_traits))
+
+    def test_get_tagged_trait_count_multiple_tags_per_trait(self):
+        """Returns the correct number of tagged traits for a study when a trait has multiple tags."""
+        trait = self.tagged_traits[0].trait
+        unused_tags = models.Tag.objects.exclude(pk=self.tagged_traits[0].tag.pk)
+        tag1 = unused_tags[0]
+        tag2 = unused_tags[1]
+        factories.TaggedTraitFactory.create(tag=tag1, trait=trait)
+        factories.TaggedTraitFactory.create(tag=tag2, trait=trait)
+        self.assertEqual(self.study.get_tagged_trait_count(), SourceTrait.objects.count())
 
     def test_get_tag_count(self):
         """Returns the correct number of tags for a study."""

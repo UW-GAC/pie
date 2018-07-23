@@ -4,7 +4,9 @@ from django.views.generic import DetailView, CreateView, UpdateView
 
 from braces.views import (FormMessagesMixin, GroupRequiredMixin, LoginRequiredMixin, PermissionRequiredMixin,
                           UserFormKwargsMixin, )
+
 import trait_browser.tables
+
 from . import tables
 from . import forms
 from . import models

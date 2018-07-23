@@ -15,10 +15,10 @@
   <div class="panel-heading"><h4 class="panel-title">Links to dbGaP information</h4></div>
   <div class="panel-body">
     <dl class="dl-horizontal">
-      {% if variable_link %}
+      {% if variable_link is not None %}
         <dt>Variable</dt> <dd><a target="_blank" href="{{ variable_link }}">{{ variable_string }}</a></dd>
       {% endif %}
-      {% if dataset_link %}
+      {% if dataset_link is not None %}
         <dt>Dataset</dt> <dd><a target="_blank" href="{{ dataset_link }}">{{ dataset_string }}</a></dd>
       {% endif %}
       <dt>Study</dt> <dd><a target="_blank" href="{{ study_link }}">{{ study_string }}</a></dd>

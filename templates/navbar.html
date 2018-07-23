@@ -68,14 +68,19 @@
             Phenotype tags<span class="caret"></span></a>
           <ul class="dropdown-menu">
             <li>
-              <a href="{% url 'tags:list' %}"><span class="glyphicon glyphicon-list"></span>
+              <a href="{% url 'tags:list' %}"><span class="glyphicon glyphicon-tags"></span>
                 Phenotype tags</a>
             </li>
             <li>
-              <a href="{% url 'tags:tagged-traits:by-study' %}"><span class="glyphicon glyphicon-list"></span>
+              <a href="{% url 'tags:tagged-traits:by-study' %}"><span class="glyphicon glyphicon-th-large"></span>
                 Tagged variables by study</a>
             </li>
+            <li>
+              <a href="{% url 'tags:tagged-traits:by-tag' %}"><span class="glyphicon glyphicon-th"></span>
+                Tagged variables by tag</a>
+            </li>
             {% if perms.tags.add_taggedtrait %}
+              <li role="separator" class="divider"></li>
               <li>
                 <a href="{% url 'tags:add-many:main' %}"><span class="glyphicon glyphicon-tag"></span>
                   Apply tag to variables</a>
@@ -86,11 +91,19 @@
               </li>
             {% endif %}
             {% if perms.tags.add_dccreview %}
+              <li role="separator" class="divider"></li>
               <li>
-                <a href="{% url 'tags:tagged-traits:review:select' %}"><span class="glyphicon glyphicon-sunglasses"></span>
+                <a href="{% url 'tags:tagged-traits:dcc-review:select' %}"><span class="glyphicon glyphicon-sunglasses"></span>
                   Review tagged variables
                 </a>
               </li>
+              {% if request.session.tagged_trait_review_by_tag_and_study_info is not None %}
+                <li>
+                  <a href="{% url 'tags:tagged-traits:dcc-review:next' %}"><span class="glyphicon glyphicon-repeat"></span>
+                    Continue reviewing
+                  </a>
+                </li>
+              {% endif %}
             {% endif %}
           </ul>
         </li>

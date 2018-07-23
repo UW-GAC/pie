@@ -1,8 +1,8 @@
 """Factory classes for generating test data for each of the trait_browser models."""
 
 import factory
-import pytz
 from faker import Factory
+import pytz
 
 from django.utils import timezone
 

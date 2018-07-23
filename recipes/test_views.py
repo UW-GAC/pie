@@ -3,9 +3,9 @@
 from django.contrib.auth.models import Group
 from django.urls import reverse
 
+from core.factories import UserFactory, SuperUserFactory, USER_FACTORY_PASSWORD
 from core.utils import (DCCAnalystLoginTestCase, DCCDeveloperLoginTestCase, LoginRequiredTestCase,
                         RecipeSubmitterLoginTestCase, SuperuserLoginTestCase, UserLoginTestCase)
-from core.factories import UserFactory, SuperUserFactory, USER_FACTORY_PASSWORD
 from trait_browser.factories import SourceTraitFactory
 
 from . import factories

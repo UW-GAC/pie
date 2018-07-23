@@ -1,0 +1,31 @@
+{% extends 'trait_browser/__study_page.html' %}
+
+{% block head_title %}
+  {{ block.super }} tagged variables
+{% endblock head_title %}
+
+{% block subtitle %}
+  tagged variables
+{% endblock subtitle %}
+
+{% block after_panel %}
+  {{ block.super }}
+  <div class="panel panel-default">
+    <div class="panel-heading"><h4 class="panel-title">Tagged variables in this study</h4></div>
+    <div class="panel-body">
+      {% if study.get_tagged_trait_count > 0 %}
+        {% for tag in tag_counts %}
+          <p>
+            <a href="{% url 'tags:tag:study:list' pk=tag.tag_pk pk_study=study.pk %}" class="btn btn-default btn-xs" role="button">
+            {{ tag.tag_name }}
+            <span class="badge">{{ tag.tt_count }}</span></a>
+          </p>
+        {% endfor %}
+      {% else %}
+        <p>
+          There are no tagged variables for this study.
+        </p>
+      {% endif %}
+    </div>
+  </div>
+{% endblock after_panel %}

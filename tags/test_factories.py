@@ -3,8 +3,8 @@
 
 from django.test import TestCase
 
-from . import models
 from . import factories
+from . import models
 
 
 class TagFactoryTest(TestCase):

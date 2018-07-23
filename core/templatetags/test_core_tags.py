@@ -4,6 +4,7 @@
 
 from core.utils import (DCCAnalystLoginTestCase, DCCDeveloperLoginTestCase, PhenotypeTaggerLoginTestCase,
                         RecipeSubmitterLoginTestCase)
+
 from . import core_tags
 
 

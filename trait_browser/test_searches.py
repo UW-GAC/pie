@@ -4,8 +4,8 @@ from django.test import TestCase
 
 from watson.models import SearchEntry
 
-from . import models
 from . import factories
+from . import models
 from . import searches
 
 

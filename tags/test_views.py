@@ -11,11 +11,11 @@ from core.utils import (LoginRequiredTestCase, PhenotypeTaggerLoginTestCase, Use
                         DCCAnalystLoginTestCase, DCCDeveloperLoginTestCase, get_autocomplete_view_ids)
 from trait_browser.factories import SourceTraitFactory, StudyFactory
 from trait_browser.models import SourceTrait
-from trait_browser.tables import SourceTraitTableFull
+
 from . import factories
+from . import forms
 from . import models
 from . import tables
-from . import forms
 from . import views
 
 fake = Faker()
@@ -46,8 +46,6 @@ class TagDetailTest(UserLoginTestCase):
         context = response.context
         self.assertIn('tag', context)
         self.assertEqual(context['tag'], self.tag)
-        self.assertIn('tagged_trait_table', context)
-        self.assertIsInstance(context['tagged_trait_table'], SourceTraitTableFull)
 
     def test_no_tagging_button(self):
         """Regular user does not see a button to add tags on this detail page."""
@@ -122,33 +120,11 @@ class TagListTest(UserLoginTestCase):
         self.assertIsInstance(context['tag_table'], tables.TagTable)
 
 
-class StudyTaggedTraitListTest(UserLoginTestCase):
-
-    def setUp(self):
-        super(StudyTaggedTraitListTest, self).setUp()
-        self.tagged_traits = factories.TaggedTraitFactory.create_batch(20)
-
-    def get_url(self, *args):
-        return reverse('tags:tagged-traits:by-study')
-
-    def test_view_success_code(self):
-        """View returns successful response code."""
-        response = self.client.get(self.get_url())
-        self.assertEqual(response.status_code, 200)
-
-    def test_context_data(self):
-        """View has appropriate data in the context."""
-        response = self.client.get(self.get_url())
-        context = response.context
-        self.assertTrue('study_table' in context)
-        self.assertIsInstance(context['study_table'], tables.StudyTaggedTraitTable)
-
-
 class TaggedTraitDetailTestsMixin(object):
     """Mixin to run standard tests for the TaggedTraitDetail view, for use with TestCase or subclass of TestCase."""
 
     def get_url(self, *args):
-        return reverse('tags:tagged-traits:detail', args=args)
+        return reverse('tags:tagged-traits:pk:detail', args=args)
 
     def test_view_success_code(self):
         """View returns successful response code."""
@@ -177,7 +153,7 @@ class TaggedTraitDetailTest(TaggedTraitDetailTestsMixin, UserLoginTestCase):
     def test_no_delete_button(self):
         """Regular user does not see a button to delete the tagged trait on this detail page."""
         response = self.client.get(self.get_url(self.tagged_trait.pk))
-        self.assertNotContains(response, reverse('tags:tagged-traits:delete', kwargs={'pk': self.tagged_trait.pk}))
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:delete', kwargs={'pk': self.tagged_trait.pk}))
 
     def test_no_dcc_review_info(self):
         """A regular user does not see DCC review info on this detail page."""
@@ -189,6 +165,42 @@ class TaggedTraitDetailTest(TaggedTraitDetailTestsMixin, UserLoginTestCase):
         response = self.client.get(self.get_url(self.tagged_trait.pk))
         self.assertNotContains(response, dcc_review.get_status_display())
         self.assertNotContains(response, dcc_review.comment)
+
+    def test_unreviewed_tagged_trait_missing_link_to_review(self):
+        """An unreviewed tagged trait does not include a link to review for regular users."""
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-review:new',
+                                                 args=[self.tagged_trait.pk]))
+
+    def test_reviewed_tagged_trait_missing_link_to_udpate(self):
+        """A reviewed tagged trait does not include a link to update the DCCReview for regular users."""
+        factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait)
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-review:update',
+                                                 args=[self.tagged_trait.pk]))
+
+    def test_context_with_unreviewed_trait(self):
+        """The context contains the proper flags for the add/update review buttons."""
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        context = response.context
+        self.assertIn('show_dcc_review_info', context)
+        self.assertEqual(context['show_dcc_review_info'], False)
+        self.assertIn('show_dcc_review_add_button', context)
+        self.assertEqual(context['show_dcc_review_add_button'], False)
+        self.assertIn('show_dcc_review_update_button', context)
+        self.assertEqual(context['show_dcc_review_update_button'], False)
+
+    def test_context_with_reviewed_trait(self):
+        """The context contains the proper flags for the add/update review buttons."""
+        factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait)
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        context = response.context
+        self.assertIn('show_dcc_review_info', context)
+        self.assertEqual(context['show_dcc_review_info'], False)
+        self.assertIn('show_dcc_review_add_button', context)
+        self.assertEqual(context['show_dcc_review_add_button'], False)
+        self.assertIn('show_dcc_review_update_button', context)
+        self.assertEqual(context['show_dcc_review_update_button'], False)
 
 
 class TaggedTraitDetailPhenotypeTaggerTest(TaggedTraitDetailTestsMixin, PhenotypeTaggerLoginTestCase):
@@ -204,26 +216,26 @@ class TaggedTraitDetailPhenotypeTaggerTest(TaggedTraitDetailTestsMixin, Phenotyp
     def test_delete_button(self):
         """A phenotype tagger does see a button to delete the tagged trait."""
         response = self.client.get(self.get_url(self.tagged_trait.pk))
-        self.assertContains(response, reverse('tags:tagged-traits:delete', kwargs={'pk': self.tagged_trait.pk}))
+        self.assertContains(response, reverse('tags:tagged-traits:pk:delete', kwargs={'pk': self.tagged_trait.pk}))
 
     def test_delete_button_for_other_studies(self):
         """A phenotype tagger does see a button to delete the tagged trait."""
         tagged_trait = factories.TaggedTraitFactory.create()
         response = self.client.get(self.get_url(tagged_trait.pk))
-        self.assertNotContains(response, reverse('tags:tagged-traits:delete', kwargs={'pk': tagged_trait.pk}))
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:delete', kwargs={'pk': tagged_trait.pk}))
 
     def test_disabled_delete_button_for_reviewed_tagged_trait(self):
         """A phenotype tagger sees a disabled button to delete the tagged trait."""
         factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP,
                                           comment='foo')
         response = self.client.get(self.get_url(self.tagged_trait.pk))
-        self.assertNotContains(response, reverse('tags:tagged-traits:delete', kwargs={'pk': self.tagged_trait.pk}))
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:delete', kwargs={'pk': self.tagged_trait.pk}))
 
     def test_disabled_delete_button_for_confirmed_tagged_trait(self):
         """A phenotype tagger sees a disabled button to delete the tagged trait."""
         factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait, status=models.DCCReview.STATUS_CONFIRMED)
         response = self.client.get(self.get_url(self.tagged_trait.pk))
-        self.assertNotContains(response, reverse('tags:tagged-traits:delete', kwargs={'pk': self.tagged_trait.pk}))
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:delete', kwargs={'pk': self.tagged_trait.pk}))
 
     def test_dcc_review_info(self):
         """A phenotype tagger does not see DCC review info on this detail page."""
@@ -236,6 +248,41 @@ class TaggedTraitDetailPhenotypeTaggerTest(TaggedTraitDetailTestsMixin, Phenotyp
         self.assertNotContains(response, dcc_review.get_status_display())
         self.assertNotContains(response, dcc_review.comment)
 
+    def test_unreviewed_tagged_trait_missing_link_to_review(self):
+        """An unreviewed tagged trait does not include a link to review for Phenotype taggers."""
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-review:new', args=[self.tagged_trait.pk]))
+
+    def test_reviewed_tagged_trait_missing_link_to_udpate(self):
+        """A reviewed tagged trait does not include a link to update the DCCReview for Phenotype taggers."""
+        factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait)
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-review:update',
+                                                 args=[self.tagged_trait.pk]))
+
+    def test_context_with_unreviewed_trait(self):
+        """The context contains the proper flags for the add/update review buttons."""
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        context = response.context
+        self.assertIn('show_dcc_review_info', context)
+        self.assertEqual(context['show_dcc_review_info'], False)
+        self.assertIn('show_dcc_review_add_button', context)
+        self.assertEqual(context['show_dcc_review_add_button'], False)
+        self.assertIn('show_dcc_review_update_button', context)
+        self.assertEqual(context['show_dcc_review_update_button'], False)
+
+    def test_context_with_reviewed_trait(self):
+        """The context contains the proper flags for the add/update review buttons."""
+        factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait)
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        context = response.context
+        self.assertIn('show_dcc_review_info', context)
+        self.assertEqual(context['show_dcc_review_info'], False)
+        self.assertIn('show_dcc_review_add_button', context)
+        self.assertEqual(context['show_dcc_review_add_button'], False)
+        self.assertIn('show_dcc_review_update_button', context)
+        self.assertEqual(context['show_dcc_review_update_button'], False)
+
 
 class TaggedTraitDetailDCCAnalystTest(TaggedTraitDetailTestsMixin, DCCAnalystLoginTestCase):
 
@@ -247,20 +294,20 @@ class TaggedTraitDetailDCCAnalystTest(TaggedTraitDetailTestsMixin, DCCAnalystLog
     def test_delete_button(self):
         """A DCC analyst does see a button to delete the tagged trait."""
         response = self.client.get(self.get_url(self.tagged_trait.pk))
-        self.assertContains(response, reverse('tags:tagged-traits:delete', kwargs={'pk': self.tagged_trait.pk}))
+        self.assertContains(response, reverse('tags:tagged-traits:pk:delete', kwargs={'pk': self.tagged_trait.pk}))
 
     def test_disabled_delete_button_for_reviewed_tagged_trait(self):
         """A phenotype tagger sees a disabled button to delete the tagged trait."""
         factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP,
                                           comment='foo')
         response = self.client.get(self.get_url(self.tagged_trait.pk))
-        self.assertNotContains(response, reverse('tags:tagged-traits:delete', kwargs={'pk': self.tagged_trait.pk}))
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:delete', kwargs={'pk': self.tagged_trait.pk}))
 
     def test_disabled_delete_button_for_confirmed_tagged_trait(self):
         """A phenotype tagger sees a disabled button to delete the tagged trait."""
         factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait, status=models.DCCReview.STATUS_CONFIRMED)
         response = self.client.get(self.get_url(self.tagged_trait.pk))
-        self.assertNotContains(response, reverse('tags:tagged-traits:delete', kwargs={'pk': self.tagged_trait.pk}))
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:delete', kwargs={'pk': self.tagged_trait.pk}))
 
     def test_dcc_review_info(self):
         """A DCC analyst does see DCC review info on this detail page."""
@@ -273,115 +320,125 @@ class TaggedTraitDetailDCCAnalystTest(TaggedTraitDetailTestsMixin, DCCAnalystLog
         self.assertContains(response, dcc_review.get_status_display())
         self.assertContains(response, dcc_review.comment)
 
+    def test_context_with_unreviewed_trait(self):
+        """The context contains the proper flags for the add/update review buttons."""
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        context = response.context
+        self.assertIn('show_dcc_review_info', context)
+        self.assertEqual(context['show_dcc_review_info'], True)
+        self.assertIn('show_dcc_review_add_button', context)
+        self.assertEqual(context['show_dcc_review_add_button'], True)
+        self.assertIn('show_dcc_review_update_button', context)
+        self.assertEqual(context['show_dcc_review_update_button'], False)
 
-class TaggedTraitByStudyListTest(UserLoginTestCase):
+    def test_unreviewed_tagged_trait_includes_link_to_review(self):
+        """An unreviewed tagged trait includes a link to review for DCC users."""
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        self.assertContains(response, reverse('tags:tagged-traits:pk:dcc-review:new', args=[self.tagged_trait.pk]))
+
+    def test_context_with_reviewed_trait(self):
+        """The context contains the proper flags when the tagged trait has been reviewed.."""
+        factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait)
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        context = response.context
+        self.assertIn('show_dcc_review_info', context)
+        self.assertEqual(context['show_dcc_review_info'], True)
+        self.assertIn('show_dcc_review_add_button', context)
+        self.assertEqual(context['show_dcc_review_add_button'], False)
+        self.assertIn('show_dcc_review_update_button', context)
+        self.assertEqual(context['show_dcc_review_update_button'], True)
+
+    def test_reviewed_tagged_trait_includes_link_to_udpate(self):
+        """The context contains the proper flags when the tagged trait has not been reviewed.."""
+        factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait)
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        self.assertContains(response, reverse('tags:tagged-traits:pk:dcc-review:update', args=[self.tagged_trait.pk]))
+
+
+class TaggedTraitTagCountsByStudyTest(UserLoginTestCase):
 
     def setUp(self):
-        super(TaggedTraitByStudyListTest, self).setUp()
-        self.study = StudyFactory.create()
-        self.tagged_traits = factories.TaggedTraitFactory.create_batch(
-            10, trait__source_dataset__source_study_version__study=self.study)
+        super(TaggedTraitTagCountsByStudyTest, self).setUp()
+
+    def make_fake_data(self):
+        self.tags = factories.TagFactory.create_batch(2)
+        self.studies = StudyFactory.create_batch(2)
+        self.taggedtraits = []
+        for tag in self.tags:
+            for study in self.studies:
+                self.taggedtraits.append(
+                    factories.TaggedTraitFactory.create_batch(
+                        2, tag=tag, trait__source_dataset__source_study_version__study=study)
+                )
 
     def get_url(self, *args):
-        return reverse('trait_browser:source:studies:pk:traits:tagged', args=args)
+        return reverse('tags:tagged-traits:by-study')
 
     def test_view_success_code(self):
         """View returns successful response code."""
-        response = self.client.get(self.get_url(self.study.pk))
+        response = self.client.get(self.get_url())
         self.assertEqual(response.status_code, 200)
-
-    def test_view_with_invalid_pk(self):
-        """View returns 404 response code when the pk doesn't exist."""
-        response = self.client.get(self.get_url(self.study.pk + 1))
-        self.assertEqual(response.status_code, 404)
 
     def test_context_data(self):
         """View has appropriate data in the context."""
-        response = self.client.get(self.get_url(self.study.pk))
+        response = self.client.get(self.get_url())
         context = response.context
-        self.assertIn('study', context)
-        self.assertIn('tagged_trait_table', context)
-        self.assertEqual(context['study'], self.study)
+        self.assertIn('taggedtrait_tag_counts_by_study', context)
 
-    def test_table_class(self):
-        """For non-taggers, the tagged trait table class does not have delete buttons."""
-        response = self.client.get(self.get_url(self.study.pk))
+    def test_context_data_is_correct(self):
+        """Data in the context is correct."""
+        self.make_fake_data()
+        response = self.client.get(self.get_url())
         context = response.context
-        self.assertIsInstance(context['tagged_trait_table'], tables.TaggedTraitTable)
+        for study in context['taggedtrait_tag_counts_by_study']:
+            for tag in study[1]:
+                tag_study_count = models.TaggedTrait.objects.filter(
+                    tag__pk=tag['tag_pk'],
+                    trait__source_dataset__source_study_version__study__pk=study[0]['study_pk']).count()
+                self.assertEqual(tag['tt_count'], tag_study_count)
 
 
-class TaggedTraitByStudyListPhenotypeTaggerTest(PhenotypeTaggerLoginTestCase):
+class TaggedTraitStudyCountsByTagTest(UserLoginTestCase):
 
     def setUp(self):
-        super(TaggedTraitByStudyListPhenotypeTaggerTest, self).setUp()
-        self.tagged_traits = factories.TaggedTraitFactory.create_batch(
-            10, trait__source_dataset__source_study_version__study=self.study)
-        self.user.refresh_from_db()
-        self.user.profile.taggable_studies.add(self.study)
+        super(TaggedTraitStudyCountsByTagTest, self).setUp()
+
+    def make_fake_data(self):
+        self.tags = factories.TagFactory.create_batch(2)
+        self.studies = StudyFactory.create_batch(2)
+        self.taggedtraits = []
+        for tag in self.tags:
+            for study in self.studies:
+                self.taggedtraits.append(
+                    factories.TaggedTraitFactory.create_batch(
+                        2, tag=tag, trait__source_dataset__source_study_version__study=study)
+                )
 
     def get_url(self, *args):
-        return reverse('trait_browser:source:studies:pk:traits:tagged', args=args)
+        return reverse('tags:tagged-traits:by-tag')
 
     def test_view_success_code(self):
         """View returns successful response code."""
-        response = self.client.get(self.get_url(self.study.pk))
+        response = self.client.get(self.get_url())
         self.assertEqual(response.status_code, 200)
-
-    def test_view_with_invalid_pk(self):
-        """View returns 404 response code when the pk doesn't exist."""
-        response = self.client.get(self.get_url(self.study.pk + 1))
-        self.assertEqual(response.status_code, 404)
 
     def test_context_data(self):
         """View has appropriate data in the context."""
-        response = self.client.get(self.get_url(self.study.pk))
+        response = self.client.get(self.get_url())
         context = response.context
-        self.assertIn('study', context)
-        self.assertIn('tagged_trait_table', context)
-        self.assertEqual(context['study'], self.study)
+        self.assertIn('taggedtrait_study_counts_by_tag', context)
 
-    def test_table_class(self):
-        """For taggers, the tagged trait table class has delete buttons."""
-        response = self.client.get(self.get_url(self.study.pk))
+    def test_context_data_is_correct(self):
+        """Data in the context is correct."""
+        self.make_fake_data()
+        response = self.client.get(self.get_url())
         context = response.context
-        self.assertIsInstance(context['tagged_trait_table'], tables.TaggedTraitTableWithDelete)
-
-
-class TaggedTraitByStudyListDCCAnalystTest(DCCAnalystLoginTestCase):
-
-    def setUp(self):
-        super(TaggedTraitByStudyListDCCAnalystTest, self).setUp()
-        self.study = StudyFactory.create()
-        self.tagged_traits = factories.TaggedTraitFactory.create_batch(
-            10, trait__source_dataset__source_study_version__study=self.study)
-        self.user.refresh_from_db()
-
-    def get_url(self, *args):
-        return reverse('trait_browser:source:studies:pk:traits:tagged', args=args)
-
-    def test_view_success_code(self):
-        """View returns successful response code."""
-        response = self.client.get(self.get_url(self.study.pk))
-        self.assertEqual(response.status_code, 200)
-
-    def test_view_with_invalid_pk(self):
-        """View returns 404 response code when the pk doesn't exist."""
-        response = self.client.get(self.get_url(self.study.pk + 1))
-        self.assertEqual(response.status_code, 404)
-
-    def test_context_data(self):
-        """View has appropriate data in the context."""
-        response = self.client.get(self.get_url(self.study.pk))
-        context = response.context
-        self.assertIn('study', context)
-        self.assertIn('tagged_trait_table', context)
-        self.assertEqual(context['study'], self.study)
-
-    def test_table_class(self):
-        """For DCC Analysts, the tagged trait table class has delete buttons."""
-        response = self.client.get(self.get_url(self.study.pk))
-        context = response.context
-        self.assertIsInstance(context['tagged_trait_table'], tables.TaggedTraitTableWithDelete)
+        for tag in context['taggedtrait_study_counts_by_tag']:
+            for study in tag[1]:
+                study_tag_count = models.TaggedTrait.objects.filter(
+                    tag__pk=tag[0]['tag_pk'],
+                    trait__source_dataset__source_study_version__study__pk=study['study_pk']).count()
+                self.assertEqual(study['tt_count'], study_tag_count)
 
 
 class TaggedTraitByTagAndStudyListTest(UserLoginTestCase):
@@ -420,6 +477,8 @@ class TaggedTraitByTagAndStudyListTest(UserLoginTestCase):
         self.assertIn('tagged_trait_table', context)
         self.assertEqual(context['study'], self.study)
         self.assertEqual(context['tag'], self.tag)
+        self.assertIn('show_review_button', context)
+        self.assertFalse(context['show_review_button'])
 
     def test_table_class(self):
         """For non-taggers, the tagged trait table class does not have delete buttons."""
@@ -497,12 +556,14 @@ class TaggedTraitByTagAndStudyListPhenotypeTaggerTest(PhenotypeTaggerLoginTestCa
         self.assertIn('tagged_trait_table', context)
         self.assertEqual(context['study'], self.study)
         self.assertEqual(context['tag'], self.tag)
+        self.assertIn('show_review_button', context)
+        self.assertFalse(context['show_review_button'])
 
     def test_table_class(self):
-        """For taggers, the tagged trait table class has delete buttons."""
+        """For taggers, the tagged trait table class is correct."""
         response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
         context = response.context
-        self.assertIsInstance(context['tagged_trait_table'], tables.TaggedTraitTableWithDelete)
+        self.assertIsInstance(context['tagged_trait_table'], tables.TaggedTraitTableWithDCCReviewStatus)
 
 
 class TaggedTraitByTagAndStudyListDCCAnalystTest(DCCAnalystLoginTestCase):
@@ -542,12 +603,14 @@ class TaggedTraitByTagAndStudyListDCCAnalystTest(DCCAnalystLoginTestCase):
         self.assertIn('tagged_trait_table', context)
         self.assertEqual(context['study'], self.study)
         self.assertEqual(context['tag'], self.tag)
+        self.assertIn('show_review_button', context)
+        self.assertTrue(context['show_review_button'])
 
     def test_table_class(self):
         """For DCC Analysts, the tagged trait table class has delete buttons."""
         response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
         context = response.context
-        self.assertIsInstance(context['tagged_trait_table'], tables.TaggedTraitTableWithDCCReview)
+        self.assertIsInstance(context['tagged_trait_table'], tables.TaggedTraitTableWithDCCReviewButton)
 
 
 class TaggedTraitCreateTest(PhenotypeTaggerLoginTestCase):
@@ -772,7 +835,7 @@ class TaggedTraitDeleteTest(PhenotypeTaggerLoginTestCase):
 
     def get_url(self, *args):
         """Get the url for the view this class is supposed to test."""
-        return reverse('tags:tagged-traits:delete', args=args)
+        return reverse('tags:tagged-traits:pk:delete', args=args)
 
     def test_view_success_code(self):
         """View returns successful response code."""
@@ -913,7 +976,7 @@ class TaggedTraitDeleteDCCAnalystTest(DCCAnalystLoginTestCase):
 
     def get_url(self, *args):
         """Get the url for the view this class is supposed to test."""
-        return reverse('tags:tagged-traits:delete', args=args)
+        return reverse('tags:tagged-traits:pk:delete', args=args)
 
     def test_view_success_code(self):
         """View returns successful response code."""
@@ -1828,7 +1891,7 @@ class ManyTaggedTraitsCreateByTagDCCAnalystTest(DCCAnalystLoginTestCase):
         self.assertEqual(response.status_code, 200)
 
 
-class TaggedTraitReviewByTagAndStudySelectDCCTestsMixin(object):
+class DCCReviewByTagAndStudySelectDCCTestsMixin(object):
 
     def setUp(self):
         super().setUp()
@@ -1842,7 +1905,7 @@ class TaggedTraitReviewByTagAndStudySelectDCCTestsMixin(object):
 
     def get_url(self, *args):
         """Get the url for the view this class is supposed to test."""
-        return reverse('tags:tagged-traits:review:select', args=args)
+        return reverse('tags:tagged-traits:dcc-review:select', args=args)
 
     def test_view_success_code(self):
         """View returns successful response code."""
@@ -1854,7 +1917,7 @@ class TaggedTraitReviewByTagAndStudySelectDCCTestsMixin(object):
         response = self.client.get(self.get_url())
         context = response.context
         self.assertTrue('form' in context)
-        self.assertIsInstance(context['form'], forms.TaggedTraitReviewSelectForm)
+        self.assertIsInstance(context['form'], forms.DCCReviewTagAndStudySelectForm)
 
     def test_post_blank_trait(self):
         """Posting bad data to the form shows a form error and doesn't set session variables."""
@@ -1879,7 +1942,7 @@ class TaggedTraitReviewByTagAndStudySelectDCCTestsMixin(object):
             self.assertIn(tt.pk, session_info['tagged_trait_pks'],
                           msg='TaggedTrait {} not in session tagged_trait_pks'.format(tt.pk))
         # The success url redirects again to a new page, so include the target_status_code argument.
-        self.assertRedirects(response, reverse('tags:tagged-traits:review:next'), target_status_code=302)
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-review:next'), target_status_code=302)
 
     def test_session_variable_tagged_with_tag(self):
         """Posting valid data to the form sets tagged_trait_pks to only those from the given tag."""
@@ -1942,7 +2005,7 @@ class TaggedTraitReviewByTagAndStudySelectDCCTestsMixin(object):
         self.assertEqual(response.status_code, 200)
         # Form errors.
         self.assertIn('form', response.context)
-        self.assertFormError(response, 'form', None, forms.TaggedTraitReviewSelectForm.ERROR_NO_TAGGED_TRAITS)
+        self.assertFormError(response, 'form', None, forms.DCCReviewTagAndStudySelectForm.ERROR_NO_TAGGED_TRAITS)
         # Make sure no variables were set.
         session = self.client.session
         self.assertNotIn('tagged_trait_review_by_tag_and_study_info', session)
@@ -1977,25 +2040,24 @@ class TaggedTraitReviewByTagAndStudySelectDCCTestsMixin(object):
         self.assertContains(response, """<a href="{}">""".format(self.get_url()))
 
 
-class TaggedTraitReviewByTagAndStudySelectDCCAnalystTest(TaggedTraitReviewByTagAndStudySelectDCCTestsMixin,
-                                                         DCCAnalystLoginTestCase):
+class DCCReviewByTagAndStudySelectDCCAnalystTest(DCCReviewByTagAndStudySelectDCCTestsMixin, DCCAnalystLoginTestCase):
 
-    # Run all tests in TaggedTraitReviewByTagAndStudySelectDCCTestsMixin, as a DCC analyst.
+    # Run all tests in DCCReviewByTagAndStudySelectDCCTestsMixin, as a DCC analyst.
     pass
 
 
-class TaggedTraitReviewByTagAndStudySelectDCCDeveloperTest(TaggedTraitReviewByTagAndStudySelectDCCTestsMixin,
-                                                           DCCDeveloperLoginTestCase):
+class DCCReviewByTagAndStudySelectDCCDeveloperTest(DCCReviewByTagAndStudySelectDCCTestsMixin,
+                                                   DCCDeveloperLoginTestCase):
 
-    # Run all tests in TaggedTraitReviewByTagAndStudySelectDCCTestsMixin, as a DCC developer.
+    # Run all tests in DCCReviewByTagAndStudySelectDCCTestsMixin, as a DCC developer.
     pass
 
 
-class TaggedTraitReviewByTagAndStudySelectOtherUserTest(UserLoginTestCase):
+class DCCReviewByTagAndStudySelectOtherUserTest(UserLoginTestCase):
 
     def get_url(self, *args):
         """Get the url for the view this class is supposed to test."""
-        return reverse('tags:tagged-traits:review:select', args=args)
+        return reverse('tags:tagged-traits:dcc-review:select', args=args)
 
     def test_forbidden_get_request(self):
         """Returns a response with a forbidden status code for non-DCC users."""
@@ -2015,16 +2077,198 @@ class TaggedTraitReviewByTagAndStudySelectOtherUserTest(UserLoginTestCase):
         self.assertNotContains(response, """<a href="{}">""".format(self.get_url()))
 
 
-class TaggedTraitReviewByTagAndStudyNextDCCTestsMixin(object):
+class DCCReviewByTagAndStudySelectFromURLDCCTestsMixin(object):
+
+    def setUp(self):
+        super().setUp()
+        self.tag = factories.TagFactory.create()
+        self.study = StudyFactory.create()
+        self.tagged_traits = factories.TaggedTraitFactory.create_batch(
+            10,
+            tag=self.tag,
+            trait__source_dataset__source_study_version__study=self.study
+        )
+
+    def get_url(self, *args):
+        return reverse('tags:tag:study:dcc-review', args=args)
+
+    def test_view_success_code(self):
+        """View returns successful response code."""
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk), follow=False)
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-review:next'), fetch_redirect_response=False)
+
+    def test_nonexistent_study(self):
+        study_pk = self.study.pk
+        self.study.delete()
+        response = self.client.get(self.get_url(self.tag.pk, study_pk), follow=False)
+        self.assertEqual(response.status_code, 404)
+
+    def test_nonexistent_tag(self):
+        tag_pk = self.tag.pk
+        self.tag.delete()
+        response = self.client.get(self.get_url(tag_pk, self.study.pk), follow=False)
+        self.assertEqual(response.status_code, 404)
+
+    def test_sets_session_variables(self):
+        """View has appropriate data in the context."""
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk), follow=False)
+        session = self.client.session
+        self.assertIn('tagged_trait_review_by_tag_and_study_info', session)
+        session_info = session['tagged_trait_review_by_tag_and_study_info']
+        self.assertIn('study_pk', session_info)
+        self.assertEqual(session_info['study_pk'], self.study.pk)
+        self.assertIn('tag_pk', session_info)
+        self.assertEqual(session_info['tag_pk'], self.tag.pk)
+        self.assertIn('tagged_trait_pks', session_info)
+        self.assertEqual(len(session_info['tagged_trait_pks']), len(self.tagged_traits))
+        for tt in self.tagged_traits:
+            self.assertIn(tt.pk, session_info['tagged_trait_pks'],
+                          msg='TaggedTrait {} not in session tagged_trait_pks'.format(tt.pk))
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-review:next'), fetch_redirect_response=False)
+
+    def test_only_tagged_traits_from_requested_trait(self):
+        """tagged_trait_pks is set to only those from the given tag."""
+        other_tag = factories.TagFactory.create()
+        other_tagged_trait = factories.TaggedTraitFactory.create(
+            tag=other_tag,
+            trait__source_dataset__source_study_version__study=self.study
+        )
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk), follow=False)
+        session = self.client.session
+        self.assertIn('tagged_trait_review_by_tag_and_study_info', session)
+        session_info = session['tagged_trait_review_by_tag_and_study_info']
+        self.assertIn('tagged_trait_pks', session_info)
+        self.assertEqual(len(session_info['tagged_trait_pks']), len(self.tagged_traits))
+        for tt in self.tagged_traits:
+            self.assertIn(tt.pk, session_info['tagged_trait_pks'],
+                          msg='TaggedTrait {} unexpectedly not in session tagged_trait_pks'.format(tt.pk))
+        self.assertNotIn(other_tagged_trait, session_info['tagged_trait_pks'],
+                         msg='TaggedTrait {} unexpectedly in session tagged_trait_pks'.format(tt.pk))
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-review:next'), fetch_redirect_response=False)
+
+    def test_only_tagged_traits_from_requested_study(self):
+        """tagged_trait_pks is set to only those from the given tag."""
+        other_study = StudyFactory.create()
+        other_tagged_trait = factories.TaggedTraitFactory.create(
+            tag=self.tag,
+            trait__source_dataset__source_study_version__study=other_study
+        )
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk), follow=False)
+        session = self.client.session
+        self.assertIn('tagged_trait_review_by_tag_and_study_info', session)
+        session_info = session['tagged_trait_review_by_tag_and_study_info']
+        self.assertIn('tagged_trait_pks', session_info)
+        self.assertEqual(len(session_info['tagged_trait_pks']), len(self.tagged_traits))
+        for tt in self.tagged_traits:
+            self.assertIn(tt.pk, session_info['tagged_trait_pks'],
+                          msg='TaggedTrait {} unexpectedly not in session tagged_trait_pks'.format(tt.pk))
+        self.assertNotIn(other_tagged_trait, session_info['tagged_trait_pks'],
+                         msg='TaggedTrait {} unexpectedly in session tagged_trait_pks'.format(tt.pk))
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-review:next'), fetch_redirect_response=False)
+
+    def test_session_variable_tagged_with_study_and_tag(self):
+        """tagged_trait_pks is set to only those from the given study and tag."""
+        other_tag = factories.TagFactory.create()
+        other_study = StudyFactory.create()
+        other_tagged_trait = factories.TaggedTraitFactory.create(
+            tag=other_tag,
+            trait__source_dataset__source_study_version__study=other_study
+        )
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        session = self.client.session
+        self.assertIn('tagged_trait_review_by_tag_and_study_info', session)
+        session_info = session['tagged_trait_review_by_tag_and_study_info']
+        for tt in self.tagged_traits:
+            self.assertIn(tt.pk, session_info['tagged_trait_pks'],
+                          msg='TaggedTrait {} unexpectedly not in session tagged_trait_pks'.format(tt.pk))
+        self.assertNotIn(other_tagged_trait, session_info['tagged_trait_pks'],
+                         msg='TaggedTrait {} unexpectedly in session tagged_trait_pks'.format(tt.pk))
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-review:next'), fetch_redirect_response=False)
+
+    def test_resets_session_variables(self):
+        """A preexisting session variable is overwritten with new data."""
+        self.client.session['tagged_trait_review_by_tag_and_study_info'] = {
+            'study_pk': self.study.pk + 1,
+            'tag_pk': self.tag.pk + 1,
+            'tagged_trait_pks': [],
+        }
+        self.client.session.save()
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        session = self.client.session
+        self.assertIn('tagged_trait_review_by_tag_and_study_info', session)
+        session_info = session['tagged_trait_review_by_tag_and_study_info']
+        self.assertIn('study_pk', session_info)
+        self.assertEqual(session_info['study_pk'], self.study.pk)
+        self.assertIn('tag_pk', session_info)
+        self.assertEqual(session_info['tag_pk'], self.tag.pk)
+        self.assertIn('tagged_trait_pks', session_info)
+        self.assertEqual(len(session_info['tagged_trait_pks']), len(self.tagged_traits))
+        for tt in self.tagged_traits:
+            self.assertIn(tt.pk, session_info['tagged_trait_pks'],
+                          msg='TaggedTrait {} not in session tagged_trait_pks'.format(tt.pk))
+
+    def test_continue_reviewing_link_in_navbar_after_successful_load(self):
+        """The link to continue reviewing appears in the navbar after loading this page."""
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        url = reverse('home')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, """<a href="{}">""".format(reverse('tags:tagged-traits:dcc-review:next')))
+
+    def test_no_tagged_traits_to_review(self):
+        models.TaggedTrait.objects.all().delete()
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        # Check for message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('No tagged variables to review', str(messages[0]))
+
+
+class DCCReviewByTagAndStudySelectFromURLDCCAnalystTest(DCCReviewByTagAndStudySelectFromURLDCCTestsMixin,
+                                                        DCCAnalystLoginTestCase):
+
+    # Run all tests in DCCReviewByTagAndStudySelectFromURLDCCTestsMixin as a DCC analyst.
+    pass
+
+
+class DCCReviewByTagAndStudySelectFromURLDCCDeveloperTest(DCCReviewByTagAndStudySelectFromURLDCCTestsMixin,
+                                                          DCCDeveloperLoginTestCase):
+
+    # Run all tests in DCCReviewByTagAndStudySelectFromURLDCCTestsMixin as a DCC developer.
+    pass
+
+
+class DCCReviewByTagAndStudySelectFromURLOtherUserTest(UserLoginTestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.tag = factories.TagFactory.create()
+        self.study = StudyFactory.create()
+        self.tagged_traits = factories.TaggedTraitFactory.create_batch(
+            10,
+            tag=self.tag,
+            trait__source_dataset__source_study_version__study=self.study
+        )
+
+    def get_url(self, *args):
+        return reverse('tags:tag:study:dcc-review', args=args)
+
+    def test_forbidden_get_request(self):
+        """Returns a response with a forbidden status code for non-DCC users."""
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        self.assertEqual(response.status_code, 403)
+
+
+class DCCReviewByTagAndStudyNextDCCTestsMixin(object):
 
     def get_url(self, *args):
         """Get the url for the view this class is supposed to test."""
-        return reverse('tags:tagged-traits:review:next', args=args)
+        return reverse('tags:tagged-traits:dcc-review:next', args=args)
 
     def test_view_success_with_no_session_variables(self):
         """View redirects correctly when no session variables are set."""
         response = self.client.get(self.get_url())
-        self.assertRedirects(response, reverse('tags:tagged-traits:review:select'))
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-review:select'))
 
     def test_view_success_with_tagged_traits_to_review(self):
         """View redirects correctly when there are tagged traits to review."""
@@ -2044,7 +2288,11 @@ class TaggedTraitReviewByTagAndStudyNextDCCTestsMixin(object):
         self.assertIn('tagged_trait_review_by_tag_and_study_info', session)
         self.assertIn('pk', session['tagged_trait_review_by_tag_and_study_info'])
         self.assertEqual(session['tagged_trait_review_by_tag_and_study_info']['pk'], tagged_trait.pk)
-        self.assertRedirects(response, reverse('tags:tagged-traits:review:review'))
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-review:review'))
+        # Check messages.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('You have 1 tagged variable left to review.', str(messages[0]))
 
     def test_view_success_with_no_tagged_traits_left(self):
         """View redirects correctly when no tagged traits are left to review."""
@@ -2059,6 +2307,9 @@ class TaggedTraitReviewByTagAndStudyNextDCCTestsMixin(object):
         session.save()
         response = self.client.get(self.get_url())
         self.assertRedirects(response, reverse('tags:tag:study:list', args=[tag.pk, study.pk]))
+        # Check that there are no messages.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 0)
 
     def test_session_variables_are_unset_when_reviewing_completed(self):
         """View unsets session variables when no tagged traits are left to review."""
@@ -2096,7 +2347,10 @@ class TaggedTraitReviewByTagAndStudyNextDCCTestsMixin(object):
         self.assertIn('tagged_trait_pks', session_info)
         self.assertEqual(session_info['tagged_trait_pks'], [tagged_traits[1].pk])
         self.assertNotIn('pk', session_info)
-        self.assertRedirects(response, reverse('tags:tagged-traits:review:next'), target_status_code=302)
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-review:next'), target_status_code=302)
+        # Check that there are no messages.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 0)
 
     def test_skips_deleted_tagged_trait(self):
         tag = factories.TagFactory.create()
@@ -2121,12 +2375,12 @@ class TaggedTraitReviewByTagAndStudyNextDCCTestsMixin(object):
         self.assertIn('tagged_trait_pks', session_info)
         self.assertEqual(session_info['tagged_trait_pks'], [tagged_traits[1].pk])
         self.assertNotIn('pk', session_info)
-        self.assertRedirects(response, reverse('tags:tagged-traits:review:next'), target_status_code=302)
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-review:next'), target_status_code=302)
 
     def test_session_variables_are_not_properly_set(self):
         """Redirects to select view if expected session variable is not set."""
         response = self.client.get(self.get_url())
-        self.assertRedirects(response, reverse('tags:tagged-traits:review:select'))
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-review:select'))
 
     def test_session_variable_missing_required_keys(self):
         """Redirects to select view if expected session variable dictionary keys are missing."""
@@ -2150,29 +2404,52 @@ class TaggedTraitReviewByTagAndStudyNextDCCTestsMixin(object):
             session.save()
             response = self.client.get(self.get_url())
             self.assertNotIn('tagged_trait_review_by_tag_and_study_info', self.client.session)
-            self.assertRedirects(response, reverse('tags:tagged-traits:review:select'),
+            self.assertRedirects(response, reverse('tags:tagged-traits:dcc-review:select'),
                                  msg_prefix='did not redirect when missing {} in session'.format(key))
 
+    def test_continue_reviewing_link_in_navbar_if_session_variable_is_present(self):
+        """The link to continue reviewing traits appears on the home page for DCC users if session variable exists."""
+        tagged_trait = factories.TaggedTraitFactory.create()
+        tag = tagged_trait.tag
+        study = tagged_trait.trait.source_dataset.source_study_version.study
+        session = self.client.session
+        session['tagged_trait_review_by_tag_and_study_info'] = {
+            'tag_pk': tag.pk,
+            'study_pk': study.pk,
+            'tagged_trait_pks': [tagged_trait.pk],
+        }
+        session.save()
+        url = reverse('home')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, """<a href="{}">""".format(self.get_url()))
 
-class TaggedTraitReviewByTagAndStudyNextDCCAnalystTest(TaggedTraitReviewByTagAndStudyNextDCCTestsMixin,
-                                                       DCCAnalystLoginTestCase):
+    def test_continue_reviewing_link_not_in_navbar_if_session_variable_is_missing(self):
+        """The link to continue reviewing doesn't appear on the home page for DCC users if no session variable."""
+        url = reverse('home')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, """<a href="{}">""".format(self.get_url()))
 
-    # Run all tests in TaggedTraitReviewByTagAndStudyNextDCCTestsMixin, as a DCC analyst.
+
+class DCCReviewByTagAndStudyNextDCCAnalystTest(DCCReviewByTagAndStudyNextDCCTestsMixin,
+                                               DCCAnalystLoginTestCase):
+
+    # Run all tests in DCCReviewByTagAndStudyNextDCCTestsMixin, as a DCC analyst.
     pass
 
 
-class TaggedTraitReviewByTagAndStudyNextDCCDeveloperTest(TaggedTraitReviewByTagAndStudyNextDCCTestsMixin,
-                                                         DCCDeveloperLoginTestCase):
+class DCCReviewByTagAndStudyNextDCCDeveloperTest(DCCReviewByTagAndStudyNextDCCTestsMixin, DCCDeveloperLoginTestCase):
 
-    # Run all tests in TaggedTraitReviewByTagAndStudyNextDCCTestsMixin, as a DCC developer.
+    # Run all tests in DCCReviewByTagAndStudyNextDCCTestsMixin, as a DCC developer.
     pass
 
 
-class TaggedTraitReviewByTagAndStudyNextOtherUserTest(UserLoginTestCase):
+class DCCReviewByTagAndStudyNextOtherUserTest(UserLoginTestCase):
 
     def get_url(self, *args):
         """Get the url for the view this class is supposed to test."""
-        return reverse('tags:tagged-traits:review:next', args=args)
+        return reverse('tags:tagged-traits:dcc-review:next', args=args)
 
     def test_forbidden_get_request(self):
         """Returns a response with a forbidden status code for non-DCC users."""
@@ -2184,8 +2461,25 @@ class TaggedTraitReviewByTagAndStudyNextOtherUserTest(UserLoginTestCase):
         response = self.client.post(self.get_url(), {})
         self.assertEqual(response.status_code, 403)
 
+    def test_continue_reviewing_link_in_navbar_if_session_variable_is_present(self):
+        """The link to continue reviewing traits doesn't appear on the home page for non-DCC users."""
+        tagged_trait = factories.TaggedTraitFactory.create()
+        tag = tagged_trait.tag
+        study = tagged_trait.trait.source_dataset.source_study_version.study
+        session = self.client.session
+        session['tagged_trait_review_by_tag_and_study_info'] = {
+            'tag_pk': tag.pk,
+            'study_pk': study.pk,
+            'tagged_trait_pks': [tagged_trait.pk],
+        }
+        session.save()
+        url = reverse('home')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, """<a href="{}">""".format(self.get_url()))
 
-class TaggedTraitReviewByTagAndStudyDCCTestsMixin(object):
+
+class DCCReviewByTagAndStudyDCCTestsMixin(object):
 
     def setUp(self):
         super().setUp()
@@ -2207,7 +2501,7 @@ class TaggedTraitReviewByTagAndStudyDCCTestsMixin(object):
 
     def get_url(self, *args):
         """Get the url for the view this class is supposed to test."""
-        return reverse('tags:tagged-traits:review:review', args=args)
+        return reverse('tags:tagged-traits:dcc-review:review', args=args)
 
     def test_view_success_code(self):
         """View returns successful response code."""
@@ -2219,7 +2513,7 @@ class TaggedTraitReviewByTagAndStudyDCCTestsMixin(object):
         response = self.client.get(self.get_url())
         context = response.context
         self.assertIn('form', context)
-        self.assertIsInstance(context['form'], forms.DCCReviewForm)
+        self.assertIsInstance(context['form'], forms.DCCReviewByTagAndStudyForm)
         self.assertIn('tagged_trait', context)
         self.assertEqual(context['tagged_trait'], self.tagged_trait)
         self.assertIn('tag', context)
@@ -2238,7 +2532,7 @@ class TaggedTraitReviewByTagAndStudyDCCTestsMixin(object):
         response = self.client.get(self.get_url())
         context = response.context
         self.assertIn('form', context)
-        self.assertIsInstance(context['form'], forms.DCCReviewForm)
+        self.assertIsInstance(context['form'], forms.DCCReviewByTagAndStudyForm)
         self.assertIn('tagged_trait', context)
         self.assertEqual(context['tagged_trait'], self.tagged_trait)
         self.assertIn('tag', context)
@@ -2250,7 +2544,7 @@ class TaggedTraitReviewByTagAndStudyDCCTestsMixin(object):
 
     def test_successful_post_with_confirmed_tagged_trait(self):
         """Posting valid data to the form correctly creates a DCCReview."""
-        form_data = {forms.DCCReviewForm.SUBMIT_CONFIRM: 'Confirm', 'comment': ''}
+        form_data = {forms.DCCReviewByTagAndStudyForm.SUBMIT_CONFIRM: 'Confirm', 'comment': ''}
         response = self.client.post(self.get_url(), form_data)
         # Correctly creates a DCCReview for this TaggedTrait.
         dcc_review = models.DCCReview.objects.all().latest('created')
@@ -2265,11 +2559,11 @@ class TaggedTraitReviewByTagAndStudyDCCTestsMixin(object):
         self.assertEqual(len(messages), 1)
         self.assertIn('Successfully reviewed', str(messages[0]))
         # Correctly redirects to the next view (remembering that it is a redirect view).
-        self.assertRedirects(response, reverse('tags:tagged-traits:review:next'), target_status_code=302)
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-review:next'), target_status_code=302)
 
     def test_successful_post_with_needs_followup_tagged_trait(self):
         """Posting valid data to the form correctly creates a DCCReview."""
-        form_data = {forms.DCCReviewForm.SUBMIT_FOLLOWUP: 'Require study followup', 'comment': 'foo'}
+        form_data = {forms.DCCReviewByTagAndStudyForm.SUBMIT_FOLLOWUP: 'Require study followup', 'comment': 'foo'}
         response = self.client.post(self.get_url(), form_data)
         # Correctly creates a DCCReview for this TaggedTrait.
         dcc_review = models.DCCReview.objects.all().latest('created')
@@ -2284,11 +2578,11 @@ class TaggedTraitReviewByTagAndStudyDCCTestsMixin(object):
         self.assertEqual(len(messages), 1)
         self.assertIn('Successfully reviewed', str(messages[0]))
         # Correctly redirects to the next view (remembering that it is a redirect view).
-        self.assertRedirects(response, reverse('tags:tagged-traits:review:next'), target_status_code=302)
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-review:next'), target_status_code=302)
 
     def test_post_bad_data(self):
         """Posting bad data to the form shows a form error and doesn't unset session variables."""
-        form_data = {forms.DCCReviewForm.SUBMIT_FOLLOWUP: 'Require study followup', 'comment': ''}
+        form_data = {forms.DCCReviewByTagAndStudyForm.SUBMIT_FOLLOWUP: 'Require study followup', 'comment': ''}
         response = self.client.post(self.get_url(), form_data)
         self.assertEqual(response.status_code, 200)
         # Does not create a DCCReview for this TaggedTrait.
@@ -2305,7 +2599,7 @@ class TaggedTraitReviewByTagAndStudyDCCTestsMixin(object):
 
     def test_skip_tagged_trait(self):
         """Skipping a TaggedTrait unsets pk and redirects to the next view."""
-        form_data = {forms.DCCReviewForm.SUBMIT_SKIP: 'Skip'}
+        form_data = {forms.DCCReviewByTagAndStudyForm.SUBMIT_SKIP: 'Skip'}
         response = self.client.post(self.get_url(), form_data)
         # Does not create a DCCReview for this TaggedTrait.
         self.assertFalse(hasattr(self.tagged_trait, 'dcc_review'))
@@ -2317,7 +2611,7 @@ class TaggedTraitReviewByTagAndStudyDCCTestsMixin(object):
         self.assertIn('tagged_trait_pks', session_info)
         self.assertNotIn(self.tagged_trait.pk, session_info['tagged_trait_pks'])
         # The redirect view unsets some session variables, so check it at the end.
-        self.assertRedirects(response, reverse('tags:tagged-traits:review:next'), target_status_code=302)
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-review:next'), target_status_code=302)
 
     def test_non_existent_tagged_trait(self):
         """Returns a 404 page if the session varaible pk doesn't exist."""
@@ -2333,7 +2627,7 @@ class TaggedTraitReviewByTagAndStudyDCCTestsMixin(object):
             comment='a comment'
         )
         # Now try to review it through the web interface.
-        form_data = {forms.DCCReviewForm.SUBMIT_CONFIRM: 'Confirm', 'comment': ''}
+        form_data = {forms.DCCReviewByTagAndStudyForm.SUBMIT_CONFIRM: 'Confirm', 'comment': ''}
         response = self.client.post(self.get_url(), form_data)
         # Check session variables.
         self.assertIn('tagged_trait_review_by_tag_and_study_info', self.client.session)
@@ -2347,7 +2641,7 @@ class TaggedTraitReviewByTagAndStudyDCCTestsMixin(object):
         self.assertIn('already been reviewed', str(messages[0]))
         # The previous DCCReview was not updated.
         self.assertEqual(self.tagged_trait.dcc_review, dcc_review)
-        self.assertRedirects(response, reverse('tags:tagged-traits:review:next'), target_status_code=302)
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-review:next'), target_status_code=302)
 
     def test_already_reviewed_tagged_trait_with_form_error(self):
         """Shows warning message and redirects if TaggedTrait is already reviewed."""
@@ -2357,7 +2651,7 @@ class TaggedTraitReviewByTagAndStudyDCCTestsMixin(object):
             comment=''
         )
         # Now try to review it through the web interface.
-        form_data = {forms.DCCReviewForm.SUBMIT_FOLLOWUP: 'Require study followup', 'comment': ''}
+        form_data = {forms.DCCReviewByTagAndStudyForm.SUBMIT_FOLLOWUP: 'Require study followup', 'comment': ''}
         response = self.client.post(self.get_url(), form_data)
         # Check session variables.
         self.assertIn('tagged_trait_review_by_tag_and_study_info', self.client.session)
@@ -2371,7 +2665,7 @@ class TaggedTraitReviewByTagAndStudyDCCTestsMixin(object):
         self.assertIn('already been reviewed', str(messages[0]))
         # The previous DCCReview was not updated.
         self.assertEqual(self.tagged_trait.dcc_review, dcc_review)
-        self.assertRedirects(response, reverse('tags:tagged-traits:review:next'), target_status_code=302)
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-review:next'), target_status_code=302)
 
     def test_can_skip_already_reviewed_tagged_trait(self):
         """Redirects without a message if an already-reviewed tagged trait is skipped."""
@@ -2381,7 +2675,7 @@ class TaggedTraitReviewByTagAndStudyDCCTestsMixin(object):
             comment=''
         )
         # Now try to review it through the web interface.
-        form_data = {forms.DCCReviewForm.SUBMIT_SKIP: 'Skip', 'comment': ''}
+        form_data = {forms.DCCReviewByTagAndStudyForm.SUBMIT_SKIP: 'Skip', 'comment': ''}
         response = self.client.post(self.get_url(), form_data)
         # Check session variables.
         self.assertIn('tagged_trait_review_by_tag_and_study_info', self.client.session)
@@ -2394,7 +2688,7 @@ class TaggedTraitReviewByTagAndStudyDCCTestsMixin(object):
         self.assertEqual(len(messages), 0)
         # The previous DCCReview was not updated.
         self.assertEqual(self.tagged_trait.dcc_review, dcc_review)
-        self.assertRedirects(response, reverse('tags:tagged-traits:review:next'), target_status_code=302)
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-review:next'), target_status_code=302)
 
     def test_session_variables_are_not_properly_set_with_get_request(self):
         """Redirects to select view if expected session variable is not set."""
@@ -2402,7 +2696,7 @@ class TaggedTraitReviewByTagAndStudyDCCTestsMixin(object):
         del session['tagged_trait_review_by_tag_and_study_info']
         session.save()
         response = self.client.get(self.get_url())
-        self.assertRedirects(response, reverse('tags:tagged-traits:review:select'))
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-review:select'))
 
     def test_session_variables_are_not_properly_set_with_post_request(self):
         """Redirects to select view if expected session variable is not set."""
@@ -2410,7 +2704,7 @@ class TaggedTraitReviewByTagAndStudyDCCTestsMixin(object):
         del session['tagged_trait_review_by_tag_and_study_info']
         session.save()
         response = self.client.post(self.get_url(), {})
-        self.assertRedirects(response, reverse('tags:tagged-traits:review:select'))
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-review:select'))
 
     def test_session_variable_missing_key_tag_pk_with_get_request(self):
         """Redirects to select view if expected session variable dictionary keys are missing."""
@@ -2419,7 +2713,7 @@ class TaggedTraitReviewByTagAndStudyDCCTestsMixin(object):
         session.save()
         response = self.client.get(self.get_url())
         self.assertNotIn('tagged_trait_review_by_tag_and_study_info', self.client.session)
-        self.assertRedirects(response, reverse('tags:tagged-traits:review:select'))
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-review:select'))
 
     def test_session_variable_missing_key_study_pk_with_get_request(self):
         """Redirects to select view if expected session variable dictionary keys are missing."""
@@ -2428,7 +2722,7 @@ class TaggedTraitReviewByTagAndStudyDCCTestsMixin(object):
         session.save()
         response = self.client.get(self.get_url())
         self.assertNotIn('tagged_trait_review_by_tag_and_study_info', self.client.session)
-        self.assertRedirects(response, reverse('tags:tagged-traits:review:select'))
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-review:select'))
 
     def test_session_variable_missing_key_tagged_trait_pks_with_get_request(self):
         """Redirects to select view if expected session variable dictionary keys are missing."""
@@ -2437,7 +2731,7 @@ class TaggedTraitReviewByTagAndStudyDCCTestsMixin(object):
         session.save()
         response = self.client.get(self.get_url())
         self.assertNotIn('tagged_trait_review_by_tag_and_study_info', self.client.session)
-        self.assertRedirects(response, reverse('tags:tagged-traits:review:select'))
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-review:select'))
 
     def test_session_variable_missing_key_pk_with_get_request(self):
         """Redirects to select view if expected session variable dictionary keys are missing."""
@@ -2445,7 +2739,7 @@ class TaggedTraitReviewByTagAndStudyDCCTestsMixin(object):
         session['tagged_trait_review_by_tag_and_study_info'].pop('pk')
         session.save()
         response = self.client.get(self.get_url())
-        self.assertRedirects(response, reverse('tags:tagged-traits:review:next'), target_status_code=302)
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-review:next'), target_status_code=302)
 
     def test_session_variable_missing_key_tag_pk_with_post_request(self):
         """Redirects to select view if expected session variable dictionary keys are missing."""
@@ -2454,7 +2748,7 @@ class TaggedTraitReviewByTagAndStudyDCCTestsMixin(object):
         session.save()
         response = self.client.post(self.get_url(), {})
         self.assertNotIn('tagged_trait_review_by_tag_and_study_info', self.client.session)
-        self.assertRedirects(response, reverse('tags:tagged-traits:review:select'))
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-review:select'))
 
     def test_session_variable_missing_key_study_pk_with_post_request(self):
         """Redirects to select view if expected session variable dictionary keys are missing."""
@@ -2463,7 +2757,7 @@ class TaggedTraitReviewByTagAndStudyDCCTestsMixin(object):
         session.save()
         response = self.client.post(self.get_url(), {})
         self.assertNotIn('tagged_trait_review_by_tag_and_study_info', self.client.session)
-        self.assertRedirects(response, reverse('tags:tagged-traits:review:select'))
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-review:select'))
 
     def test_session_variable_missing_key_tagged_trait_pks_with_post_request(self):
         """Redirects to select view if expected session variable dictionary keys are missing."""
@@ -2472,7 +2766,7 @@ class TaggedTraitReviewByTagAndStudyDCCTestsMixin(object):
         session.save()
         response = self.client.post(self.get_url(), {})
         self.assertNotIn('tagged_trait_review_by_tag_and_study_info', self.client.session)
-        self.assertRedirects(response, reverse('tags:tagged-traits:review:select'))
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-review:select'))
 
     def test_session_variable_missing_key_pk_with_post_request(self):
         """Redirects to select view if expected session variable dictionary keys are missing."""
@@ -2480,28 +2774,26 @@ class TaggedTraitReviewByTagAndStudyDCCTestsMixin(object):
         session['tagged_trait_review_by_tag_and_study_info'].pop('pk')
         session.save()
         response = self.client.post(self.get_url(), {})
-        self.assertRedirects(response, reverse('tags:tagged-traits:review:next'), target_status_code=302)
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-review:next'), target_status_code=302)
 
 
-class TaggedTraitReviewByTagAndStudyDCCAnalystTest(TaggedTraitReviewByTagAndStudyDCCTestsMixin,
-                                                   DCCAnalystLoginTestCase):
+class DCCReviewByTagAndStudyDCCAnalystTest(DCCReviewByTagAndStudyDCCTestsMixin, DCCAnalystLoginTestCase):
 
-    # Run all tests in TaggedTraitReviewByTagAndStudyDCCTestsMixin, as a DCC analyst.
+    # Run all tests in DCCReviewByTagAndStudyDCCTestsMixin, as a DCC analyst.
     pass
 
 
-class TaggedTraitReviewByTagAndStudyDCCDeveloperTest(TaggedTraitReviewByTagAndStudyDCCTestsMixin,
-                                                     DCCDeveloperLoginTestCase):
+class DCCReviewByTagAndStudyDCCDeveloperTest(DCCReviewByTagAndStudyDCCTestsMixin, DCCDeveloperLoginTestCase):
 
-    # Run all tests in TaggedTraitReviewByTagAndStudyDCCTestsMixin, as a DCC developer.
+    # Run all tests in DCCReviewByTagAndStudyDCCTestsMixin, as a DCC developer.
     pass
 
 
-class TaggedTraitReviewByTagAndStudyOtherUserTest(UserLoginTestCase):
+class DCCReviewByTagAndStudyOtherUserTest(UserLoginTestCase):
 
     def get_url(self, *args):
         """Get the url for the view this class is supposed to test."""
-        return reverse('tags:tagged-traits:review:review', args=args)
+        return reverse('tags:tagged-traits:dcc-review:review', args=args)
 
     def test_forbidden_get_request(self):
         """Returns a response with a forbidden status code for non-DCC users."""
@@ -2511,6 +2803,329 @@ class TaggedTraitReviewByTagAndStudyOtherUserTest(UserLoginTestCase):
     def test_forbidden_post_request(self):
         """Returns a response with a forbidden status code for non-DCC users."""
         response = self.client.post(self.get_url(), {})
+        self.assertEqual(response.status_code, 403)
+
+    def test_link_not_in_navbar(self):
+        """The link to continue reviewing traits doesn't appear on the home page for non-DCC users."""
+        url = reverse('home')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, """<a href="{}">""".format(self.get_url()))
+
+
+class DCCReviewCreateDCCTestsMixin(object):
+
+    def setUp(self):
+        super().setUp()
+        self.tagged_trait = factories.TaggedTraitFactory.create()
+
+    def get_url(self, *args):
+        """Get the url for the view this class is supposed to test."""
+        return reverse('tags:tagged-traits:pk:dcc-review:new', args=args)
+
+    def test_view_success_code(self):
+        """View returns successful response code."""
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        self.assertEqual(response.status_code, 200)
+
+    def test_context_data(self):
+        """View has appropriate data in the context."""
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        context = response.context
+        self.assertIn('form', context)
+        self.assertIsInstance(context['form'], forms.DCCReviewForm)
+        self.assertIn('tagged_trait', context)
+        self.assertEqual(context['tagged_trait'], self.tagged_trait)
+
+    def test_successful_post_with_confirmed_tagged_trait(self):
+        """Posting valid data to the form correctly creates a DCCReview."""
+        form_data = {forms.DCCReviewForm.SUBMIT_CONFIRM: 'Confirm', 'comment': ''}
+        response = self.client.post(self.get_url(self.tagged_trait.pk), form_data)
+        self.assertRedirects(response, self.tagged_trait.get_absolute_url())
+        # Correctly creates a DCCReview for this TaggedTrait.
+        dcc_review = models.DCCReview.objects.all().latest('created')
+        self.assertEqual(self.tagged_trait.dcc_review, dcc_review)
+        # Check for success message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Successfully reviewed', str(messages[0]))
+
+    def test_successful_post_with_needs_followup_tagged_trait(self):
+        """Posting valid data to the form correctly creates a DCCReview."""
+        form_data = {forms.DCCReviewForm.SUBMIT_FOLLOWUP: 'Require study followup', 'comment': 'foo'}
+        response = self.client.post(self.get_url(self.tagged_trait.pk), form_data)
+        self.assertRedirects(response, self.tagged_trait.get_absolute_url())
+        # Correctly creates a DCCReview for this TaggedTrait.
+        dcc_review = models.DCCReview.objects.all().latest('created')
+        self.assertEqual(self.tagged_trait.dcc_review, dcc_review)
+        # Check for success message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Successfully reviewed', str(messages[0]))
+
+    def test_post_bad_data(self):
+        """Posting bad data to the form shows a form error."""
+        form_data = {forms.DCCReviewForm.SUBMIT_FOLLOWUP: 'Require study followup', 'comment': ''}
+        response = self.client.post(self.get_url(self.tagged_trait.pk), form_data)
+        self.assertEqual(response.status_code, 200)
+        # Does not create a DCCReview for this TaggedTrait.
+        self.assertFalse(hasattr(self.tagged_trait, 'dcc_review'))
+        # No messages.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 0)
+
+    def test_get_non_existent_tagged_trait(self):
+        """Returns a 404 page with a get request if the tagged trai doesn't exist."""
+        url = self.get_url(self.tagged_trait.pk)
+        self.tagged_trait.delete()
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 404)
+
+    def test_post_non_existent_tagged_trait(self):
+        """Returns a 404 page if the session varaible pk doesn't exist."""
+        url = self.get_url(self.tagged_trait.pk)
+        self.tagged_trait.delete()
+        form_data = {forms.DCCReviewForm.SUBMIT_CONFIRM: 'Confirm', 'comment': ''}
+        response = self.client.post(url, form_data)
+        self.assertEqual(response.status_code, 404)
+
+    def test_get_already_reviewed_tagged_trait(self):
+        """Shows warning message and redirects to update page if TaggedTrait is already reviewed."""
+        dcc_review = factories.DCCReviewFactory.create(
+            tagged_trait=self.tagged_trait,
+            status=models.DCCReview.STATUS_FOLLOWUP,
+            comment='a comment'
+        )
+        # Now try to review it through the web interface.
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        self.assertRedirects(response, reverse('tags:tagged-traits:pk:dcc-review:update', args=[self.tagged_trait.pk]))
+        # Check for warning message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('already been reviewed', str(messages[0]))
+        # The previous DCCReview was not updated.
+        self.assertEqual(self.tagged_trait.dcc_review, dcc_review)
+
+    def test_post_already_reviewed_tagged_trait(self):
+        """Shows warning message and does not save review if TaggedTrait is already reviewed."""
+        dcc_review = factories.DCCReviewFactory.create(
+            tagged_trait=self.tagged_trait,
+            status=models.DCCReview.STATUS_FOLLOWUP,
+            comment='a comment'
+        )
+        # Now try to review it through the web interface.
+        form_data = {forms.DCCReviewForm.SUBMIT_CONFIRM: 'Confirm', 'comment': ''}
+        response = self.client.post(self.get_url(self.tagged_trait.pk), form_data)
+        self.assertRedirects(response, reverse('tags:tagged-traits:pk:dcc-review:update', args=[self.tagged_trait.pk]))
+        # Check for warning message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('already been reviewed', str(messages[0]))
+        # The previous DCCReview was not updated.
+        self.assertEqual(self.tagged_trait.dcc_review, dcc_review)
+
+    def test_post_already_reviewed_tagged_trait_with_form_error(self):
+        """Shows warning message and redirects if TaggedTrait is already reviewed."""
+        dcc_review = factories.DCCReviewFactory.create(
+            tagged_trait=self.tagged_trait,
+            status=models.DCCReview.STATUS_FOLLOWUP,
+            comment='a comment'
+        )
+        # Now try to review it through the web interface.
+        form_data = {forms.DCCReviewForm.SUBMIT_FOLLOWUP: 'Confirm', 'comment': ''}
+        response = self.client.post(self.get_url(self.tagged_trait.pk), form_data)
+        self.assertRedirects(response, reverse('tags:tagged-traits:pk:dcc-review:update', args=[self.tagged_trait.pk]))
+        # Check for warning message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('already been reviewed', str(messages[0]))
+        # The previous DCCReview was not updated.
+        self.assertEqual(self.tagged_trait.dcc_review, dcc_review)
+
+
+class DCCReviewCreateDCCAnalystTest(DCCReviewCreateDCCTestsMixin, DCCAnalystLoginTestCase):
+
+    # Run all tests in DCCReviewCreateDCCTestsMixin, as a DCC analyst.
+    pass
+
+
+class DCCReviewCreateDCCDeveloperTest(DCCReviewCreateDCCTestsMixin, DCCDeveloperLoginTestCase):
+
+    # Run all tests in DCCReviewCreateDCCTestsMixin, as a DCC developer.
+    pass
+
+
+class DCCReviewCreateOtherUserTest(UserLoginTestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.tagged_trait = factories.TaggedTraitFactory.create()
+
+    def get_url(self, *args):
+        """Get the url for the view this class is supposed to test."""
+        return reverse('tags:tagged-traits:pk:dcc-review:new', args=args)
+
+    def test_forbidden_get_request(self):
+        """Returns a response with a forbidden status code for non-DCC users."""
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        self.assertEqual(response.status_code, 403)
+
+    def test_forbidden_post_request(self):
+        """Returns a response with a forbidden status code for non-DCC users."""
+        response = self.client.post(self.get_url(self.tagged_trait.pk), {})
+        self.assertEqual(response.status_code, 403)
+
+    def test_forbidden_get_request_with_existing_review(self):
+        """Returns a response with a forbidden status code for non-DCC users."""
+        factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait, status=models.DCCReview.STATUS_CONFIRMED)
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        self.assertEqual(response.status_code, 403)
+
+    def test_forbidden_post_request_with_existing_review(self):
+        """Returns a response with a forbidden status code for non-DCC users."""
+        factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait, status=models.DCCReview.STATUS_CONFIRMED)
+        response = self.client.post(self.get_url(self.tagged_trait.pk), {})
+        self.assertEqual(response.status_code, 403)
+
+
+class DCCReviewUpdateDCCTestsMixin(object):
+
+    def setUp(self):
+        super().setUp()
+        self.tagged_trait = factories.TaggedTraitFactory.create()
+        factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait)
+
+    def get_url(self, *args):
+        """Get the url for the view this class is supposed to test."""
+        return reverse('tags:tagged-traits:pk:dcc-review:update', args=args)
+
+    def test_view_success_code(self):
+        """View returns successful response code."""
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        self.assertEqual(response.status_code, 200)
+
+    def test_context_data(self):
+        """View has appropriate data in the context."""
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        context = response.context
+        self.assertIn('form', context)
+        self.assertIsInstance(context['form'], forms.DCCReviewForm)
+        self.assertIn('tagged_trait', context)
+        self.assertEqual(context['tagged_trait'], self.tagged_trait)
+
+    def test_successful_post_with_confirmed_tagged_trait(self):
+        """Posting valid data to the form correctly updates an existing DCCReview."""
+        self.tagged_trait.dcc_review.delete()
+        factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP,
+                                          comment='foo')
+        form_data = {forms.DCCReviewForm.SUBMIT_CONFIRM: 'Confirm', 'comment': ''}
+        response = self.client.post(self.get_url(self.tagged_trait.pk), form_data)
+        self.assertRedirects(response, self.tagged_trait.get_absolute_url())
+        # Correctly updates the DCCReview for this TaggedTrait.
+        self.tagged_trait.dcc_review.refresh_from_db()
+        self.assertEqual(self.tagged_trait.dcc_review.status, models.DCCReview.STATUS_CONFIRMED)
+        self.assertEqual(self.tagged_trait.dcc_review.comment, '')
+        # Check for success message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Successfully updated', str(messages[0]))
+
+    def test_successful_post_with_needs_followup_tagged_trait(self):
+        """Posting valid data to the form correctly updates a DCCReview."""
+        comment = 'a new comment'
+        form_data = {forms.DCCReviewForm.SUBMIT_FOLLOWUP: 'Confirm', 'comment': comment}
+        response = self.client.post(self.get_url(self.tagged_trait.pk), form_data)
+        self.assertRedirects(response, self.tagged_trait.get_absolute_url())
+        # Correctly updates the DCCReview for this TaggedTrait.
+        self.tagged_trait.dcc_review.refresh_from_db()
+        self.assertEqual(self.tagged_trait.dcc_review.status, models.DCCReview.STATUS_FOLLOWUP)
+        self.assertEqual(self.tagged_trait.dcc_review.comment, comment)
+        # Check for success message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Successfully updated', str(messages[0]))
+
+    def test_post_bad_data(self):
+        """Posting bad data to the form shows a form error."""
+        existing_review = self.tagged_trait.dcc_review
+        form_data = {forms.DCCReviewForm.SUBMIT_FOLLOWUP: 'Require study followup', 'comment': ''}
+        response = self.client.post(self.get_url(self.tagged_trait.pk), form_data)
+        self.assertEqual(response.status_code, 200)
+        # Does not update the DCCReview for this TaggedTrait.
+        self.tagged_trait.dcc_review.refresh_from_db()
+        self.assertEqual(self.tagged_trait.dcc_review, existing_review)
+        # No messages.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 0)
+
+    def test_get_non_existent_tagged_trait(self):
+        """Returns a 404 page with a get request if the tagged trait doesn't exist."""
+        url = self.get_url(self.tagged_trait.pk)
+        self.tagged_trait.hard_delete()
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 404)
+
+    def test_post_non_existent_tagged_trait(self):
+        """Returns a 404 page with a post request if the tagged trait doesn't exist."""
+        url = self.get_url(self.tagged_trait.pk)
+        self.tagged_trait.hard_delete()
+        form_data = {forms.DCCReviewForm.SUBMIT_CONFIRM: 'Confirm', 'comment': ''}
+        response = self.client.post(url, form_data)
+        self.assertEqual(response.status_code, 404)
+
+    def test_get_nonexistent_dcc_review(self):
+        """Redirects to the create view with a warning if the DCCReview doesn't exist."""
+        self.tagged_trait.dcc_review.delete()
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        self.assertRedirects(response, reverse('tags:tagged-traits:pk:dcc-review:new', args=[self.tagged_trait.pk]))
+        # Check for warning message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('has not been reviewed yet', str(messages[0]))
+
+    def test_post_nonexistent_dcc_review(self):
+        """Returns a 404 page with a post request if the dcc_review doesn't exist."""
+        """Redirects to the create view with a warning if the DCCReview doesn't exist."""
+        self.tagged_trait.dcc_review.delete()
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        self.assertRedirects(response, reverse('tags:tagged-traits:pk:dcc-review:new', args=[self.tagged_trait.pk]))
+        # Check for warning message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('has not been reviewed yet', str(messages[0]))
+
+
+class DCCReviewUpdateDCCAnalystTest(DCCReviewUpdateDCCTestsMixin, DCCAnalystLoginTestCase):
+
+    # Run all tests in DCCReviewDCCTestsMixin, as a DCC analyst.
+    pass
+
+
+class DCCReviewUpdateDCCDeveloperTest(DCCReviewUpdateDCCTestsMixin, DCCDeveloperLoginTestCase):
+
+    # Run all tests in DCCReviewDCCTestsMixin, as a DCC developer.
+    pass
+
+
+class DCCReviewUpdateOtherUserTest(UserLoginTestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.tagged_trait = factories.TaggedTraitFactory.create()
+        factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait)
+
+    def get_url(self, *args):
+        """Get the url for the view this class is supposed to test."""
+        return reverse('tags:tagged-traits:pk:dcc-review:update', args=args)
+
+    def test_forbidden_get_request(self):
+        """Returns a response with a forbidden status code for non-DCC users."""
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        self.assertEqual(response.status_code, 403)
+
+    def test_forbidden_post_request(self):
+        """Returns a response with a forbidden status code for non-DCC users."""
+        response = self.client.post(self.get_url(self.tagged_trait.pk), {})
         self.assertEqual(response.status_code, 403)
 
 
