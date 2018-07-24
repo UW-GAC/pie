@@ -33,8 +33,8 @@
     </a>
   {% endif %}
   {% if show_dcc_review_update_button %}
-    <a class="btn btn-primary" href="{% url 'tags:tagged-traits:pk:dcc-review:update' tagged_trait.pk %}" role="button">
-        <span class="glyphicon glyphicon-sunglasses" aria-hidden="true"></span> Update review
+    <a class="btn btn-warning" href="{% url 'tags:tagged-traits:pk:dcc-review:update' tagged_trait.pk %}" role="button">
+        <span class="glyphicon glyphicon-sunglasses" aria-hidden="true"></span> Update DCC review
     </a>
   {% endif %}
   {% if perms.tags.add_taggedtrait %}
