@@ -92,3 +92,21 @@ class DCCReview(TimeStampedModel):
 
     class Meta:
         verbose_name = 'dcc review'
+
+
+class StudyResponse(TimeStampedModel):
+    """Model to allow study users to respond to a DCCReview."""
+
+    dcc_review = models.OneToOneField(DCCReview, on_delete=models.CASCADE, related_name='study_response')
+    STATUS_DISAGREE = 0
+    STATUS_AGREE = 1
+    STATUS_CHOICES = (
+        (STATUS_AGREE, 'Agree'),
+        (STATUS_DISAGREE, 'Disagree'),
+    )
+    status = models.IntegerField(choices=STATUS_CHOICES)
+    comment = models.TextField(blank=True)
+    creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+
+    class Meta:
+        verbose_name = 'study response'

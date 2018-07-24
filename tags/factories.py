@@ -48,3 +48,19 @@ class DCCReviewFactory(factory.DjangoModelFactory):
 
     class Meta:
         model = models.DCCReview
+
+
+class StudyResponseFactory(factory.DjangoModelFactory):
+    """Factory for StudyResponse objects using Faker data."""
+
+    dcc_review = factory.SubFactory(DCCReviewFactory)
+    status = models.StudyResponse.STATUS_AGREE
+    creator = factory.SubFactory(UserFactory)
+    comment = factory.Maybe(
+        'status',
+        yes_declaration='',
+        no_declaration=factory.Faker('sentence')
+    )
+
+    class Meta:
+        model = models.StudyResponse

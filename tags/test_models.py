@@ -382,3 +382,39 @@ class DCCReviewTest(TestCase):
         """The custom __str__ method returns a string."""
         instance = self.model_factory.create()
         self.assertIsInstance(instance.__str__(), str)
+
+
+class StudyResponseTest(TestCase):
+    model = models.StudyResponse
+    model_factory = factories.StudyResponseFactory
+
+    def setUp(self):
+        self.dcc_review = factories.DCCReviewFactory.create()
+        self.status = self.model.STATUS_AGREE
+        self.comment = ''
+        self.user = UserFactory.create()
+        self.model_args = {'dcc_review': self.dcc_review, 'status': self.status, 'comment': self.comment,
+                           'creator': self.user}
+
+    def test_model_saving(self):
+        """Creation using the model constructor and .save() works."""
+        instance = self.model(**self.model_args)
+        instance.save()
+        self.assertIsInstance(instance, self.model)
+
+    def test_model_saving_with_comment(self):
+        """Creation using the model constructor and .save() works."""
+        instance = self.model(**self.model_args)
+        instance.save()
+        self.assertIsInstance(instance, self.model)
+
+    def test_model_factory(self):
+        """Creation using the model factory."""
+        instance = self.model_factory.create()
+        self.assertIsInstance(self.model_factory._meta.model.objects.get(pk=instance.pk),
+                              self.model_factory._meta.model)
+
+    def test_printing(self):
+        """The custom __str__ method returns a string."""
+        instance = self.model_factory.create()
+        self.assertIsInstance(instance.__str__(), str)
