@@ -238,15 +238,15 @@ class TaggedTraitDetailPhenotypeTaggerTest(TaggedTraitDetailTestsMixin, Phenotyp
         self.assertNotContains(response, reverse('tags:tagged-traits:pk:delete', kwargs={'pk': self.tagged_trait.pk}))
 
     def test_dcc_review_info(self):
-        """A phenotype tagger does not see DCC review info on this detail page."""
+        """A phenotype tagger does see DCC review info on this detail page."""
         dcc_review = factories.DCCReviewFactory.create(
             tagged_trait=self.tagged_trait,
             status=models.DCCReview.STATUS_FOLLOWUP,
             comment='dcc test comment'
         )
         response = self.client.get(self.get_url(self.tagged_trait.pk))
-        self.assertNotContains(response, dcc_review.get_status_display())
-        self.assertNotContains(response, dcc_review.comment)
+        self.assertContains(response, dcc_review.get_status_display())
+        self.assertContains(response, dcc_review.comment)
 
     def test_unreviewed_tagged_trait_missing_link_to_review(self):
         """An unreviewed tagged trait does not include a link to review for Phenotype taggers."""
@@ -277,7 +277,7 @@ class TaggedTraitDetailPhenotypeTaggerTest(TaggedTraitDetailTestsMixin, Phenotyp
         response = self.client.get(self.get_url(self.tagged_trait.pk))
         context = response.context
         self.assertIn('show_dcc_review_info', context)
-        self.assertEqual(context['show_dcc_review_info'], False)
+        self.assertEqual(context['show_dcc_review_info'], True)
         self.assertIn('show_dcc_review_add_button', context)
         self.assertEqual(context['show_dcc_review_add_button'], False)
         self.assertIn('show_dcc_review_update_button', context)
@@ -325,7 +325,7 @@ class TaggedTraitDetailDCCAnalystTest(TaggedTraitDetailTestsMixin, DCCAnalystLog
         response = self.client.get(self.get_url(self.tagged_trait.pk))
         context = response.context
         self.assertIn('show_dcc_review_info', context)
-        self.assertEqual(context['show_dcc_review_info'], True)
+        self.assertEqual(context['show_dcc_review_info'], False)
         self.assertIn('show_dcc_review_add_button', context)
         self.assertEqual(context['show_dcc_review_add_button'], True)
         self.assertIn('show_dcc_review_update_button', context)

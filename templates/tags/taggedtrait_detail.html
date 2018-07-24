@@ -7,7 +7,7 @@
 
 {% block title %}
   <a href="{{ tagged_trait.trait.get_absolute_url }}">{{ tagged_trait.trait.i_trait_name }}</a> tagged with
-  <a href="{{ tagged_trait.tag.get_absolute_url }}">{{ tagged_trait.tag.lower_title }}</a>
+  <a href="{{ tagged_trait.tag.get_absolute_url }}">{{ tagged_trait.tag.title }}</a>
 {% endblock title %}
 
 {% block subtitle %}
@@ -18,7 +18,9 @@
   <dt>Tagged by</dt><dd>{{ tagged_trait.creator }}</dd>
   {% if show_dcc_review_info %}
     <dt>DCC status</dt><dd>{{ tagged_trait.dcc_review.get_status_display }}</dd>
-    <dt>DCC comment</dt><dd>{{ tagged_trait.dcc_review.comment }}</dd>
+    {% if tagged_trait.dcc_review.status != tagged_trait.dcc_review.STATUS_CONFIRMED %}
+      <dt>DCC comment</dt><dd>{{ tagged_trait.dcc_review.comment }}</dd>
+    {% endif %}
   {% endif %}
 {% endblock detail_fields %}
 
@@ -33,8 +35,8 @@
     </a>
   {% endif %}
   {% if show_dcc_review_update_button %}
-    <a class="btn btn-primary" href="{% url 'tags:tagged-traits:pk:dcc-review:update' tagged_trait.pk %}" role="button">
-        <span class="glyphicon glyphicon-sunglasses" aria-hidden="true"></span> Update review
+    <a class="btn btn-warning" href="{% url 'tags:tagged-traits:pk:dcc-review:update' tagged_trait.pk %}" role="button">
+        <span class="glyphicon glyphicon-sunglasses" aria-hidden="true"></span> Update DCC review
     </a>
   {% endif %}
   {% if perms.tags.add_taggedtrait %}
