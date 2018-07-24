@@ -74,7 +74,7 @@ class TaggedTraitDetail(LoginRequiredMixin, DetailView):
         has_add_perms = self.request.user.has_perm('tags.add_dccreview')
         has_change_perms = self.request.user.has_perm('tags.change_dccreview')
         # Check if DCCReview info should be shown.
-        context['show_dcc_review_info'] = self.request.user.is_staff
+        context['show_dcc_review_info'] = (self.request.user.is_staff or user_is_study_tagger) and review_exists
         # Check if the review add or update buttons should be shown.
         context['show_dcc_review_add_button'] = (not review_exists and has_add_perms)
         context['show_dcc_review_update_button'] = review_exists and has_change_perms

@@ -18,7 +18,9 @@
   <dt>Tagged by</dt><dd>{{ tagged_trait.creator }}</dd>
   {% if show_dcc_review_info %}
     <dt>DCC status</dt><dd>{{ tagged_trait.dcc_review.get_status_display }}</dd>
-    <dt>DCC comment</dt><dd>{{ tagged_trait.dcc_review.comment }}</dd>
+    {% if tagged_trait.dcc_review.status != tagged_trait.dcc_review.STATUS_CONFIRMED %}
+      <dt>DCC comment</dt><dd>{{ tagged_trait.dcc_review.comment }}</dd>
+    {% endif %}
   {% endif %}
 {% endblock detail_fields %}
 
