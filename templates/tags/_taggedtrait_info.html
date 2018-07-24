@@ -17,7 +17,7 @@
     <div id="collapse-tag" class="panel-collapse {% if collapse_tag_panel %}collapse{% else %}in{% endif %}">
       <div class="panel-body">
         <dl class="dl-horizontal">
-          <dt>Tag name</dt><dd><a href="{{ tagged_trait.tag.get_absolute_url }}">{{ tagged_trait.tag.lower_title }}</a></dd>
+          <dt>Tag name</dt><dd><a href="{{ tagged_trait.tag.get_absolute_url }}">{{ tagged_trait.tag.title }}</a></dd>
           <dt>Tag description</dt><dd>{{ tagged_trait.tag.description }}</dd>
           <dt>Tag instructions</dt><dd>{{ tagged_trait.tag.instructions }}</dd>
         </dl>

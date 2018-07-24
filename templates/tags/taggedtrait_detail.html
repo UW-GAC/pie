@@ -7,7 +7,7 @@
 
 {% block title %}
   <a href="{{ tagged_trait.trait.get_absolute_url }}">{{ tagged_trait.trait.i_trait_name }}</a> tagged with
-  <a href="{{ tagged_trait.tag.get_absolute_url }}">{{ tagged_trait.tag.lower_title }}</a>
+  <a href="{{ tagged_trait.tag.get_absolute_url }}">{{ tagged_trait.tag.title }}</a>
 {% endblock title %}
 
 {% block subtitle %}
