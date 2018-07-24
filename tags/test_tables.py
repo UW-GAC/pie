@@ -108,3 +108,17 @@ class TaggedTraitTableWithDCCReviewButtonTest(TestCase):
         """Number of rows in table matches number of tagged traits."""
         table = self.table_class(self.tagged_traits)
         self.assertEqual(self.model_class.objects.count(), len(table.rows))
+
+
+class DCCReviewTableTest(TestCase):
+    table_class = tables.DCCReviewTable
+    model_class = models.TaggedTrait
+
+    def setUp(self):
+        super().setUp()
+        self.tagged_traits = factories.TaggedTraitFactory.create_batch(10)
+
+    def test_row_count(self):
+        """Number of rows in table matches number of tagged traits."""
+        table = self.table_class(self.tagged_traits)
+        self.assertEqual(self.model_class.objects.count(), len(table.rows))

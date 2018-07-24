@@ -124,3 +124,23 @@ class TaggedTraitTableWithDCCReviewButton(TaggedTraitTableDCCReviewButtonMixin, 
 
     class Meta(TaggedTraitTable.Meta):
         fields = ('tag', 'trait', 'description', 'dataset', 'details', 'status', 'review_button', )
+
+
+class DCCReviewTable(tables.Table):
+    """Table for displaying TaggedTrait and DCCReviews."""
+
+    tag = tables.LinkColumn(
+        'tags:tag:detail', args=[tables.utils.A('tag.pk')], verbose_name='Tag',
+        text=lambda record: record.tag.title, orderable=True)
+    trait = tables.LinkColumn(
+        'trait_browser:source:traits:detail', args=[tables.utils.A('trait.pk')], verbose_name='Study variable',
+        text=lambda record: record.trait.i_trait_name, orderable=True)
+    details = tables.TemplateColumn(verbose_name='', orderable=False,
+                                    template_code=DETAIL_BUTTON_TEMPLATE)
+
+    class Meta:
+        # It doesn't really matter if we use TaggedTrait or DCCReview because of the one-to-one relationship.
+        models.TaggedTrait
+        fields = ('tag', 'trait', 'details', )
+        attrs = {'class': 'table table-striped table-bordered table-hover'}
+        template = 'django_tables2/bootstrap-responsive.html'
