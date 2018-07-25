@@ -39,6 +39,12 @@ class DCCReviewFactory(factory.DjangoModelFactory):
     tagged_trait = factory.SubFactory(TaggedTraitFactory)
     status = models.DCCReview.STATUS_CONFIRMED
     creator = factory.SubFactory(UserFactory)
+    # Set comment based on the status field.
+    comment = factory.Maybe(
+        'status',
+        yes_declaration='',
+        no_declaration=factory.Faker('sentence')
+    )
 
     class Meta:
         model = models.DCCReview

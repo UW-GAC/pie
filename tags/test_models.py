@@ -215,8 +215,7 @@ class TaggedTraitTest(TestCase):
         """Only TaggedTraits that have not been reviewed are returned by the .unreviewed() filter."""
         tagged_trait_unreviewed = factories.TaggedTraitFactory.create()
         tagged_trait_followup = factories.TaggedTraitFactory.create()
-        factories.DCCReviewFactory.create(tagged_trait=tagged_trait_followup, status=models.DCCReview.STATUS_FOLLOWUP,
-                                          comment='foo')
+        factories.DCCReviewFactory.create(tagged_trait=tagged_trait_followup, status=models.DCCReview.STATUS_FOLLOWUP)
         tagged_trait_confirmed = factories.TaggedTraitFactory.create()
         factories.DCCReviewFactory.create(tagged_trait=tagged_trait_confirmed,
                                           status=models.DCCReview.STATUS_CONFIRMED)
@@ -229,8 +228,7 @@ class TaggedTraitTest(TestCase):
         """Only TaggedTraits that need study followup are returned by the .needs_followup() filter."""
         tagged_trait_unreviewed = factories.TaggedTraitFactory.create()
         tagged_trait_followup = factories.TaggedTraitFactory.create()
-        factories.DCCReviewFactory.create(tagged_trait=tagged_trait_followup, status=models.DCCReview.STATUS_FOLLOWUP,
-                                          comment='foo')
+        factories.DCCReviewFactory.create(tagged_trait=tagged_trait_followup, status=models.DCCReview.STATUS_FOLLOWUP)
         tagged_trait_confirmed = factories.TaggedTraitFactory.create()
         factories.DCCReviewFactory.create(tagged_trait=tagged_trait_confirmed,
                                           status=models.DCCReview.STATUS_CONFIRMED)
@@ -248,8 +246,7 @@ class TaggedTraitTest(TestCase):
     def test_unable_to_delete_with_dccreview_need_followup(self):
         """A reviewed TaggedTrait with needs followup status cannot be deleted."""
         tagged_trait = self.model_factory.create(**self.model_args)
-        factories.DCCReviewFactory.create(tagged_trait=tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP,
-                                          comment='foo')
+        factories.DCCReviewFactory.create(tagged_trait=tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP)
         with self.assertRaises(DeleteNotAllowedError):
             tagged_trait.delete()
         tagged_trait.refresh_from_db()
@@ -272,8 +269,7 @@ class TaggedTraitTest(TestCase):
     def test_can_hard_delete_tagged_trait_with_dccreview_need_followup(self):
         """A reviewed TaggedTrait with needs followup status can be deleted with hard_delete."""
         tagged_trait = self.model_factory.create(**self.model_args)
-        factories.DCCReviewFactory.create(tagged_trait=tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP,
-                                          comment='foo')
+        factories.DCCReviewFactory.create(tagged_trait=tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP)
         tagged_trait.hard_delete()
         with self.assertRaises(ObjectDoesNotExist):
             tagged_trait.refresh_from_db()
@@ -303,8 +299,7 @@ class TaggedTraitTest(TestCase):
         """The TaggedTrait queryset method does not delete anything if any tagged traits are reviewed."""
         tagged_traits = factories.TaggedTraitFactory.create_batch(5)
         tagged_trait_to_review = tagged_traits[1]
-        factories.DCCReviewFactory.create(tagged_trait=tagged_trait_to_review, comment='foo',
-                                          status=models.DCCReview.STATUS_FOLLOWUP)
+        factories.DCCReviewFactory.create(tagged_trait=tagged_trait_to_review, status=models.DCCReview.STATUS_FOLLOWUP)
         with self.assertRaises(DeleteNotAllowedError):
             models.TaggedTrait.objects.all().delete()
         self.assertEqual(models.TaggedTrait.objects.count(), 5)
@@ -324,8 +319,7 @@ class TaggedTraitTest(TestCase):
         tagged_traits = factories.TaggedTraitFactory.create_batch(5)
         factories.DCCReviewFactory.create(tagged_trait=tagged_traits[1],
                                           status=models.DCCReview.STATUS_CONFIRMED)
-        factories.DCCReviewFactory.create(tagged_trait=tagged_traits[3], comment='foo',
-                                          status=models.DCCReview.STATUS_FOLLOWUP)
+        factories.DCCReviewFactory.create(tagged_trait=tagged_traits[3], status=models.DCCReview.STATUS_FOLLOWUP)
         with self.assertRaises(DeleteNotAllowedError):
             models.TaggedTrait.objects.all().delete()
         self.assertEqual(models.TaggedTrait.objects.count(), 5)
@@ -340,8 +334,7 @@ class TaggedTraitTest(TestCase):
         """The TaggedTrait queryset hard_delete method deletes regardless of review status."""
         tagged_traits = factories.TaggedTraitFactory.create_batch(5)
         tagged_trait_to_review = tagged_traits[1]
-        factories.DCCReviewFactory.create(tagged_trait=tagged_trait_to_review, comment='foo',
-                                          status=models.DCCReview.STATUS_FOLLOWUP)
+        factories.DCCReviewFactory.create(tagged_trait=tagged_trait_to_review, status=models.DCCReview.STATUS_FOLLOWUP)
         models.TaggedTrait.objects.all().hard_delete()
         self.assertEqual(models.TaggedTrait.objects.count(), 0)
 

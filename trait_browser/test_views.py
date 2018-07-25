@@ -1799,8 +1799,7 @@ class SourceTraitDetailPhenotypeTaggerTest(PhenotypeTaggerLoginTestCase):
     def test_no_tagged_trait_remove_buttons_if_reviewed(self):
         """The tag removal button does not show up for reviewed tagged traits that need followup."""
         tagged_traits = TaggedTraitFactory.create_batch(3, trait=self.trait)
-        dcc_review = DCCReviewFactory.create(
-            tagged_trait=tagged_traits[0], status=DCCReview.STATUS_FOLLOWUP, comment='foo')
+        dcc_review = DCCReviewFactory.create(tagged_trait=tagged_traits[0], status=DCCReview.STATUS_FOLLOWUP)
         response = self.client.get(self.get_url(self.trait.pk))
         context = response.context
         for (a, b) in context['tagged_traits_with_xs']:
@@ -1895,7 +1894,7 @@ class SourceTraitDetailDCCAnalystTest(DCCAnalystLoginTestCase):
         """The tag removal button does not show up for reviewed tagged traits that need followup."""
         tagged_traits = TaggedTraitFactory.create_batch(3, trait=self.trait)
         dcc_review = DCCReviewFactory.create(
-            tagged_trait=tagged_traits[0], status=DCCReview.STATUS_FOLLOWUP, comment='foo')
+            tagged_trait=tagged_traits[0], status=DCCReview.STATUS_FOLLOWUP)
         response = self.client.get(self.get_url(self.trait.pk))
         context = response.context
         for (a, b) in context['tagged_traits_with_xs']:

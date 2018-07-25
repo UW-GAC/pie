@@ -159,8 +159,7 @@ class TaggedTraitDetailTest(TaggedTraitDetailTestsMixin, UserLoginTestCase):
         """A regular user does not see DCC review info on this detail page."""
         dcc_review = factories.DCCReviewFactory.create(
             tagged_trait=self.tagged_trait,
-            status=models.DCCReview.STATUS_FOLLOWUP,
-            comment='dcc test comment'
+            status=models.DCCReview.STATUS_FOLLOWUP
         )
         response = self.client.get(self.get_url(self.tagged_trait.pk))
         self.assertNotContains(response, dcc_review.get_status_display())
@@ -226,8 +225,7 @@ class TaggedTraitDetailPhenotypeTaggerTest(TaggedTraitDetailTestsMixin, Phenotyp
 
     def test_disabled_delete_button_for_reviewed_tagged_trait(self):
         """A phenotype tagger sees a disabled button to delete the tagged trait."""
-        factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP,
-                                          comment='foo')
+        factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP)
         response = self.client.get(self.get_url(self.tagged_trait.pk))
         self.assertNotContains(response, reverse('tags:tagged-traits:pk:delete', kwargs={'pk': self.tagged_trait.pk}))
 
@@ -241,8 +239,7 @@ class TaggedTraitDetailPhenotypeTaggerTest(TaggedTraitDetailTestsMixin, Phenotyp
         """A phenotype tagger does see DCC review info on this detail page."""
         dcc_review = factories.DCCReviewFactory.create(
             tagged_trait=self.tagged_trait,
-            status=models.DCCReview.STATUS_FOLLOWUP,
-            comment='dcc test comment'
+            status=models.DCCReview.STATUS_FOLLOWUP
         )
         response = self.client.get(self.get_url(self.tagged_trait.pk))
         self.assertContains(response, dcc_review.get_status_display())
@@ -298,8 +295,7 @@ class TaggedTraitDetailDCCAnalystTest(TaggedTraitDetailTestsMixin, DCCAnalystLog
 
     def test_disabled_delete_button_for_reviewed_tagged_trait(self):
         """A phenotype tagger sees a disabled button to delete the tagged trait."""
-        factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP,
-                                          comment='foo')
+        factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP)
         response = self.client.get(self.get_url(self.tagged_trait.pk))
         self.assertNotContains(response, reverse('tags:tagged-traits:pk:delete', kwargs={'pk': self.tagged_trait.pk}))
 
@@ -313,8 +309,7 @@ class TaggedTraitDetailDCCAnalystTest(TaggedTraitDetailTestsMixin, DCCAnalystLog
         """A DCC analyst does see DCC review info on this detail page."""
         dcc_review = factories.DCCReviewFactory.create(
             tagged_trait=self.tagged_trait,
-            status=models.DCCReview.STATUS_FOLLOWUP,
-            comment='dcc test comment'
+            status=models.DCCReview.STATUS_FOLLOWUP
         )
         response = self.client.get(self.get_url(self.tagged_trait.pk))
         self.assertContains(response, dcc_review.get_status_display())
@@ -936,7 +931,7 @@ class TaggedTraitDeleteTest(PhenotypeTaggerLoginTestCase):
 
     def test_needs_followup_tagged_trait_get_request_redirects_before_confirmation_view(self):
         """Redirect when trying to delete a TaggedTrait that was reviewed with needs followup."""
-        dcc_review = factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait, comment='foo',
+        dcc_review = factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait,
                                                        status=models.DCCReview.STATUS_FOLLOWUP)
         response = self.client.get(self.get_url(self.tagged_trait.pk))
         self.assertEqual(response.status_code, 302)
@@ -948,7 +943,7 @@ class TaggedTraitDeleteTest(PhenotypeTaggerLoginTestCase):
 
     def test_cannot_delete_a_reviewed_trait(self):
         """Cannot delete a TaggedTrait that was reviewed with needs followup."""
-        dcc_review = factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait, comment='foo',
+        dcc_review = factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait,
                                                        status=models.DCCReview.STATUS_FOLLOWUP)
         response = self.client.post(self.get_url(self.tagged_trait.pk), {'submit': ''})
         self.assertEqual(response.status_code, 302)
@@ -1116,7 +1111,7 @@ class TaggedTraitDeleteDCCAnalystTest(DCCAnalystLoginTestCase):
 
     def test_needs_followup_tagged_trait_get_request_redirects_before_confirmation_view(self):
         """Redirect when trying to delete a TaggedTrait that was reviewed with needs followup."""
-        dcc_review = factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait, comment='foo',
+        dcc_review = factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait,
                                                        status=models.DCCReview.STATUS_FOLLOWUP)
         response = self.client.get(self.get_url(self.tagged_trait.pk))
         self.assertEqual(response.status_code, 302)
@@ -1128,7 +1123,7 @@ class TaggedTraitDeleteDCCAnalystTest(DCCAnalystLoginTestCase):
 
     def test_cannot_delete_a_reviewed_trait(self):
         """Cannot delete a TaggedTrait that was reviewed with needs followup."""
-        dcc_review = factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait, comment='foo',
+        dcc_review = factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait,
                                                        status=models.DCCReview.STATUS_FOLLOWUP)
         response = self.client.post(self.get_url(self.tagged_trait.pk), {'submit': ''})
         self.assertEqual(response.status_code, 302)
@@ -2718,8 +2713,7 @@ class DCCReviewByTagAndStudyDCCTestsMixin(object):
         """Shows warning message and does not save review if TaggedTrait is already reviewed."""
         dcc_review = factories.DCCReviewFactory.create(
             tagged_trait=self.tagged_trait,
-            status=models.DCCReview.STATUS_FOLLOWUP,
-            comment='a comment'
+            status=models.DCCReview.STATUS_FOLLOWUP
         )
         # Now try to review it through the web interface.
         form_data = {forms.DCCReviewByTagAndStudyForm.SUBMIT_CONFIRM: 'Confirm', 'comment': ''}
@@ -2988,8 +2982,7 @@ class DCCReviewCreateDCCTestsMixin(object):
         """Shows warning message and redirects to update page if TaggedTrait is already reviewed."""
         dcc_review = factories.DCCReviewFactory.create(
             tagged_trait=self.tagged_trait,
-            status=models.DCCReview.STATUS_FOLLOWUP,
-            comment='a comment'
+            status=models.DCCReview.STATUS_FOLLOWUP
         )
         # Now try to review it through the web interface.
         response = self.client.get(self.get_url(self.tagged_trait.pk))
@@ -3005,8 +2998,7 @@ class DCCReviewCreateDCCTestsMixin(object):
         """Shows warning message and does not save review if TaggedTrait is already reviewed."""
         dcc_review = factories.DCCReviewFactory.create(
             tagged_trait=self.tagged_trait,
-            status=models.DCCReview.STATUS_FOLLOWUP,
-            comment='a comment'
+            status=models.DCCReview.STATUS_FOLLOWUP
         )
         # Now try to review it through the web interface.
         form_data = {forms.DCCReviewForm.SUBMIT_CONFIRM: 'Confirm', 'comment': ''}
@@ -3023,8 +3015,7 @@ class DCCReviewCreateDCCTestsMixin(object):
         """Shows warning message and redirects if TaggedTrait is already reviewed."""
         dcc_review = factories.DCCReviewFactory.create(
             tagged_trait=self.tagged_trait,
-            status=models.DCCReview.STATUS_FOLLOWUP,
-            comment='a comment'
+            status=models.DCCReview.STATUS_FOLLOWUP
         )
         # Now try to review it through the web interface.
         form_data = {forms.DCCReviewForm.SUBMIT_FOLLOWUP: 'Confirm', 'comment': ''}
@@ -3111,8 +3102,7 @@ class DCCReviewUpdateDCCTestsMixin(object):
     def test_successful_post_with_confirmed_tagged_trait(self):
         """Posting valid data to the form correctly updates an existing DCCReview."""
         self.tagged_trait.dcc_review.delete()
-        factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP,
-                                          comment='foo')
+        factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP)
         form_data = {forms.DCCReviewForm.SUBMIT_CONFIRM: 'Confirm', 'comment': ''}
         response = self.client.post(self.get_url(self.tagged_trait.pk), form_data)
         self.assertRedirects(response, self.tagged_trait.get_absolute_url())
