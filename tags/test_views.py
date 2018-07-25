@@ -2180,7 +2180,7 @@ class DCCReviewByTagAndStudySelectFromURLDCCTestsMixin(object):
         )
 
     def get_url(self, *args):
-        return reverse('tags:tag:study:dcc-review', args=args)
+        return reverse('tags:tag:study:begin-dcc-review', args=args)
 
     def test_view_success_code(self):
         """View returns successful response code."""
@@ -2341,7 +2341,7 @@ class DCCReviewByTagAndStudySelectFromURLOtherUserTest(UserLoginTestCase):
         )
 
     def get_url(self, *args):
-        return reverse('tags:tag:study:dcc-review', args=args)
+        return reverse('tags:tag:study:begin-dcc-review', args=args)
 
     def test_forbidden_get_request(self):
         """Returns a response with a forbidden status code for non-DCC users."""

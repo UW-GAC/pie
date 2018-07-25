@@ -24,7 +24,7 @@ add_many_patterns = ([
 
 tag_study_patterns = ([
     url(r'^$', views.TaggedTraitByTagAndStudyList.as_view(), name='list'),
-    url(r'^dcc-review/$', views.DCCReviewByTagAndStudySelectFromURL.as_view(), name='dcc-review'),
+    url(r'^begin-dcc-review/$', views.DCCReviewByTagAndStudySelectFromURL.as_view(), name='begin-dcc-review'),
 ], 'study', )
 
 tag_patterns = ([
