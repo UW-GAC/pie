@@ -1,0 +1,20 @@
+{% extends '__list.html' %}
+{% load render_table from django_tables2 %}
+
+{% block head_title %}
+  | Tagged phenotype variables that need followup
+{% endblock head_title %}
+
+{% block title %}
+  Tagged variables that need followup
+{% endblock title %}
+
+{% block subtitle %}
+   from <a href="{{ study.get_absolute_url }}">{{ study.i_study_name }}</a>
+   tagged with <a href="{{ tag.get_absolute_url }}">{{ tag.title }}</a>
+ {% endblock subtitle %}
+
+{% block table %}
+  {% include '_messages.html' %}
+  {% render_table tagged_trait_table %}
+{% endblock table %}

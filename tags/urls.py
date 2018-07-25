@@ -22,7 +22,12 @@ add_many_patterns = ([
     url(r'^(?P<pk>\d+)/$', views.ManyTaggedTraitsCreateByTag.as_view(), name='by-tag'),
 ], 'add-many', )
 
+tag_study_reviewed_patterns = ([
+    url(r'^need-followup/$', views.DCCReviewNeedFollowupList.as_view(), name='need-followup')
+], 'reviewed', )
+
 tag_study_patterns = ([
+    url(r'^reviewed/', include(tag_study_reviewed_patterns)),
     url(r'^$', views.TaggedTraitByTagAndStudyList.as_view(), name='list'),
     url(r'^begin-dcc-review/$', views.DCCReviewByTagAndStudySelectFromURL.as_view(), name='begin-dcc-review'),
 ], 'study', )

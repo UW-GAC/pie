@@ -3214,6 +3214,125 @@ class DCCReviewUpdateOtherUserTest(UserLoginTestCase):
         self.assertEqual(response.status_code, 403)
 
 
+class DCCReviewNeedFollowupListMixin(object):
+    """Tests to include in all user type test cases for this view."""
+
+    def setUp(self):
+        super().setUp()
+        self.study = StudyFactory.create()
+        self.tag = factories.TagFactory.create()
+        self.dcc_reviews = factories.DCCReviewFactory.create_batch(
+            10,
+            tagged_trait__tag=self.tag,
+            tagged_trait__trait__source_dataset__source_study_version__study=self.study,
+            status=models.DCCReview.STATUS_FOLLOWUP
+        )
+
+    def get_url(self, *args):
+        return reverse('tags:tag:study:reviewed:need-followup', args=args)
+
+    def test_view_success_code(self):
+        """View returns successful response code."""
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        self.assertEqual(response.status_code, 200)
+
+    def test_view_with_invalid_study_pk(self):
+        """View returns 404 response code when the study pk doesn't exist."""
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk + 1))
+        self.assertEqual(response.status_code, 404)
+
+    def test_view_with_invalid_tag_pk(self):
+        """View returns 404 response code when the pk doesn't exist."""
+        response = self.client.get(self.get_url(self.tag.pk + 1, self.study.pk))
+        self.assertEqual(response.status_code, 404)
+
+    def test_context_data(self):
+        """View has appropriate data in the context."""
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        context = response.context
+        self.assertIn('study', context)
+        self.assertIn('tag', context)
+        self.assertIn('tagged_trait_table', context)
+        self.assertEqual(context['study'], self.study)
+        self.assertEqual(context['tag'], self.tag)
+
+    def test_table_class(self):
+        """The table class is appropriate."""
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        context = response.context
+        self.assertIsInstance(context['tagged_trait_table'], tables.DCCReviewTable)
+
+    def test_view_contains_tagged_traits_that_need_followup(self):
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        context = response.context
+        table = context['tagged_trait_table']
+        self.assertEqual(len(table.data), len(self.dcc_reviews))
+        for dcc_review in self.dcc_reviews:
+            self.assertIn(dcc_review.tagged_trait, table.data,
+                          msg='tagged_trait_table does not contain {}'.format(dcc_review.tagged_trait))
+
+    def test_view_table_does_not_contain_unreviewed_tagged_traits(self):
+        unreviewed_tagged_trait = factories.TaggedTraitFactory.create(
+            tag=self.tag,
+            trait__source_dataset__source_study_version__study=self.study
+        )
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        context = response.context
+        table = context['tagged_trait_table']
+        self.assertNotIn(unreviewed_tagged_trait, table.data)
+        for dcc_review in self.dcc_reviews:
+            self.assertIn(dcc_review.tagged_trait, table.data,
+                          msg='tagged_trait_table does not contain {}'.format(dcc_review.tagged_trait))
+        self.assertEqual(len(table.data), len(self.dcc_reviews))
+
+    def test_view_works_with_no_matching_tagged_traits(self):
+        other_study = StudyFactory.create()
+        other_tag = factories.TagFactory.create()
+        response = self.client.get(self.get_url(other_tag.pk, other_study.pk))
+        self.assertEqual(response.status_code, 200)
+        context = response.context
+        self.assertEqual(len(context['tagged_trait_table'].data), 0)
+
+    def test_view_does_not_show_tagged_traits_from_a_different_study(self):
+        other_study = StudyFactory.create()
+        other_tagged_trait = factories.TaggedTraitFactory.create(
+            tag=self.tag, trait__source_dataset__source_study_version__study=other_study)
+        factories.DCCReviewFactory.create(tagged_trait=other_tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP)
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        context = response.context
+        self.assertNotIn(other_tagged_trait, context['tagged_trait_table'].data)
+
+    def test_view_does_not_show_tagged_traits_from_a_different_tag(self):
+        other_tag = factories.TagFactory.create()
+        other_tagged_trait = factories.TaggedTraitFactory.create(
+            tag=other_tag, trait__source_dataset__source_study_version__study=self.study)
+        factories.DCCReviewFactory.create(tagged_trait=other_tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP)
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        context = response.context
+        self.assertNotIn(other_tagged_trait, context['tagged_trait_table'].data)
+
+
+class DCCReviewNeedFollowupListPhenotypeTaggerTestCase(DCCReviewNeedFollowupListMixin,
+                                                         PhenotypeTaggerLoginTestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.user.refresh_from_db()
+        self.user.profile.taggable_studies.add(self.study)
+
+
+class DCCReviewNeedFollowupListDCCAnalystTestCase(DCCReviewNeedFollowupListMixin,
+                                                    DCCAnalystLoginTestCase):
+
+    pass
+
+
+class DCCReviewNeedFollowupListOtherUserTestCase(DCCReviewNeedFollowupListMixin,
+                                                   UserLoginTestCase):
+
+    pass
+
+
 class TagsLoginRequiredTest(LoginRequiredTestCase):
 
     def test_tags_login_required(self):

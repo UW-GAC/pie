@@ -659,6 +659,32 @@ class DCCReviewUpdate(LoginRequiredMixin, PermissionRequiredMixin, FormValidMess
         return self.tagged_trait.get_absolute_url()
 
 
+class DCCReviewNeedFollowupList(LoginRequiredMixin, SingleTableMixin, ListView):
+    """List view of DCCReviews that need study followup."""
+
+    template_name = 'tags/dccreview_list.html'
+    model = models.TaggedTrait
+    context_table_name = 'tagged_trait_table'
+    table_class = tables.DCCReviewTable
+    context_table_name = 'tagged_trait_table'
+    table_pagination = {'per_page': TABLE_PER_PAGE * 2}
+
+    def get(self, request, *args, **kwargs):
+        self.tag = get_object_or_404(models.Tag, pk=self.kwargs['pk'])
+        self.study = get_object_or_404(Study, pk=self.kwargs['pk_study'])
+        return super().get(self, request, *args, **kwargs)
+
+    def get_context_data(self, *args, **kwargs):
+        context = super().get_context_data(*args, **kwargs)
+        context['study'] = self.study
+        context['tag'] = self.tag
+        context['show_review_button'] = self.request.user.is_staff
+        return context
+
+    def get_table_data(self):
+        return self.study.get_tagged_traits().filter(tag=self.tag).need_followup()
+
+
 class TagAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
     """View for autocompleting tag model choice fields by title in a form. Case-insensitive."""
 
