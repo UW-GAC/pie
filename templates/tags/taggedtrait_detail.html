@@ -22,6 +22,12 @@
       <dt>DCC comment</dt><dd>{{ tagged_trait.dcc_review.comment }}</dd>
     {% endif %}
   {% endif %}
+  {% if show_study_response_info %}
+    <dt>Study response status</dt><dd>{{ tagged_trait.dcc_review.study_response.get_status_display }}</dd>
+    {% if tagged_trait.dcc_review.study_response.status != tagged_trait.dcc_review.study_response.STATUS_AGREE %}
+      <dt>Study comment</dt><dd>{{ tagged_trait.dcc_review.study_response.comment }}</dd>
+    {% endif %}
+  {% endif %}
 {% endblock detail_fields %}
 
 

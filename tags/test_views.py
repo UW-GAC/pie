@@ -188,6 +188,8 @@ class TaggedTraitDetailTest(TaggedTraitDetailTestsMixin, UserLoginTestCase):
         self.assertEqual(context['show_dcc_review_add_button'], False)
         self.assertIn('show_dcc_review_update_button', context)
         self.assertEqual(context['show_dcc_review_update_button'], False)
+        self.assertIn('show_study_response_info', context)
+        self.assertFalse(context['show_study_response_info'])
 
     def test_context_with_reviewed_trait(self):
         """The context contains the proper flags for the add/update review buttons."""
@@ -200,6 +202,22 @@ class TaggedTraitDetailTest(TaggedTraitDetailTestsMixin, UserLoginTestCase):
         self.assertEqual(context['show_dcc_review_add_button'], False)
         self.assertIn('show_dcc_review_update_button', context)
         self.assertEqual(context['show_dcc_review_update_button'], False)
+        self.assertIn('show_study_response_info', context)
+        self.assertFalse(context['show_study_response_info'])
+
+    def test_context_with_reviewed_trait_with_response(self):
+        dcc_review = factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait)
+        factories.StudyResponseFactory.create(dcc_review=dcc_review)
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        context = response.context
+        self.assertIn('show_dcc_review_info', context)
+        self.assertEqual(context['show_dcc_review_info'], False)
+        self.assertIn('show_dcc_review_add_button', context)
+        self.assertEqual(context['show_dcc_review_add_button'], False)
+        self.assertIn('show_dcc_review_update_button', context)
+        self.assertEqual(context['show_dcc_review_update_button'], False)
+        self.assertIn('show_study_response_info', context)
+        self.assertFalse(context['show_study_response_info'])
 
 
 class TaggedTraitDetailPhenotypeTaggerTest(TaggedTraitDetailTestsMixin, PhenotypeTaggerLoginTestCase):
@@ -267,6 +285,8 @@ class TaggedTraitDetailPhenotypeTaggerTest(TaggedTraitDetailTestsMixin, Phenotyp
         self.assertEqual(context['show_dcc_review_add_button'], False)
         self.assertIn('show_dcc_review_update_button', context)
         self.assertEqual(context['show_dcc_review_update_button'], False)
+        self.assertIn('show_study_response_info', context)
+        self.assertFalse(context['show_study_response_info'])
 
     def test_context_with_reviewed_trait(self):
         """The context contains the proper flags for the add/update review buttons."""
@@ -279,6 +299,38 @@ class TaggedTraitDetailPhenotypeTaggerTest(TaggedTraitDetailTestsMixin, Phenotyp
         self.assertEqual(context['show_dcc_review_add_button'], False)
         self.assertIn('show_dcc_review_update_button', context)
         self.assertEqual(context['show_dcc_review_update_button'], False)
+        self.assertIn('show_study_response_info', context)
+        self.assertFalse(context['show_study_response_info'])
+
+    def test_context_with_reviewed_trait_with_response(self):
+        dcc_review = factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait)
+        factories.StudyResponseFactory.create(dcc_review=dcc_review)
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        context = response.context
+        self.assertIn('show_dcc_review_info', context)
+        self.assertEqual(context['show_dcc_review_info'], True)
+        self.assertIn('show_dcc_review_add_button', context)
+        self.assertEqual(context['show_dcc_review_add_button'], False)
+        self.assertIn('show_dcc_review_update_button', context)
+        self.assertFalse(context['show_dcc_review_update_button'])
+        self.assertIn('show_study_response_info', context)
+        self.assertTrue(context['show_study_response_info'])
+
+    def test_context_with_tagged_trait_from_other_study(self):
+        other_tagged_trait = factories.TaggedTraitFactory.create()
+        dcc_review = factories.DCCReviewFactory.create(tagged_trait=other_tagged_trait,
+                                                       status=models.DCCReview.STATUS_FOLLOWUP)
+        factories.StudyResponseFactory.create(dcc_review = dcc_review)
+        response = self.client.get(self.get_url(other_tagged_trait.pk))
+        context = response.context
+        self.assertIn('show_dcc_review_info', context)
+        self.assertFalse(context['show_dcc_review_info'])
+        self.assertIn('show_dcc_review_add_button', context)
+        self.assertFalse(context['show_dcc_review_add_button'])
+        self.assertIn('show_dcc_review_update_button', context)
+        self.assertFalse(context['show_dcc_review_update_button'])
+        self.assertIn('show_study_response_info', context)
+        self.assertFalse(context['show_study_response_info'])
 
 
 class TaggedTraitDetailDCCAnalystTest(TaggedTraitDetailTestsMixin, DCCAnalystLoginTestCase):
@@ -325,6 +377,8 @@ class TaggedTraitDetailDCCAnalystTest(TaggedTraitDetailTestsMixin, DCCAnalystLog
         self.assertEqual(context['show_dcc_review_add_button'], True)
         self.assertIn('show_dcc_review_update_button', context)
         self.assertEqual(context['show_dcc_review_update_button'], False)
+        self.assertIn('show_study_response_info', context)
+        self.assertFalse(context['show_study_response_info'])
 
     def test_unreviewed_tagged_trait_includes_link_to_review(self):
         """An unreviewed tagged trait includes a link to review for DCC users."""
@@ -342,12 +396,28 @@ class TaggedTraitDetailDCCAnalystTest(TaggedTraitDetailTestsMixin, DCCAnalystLog
         self.assertEqual(context['show_dcc_review_add_button'], False)
         self.assertIn('show_dcc_review_update_button', context)
         self.assertEqual(context['show_dcc_review_update_button'], True)
+        self.assertIn('show_study_response_info', context)
+        self.assertFalse(context['show_study_response_info'])
 
     def test_reviewed_tagged_trait_includes_link_to_udpate(self):
         """The context contains the proper flags when the tagged trait has not been reviewed.."""
         factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait)
         response = self.client.get(self.get_url(self.tagged_trait.pk))
         self.assertContains(response, reverse('tags:tagged-traits:pk:dcc-review:update', args=[self.tagged_trait.pk]))
+
+    def test_context_with_reviewed_trait_with_response(self):
+        dcc_review = factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait)
+        factories.StudyResponseFactory.create(dcc_review=dcc_review)
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        context = response.context
+        self.assertIn('show_dcc_review_info', context)
+        self.assertEqual(context['show_dcc_review_info'], True)
+        self.assertIn('show_dcc_review_add_button', context)
+        self.assertEqual(context['show_dcc_review_add_button'], False)
+        self.assertIn('show_dcc_review_update_button', context)
+        self.assertEqual(context['show_dcc_review_update_button'], False)
+        self.assertIn('show_study_response_info', context)
+        self.assertTrue(context['show_study_response_info'])
 
 
 class TaggedTraitTagCountsByStudyTest(UserLoginTestCase):
