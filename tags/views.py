@@ -634,21 +634,21 @@ class DCCReviewUpdate(LoginRequiredMixin, PermissionRequiredMixin, FormValidMess
     redirect_unauthenticated_users = True
     form_class = forms.DCCReviewForm
 
-    def _get_already_reviewed_warning_message(self):
+    def _get_not_reviewed_warning_message(self):
         return '{} has not been reviewed yet.'.format(self.tagged_trait)
 
     def get(self, request, *args, **kwargs):
         try:
             return super().get(request, *args, **kwargs)
         except ObjectDoesNotExist:
-            self.messages.warning(self._get_already_reviewed_warning_message())
+            self.messages.warning(self._get_not_reviewed_warning_message())
             return HttpResponseRedirect(reverse('tags:tagged-traits:pk:dcc-review:new', args=[self.tagged_trait.pk]))
 
     def post(self, request, *args, **kwargs):
         try:
             return super().post(request, *args, **kwargs)
         except ObjectDoesNotExist:
-            self.messages.warning(self._get_already_reviewed_warning_message())
+            self.messages.warning(self._get_not_reviewed_warning_message())
             return HttpResponseRedirect(reverse('tags:tagged-traits:pk:dcc-review:new', args=[self.tagged_trait.pk]))
 
     def get_object(self, queryset=None):
