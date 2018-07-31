@@ -4,12 +4,12 @@ from itertools import groupby
 
 from django.db.models import Count, F
 from django.core.exceptions import ObjectDoesNotExist
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, HttpResponseForbidden
 from django.shortcuts import get_object_or_404
 from django.utils.safestring import mark_safe
 from django.urls import reverse
 from django.views.generic import (CreateView, DetailView, DeleteView, FormView, ListView, RedirectView, TemplateView,
-                                  UpdateView)
+                                  UpdateView, View)
 
 from braces.views import (FormMessagesMixin, FormValidMessageMixin, LoginRequiredMixin, MessageMixin,
                           PermissionRequiredMixin, UserFormKwargsMixin, UserPassesTestMixin)
@@ -688,6 +688,47 @@ class DCCReviewNeedFollowupList(LoginRequiredMixin, SingleTableMixin, ListView):
 
     def get_table_data(self):
         return self.study.get_tagged_traits().filter(tag=self.tag).need_followup()
+
+
+class StudyResponseCreateAgree(LoginRequiredMixin, TaggableStudiesRequiredMixin, MessageMixin, View):
+
+    http_method_names = ['post', 'put', ]
+
+    # permission_required = 'tags.add_studyresponse'
+    raise_exception = True
+    redirect_unauthenticated_users = True
+
+    def _create_study_response(self):
+        """Create a DCCReview object linked to the given TaggedTrait."""
+        study_response = models.StudyResponse(dcc_review = self.tagged_trait.dcc_review, creator=self.request.user,
+                                    status=models.StudyResponse.STATUS_AGREE)
+        study_response.full_clean()
+        study_response.save()
+        msg = 'You have responded to the DCC review of {}'.format(self.tagged_trait)
+        self.messages.success(msg)
+
+    def get_redirect_url(self, *args, **kwargs):
+        tag = self.tagged_trait.tag
+        study = self.tagged_trait.trait.source_dataset.source_study_version.study
+        return reverse('tags:tag:study:reviewed:need-followup', args=[tag.pk, study.pk])
+
+    def post(self, request, *args, **kwargs):
+        self.tagged_trait = get_object_or_404(models.TaggedTrait, pk=kwargs['pk'])
+        if not self.tagged_trait.trait.source_dataset.source_study_version.study in request.user.profile.taggable_studies.all():
+            return HttpResponseForbidden()
+        try:
+            dcc_review = self.tagged_trait.dcc_review
+        except AttributeError:
+            self.messages.warning('Oops! {} has not been reviewed by the DCC.'.format(self.tagged_trait))
+            return HttpResponseRedirect(self.get_redirect_url())
+        if dcc_review.status == models.DCCReview.STATUS_CONFIRMED:
+            self.messages.warning('Oops! {} has been confirmed by the DCC.'.format(self.tagged_trait))
+            return HttpResponseRedirect(self.get_redirect_url())
+        if hasattr(dcc_review, 'study_response'):
+            self.messages.warning('Oops! {} already has a study response.'.format(self.tagged_trait))
+            return HttpResponseRedirect(self.get_redirect_url())
+        self._create_study_response()
+        return HttpResponseRedirect(self.get_redirect_url())
 
 
 class TagAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):

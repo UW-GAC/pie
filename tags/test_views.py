@@ -3403,6 +3403,140 @@ class DCCReviewNeedFollowupListOtherUserTestCase(DCCReviewNeedFollowupListMixin,
     pass
 
 
+class StudyResponseCreateAgreeOtherUserTestCase(UserLoginTestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.tag = factories.TagFactory.create()
+        self.tagged_trait = factories.TaggedTraitFactory.create(tag=self.tag)
+        factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP)
+
+    def get_url(self, *args):
+        return reverse('tags:tagged-traits:pk:study-response:create:agree', args=args)
+
+    def test_post_forbidden(self):
+        """Returns a 403 forbidden status code for non-taggers."""
+        response = self.client.post(self.get_url(self.tagged_trait.pk), {})
+        self.assertEqual(response.status_code, 403)
+
+    def test_get_forbidden(self):
+        """Returns a 403 forbidden status code for non-taggers."""
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        self.assertEqual(response.status_code, 403)
+
+
+class StudyResponseCreateAgreePhenotypeTaggerTestCase(PhenotypeTaggerLoginTestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.tag = factories.TagFactory.create()
+        self.tagged_trait = factories.TaggedTraitFactory.create(
+            tag=self.tag,
+            trait__source_dataset__source_study_version__study=self.study
+        )
+        factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP)
+
+    def get_url(self, *args):
+        return reverse('tags:tagged-traits:pk:study-response:create:agree', args=args)
+
+    def test_get_method_not_allowed(self):
+        """Returns a method not allowed status code for get requests."""
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        self.assertEqual(response.status_code, 405)
+
+    def test_can_create_study_response(self):
+        """Creates a study response as expected."""
+        response = self.client.post(self.get_url(self.tagged_trait.pk), {})
+        self.assertTrue(hasattr(self.tagged_trait.dcc_review, 'study_response'))
+        study_response = self.tagged_trait.dcc_review.study_response
+        self.assertEqual(study_response.status, models.StudyResponse.STATUS_AGREE)
+        self.assertEqual(study_response.comment, '')
+        self.assertRedirects(response, reverse('tags:tag:study:reviewed:need-followup',
+                                               args=[self.tag.pk, self.study.pk]))
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertFalse('Oops!' in str(messages[0]))
+
+    def test_missing_tagged_trait(self):
+        """Returns 404 status with missing tagged trait."""
+        response = self.client.post(self.get_url(self.tagged_trait.pk + 1), {})
+        self.assertEqual(response.status_code, 404)
+
+    def test_missing_dcc_review(self):
+        """Redirects with warning message if DCCReview doesn't exist."""
+        self.tagged_trait.dcc_review.delete()
+        response = self.client.post(self.get_url(self.tagged_trait.pk), {})
+        self.assertRedirects(response, reverse('tags:tag:study:reviewed:need-followup',
+                                               args=[self.tag.pk, self.study.pk]))
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertTrue('Oops!' in str(messages[0]))
+        self.assertTrue('has not been reviewed' in str(messages[0]))
+
+    def test_confirmed_dcc_review(self):
+        """Redirects with warning message if DCCReview status is confirmed."""
+        self.tagged_trait.dcc_review.delete()
+        factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait, status=models.DCCReview.STATUS_CONFIRMED)
+        response = self.client.post(self.get_url(self.tagged_trait.pk), {})
+        self.assertRedirects(response, reverse('tags:tag:study:reviewed:need-followup',
+                                               args=[self.tag.pk, self.study.pk]))
+        self.assertFalse(hasattr(self.tagged_trait.dcc_review, 'study_response'))
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertTrue('Oops!' in str(messages[0]))
+        self.assertTrue('has been confirmed' in str(messages[0]))
+
+    def test_studyresponse_exists(self):
+        """Redirects with warning message if a StudyResponse already exists."""
+        factories.StudyResponseFactory.create(dcc_review=self.tagged_trait.dcc_review,
+                                              status=models.StudyResponse.STATUS_DISAGREE)
+        response = self.client.post(self.get_url(self.tagged_trait.pk), {})
+        self.assertTrue(hasattr(self.tagged_trait.dcc_review, 'study_response'))
+        study_response = self.tagged_trait.dcc_review.study_response
+        # Make sure it was not updated.
+        self.assertEqual(study_response.status, models.StudyResponse.STATUS_DISAGREE)
+        self.assertRedirects(response, reverse('tags:tag:study:reviewed:need-followup',
+                                               args=[self.tag.pk, self.study.pk]))
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertTrue('Oops!' in str(messages[0]))
+
+    def test_cant_create_study_response_for_other_study_tagged_trait(self):
+        """Can't review tagged traits from a different study."""
+        # This is a suggested test, but we need to decide on the expected behavior.
+        other_tagged_trait = factories.TaggedTraitFactory.create()
+        factories.DCCReviewFactory.create(tagged_trait=other_tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP)
+        response = self.client.post(self.get_url(other_tagged_trait.pk), {})
+        self.assertFalse(hasattr(other_tagged_trait.dcc_review, 'study_response'))
+        self.assertEqual(response.status_code, 403)
+
+    def test_adds_user(self):
+        """When a StudyResponse is successfully created, it has the appropriate creator."""
+        response = self.client.post(self.get_url(self.tagged_trait.pk), {})
+        self.assertEqual(self.tagged_trait.dcc_review.study_response.creator, self.user)
+
+class StudyResponseCreateAgreeDCCAnalystTestCase(DCCAnalystLoginTestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.tag = factories.TagFactory.create()
+        self.tagged_trait = factories.TaggedTraitFactory.create(tag=self.tag)
+        factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP)
+
+    def get_url(self, *args):
+        return reverse('tags:tagged-traits:pk:study-response:create:agree', args=args)
+
+    def test_post_forbidden(self):
+        """Returns a 403 forbidden status code for non-taggers."""
+        response = self.client.post(self.get_url(self.tagged_trait.pk), {})
+        self.assertEqual(response.status_code, 403)
+
+    def test_get_forbidden(self):
+        """Returns a 403 forbidden status code for non-taggers."""
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        self.assertEqual(response.status_code, 403)
+
+
 class TagsLoginRequiredTest(LoginRequiredTestCase):
 
     def test_tags_login_required(self):
