@@ -853,12 +853,12 @@ class TaggedTraitDeleteTest(PhenotypeTaggerLoginTestCase):
         context = response.context
         self.assertIn('tagged_trait', context)
         self.assertEqual(context['tagged_trait'], self.tagged_trait)
+        self.assertEqual(context['next_url'], None)
 
     def test_deletes_object(self):
         """Posting 'submit' to the form correctly deletes the tagged_trait."""
         response = self.client.post(self.get_url(self.tagged_trait.pk), {'submit': ''})
-        self.assertRedirects(response, reverse('trait_browser:source:studies:pk:traits:tagged',
-                                               args=[self.trait.source_dataset.source_study_version.study.pk]))
+        self.assertEqual(response.status_code, 302)
         with self.assertRaises(models.TaggedTrait.DoesNotExist):
             self.tagged_trait.refresh_from_db()
         self.assertEqual(models.TaggedTrait.objects.count(), 0)
@@ -875,8 +875,7 @@ class TaggedTraitDeleteTest(PhenotypeTaggerLoginTestCase):
         other_user.profile.taggable_studies.add(self.study)
         other_user_tagged_trait = models.TaggedTrait.objects.create(trait=trait, tag=self.tag, creator=other_user)
         response = self.client.post(self.get_url(other_user_tagged_trait.pk), {'submit': ''})
-        self.assertRedirects(response, reverse('trait_browser:source:studies:pk:traits:tagged',
-                                               args=[self.study.pk]))
+        self.assertEqual(response.status_code, 302)
         with self.assertRaises(models.TaggedTrait.DoesNotExist):
             other_user_tagged_trait.refresh_from_db()
         self.assertEqual(models.TaggedTrait.objects.count(), 1)
@@ -890,8 +889,7 @@ class TaggedTraitDeleteTest(PhenotypeTaggerLoginTestCase):
         # Sounds like it might be:
         # https://stackoverflow.com/questions/17678689/how-to-add-a-cancel-button-to-deleteview-in-django
         response = self.client.post(self.get_url(self.tagged_trait.pk), {})
-        self.assertRedirects(response, reverse('trait_browser:source:studies:pk:traits:tagged',
-                                               args=[self.trait.source_dataset.source_study_version.study.pk]))
+        self.assertEqual(response.status_code, 302)
         with self.assertRaises(models.TaggedTrait.DoesNotExist):
             self.tagged_trait.refresh_from_db()
         self.assertEqual(models.TaggedTrait.objects.count(), 0)
@@ -917,8 +915,7 @@ class TaggedTraitDeleteTest(PhenotypeTaggerLoginTestCase):
         dcc_review = factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait,
                                                        status=models.DCCReview.STATUS_CONFIRMED)
         response = self.client.get(self.get_url(self.tagged_trait.pk))
-        self.assertRedirects(response, reverse('trait_browser:source:studies:pk:traits:tagged',
-                                               args=[self.trait.source_dataset.source_study_version.study.pk]))
+        self.assertEqual(response.status_code, 302)
         # Make sure it wasn't deleted.
         self.assertIn(self.tagged_trait, models.TaggedTrait.objects.all())
         messages = list(response.wsgi_request._messages)
@@ -930,8 +927,7 @@ class TaggedTraitDeleteTest(PhenotypeTaggerLoginTestCase):
         dcc_review = factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait,
                                                        status=models.DCCReview.STATUS_CONFIRMED)
         response = self.client.post(self.get_url(self.tagged_trait.pk), {'submit': ''})
-        self.assertRedirects(response, reverse('trait_browser:source:studies:pk:traits:tagged',
-                                               args=[self.trait.source_dataset.source_study_version.study.pk]))
+        self.assertEqual(response.status_code, 302)
         # Make sure it wasn't deleted.
         self.assertIn(self.tagged_trait, models.TaggedTrait.objects.all())
         messages = list(response.wsgi_request._messages)
@@ -943,8 +939,7 @@ class TaggedTraitDeleteTest(PhenotypeTaggerLoginTestCase):
         dcc_review = factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait, comment='foo',
                                                        status=models.DCCReview.STATUS_FOLLOWUP)
         response = self.client.get(self.get_url(self.tagged_trait.pk))
-        self.assertRedirects(response, reverse('trait_browser:source:studies:pk:traits:tagged',
-                                               args=[self.trait.source_dataset.source_study_version.study.pk]))
+        self.assertEqual(response.status_code, 302)
         # Make sure it wasn't deleted.
         self.assertIn(self.tagged_trait, models.TaggedTrait.objects.all())
         messages = list(response.wsgi_request._messages)
@@ -956,13 +951,56 @@ class TaggedTraitDeleteTest(PhenotypeTaggerLoginTestCase):
         dcc_review = factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait, comment='foo',
                                                        status=models.DCCReview.STATUS_FOLLOWUP)
         response = self.client.post(self.get_url(self.tagged_trait.pk), {'submit': ''})
-        self.assertRedirects(response, reverse('trait_browser:source:studies:pk:traits:tagged',
-                                               args=[self.trait.source_dataset.source_study_version.study.pk]))
+        self.assertEqual(response.status_code, 302)
         # Make sure it wasn't deleted.
         self.assertIn(self.tagged_trait, models.TaggedTrait.objects.all())
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
         self.assertIn(views.REVIEWED_TAGGED_TRAIT_DELETE_ERROR_MESSAGE, str(messages[0]))
+
+    def test_next_url(self):
+        """next_url in context matches the starting url."""
+        starting_url = reverse('trait_browser:source:traits:detail', args=[self.trait.pk])
+        url_with_next = self.get_url(self.tagged_trait.pk) + '?next={}'.format(starting_url)
+        response = self.client.get(url_with_next)
+        context = response.context
+        self.assertEqual(context['next_url'], starting_url)
+
+    def test_success_url_sourcetraitdetail(self):
+        """Redirects to the source trait detail page as expected."""
+        starting_url = reverse('trait_browser:source:traits:detail', args=[self.trait.pk])
+        url_with_next = self.get_url(self.tagged_trait.pk) + '?next={}'.format(starting_url)
+        response = self.client.post(url_with_next, {'submit': ''})
+        self.assertRedirects(response, starting_url)
+
+    def test_success_url_taggedtraitdetail(self):
+        """Redirects to the TaggedTraitByTagAndStudyList view as expected."""
+        starting_url = reverse('tags:tagged-traits:detail', args=[self.tagged_trait.pk])
+        tag_study_list_url = reverse(
+            'tags:tag:study:list',
+            kwargs={'pk_study': self.trait.source_dataset.source_study_version.study.pk,
+                    'pk': self.tag.pk}
+        )
+        url_with_next = self.get_url(self.tagged_trait.pk) + '?next={}'.format(starting_url)
+        response = self.client.post(url_with_next, {'submit': ''})
+        self.assertRedirects(response, tag_study_list_url)
+
+    def test_success_url_profile(self):
+        """Redirects to the profile page as expected."""
+        starting_url = reverse('profiles:profile')
+        url_with_next = self.get_url(self.tagged_trait.pk) + '?next={}'.format(starting_url)
+        response = self.client.post(url_with_next, {'submit': ''})
+        self.assertRedirects(response, starting_url)
+
+    def test_success_url_no_starting_url(self):
+        """Redirects to the profile page as expected."""
+        tag_study_list_url = reverse(
+            'tags:tag:study:list',
+            kwargs={'pk_study': self.trait.source_dataset.source_study_version.study.pk,
+                    'pk': self.tag.pk}
+        )
+        response = self.client.post(self.get_url(self.tagged_trait.pk), {'submit': ''})
+        self.assertRedirects(response, tag_study_list_url)
 
 
 class TaggedTraitDeleteDCCAnalystTest(DCCAnalystLoginTestCase):
