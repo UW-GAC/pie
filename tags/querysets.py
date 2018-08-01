@@ -15,7 +15,7 @@ class TaggedTraitQuerySet(models.query.QuerySet):
     def need_followup(self):
         """Filter to TaggedTrait object that need study followup only."""
         followup_code = self.model._meta.get_field('dcc_review').related_model.STATUS_FOLLOWUP
-        return self.filter(dcc_review__status=followup_code)
+        return self.filter(dcc_review__status=followup_code).filter(dcc_review__study_response__isnull=True)
 
     def delete(self, *args, **kwargs):
         """Only allow deletion if no objects have an associated DCCReview."""

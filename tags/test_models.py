@@ -237,6 +237,16 @@ class TaggedTraitTest(TestCase):
         self.assertFalse(tagged_trait_unreviewed in qs)
         self.assertFalse(tagged_trait_confirmed in qs)
 
+    def test_need_followup_queryset_method(self):
+        """TaggedTraits with StudyResponses do not appear in the needs_followup() queryset."""
+        tagged_trait = factories.TaggedTraitFactory.create()
+        dcc_review = factories.DCCReviewFactory.create(tagged_trait=tagged_trait,
+                                                       status=models.DCCReview.STATUS_FOLLOWUP)
+        factories.StudyResponseFactory.create(dcc_review=dcc_review)
+        qs = models.TaggedTrait.objects.need_followup()
+        self.assertEqual(qs.count(), 0)
+        self.assertNotIn(tagged_trait, qs)
+
     def test_get_absolute_url(self):
         """get_absolute_url function doesn't fail."""
         instance = self.model_factory.create()
