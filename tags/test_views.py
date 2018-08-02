@@ -975,7 +975,7 @@ class TaggedTraitDeleteTest(PhenotypeTaggerLoginTestCase):
 
     def test_success_url_taggedtraitdetail(self):
         """Redirects to the TaggedTraitByTagAndStudyList view as expected."""
-        starting_url = reverse('tags:tagged-traits:detail', args=[self.tagged_trait.pk])
+        starting_url = reverse('tags:tagged-traits:pk:detail', args=[self.tagged_trait.pk])
         tag_study_list_url = reverse(
             'tags:tag:study:list',
             kwargs={'pk_study': self.trait.source_dataset.source_study_version.study.pk,
