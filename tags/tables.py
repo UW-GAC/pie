@@ -87,7 +87,8 @@ class TaggedTraitDeleteButtonMixin(tables.Table):
 class TaggedTraitTableReviewStatusMixin(tables.Table):
     """Mixin to show DCCReview status in a TaggedTrait table."""
 
-    dcc_review = tables.Column('DCC Review', accessor='dcc_review.status')
+    dcc_status = tables.Column('DCC review', accessor='dcc_review.status')
+    response_status = tables.Column('Study response', accessor='dcc_review.study_response.status')
 
 
 class TaggedTraitTableDCCReviewButtonMixin(TaggedTraitTableReviewStatusMixin):
@@ -116,14 +117,15 @@ class TaggedTraitTableWithReviewStatus(TaggedTraitTableReviewStatusMixin, Tagged
                                     template_code=DETAIL_BUTTON_TEMPLATE)
 
     class Meta(TaggedTraitTable.Meta):
-        fields = ('tag', 'trait', 'description', 'dataset', 'details', 'status', )
+        fields = ('tag', 'trait', 'description', 'dataset', 'details', 'dcc_status', 'response_status', )
 
 
 class TaggedTraitTableWithDCCReviewButton(TaggedTraitTableDCCReviewButtonMixin, TaggedTraitTable):
     """Table for displaying TaggedTraits with DCCReview information and review button."""
 
     class Meta(TaggedTraitTable.Meta):
-        fields = ('tag', 'trait', 'description', 'dataset', 'details', 'status', 'review_button', )
+        fields = ('tag', 'trait', 'description', 'dataset', 'details', 'dcc_status', 'response_status',
+                  'review_button', )
 
 
 class DCCReviewTable(tables.Table):
