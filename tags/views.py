@@ -690,7 +690,31 @@ class DCCReviewNeedFollowupList(LoginRequiredMixin, SingleTableMixin, ListView):
         return self.study.get_tagged_traits().filter(tag=self.tag).need_followup()
 
 
-class StudyResponseCreateAgree(LoginRequiredMixin, TaggableStudiesRequiredMixin, MessageMixin, View):
+class StudyResponseCheckCreateMixin(MessageMixin):
+    """Mixin to handle checking that it's appropriate to create a StudyResponse to a DCCReview."""
+
+    def dispatch(self, request, *args, **kwargs):
+        self.tagged_trait = get_object_or_404(models.TaggedTrait, pk=kwargs['pk'])
+        tag = self.tagged_trait.tag
+        study = self.tagged_trait.trait.source_dataset.source_study_version.study
+        failure_url = reverse('tags:tag:study:reviewed:need-followup', args=[tag.pk, study.pk])
+        if not self.tagged_trait.trait.source_dataset.source_study_version.study in request.user.profile.taggable_studies.all():
+            return HttpResponseForbidden()
+        try:
+            dcc_review = self.tagged_trait.dcc_review
+        except AttributeError:
+            self.messages.warning('Oops! {} has not been reviewed by the DCC.'.format(self.tagged_trait))
+            return HttpResponseRedirect(failure_url)
+        if self.tagged_trait.dcc_review.status == models.DCCReview.STATUS_CONFIRMED:
+            self.messages.warning('Oops! {} has been confirmed by the DCC.'.format(self.tagged_trait))
+            return HttpResponseRedirect(failure_url)
+        if hasattr(dcc_review, 'study_response'):
+            self.messages.warning('Oops! {} already has a study response.'.format(self.tagged_trait))
+            return HttpResponseRedirect(failure_url)
+        return super().dispatch(request, *args, **kwargs)
+
+
+class StudyResponseCreateAgree(LoginRequiredMixin, TaggableStudiesRequiredMixin, StudyResponseCheckCreateMixin, View):
 
     http_method_names = ['post', 'put', ]
 
@@ -713,22 +737,44 @@ class StudyResponseCreateAgree(LoginRequiredMixin, TaggableStudiesRequiredMixin,
         return reverse('tags:tag:study:reviewed:need-followup', args=[tag.pk, study.pk])
 
     def post(self, request, *args, **kwargs):
-        self.tagged_trait = get_object_or_404(models.TaggedTrait, pk=kwargs['pk'])
-        if not self.tagged_trait.trait.source_dataset.source_study_version.study in request.user.profile.taggable_studies.all():
-            return HttpResponseForbidden()
-        try:
-            dcc_review = self.tagged_trait.dcc_review
-        except AttributeError:
-            self.messages.warning('Oops! {} has not been reviewed by the DCC.'.format(self.tagged_trait))
-            return HttpResponseRedirect(self.get_redirect_url())
-        if dcc_review.status == models.DCCReview.STATUS_CONFIRMED:
-            self.messages.warning('Oops! {} has been confirmed by the DCC.'.format(self.tagged_trait))
-            return HttpResponseRedirect(self.get_redirect_url())
-        if hasattr(dcc_review, 'study_response'):
-            self.messages.warning('Oops! {} already has a study response.'.format(self.tagged_trait))
-            return HttpResponseRedirect(self.get_redirect_url())
         self._create_study_response()
         return HttpResponseRedirect(self.get_redirect_url())
+
+
+class StudyResponseCreateDisagree(LoginRequiredMixin, FormValidMessageMixin, StudyResponseCheckCreateMixin, FormView):
+
+    # permission_required = 'tags.add_studyresponse'
+    raise_exception = True
+    redirect_unauthenticated_users = True
+    form_class = forms.StudyResponseDisagreeForm
+    template_name = 'tags/studyresponse_disagree_form.html'
+    context_object_name = 'tagged_trait'
+    model = models.TaggedTrait
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['tagged_trait'] = self.tagged_trait
+        return context
+
+    def form_valid(self, form):
+        study_response = models.StudyResponse(
+            dcc_review = self.tagged_trait.dcc_review,
+            creator=self.request.user,
+            status=models.StudyResponse.STATUS_DISAGREE,
+            comment=form.cleaned_data['comment']
+        )
+        study_response.full_clean()
+        study_response.save()
+        return super().form_valid(form)
+
+    def get_form_valid_message(self):
+        msg = 'You have responded to the DCC review of {}'.format(self.tagged_trait)
+        return(msg)
+
+    def get_success_url(self):
+        tag = self.tagged_trait.dcc_review.tagged_trait.tag
+        study = self.tagged_trait.dcc_review.tagged_trait.trait.source_dataset.source_study_version.study
+        return reverse('tags:tag:study:reviewed:need-followup', args=[tag.pk, study.pk])
 
 
 class TagAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):

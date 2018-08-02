@@ -1,0 +1,19 @@
+{% extends '__base.html' %}
+
+{% load crispy_forms_tags %}
+
+{% block head_title %}
+  | Respond to a DCC Review
+{% endblock head_title %}
+
+{% block content %}
+
+  {% include '_messages.html' %}
+
+  <h2>
+    Why should this tagged trait not be tagged?
+  </h2>
+
+  {% crispy form %}
+
+{% endblock content %}

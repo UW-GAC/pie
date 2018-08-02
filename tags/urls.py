@@ -50,6 +50,7 @@ single_dcc_review_patterns = ([
 
 single_study_response_create_patterns = ([
     url(r'^agree/$', views.StudyResponseCreateAgree.as_view(), name='agree'),
+    url(r'^disagree/$', views.StudyResponseCreateDisagree.as_view(), name='disagree'),
 ], 'create')
 
 single_study_response_patterns = ([
