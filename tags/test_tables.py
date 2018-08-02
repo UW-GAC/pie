@@ -82,8 +82,8 @@ class TaggedTraitTableWithDCCReviewButtonMixinTest(TestCase):
         self.assertIn(expected_url, table.render_review_button(tagged_trait))
 
 
-class TaggedTraitTableWithDCCReviewStatusTest(TestCase):
-    table_class = tables.TaggedTraitTableWithDCCReviewStatus
+class TaggedTraitTableWithReviewStatusTest(TestCase):
+    table_class = tables.TaggedTraitTableWithReviewStatus
     model_class = models.TaggedTrait
 
     def setUp(self):

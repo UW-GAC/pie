@@ -84,13 +84,13 @@ class TaggedTraitDeleteButtonMixin(tables.Table):
         return mark_safe(html)
 
 
-class TaggedTraitTableDCCReviewStatusMixin(tables.Table):
+class TaggedTraitTableReviewStatusMixin(tables.Table):
     """Mixin to show DCCReview status in a TaggedTrait table."""
 
-    status = tables.Column('Status', accessor='dcc_review.status')
+    dcc_review = tables.Column('DCC Review', accessor='dcc_review.status')
 
 
-class TaggedTraitTableDCCReviewButtonMixin(TaggedTraitTableDCCReviewStatusMixin):
+class TaggedTraitTableDCCReviewButtonMixin(TaggedTraitTableReviewStatusMixin):
     """Mixin to show DCCReview status and a button to review a TaggedTrait."""
 
     # This column will display a button to either create a new review or update an existing review.
@@ -109,7 +109,7 @@ class TaggedTraitTableDCCReviewButtonMixin(TaggedTraitTableDCCReviewStatusMixin)
         return mark_safe(html)
 
 
-class TaggedTraitTableWithDCCReviewStatus(TaggedTraitTableDCCReviewStatusMixin, TaggedTraitTable):
+class TaggedTraitTableWithReviewStatus(TaggedTraitTableReviewStatusMixin, TaggedTraitTable):
     """Table for displaying TaggedTraits with DCCReview information."""
 
     details = tables.TemplateColumn(verbose_name='', orderable=False,

@@ -628,7 +628,7 @@ class TaggedTraitByTagAndStudyListPhenotypeTaggerTest(PhenotypeTaggerLoginTestCa
         """For taggers, the tagged trait table class is correct."""
         response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
         context = response.context
-        self.assertIsInstance(context['tagged_trait_table'], tables.TaggedTraitTableWithDCCReviewStatus)
+        self.assertIsInstance(context['tagged_trait_table'], tables.TaggedTraitTableWithReviewStatus)
 
 
 class TaggedTraitByTagAndStudyListDCCAnalystTest(DCCAnalystLoginTestCase):

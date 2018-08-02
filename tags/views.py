@@ -148,7 +148,7 @@ class TaggedTraitByTagAndStudyList(LoginRequiredMixin, SingleTableMixin, ListVie
             return tables.TaggedTraitTableWithDCCReviewButton
         elif (self.request.user.groups.filter(name='phenotype_taggers').exists() and
               self.study in self.request.user.profile.taggable_studies.all()):
-            return tables.TaggedTraitTableWithDCCReviewStatus
+            return tables.TaggedTraitTableWithReviewStatus
         else:
             return tables.TaggedTraitTable
 
