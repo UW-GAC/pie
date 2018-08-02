@@ -3390,17 +3390,25 @@ class DCCReviewNeedFollowupListPhenotypeTaggerTestCase(DCCReviewNeedFollowupList
         self.user.refresh_from_db()
         self.user.profile.taggable_studies.add(self.study)
 
+    def test_table_class(self):
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        self.assertIs(type(response.context['tagged_trait_table']), tables.DCCReviewTableWithStudyResponseButtons)
+
 
 class DCCReviewNeedFollowupListDCCAnalystTestCase(DCCReviewNeedFollowupListMixin,
                                                     DCCAnalystLoginTestCase):
 
-    pass
+    def test_table_class(self):
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        self.assertIs(type(response.context['tagged_trait_table']), tables.DCCReviewTable)
 
 
 class DCCReviewNeedFollowupListOtherUserTestCase(DCCReviewNeedFollowupListMixin,
                                                    UserLoginTestCase):
 
-    pass
+    def test_table_class(self):
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        self.assertIs(type(response.context['tagged_trait_table']), tables.DCCReviewTable)
 
 
 class StudyResponseCreateAgreeOtherUserTestCase(UserLoginTestCase):

@@ -670,9 +670,14 @@ class DCCReviewNeedFollowupList(LoginRequiredMixin, SingleTableMixin, ListView):
     template_name = 'tags/dccreview_list.html'
     model = models.TaggedTrait
     context_table_name = 'tagged_trait_table'
-    table_class = tables.DCCReviewTable
     context_table_name = 'tagged_trait_table'
     table_pagination = {'per_page': TABLE_PER_PAGE * 2}
+
+    def get_table_class(self):
+        if self.study in self.request.user.profile.taggable_studies.all():
+            return tables.DCCReviewTableWithStudyResponseButtons
+        else:
+            return tables.DCCReviewTable
 
     def get(self, request, *args, **kwargs):
         self.tag = get_object_or_404(models.Tag, pk=self.kwargs['pk'])
@@ -698,7 +703,7 @@ class StudyResponseCheckCreateMixin(MessageMixin):
         tag = self.tagged_trait.tag
         study = self.tagged_trait.trait.source_dataset.source_study_version.study
         failure_url = reverse('tags:tag:study:reviewed:need-followup', args=[tag.pk, study.pk])
-        if not self.tagged_trait.trait.source_dataset.source_study_version.study in request.user.profile.taggable_studies.all():
+        if not study in request.user.profile.taggable_studies.all():
             return HttpResponseForbidden()
         try:
             dcc_review = self.tagged_trait.dcc_review

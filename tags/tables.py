@@ -144,3 +144,14 @@ class DCCReviewTable(tables.Table):
         fields = ('tag', 'trait', 'details', )
         attrs = {'class': 'table table-striped table-bordered table-hover'}
         template = 'django_tables2/bootstrap-responsive.html'
+
+
+class DCCReviewTableWithStudyResponseButtons(DCCReviewTable):
+    """Table to display TaggedTrait and DCCReview info plus buttons for creating a StudyResponse."""
+
+    dcc_comment = tables.Column('DCC Comment', accessor='dcc_review.comment')
+    buttons = tables.TemplateColumn(verbose_name='', orderable=False,
+                                  template_name='tags/_studyreview_buttons.html')
+
+    class Meta(DCCReviewTable.Meta):
+        fields = ('tag', 'trait', 'details', 'dcc_comment', 'buttons', )
