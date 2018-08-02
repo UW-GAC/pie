@@ -511,3 +511,25 @@ class DCCReviewTagAndStudySelectForm(forms.Form):
             if n == 0:
                 raise forms.ValidationError(self.ERROR_NO_TAGGED_TRAITS)
         return cleaned_data
+
+
+class StudyResponseDisagreeForm(forms.Form):
+    """Form for phenotype taggers to provide a reason that they disagree with a DCC Review."""
+
+    # Use a Form instead of a ModelForm because comment is required in this case.
+    comment = forms.CharField(
+        label='Comment',
+        help_text='Provide a reason that this variable is appropriately tagged.',
+        widget=forms.Textarea
+    )
+
+    helper = FormHelper()
+    helper.form_class = 'form-horizontal'
+    helper.label_class = 'col-sm-2'
+    helper.field_class = 'col-sm-8'
+    helper.layout = Layout(
+        'comment',
+        FormActions(
+            Submit('submit', 'Submit'),
+        )
+    )

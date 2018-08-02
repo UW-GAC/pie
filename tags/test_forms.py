@@ -497,3 +497,23 @@ class DCCReviewTagAndStudySelectFormTest(TestCase):
         dcc_review = factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait)
         form = self.form_class({'tag': self.tag.pk, 'study': self.study.pk})
         self.assertFalse(form.is_valid())
+
+
+class StudyResponseDisagreeFormTest(TestCase):
+
+    form_class = forms.StudyResponseDisagreeForm
+
+    def test_valid(self):
+        """Form is valid with all necessary input."""
+        form = self.form_class({'comment': 'a comment'})
+        self.assertTrue(form.is_valid())
+
+    def test_invalid_missing_comment(self):
+        """Form is invalid if missing comment."""
+        form = self.form_class({})
+        self.assertFalse(form.is_valid())
+
+    def test_invalid_whitespace_comment(self):
+        """Form is invalid if comment is only whitespace."""
+        form = self.form_class({'comment': ' '})
+        self.assertFalse(form.is_valid())
