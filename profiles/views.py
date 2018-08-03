@@ -52,6 +52,7 @@ class Profile(LoginRequiredMixin, TemplateView):
                 tag_pk=F('tag__pk'),
                 variable_name=F('trait__i_trait_name'),
                 dataset_name=F('trait__source_dataset__dataset_name'),
+                review=F('dcc_review'),
                 taggedtrait_pk=F('pk')).order_by('study_name', 'tag_name', 'variable_name')
             # Group by study.
             user_taggedtraits = groupby(user_taggedtraits,
@@ -87,5 +88,4 @@ class Profile(LoginRequiredMixin, TemplateView):
                 study_taggedtrait_counts = [
                     (key, list(group)) for key, group in study_taggedtrait_counts]
                 context['study_taggedtrait_counts'] = study_taggedtrait_counts
-
         return context

@@ -5,8 +5,8 @@ from django.urls import reverse
 from core.utils import (DCCAnalystLoginTestCase, LoginRequiredTestCase, RecipeSubmitterLoginTestCase,
                         PhenotypeTaggerLoginTestCase, UserLoginTestCase)
 from recipes.factories import HarmonizationRecipeFactory, UnitRecipeFactory
-from tags.factories import TaggedTraitFactory
-from tags.models import TaggedTrait
+from tags.factories import DCCReviewFactory, TaggedTraitFactory
+from tags.models import DCCReview, TaggedTrait
 from trait_browser.factories import StudyFactory
 
 
@@ -149,6 +149,27 @@ class DCCAnalystLoginTestCaseProfileTest(DCCAnalystLoginTestCase):
         self.assertNotIn(other_tagged_trait.pk, all_tagged_trait_pks)
         self.assertEqual(sorted(all_tagged_trait_pks),
                          list(TaggedTrait.objects.filter(creator=self.user).values_list('pk', flat=True)))
+
+    def test_delete_link_present_for_unreviewed_taggedtrait(self):
+        """The taggedtrait delete link is present in the html for a taggedtrait that is not reviewed."""
+        tagged_trait = TaggedTraitFactory.create(creator=self.user)
+        tagged_trait_delete_url = reverse('tags:tagged-traits:pk:delete', args=[tagged_trait.pk])
+        response = self.client.get(self.get_url())
+        self.assertContains(response, tagged_trait_delete_url)
+
+    def test_delete_link_not_present_for_confirmed_taggedtrait(self):
+        """The taggedtrait delete link is not present in the html for a taggedtrait that is confirmed."""
+        dcc_review = DCCReviewFactory.create(status=DCCReview.STATUS_CONFIRMED, tagged_trait__creator=self.user)
+        tagged_trait_delete_url = reverse('tags:tagged-traits:pk:delete', args=[dcc_review.tagged_trait.pk])
+        response = self.client.get(self.get_url())
+        self.assertNotContains(response, tagged_trait_delete_url)
+
+    def test_delete_link_not_present_for_needsfollowup_taggedtrait(self):
+        """The taggedtrait delete link is not present in the html for a taggedtrait that needs followup."""
+        dcc_review = DCCReviewFactory.create(status=DCCReview.STATUS_FOLLOWUP, tagged_trait__creator=self.user)
+        tagged_trait_delete_url = reverse('tags:tagged-traits:pk:delete', args=[dcc_review.tagged_trait.pk])
+        response = self.client.get(self.get_url())
+        self.assertNotContains(response, tagged_trait_delete_url)
 
 
 class RecipeSubmitterLoginTestCaseProfileTest(RecipeSubmitterLoginTestCase):
@@ -320,6 +341,34 @@ class PhenotypeTaggerLoginTestCaseProfileTest(PhenotypeTaggerLoginTestCase):
         study1_tag_pks = [el['tag_pk'] for el in study_data[0][1]]
         self.assertIn(user_tagged_trait.tag.pk, study1_tag_pks)
         self.assertEqual(study_data[0][1][0]['tt_count'], 2)
+
+    def test_delete_link_present_for_unreviewed_taggedtrait(self):
+        """The taggedtrait delete link is present in the html for a taggedtrait that is not reviewed."""
+        tagged_trait = TaggedTraitFactory.create(creator=self.user,
+                                                 trait__source_dataset__source_study_version__study=self.study)
+        tagged_trait_delete_url = reverse('tags:tagged-traits:pk:delete', args=[tagged_trait.pk])
+        response = self.client.get(self.get_url())
+        self.assertContains(response, tagged_trait_delete_url)
+
+    def test_delete_link_not_present_for_confirmed_taggedtrait(self):
+        """The taggedtrait delete link is not present in the html for a taggedtrait that is confirmed."""
+        dcc_review = DCCReviewFactory.create(
+            status=DCCReview.STATUS_CONFIRMED,
+            tagged_trait__creator=self.user,
+            tagged_trait__trait__source_dataset__source_study_version__study=self.study)
+        tagged_trait_delete_url = reverse('tags:tagged-traits:pk:delete', args=[dcc_review.tagged_trait.pk])
+        response = self.client.get(self.get_url())
+        self.assertNotContains(response, tagged_trait_delete_url)
+
+    def test_delete_link_not_present_for_needsfollowup_taggedtrait(self):
+        """The taggedtrait delete link is not present in the html for a taggedtrait that needs followup."""
+        dcc_review = DCCReviewFactory.create(
+            status=DCCReview.STATUS_FOLLOWUP,
+            tagged_trait__creator=self.user,
+            tagged_trait__trait__source_dataset__source_study_version__study=self.study)
+        tagged_trait_delete_url = reverse('tags:tagged-traits:pk:delete', args=[dcc_review.tagged_trait.pk])
+        response = self.client.get(self.get_url())
+        self.assertNotContains(response, tagged_trait_delete_url)
 
 
 class ProfilesLoginRequiredTestCase(LoginRequiredTestCase):
