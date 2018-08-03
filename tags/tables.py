@@ -127,16 +127,14 @@ class TaggedTraitTableWithDCCReviewButton(TaggedTraitTableDCCReviewButtonMixin, 
         fields = ('tag', 'trait', 'description', 'dataset', 'details', 'dcc_status', 'response_status',
                   'review_button', )
 
-
 class DCCReviewTable(tables.Table):
     """Table for displaying TaggedTrait and DCCReviews."""
 
     tag = tables.LinkColumn(
         'tags:tag:detail', args=[tables.utils.A('tag.pk')], verbose_name='Tag',
         text=lambda record: record.tag.title, orderable=True)
-    trait = tables.LinkColumn(
-        'trait_browser:source:traits:detail', args=[tables.utils.A('trait.pk')], verbose_name='Study variable',
-        text=lambda record: record.trait.i_trait_name, orderable=True)
+    trait = tables.TemplateColumn(verbose_name='Study Variable', orderable=False,
+                                  template_code="""{{ record.trait.get_name_link_html|safe }}""")
     details = tables.TemplateColumn(verbose_name='', orderable=False,
                                     template_code=DETAIL_BUTTON_TEMPLATE)
 

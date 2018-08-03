@@ -1,5 +1,6 @@
 {% extends '__list.html' %}
 {% load render_table from django_tables2 %}
+{% load staticfiles %}
 
 {% block head_title %}
   | Tagged phenotype variables that need followup
@@ -18,3 +19,7 @@
   {% include '_messages.html' %}
   {% render_table tagged_trait_table %}
 {% endblock table %}
+
+{% block custom_javascript %}
+  <script src="{% static 'js/popover.js' %}"></script>
+{% endblock custom_javascript %}
