@@ -476,8 +476,8 @@ class SourceTrait(Trait):
 
     def get_name_link_html(self):
         """Get html for the trait name linked to the trait's detail page, with description as popover."""
-        url_text = "{{% url 'trait_browser:source:traits:detail' pk={} %}} ".format(self.pk)
-        return POPOVER_URL_HTML.format(url=url_text, popover=self.i_description, name=self.i_trait_name)
+        return POPOVER_URL_HTML.format(url=self.get_absolute_url(), popover=self.i_description,
+                                       name=self.i_trait_name)
 
 
 class HarmonizedTrait(Trait):
