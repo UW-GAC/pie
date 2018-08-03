@@ -3287,25 +3287,6 @@ class DCCReviewUpdateOtherUserTest(UserLoginTestCase):
 class DCCReviewNeedFollowupListMixin(object):
     """Tests to include in all user type test cases for this view."""
 
-    def setUp(self):
-        super().setUp()
-        self.study = StudyFactory.create()
-        self.tag = factories.TagFactory.create()
-        self.dcc_reviews = factories.DCCReviewFactory.create_batch(
-            10,
-            tagged_trait__tag=self.tag,
-            tagged_trait__trait__source_dataset__source_study_version__study=self.study,
-            status=models.DCCReview.STATUS_FOLLOWUP
-        )
-
-    def get_url(self, *args):
-        return reverse('tags:tag:study:reviewed:need-followup', args=args)
-
-    def test_view_success_code(self):
-        """View returns successful response code."""
-        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
-        self.assertEqual(response.status_code, 200)
-
     def test_view_with_invalid_study_pk(self):
         """View returns 404 response code when the study pk doesn't exist."""
         response = self.client.get(self.get_url(self.tag.pk, self.study.pk + 1))
@@ -3356,9 +3337,8 @@ class DCCReviewNeedFollowupListMixin(object):
         self.assertEqual(len(table.data), len(self.dcc_reviews))
 
     def test_view_works_with_no_matching_tagged_traits(self):
-        other_study = StudyFactory.create()
         other_tag = factories.TagFactory.create()
-        response = self.client.get(self.get_url(other_tag.pk, other_study.pk))
+        response = self.client.get(self.get_url(other_tag.pk, self.study.pk))
         self.assertEqual(response.status_code, 200)
         context = response.context
         self.assertEqual(len(context['tagged_trait_table'].data), 0)
@@ -3387,28 +3367,80 @@ class DCCReviewNeedFollowupListPhenotypeTaggerTestCase(DCCReviewNeedFollowupList
 
     def setUp(self):
         super().setUp()
-        self.user.refresh_from_db()
-        self.user.profile.taggable_studies.add(self.study)
+        self.tag = factories.TagFactory.create()
+        self.dcc_reviews = factories.DCCReviewFactory.create_batch(
+            10,
+            tagged_trait__tag=self.tag,
+            tagged_trait__trait__source_dataset__source_study_version__study=self.study,
+            status=models.DCCReview.STATUS_FOLLOWUP
+        )
+
+    def get_url(self, *args):
+        return reverse('tags:tag:study:reviewed:need-followup', args=args)
+
+    def test_view_success_code(self):
+        """View returns successful response code."""
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        self.assertEqual(response.status_code, 200)
 
     def test_table_class(self):
         response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
         self.assertIs(type(response.context['tagged_trait_table']), tables.DCCReviewTableWithStudyResponseButtons)
 
+    def test_forbidden_for_other_study(self):
+        """View returns forbidden response code for a study that the user can't tag."""
+        other_study = StudyFactory.create()
+        response = self.client.get(self.get_url(self.tag.pk, other_study.pk))
+        self.assertEqual(response.status_code, 403)
+
 
 class DCCReviewNeedFollowupListDCCAnalystTestCase(DCCReviewNeedFollowupListMixin,
                                                     DCCAnalystLoginTestCase):
 
+    def setUp(self):
+        super().setUp()
+        self.study = StudyFactory.create()
+        self.tag = factories.TagFactory.create()
+        self.dcc_reviews = factories.DCCReviewFactory.create_batch(
+            10,
+            tagged_trait__tag=self.tag,
+            tagged_trait__trait__source_dataset__source_study_version__study=self.study,
+            status=models.DCCReview.STATUS_FOLLOWUP
+        )
+
+    def get_url(self, *args):
+        return reverse('tags:tag:study:reviewed:need-followup', args=args)
+
     def test_table_class(self):
         response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
         self.assertIs(type(response.context['tagged_trait_table']), tables.DCCReviewTable)
 
-
-class DCCReviewNeedFollowupListOtherUserTestCase(DCCReviewNeedFollowupListMixin,
-                                                   UserLoginTestCase):
-
-    def test_table_class(self):
+    def test_view_success_code(self):
+        """View returns successful response code."""
         response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
-        self.assertIs(type(response.context['tagged_trait_table']), tables.DCCReviewTable)
+        self.assertEqual(response.status_code, 200)
+
+
+class DCCReviewNeedFollowupListOtherUserTestCase(UserLoginTestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.study = StudyFactory.create()
+        self.tag = factories.TagFactory.create()
+        self.dcc_reviews = factories.DCCReviewFactory.create_batch(
+            10,
+            tagged_trait__tag=self.tag,
+            tagged_trait__trait__source_dataset__source_study_version__study=self.study,
+            status=models.DCCReview.STATUS_FOLLOWUP
+        )
+
+    def get_url(self, *args):
+        return reverse('tags:tag:study:reviewed:need-followup', args=args)
+
+    def test_forbidden(self):
+        """View returns forbidden response code for non-taggers and non-staff."""
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        self.assertEqual(response.status_code, 403)
 
 
 class StudyResponseCreateAgreeOtherUserTestCase(UserLoginTestCase):

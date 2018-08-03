@@ -682,7 +682,13 @@ class DCCReviewNeedFollowupList(LoginRequiredMixin, SingleTableMixin, ListView):
     def get(self, request, *args, **kwargs):
         self.tag = get_object_or_404(models.Tag, pk=self.kwargs['pk'])
         self.study = get_object_or_404(Study, pk=self.kwargs['pk_study'])
-        return super().get(self, request, *args, **kwargs)
+        if request.user.is_staff:
+            return super().get(self, request, *args, **kwargs)
+        elif self.study in request.user.profile.taggable_studies.all():
+            return super().get(self, request, *args, **kwargs)
+        else:
+            return HttpResponseForbidden()
+
 
     def get_context_data(self, *args, **kwargs):
         context = super().get_context_data(*args, **kwargs)
