@@ -2062,7 +2062,7 @@ class StudyTaggedTraitListTest(UserLoginTestCase):
         # Spot-check one of the tag counts.
         self.assertEqual(context['tag_counts'][0]['tt_count'], 1)
         # The button linking to this view should be present.
-        self.assertIn(self.get_url(self.study.pk), str(response.content))
+        self.assertContains(response, self.get_url(self.study.pk))
 
     def test_context_data_no_taggedtraits(self):
         """View has appropriate data in the context and works when there are no tagged traits for the study."""
@@ -2074,7 +2074,7 @@ class StudyTaggedTraitListTest(UserLoginTestCase):
         self.assertIn('tag_counts', context)
         self.assertEqual(len(context['tag_counts']), 0)
         # The button linking to this view should not be present.
-        self.assertNotIn(self.get_url(self.study.pk), str(response.content))
+        self.assertNotContains(response, self.get_url(self.study.pk))
 
 
 class PhenotypeTaggerSourceTraitTaggingTest(PhenotypeTaggerLoginTestCase):
