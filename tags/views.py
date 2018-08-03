@@ -637,19 +637,30 @@ class DCCReviewUpdate(LoginRequiredMixin, PermissionRequiredMixin, FormValidMess
     def _get_not_reviewed_warning_message(self):
         return '{} has not been reviewed yet.'.format(self.tagged_trait)
 
+    def _get_study_responded_message(self):
+        return 'Oops! {} cannot be changed because it has a study response.'.format(self.tagged_trait)
+
     def get(self, request, *args, **kwargs):
         try:
-            return super().get(request, *args, **kwargs)
+            self.object = self.get_object()
         except ObjectDoesNotExist:
             self.messages.warning(self._get_not_reviewed_warning_message())
             return HttpResponseRedirect(reverse('tags:tagged-traits:pk:dcc-review:new', args=[self.tagged_trait.pk]))
+        if hasattr(self.object, 'study_response'):
+            self.messages.error(self._get_study_responded_message())
+            return HttpResponseRedirect(self.tagged_trait.get_absolute_url())
+        return super().get(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
         try:
-            return super().post(request, *args, **kwargs)
+            self.object = self.get_object()
         except ObjectDoesNotExist:
             self.messages.warning(self._get_not_reviewed_warning_message())
             return HttpResponseRedirect(reverse('tags:tagged-traits:pk:dcc-review:new', args=[self.tagged_trait.pk]))
+        if hasattr(self.object, 'study_response'):
+            self.messages.error(self._get_study_responded_message())
+            return HttpResponseRedirect(self.tagged_trait.get_absolute_url())
+        return super().post(request, *args, **kwargs)
 
     def get_object(self, queryset=None):
         self.tagged_trait = get_object_or_404(models.TaggedTrait, pk=self.kwargs['pk'])
