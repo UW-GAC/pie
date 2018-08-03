@@ -15,6 +15,10 @@
    tagged with <a href="{{ tag.get_absolute_url }}">{{ tag.title }}</a>
  {% endblock subtitle %}
 
+{% block before_table %}
+  {% include 'tags/_tag_panel.html' with tag=tag is_collapsed=False %}
+{% endblock before_table %}
+
 {% block table %}
   {% include '_messages.html' %}
   {% render_table tagged_trait_table %}
