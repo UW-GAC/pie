@@ -12,10 +12,14 @@
   <h1>Remove a tag from a variable</h1>
   <h3>Are you sure you want to remove the tag <mark>{{ tagged_trait.tag.title }}</mark> from the variable <mark>{{ tagged_trait.trait.i_trait_name }}</mark>?</h3>
 
-  <form action="{% url 'tags:tagged-traits:pk:delete' pk=tagged_trait.pk %}" method="POST">
+  <form method="POST"
+  action="{% url 'tags:tagged-traits:pk:delete' pk=tagged_trait.pk %}{% if next_url is not None %}?next={{ next_url }}{% endif %}"
+  >
     {% csrf_token %}
-    <input type="submit" class="btn btn-danger" value="Yes, delete." />
-    <a href="{% url 'trait_browser:source:studies:pk:traits:tagged' pk=tagged_trait.trait.source_dataset.source_study_version.study.pk %}" class="btn btn-default" role="button">
+    <input type="submit" class="btn btn-danger" value="Yes, remove."/>
+    {# Currently this takes the user back to the study/tag list when they come from the taggedtrait detail page #}
+    <a href="{% if next_url is not None %}{{ next_url }}{% else %}{% url 'tags:tag:study:list' pk=tagged_trait.tag.pk pk_study=tagged_trait.trait.source_dataset.source_study_version.study.pk %}{% endif %}"
+    class="btn btn-default" role="button">
     No, cancel.</a>
   </form>
 
