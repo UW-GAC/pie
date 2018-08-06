@@ -103,9 +103,12 @@ class TaggedTraitTableDCCReviewButtonMixin(TaggedTraitTableReviewStatusMixin):
             btn_text = "Add a DCC review"
             btn_class = 'btn-primary'
         else:
-            url = reverse('tags:tagged-traits:pk:dcc-review:update', args=[record.pk])
-            btn_text = "Update DCC review"
-            btn_class = 'btn-warning'
+            if hasattr(record.dcc_review, 'study_response'):
+                return ('')
+            else:
+                url = reverse('tags:tagged-traits:pk:dcc-review:update', args=[record.pk])
+                btn_text = "Update DCC review"
+                btn_class = 'btn-warning'
         html = REVIEW_BUTTON_HTML.format(url=url, btn_text=btn_text, btn_class=btn_class)
         return mark_safe(html)
 

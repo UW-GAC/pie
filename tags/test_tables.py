@@ -81,6 +81,17 @@ class TaggedTraitTableWithDCCReviewButtonMixinTest(TestCase):
         expected_url = reverse('tags:tagged-traits:pk:dcc-review:new', args=[tagged_trait.pk])
         self.assertIn(expected_url, table.render_review_button(tagged_trait))
 
+    def test_no_update_button_if_study_response_exists(self):
+        tagged_trait = factories.TaggedTraitFactory.create()
+        dcc_review = factories.DCCReviewFactory.create(tagged_trait=tagged_trait,
+                                                       status=models.DCCReview.STATUS_FOLLOWUP)
+        factories.StudyResponseFactory.create(dcc_review=dcc_review, status=models.StudyResponse.STATUS_DISAGREE)
+        table = self.table_class(models.TaggedTrait.objects.all())
+        self.assertNotIn(reverse('tags:tagged-traits:pk:dcc-review:new', args=[tagged_trait.pk]),
+                         table.render_review_button(tagged_trait))
+        self.assertNotIn(reverse('tags:tagged-traits:pk:dcc-review:update', args=[tagged_trait.pk]),
+                         table.render_review_button(tagged_trait))
+
 
 class TaggedTraitTableWithReviewStatusTest(TestCase):
     table_class = tables.TaggedTraitTableWithReviewStatus
