@@ -90,8 +90,21 @@ class DCCReview(TimeStampedModel):
     comment = models.TextField(blank=True)
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
 
+    # Managers/custom querysets.
+    objects = querysets.DCCReviewQuerySet.as_manager()
+
     class Meta:
         verbose_name = 'dcc review'
+
+    def delete(self, *args, **kwargs):
+        """Only allow DCCReview objects without a StudyResponse to be deleted."""
+        if hasattr(self, 'study_response'):
+            raise DeleteNotAllowedError("Cannot delete a DCCReview with a study response.")
+        super().delete(*args, **kwargs)
+
+    def hard_delete(self, *args, **kwargs):
+        """Delete objects that cannot be deleted with overriden delete method."""
+        super().delete(*args, **kwargs)
 
 
 class StudyResponse(TimeStampedModel):
