@@ -3473,6 +3473,230 @@ class DCCReviewNeedFollowupListOtherUserTestCase(UserLoginTestCase):
         self.assertEqual(response.status_code, 403)
 
 
+class StudyResponseCreateOtherUserTestCase(UserLoginTestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.tag = factories.TagFactory.create()
+        self.tagged_trait = factories.TaggedTraitFactory.create(tag=self.tag)
+        factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP)
+
+    def get_url(self, *args):
+        return reverse('tags:tagged-traits:pk:study-response:create:agree', args=args)
+
+    def test_post_forbidden(self):
+        """Returns a 403 forbidden status code for non-taggers."""
+        response = self.client.post(self.get_url(self.tagged_trait.pk), {})
+        self.assertEqual(response.status_code, 403)
+
+    def test_get_forbidden(self):
+        """Returns a 403 forbidden status code for non-taggers."""
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        self.assertEqual(response.status_code, 403)
+
+
+class StudyResponseCreatePhenotypeTaggerTestCase(PhenotypeTaggerLoginTestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.tagged_trait = factories.TaggedTraitFactory.create(
+            trait__source_dataset__source_study_version__study=self.study
+        )
+        factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP)
+
+    def get_url(self, *args):
+        """Get the url for the view this class is supposed to test."""
+        return reverse('tags:tagged-traits:pk:study-response:create:new', args=args)
+
+    def test_view_success_code(self):
+        """View returns successful response code."""
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        self.assertEqual(response.status_code, 200)
+
+    def test_context_data(self):
+        """View has appropriate data in the context."""
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        context = response.context
+        self.assertIn('form', context)
+        self.assertIsInstance(context['form'], forms.StudyResponseForm)
+        self.assertIn('tagged_trait', context)
+        self.assertEqual(context['tagged_trait'], self.tagged_trait)
+
+    def test_successful_post_with_agree_response(self):
+        """Posting valid data to the form correctly creates a StudyResponse."""
+        form_data = {forms.StudyResponseForm.SUBMIT_AGREE: 'Agree', 'comment': ''}
+        response = self.client.post(self.get_url(self.tagged_trait.pk), form_data)
+        self.assertRedirects(response, self.tagged_trait.get_absolute_url())
+        # Correctly creates a StudyResponse for this TaggedTrait.
+        study_response = models.StudyResponse.objects.all().latest('created')
+        self.assertEqual(self.tagged_trait.dcc_review.study_response, study_response)
+        self.assertEqual(self.tagged_trait.dcc_review.study_response.status, models.StudyResponse.STATUS_AGREE)
+        # Check for success message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Successfully responded to the DCC review', str(messages[0]))
+
+    def test_successful_post_with_disagree_response(self):
+        """Posting valid data to the form correctly creates a StudyResponse."""
+        form_data = {forms.StudyResponseForm.SUBMIT_DISAGREE: 'Disgree', 'comment': 'a comment'}
+        response = self.client.post(self.get_url(self.tagged_trait.pk), form_data)
+        self.assertRedirects(response, self.tagged_trait.get_absolute_url())
+        # Correctly creates a StudyResponse for this TaggedTrait.
+        study_response = models.StudyResponse.objects.all().latest('created')
+        self.assertEqual(self.tagged_trait.dcc_review.study_response, study_response)
+        self.assertEqual(self.tagged_trait.dcc_review.study_response.status, models.StudyResponse.STATUS_DISAGREE)
+        # Check for success message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Successfully responded to the DCC review', str(messages[0]))
+
+    def test_post_bad_data(self):
+        """Posting bad data to the form shows a form error."""
+        form_data = {forms.StudyResponseForm.SUBMIT_DISAGREE: 'Require study followup', 'comment': ''}
+        response = self.client.post(self.get_url(self.tagged_trait.pk), form_data)
+        self.assertEqual(response.status_code, 200)
+        # Does not create a DCCReview for this TaggedTrait.
+        self.assertFalse(hasattr(self.tagged_trait.dcc_review, 'study_response'))
+        # No messages.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 0)
+
+    def test_get_non_existent_tagged_trait(self):
+        """Returns a 404 page with a get request if the tagged trait doesn't exist."""
+        url = self.get_url(self.tagged_trait.pk)
+        self.tagged_trait.hard_delete()
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 404)
+
+    def test_post_non_existent_tagged_trait(self):
+        """Returns a 404 page if the session varaible pk doesn't exist."""
+        url = self.get_url(self.tagged_trait.pk)
+        self.tagged_trait.hard_delete()
+        form_data = {forms.StudyResponseForm.SUBMIT_AGREE: 'Confirm', 'comment': ''}
+        response = self.client.post(url, form_data)
+        self.assertEqual(response.status_code, 404)
+
+    def test_get_no_dcc_review(self):
+        """Redirects with an error if a DCC review doesn't exist."""
+        self.tagged_trait.dcc_review.delete()
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        self.assertRedirects(response, self.tagged_trait.get_absolute_url())
+        # Check for messages.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Oops!', str(messages[0]))
+
+    def test_post_no_dcc_review(self):
+        """Redirects with an error if a DCC review doesn't exist."""
+        self.tagged_trait.dcc_review.delete()
+        form_data = {forms.StudyResponseForm.SUBMIT_AGREE: 'Confirm', 'comment': ''}
+        response = self.client.post(self.get_url(self.tagged_trait.pk), form_data)
+        self.assertRedirects(response, self.tagged_trait.get_absolute_url())
+        # Check for messages.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Oops!', str(messages[0]))
+
+    def test_get_already_responded(self):
+        """Shows warning message and redirects to update page if a StudyResponse already exists."""
+        study_response = factories.StudyResponseFactory.create(
+            dcc_review=self.tagged_trait.dcc_review,
+            status=models.StudyResponse.STATUS_DISAGREE
+        )
+        # Now try to review it through the web interface.
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        self.fail('waiting for update view')
+        # self.assertRedirects(response, reverse('tags:tagged-traits:pk:study-response:update', args=[self.tagged_trait.pk]))
+        # # Check for warning message.
+        # messages = list(response.wsgi_request._messages)
+        # self.assertEqual(len(messages), 1)
+        # self.assertIn('already been reviewed', str(messages[0]))
+        # # The previous StudyResponse was not updated.
+        # self.assertEqual(self.tagged_trait.dcc_review.study_response, study_response)
+
+    def test_post_already_responded(self):
+        """Shows warning message and redirects to update page if a StudyResponse already exists."""
+        study_response = factories.StudyResponseFactory.create(
+            dcc_review=self.tagged_trait.dcc_review,
+            status=models.StudyResponse.STATUS_DISAGREE
+        )
+        # Now try to review it through the web interface.
+        form_data = {forms.StudyResponseForm.SUBMIT_AGREE: 'Agree', 'comment': 'a comment'}
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        self.fail('waiting for update view')
+        # self.assertRedirects(response, reverse('tags:tagged-traits:pk:study-response:update', args=[self.tagged_trait.pk]))
+        # # Check for warning message.
+        # messages = list(response.wsgi_request._messages)
+        # self.assertEqual(len(messages), 1)
+        # self.assertIn('already been reviewed', str(messages[0]))
+        # # The previous StudyResponse was not updated.
+        # self.assertEqual(self.tagged_trait.dcc_review.study_response, study_response)
+
+    def test_post_already_responded_with_form_error(self):
+        """Shows warning message and redirects if TaggedTrait is already reviewed."""
+        study_response = factories.StudyResponseFactory.create(
+            dcc_review=self.tagged_trait.dcc_review,
+            status=models.StudyResponse.STATUS_DISAGREE
+        )
+        # Now try to review it through the web interface.
+        form_data = {forms.StudyResponseForm.SUBMIT_AGREE: 'Confirm', 'comment': ''}
+        response = self.client.post(self.get_url(self.tagged_trait.pk), form_data)
+        self.fail('waiting for update view')
+        # self.assertRedirects(response, reverse('tags:tagged-traits:pk:study-response:update', args=[self.tagged_trait.pk]))
+        # # Check for warning message.
+        # messages = list(response.wsgi_request._messages)
+        # self.assertEqual(len(messages), 1)
+        # self.assertIn('already been reviewed', str(messages[0]))
+        # # The previous DCCReview was not updated.
+        # self.assertEqual(self.tagged_trait.dcc_review.study_response, study_response)
+
+    def test_get_tagged_trait_from_another_study(self):
+        """Can't load the page for a tagged trait from another study."""
+        other_study = StudyFactory.create()
+        tagged_trait = factories.TaggedTraitFactory.create(
+            trait__source_dataset__source_study_version__study=other_study
+        )
+        factories.DCCReviewFactory.create(tagged_trait=tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP)
+        form_data = {forms.StudyResponseForm.SUBMIT_AGREE: 'Agree', 'comment': ''}
+        response = self.client.get(self.get_url(tagged_trait.pk))
+        self.assertEqual(response.status_code, 403)
+        self.assertFalse(hasattr(tagged_trait.dcc_review, 'study_response'))
+
+    def test_post_tagged_trait_from_another_study(self):
+        """Can't post valid data for a tagged trait from another study."""
+        other_study = StudyFactory.create()
+        tagged_trait = factories.TaggedTraitFactory.create(
+            trait__source_dataset__source_study_version__study=other_study
+        )
+        factories.DCCReviewFactory.create(tagged_trait=tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP)
+        form_data = {forms.StudyResponseForm.SUBMIT_AGREE: 'Agree', 'comment': ''}
+        response = self.client.post(self.get_url(tagged_trait.pk), form_data)
+        self.assertEqual(response.status_code, 403)
+        self.assertFalse(hasattr(tagged_trait.dcc_review, 'study_response'))
+
+
+class StudyResponseCreateDCCAnalystTestCase(DCCAnalystLoginTestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.tag = factories.TagFactory.create()
+        self.tagged_trait = factories.TaggedTraitFactory.create(tag=self.tag)
+        factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP)
+
+    def get_url(self, *args):
+        return reverse('tags:tagged-traits:pk:study-response:create:new', args=args)
+
+    def test_post_forbidden(self):
+        """Returns a 403 forbidden status code for non-taggers."""
+        response = self.client.post(self.get_url(self.tagged_trait.pk), {})
+        self.assertEqual(response.status_code, 403)
+
+    def test_get_forbidden(self):
+        """Returns a 403 forbidden status code for non-taggers."""
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        self.assertEqual(response.status_code, 403)
+
+
 class StudyResponseCreateAgreeOtherUserTestCase(UserLoginTestCase):
 
     def setUp(self):

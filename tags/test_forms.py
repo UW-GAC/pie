@@ -517,3 +517,53 @@ class StudyResponseDisagreeFormTest(TestCase):
         """Form is invalid if comment is only whitespace."""
         form = self.form_class({'comment': ' '})
         self.assertFalse(form.is_valid())
+
+
+class StudyResponseFormTest(TestCase):
+
+    form_class = forms.StudyResponseForm
+
+    def test_valid_if_disagree_with_comment(self):
+        """Form is valid if the study disagrees and a comment is given."""
+        form_data = {'comment': 'foo', 'status': models.StudyResponse.STATUS_DISAGREE}
+        form = self.form_class(form_data)
+        self.assertTrue(form.is_valid())
+
+    def test_invalid_if_disagree_with_no_comment(self):
+        """Form is invalid if the study disagrees and no comment is given."""
+        form_data = {'comment': '', 'status': models.StudyResponse.STATUS_DISAGREE}
+        form = self.form_class(form_data)
+        self.assertFalse(form.is_valid())
+        self.assertTrue(form.has_error('comment', code='disagree_comment'))
+
+    def test_invalid_if_disagree_with_whitespace_comment(self):
+        """Form is invalid if the study disagrees and no comment is given."""
+        form_data = {'comment': ' ', 'status': models.StudyResponse.STATUS_DISAGREE}
+        form = self.form_class(form_data)
+        self.assertFalse(form.is_valid())
+        self.assertTrue(form.has_error('comment', code='disagree_comment'))
+
+    def test_valid_if_agree_with_no_comment(self):
+        """Form is valid if the study agrees and no comment is given."""
+        form_data = {'comment': '', 'status': models.StudyResponse.STATUS_AGREE}
+        form = self.form_class(form_data)
+        self.assertTrue(form.is_valid())
+
+    def test_valid_if_agree_with_whitespace_comment(self):
+        """Form is valid if the study agrees and a whitespace-only comment is given."""
+        form_data = {'comment': '  ', 'status': models.StudyResponse.STATUS_AGREE}
+        form = self.form_class(form_data)
+        self.assertTrue(form.is_valid())
+
+    def test_invalid_if_agree_with_comment(self):
+        """Form is invalid if the study agrees and a comment is given."""
+        form_data = {'comment': 'foo', 'status': models.StudyResponse.STATUS_AGREE}
+        form = self.form_class(form_data)
+        self.assertFalse(form.is_valid())
+        self.assertTrue(form.has_error('comment', code='agree_comment'))
+
+    def test_invalid_missing_status(self):
+        form_data = {'comment': ''}
+        form = self.form_class(form_data)
+        self.assertFalse(form.is_valid())
+        self.assertTrue(form.has_error('status'))

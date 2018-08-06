@@ -116,9 +116,6 @@ class TaggedTraitTableDCCReviewButtonMixin(TaggedTraitTableReviewStatusMixin):
 class TaggedTraitTableWithReviewStatus(TaggedTraitTableReviewStatusMixin, TaggedTraitTable):
     """Table for displaying TaggedTraits with DCCReview information."""
 
-    details = tables.TemplateColumn(verbose_name='', orderable=False,
-                                    template_code=DETAIL_BUTTON_TEMPLATE)
-
     class Meta(TaggedTraitTable.Meta):
         fields = ('tag', 'trait', 'description', 'dataset', 'details', 'dcc_status', 'response_status', )
 

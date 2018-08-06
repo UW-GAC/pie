@@ -533,3 +533,51 @@ class StudyResponseDisagreeForm(forms.Form):
             Submit('submit', 'Submit'),
         )
     )
+
+
+class StudyResponseBaseForm(forms.ModelForm):
+
+    def clean(self):
+        """Custom cleaning to check a comment is given for StudyResponses that disagree."""
+        cleaned_data = super().clean()
+        comment = cleaned_data.get('comment')
+        status = cleaned_data.get('status')
+        if status == models.StudyResponse.STATUS_DISAGREE and not comment:
+            error = forms.ValidationError('Comment cannot be blank if you disagree with the DCC review.',
+                                          code='disagree_comment')
+            self.add_error('comment', error)
+        if status == models.StudyResponse.STATUS_AGREE and comment:
+            error = forms.ValidationError('Comment must be blank if you agree with the DCC review.',
+                                          code='agree_comment')
+            self.add_error('comment', error)
+        return cleaned_data
+
+    class Meta:
+        model = models.StudyResponse
+        fields = ('status', 'comment', )
+        help_texts = {
+            'comment': 'Only include a comment when you disagree that this variable is tagged incorrectly.'
+        }
+
+
+class StudyResponseForm(StudyResponseBaseForm):
+
+    SUBMIT_AGREE = 'agree'
+    SUBMIT_DISAGREE = 'disagree'
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.layout = Layout(
+            'status',
+            'comment',
+            FormActions(
+                Submit(self.SUBMIT_AGREE, 'Agree'),
+                SubmitCssClass(self.SUBMIT_DISAGREE, 'Disagree', css_class='btn-warning')
+            )
+        )
+
+    class Meta(StudyResponseBaseForm.Meta):
+        widgets = {
+            'status': forms.HiddenInput
+        }

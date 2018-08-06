@@ -49,6 +49,7 @@ single_dcc_review_patterns = ([
 ], 'dcc-review')
 
 single_study_response_create_patterns = ([
+    url(r'^$', views.StudyResponseCreate.as_view(), name='new'),
     url(r'^agree/$', views.StudyResponseCreateAgree.as_view(), name='agree'),
     url(r'^disagree/$', views.StudyResponseCreateDisagree.as_view(), name='disagree'),
 ], 'create')
