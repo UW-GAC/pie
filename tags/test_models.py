@@ -297,25 +297,25 @@ class TaggedTraitTest(TestCase):
         url = instance.get_absolute_url()
         # Just test that this function works.
 
-    def test_unable_to_delete_with_dccreview_need_followup(self):
-        """A reviewed TaggedTrait with needs followup status cannot be deleted."""
+    def test_delete_archives_reviewed_needfollowup_taggedtrait(self):
+        """delete() archives a reviewed taggedtrait with status need_followup."""
         tagged_trait = self.model_factory.create(**self.model_args)
         factories.DCCReviewFactory.create(tagged_trait=tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP,
                                           comment='foo')
-        with self.assertRaises(DeleteNotAllowedError):
-            tagged_trait.delete()
+        tagged_trait.delete()
         tagged_trait.refresh_from_db()
+        self.assertTrue(tagged_trait.archived)
 
-    def test_unable_to_delete_with_dccreview_confirmed(self):
-        """A reviewed TaggedTrait with confirmed status cannot be deleted."""
+    def test_delete_raises_error_reviewed_confirmed_taggedtrait(self):
+        """delete() raises an error for a reviewed taggedtrait with status confirmed."""
         tagged_trait = self.model_factory.create(**self.model_args)
         factories.DCCReviewFactory.create(tagged_trait=tagged_trait, status=models.DCCReview.STATUS_CONFIRMED)
         with self.assertRaises(DeleteNotAllowedError):
             tagged_trait.delete()
         tagged_trait.refresh_from_db()
 
-    def test_can_delete_unreviewed_object(self):
-        """A unreviewed TaggedTrait can be deleted."""
+    def test_delete_hard_deletes_unreviewed_taggedtrait(self):
+        """delete() hard deletes an unreviewed taggedtrait."""
         tagged_trait = self.model_factory.create(**self.model_args)
         tagged_trait.delete()
         with self.assertRaises(ObjectDoesNotExist):

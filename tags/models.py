@@ -79,8 +79,12 @@ class TaggedTrait(TimeStampedModel):
     def delete(self, *args, **kwargs):
         """Only allow unreviewed TaggedTrait objects to be deleted."""
         if hasattr(self, 'dcc_review'):
-            raise DeleteNotAllowedError("Cannot delete a reviewed TaggedTrait.")
-        super().delete(*args, **kwargs)
+            if self.dcc_review.status == self.dcc_review.STATUS_CONFIRMED:
+                raise DeleteNotAllowedError("Cannot delete a reviewed TaggedTrait.")
+            else:
+                self.archive()
+        else:
+            self.hard_delete()
 
     def hard_delete(self, *args, **kwargs):
         """Delete objects that cannot be deleted with overriden delete method."""
