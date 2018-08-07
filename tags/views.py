@@ -712,8 +712,8 @@ class DCCReviewNeedFollowupList(LoginRequiredMixin, SingleTableMixin, ListView):
         return self.study.get_tagged_traits().filter(tag=self.tag).need_followup()
 
 
-class StudyResponseCheckCreateMixin(MessageMixin):
-    """Mixin to handle checking that it's appropriate to create a StudyResponse to a DCCReview."""
+class StudyResponseCheckMixin(MessageMixin):
+    """Mixin to handle checking that it's appropriate to create or update a StudyResponse."""
 
     def get_failure_url(self):
         raise NotImplementedError('Implement get_failure_url when using this mixin.')  # pragma: no cover
@@ -731,7 +731,14 @@ class StudyResponseCheckCreateMixin(MessageMixin):
         if self.tagged_trait.dcc_review.status == models.DCCReview.STATUS_CONFIRMED:
             self.messages.warning('Oops! {} has been confirmed by the DCC.'.format(self.tagged_trait))
             return HttpResponseRedirect(self.get_failure_url())
-        if hasattr(dcc_review, 'study_response'):
+        return super().dispatch(request, *args, **kwargs)
+
+
+class StudyResponseCheckCreateMixin(MessageMixin):
+    """Mixin to handle checking that it's appropriate to create a StudyResponse to a DCCReview."""
+
+    def dispatch(self, request, *args, **kwargs):
+        if hasattr(self.tagged_trait.dcc_review, 'study_response'):
             self.messages.warning('Oops! {} already has a study response.'.format(self.tagged_trait))
             return HttpResponseRedirect(self.get_failure_url())
         return super().dispatch(request, *args, **kwargs)
@@ -774,7 +781,7 @@ class StudyResponseMixin(object):
         return self.tagged_trait.get_absolute_url()
 
 
-class StudyResponseCreate(LoginRequiredMixin, FormValidMessageMixin, StudyResponseCheckCreateMixin, StudyResponseMixin, CreateView):
+class StudyResponseCreate(LoginRequiredMixin, FormValidMessageMixin, StudyResponseCheckMixin, StudyResponseCheckCreateMixin, StudyResponseMixin, CreateView):
 
     template_name = 'tags/studyresponse_form.html'
     form_class = forms.StudyResponseForm
@@ -787,7 +794,44 @@ class StudyResponseCreate(LoginRequiredMixin, FormValidMessageMixin, StudyRespon
         return msg
 
 
-class StudyResponseCreateAgree(LoginRequiredMixin, TaggableStudiesRequiredMixin, StudyResponseCheckCreateMixin, View):
+class StudyResponseUpdate(LoginRequiredMixin, FormValidMessageMixin, StudyResponseMixin, StudyResponseCheckMixin, UpdateView):
+
+    template_name = 'tags/studyresponse_form.html'
+    form_class = forms.StudyResponseForm
+
+    def get_object(self, queryset=None):
+        obj = self.tagged_trait.dcc_review.study_response
+        return obj
+
+    def get_failure_url(self):
+        return self.tagged_trait.get_absolute_url()
+
+    def get_not_responded_warning_message(self):
+        msg = '{} does not have a study response yet.'.format(self.tagged_trait)
+        return(msg)
+
+    def get(self, request, *args, **kwargs):
+        try:
+            self.get_object()
+        except ObjectDoesNotExist:
+            self.messages.warning(self.get_not_responded_warning_message())
+            return HttpResponseRedirect(reverse('tags:tagged-traits:pk:study-response:create:new', args=[self.tagged_trait.pk]))
+        return super().get(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        try:
+            self.get_object()
+        except ObjectDoesNotExist:
+            self.messages.warning(self.get_not_responded_warning_message())
+            return HttpResponseRedirect(reverse('tags:tagged-traits:pk:study-response:create:new', args=[self.tagged_trait.pk]))
+        return super().post(request, *args, **kwargs)
+
+    def get_form_valid_message(self):
+        msg = 'Successfully responded to the DCC review of {}.'.format(self.tagged_trait)
+        return msg
+
+
+class StudyResponseCreateAgree(LoginRequiredMixin, TaggableStudiesRequiredMixin, StudyResponseCheckMixin, StudyResponseCheckCreateMixin, View):
 
     http_method_names = ['post', 'put', ]
 
@@ -819,7 +863,7 @@ class StudyResponseCreateAgree(LoginRequiredMixin, TaggableStudiesRequiredMixin,
         return HttpResponseRedirect(self.get_redirect_url())
 
 
-class StudyResponseCreateDisagree(LoginRequiredMixin, FormValidMessageMixin, StudyResponseCheckCreateMixin, FormView):
+class StudyResponseCreateDisagree(LoginRequiredMixin, FormValidMessageMixin, StudyResponseCheckMixin, StudyResponseCheckCreateMixin, FormView):
 
     # permission_required = 'tags.add_studyresponse'
     raise_exception = True

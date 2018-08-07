@@ -56,6 +56,7 @@ single_study_response_create_patterns = ([
 
 single_study_response_patterns = ([
     url(r'^create/', include(single_study_response_create_patterns)),
+    url(r'^update/', views.StudyResponseUpdate.as_view(), name='update'),
 ], 'study-response')
 
 single_tagged_trait_patterns = ([
