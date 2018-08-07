@@ -734,17 +734,6 @@ class StudyResponseCheckMixin(MessageMixin):
         return super().dispatch(request, *args, **kwargs)
 
 
-class StudyResponseCheckCreateMixin(MessageMixin):
-    """Mixin to handle checking that it's appropriate to create a StudyResponse to a DCCReview."""
-
-    def dispatch(self, request, *args, **kwargs):
-        if hasattr(self.tagged_trait.dcc_review, 'study_response'):
-            self.messages.warning('{} already has a study response.'.format(self.tagged_trait))
-            return HttpResponseRedirect(reverse('tags:tagged-traits:pk:study-response:update',
-                                                args=[self.tagged_trait.pk]))
-        return super().dispatch(request, *args, **kwargs)
-
-
 class StudyResponseMixin(object):
     """Mixin to respond to DCCReviews with a form. Must be used with CreateView or UpdateView."""
 
@@ -782,7 +771,7 @@ class StudyResponseMixin(object):
         return self.tagged_trait.get_absolute_url()
 
 
-class StudyResponseCreate(LoginRequiredMixin, FormValidMessageMixin, StudyResponseCheckMixin, StudyResponseCheckCreateMixin, StudyResponseMixin, CreateView):
+class StudyResponseCreate(LoginRequiredMixin, FormValidMessageMixin, StudyResponseCheckMixin, StudyResponseMixin, CreateView):
 
     template_name = 'tags/studyresponse_form.html'
     form_class = forms.StudyResponseForm
@@ -790,12 +779,26 @@ class StudyResponseCreate(LoginRequiredMixin, FormValidMessageMixin, StudyRespon
     def get_failure_url(self):
         return self.tagged_trait.get_absolute_url()
 
+    def get(self, request, *args, **kwargs):
+        if hasattr(self.tagged_trait.dcc_review, 'study_response'):
+            self.messages.warning('{} already has a study response.'.format(self.tagged_trait))
+            return HttpResponseRedirect(reverse('tags:tagged-traits:pk:study-response:update',
+                                                args=[self.tagged_trait.pk]))
+        return super().get(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        if hasattr(self.tagged_trait.dcc_review, 'study_response'):
+            self.messages.warning('{} already has a study response.'.format(self.tagged_trait))
+            return HttpResponseRedirect(reverse('tags:tagged-traits:pk:study-response:update',
+                                                args=[self.tagged_trait.pk]))
+        return super().post(request, *args, **kwargs)
+
     def get_form_valid_message(self):
         msg = 'Successfully responded to the DCC review of {}.'.format(self.tagged_trait)
         return msg
 
 
-class StudyResponseUpdate(LoginRequiredMixin, FormValidMessageMixin, StudyResponseMixin, StudyResponseCheckMixin, UpdateView):
+class StudyResponseUpdate(LoginRequiredMixin, FormValidMessageMixin, StudyResponseCheckMixin, StudyResponseMixin, UpdateView):
 
     template_name = 'tags/studyresponse_form.html'
     form_class = forms.StudyResponseForm
@@ -832,7 +835,7 @@ class StudyResponseUpdate(LoginRequiredMixin, FormValidMessageMixin, StudyRespon
         return msg
 
 
-class StudyResponseCreateAgree(LoginRequiredMixin, TaggableStudiesRequiredMixin, StudyResponseCheckMixin, StudyResponseCheckCreateMixin, View):
+class StudyResponseCreateAgree(LoginRequiredMixin, TaggableStudiesRequiredMixin, StudyResponseCheckMixin, View):
 
     http_method_names = ['post', 'put', ]
 
@@ -859,12 +862,21 @@ class StudyResponseCreateAgree(LoginRequiredMixin, TaggableStudiesRequiredMixin,
         study = self.tagged_trait.trait.source_dataset.source_study_version.study
         return reverse('tags:tag:study:reviewed:need-followup', args=[tag.pk, study.pk])
 
+    def get(self, request, *args, **kwargs):
+        if hasattr(self.tagged_trait.dcc_review, 'study_response'):
+            self.messages.warning('Oops! {} already has a study response.'.format(self.tagged_trait))
+            return HttpResponseRedirect(self.get_failure_url())
+        return super().get(request, *args, **kwargs)
+
     def post(self, request, *args, **kwargs):
+        if hasattr(self.tagged_trait.dcc_review, 'study_response'):
+            self.messages.warning('Oops! {} already has a study response.'.format(self.tagged_trait))
+            return HttpResponseRedirect(self.get_failure_url())
         self._create_study_response()
         return HttpResponseRedirect(self.get_redirect_url())
 
 
-class StudyResponseCreateDisagree(LoginRequiredMixin, FormValidMessageMixin, StudyResponseCheckMixin, StudyResponseCheckCreateMixin, FormView):
+class StudyResponseCreateDisagree(LoginRequiredMixin, FormValidMessageMixin, StudyResponseCheckMixin, FormView):
 
     # permission_required = 'tags.add_studyresponse'
     raise_exception = True
@@ -894,6 +906,18 @@ class StudyResponseCreateDisagree(LoginRequiredMixin, FormValidMessageMixin, Stu
         study_response.full_clean()
         study_response.save()
         return super().form_valid(form)
+
+    def get(self, request, *args, **kwargs):
+        if hasattr(self.tagged_trait.dcc_review, 'study_response'):
+            self.messages.warning('Oops! {} already has a study response.'.format(self.tagged_trait))
+            return HttpResponseRedirect(self.get_failure_url())
+        return super().get(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        if hasattr(self.tagged_trait.dcc_review, 'study_response'):
+            self.messages.warning('Oops! {} already has a study response.'.format(self.tagged_trait))
+            return HttpResponseRedirect(self.get_failure_url())
+        return super().post(request, *args, **kwargs)
 
     def get_form_valid_message(self):
         msg = 'You have responded to the DCC review of {}'.format(self.tagged_trait)
