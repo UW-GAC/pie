@@ -964,17 +964,17 @@ class TaggedTraitDeleteTest(PhenotypeTaggerLoginTestCase):
         self.assertEqual(len(messages), 1)
         self.assertIn(views.REVIEWED_TAGGED_TRAIT_DELETE_ERROR_MESSAGE, str(messages[0]))
 
-    def test_cannot_delete_a_reviewed_trait(self):
-        """Cannot delete a TaggedTrait that was reviewed with needs followup."""
+    def test_archives_a_need_followup_trait(self):
+        """Archives a TaggedTrait that was reviewed with needs followup."""
         dcc_review = factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait, comment='foo',
                                                        status=models.DCCReview.STATUS_FOLLOWUP)
         response = self.client.post(self.get_url(self.tagged_trait.pk), {'submit': ''})
         self.assertEqual(response.status_code, 302)
-        # Make sure it wasn't deleted.
-        self.assertIn(self.tagged_trait, models.TaggedTrait.objects.all())
+        self.tagged_trait.refresh_from_db()
+        self.assertTrue(self.tagged_trait.archived)
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
-        self.assertIn(views.REVIEWED_TAGGED_TRAIT_DELETE_ERROR_MESSAGE, str(messages[0]))
+        self.assertNotIn(views.REVIEWED_TAGGED_TRAIT_DELETE_ERROR_MESSAGE, str(messages[0]))
 
     def test_next_url(self):
         """next_url in context matches the starting url."""
@@ -1144,17 +1144,17 @@ class TaggedTraitDeleteDCCAnalystTest(DCCAnalystLoginTestCase):
         self.assertEqual(len(messages), 1)
         self.assertIn(views.REVIEWED_TAGGED_TRAIT_DELETE_ERROR_MESSAGE, str(messages[0]))
 
-    def test_cannot_delete_a_reviewed_trait(self):
-        """Cannot delete a TaggedTrait that was reviewed with needs followup."""
+    def test_archives_a_need_followup_trait(self):
+        """Archives a TaggedTrait that was reviewed with needs followup."""
         dcc_review = factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait, comment='foo',
                                                        status=models.DCCReview.STATUS_FOLLOWUP)
         response = self.client.post(self.get_url(self.tagged_trait.pk), {'submit': ''})
         self.assertEqual(response.status_code, 302)
-        # Make sure it wasn't deleted.
-        self.assertIn(self.tagged_trait, models.TaggedTrait.objects.all())
+        self.tagged_trait.refresh_from_db()
+        self.assertTrue(self.tagged_trait.archived)
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
-        self.assertIn(views.REVIEWED_TAGGED_TRAIT_DELETE_ERROR_MESSAGE, str(messages[0]))
+        self.assertNotIn(views.REVIEWED_TAGGED_TRAIT_DELETE_ERROR_MESSAGE, str(messages[0]))
 
     def test_next_url(self):
         """next_url in context matches the starting url."""
