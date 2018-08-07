@@ -3605,14 +3605,13 @@ class StudyResponseCreatePhenotypeTaggerTestCase(PhenotypeTaggerLoginTestCase):
         )
         # Now try to review it through the web interface.
         response = self.client.get(self.get_url(self.tagged_trait.pk))
-        self.fail('waiting for update view')
-        # self.assertRedirects(response, reverse('tags:tagged-traits:pk:study-response:update', args=[self.tagged_trait.pk]))
-        # # Check for warning message.
-        # messages = list(response.wsgi_request._messages)
-        # self.assertEqual(len(messages), 1)
-        # self.assertIn('already been reviewed', str(messages[0]))
-        # # The previous StudyResponse was not updated.
-        # self.assertEqual(self.tagged_trait.dcc_review.study_response, study_response)
+        self.assertRedirects(response, reverse('tags:tagged-traits:pk:study-response:update', args=[self.tagged_trait.pk]))
+        # Check for warning message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('already has a study response', str(messages[0]))
+        # The previous StudyResponse was not updated.
+        self.assertEqual(self.tagged_trait.dcc_review.study_response, study_response)
 
     def test_post_already_responded(self):
         """Shows warning message and redirects to update page if a StudyResponse already exists."""
@@ -3622,15 +3621,15 @@ class StudyResponseCreatePhenotypeTaggerTestCase(PhenotypeTaggerLoginTestCase):
         )
         # Now try to review it through the web interface.
         form_data = {forms.StudyResponseForm.SUBMIT_AGREE: 'Agree', 'comment': 'a comment'}
-        response = self.client.get(self.get_url(self.tagged_trait.pk))
-        self.fail('waiting for update view')
-        # self.assertRedirects(response, reverse('tags:tagged-traits:pk:study-response:update', args=[self.tagged_trait.pk]))
-        # # Check for warning message.
-        # messages = list(response.wsgi_request._messages)
-        # self.assertEqual(len(messages), 1)
-        # self.assertIn('already been reviewed', str(messages[0]))
-        # # The previous StudyResponse was not updated.
-        # self.assertEqual(self.tagged_trait.dcc_review.study_response, study_response)
+        response = self.client.post(self.get_url(self.tagged_trait.pk))
+        self.assertRedirects(response, reverse('tags:tagged-traits:pk:study-response:update',
+                                               args=[self.tagged_trait.pk]))
+        # Check for warning message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('already has a study response', str(messages[0]))
+        # The previous StudyResponse was not updated.
+        self.assertEqual(self.tagged_trait.dcc_review.study_response, study_response)
 
     def test_post_already_responded_with_form_error(self):
         """Shows warning message and redirects if TaggedTrait is already reviewed."""
@@ -3641,14 +3640,14 @@ class StudyResponseCreatePhenotypeTaggerTestCase(PhenotypeTaggerLoginTestCase):
         # Now try to review it through the web interface.
         form_data = {forms.StudyResponseForm.SUBMIT_AGREE: 'Confirm', 'comment': ''}
         response = self.client.post(self.get_url(self.tagged_trait.pk), form_data)
-        self.fail('waiting for update view')
-        # self.assertRedirects(response, reverse('tags:tagged-traits:pk:study-response:update', args=[self.tagged_trait.pk]))
-        # # Check for warning message.
-        # messages = list(response.wsgi_request._messages)
-        # self.assertEqual(len(messages), 1)
-        # self.assertIn('already been reviewed', str(messages[0]))
-        # # The previous DCCReview was not updated.
-        # self.assertEqual(self.tagged_trait.dcc_review.study_response, study_response)
+        self.assertRedirects(response, reverse('tags:tagged-traits:pk:study-response:update',
+                                               args=[self.tagged_trait.pk]))
+        # Check for warning message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('already has a study response', str(messages[0]))
+        # The previous StudyResponse was not updated.
+        self.assertEqual(self.tagged_trait.dcc_review.study_response, study_response)
 
     def test_get_tagged_trait_from_another_study(self):
         """Can't load the page for a tagged trait from another study."""

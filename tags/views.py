@@ -739,8 +739,9 @@ class StudyResponseCheckCreateMixin(MessageMixin):
 
     def dispatch(self, request, *args, **kwargs):
         if hasattr(self.tagged_trait.dcc_review, 'study_response'):
-            self.messages.warning('Oops! {} already has a study response.'.format(self.tagged_trait))
-            return HttpResponseRedirect(self.get_failure_url())
+            self.messages.warning('{} already has a study response.'.format(self.tagged_trait))
+            return HttpResponseRedirect(reverse('tags:tagged-traits:pk:study-response:update',
+                                                args=[self.tagged_trait.pk]))
         return super().dispatch(request, *args, **kwargs)
 
 
