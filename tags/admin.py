@@ -24,8 +24,8 @@ class TagAdmin(admin.ModelAdmin):
 class TaggedTraitAdmin(admin.ModelAdmin):
     """Admin class for TaggedTrait objects."""
 
-    list_display = ('tag', 'trait', 'dcc_review_status', 'creator', 'created', 'modified', )
-    list_filter = ('tag', 'creator', 'dcc_review__status')
+    list_display = ('tag', 'trait', 'dcc_review_status', 'study_response_status', 'creator', 'created', 'modified', )
+    list_filter = ('tag', 'creator', 'dcc_review__status', 'dcc_review__study_response__status', )
     search_fields = ('tag', 'trait', )
     form = forms.TaggedTraitAdminForm
 
@@ -37,6 +37,9 @@ class TaggedTraitAdmin(admin.ModelAdmin):
 
     def dcc_review_status(self, obj):
         return obj.dcc_review.get_status_display()
+
+    def study_response_status(self, obj):
+        return obj.dcc_review.study_response.get_status_display()
 
     def has_delete_permission(self, request, obj=None):
         if obj is not None and hasattr(obj, 'dcc_review'):
