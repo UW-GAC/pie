@@ -581,3 +581,10 @@ class StudyResponseForm(StudyResponseBaseForm):
         widgets = {
             'status': forms.HiddenInput
         }
+
+
+class StudyResponseAdminForm(StudyResponseBaseForm):
+
+    class Meta:
+        model = models.StudyResponse
+        fields = ('status', 'comment', )

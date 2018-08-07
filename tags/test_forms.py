@@ -519,9 +519,7 @@ class StudyResponseDisagreeFormTest(TestCase):
         self.assertFalse(form.is_valid())
 
 
-class StudyResponseFormTest(TestCase):
-
-    form_class = forms.StudyResponseForm
+class StudyResponseFormTestMixin(object):
 
     def test_valid_if_disagree_with_comment(self):
         """Form is valid if the study disagrees and a comment is given."""
@@ -567,3 +565,13 @@ class StudyResponseFormTest(TestCase):
         form = self.form_class(form_data)
         self.assertFalse(form.is_valid())
         self.assertTrue(form.has_error('status'))
+
+
+class StudyResponseFormTest(StudyResponseFormTestMixin, TestCase):
+
+    form_class = forms.StudyResponseForm
+
+
+class StudyResponseAdminFormTest(StudyResponseFormTestMixin, TestCase):
+
+    form_class = forms.StudyResponseAdminForm

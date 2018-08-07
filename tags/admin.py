@@ -52,7 +52,15 @@ class DCCReviewAdmin(admin.ModelAdmin):
     form = forms.DCCReviewAdminForm
 
 
+class StudyResponseAdmin(admin.ModelAdmin):
+    list_display = ('dcc_review', 'status', 'comment', 'creator', 'created', 'modified', )
+    list_filter = ('status', 'creator', )
+    search_fields = ('dcc_review__tagged_trait__tag__title', 'dcc_review__tagged_trait__trait__i_trait_name')
+    form = forms.StudyResponseAdminForm
+
+
 # Register models for showing them in the admin interface.
 admin.site.register(models.Tag, TagAdmin)
 admin.site.register(models.TaggedTrait, TaggedTraitAdmin)
 admin.site.register(models.DCCReview, DCCReviewAdmin)
+admin.site.register(models.StudyResponse, StudyResponseAdmin)
