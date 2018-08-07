@@ -73,6 +73,7 @@ class TaggedTraitDetail(LoginRequiredMixin, DetailView):
         context['user_is_study_tagger'] = user_is_study_tagger
         # Check if DCCReview info should be shown.
         dccreview_exists = hasattr(self.object, 'dcc_review')
+        needs_followup = dccreview_exists and self.object.dcc_review.status == models.DCCReview.STATUS_FOLLOWUP
         has_dccreview_add_perms = self.request.user.has_perm('tags.add_dccreview')
         has_dccreview_change_perms = self.request.user.has_perm('tags.change_dccreview')
         context['show_dcc_review_info'] = (user_is_staff or user_is_study_tagger) and dccreview_exists
@@ -83,6 +84,9 @@ class TaggedTraitDetail(LoginRequiredMixin, DetailView):
         context['show_dcc_review_add_button'] = (not dccreview_exists and has_dccreview_add_perms)
         context['show_dcc_review_update_button'] = dccreview_exists and (not response_exists) \
             and has_dccreview_change_perms
+        # Check if the StudyResponse buttons should be shown.
+        context['show_study_response_add_button'] = user_is_study_tagger and needs_followup and not response_exists
+        context['show_study_response_update_button'] = user_is_study_tagger and response_exists
         return context
 
 
