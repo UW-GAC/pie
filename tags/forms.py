@@ -519,7 +519,7 @@ class StudyResponseDisagreeForm(forms.Form):
     # Use a Form instead of a ModelForm because comment is required in this case.
     comment = forms.CharField(
         label='Comment',
-        help_text='Provide a reason that this variable is appropriately tagged.',
+        help_text='Provide a reason why this variable is appropriately tagged.',
         widget=forms.Textarea
     )
 

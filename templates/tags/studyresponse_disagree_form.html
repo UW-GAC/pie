@@ -8,11 +8,39 @@
 
 {% block content %}
 
+  <h2>
+    Respond to the DCC Review
+    <small>
+      for <a href="{{ tagged_trait.get_absolute_url }}">{{ tagged_trait }}</a>
+    </small>
+  </h2>
+
   {% include '_messages.html' %}
 
-  <h2>
-    Why should this tagged trait not be tagged?
-  </h2>
+  <div class="well">
+    Please review the reason that the DCC requests followup about this tagged variable.
+    Click on the "Tag information" and "Study variable information" panels for more details about the tag and variable.
+    Enter a reason in the "Comment" box about why this variable is appropriately tagged and select the "Submit" button.
+  </div>
+
+  {% include 'tags/_taggedtrait_info.html' with show_all_tags=True collapse_tag_panel=True collapse_trait_panel=True %}
+
+  <div class="panel-group">
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <h4 class="panel-title">
+          <a data-toggle="collapse" href="#collapse-dccreview">DCC Review</a>
+        </h4>
+      </div>
+      <div id="collapse-dccreview" class="panel-collapse in">
+        <div class="panel-body">
+          <dl class="dl-horizontal">
+            <dt>DCC comment</dt><dd>{{ tagged_trait.dcc_review.comment }}<dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+  </div>
 
   {% crispy form %}
 

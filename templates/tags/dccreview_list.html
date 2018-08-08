@@ -16,6 +16,16 @@
  {% endblock subtitle %}
 
 {% block before_table %}
+
+  <div class="well">
+    Please review the "DCC Comment" in the table about why the DCC requests followup for each tagged variable.
+    Click on the "Tag information" panel for more details about the tag.
+    The variable description can be seen by mousing over the variable name.
+    If you agree that it is improperly tagged, select the "Agree" button on the same row.
+    If you think that it should remain tagged, select the "Disagree" button on that row.
+    You will then be taken to a page to enter a reason why this variable should remain tagged.
+  </div>
+
   {% include 'tags/_tag_panel.html' with tag=tag is_collapsed=False %}
 {% endblock before_table %}
 
