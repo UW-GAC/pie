@@ -63,7 +63,10 @@ class SessionVariableMixin(object):
 
 
 class ValidateObjectMixin(object):
-    """Run a check on an object before dispatching a request to the proper method."""
+    """Run a check on an object before dispatching a request to the proper method.
+
+    If the check fails, redirect to the failure url. Otherwise, proceed as normal.
+    """
 
     validation_failure_url = None
 

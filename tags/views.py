@@ -199,6 +199,10 @@ class TaggedTraitDelete(LoginRequiredMixin, PermissionRequiredMixin, TaggableStu
         return self.get_success_url()
 
     def validate_object(self):
+        """Redirect to the failure url if the taggedtrait is reviewed and confirmed.
+
+        Otherwise, will delete or archive as appropriate, using the custom delete method.
+        """
         if hasattr(self.object, 'dcc_review'):
             if self.object.dcc_review.status == self.object.dcc_review.STATUS_CONFIRMED:
                 self.messages.error(REVIEWED_TAGGED_TRAIT_DELETE_ERROR_MESSAGE)
