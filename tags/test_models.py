@@ -297,6 +297,20 @@ class TaggedTraitTest(TestCase):
         url = instance.get_absolute_url()
         # Just test that this function works.
 
+
+class TaggedTraitDeleteTest(TestCase):
+    """Tests of the overridden delete method for the TaggedTrait model."""
+
+    model = models.TaggedTrait
+    model_factory = factories.TaggedTraitFactory
+
+    def setUp(self):
+        self.user = UserFactory.create()
+        self.tag = factories.TagFactory.create()
+        self.trait = SourceTraitFactory.create()
+        self.model_args = {'trait': self.trait, 'tag': self.tag, 'creator': self.user}
+
+    # Tests of the overridden delete().
     def test_delete_archives_reviewed_needfollowup_taggedtrait(self):
         """delete() archives a reviewed taggedtrait with status need_followup."""
         tagged_trait = self.model_factory.create(**self.model_args)
@@ -321,6 +335,7 @@ class TaggedTraitTest(TestCase):
         with self.assertRaises(ObjectDoesNotExist):
             tagged_trait.refresh_from_db()
 
+    # Tests of hard_delete().
     def test_can_hard_delete_tagged_trait_with_dccreview_need_followup(self):
         """A reviewed TaggedTrait with needs followup status can be deleted with hard_delete."""
         tagged_trait = self.model_factory.create(**self.model_args)
@@ -345,6 +360,7 @@ class TaggedTraitTest(TestCase):
         with self.assertRaises(ObjectDoesNotExist):
             tagged_trait.refresh_from_db()
 
+    # Tests of the queryset delete().
     def test_can_delete_queryset_with_no_reviewed_tagged_traits(self):
         """The TaggedTrait queryset method deletes unreviewed tagged traits."""
         tagged_traits = factories.TaggedTraitFactory.create_batch(5)
