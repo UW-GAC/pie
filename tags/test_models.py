@@ -361,51 +361,127 @@ class TaggedTraitDeleteTest(TestCase):
             tagged_trait.refresh_from_db()
 
     # Tests of the queryset delete().
-    def test_can_delete_queryset_with_no_reviewed_tagged_traits(self):
-        """The TaggedTrait queryset method deletes unreviewed tagged traits."""
-        tagged_traits = factories.TaggedTraitFactory.create_batch(5)
+    def test_queryset_delete_unreviewed(self):
+        """Deletes all unreviewed tagged traits."""
+        unreviewed = factories.TaggedTraitFactory.create_batch(5)
         models.TaggedTrait.objects.all().delete()
         self.assertEqual(models.TaggedTrait.objects.count(), 0)
+        self.assertEqual(models.TaggedTrait.objects.archived().count(), 0)
+        self.assertEqual(models.TaggedTrait.objects.non_archived().count(), 0)
 
-    def test_queryset_delete_with_one_reviewed_tagged_trait_followup(self):
-        """The TaggedTrait queryset method does not delete anything if any tagged traits are reviewed."""
-        tagged_traits = factories.TaggedTraitFactory.create_batch(5)
-        tagged_trait_to_review = tagged_traits[1]
-        factories.DCCReviewFactory.create(tagged_trait=tagged_trait_to_review, comment='foo',
-                                          status=models.DCCReview.STATUS_FOLLOWUP)
-        with self.assertRaises(DeleteNotAllowedError):
-            models.TaggedTrait.objects.all().delete()
-        self.assertEqual(models.TaggedTrait.objects.count(), 5)
-
-    def test_queryset_delete_with_one_reviewed_tagged_trait_confirmed(self):
-        """The TaggedTrait queryset method does not delete anything if any tagged traits are reviewed."""
-        tagged_traits = factories.TaggedTraitFactory.create_batch(5)
-        tagged_trait_to_review = tagged_traits[1]
-        factories.DCCReviewFactory.create(tagged_trait=tagged_trait_to_review,
-                                          status=models.DCCReview.STATUS_CONFIRMED)
-        with self.assertRaises(DeleteNotAllowedError):
-            models.TaggedTrait.objects.all().delete()
-        self.assertEqual(models.TaggedTrait.objects.count(), 5)
-
-    def test_queryset_delete_with_multiple_reviewed_tagged_traits(self):
-        """The TaggedTrait queryset method does not delete anything if any tagged traits are reviewed."""
-        tagged_traits = factories.TaggedTraitFactory.create_batch(5)
-        factories.DCCReviewFactory.create(tagged_trait=tagged_traits[1],
-                                          status=models.DCCReview.STATUS_CONFIRMED)
-        factories.DCCReviewFactory.create(tagged_trait=tagged_traits[3], comment='foo',
-                                          status=models.DCCReview.STATUS_FOLLOWUP)
-        with self.assertRaises(DeleteNotAllowedError):
-            models.TaggedTrait.objects.all().delete()
-        self.assertEqual(models.TaggedTrait.objects.count(), 5)
-
-    def test_can_hard_delete_queryset_with_no_reviewed_tagged_traits(self):
-        """The TaggedTrait queryset hard_delete method deletes unreviewed tagged traits."""
-        tagged_traits = factories.TaggedTraitFactory.create_batch(5)
+    def test_queryset_delete_needs_followup(self):
+        """Archives all need_followup tagged traits."""
+        dcc_reviews = factories.DCCReviewFactory.create_batch(5, comment='foo',
+                                                              status=models.DCCReview.STATUS_FOLLOWUP)
+        needs_followup = models.TaggedTrait.objects.all()
+        n_needs_followup = needs_followup.count()
         models.TaggedTrait.objects.all().delete()
+        self.assertEqual(models.TaggedTrait.objects.count(), n_needs_followup)
+        self.assertEqual(models.TaggedTrait.objects.archived().count(), n_needs_followup)
+        self.assertEqual(models.TaggedTrait.objects.non_archived().count(), 0)
+        self.assertEqual(list(models.TaggedTrait.objects.need_followup().values_list('archived', flat=True)),
+                         [True] * n_needs_followup)
+
+    def test_queryset_delete_confirmed(self):
+        """Gives an error for confirmed tagged traits."""
+        dcc_reviews = factories.DCCReviewFactory.create_batch(5, status=models.DCCReview.STATUS_CONFIRMED)
+        confirmed = models.TaggedTrait.objects.all()
+        n_confirmed = confirmed.count()
+        with self.assertRaises(DeleteNotAllowedError):
+            models.TaggedTrait.objects.all().delete()
+        self.assertEqual(models.TaggedTrait.objects.count(), n_confirmed)
+        self.assertEqual(models.TaggedTrait.objects.archived().count(), 0)
+        self.assertEqual(models.TaggedTrait.objects.non_archived().count(), n_confirmed)
+        self.assertEqual(list(models.TaggedTrait.objects.confirmed().values_list('archived', flat=True)),
+                         [False] * n_confirmed)
+
+    def test_queryset_delete_needs_followup_and_unreviewed(self):
+        """Archives need_followup and deletes unreviewed tagged traits."""
+        dcc_reviews = factories.DCCReviewFactory.create_batch(5, comment='foo',
+                                                              status=models.DCCReview.STATUS_FOLLOWUP)
+        needs_followup = models.TaggedTrait.objects.all()
+        n_needs_followup = needs_followup.count()
+        unreviewed = factories.TaggedTraitFactory.create_batch(4)
+        unreviewed = models.TaggedTrait.objects.unreviewed()
+        n_unreviewed = unreviewed.count()
+        models.TaggedTrait.objects.all().delete()
+        self.assertEqual(models.TaggedTrait.objects.count(), n_needs_followup)
+        self.assertEqual(models.TaggedTrait.objects.archived().count(), n_needs_followup)
+        self.assertEqual(models.TaggedTrait.objects.non_archived().count(), 0)
+        self.assertEqual(list(models.TaggedTrait.objects.need_followup().values_list('archived', flat=True)),
+                         [True] * n_needs_followup)
+
+    def test_queryset_delete_needs_followup_and_unreviewed_and_confirmed(self):
+        """Archives need_followup and deletes unreviewed tagged traits. Raises an error for confirmed."""
+        unreviewed = factories.TaggedTraitFactory.create_batch(5)
+        dcc_reviews = factories.DCCReviewFactory.create_batch(4, comment='foo',
+                                                              status=models.DCCReview.STATUS_FOLLOWUP)
+        confirmed_dcc_reviews = factories.DCCReviewFactory.create_batch(3, status=models.DCCReview.STATUS_CONFIRMED)
+        unreviewed = models.TaggedTrait.objects.unreviewed()
+        confirmed = models.TaggedTrait.objects.confirmed()
+        needs_followup = models.TaggedTrait.objects.need_followup()
+        n_needs_followup = needs_followup.count()
+        n_unreviewed = unreviewed.count()
+        n_confirmed = confirmed.count()
+        with self.assertRaises(DeleteNotAllowedError):
+            models.TaggedTrait.objects.all().delete()
+        self.assertEqual(models.TaggedTrait.objects.count(), n_needs_followup + n_confirmed)
+        self.assertEqual(models.TaggedTrait.objects.archived().count(), n_needs_followup)
+        self.assertEqual(models.TaggedTrait.objects.non_archived().count(), n_confirmed)
+        self.assertEqual(list(models.TaggedTrait.objects.need_followup().values_list('archived', flat=True)),
+                         [True] * n_needs_followup)
+        self.assertEqual(list(models.TaggedTrait.objects.confirmed().values_list('archived', flat=True)),
+                         [False] * n_confirmed)
+
+    def test_queryset_delete_unreviewed_and_confirmed(self):
+        """Deletes unreviewed tagged traits. Raises an error for confirmed."""
+        unreviewed = factories.TaggedTraitFactory.create_batch(5)
+        dcc_reviews = factories.DCCReviewFactory.create_batch(4, comment='foo',
+                                                              status=models.DCCReview.STATUS_FOLLOWUP)
+        confirmed_dcc_reviews = factories.DCCReviewFactory.create_batch(3, status=models.DCCReview.STATUS_CONFIRMED)
+        unreviewed = models.TaggedTrait.objects.unreviewed()
+        confirmed = models.TaggedTrait.objects.confirmed()
+        needs_followup = models.TaggedTrait.objects.need_followup()
+        n_needs_followup = needs_followup.count()
+        n_unreviewed = unreviewed.count()
+        n_confirmed = confirmed.count()
+        with self.assertRaises(DeleteNotAllowedError):
+            models.TaggedTrait.objects.all().delete()
+        self.assertEqual(models.TaggedTrait.objects.count(), n_needs_followup + n_confirmed)
+        self.assertEqual(models.TaggedTrait.objects.archived().count(), n_needs_followup)
+        self.assertEqual(models.TaggedTrait.objects.non_archived().count(), n_confirmed)
+        self.assertEqual(list(models.TaggedTrait.objects.need_followup().values_list('archived', flat=True)),
+                         [True] * n_needs_followup)
+        self.assertEqual(list(models.TaggedTrait.objects.confirmed().values_list('archived', flat=True)),
+                         [False] * n_confirmed)
+
+    def test_queryset_delete_needs_followup_and_confirmed(self):
+        """Archives need_followup and raises an error for confirmed."""
+        dcc_reviews = factories.DCCReviewFactory.create_batch(4, comment='foo',
+                                                              status=models.DCCReview.STATUS_FOLLOWUP)
+        confirmed_dcc_reviews = factories.DCCReviewFactory.create_batch(3, status=models.DCCReview.STATUS_CONFIRMED)
+        confirmed = models.TaggedTrait.objects.confirmed()
+        needs_followup = models.TaggedTrait.objects.need_followup()
+        n_needs_followup = needs_followup.count()
+        n_confirmed = confirmed.count()
+        with self.assertRaises(DeleteNotAllowedError):
+            models.TaggedTrait.objects.all().delete()
+        self.assertEqual(models.TaggedTrait.objects.count(), n_needs_followup + n_confirmed)
+        self.assertEqual(models.TaggedTrait.objects.archived().count(), n_needs_followup)
+        self.assertEqual(models.TaggedTrait.objects.non_archived().count(), n_confirmed)
+        self.assertEqual(list(models.TaggedTrait.objects.need_followup().values_list('archived', flat=True)),
+                         [True] * n_needs_followup)
+        self.assertEqual(list(models.TaggedTrait.objects.confirmed().values_list('archived', flat=True)),
+                         [False] * n_confirmed)
+
+    def test_queryset_hard_delete_unreviewed(self):
+        """Deletes unreviewed tagged traits."""
+        tagged_traits = factories.TaggedTraitFactory.create_batch(5)
+        models.TaggedTrait.objects.all().hard_delete()
         self.assertEqual(models.TaggedTrait.objects.count(), 0)
 
-    def test_queryset_hard_delete_with_one_reviewed_tagged_trait_followup(self):
-        """The TaggedTrait queryset hard_delete method deletes regardless of review status."""
+    def test_queryset_hard_delete_need_followup(self):
+        """Deletes need_followup tagged traits."""
         tagged_traits = factories.TaggedTraitFactory.create_batch(5)
         tagged_trait_to_review = tagged_traits[1]
         factories.DCCReviewFactory.create(tagged_trait=tagged_trait_to_review, comment='foo',
@@ -413,12 +489,34 @@ class TaggedTraitDeleteTest(TestCase):
         models.TaggedTrait.objects.all().hard_delete()
         self.assertEqual(models.TaggedTrait.objects.count(), 0)
 
-    def test_queryset_hard_delete_with_one_reviewed_tagged_trait_confirmed(self):
-        """The TaggedTrait queryset hard_delete method deletes regardless of review status."""
+    def test_queryset_hard_delete_confirmed(self):
+        """Deletes confirmed tagged traits."""
         tagged_traits = factories.TaggedTraitFactory.create_batch(5)
         tagged_trait_to_review = tagged_traits[1]
         factories.DCCReviewFactory.create(tagged_trait=tagged_trait_to_review,
                                           status=models.DCCReview.STATUS_CONFIRMED)
+        models.TaggedTrait.objects.all().hard_delete()
+        self.assertEqual(models.TaggedTrait.objects.count(), 0)
+
+    def test_queryset_hard_delete_unreviewed_and_need_followup(self):
+        """Deletes unreviewed and need_followup tagged traits."""
+        factories.DCCReviewFactory.create_batch(5, comment='foo', status=models.DCCReview.STATUS_FOLLOWUP)
+        factories.TaggedTraitFactory.create_batch(5)
+        models.TaggedTrait.objects.all().hard_delete()
+        self.assertEqual(models.TaggedTrait.objects.count(), 0)
+
+    def test_queryset_hard_delete_unreviewed_and_confirmed(self):
+        """Deletes unreviewed and confirmed tagged traits."""
+        factories.DCCReviewFactory.create_batch(5, status=models.DCCReview.STATUS_CONFIRMED)
+        factories.TaggedTraitFactory.create_batch(5)
+        models.TaggedTrait.objects.all().hard_delete()
+        self.assertEqual(models.TaggedTrait.objects.count(), 0)
+
+    def test_queryset_hard_delete_unreviewed_and_need_followup_and_confirmed(self):
+        """Deletes unreviewed and need_followup and confirmed tagged traits."""
+        factories.DCCReviewFactory.create_batch(5, comment='foo', status=models.DCCReview.STATUS_FOLLOWUP)
+        factories.DCCReviewFactory.create_batch(5, status=models.DCCReview.STATUS_CONFIRMED)
+        factories.TaggedTraitFactory.create_batch(5)
         models.TaggedTrait.objects.all().hard_delete()
         self.assertEqual(models.TaggedTrait.objects.count(), 0)
 
