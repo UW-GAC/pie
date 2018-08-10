@@ -236,32 +236,28 @@ class TaggedTraitTest(TestCase):
         taggedtrait = self.model(archived=False, **self.model_args)
         taggedtrait.save()
         taggedtrait.archive()
-        taggedtrait.refresh_from_db()
-        self.assertTrue(taggedtrait.archived)
+        self.assertIn(taggedtrait, models.TaggedTrait.objects.archived())
 
     def test_unarchive_archived_taggedtrait(self):
         """Archive method sets an unarchived taggedtrait to archived."""
         taggedtrait = self.model(archived=True, **self.model_args)
         taggedtrait.save()
         taggedtrait.unarchive()
-        taggedtrait.refresh_from_db()
-        self.assertFalse(taggedtrait.archived)
+        self.assertIn(taggedtrait, models.TaggedTrait.objects.non_archived())
 
     def test_archive_archived_taggedtrait(self):
         """Archive method sets an unarchived taggedtrait to archived."""
         taggedtrait = self.model(archived=True, **self.model_args)
         taggedtrait.save()
         taggedtrait.archive()
-        taggedtrait.refresh_from_db()
-        self.assertTrue(taggedtrait.archived)
+        self.assertIn(taggedtrait, models.TaggedTrait.objects.archived())
 
     def test_unarchive_unarchived_taggedtrait(self):
         """Archive method sets an unarchived taggedtrait to archived."""
         taggedtrait = self.model(archived=False, **self.model_args)
         taggedtrait.save()
         taggedtrait.unarchive()
-        taggedtrait.refresh_from_db()
-        self.assertFalse(taggedtrait.archived)
+        self.assertIn(taggedtrait, models.TaggedTrait.objects.non_archived())
 
     def test_unreviewed_queryset_method(self):
         """Only TaggedTraits that have not been reviewed are returned by the .unreviewed() filter."""
@@ -312,53 +308,48 @@ class TaggedTraitDeleteTest(TestCase):
 
     # Tests of the overridden delete().
     def test_delete_archives_reviewed_needfollowup_taggedtrait(self):
-        """delete() archives a reviewed taggedtrait with status need_followup."""
+        """Archives a reviewed taggedtrait with status need_followup."""
         tagged_trait = self.model_factory.create(**self.model_args)
         factories.DCCReviewFactory.create(tagged_trait=tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP,
                                           comment='foo')
         tagged_trait.delete()
-        tagged_trait.refresh_from_db()
-        self.assertTrue(tagged_trait.archived)
+        self.assertIn(tagged_trait, models.TaggedTrait.objects.archived())
 
     def test_delete_raises_error_reviewed_confirmed_taggedtrait(self):
-        """delete() raises an error for a reviewed taggedtrait with status confirmed."""
+        """Raises an error for a reviewed taggedtrait with status confirmed."""
         tagged_trait = self.model_factory.create(**self.model_args)
         factories.DCCReviewFactory.create(tagged_trait=tagged_trait, status=models.DCCReview.STATUS_CONFIRMED)
         with self.assertRaises(DeleteNotAllowedError):
             tagged_trait.delete()
-        tagged_trait.refresh_from_db()
+        self.assertIn(tagged_trait, models.TaggedTrait.objects.non_archived())
 
     def test_delete_hard_deletes_unreviewed_taggedtrait(self):
-        """delete() hard deletes an unreviewed taggedtrait."""
+        """Hard deletes an unreviewed taggedtrait."""
         tagged_trait = self.model_factory.create(**self.model_args)
         tagged_trait.delete()
-        with self.assertRaises(ObjectDoesNotExist):
-            tagged_trait.refresh_from_db()
+        self.assertNotIn(tagged_trait, models.TaggedTrait.objects.all())
 
     # Tests of hard_delete().
-    def test_can_hard_delete_tagged_trait_with_dccreview_need_followup(self):
-        """A reviewed TaggedTrait with needs followup status can be deleted with hard_delete."""
+    def test_hard_delete_need_followup(self):
+        """Deletes a need_followup tagged trait."""
         tagged_trait = self.model_factory.create(**self.model_args)
         factories.DCCReviewFactory.create(tagged_trait=tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP,
                                           comment='foo')
         tagged_trait.hard_delete()
-        with self.assertRaises(ObjectDoesNotExist):
-            tagged_trait.refresh_from_db()
+        self.assertNotIn(tagged_trait, models.TaggedTrait.objects.all())
 
-    def test_can_hard_delete_tagged_trait_with_dccreview_confirmed(self):
-        """A reviewed TaggedTrait with confirmed status can be deleted with hard_delete."""
+    def test_hard_delete_confirmed(self):
+        """Deletes a confirmed tagged trait."""
         tagged_trait = self.model_factory.create(**self.model_args)
         factories.DCCReviewFactory.create(tagged_trait=tagged_trait, status=models.DCCReview.STATUS_CONFIRMED)
         tagged_trait.hard_delete()
-        with self.assertRaises(ObjectDoesNotExist):
-            tagged_trait.refresh_from_db()
+        self.assertNotIn(tagged_trait, models.TaggedTrait.objects.all())
 
-    def test_can_hard_delete_unreviewed_tagged_trait(self):
-        """An unreviewed TaggedTrait can be deleted with hard_delete."""
+    def test_hard_delete_unreviewed(self):
+        """Deletes an unreviewed tagged trait."""
         tagged_trait = self.model_factory.create(**self.model_args)
         tagged_trait.hard_delete()
-        with self.assertRaises(ObjectDoesNotExist):
-            tagged_trait.refresh_from_db()
+        self.assertNotIn(tagged_trait, models.TaggedTrait.objects.all())
 
     # Tests of the queryset delete().
     def test_queryset_delete_unreviewed(self):
