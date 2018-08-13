@@ -117,6 +117,28 @@ class TagTest(TestCase):
         self.assertIsInstance(tag.archived_traits, QuerySet)
         self.assertIsInstance(tag.non_archived_traits, QuerySet)
 
+    def test_multiple_archived_traits(self):
+        """Archived tagged traits show up in the archived_trait property with multiple tagged traits of each type."""
+        tag = factories.TagFactory.create()
+        archived = factories.TaggedTraitFactory.create_batch(5, archived=True, tag=tag)
+        non_archived = factories.TaggedTraitFactory.create_batch(6, archived=False, tag=tag)
+        for tagged_trait in archived:
+            self.assertIn(tagged_trait.trait, tag.traits.all())
+            self.assertIn(tagged_trait.trait, tag.archived_traits)
+            self.assertNotIn(tagged_trait.trait, tag.non_archived_traits)
+        self.assertEqual(len(archived), tag.archived_traits.count())
+
+    def test_multiple_non_archived_traits(self):
+        """Non-archived tagged traits show up in the non_archived_trait property with multiple of each type."""
+        tag = factories.TagFactory.create()
+        archived = factories.TaggedTraitFactory.create_batch(5, archived=True, tag=tag)
+        non_archived = factories.TaggedTraitFactory.create_batch(6, archived=False, tag=tag)
+        for tagged_trait in non_archived:
+            self.assertIn(tagged_trait.trait, tag.traits.all())
+            self.assertIn(tagged_trait.trait, tag.non_archived_traits)
+            self.assertNotIn(tagged_trait.trait, tag.archived_traits)
+        self.assertEqual(len(non_archived), tag.non_archived_traits.count())
+
 
 class StudyTaggedTraitsTest(TestCase):
 
