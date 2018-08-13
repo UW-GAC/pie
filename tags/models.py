@@ -8,8 +8,6 @@ from django.urls import reverse
 from core.exceptions import DeleteNotAllowedError
 from core.models import TimeStampedModel
 
-from trait_browser.models import SourceTrait
-
 from . import querysets
 
 
@@ -50,13 +48,15 @@ class Tag(TimeStampedModel):
     def archived_traits(self):
         """Return queryset of archived traits tagged with this tag."""
         archived_tagged_traits = apps.get_model('tags', 'TaggedTrait').objects.archived().filter(tag=self)
-        return SourceTrait.objects.filter(pk__in=archived_tagged_traits.values_list('trait__pk', flat=True))
+        return apps.get_model('trait_browser', 'SourceTrait').objects.filter(
+            pk__in=archived_tagged_traits.values_list('trait__pk', flat=True))
 
     @property
     def non_archived_traits(self):
         """Return queryset of non-archived traits tagged with this tag."""
         non_archived_tagged_traits = apps.get_model('tags', 'TaggedTrait').objects.non_archived().filter(tag=self)
-        return SourceTrait.objects.filter(pk__in=non_archived_tagged_traits.values_list('trait__pk', flat=True))
+        return apps.get_model('trait_browser', 'SourceTrait').objects.filter(
+            pk__in=non_archived_tagged_traits.values_list('trait__pk', flat=True))
 
 
 class TaggedTrait(TimeStampedModel):
