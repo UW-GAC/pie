@@ -474,6 +474,20 @@ class SourceTrait(Trait):
         """Gets the absolute URL of the detail page for a given SourceTrait instance."""
         return reverse('trait_browser:source:traits:detail', kwargs={'pk': self.pk})
 
+    @property
+    def archived_tags(self):
+        """Return queryset of archived tags linked to this trait."""
+        archived_tagged_traits = apps.get_model('tags', 'TaggedTrait').objects.archived().filter(trait=self)
+        return apps.get_model('tags', 'Tag').objects.filter(
+            pk__in=archived_tagged_traits.values_list('tag__pk', flat=True))
+
+    @property
+    def non_archived_tags(self):
+        """Return queryset of non-archived tags linked to this trait."""
+        non_archived_tagged_traits = apps.get_model('tags', 'TaggedTrait').objects.non_archived().filter(trait=self)
+        return apps.get_model('tags', 'Tag').objects.filter(
+            pk__in=non_archived_tagged_traits.values_list('tag__pk', flat=True))
+
     def get_name_link_html(self):
         """Get html for the trait name linked to the trait's detail page, with description as popover."""
         url_text = "{{% url 'trait_browser:source:traits:detail' pk={} %}} ".format(self.pk)

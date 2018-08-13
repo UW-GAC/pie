@@ -2,8 +2,11 @@
 
 from datetime import datetime
 
+from django.db.models.query import QuerySet
 from django.core.exceptions import ValidationError
 from django.test import TestCase
+
+from tags.factories import TaggedTraitFactory
 
 from . import factories
 from . import models
@@ -339,6 +342,49 @@ class SourceTraitTest(TestCase):
         deprecated_trait.source_dataset.source_study_version.save()
         self.assertIn(current_trait, models.SourceTrait.objects.current())
         self.assertNotIn(deprecated_trait, models.SourceTrait.objects.current())
+
+    def test_archived_tags_and_non_archived_tags(self):
+        """Archived tags and non archived tags linked to the trait are where they should be."""
+        trait = factories.SourceTraitFactory.create()
+        archived = TaggedTraitFactory.create(archived=True, trait=trait)
+        non_archived = TaggedTraitFactory.create(archived=False, trait=trait)
+        self.assertIn(archived.tag, trait.tag_set.all())
+        self.assertIn(non_archived.tag, trait.tag_set.all())
+        self.assertIn(archived.tag, trait.archived_tags)
+        self.assertIn(non_archived.tag, trait.non_archived_tags)
+        self.assertNotIn(archived.tag, trait.non_archived_tags)
+        self.assertNotIn(non_archived.tag, trait.archived_tags)
+
+    def test_archived_tags_and_non_archived_tags_are_querysets(self):
+        """The properties archived_traits and non_archived_traits are QuerySets."""
+        # These need to be querysets to behave similarly to tag.traits and trait.tag_set.
+        trait = factories.SourceTraitFactory.create()
+        archived = TaggedTraitFactory.create(archived=True, trait=trait)
+        non_archived = TaggedTraitFactory.create(archived=False, trait=trait)
+        self.assertIsInstance(trait.archived_tags, QuerySet)
+        self.assertIsInstance(trait.non_archived_tags, QuerySet)
+
+    def test_multiple_archived_tags(self):
+        """Archived tags show up in the archived_tags property with multiple tagged traits of each type."""
+        trait = factories.SourceTraitFactory.create()
+        archived = TaggedTraitFactory.create_batch(5, archived=True, trait=trait)
+        non_archived = TaggedTraitFactory.create_batch(6, archived=False, trait=trait)
+        for tagged_trait in archived:
+            self.assertIn(tagged_trait.tag, trait.tag_set.all())
+            self.assertIn(tagged_trait.tag, trait.archived_tags)
+            self.assertNotIn(tagged_trait.tag, trait.non_archived_tags)
+        self.assertEqual(len(archived), trait.archived_tags.count())
+
+    def test_multiple_non_archived_tags(self):
+        """Non-archived tags show up in the non_archived_tags property with multiple of each type."""
+        trait = factories.SourceTraitFactory.create()
+        archived = TaggedTraitFactory.create_batch(5, archived=True, trait=trait)
+        non_archived = TaggedTraitFactory.create_batch(6, archived=False, trait=trait)
+        for tagged_trait in non_archived:
+            self.assertIn(tagged_trait.tag, trait.tag_set.all())
+            self.assertIn(tagged_trait.tag, trait.non_archived_tags)
+            self.assertNotIn(tagged_trait.tag, trait.archived_tags)
+        self.assertEqual(len(non_archived), trait.non_archived_tags.count())
 
 
 class HarmonizedTraitTest(TestCase):
