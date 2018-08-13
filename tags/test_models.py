@@ -1,6 +1,7 @@
 """Tests of models for the tags app."""
 
-from django.core.exceptions import ObjectDoesNotExist, ValidationError
+from django.core.exceptions import ValidationError
+from django.db.models.query import QuerySet
 from django.db.utils import IntegrityError
 from django.test import TestCase
 
@@ -94,6 +95,27 @@ class TagTest(TestCase):
         tagged_trait = models.TaggedTrait(trait=trait, tag=tag, creator=self.user)
         tagged_trait.save()
         self.assertIn(trait, tag.traits.all())
+
+    def test_archived_traits_and_non_archived_traits(self):
+        """Archived traits and non archived traits linked to the tag are where they should be."""
+        tag = factories.TagFactory.create()
+        archived = factories.TaggedTraitFactory.create(archived=True, tag=tag)
+        non_archived = factories.TaggedTraitFactory.create(archived=False, tag=tag)
+        self.assertIn(archived.trait, tag.traits.all())
+        self.assertIn(non_archived.trait, tag.traits.all())
+        self.assertIn(archived.trait, tag.archived_traits)
+        self.assertIn(non_archived.trait, tag.non_archived_traits)
+        self.assertNotIn(archived.trait, tag.non_archived_traits)
+        self.assertNotIn(non_archived.trait, tag.archived_traits)
+
+    def test_archived_traits_and_non_archived_traits_are_querysets(self):
+        """The properties archived_traits and non_archived_traits are QuerySets."""
+        # These need to be querysets to behave similarly to tag.traits and trait.tag_set.
+        tag = factories.TagFactory.create()
+        archived = factories.TaggedTraitFactory.create(archived=True, tag=tag)
+        non_archived = factories.TaggedTraitFactory.create(archived=False, tag=tag)
+        self.assertIsInstance(tag.archived_traits, QuerySet)
+        self.assertIsInstance(tag.non_archived_traits, QuerySet)
 
 
 class StudyTaggedTraitsTest(TestCase):

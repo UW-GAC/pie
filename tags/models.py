@@ -1,11 +1,14 @@
 """Models for the tags app."""
 
+from django.apps import apps
 from django.conf import settings
 from django.db import models
 from django.urls import reverse
 
 from core.exceptions import DeleteNotAllowedError
 from core.models import TimeStampedModel
+
+from trait_browser.models import SourceTrait
 
 from . import querysets
 
@@ -42,6 +45,16 @@ class Tag(TimeStampedModel):
 
     def get_absolute_url(self):
         return reverse('tags:tag:detail', args=[self.pk])
+
+    @property
+    def archived_traits(self):
+        archived_tagged_traits = apps.get_model('tags', 'TaggedTrait').objects.archived().filter(tag=self)
+        return SourceTrait.objects.filter(pk__in=archived_tagged_traits.values_list('trait__pk', flat=True))
+
+    @property
+    def non_archived_traits(self):
+        non_archived_tagged_traits = apps.get_model('tags', 'TaggedTrait').objects.non_archived().filter(tag=self)
+        return SourceTrait.objects.filter(pk__in=non_archived_tagged_traits.values_list('trait__pk', flat=True))
 
 
 class TaggedTrait(TimeStampedModel):
