@@ -26,9 +26,16 @@ def set_permissions_for_studyresponse(apps, schema_editor):
     Permission = apps.get_model('auth', 'Permission')
     study_response_permissions = Permission.objects.filter(content_type__app_label='tags',
                                                            content_type__model='StudyResponse')
-    # Give only developers all permissions on the Profile model.
-    developers = Group.objects.get(name='dcc_developers')
-    developers.permissions.add(*study_response_permissions)
+    # Developers already have permissions for StudyResponse because they have blanket permissions for the tags app.
+    # Give phenotype taggers add and change permissions on the StudyResponse model.
+    taggers = Group.objects.get(name='phenotype_taggers')
+    taggers.permissions.add(*Permission.objects.filter(
+        content_type__app_label='tags', content_type__model='StudyResponse', codename__startswith='add'))
+    taggers.permissions.add(*Permission.objects.filter(
+        content_type__app_label='tags', content_type__model='StudyResponse', codename__startswith='change'))
+    # Remove permissions for DCC analysts, which have blanket perimssions for the tags app.
+    analysts = Group.objects.get(name='dcc_analysts')
+    analysts.permissions.remove(*study_response_permissions)
 
 
 def delete_permissions_for_studyresponse(apps, schema_editor):
@@ -37,9 +44,15 @@ def delete_permissions_for_studyresponse(apps, schema_editor):
     Permission = apps.get_model('auth', 'Permission')
     study_response_permissions = Permission.objects.filter(content_type__app_label='tags',
                                                            content_type__model='StudyResponse')
-    # Revoke all permissions on the Profile model from developers.
-    developers = Group.objects.get(name='dcc_developers')
-    developers.permissions.remove(*study_response_permissions)
+    # Revoke all permissions on the StudyResponse model for phenotype taggers.
+    taggers = Group.objects.get(name='phenotype_taggers')
+    taggers.permissions.remove(*Permission.objects.filter(
+        content_type__app_label='tags', content_type__model='StudyResponse', codename__startswith='add'))
+    taggers.permissions.remove(*Permission.objects.filter(
+        content_type__app_label='tags', content_type__model='StudyResponse', codename__startswith='change'))
+    # Add permissions for DCC analysts, who started with blanket perimssions for the tags app.
+    analysts = Group.objects.get(name='dcc_analysts')
+    analysts.permissions.add(*study_response_permissions)
 
 
 class Migration(migrations.Migration):
