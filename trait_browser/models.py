@@ -286,6 +286,11 @@ class SourceDataset(SourceDBTimeStampedModel):
         """Automatically set dbgap_link from dbGaP identifier information."""
         return self.DATASET_URL.format(self.source_study_version.full_accession, self.full_accession)
 
+    def get_name_link_html(self):
+        """Get html for the dataset name linked to the dataset's detail page, with description as popover."""
+        return POPOVER_URL_HTML.format(url=self.get_absolute_url(), popover=self.i_dbgap_description,
+                                       name=self.dataset_name)
+
 
 class HarmonizedTraitSet(SourceDBTimeStampedModel):
     """Model for harmonized trait set from topmed_pheno. Analagous to the SourceDataset for source traits."""

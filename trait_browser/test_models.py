@@ -160,6 +160,11 @@ class SourceDatasetTest(TestCase):
         self.assertIn(current_dataset, models.SourceDataset.objects.current())
         self.assertNotIn(deprecated_dataset, models.SourceDataset.objects.current())
 
+    def test_get_name_link_html(self):
+        """get_name_link_html returns a string."""
+        dataset = factories.SourceDatasetFactory.create()
+        self.assertIsInstance(dataset.get_name_link_html(), str)
+
 
 class HarmonizedTraitSetTest(TestCase):
 
