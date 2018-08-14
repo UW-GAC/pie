@@ -134,12 +134,14 @@ class DCCReviewTable(tables.Table):
                                   template_code="""{{ record.trait.get_name_link_html|safe }}""")
     details = tables.TemplateColumn(verbose_name='', orderable=False,
                                     template_code=DETAIL_BUTTON_TEMPLATE)
+    dataset = tables.TemplateColumn(verbose_name='Dataset', orderable=False,
+                                    template_code="""{{ record.trait.source_dataset.get_name_link_html|safe }}""")
     dcc_comment = tables.Column('DCC Comment', accessor='dcc_review.comment')
 
     class Meta:
         # It doesn't really matter if we use TaggedTrait or DCCReview because of the one-to-one relationship.
         models.TaggedTrait
-        fields = ('trait', 'details', 'dcc_comment', )
+        fields = ('trait', 'dataset', 'dcc_comment', 'details', )
         attrs = {'class': 'table table-striped table-bordered table-hover'}
         template = 'django_tables2/bootstrap-responsive.html'
 
@@ -151,4 +153,4 @@ class DCCReviewTableWithStudyResponseButtons(DCCReviewTable):
                                   template_name='tags/_studyreview_buttons.html')
 
     class Meta(DCCReviewTable.Meta):
-        fields = ('trait', 'details', 'dcc_comment', 'buttons', )
+        pass
