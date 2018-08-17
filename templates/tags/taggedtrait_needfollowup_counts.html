@@ -2,35 +2,50 @@
 {% load render_table from django_tables2 %}
 
 {% block head_title %}
-| Flagged for removal
+| Quality review
 {% endblock head_title %}
 
 {% block content %}
   {% include '_messages.html' %}
 
-<h2>Tagged variables flagged for removal</h2>
+  <h2>Quality review of tagged variables</h2>
 
-{% for study_data in grouped_study_tag_counts %}
-
-  <h3>{{ study_data.0.study_name }}</h3>
-
-  <div class="panel panel-default">
-    <div class="table-responsive">
-      <table class='table table-bordered table-striped table-hover'>
-        <tr>
-          <th>Tag</th>
-          <th>Number of tagged variables flagged for removal</th>
-        </tr>
-        {% for tag_data in study_data.1 %}
-        <tr>
-          <td><a href="{% url 'tags:tag:detail' tag_data.tag_pk %}">{{ tag_data.tag_name }}</a></td>
-          <td><a href="{% url 'tags:tag:study:reviewed:need-followup' tag_data.tag_pk study_data.0.study_pk %}">{{ tag_data.tt_count }}</a></td>
-        </tr>
-        {% endfor %}
-      </table>
-    </div>
+  <div class="well">
+    <p>
+      The DCC has performed initial quality review of tagged variables.
+      Those that don't fit the tag description or instructions have been flagged for removal.
+      The table below shows the number of tagged variables flagged for removal for each tag.
+      For a given tag, click on the blue button that says "Begin quality review" to be taken to a page to review the reasons that these tagged variables are flagged for removal.
+    </p>
   </div>
 
-{% endfor %}
+  {% for study_data in grouped_study_tag_counts %}
+
+    <h3>{{ study_data.0.study_name }}</h3>
+
+    <div class="panel panel-default">
+      <div class="table-responsive">
+        <table class='table table-bordered table-striped table-hover'>
+          <thead>
+            <tr>
+              <th>Tag</th>
+              <th>Number of tagged variables flagged for removal</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for tag_data in study_data.1 %}
+            <tr>
+              <td><a href="{% url 'tags:tag:detail' tag_data.tag_pk %}">{{ tag_data.tag_name }}</a></td>
+              <td>{{ tag_data.tt_count }}</td>
+              <td><a class="btn btn-xs btn-primary" href="{% url 'tags:tag:study:reviewed:need-followup' tag_data.tag_pk study_data.0.study_pk %}" role="button">Begin quality review</a></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  {% endfor %}
 
 {% endblock content %}
