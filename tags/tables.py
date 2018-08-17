@@ -136,7 +136,7 @@ class DCCReviewTable(tables.Table):
                                     template_code=DETAIL_BUTTON_TEMPLATE)
     dataset = tables.TemplateColumn(verbose_name='Dataset', orderable=False,
                                     template_code="""{{ record.trait.source_dataset.get_name_link_html|safe }}""")
-    dcc_comment = tables.Column('DCC Comment', accessor='dcc_review.comment')
+    dcc_comment = tables.Column('Reason for removal', accessor='dcc_review.comment', orderable=False)
 
     class Meta:
         # It doesn't really matter if we use TaggedTrait or DCCReview because of the one-to-one relationship.

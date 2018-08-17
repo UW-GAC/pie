@@ -3,29 +3,31 @@
 {% load staticfiles %}
 
 {% block head_title %}
-  | Tagged phenotype variables that need followup
+  | Quality review
 {% endblock head_title %}
 
 {% block title %}
-  Tagged variables that need followup
+  Quality review
 {% endblock title %}
 
 {% block subtitle %}
-   from <a href="{{ study.get_absolute_url }}">{{ study.i_study_name }}</a>
-   tagged with <a href="{{ tag.get_absolute_url }}">{{ tag.title }}</a>
- {% endblock subtitle %}
+  variables tagged with <a href="{{ tag.get_absolute_url }}">{{ tag.title }}</a>
+  from <a href="{{ study.get_absolute_url }}">{{ study.i_study_name }}</a>
+{% endblock subtitle %}
 
 {% block before_table %}
-
   <div class="well">
-    Please review the "DCC Comment" in the table about why the DCC requests followup for each tagged variable.
-    Click on the "Tag information" panel for more details about the tag.
-    The variable description can be seen by mousing over the variable name.
-    If you agree that it is improperly tagged, select the "Agree" button on the same row.
-    If you think that it should remain tagged, select the "Disagree" button on that row.
-    You will then be taken to a page to enter a reason why this variable should remain tagged.
+    <p>
+      The DCC has performed initial quality review of tagged variables.
+      The variables shown in this table have been flagged for review.
+      For each row in the table, please review the reason for removal given in the table and select the appropriate button.
+      If you agree that the tag should be removed from this variable, select the green button that says the tag should be removed.
+      If you think that the variable should remain tagged with this tag, select the red button to be taken to a page to provide further explanation.
+    </p>
+    <p>
+      Variable and dataset descriptions can be seen by mousing over the variable name.
+    </p>
   </div>
-
   {% include 'tags/_tag_panel.html' with tag=tag is_collapsed=False %}
 {% endblock before_table %}
 
