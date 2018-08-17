@@ -46,11 +46,22 @@ class TagDetailTest(UserLoginTestCase):
         context = response.context
         self.assertIn('tag', context)
         self.assertEqual(context['tag'], self.tag)
+        self.assertIn('study_counts', context)
 
     def test_no_tagging_button(self):
         """Regular user does not see a button to add tags on this detail page."""
         response = self.client.get(self.get_url(self.tag.pk))
         self.assertNotContains(response, reverse('tags:add-many:by-tag', kwargs={'pk': self.tag.pk}))
+
+    def test_no_archived_taggedtraits(self):
+        """A non-archived tagged trait is in the study counts, but not an archived one."""
+        archived_tagged_trait = factories.TaggedTraitFactory.create(archived=True, tag=self.tag)
+        non_archived_tagged_trait = factories.TaggedTraitFactory.create(archived=False, tag=self.tag)
+        response = self.client.get(self.get_url(self.tag.pk))
+        context = response.context
+        study_names = [el['study_name'] for el in context['study_counts']]
+        self.assertIn(non_archived_tagged_trait.trait.source_dataset.source_study_version.study, study_names)
+        self.assertNotIn(archived_tagged_trait.trait.source_dataset.source_study_version.study, study_names)
 
 
 class TagDetailPhenotypeTaggerTest(PhenotypeTaggerLoginTestCase):
@@ -74,6 +85,16 @@ class TagDetailPhenotypeTaggerTest(PhenotypeTaggerLoginTestCase):
         response = self.client.get(self.get_url(self.tag.pk))
         self.assertContains(response, reverse('tags:add-many:by-tag', kwargs={'pk': self.tag.pk}))
 
+    def test_no_archived_taggedtraits(self):
+        """A non-archived tagged trait is in the study counts, but not an archived one."""
+        archived_tagged_trait = factories.TaggedTraitFactory.create(archived=True, tag=self.tag)
+        non_archived_tagged_trait = factories.TaggedTraitFactory.create(archived=False, tag=self.tag)
+        response = self.client.get(self.get_url(self.tag.pk))
+        context = response.context
+        study_names = [el['study_name'] for el in context['study_counts']]
+        self.assertIn(non_archived_tagged_trait.trait.source_dataset.source_study_version.study, study_names)
+        self.assertNotIn(archived_tagged_trait.trait.source_dataset.source_study_version.study, study_names)
+
 
 class TagDetailDCCAnalystTest(DCCAnalystLoginTestCase):
 
@@ -96,6 +117,16 @@ class TagDetailDCCAnalystTest(DCCAnalystLoginTestCase):
         """A DCC analyst does see a button to add tags on this detail page."""
         response = self.client.get(self.get_url(self.tag.pk))
         self.assertContains(response, reverse('tags:add-many:by-tag', kwargs={'pk': self.tag.pk}))
+
+    def test_no_archived_taggedtraits(self):
+        """A non-archived tagged trait is in the study counts, but not an archived one."""
+        archived_tagged_trait = factories.TaggedTraitFactory.create(archived=True, tag=self.tag)
+        non_archived_tagged_trait = factories.TaggedTraitFactory.create(archived=False, tag=self.tag)
+        response = self.client.get(self.get_url(self.tag.pk))
+        context = response.context
+        study_names = [el['study_name'] for el in context['study_counts']]
+        self.assertIn(non_archived_tagged_trait.trait.source_dataset.source_study_version.study, study_names)
+        self.assertNotIn(archived_tagged_trait.trait.source_dataset.source_study_version.study, study_names)
 
 
 class TagListTest(UserLoginTestCase):
@@ -375,7 +406,7 @@ class TaggedTraitTagCountsByStudyTest(UserLoginTestCase):
         self.taggedtraits = []
         for tag in self.tags:
             for study in self.studies:
-                self.taggedtraits.append(
+                self.taggedtraits.extend(
                     factories.TaggedTraitFactory.create_batch(
                         2, tag=tag, trait__source_dataset__source_study_version__study=study)
                 )
@@ -406,14 +437,17 @@ class TaggedTraitTagCountsByStudyTest(UserLoginTestCase):
                     trait__source_dataset__source_study_version__study__pk=study[0]['study_pk']).count()
                 self.assertEqual(tag['tt_count'], tag_study_count)
 
-    def test_archived_taggedtraits(self):
-        """Archived tagged traits do not appear in the table."""
-        tagged_trait = self.tagged_traits[0]
-        tagged_trait.archive()
-        response = self.client.get(self.get_url(self.study.pk))
-        self.assertIn('tagged_trait_table', response.context)
-        table = response.context['tagged_trait_table']
-        self.assertNotIn(tagged_trait, table.data)
+    def test_count_does_not_include_archived_taggedtraits(self):
+        """Counts do not include archived tagged traits."""
+        self.tag = factories.TagFactory.create()
+        study = StudyFactory.create()
+        archived_tagged_trait = factories.TaggedTraitFactory.create(
+            tag=self.tag, trait__source_dataset__source_study_version__study=study, archived=True)
+        non_archived_tagged_trait = factories.TaggedTraitFactory.create(
+            tag=self.tag, trait__source_dataset__source_study_version__study=study, archived=False)
+        response = self.client.get(self.get_url())
+        counts = response.context['taggedtrait_tag_counts_by_study']
+        self.assertEqual(counts[0][1][0]['tt_count'], 1)
 
 
 class TaggedTraitStudyCountsByTagTest(UserLoginTestCase):
@@ -458,14 +492,17 @@ class TaggedTraitStudyCountsByTagTest(UserLoginTestCase):
                     trait__source_dataset__source_study_version__study__pk=study['study_pk']).count()
                 self.assertEqual(study['tt_count'], study_tag_count)
 
-    def test_archived_taggedtraits(self):
-        """Archived tagged traits do not appear in the table."""
-        tagged_trait = self.tagged_traits[0]
-        tagged_trait.archive()
-        response = self.client.get(self.get_url(self.study.pk))
-        self.assertIn('tagged_trait_table', response.context)
-        table = response.context['tagged_trait_table']
-        self.assertNotIn(tagged_trait, table.data)
+    def test_count_does_not_include_archived_taggedtraits(self):
+        """Counts do not include archived tagged traits."""
+        self.tag = factories.TagFactory.create()
+        study = StudyFactory.create()
+        archived_tagged_trait = factories.TaggedTraitFactory.create(
+            tag=self.tag, trait__source_dataset__source_study_version__study=study, archived=True)
+        non_archived_tagged_trait = factories.TaggedTraitFactory.create(
+            tag=self.tag, trait__source_dataset__source_study_version__study=study, archived=False)
+        response = self.client.get(self.get_url())
+        counts = response.context['taggedtrait_study_counts_by_tag']
+        self.assertEqual(counts[0][1][0]['tt_count'], 1)
 
 
 class TaggedTraitByTagAndStudyListTest(UserLoginTestCase):
@@ -545,14 +582,18 @@ class TaggedTraitByTagAndStudyListTest(UserLoginTestCase):
         context = response.context
         self.assertNotIn(other_tagged_trait, context['tagged_trait_table'].data)
 
-    def test_archived_taggedtraits(self):
+    def test_no_archived_taggedtraits(self):
         """Archived tagged traits do not appear in the table."""
-        tagged_trait = self.tagged_traits[0]
-        tagged_trait.archive()
+        models.TaggedTrait.objects.all().delete()
+        archived_tagged_trait = factories.TaggedTraitFactory.create(
+            tag=self.tag, trait__source_dataset__source_study_version__study=self.study, archived=True)
+        non_archived_tagged_trait = factories.TaggedTraitFactory.create(
+            tag=self.tag, trait__source_dataset__source_study_version__study=self.study, archived=False)
         response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
         self.assertIn('tagged_trait_table', response.context)
         table = response.context['tagged_trait_table']
-        self.assertNotIn(tagged_trait, table.data)
+        self.assertNotIn(archived_tagged_trait, table.data)
+        self.assertIn(non_archived_tagged_trait, table.data)
 
 
 class TaggedTraitByTagAndStudyListPhenotypeTaggerTest(PhenotypeTaggerLoginTestCase):
@@ -601,14 +642,18 @@ class TaggedTraitByTagAndStudyListPhenotypeTaggerTest(PhenotypeTaggerLoginTestCa
         context = response.context
         self.assertIsInstance(context['tagged_trait_table'], tables.TaggedTraitTableWithDCCReviewStatus)
 
-    def test_archived_taggedtraits(self):
+    def test_no_archived_taggedtraits(self):
         """Archived tagged traits do not appear in the table."""
-        tagged_trait = self.tagged_traits[0]
-        tagged_trait.archive()
+        models.TaggedTrait.objects.all().delete()
+        archived_tagged_trait = factories.TaggedTraitFactory.create(
+            tag=self.tag, trait__source_dataset__source_study_version__study=self.study, archived=True)
+        non_archived_tagged_trait = factories.TaggedTraitFactory.create(
+            tag=self.tag, trait__source_dataset__source_study_version__study=self.study, archived=False)
         response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
         self.assertIn('tagged_trait_table', response.context)
         table = response.context['tagged_trait_table']
-        self.assertNotIn(tagged_trait, table.data)
+        self.assertNotIn(archived_tagged_trait, table.data)
+        self.assertIn(non_archived_tagged_trait, table.data)
 
 
 class TaggedTraitByTagAndStudyListDCCAnalystTest(DCCAnalystLoginTestCase):
@@ -657,14 +702,18 @@ class TaggedTraitByTagAndStudyListDCCAnalystTest(DCCAnalystLoginTestCase):
         context = response.context
         self.assertIsInstance(context['tagged_trait_table'], tables.TaggedTraitTableWithDCCReviewButton)
 
-    def test_archived_taggedtraits(self):
+    def test_no_archived_taggedtraits(self):
         """Archived tagged traits do not appear in the table."""
-        tagged_trait = self.tagged_traits[0]
-        tagged_trait.archive()
+        models.TaggedTrait.objects.all().delete()
+        archived_tagged_trait = factories.TaggedTraitFactory.create(
+            tag=self.tag, trait__source_dataset__source_study_version__study=self.study, archived=True)
+        non_archived_tagged_trait = factories.TaggedTraitFactory.create(
+            tag=self.tag, trait__source_dataset__source_study_version__study=self.study, archived=False)
         response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
         self.assertIn('tagged_trait_table', response.context)
         table = response.context['tagged_trait_table']
-        self.assertNotIn(tagged_trait, table.data)
+        self.assertNotIn(archived_tagged_trait, table.data)
+        self.assertIn(non_archived_tagged_trait, table.data)
 
 
 class TaggedTraitCreateTest(PhenotypeTaggerLoginTestCase):
@@ -927,7 +976,7 @@ class TaggedTraitDeleteTest(PhenotypeTaggerLoginTestCase):
         self.assertEqual(context['tagged_trait'], self.tagged_trait)
         self.assertEqual(context['next_url'], None)
 
-    def test_deletes_object(self):
+    def test_deletes_unreviewed(self):
         """Posting 'submit' to the form correctly deletes the tagged_trait."""
         response = self.client.post(self.get_url(self.tagged_trait.pk), {'submit': ''})
         self.assertEqual(response.status_code, 302)
@@ -938,7 +987,7 @@ class TaggedTraitDeleteTest(PhenotypeTaggerLoginTestCase):
         self.assertEqual(len(messages), 1)
         self.assertFalse('Oops!' in str(messages[0]))
 
-    def test_deletes_object_tagged_by_other_user(self):
+    def test_deletes_unreviewed_tagged_by_other_user(self):
         """User can delete a tagged trait that was created by someone else from the same study."""
         trait = SourceTraitFactory.create(source_dataset__source_study_version__study=self.study)
         other_user = UserFactory.create()
@@ -955,7 +1004,7 @@ class TaggedTraitDeleteTest(PhenotypeTaggerLoginTestCase):
         self.assertEqual(len(messages), 1)
         self.assertFalse('Oops!' in str(messages[0]))
 
-    def test_post_anything_deletes_object(self):
+    def test_post_anything_deletes_unreviewed(self):
         """Posting anything at all, even an empty dict, deletes the object."""
         # Is this really the behavior I want? I'm not sure...
         # Sounds like it might be:
@@ -994,7 +1043,7 @@ class TaggedTraitDeleteTest(PhenotypeTaggerLoginTestCase):
         self.assertEqual(len(messages), 1)
         self.assertIn(views.REVIEWED_TAGGED_TRAIT_DELETE_ERROR_MESSAGE, str(messages[0]))
 
-    def test_cannot_delete_a_confirmed_trait(self):
+    def test_does_not_delete_confirmed(self):
         """Cannot delete a TaggedTrait that has been confirmed by the DCC."""
         dcc_review = factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait,
                                                        status=models.DCCReview.STATUS_CONFIRMED)
@@ -1018,7 +1067,7 @@ class TaggedTraitDeleteTest(PhenotypeTaggerLoginTestCase):
         self.assertEqual(len(messages), 1)
         self.assertIn(views.REVIEWED_TAGGED_TRAIT_DELETE_ERROR_MESSAGE, str(messages[0]))
 
-    def test_archives_a_need_followup_trait(self):
+    def test_archives_need_followup(self):
         """Archives a TaggedTrait that was reviewed with needs followup."""
         dcc_review = factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait, comment='foo',
                                                        status=models.DCCReview.STATUS_FOLLOWUP)
@@ -1106,7 +1155,7 @@ class TaggedTraitDeleteDCCAnalystTest(DCCAnalystLoginTestCase):
         self.assertEqual(context['tagged_trait'], self.tagged_trait)
         self.assertEqual(context['next_url'], None)
 
-    def test_deletes_object(self):
+    def test_deletes_unreviewed(self):
         """Posting 'submit' to the form correctly deletes the tagged_trait."""
         response = self.client.post(self.get_url(self.tagged_trait.pk), {'submit': ''})
         self.assertEqual(response.status_code, 302)
@@ -1117,7 +1166,7 @@ class TaggedTraitDeleteDCCAnalystTest(DCCAnalystLoginTestCase):
         self.assertEqual(len(messages), 1)
         self.assertFalse('Oops!' in str(messages[0]))
 
-    def test_deletes_object_tagged_by_other_user(self):
+    def test_deletes_unreviewed_tagged_by_other_user(self):
         """User can delete a tagged trait that was created by someone else from the same study."""
         trait = SourceTraitFactory.create(
             source_dataset__source_study_version__study=self.trait.source_dataset.source_study_version.study)
@@ -1135,7 +1184,7 @@ class TaggedTraitDeleteDCCAnalystTest(DCCAnalystLoginTestCase):
         self.assertEqual(len(messages), 1)
         self.assertFalse('Oops!' in str(messages[0]))
 
-    def test_post_anything_deletes_object(self):
+    def test_post_anything_deletes_unreviewed(self):
         """Posting anything at all, even an empty dict, deletes the object."""
         # Is this really the behavior I want? I'm not sure...
         # Sounds like it might be:
@@ -1174,7 +1223,7 @@ class TaggedTraitDeleteDCCAnalystTest(DCCAnalystLoginTestCase):
         self.assertEqual(len(messages), 1)
         self.assertIn(views.REVIEWED_TAGGED_TRAIT_DELETE_ERROR_MESSAGE, str(messages[0]))
 
-    def test_cannot_delete_a_confirmed_trait(self):
+    def test_does_not_delete_confirmed(self):
         """Cannot delete a TaggedTrait that has been confirmed by the DCC."""
         dcc_review = factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait,
                                                        status=models.DCCReview.STATUS_CONFIRMED)
@@ -1198,7 +1247,7 @@ class TaggedTraitDeleteDCCAnalystTest(DCCAnalystLoginTestCase):
         self.assertEqual(len(messages), 1)
         self.assertIn(views.REVIEWED_TAGGED_TRAIT_DELETE_ERROR_MESSAGE, str(messages[0]))
 
-    def test_archives_a_need_followup_trait(self):
+    def test_archives_need_followup(self):
         """Archives a TaggedTrait that was reviewed with needs followup."""
         dcc_review = factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait, comment='foo',
                                                        status=models.DCCReview.STATUS_FOLLOWUP)
@@ -2286,6 +2335,27 @@ class DCCReviewByTagAndStudySelectDCCTestsMixin(object):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, """<a href="{}">""".format(self.get_url()))
 
+    def test_no_archived_taggedtraits_in_session_variable(self):
+        """Sets session variable, without including archived tagged traits."""
+        archived_tagged_trait = factories.TaggedTraitFactory.create(
+            tag=self.tag, trait__source_dataset__source_study_version__study=self.study)
+        response = self.client.post(self.get_url(), {'tag': self.tag.pk, 'study': self.study.pk})
+        # Check session variables.
+        session = self.client.session
+        self.assertIn('tagged_trait_review_by_tag_and_study_info', session)
+        session_info = session['tagged_trait_review_by_tag_and_study_info']
+        self.assertIn('study_pk', session_info)
+        self.assertEqual(session_info['study_pk'], self.study.pk)
+        self.assertIn('tag_pk', session_info)
+        self.assertEqual(session_info['tag_pk'], self.tag.pk)
+        self.assertIn('tagged_trait_pks', session_info)
+        for tt in self.tagged_traits:
+            self.assertIn(tt.pk, session_info['tagged_trait_pks'],
+                          msg='TaggedTrait {} not in session tagged_trait_pks'.format(tt.pk))
+        self.assertNotIn(archived_tagged_trait.pk, session_info['tagged_trait_pks'])
+        # The success url redirects again to a new page, so include the target_status_code argument.
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-review:next'), target_status_code=302)
+
 
 class DCCReviewByTagAndStudySelectDCCAnalystTest(DCCReviewByTagAndStudySelectDCCTestsMixin, DCCAnalystLoginTestCase):
 
@@ -2344,13 +2414,15 @@ class DCCReviewByTagAndStudySelectFromURLDCCTestsMixin(object):
         response = self.client.get(self.get_url(self.tag.pk, self.study.pk), follow=False)
         self.assertRedirects(response, reverse('tags:tagged-traits:dcc-review:next'), fetch_redirect_response=False)
 
-    def test_nonexistent_study(self):
+    def test_nonexistent_study_404(self):
+        """View returns 404 if study does not exist."""
         study_pk = self.study.pk
         self.study.delete()
         response = self.client.get(self.get_url(self.tag.pk, study_pk), follow=False)
         self.assertEqual(response.status_code, 404)
 
-    def test_nonexistent_tag(self):
+    def test_nonexistent_tag_404(self):
+        """View returns 404 if tag does not exist."""
         tag_pk = self.tag.pk
         self.tag.delete()
         response = self.client.get(self.get_url(tag_pk, self.study.pk), follow=False)
@@ -2373,7 +2445,7 @@ class DCCReviewByTagAndStudySelectFromURLDCCTestsMixin(object):
                           msg='TaggedTrait {} not in session tagged_trait_pks'.format(tt.pk))
         self.assertRedirects(response, reverse('tags:tagged-traits:dcc-review:next'), fetch_redirect_response=False)
 
-    def test_only_tagged_traits_from_requested_trait(self):
+    def test_only_tagged_traits_from_requested_tag(self):
         """tagged_trait_pks is set to only those from the given tag."""
         other_tag = factories.TagFactory.create()
         other_tagged_trait = factories.TaggedTraitFactory.create(
@@ -2394,7 +2466,7 @@ class DCCReviewByTagAndStudySelectFromURLDCCTestsMixin(object):
         self.assertRedirects(response, reverse('tags:tagged-traits:dcc-review:next'), fetch_redirect_response=False)
 
     def test_only_tagged_traits_from_requested_study(self):
-        """tagged_trait_pks is set to only those from the given tag."""
+        """tagged_trait_pks is set to only those from the given study."""
         other_study = StudyFactory.create()
         other_tagged_trait = factories.TaggedTraitFactory.create(
             tag=self.tag,
@@ -2463,12 +2535,35 @@ class DCCReviewByTagAndStudySelectFromURLDCCTestsMixin(object):
         self.assertContains(response, """<a href="{}">""".format(reverse('tags:tagged-traits:dcc-review:next')))
 
     def test_no_tagged_traits_to_review(self):
+        """View redirects and displays message when there are no tagged traits to review for the tag+study."""
         models.TaggedTrait.objects.all().delete()
         response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        self.assertEqual(response.status_code, 302)
         # Check for message.
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
         self.assertIn('No tagged variables to review', str(messages[0]))
+
+    def test_no_archived_taggedtraits_in_session_variable(self):
+        """Does not include archived tagged traits in session variables."""
+        archived_tagged_trait = factories.TaggedTraitFactory.create(
+            tag=self.tag, trait__source_dataset__source_study_version__study=self.study)
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        # Check session variables.
+        session = self.client.session
+        self.assertIn('tagged_trait_review_by_tag_and_study_info', session)
+        session_info = session['tagged_trait_review_by_tag_and_study_info']
+        self.assertIn('study_pk', session_info)
+        self.assertEqual(session_info['study_pk'], self.study.pk)
+        self.assertIn('tag_pk', session_info)
+        self.assertEqual(session_info['tag_pk'], self.tag.pk)
+        self.assertIn('tagged_trait_pks', session_info)
+        for tt in self.tagged_traits:
+            self.assertIn(tt.pk, session_info['tagged_trait_pks'],
+                          msg='TaggedTrait {} not in session tagged_trait_pks'.format(tt.pk))
+        self.assertNotIn(archived_tagged_trait.pk, session_info['tagged_trait_pks'])
+        # The success url redirects again to a new page, so include the target_status_code argument.
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-review:next'), target_status_code=302)
 
 
 class DCCReviewByTagAndStudySelectFromURLDCCAnalystTest(DCCReviewByTagAndStudySelectFromURLDCCTestsMixin,
@@ -2616,6 +2711,31 @@ class DCCReviewByTagAndStudyNextDCCTestsMixin(object):
         session.save()
         # Now delete it and try loading the view.
         tagged_traits[0].delete()
+        response = self.client.get(self.get_url())
+        self.assertIn('tagged_trait_review_by_tag_and_study_info', self.client.session)
+        session_info = self.client.session['tagged_trait_review_by_tag_and_study_info']
+        self.assertIn('tagged_trait_pks', session_info)
+        self.assertEqual(session_info['tagged_trait_pks'], [tagged_traits[1].pk])
+        self.assertNotIn('pk', session_info)
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-review:next'), target_status_code=302)
+
+    def test_skips_archived_tagged_trait(self):
+        tag = factories.TagFactory.create()
+        study = StudyFactory.create()
+        tagged_traits = factories.TaggedTraitFactory.create_batch(
+            2,
+            tag=tag,
+            trait__source_dataset__source_study_version__study=study
+        )
+        session = self.client.session
+        session['tagged_trait_review_by_tag_and_study_info'] = {
+            'tag_pk': tag.pk,
+            'study_pk': study.pk,
+            'tagged_trait_pks': [x.pk for x in tagged_traits],
+        }
+        session.save()
+        # Now archive it and try loading the view.
+        tagged_traits[0].archive()
         response = self.client.get(self.get_url())
         self.assertIn('tagged_trait_review_by_tag_and_study_info', self.client.session)
         session_info = self.client.session['tagged_trait_review_by_tag_and_study_info']
@@ -2890,8 +3010,26 @@ class DCCReviewByTagAndStudyDCCTestsMixin(object):
         self.assertEqual(self.tagged_trait.dcc_review, dcc_review)
         self.assertRedirects(response, reverse('tags:tagged-traits:dcc-review:next'), target_status_code=302)
 
+    def test_archived_tagged_trait(self):
+        """Shows warning message and does not save review if TaggedTrait is archived."""
+        self.tagged_trait.archive()
+        # Now try to review it through the web interface.
+        form_data = {forms.DCCReviewByTagAndStudyForm.SUBMIT_CONFIRM: 'Confirm', 'comment': ''}
+        response = self.client.post(self.get_url(), form_data)
+        # Check session variables.
+        self.assertIn('tagged_trait_review_by_tag_and_study_info', self.client.session)
+        session_info = self.client.session['tagged_trait_review_by_tag_and_study_info']
+        self.assertNotIn('pk', session_info)
+        self.assertIn('tagged_trait_pks', session_info)
+        self.assertNotIn(self.tagged_trait.pk, session_info['tagged_trait_pks'])
+        # Check for success message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('archived', str(messages[0]))
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-review:next'), target_status_code=302)
+
     def test_already_reviewed_tagged_trait_with_form_error(self):
-        """Shows warning message and redirects if TaggedTrait is already reviewed."""
+        """Shows warning message and redirects if TaggedTrait is already reviewed, even if there's a form error."""
         dcc_review = factories.DCCReviewFactory.create(
             tagged_trait=self.tagged_trait,
             status=models.DCCReview.STATUS_CONFIRMED,
@@ -2912,6 +3050,24 @@ class DCCReviewByTagAndStudyDCCTestsMixin(object):
         self.assertIn('already been reviewed', str(messages[0]))
         # The previous DCCReview was not updated.
         self.assertEqual(self.tagged_trait.dcc_review, dcc_review)
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-review:next'), target_status_code=302)
+
+    def test_archived_tagged_trait_with_form_error(self):
+        """Shows warning message and redirects if TaggedTrait is archived, even if there's a form error."""
+        self.tagged_trait.archive()
+        # Now try to review it through the web interface.
+        form_data = {forms.DCCReviewByTagAndStudyForm.SUBMIT_FOLLOWUP: 'Require study followup', 'comment': ''}
+        response = self.client.post(self.get_url(), form_data)
+        # Check session variables.
+        self.assertIn('tagged_trait_review_by_tag_and_study_info', self.client.session)
+        session_info = self.client.session['tagged_trait_review_by_tag_and_study_info']
+        self.assertNotIn('pk', session_info)
+        self.assertIn('tagged_trait_pks', session_info)
+        self.assertNotIn(self.tagged_trait.pk, session_info['tagged_trait_pks'])
+        # Check for success message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('archived', str(messages[0]))
         self.assertRedirects(response, reverse('tags:tagged-traits:dcc-review:next'), target_status_code=302)
 
     def test_can_skip_already_reviewed_tagged_trait(self):
@@ -3189,6 +3345,21 @@ class DCCReviewCreateDCCTestsMixin(object):
         # The previous DCCReview was not updated.
         self.assertEqual(self.tagged_trait.dcc_review, dcc_review)
 
+    def test_get_archived_tagged_trait(self):
+        """Returns a 404 page with a get request if the tagged trait is archived."""
+        self.tagged_trait.archive()
+        url = self.get_url(self.tagged_trait.pk)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 404)
+
+    def test_post_archived_tagged_trait(self):
+        """Returns a 404 page if the session variable pk doesn't exist."""
+        self.tagged_trait.archive()
+        url = self.get_url(self.tagged_trait.pk)
+        form_data = {forms.DCCReviewForm.SUBMIT_CONFIRM: 'Confirm', 'comment': ''}
+        response = self.client.post(url, form_data)
+        self.assertEqual(response.status_code, 404)
+
 
 class DCCReviewCreateDCCAnalystTest(DCCReviewCreateDCCTestsMixin, DCCAnalystLoginTestCase):
 
@@ -3340,6 +3511,21 @@ class DCCReviewUpdateDCCTestsMixin(object):
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
         self.assertIn('has not been reviewed yet', str(messages[0]))
+
+    def test_get_archived_tagged_trait(self):
+        """Returns a 404 page with a get request if the tagged trait is archived."""
+        self.tagged_trait.archive()
+        url = self.get_url(self.tagged_trait.pk)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 404)
+
+    def test_post_archived_tagged_trait(self):
+        """Returns a 404 page with a post request if the tagged trait is archived."""
+        self.tagged_trait.archive()
+        url = self.get_url(self.tagged_trait.pk)
+        form_data = {forms.DCCReviewForm.SUBMIT_CONFIRM: 'Confirm', 'comment': ''}
+        response = self.client.post(url, form_data)
+        self.assertEqual(response.status_code, 404)
 
 
 class DCCReviewUpdateDCCAnalystTest(DCCReviewUpdateDCCTestsMixin, DCCAnalystLoginTestCase):
