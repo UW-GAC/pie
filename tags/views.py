@@ -14,7 +14,7 @@ from django.views.generic import (CreateView, DetailView, DeleteView, FormView, 
 from braces.views import (FormMessagesMixin, FormValidMessageMixin, LoginRequiredMixin, MessageMixin,
                           PermissionRequiredMixin, UserFormKwargsMixin, UserPassesTestMixin)
 from dal import autocomplete
-from django_tables2 import SingleTableMixin
+from django_tables2 import MultiTableMixin, SingleTableMixin
 
 from core.utils import SessionVariableMixin, ValidateObjectMixin
 from trait_browser.models import Study
@@ -677,6 +677,42 @@ class DCCReviewUpdate(LoginRequiredMixin, PermissionRequiredMixin, FormValidMess
 
     def get_success_url(self):
         return self.tagged_trait.get_absolute_url()
+
+
+class DCCReviewNeedFollowupCounts(LoginRequiredMixin, TemplateView):
+    """View to show counts of DCCReviews that need followup by study and tag for phenotype taggers."""
+
+    template_name = 'tags/taggedtrait_needfollowup_counts.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        studies = self.request.user.profile.taggable_studies.all()
+        study_tag_counts = models.TaggedTrait.objects.need_followup().filter(
+            trait__source_dataset__source_study_version__study__in=studies
+        ).values(
+            study_name=F('trait__source_dataset__source_study_version__study__i_study_name'),
+            study_pk=F('trait__source_dataset__source_study_version__study__i_accession'),
+            tag_name=F('tag__title'),
+            tag_pk=F('tag__pk')
+        ).annotate(
+            tt_count=Count('pk')
+        ).values(
+            'study_name', 'study_pk', 'tag_name', 'tt_count', 'tag_pk'
+        ).order_by(
+            'study_name', 'tag_name'
+        )
+        grouped_study_tag_counts = groupby(study_tag_counts,
+                                           lambda x: {'study_name': x['study_name'], 'study_pk': x['study_pk']})
+        grouped_study_tag_counts = [(key, list(group)) for key, group in grouped_study_tag_counts]
+        context['grouped_study_tag_counts'] = grouped_study_tag_counts
+        return context
+
+    def get(self, request, *args, **kwargs):
+        # Make sure the user is a phenotype tagger and has at least one taggable study.
+        if (self.request.user.groups.filter(name='phenotype_taggers').exists() and
+              self.request.user.profile.taggable_studies.count() > 0):
+            return super().get(request, *args, **kwargs)
+        return HttpResponseForbidden()
 
 
 class DCCReviewNeedFollowupList(LoginRequiredMixin, SingleTableMixin, ListView):

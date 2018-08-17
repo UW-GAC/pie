@@ -3427,6 +3427,218 @@ class DCCReviewUpdateOtherUserTest(UserLoginTestCase):
         self.assertEqual(response.status_code, 403)
 
 
+class DCCReviewNeedFollowupCountsPhenotypeTaggerTest(PhenotypeTaggerLoginTestCase):
+
+    def get_url(self, *args):
+        """Get the url for the view this class is supposed to test."""
+        return reverse('tags:tagged-traits:need-followup', args=args)
+
+    def test_view_success(self):
+        """View returns successful response code."""
+        response = self.client.get(self.get_url())
+        self.assertEqual(response.status_code, 200)
+
+    def test_get_context_data_one_study_with_no_need_followup_traits(self):
+        response = self.client.get(self.get_url())
+        context = response.context
+        self.assertIn('grouped_study_tag_counts', context)
+        counts = context['grouped_study_tag_counts']
+        self.assertEqual(len(counts), 0)
+
+    def test_get_context_data_one_study_with_one_need_followup_traits(self):
+        tag = factories.TagFactory.create()
+        factories.DCCReviewFactory.create(
+            tagged_trait__tag=tag,
+            tagged_trait__trait__source_dataset__source_study_version__study=self.study,
+            status=models.DCCReview.STATUS_FOLLOWUP
+        )
+        response = self.client.get(self.get_url())
+        context = response.context
+        self.assertIn('grouped_study_tag_counts', context)
+        counts = context['grouped_study_tag_counts']
+        self.assertEqual(len(counts), 1)
+        self.assertEqual(len(counts[0][1]), 1)
+        self.assertEqual(counts[0][1][0]['tag_pk'], tag.pk)
+        self.assertEqual(counts[0][1][0]['tt_count'], 1)
+
+    def test_get_context_data_one_study_with_two_need_followup_traits(self):
+        tag = factories.TagFactory.create()
+        factories.DCCReviewFactory.create_batch(
+            2,
+            tagged_trait__tag=tag,
+            tagged_trait__trait__source_dataset__source_study_version__study=self.study,
+            status=models.DCCReview.STATUS_FOLLOWUP
+        )
+        response = self.client.get(self.get_url())
+        context = response.context
+        self.assertIn('grouped_study_tag_counts', context)
+        counts = context['grouped_study_tag_counts']
+        self.assertEqual(len(counts), 1)
+        self.assertEqual(len(counts[0][1]), 1)
+        self.assertEqual(counts[0][1][0]['tag_pk'], tag.pk)
+        self.assertEqual(counts[0][1][0]['tt_count'], 2)
+
+    def test_get_context_data_one_study_two_tags(self):
+        tag1 = factories.TagFactory.create(lower_title='tag1')
+        factories.DCCReviewFactory.create_batch(
+            2,
+            tagged_trait__tag=tag1,
+            tagged_trait__trait__source_dataset__source_study_version__study=self.study,
+            status=models.DCCReview.STATUS_FOLLOWUP
+        )
+        tag2 = factories.TagFactory.create(lower_title='tag2')
+        factories.DCCReviewFactory.create(
+            tagged_trait__tag=tag2,
+            tagged_trait__trait__source_dataset__source_study_version__study=self.study,
+            status=models.DCCReview.STATUS_FOLLOWUP
+        )
+        response = self.client.get(self.get_url())
+        context = response.context
+        self.assertIn('grouped_study_tag_counts', context)
+        counts = context['grouped_study_tag_counts']
+        self.assertEqual(len(counts), 1)
+        self.assertEqual(len(counts[0][1]), 2)
+        self.assertEqual(counts[0][1][0]['tag_pk'], tag1.pk)
+        self.assertEqual(counts[0][1][0]['tt_count'], 2)
+        self.assertEqual(counts[0][1][1]['tag_pk'], tag2.pk)
+        self.assertEqual(counts[0][1][1]['tt_count'], 1)
+
+    def test_get_context_data_two_studies_same_tag(self):
+        # Make sure the second study comes last by appending zzz to the name.
+        other_study = StudyFactory.create(i_study_name=self.study.i_study_name + 'zzz')
+        self.user.profile.taggable_studies.add(other_study)
+        tag = factories.TagFactory.create()
+        factories.DCCReviewFactory.create_batch(
+            2,
+            tagged_trait__tag=tag,
+            tagged_trait__trait__source_dataset__source_study_version__study=self.study,
+            status=models.DCCReview.STATUS_FOLLOWUP
+        )
+        factories.DCCReviewFactory.create(
+            tagged_trait__tag=tag,
+            tagged_trait__trait__source_dataset__source_study_version__study=other_study,
+            status=models.DCCReview.STATUS_FOLLOWUP
+        )
+        response = self.client.get(self.get_url())
+        context = response.context
+        self.assertIn('grouped_study_tag_counts', context)
+        counts = context['grouped_study_tag_counts']
+        self.assertEqual(len(counts), 2)
+        self.assertEqual(len(counts[0][1]), 1)
+        self.assertEqual(counts[0][1][0]['tag_pk'], tag.pk)
+        self.assertEqual(counts[0][1][0]['tt_count'], 2)
+        self.assertEqual(len(counts[1][1]), 1)
+        self.assertEqual(counts[1][1][0]['tag_pk'], tag.pk)
+        self.assertEqual(counts[1][1][0]['tt_count'], 1)
+
+    def test_context_excludes_confirmed_trait(self):
+        factories.DCCReviewFactory.create(
+            tagged_trait__trait__source_dataset__source_study_version__study=self.study,
+            status=models.DCCReview.STATUS_CONFIRMED
+        )
+        response = self.client.get(self.get_url())
+        context = response.context
+        self.assertIn('grouped_study_tag_counts', context)
+        counts = context['grouped_study_tag_counts']
+        self.assertEqual(len(counts), 0)
+
+    def test_only_taggable_studies(self):
+        other_study = StudyFactory.create()
+        factories.DCCReviewFactory.create(
+            tagged_trait__trait__source_dataset__source_study_version__study=other_study,
+            status=models.DCCReview.STATUS_FOLLOWUP
+        )
+        response = self.client.get(self.get_url())
+        context = response.context
+        self.assertIn('grouped_study_tag_counts', context)
+        counts = context['grouped_study_tag_counts']
+        self.assertEqual(len(counts), 0)
+
+    def test_context_does_not_include_tags_with_no_followup_traits(self):
+        tag = factories.TagFactory.create()
+        factories.DCCReviewFactory.create(
+            tagged_trait__tag=tag,
+            tagged_trait__trait__source_dataset__source_study_version__study=self.study,
+            status=models.DCCReview.STATUS_FOLLOWUP
+        )
+        tag2 = factories.TagFactory.create()
+        factories.DCCReviewFactory.create(
+            tagged_trait__tag=tag2,
+            tagged_trait__trait__source_dataset__source_study_version__study=self.study,
+            status=models.DCCReview.STATUS_CONFIRMED
+        )
+        response = self.client.get(self.get_url())
+        context = response.context
+        self.assertIn('grouped_study_tag_counts', context)
+        counts = context['grouped_study_tag_counts']
+        self.assertEqual(len(counts), 1)
+        self.assertEqual(len(counts[0][1]), 1)
+        self.assertEqual(counts[0][1][0]['tag_pk'], tag.pk)
+        self.assertEqual(counts[0][1][0]['tt_count'], 1)
+
+    def test_context_does_not_include_tags_with_no_followup_traits_different_studies(self):
+        other_study = StudyFactory.create(i_study_name=self.study.i_study_name + 'zzz')
+        self.user.profile.taggable_studies.add(other_study)
+        tag1 = factories.TagFactory.create()
+        tag2 = factories.TagFactory.create()
+        factories.DCCReviewFactory.create(
+            tagged_trait__tag=tag1,
+            tagged_trait__trait__source_dataset__source_study_version__study=self.study,
+            status=models.DCCReview.STATUS_FOLLOWUP
+        )
+        factories.DCCReviewFactory.create_batch(
+            2,
+            tagged_trait__tag=tag2,
+            tagged_trait__trait__source_dataset__source_study_version__study=self.study,
+            status=models.DCCReview.STATUS_CONFIRMED
+        )
+        factories.DCCReviewFactory.create(
+            tagged_trait__tag=tag1,
+            tagged_trait__trait__source_dataset__source_study_version__study=other_study,
+            status=models.DCCReview.STATUS_CONFIRMED
+        )
+        factories.DCCReviewFactory.create_batch(
+            2,
+            tagged_trait__tag=tag2,
+            tagged_trait__trait__source_dataset__source_study_version__study=other_study,
+            status=models.DCCReview.STATUS_FOLLOWUP
+        )
+        response = self.client.get(self.get_url())
+        context = response.context
+        self.assertIn('grouped_study_tag_counts', context)
+        counts = context['grouped_study_tag_counts']
+        self.assertEqual(len(counts), 2)
+        self.assertEqual(len(counts[0][1]), 1)
+        self.assertEqual(counts[0][1][0]['tag_pk'], tag1.pk)
+        self.assertEqual(counts[0][1][0]['tt_count'], 1)
+        self.assertEqual(len(counts[1][1]), 1)
+        self.assertEqual(counts[1][1][0]['tag_pk'], tag2.pk)
+        self.assertEqual(counts[1][1][0]['tt_count'], 2)
+
+
+class DCCReviewNeedFollowupCountsDCCAnalystTest(DCCAnalystLoginTestCase):
+
+    def get_url(self, *args):
+        """Get the url for the view this class is supposed to test."""
+        return reverse('tags:tagged-traits:need-followup', args=args)
+
+    def test_forbidden(self):
+        """View returns successful response code."""
+        response = self.client.get(self.get_url())
+        self.assertEqual(response.status_code, 403)
+
+
+class DCCReviewNeedFollowupCountsOtherUseTest(UserLoginTestCase):
+    def get_url(self, *args):
+        """Get the url for the view this class is supposed to test."""
+        return reverse('tags:tagged-traits:need-followup', args=args)
+
+    def test_forbidden(self):
+        """View returns successful response code."""
+        response = self.client.get(self.get_url())
+        self.assertEqual(response.status_code, 403)
+
+
 class DCCReviewNeedFollowupListMixin(object):
     """Tests to include in all user type test cases for this view."""
 
