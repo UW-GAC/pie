@@ -325,7 +325,8 @@ class StudyNameOrPHSAutocompleteTest(UserLoginTestCase):
         self.assertEqual(sorted(returned_pks),
                          sorted([name_match.i_accession, phs_match.i_accession]))
 
-    def test_subsets_to_studies_with_traits_with_forwarded_tag(self):
+    def test_correct_studies_with_tag(self):
+        """Queryset returns only studies that have tagged traits with the specified tag."""
         study = self.studies[0]
         tag = TagFactory.create()
         tagged_trait = TaggedTraitFactory.create(trait__source_dataset__source_study_version__study=study,
@@ -336,7 +337,8 @@ class StudyNameOrPHSAutocompleteTest(UserLoginTestCase):
         self.assertEqual(len(pk), 1)
         self.assertEqual(pk, [study.pk])
 
-    def test_subsets_to_studies_with_unreviewed_tagged_traits_if_requested(self):
+    def test_correct_studies_with_tag_and_unreviewed(self):
+        """Queryset returns only studies that have unreviewed tagged traits with the specified tag."""
         study = self.studies[0]
         tag = TagFactory.create()
         tagged_trait = TaggedTraitFactory.create(trait__source_dataset__source_study_version__study=study,
@@ -347,7 +349,8 @@ class StudyNameOrPHSAutocompleteTest(UserLoginTestCase):
         pk = get_autocomplete_view_ids(response)
         self.assertEqual(len(pk), 0)
 
-    def test_subsets_to_studies_with_any_tagged_trait_if_not_requested(self):
+    def test_correct_studies_with_reviewed_taggedtrait_and_tag(self):
+        """Without the unreviewed argument, queryset returns studies with reviewed tagged traits with the given tag."""
         study = self.studies[0]
         tag = TagFactory.create()
         tagged_trait = TaggedTraitFactory.create(trait__source_dataset__source_study_version__study=study,
