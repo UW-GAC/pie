@@ -71,22 +71,32 @@ class TaggedTraitDetail(LoginRequiredMixin, DetailView):
         user_is_study_tagger = self.object.trait.source_dataset.source_study_version.study in user_studies
         user_is_staff = self.request.user.is_staff
         context['user_is_study_tagger'] = user_is_study_tagger
+        user_has_study_access = user_is_staff or user_is_study_tagger
         # Check if DCCReview info should be shown.
         dccreview_exists = hasattr(self.object, 'dcc_review')
+        is_confirmed = dccreview_exists and self.object.dcc_review.status == models.DCCReview.STATUS_CONFIRMED
         needs_followup = dccreview_exists and self.object.dcc_review.status == models.DCCReview.STATUS_FOLLOWUP
-        has_dccreview_add_perms = self.request.user.has_perm('tags.add_dccreview')
-        has_dccreview_change_perms = self.request.user.has_perm('tags.change_dccreview')
-        context['show_dcc_review_info'] = (user_is_staff or user_is_study_tagger) and dccreview_exists
-        # Check if StudyResponse info should be shown
+        user_has_dccreview_add_perms = self.request.user.has_perm('tags.add_dccreview')
+        user_has_dccreview_change_perms = self.request.user.has_perm('tags.change_dccreview')
+        # context['show_dcc_review_info'] = (user_is_staff or user_is_study_tagger) and dccreview_exists
+        # # Check if StudyResponse info should be shown
         response_exists = dccreview_exists and hasattr(self.object.dcc_review, 'study_response')
-        context['show_study_response_info'] = (user_is_staff or user_is_study_tagger) and response_exists
-        # Check if the DCCReview add or update buttons should be shown.
-        context['show_dcc_review_add_button'] = (not dccreview_exists and has_dccreview_add_perms)
-        context['show_dcc_review_update_button'] = dccreview_exists and (not response_exists) \
-            and has_dccreview_change_perms
-        # Check if the StudyResponse buttons should be shown.
-        context['show_study_response_add_button'] = user_is_study_tagger and needs_followup and not response_exists
-        context['show_study_response_update_button'] = user_is_study_tagger and response_exists
+        # context['show_study_response_info'] = (user_is_staff or user_is_study_tagger) and response_exists
+        # # Check if the DCCReview add or update buttons should be shown.
+        # # Check if the StudyResponse buttons should be shown.
+        # context['show_study_response_add_button'] = user_is_study_tagger and needs_followup and not response_exists
+        # context['show_study_response_update_button'] = user_is_study_tagger and response_exists
+        context['show_quality_review_panel'] = user_has_study_access
+        context['show_dcc_review_add_button'] = (not dccreview_exists) and user_has_dccreview_add_perms
+        context['show_dcc_review_update_button'] = dccreview_exists and user_has_dccreview_change_perms \
+            and not response_exists
+        context['show_confirmed_status'] = user_has_study_access and is_confirmed
+        context['show_needs_followup_status'] = user_has_study_access and needs_followup
+        context['show_study_response_status'] = user_has_study_access and response_exists
+        context['show_study_agrees'] = user_has_study_access and response_exists and self.object.dcc_review.study_response.status == models.StudyResponse.STATUS_AGREE
+        context['show_study_disagrees'] = user_has_study_access and response_exists and self.object.dcc_review.study_response.status == models.StudyResponse.STATUS_DISAGREE
+        context['show_study_response_add_buttons'] = user_is_study_tagger and needs_followup and not response_exists
+        context['show_study_response_update_button'] = user_is_study_tagger and needs_followup and response_exists
         return context
 
 

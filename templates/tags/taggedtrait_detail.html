@@ -16,45 +16,77 @@
 
 {% block detail_fields %}
   <dt>Tagged by</dt><dd>{{ tagged_trait.creator }}</dd>
-  {% if show_dcc_review_info %}
-    <dt>DCC status</dt><dd>{{ tagged_trait.dcc_review.get_status_display }}</dd>
-    {% if tagged_trait.dcc_review.status != tagged_trait.dcc_review.STATUS_CONFIRMED %}
-      <dt>DCC comment</dt><dd>{{ tagged_trait.dcc_review.comment }}</dd>
-    {% endif %}
-  {% endif %}
-  {% if show_study_response_info %}
-    <dt>Study response status</dt><dd>{{ tagged_trait.dcc_review.study_response.get_status_display }}</dd>
-    {% if tagged_trait.dcc_review.study_response.status != tagged_trait.dcc_review.study_response.STATUS_AGREE %}
-      <dt>Study comment</dt><dd>{{ tagged_trait.dcc_review.study_response.comment }}</dd>
-    {% endif %}
-  {% endif %}
 {% endblock detail_fields %}
 
 
 {% block after_panel %}
 
+{% if show_quality_review_panel %}
+  <div class="panel-group">
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <h4 class="panel-title">
+          <a data-toggle="collapse" href="#collapse-reviewstatus">Quality review status</a>
+        </h4>
+      </div>
+      <div id="collapse-reviewstatus" class="panel-collapse in">
+        {% if show_confirmed_status %}
+          <div class="panel-body alert-success">
+            <p>
+              <span class="glyphicon glyphicon-ok"></span>
+              This tagged variable has been confirmed by the DCC.
+            </p>
+        {% elif show_needs_followup_status %}
+          <div class="panel-body alert-danger">
+            <p>
+              <span class="glyphicon glyphicon-remove"></span>
+              This tagged variable has been flagged for removal by the DCC.
+          </p>
+        {% else %}
+          <div class="panel-body">
+            <p>
+              This tagged variable has not been reviewed.
+            </p>
+        {% endif %}
+        {% if show_study_response_status %}
+          {% if show_study_disagrees %}
+            <p>
+              <span class="glyphicon glyphicon-ok"></span>
+              The study has indicated that the variable should remain tagged for the following reason:
+              {{ tagged_trait.dcc_review.study_response.comment }}.
+            </p>
+          {% endif %}
+          {% if show_study_agrees %}
+            <p>
+              <span class="glyphicon glyphicon-remove"></span>
+              The study agrees that the tag should be removed.
+            </p>
+          {% endif %}
+        {% endif %}
+        {% if show_dcc_review_add_button %}
+          <a class="btn btn-xs btn-primary" href="{% url 'tags:tagged-traits:pk:dcc-review:new' tagged_trait.pk %}" role="button">
+              <span class="glyphicon glyphicon-sunglasses" aria-hidden="true"></span> Review this tagged variable
+          </a>
+        {% endif %}
+        {% if show_dcc_review_update_button %}
+          <a class="btn btn-xs btn-warning" href="{% url 'tags:tagged-traits:pk:dcc-review:update' tagged_trait.pk %}" role="button">
+              <span class="glyphicon glyphicon-sunglasses" aria-hidden="true"></span> Update DCC review
+          </a>
+        {% endif %}
+        {% if show_study_response_add_buttons %}
+          {% include 'tags/_studyreview_buttons.html' with record=tagged_trait %}
+        {% endif %}
+        {% if show_study_response_update_buttons %}
+          XXX
+        {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+{% endif %}
+
   {% include 'tags/_taggedtrait_info.html' with show_all_tags=False %}
 
-  {% if show_dcc_review_add_button %}
-    <a class="btn btn-primary" href="{% url 'tags:tagged-traits:pk:dcc-review:new' tagged_trait.pk %}" role="button">
-        <span class="glyphicon glyphicon-sunglasses" aria-hidden="true"></span> Review this tagged variable
-    </a>
-  {% endif %}
-  {% if show_dcc_review_update_button %}
-    <a class="btn btn-warning" href="{% url 'tags:tagged-traits:pk:dcc-review:update' tagged_trait.pk %}" role="button">
-        <span class="glyphicon glyphicon-sunglasses" aria-hidden="true"></span> Update DCC review
-    </a>
-  {% endif %}
-  {% if show_study_response_add_button %}
-    <a class="btn btn-primary" href="{% url 'tags:tagged-traits:pk:study-response:create:new' tagged_trait.pk %}" role="button">
-      <span class="glyphicon glyphicon sunglasses" aria-hidden="true"></span> Add a study response
-    </a>
-  {% endif %}
-  {% if show_study_response_update_button %}
-    <a class="btn btn-warning" href="{% url 'tags:tagged-traits:pk:study-response:update' tagged_trait.pk %}" role="button">
-      <span class="glyphicon glyphicon sunglasses" aria-hidden="true"></span> Update study response
-    </a>
-  {% endif %}
   {% if perms.tags.add_taggedtrait %}
     {% if user_is_study_tagger or request.user.is_staff %}
       {% if not tagged_trait.dcc_review %}
