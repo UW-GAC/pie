@@ -698,7 +698,8 @@ class DCCReviewNeedFollowupCounts(LoginRequiredMixin, TemplateView):
         context = super().get_context_data(**kwargs)
         studies = self.request.user.profile.taggable_studies.all()
         study_tag_counts = models.TaggedTrait.objects.need_followup().filter(
-            trait__source_dataset__source_study_version__study__in=studies
+            trait__source_dataset__source_study_version__study__in=studies,
+            dcc_review__study_response__isnull=True
         ).values(
             study_name=F('trait__source_dataset__source_study_version__study__i_study_name'),
             study_pk=F('trait__source_dataset__source_study_version__study__i_accession'),

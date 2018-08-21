@@ -3543,6 +3543,17 @@ class DCCReviewNeedFollowupCountsPhenotypeTaggerTest(PhenotypeTaggerLoginTestCas
         counts = context['grouped_study_tag_counts']
         self.assertEqual(len(counts), 0)
 
+    def test_get_context_data_does_not_include_tagged_traits_with_study_response(self):
+        factories.StudyResponseFactory.create(
+            dcc_review__status=models.DCCReview.STATUS_FOLLOWUP,
+            dcc_review__tagged_trait__trait__source_dataset__source_study_version__study=self.study
+        )
+        response = self.client.get(self.get_url())
+        context = response.context
+        self.assertIn('grouped_study_tag_counts', context)
+        counts = context['grouped_study_tag_counts']
+        self.assertEqual(len(counts), 0)
+
     def test_get_context_data_one_study_with_one_need_followup_traits(self):
         tag = factories.TagFactory.create()
         factories.DCCReviewFactory.create(
