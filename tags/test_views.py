@@ -3713,6 +3713,12 @@ class DCCReviewNeedFollowupCountsPhenotypeTaggerTest(PhenotypeTaggerLoginTestCas
         self.assertEqual(counts[1][1][0]['tag_pk'], tag2.pk)
         self.assertEqual(counts[1][1][0]['tt_count'], 2)
 
+    def test_navbar_does_not_contain_link(self):
+        """Phenotype taggers do see a link to the main quality review page."""
+        response = self.client.get(reverse('home'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, """<a href="{}">""".format(self.get_url()))
+
 
 class DCCReviewNeedFollowupCountsDCCAnalystTest(DCCAnalystLoginTestCase):
 
@@ -3725,6 +3731,12 @@ class DCCReviewNeedFollowupCountsDCCAnalystTest(DCCAnalystLoginTestCase):
         response = self.client.get(self.get_url())
         self.assertEqual(response.status_code, 403)
 
+    def test_navbar_does_not_contain_link(self):
+        """DCC analysts do not see a link to the main quality review page."""
+        response = self.client.get(reverse('home'))
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, """<a href="{}">""".format(self.get_url()))
+
 
 class DCCReviewNeedFollowupCountsOtherUseTest(UserLoginTestCase):
     def get_url(self, *args):
@@ -3735,6 +3747,12 @@ class DCCReviewNeedFollowupCountsOtherUseTest(UserLoginTestCase):
         """View returns successful response code."""
         response = self.client.get(self.get_url())
         self.assertEqual(response.status_code, 403)
+
+    def test_navbar_does_not_contain_link(self):
+        """Regular users do not see a link to the main quality review page."""
+        response = self.client.get(reverse('home'))
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, """<a href="{}">""".format(self.get_url()))
 
 
 class DCCReviewNeedFollowupListMixin(object):
