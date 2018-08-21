@@ -1,5 +1,6 @@
 """Table classes for tags app, using django-tables2."""
 
+from django.template.loader import get_template
 from django.urls import reverse
 from django.utils.safestring import mark_safe
 
@@ -149,8 +150,18 @@ class DCCReviewTable(tables.Table):
 class DCCReviewTableWithStudyResponseButtons(DCCReviewTable):
     """Table to display TaggedTrait and DCCReview info plus buttons for creating a StudyResponse."""
 
-    buttons = tables.TemplateColumn(verbose_name='', orderable=False,
-                                  template_name='tags/_studyreview_buttons.html')
+    buttons = tables.Column(verbose_name='', accessor='pk')
+    # tables.TemplateColumn(verbose_name='', orderable=False,
+    #                               template_name='tags/_studyreview_buttons.html')
+
+    def render_buttons(self, record):
+        if hasattr(record, 'dcc_review') and hasattr(record.dcc_review, 'study_response'):
+            if record.dcc_review.study_response.status == models.StudyResponse.STATUS_AGREE:
+                return mark_safe('<button type="button" class="btn btn-xs btn-success" disabled="disabled">Agreed to remove</button>')
+            else:
+                return mark_safe('<button type="button" class="btn btn-xs btn-danger" disabled="disabled">Gave explanation</button>')
+        else:
+            return get_template('tags/_studyreview_buttons.html').render({'record': record})
 
     class Meta(DCCReviewTable.Meta):
         pass

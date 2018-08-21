@@ -760,7 +760,7 @@ class DCCReviewNeedFollowupList(LoginRequiredMixin, SingleTableMixin, ListView):
         return context
 
     def get_table_data(self):
-        return self.study.get_tagged_traits().filter(tag=self.tag).need_followup()
+        return self.study.get_tagged_traits().filter(tag=self.tag).need_followup().order_by('dcc_review__study_response')
 
 
 class StudyResponseCheckMixin(MessageMixin):

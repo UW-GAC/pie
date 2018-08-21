@@ -147,3 +147,33 @@ class DCCReviewTableWithStudyResponseButtonsTest(TestCase):
         """Number of rows in table matches number of tagged traits."""
         table = self.table_class(self.tagged_traits)
         self.assertEqual(models.DCCReview.objects.count(), len(table.rows))
+
+    def test_render_buttons_for_need_followup_tagged_trait(self):
+        table = self.table_class(self.tagged_traits)
+        tagged_trait = self.tagged_traits[0]
+        expected_url = reverse('tags:tagged-traits:pk:study-response:create:agree', args=[tagged_trait.pk])
+        self.assertIn(expected_url, table.render_buttons(tagged_trait))
+        expected_url = reverse('tags:tagged-traits:pk:study-response:create:disagree', args=[tagged_trait.pk])
+        self.assertIn(expected_url, table.render_buttons(tagged_trait))
+
+    def test_render_buttons_for_need_followup_tagged_trait_with_agree_response(self):
+        table = self.table_class(self.tagged_traits)
+        tagged_trait = self.tagged_traits[0]
+        factories.StudyResponseFactory.create(dcc_review=tagged_trait.dcc_review,
+                                              status=models.StudyResponse.STATUS_AGREE)
+        expected_url = reverse('tags:tagged-traits:pk:study-response:create:agree', args=[tagged_trait.pk])
+        self.assertNotIn(expected_url, table.render_buttons(tagged_trait))
+        expected_url = reverse('tags:tagged-traits:pk:study-response:create:disagree', args=[tagged_trait.pk])
+        self.assertNotIn(expected_url, table.render_buttons(tagged_trait))
+        self.assertIn('Agreed to remove', table.render_buttons(tagged_trait))
+
+    def test_render_buttons_for_need_followup_tagged_trait_with_disagree_response(self):
+        table = self.table_class(self.tagged_traits)
+        tagged_trait = self.tagged_traits[0]
+        factories.StudyResponseFactory.create(dcc_review=tagged_trait.dcc_review,
+                                              status=models.StudyResponse.STATUS_DISAGREE)
+        expected_url = reverse('tags:tagged-traits:pk:study-response:create:agree', args=[tagged_trait.pk])
+        self.assertNotIn(expected_url, table.render_buttons(tagged_trait))
+        expected_url = reverse('tags:tagged-traits:pk:study-response:create:disagree', args=[tagged_trait.pk])
+        self.assertNotIn(expected_url, table.render_buttons(tagged_trait))
+        self.assertIn('Gave explanation', table.render_buttons(tagged_trait))
