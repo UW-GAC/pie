@@ -821,33 +821,6 @@ class StudyResponseMixin(object):
         return self.tagged_trait.get_absolute_url()
 
 
-class StudyResponseCreate(LoginRequiredMixin, FormValidMessageMixin, StudyResponseCheckMixin, StudyResponseMixin, CreateView):
-
-    template_name = 'tags/studyresponse_form.html'
-    form_class = forms.StudyResponseForm
-
-    def get_failure_url(self):
-        return self.tagged_trait.get_absolute_url()
-
-    def get(self, request, *args, **kwargs):
-        if hasattr(self.tagged_trait.dcc_review, 'study_response'):
-            self.messages.warning('{} already has a study response.'.format(self.tagged_trait))
-            return HttpResponseRedirect(reverse('tags:tagged-traits:pk:study-response:update',
-                                                args=[self.tagged_trait.pk]))
-        return super().get(request, *args, **kwargs)
-
-    def post(self, request, *args, **kwargs):
-        if hasattr(self.tagged_trait.dcc_review, 'study_response'):
-            self.messages.warning('{} already has a study response.'.format(self.tagged_trait))
-            return HttpResponseRedirect(reverse('tags:tagged-traits:pk:study-response:update',
-                                                args=[self.tagged_trait.pk]))
-        return super().post(request, *args, **kwargs)
-
-    def get_form_valid_message(self):
-        msg = 'Successfully responded to the DCC review of {}.'.format(self.tagged_trait)
-        return msg
-
-
 class StudyResponseUpdate(LoginRequiredMixin, FormValidMessageMixin, StudyResponseCheckMixin, StudyResponseMixin, UpdateView):
 
     template_name = 'tags/studyresponse_form.html'
@@ -869,7 +842,7 @@ class StudyResponseUpdate(LoginRequiredMixin, FormValidMessageMixin, StudyRespon
             self.get_object()
         except ObjectDoesNotExist:
             self.messages.warning(self.get_not_responded_warning_message())
-            return HttpResponseRedirect(reverse('tags:tagged-traits:pk:study-response:create:new', args=[self.tagged_trait.pk]))
+            return HttpResponseRedirect(reverse('tags:tagged-traits:pk:detail', args=[self.tagged_trait.pk]))
         return super().get(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
@@ -877,7 +850,7 @@ class StudyResponseUpdate(LoginRequiredMixin, FormValidMessageMixin, StudyRespon
             self.get_object()
         except ObjectDoesNotExist:
             self.messages.warning(self.get_not_responded_warning_message())
-            return HttpResponseRedirect(reverse('tags:tagged-traits:pk:study-response:create:new', args=[self.tagged_trait.pk]))
+            return HttpResponseRedirect(reverse('tags:tagged-traits:pk:detail', args=[self.tagged_trait.pk]))
         return super().post(request, *args, **kwargs)
 
     def get_form_valid_message(self):
