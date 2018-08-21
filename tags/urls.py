@@ -23,7 +23,7 @@ add_many_patterns = ([
 ], 'add-many', )
 
 tag_study_reviewed_patterns = ([
-    url(r'^need-followup/$', views.DCCReviewNeedFollowupList.as_view(), name='need-followup')
+    url(r'^quality-review/$', views.DCCReviewNeedFollowupList.as_view(), name='quality-review')
 ], 'reviewed', )
 
 tag_study_patterns = ([
@@ -71,7 +71,7 @@ tagged_trait_patterns = ([
     url(r'^(?P<pk>\d+)/', include(single_tagged_trait_patterns)),
     url(r'^by-study/$', views.TaggedTraitTagCountsByStudy.as_view(), name='by-study'),
     url(r'^by-tag/$', views.TaggedTraitStudyCountsByTag.as_view(), name='by-tag'),
-    url(r'^need-followup/$', views.DCCReviewNeedFollowupCounts.as_view(), name='need-followup'),
+    url(r'^quality-review/$', views.DCCReviewNeedFollowupCounts.as_view(), name='quality-review'),
 ], 'tagged-traits', )
 
 urlpatterns = [

@@ -92,7 +92,7 @@
               {% if perms.tags.add_studyresponse and not user.is_staff %}
                 <li role="separator" class="divider"></li>
                 <li>
-                  <a href="{% url 'tags:tagged-traits:need-followup' %}"><span class="glyphicon glyphicon-check"></span>
+                  <a href="{% url 'tags:tagged-traits:quality-review' %}"><span class="glyphicon glyphicon-check"></span>
                     Quality review</a>
                 </li>
               {% endif %}

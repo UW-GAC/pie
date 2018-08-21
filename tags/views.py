@@ -870,7 +870,7 @@ class StudyResponseCreateAgree(LoginRequiredMixin, TaggableStudiesRequiredMixin,
     def get_failure_url(self):
         study = self.tagged_trait.trait.source_dataset.source_study_version.study
         tag = self.tagged_trait.tag
-        return reverse('tags:tag:study:reviewed:need-followup', args=[tag.pk, study.pk])
+        return reverse('tags:tag:study:reviewed:quality-review', args=[tag.pk, study.pk])
 
     def _create_study_response(self):
         """Create a DCCReview object linked to the given TaggedTrait."""
@@ -884,7 +884,7 @@ class StudyResponseCreateAgree(LoginRequiredMixin, TaggableStudiesRequiredMixin,
     def get_redirect_url(self, *args, **kwargs):
         tag = self.tagged_trait.tag
         study = self.tagged_trait.trait.source_dataset.source_study_version.study
-        return reverse('tags:tag:study:reviewed:need-followup', args=[tag.pk, study.pk])
+        return reverse('tags:tag:study:reviewed:quality-review', args=[tag.pk, study.pk])
 
     def get(self, request, *args, **kwargs):
         if hasattr(self.tagged_trait.dcc_review, 'study_response'):
@@ -913,7 +913,7 @@ class StudyResponseCreateDisagree(LoginRequiredMixin, FormValidMessageMixin, Stu
     def get_failure_url(self):
         tag = self.tagged_trait.tag
         study = self.tagged_trait.trait.source_dataset.source_study_version.study
-        return reverse('tags:tag:study:reviewed:need-followup', args=[tag.pk, study.pk])
+        return reverse('tags:tag:study:reviewed:quality-review', args=[tag.pk, study.pk])
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -950,7 +950,7 @@ class StudyResponseCreateDisagree(LoginRequiredMixin, FormValidMessageMixin, Stu
     def get_success_url(self):
         tag = self.tagged_trait.dcc_review.tagged_trait.tag
         study = self.tagged_trait.dcc_review.tagged_trait.trait.source_dataset.source_study_version.study
-        return reverse('tags:tag:study:reviewed:need-followup', args=[tag.pk, study.pk])
+        return reverse('tags:tag:study:reviewed:quality-review', args=[tag.pk, study.pk])
 
 
 class TagAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):

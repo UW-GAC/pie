@@ -3529,7 +3529,7 @@ class DCCReviewNeedFollowupCountsPhenotypeTaggerTest(PhenotypeTaggerLoginTestCas
 
     def get_url(self, *args):
         """Get the url for the view this class is supposed to test."""
-        return reverse('tags:tagged-traits:need-followup', args=args)
+        return reverse('tags:tagged-traits:quality-review', args=args)
 
     def test_view_success(self):
         """View returns successful response code."""
@@ -3735,7 +3735,7 @@ class DCCReviewNeedFollowupCountsDCCAnalystTest(DCCAnalystLoginTestCase):
 
     def get_url(self, *args):
         """Get the url for the view this class is supposed to test."""
-        return reverse('tags:tagged-traits:need-followup', args=args)
+        return reverse('tags:tagged-traits:quality-review', args=args)
 
     def test_forbidden(self):
         """View returns successful response code."""
@@ -3752,7 +3752,7 @@ class DCCReviewNeedFollowupCountsDCCAnalystTest(DCCAnalystLoginTestCase):
 class DCCReviewNeedFollowupCountsOtherUseTest(UserLoginTestCase):
     def get_url(self, *args):
         """Get the url for the view this class is supposed to test."""
-        return reverse('tags:tagged-traits:need-followup', args=args)
+        return reverse('tags:tagged-traits:quality-review', args=args)
 
     def test_forbidden(self):
         """View returns successful response code."""
@@ -3858,7 +3858,7 @@ class DCCReviewNeedFollowupListPhenotypeTaggerTestCase(DCCReviewNeedFollowupList
         )
 
     def get_url(self, *args):
-        return reverse('tags:tag:study:reviewed:need-followup', args=args)
+        return reverse('tags:tag:study:reviewed:quality-review', args=args)
 
     def test_view_success_code(self):
         """View returns successful response code."""
@@ -3891,7 +3891,7 @@ class DCCReviewNeedFollowupListDCCAnalystTestCase(DCCReviewNeedFollowupListMixin
         )
 
     def get_url(self, *args):
-        return reverse('tags:tag:study:reviewed:need-followup', args=args)
+        return reverse('tags:tag:study:reviewed:quality-review', args=args)
 
     def test_table_class(self):
         response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
@@ -3917,7 +3917,7 @@ class DCCReviewNeedFollowupListOtherUserTestCase(UserLoginTestCase):
         )
 
     def get_url(self, *args):
-        return reverse('tags:tag:study:reviewed:need-followup', args=args)
+        return reverse('tags:tag:study:reviewed:quality-review', args=args)
 
     def test_forbidden(self):
         """View returns forbidden response code for non-taggers and non-staff."""
@@ -4155,7 +4155,7 @@ class StudyResponseCreateAgreePhenotypeTaggerTestCase(PhenotypeTaggerLoginTestCa
         study_response = self.tagged_trait.dcc_review.study_response
         self.assertEqual(study_response.status, models.StudyResponse.STATUS_AGREE)
         self.assertEqual(study_response.comment, '')
-        self.assertRedirects(response, reverse('tags:tag:study:reviewed:need-followup',
+        self.assertRedirects(response, reverse('tags:tag:study:reviewed:quality-review',
                                                args=[self.tag.pk, self.study.pk]))
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
@@ -4170,7 +4170,7 @@ class StudyResponseCreateAgreePhenotypeTaggerTestCase(PhenotypeTaggerLoginTestCa
         """Redirects with warning message if DCCReview doesn't exist."""
         self.tagged_trait.dcc_review.delete()
         response = self.client.post(self.get_url(self.tagged_trait.pk), {})
-        self.assertRedirects(response, reverse('tags:tag:study:reviewed:need-followup',
+        self.assertRedirects(response, reverse('tags:tag:study:reviewed:quality-review',
                                                args=[self.tag.pk, self.study.pk]))
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
@@ -4182,7 +4182,7 @@ class StudyResponseCreateAgreePhenotypeTaggerTestCase(PhenotypeTaggerLoginTestCa
         self.tagged_trait.dcc_review.delete()
         factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait, status=models.DCCReview.STATUS_CONFIRMED)
         response = self.client.post(self.get_url(self.tagged_trait.pk), {})
-        self.assertRedirects(response, reverse('tags:tag:study:reviewed:need-followup',
+        self.assertRedirects(response, reverse('tags:tag:study:reviewed:quality-review',
                                                args=[self.tag.pk, self.study.pk]))
         self.assertFalse(hasattr(self.tagged_trait.dcc_review, 'study_response'))
         messages = list(response.wsgi_request._messages)
@@ -4199,7 +4199,7 @@ class StudyResponseCreateAgreePhenotypeTaggerTestCase(PhenotypeTaggerLoginTestCa
         study_response = self.tagged_trait.dcc_review.study_response
         # Make sure it was not updated.
         self.assertEqual(study_response.status, models.StudyResponse.STATUS_DISAGREE)
-        self.assertRedirects(response, reverse('tags:tag:study:reviewed:need-followup',
+        self.assertRedirects(response, reverse('tags:tag:study:reviewed:quality-review',
                                                args=[self.tag.pk, self.study.pk]))
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
@@ -4300,7 +4300,7 @@ class StudyResponseCreateDisagreePhenotypeTaggerTestCase(PhenotypeTaggerLoginTes
         study_response = self.tagged_trait.dcc_review.study_response
         self.assertEqual(study_response.status, models.StudyResponse.STATUS_DISAGREE)
         self.assertEqual(study_response.comment, comment)
-        self.assertRedirects(response, reverse('tags:tag:study:reviewed:need-followup',
+        self.assertRedirects(response, reverse('tags:tag:study:reviewed:quality-review',
                                                args=[self.tag.pk, self.study.pk]))
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
@@ -4329,7 +4329,7 @@ class StudyResponseCreateDisagreePhenotypeTaggerTestCase(PhenotypeTaggerLoginTes
         """Redirects with warning message if DCCReview doesn't exist."""
         self.tagged_trait.dcc_review.delete()
         response = self.client.get(self.get_url(self.tagged_trait.pk))
-        self.assertRedirects(response, reverse('tags:tag:study:reviewed:need-followup',
+        self.assertRedirects(response, reverse('tags:tag:study:reviewed:quality-review',
                                                args=[self.tag.pk, self.study.pk]))
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
@@ -4341,7 +4341,7 @@ class StudyResponseCreateDisagreePhenotypeTaggerTestCase(PhenotypeTaggerLoginTes
         self.tagged_trait.dcc_review.delete()
         factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait, status=models.DCCReview.STATUS_CONFIRMED)
         response = self.client.post(self.get_url(self.tagged_trait.pk), {})
-        self.assertRedirects(response, reverse('tags:tag:study:reviewed:need-followup',
+        self.assertRedirects(response, reverse('tags:tag:study:reviewed:quality-review',
                                                args=[self.tag.pk, self.study.pk]))
         self.assertFalse(hasattr(self.tagged_trait.dcc_review, 'study_response'))
         messages = list(response.wsgi_request._messages)
@@ -4355,7 +4355,7 @@ class StudyResponseCreateDisagreePhenotypeTaggerTestCase(PhenotypeTaggerLoginTes
                                               status=models.StudyResponse.STATUS_AGREE)
         response = self.client.get(self.get_url(self.tagged_trait.pk))
         self.assertTrue(hasattr(self.tagged_trait.dcc_review, 'study_response'))
-        self.assertRedirects(response, reverse('tags:tag:study:reviewed:need-followup',
+        self.assertRedirects(response, reverse('tags:tag:study:reviewed:quality-review',
                                                args=[self.tag.pk, self.study.pk]))
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
@@ -4371,7 +4371,7 @@ class StudyResponseCreateDisagreePhenotypeTaggerTestCase(PhenotypeTaggerLoginTes
         # Make sure it was not updated.
         self.assertEqual(study_response.status, models.StudyResponse.STATUS_AGREE)
         self.assertEqual(study_response.comment, '')
-        self.assertRedirects(response, reverse('tags:tag:study:reviewed:need-followup',
+        self.assertRedirects(response, reverse('tags:tag:study:reviewed:quality-review',
                                                args=[self.tag.pk, self.study.pk]))
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
