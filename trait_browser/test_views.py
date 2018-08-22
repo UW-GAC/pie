@@ -325,41 +325,259 @@ class StudyNameOrPHSAutocompleteTest(UserLoginTestCase):
         self.assertEqual(sorted(returned_pks),
                          sorted([name_match.i_accession, phs_match.i_accession]))
 
-    def test_correct_studies_with_tag(self):
-        """Queryset returns only studies that have tagged traits with the specified tag."""
-        study = self.studies[0]
+    def test_returns_all_studies_with_unreviewed_tagged_traits(self):
+        """With no forwards, returns studies for unreviewed tagged traits."""
         tag = TagFactory.create()
-        tagged_trait = TaggedTraitFactory.create(trait__source_dataset__source_study_version__study=study,
-                                                 tag=tag)
+        tagged_traits = []
+        for study in self.studies:
+            tmp = TaggedTraitFactory.create(trait__source_dataset__source_study_version__study=study, tag=tag)
+            tagged_traits.append(tmp)
+        get_data = {'q': ''}
+        response = self.client.get(self.get_url(), get_data)
+        pks = get_autocomplete_view_ids(response)
+        self.assertEqual(sorted([study.pk for study in self.studies]), sorted(pks))
+
+    def test_returns_all_studies_with_archived_tagged_traits(self):
+        """With no forwards, returns studies for archived tagged traits."""
+        tag = TagFactory.create()
+        tagged_traits = []
+        for study in self.studies:
+            tmp = TaggedTraitFactory.create(trait__source_dataset__source_study_version__study=study,
+                                            archived=True, tag=tag)
+            tagged_traits.append(tmp)
+        get_data = {'q': ''}
+        response = self.client.get(self.get_url(), get_data)
+        pks = get_autocomplete_view_ids(response)
+        self.assertEqual(sorted([study.pk for study in self.studies]), sorted(pks))
+
+    def test_returns_all_studies_with_reviewed_tagged_traits(self):
+        """With no forwards, returns studies for reviewed tagged traits."""
+        tag = TagFactory.create()
+        tagged_traits = []
+        for (idx, study) in enumerate(self.studies):
+            tmp = TaggedTraitFactory.create(trait__source_dataset__source_study_version__study=study, tag=tag)
+            tagged_traits.append(tmp)
+            if idx % 2 == 0:
+                status = DCCReview.STATUS_CONFIRMED
+            else:
+                status = DCCReview.STATUS_FOLLOWUP
+            DCCReviewFactory.create(tagged_trait=tmp, status=status)
+        get_data = {'q': ''}
+        response = self.client.get(self.get_url(), get_data)
+        pks = get_autocomplete_view_ids(response)
+        self.assertEqual(sorted([study.pk for study in self.studies]), sorted(pks))
+
+    def test_returns_all_studies_with_tagged_traits_for_multiple_tags(self):
+        """With no forwards, returns studies for tagged traits with multiple tags."""
+        tagged_traits = []
+        for study in self.studies:
+            tmp = TaggedTraitFactory.create(trait__source_dataset__source_study_version__study=study)
+            tagged_traits.append(tmp)
+        get_data = {'q': ''}
+        response = self.client.get(self.get_url(), get_data)
+        pks = get_autocomplete_view_ids(response)
+        self.assertEqual(sorted([study.pk for study in self.studies]), sorted(pks))
+
+    def test_does_not_return_studies_without_tagged_traits_for_given_tag(self):
+        """With tag forwarded, does not return studies without any tagged traits."""
+        tag = TagFactory.create()
+        study = self.studies[0]
+        tagged_trait = TaggedTraitFactory.create(tag=tag, trait__source_dataset__source_study_version__study=study)
+        other_study = self.studies[1]
         get_data = {'q': '', 'forward': ['{"tag":"' + str(tag.pk) + '"}']}
         response = self.client.get(self.get_url(), get_data)
-        pk = get_autocomplete_view_ids(response)
-        self.assertEqual(len(pk), 1)
-        self.assertEqual(pk, [study.pk])
+        pks = get_autocomplete_view_ids(response)
+        self.assertNotIn(other_study.pk, pks)
 
-    def test_correct_studies_with_tag_and_unreviewed(self):
-        """Queryset returns only studies that have unreviewed tagged traits with the specified tag."""
-        study = self.studies[0]
+    def test_does_not_return_studies_with_unreviewed_tagged_traits_with_other_tag_for_given_tag(self):
+        """With tag forwarded, does not return studies for unreviewed tagged traits with other tags."""
         tag = TagFactory.create()
-        tagged_trait = TaggedTraitFactory.create(trait__source_dataset__source_study_version__study=study,
-                                                 tag=tag)
-        dcc_review = DCCReviewFactory.create(tagged_trait=tagged_trait)
+        study = self.studies[0]
+        tagged_trait = TaggedTraitFactory.create(tag=tag, trait__source_dataset__source_study_version__study=study)
+        other_tag = TagFactory.create()
+        other_study = self.studies[1]
+        other_tagged_trait = TaggedTraitFactory.create(
+            tag=other_tag, trait__source_dataset__source_study_version__study=other_study)
+        get_data = {'q': '', 'forward': ['{"tag":"' + str(tag.pk) + '"}']}
+        response = self.client.get(self.get_url(), get_data)
+        pks = get_autocomplete_view_ids(response)
+        self.assertNotIn(other_study.pk, pks)
+
+    def test_returns_study_with_unreviewed_tagged_trait_for_given_tag(self):
+        """With tag forwarded, returns study with unreviewed tagged traits."""
+        tag = TagFactory.create()
+        study = self.studies[0]
+        tagged_trait = TaggedTraitFactory.create(tag=tag, trait__source_dataset__source_study_version__study=study)
+        get_data = {'q': '', 'forward': ['{"tag":"' + str(tag.pk) + '"}']}
+        response = self.client.get(self.get_url(), get_data)
+        pks = get_autocomplete_view_ids(response)
+        self.assertIn(study.pk, pks)
+
+    def test_returns_study_with_reviewed_needsfollowup_tagged_trait_for_given_tag(self):
+        """With tag forwarded, returns study with reviewed tagged traits that need followup."""
+        tag = TagFactory.create()
+        study = self.studies[0]
+        tagged_trait = TaggedTraitFactory.create(tag=tag, trait__source_dataset__source_study_version__study=study)
+        dcc_review = DCCReviewFactory.create(tagged_trait=tagged_trait, status=DCCReview.STATUS_FOLLOWUP)
+        get_data = {'q': '', 'forward': ['{"tag":"' + str(tag.pk) + '"}']}
+        response = self.client.get(self.get_url(), get_data)
+        pks = get_autocomplete_view_ids(response)
+        self.assertIn(study.pk, pks)
+
+    def test_returns_study_with_reviewed_confirmed_tagged_trait_for_given_tag(self):
+        """With tag forwarded, returns study with reviewed tagged traits that are confirmed."""
+        tag = TagFactory.create()
+        study = self.studies[0]
+        tagged_trait = TaggedTraitFactory.create(tag=tag, trait__source_dataset__source_study_version__study=study)
+        dcc_review = DCCReviewFactory.create(tagged_trait=tagged_trait, status=DCCReview.STATUS_CONFIRMED)
+        get_data = {'q': '', 'forward': ['{"tag":"' + str(tag.pk) + '"}']}
+        response = self.client.get(self.get_url(), get_data)
+        pks = get_autocomplete_view_ids(response)
+        self.assertIn(study.pk, pks)
+
+    def test_returns_study_with_archived_tagged_trait_for_given_tag(self):
+        """With tag forwarded, returns study with archived tagged traits."""
+        tag = TagFactory.create()
+        study = self.studies[0]
+        tagged_trait = TaggedTraitFactory.create(
+            tag=tag, trait__source_dataset__source_study_version__study=study, archived=True)
+        get_data = {'q': '', 'forward': ['{"tag":"' + str(tag.pk) + '"}']}
+        response = self.client.get(self.get_url(), get_data)
+        pks = get_autocomplete_view_ids(response)
+        self.assertIn(study.pk, pks)
+
+    def test_returns_study_with_unreviewed_tagged_trait_for_given_tag_with_only(self):
+        """With tag and only arg forwarded, returns study with unreviewed tagged trait."""
+        tag = TagFactory.create()
+        study = self.studies[0]
+        tagged_trait = TaggedTraitFactory.create(tag=tag, trait__source_dataset__source_study_version__study=study)
         get_data = {'q': '', 'forward': ['{"tag":"' + str(tag.pk) + '","unreviewed_tagged_traits_only":true}']}
         response = self.client.get(self.get_url(), get_data)
-        pk = get_autocomplete_view_ids(response)
-        self.assertEqual(len(pk), 0)
+        pks = get_autocomplete_view_ids(response)
+        self.assertIn(study.pk, pks)
 
-    def test_correct_studies_with_reviewed_taggedtrait_and_tag(self):
-        """Without the unreviewed argument, queryset returns studies with reviewed tagged traits with the given tag."""
-        study = self.studies[0]
+    def test_does_not_return_study_with_reviewed_confirmed_tagged_trait_for_given_tag_with_only(self):
+        """With tag and only arg forwarded, does not return study with reviewed tagged traits."""
         tag = TagFactory.create()
-        tagged_trait = TaggedTraitFactory.create(trait__source_dataset__source_study_version__study=study,
-                                                 tag=tag)
-        dcc_review = DCCReviewFactory.create(tagged_trait=tagged_trait)
-        get_data = {'q': '', 'forward': ['{"tag":"' + str(tag.pk) + '"}']}
+        study = self.studies[0]
+        tagged_trait = TaggedTraitFactory.create(tag=tag, trait__source_dataset__source_study_version__study=study)
+        dcc_review = DCCReviewFactory.create(tagged_trait=tagged_trait, status=DCCReview.STATUS_CONFIRMED)
+        get_data = {'q': '', 'forward': ['{"tag":"' + str(tag.pk) + '","unreviewed_tagged_traits_only":true}']}
         response = self.client.get(self.get_url(), get_data)
-        pk = get_autocomplete_view_ids(response)
-        self.assertEqual(len(pk), 1)
+        pks = get_autocomplete_view_ids(response)
+        self.assertNotIn(study.pk, pks)
+
+    def test_does_not_return_study_with_reviewed_needfollowup_tagged_trait_for_given_tag_with_only(self):
+        """With tag and only arg forwarded, does not return study with reviewed tagged traits."""
+        tag = TagFactory.create()
+        study = self.studies[0]
+        tagged_trait = TaggedTraitFactory.create(tag=tag, trait__source_dataset__source_study_version__study=study)
+        dcc_review = DCCReviewFactory.create(tagged_trait=tagged_trait, status=DCCReview.STATUS_FOLLOWUP)
+        get_data = {'q': '', 'forward': ['{"tag":"' + str(tag.pk) + '","unreviewed_tagged_traits_only":true}']}
+        response = self.client.get(self.get_url(), get_data)
+        pks = get_autocomplete_view_ids(response)
+        self.assertNotIn(study.pk, pks)
+
+    def test_does_not_return_study_with_archived_tagged_trait_for_given_tag_with_only(self):
+        """With tag and only arg forwarded, does not return study with archived tagged traits."""
+        tag = TagFactory.create()
+        study = self.studies[0]
+        tagged_trait = TaggedTraitFactory.create(
+            tag=tag, trait__source_dataset__source_study_version__study=study, archived=True)
+        get_data = {'q': '', 'forward': ['{"tag":"' + str(tag.pk) + '","unreviewed_tagged_traits_only":true}']}
+        response = self.client.get(self.get_url(), get_data)
+        pks = get_autocomplete_view_ids(response)
+        self.assertNotIn(study.pk, pks)
+
+    def test_does_not_return_study_with_no_tagged_traits_for_given_tag_with_only(self):
+        """With tag and only arg forwarded, does not return study with archived tagged traits."""
+        tag = TagFactory.create()
+        study = self.studies[0]
+        get_data = {'q': '', 'forward': ['{"tag":"' + str(tag.pk) + '","unreviewed_tagged_traits_only":true}']}
+        response = self.client.get(self.get_url(), get_data)
+        pks = get_autocomplete_view_ids(response)
+        self.assertNotIn(study.pk, pks)
+
+    def test_does_not_return_studies_with_unreviewed_tagged_trait_with_other_tag_with_only(self):
+        """With tag and only arg forwarded, does not return study with unreviewed tagged traits with other tag."""
+        tag = TagFactory.create()
+        study = self.studies[0]
+        tagged_trait = TaggedTraitFactory.create(tag=tag, trait__source_dataset__source_study_version__study=study)
+        other_tag = TagFactory.create()
+        other_study = self.studies[1]
+        other_tagged_trait = TaggedTraitFactory.create(
+            tag=other_tag, trait__source_dataset__source_study_version__study=other_study)
+        get_data = {'q': '', 'forward': ['{"tag":"' + str(tag.pk) + '","unreviewed_tagged_traits_only":true}']}
+        response = self.client.get(self.get_url(), get_data)
+        pks = get_autocomplete_view_ids(response)
+        self.assertNotIn(other_study.pk, pks)
+
+    def test_returns_all_studies_with_unreviewed_tagged_traits_without_given_tag_with_only(self):
+        """With only arg but no tag forwarded, returns all studies."""
+        tag = TagFactory.create()
+        tagged_traits = []
+        for study in self.studies:
+            tmp = TaggedTraitFactory.create(trait__source_dataset__source_study_version__study=study, tag=tag)
+            tagged_traits.append(tmp)
+        get_data = {'q': '', 'forward': ['{"unreviewed_tagged_traits_only":true}']}
+        response = self.client.get(self.get_url(), get_data)
+        pks = get_autocomplete_view_ids(response)
+        self.assertEqual(sorted([study.pk for study in self.studies]), sorted(pks))
+
+    def test_returns_all_studies_with_reviewed_tagged_traits_without_given_tag_with_only(self):
+        """With only arg but no tag forwarded, returns studies with reviewed tagged traits."""
+        tag = TagFactory.create()
+        tagged_traits = []
+        for (idx, study) in enumerate(self.studies):
+            tmp = TaggedTraitFactory.create(trait__source_dataset__source_study_version__study=study, tag=tag)
+            tagged_traits.append(tmp)
+            if idx % 2 == 0:
+                status = DCCReview.STATUS_CONFIRMED
+            else:
+                status = DCCReview.STATUS_FOLLOWUP
+            DCCReviewFactory.create(tagged_trait=tmp, status=status)
+        get_data = {'q': '', 'forward': ['{"unreviewed_tagged_traits_only":true}']}
+        response = self.client.get(self.get_url(), get_data)
+        pks = get_autocomplete_view_ids(response)
+        self.assertEqual(sorted([study.pk for study in self.studies]), sorted(pks))
+
+    def test_returns_all_studies_with_archived_tagged_traits_without_given_tag_with_only(self):
+        """With only arg but no tag forwarded, returns studies with archived tagged traits."""
+        tag = TagFactory.create()
+        tagged_traits = []
+        for study in self.studies:
+            tmp = TaggedTraitFactory.create(trait__source_dataset__source_study_version__study=study,
+                                            archived=True, tag=tag)
+            tagged_traits.append(tmp)
+        get_data = {'q': '', 'forward': ['{"unreviewed_tagged_traits_only":true}']}
+        response = self.client.get(self.get_url(), get_data)
+        print(response.content)
+        pks = get_autocomplete_view_ids(response)
+        self.assertEqual(sorted([study.pk for study in self.studies]), sorted(pks))
+
+    def test_returns_all_studies_with_other_tag_without_given_tag_with_only(self):
+        """With only arg but no tag forwarded, returns studies with tagged traits with other tag."""
+        tag = TagFactory.create()
+        study = self.studies[0]
+        tagged_trait = TaggedTraitFactory.create(tag=tag, trait__source_dataset__source_study_version__study=study)
+        other_tag = TagFactory.create()
+        other_study = self.studies[1]
+        other_tagged_trait = TaggedTraitFactory.create(
+            tag=other_tag, trait__source_dataset__source_study_version__study=other_study)
+        get_data = {'q': '', 'forward': ['{"unreviewed_tagged_traits_only":true}']}
+        response = self.client.get(self.get_url(), get_data)
+        pks = get_autocomplete_view_ids(response)
+        self.assertIn(other_study.pk, pks)
+        self.assertEqual(sorted([study.pk for study in self.studies]), sorted(pks))
+
+    def test_returns_all_studies_without_tagged_traits_without_given_tag_with_only(self):
+        """With only arg but no tag forwarded, returns even studies without any tagged traits."""
+        tag = TagFactory.create()
+        study = self.studies[0]
+        get_data = {'q': '', 'forward': ['{"unreviewed_tagged_traits_only":true}']}
+        response = self.client.get(self.get_url(), get_data)
+        pks = get_autocomplete_view_ids(response)
+        self.assertEqual(sorted([study.pk for study in self.studies]), sorted(pks))
 
 
 class StudySourceTableViewsTest(UserLoginTestCase):
