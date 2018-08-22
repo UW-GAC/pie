@@ -556,3 +556,9 @@ class DCCReviewTagAndStudySelectFormTest(TestCase):
         dcc_review = factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait)
         form = self.form_class({'tag': self.tag.pk, 'study': self.study.pk})
         self.assertFalse(form.is_valid())
+
+    def test_no_archived_tagged_traits(self):
+        """Form is invalid if there are no non-archived tagged traits matching the selected tag and study."""
+        self.tagged_trait.archive()
+        form = self.form_class({'tag': self.tag.pk, 'study': self.study.pk})
+        self.assertFalse(form.is_valid())
