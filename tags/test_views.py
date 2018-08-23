@@ -3993,7 +3993,7 @@ class StudyResponseUpdatePhenotypeTaggerTest(PhenotypeTaggerLoginTestCase):
         # Check for success message.
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
-        self.assertIn('Successfully responded', str(messages[0]))
+        self.assertIn('Successfully changed', str(messages[0]))
 
     def test_successful_post_with_disagree_study_response(self):
         """Posting valid data to the form correctly updates an existing StudyResponse."""
@@ -4010,7 +4010,7 @@ class StudyResponseUpdatePhenotypeTaggerTest(PhenotypeTaggerLoginTestCase):
         # Check for success message.
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
-        self.assertIn('Successfully responded', str(messages[0]))
+        self.assertIn('Successfully changed', str(messages[0]))
 
     def test_post_bad_data(self):
         """Posting bad data to the form shows a form error."""

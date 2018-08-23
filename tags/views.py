@@ -855,7 +855,7 @@ class StudyResponseUpdate(LoginRequiredMixin, FormValidMessageMixin, StudyRespon
         return super().post(request, *args, **kwargs)
 
     def get_form_valid_message(self):
-        msg = 'Successfully responded to the DCC review of {}.'.format(self.tagged_trait)
+        msg = 'Successfully changed your response to the quality review for {}.'.format(self.tagged_trait)
         return msg
 
 
@@ -878,7 +878,7 @@ class StudyResponseCreateAgree(LoginRequiredMixin, TaggableStudiesRequiredMixin,
                                     status=models.StudyResponse.STATUS_AGREE)
         study_response.full_clean()
         study_response.save()
-        msg = 'You have responded to the DCC review of {}'.format(self.tagged_trait)
+        msg = 'Agreed that {} should be removed.'.format(self.tagged_trait)
         self.messages.success(msg)
 
     def get_redirect_url(self, *args, **kwargs):
@@ -944,7 +944,7 @@ class StudyResponseCreateDisagree(LoginRequiredMixin, FormValidMessageMixin, Stu
         return super().post(request, *args, **kwargs)
 
     def get_form_valid_message(self):
-        msg = 'You have responded to the DCC review of {}'.format(self.tagged_trait)
+        msg = 'Explained why {} should not be removed'.format(self.tagged_trait)
         return(msg)
 
     def get_success_url(self):
