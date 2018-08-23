@@ -518,7 +518,7 @@ class DCCReviewByTagAndStudyNext(LoginRequiredMixin, PermissionRequiredMixin, Se
                    """tagged variable{s} left to review.""")
             msg = msg.format(
                 tag_url=self.tag.get_absolute_url(),
-                tag=self.tag.lower_title,
+                tag=self.tag.title,
                 study_url=self.study.get_absolute_url(),
                 study_name=self.study.i_study_name,
                 n_pks=len(self.pks),

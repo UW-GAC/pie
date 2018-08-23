@@ -3,7 +3,7 @@
 
 
 {% block head_title %}
-  | {{ tag.lower_title }} details
+  | {{ tag.title }} details
 {% endblock head_title %}
 
 {% block title %}
@@ -21,7 +21,7 @@
        Tag variables as "{{ tag.title }}"</a>
      </p>
   {% endif %}
-{% endblock before_panel %} 
+{% endblock before_panel %}
 
 {% block detail_fields %}
   <dt>Description</dt><dd>{{ tag.description }}</dd>
