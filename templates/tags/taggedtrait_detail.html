@@ -31,29 +31,32 @@
       </div>
       <div id="collapse-reviewstatus" class="panel-collapse in">
         {% if show_confirmed_status %}
-          <div class="panel-body alert-success">
+          <div class="panel-body bg-success">
             <p>
               <span class="glyphicon glyphicon-ok"></span>
               This tagged variable has been confirmed by the DCC.
             </p>
         {% elif show_needs_followup_status %}
-          <div class="panel-body alert-danger">
+          <div class="panel-body bg-danger">
             <p>
               <span class="glyphicon glyphicon-remove"></span>
-              This tagged variable has been flagged for removal by the DCC.
-          </p>
+              This tagged variable has been flagged for removal by the DCC for the following reason:<br>
+              <span class="glyphicon glyphicon-remove invisible"></span>
+              <span class="text-muted">{{ tagged_trait.dcc_review.comment }}</span>
+            </p>
         {% else %}
           <div class="panel-body">
             <p>
-              This tagged variable has not been reviewed.
+              This tagged variable has not yet been reviewed by the DCC.
             </p>
         {% endif %}
         {% if show_study_response_status %}
           {% if show_study_disagrees %}
             <p>
               <span class="glyphicon glyphicon-ok"></span>
-              The study has indicated that the variable should remain tagged for the following reason:
-              {{ tagged_trait.dcc_review.study_response.comment }}.
+              The study has indicated that the variable should remain tagged for the following reason:<br>
+              <span class="glyphicon glyphicon-ok invisible"></span>
+              <span class="text-muted">{{ tagged_trait.dcc_review.study_response.comment }}</span>
             </p>
           {% endif %}
           {% if show_study_agrees %}
@@ -72,12 +75,6 @@
           <a class="btn btn-xs btn-warning" href="{% url 'tags:tagged-traits:pk:dcc-review:update' tagged_trait.pk %}" role="button">
               <span class="glyphicon glyphicon-sunglasses" aria-hidden="true"></span> Update DCC review
           </a>
-        {% endif %}
-        {% if show_study_response_add_buttons %}
-          {% include 'tags/_studyreview_buttons.html' with record=tagged_trait %}
-        {% endif %}
-        {% if show_study_response_update_buttons %}
-          XXX
         {% endif %}
         </div>
       </div>

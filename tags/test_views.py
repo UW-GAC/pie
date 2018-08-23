@@ -198,10 +198,6 @@ class TaggedTraitDetailTest(TaggedTraitDetailTestsMixin, UserLoginTestCase):
         self.assertFalse(context['show_study_agrees'])
         self.assertIn('show_study_disagrees', context)
         self.assertFalse(context['show_study_disagrees'])
-        self.assertIn('show_study_response_add_buttons', context)
-        self.assertFalse(context['show_study_response_add_buttons'])
-        self.assertIn('show_study_response_update_button', context)
-        self.assertFalse(context['show_study_response_update_button'])
 
     def test_context_with_confirmed_trait(self):
         """The context contains the proper flags for the add/update review buttons."""
@@ -224,10 +220,6 @@ class TaggedTraitDetailTest(TaggedTraitDetailTestsMixin, UserLoginTestCase):
         self.assertFalse(context['show_study_agrees'])
         self.assertIn('show_study_disagrees', context)
         self.assertFalse(context['show_study_disagrees'])
-        self.assertIn('show_study_response_add_buttons', context)
-        self.assertFalse(context['show_study_response_add_buttons'])
-        self.assertIn('show_study_response_update_button', context)
-        self.assertFalse(context['show_study_response_update_button'])
 
     def test_context_with_needs_followup_trait(self):
         """The context contains the proper flags for the add/update review buttons."""
@@ -250,10 +242,6 @@ class TaggedTraitDetailTest(TaggedTraitDetailTestsMixin, UserLoginTestCase):
         self.assertFalse(context['show_study_agrees'])
         self.assertIn('show_study_disagrees', context)
         self.assertFalse(context['show_study_disagrees'])
-        self.assertIn('show_study_response_add_buttons', context)
-        self.assertFalse(context['show_study_response_add_buttons'])
-        self.assertIn('show_study_response_update_button', context)
-        self.assertFalse(context['show_study_response_update_button'])
 
     def test_context_with_reviewed_trait_with_response(self):
         dcc_review = factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait)
@@ -276,10 +264,6 @@ class TaggedTraitDetailTest(TaggedTraitDetailTestsMixin, UserLoginTestCase):
         self.assertFalse(context['show_study_agrees'])
         self.assertIn('show_study_disagrees', context)
         self.assertFalse(context['show_study_disagrees'])
-        self.assertIn('show_study_response_add_buttons', context)
-        self.assertFalse(context['show_study_response_add_buttons'])
-        self.assertIn('show_study_response_update_button', context)
-        self.assertFalse(context['show_study_response_update_button'])
 
 
 class TaggedTraitDetailPhenotypeTaggerTest(TaggedTraitDetailTestsMixin, PhenotypeTaggerLoginTestCase):
@@ -347,10 +331,6 @@ class TaggedTraitDetailPhenotypeTaggerTest(TaggedTraitDetailTestsMixin, Phenotyp
         self.assertFalse(context['show_study_agrees'])
         self.assertIn('show_study_disagrees', context)
         self.assertFalse(context['show_study_disagrees'])
-        self.assertIn('show_study_response_add_buttons', context)
-        self.assertFalse(context['show_study_response_add_buttons'])
-        self.assertIn('show_study_response_update_button', context)
-        self.assertFalse(context['show_study_response_update_button'])
 
     def test_context_with_confirmed_trait(self):
         """The context contains the proper flags for the add/update review buttons."""
@@ -373,10 +353,6 @@ class TaggedTraitDetailPhenotypeTaggerTest(TaggedTraitDetailTestsMixin, Phenotyp
         self.assertFalse(context['show_study_agrees'])
         self.assertIn('show_study_disagrees', context)
         self.assertFalse(context['show_study_disagrees'])
-        self.assertIn('show_study_response_add_buttons', context)
-        self.assertFalse(context['show_study_response_add_buttons'])
-        self.assertIn('show_study_response_update_button', context)
-        self.assertFalse(context['show_study_response_update_button'])
 
 
     def test_context_with_needs_followup_trait(self):
@@ -400,10 +376,6 @@ class TaggedTraitDetailPhenotypeTaggerTest(TaggedTraitDetailTestsMixin, Phenotyp
         self.assertFalse(context['show_study_agrees'])
         self.assertIn('show_study_disagrees', context)
         self.assertFalse(context['show_study_disagrees'])
-        self.assertIn('show_study_response_add_buttons', context)
-        self.assertTrue(context['show_study_response_add_buttons'])
-        self.assertIn('show_study_response_update_button', context)
-        self.assertFalse(context['show_study_response_update_button'])
 
     def test_context_with_reviewed_trait_with_agree_response(self):
         dcc_review = factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait,
@@ -427,10 +399,6 @@ class TaggedTraitDetailPhenotypeTaggerTest(TaggedTraitDetailTestsMixin, Phenotyp
         self.assertTrue(context['show_study_agrees'])
         self.assertIn('show_study_disagrees', context)
         self.assertFalse(context['show_study_disagrees'])
-        self.assertIn('show_study_response_add_buttons', context)
-        self.assertFalse(context['show_study_response_add_buttons'])
-        self.assertIn('show_study_response_update_button', context)
-        self.assertTrue(context['show_study_response_update_button'])
 
     def test_context_with_reviewed_trait_with_disagree_response(self):
         dcc_review = factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait,
@@ -454,10 +422,6 @@ class TaggedTraitDetailPhenotypeTaggerTest(TaggedTraitDetailTestsMixin, Phenotyp
         self.assertFalse(context['show_study_agrees'])
         self.assertIn('show_study_disagrees', context)
         self.assertTrue(context['show_study_disagrees'])
-        self.assertIn('show_study_response_add_buttons', context)
-        self.assertFalse(context['show_study_response_add_buttons'])
-        self.assertIn('show_study_response_update_button', context)
-        self.assertTrue(context['show_study_response_update_button'])
 
     def test_context_with_tagged_trait_from_other_study_with_review(self):
         other_tagged_trait = factories.TaggedTraitFactory.create()
@@ -477,10 +441,6 @@ class TaggedTraitDetailPhenotypeTaggerTest(TaggedTraitDetailTestsMixin, Phenotyp
         self.assertFalse(context['show_needs_followup_status'])
         self.assertIn('show_study_response_status', context)
         self.assertFalse(context['show_study_response_status'])
-        self.assertIn('show_study_response_add_buttons', context)
-        self.assertFalse(context['show_study_response_add_buttons'])
-        self.assertIn('show_study_response_update_button', context)
-        self.assertFalse(context['show_study_response_update_button'])
 
     def test_context_with_tagged_trait_from_other_study_with_response(self):
         other_tagged_trait = factories.TaggedTraitFactory.create()
@@ -501,10 +461,6 @@ class TaggedTraitDetailPhenotypeTaggerTest(TaggedTraitDetailTestsMixin, Phenotyp
         self.assertFalse(context['show_needs_followup_status'])
         self.assertIn('show_study_response_status', context)
         self.assertFalse(context['show_study_response_status'])
-        self.assertIn('show_study_response_add_buttons', context)
-        self.assertFalse(context['show_study_response_add_buttons'])
-        self.assertIn('show_study_response_update_button', context)
-        self.assertFalse(context['show_study_response_update_button'])
 
 
 class TaggedTraitDetailDCCAnalystTest(TaggedTraitDetailTestsMixin, DCCAnalystLoginTestCase):
@@ -547,10 +503,6 @@ class TaggedTraitDetailDCCAnalystTest(TaggedTraitDetailTestsMixin, DCCAnalystLog
         self.assertFalse(context['show_needs_followup_status'])
         self.assertIn('show_study_response_status', context)
         self.assertFalse(context['show_study_response_status'])
-        self.assertIn('show_study_response_add_buttons', context)
-        self.assertFalse(context['show_study_response_add_buttons'])
-        self.assertIn('show_study_response_update_button', context)
-        self.assertFalse(context['show_study_response_update_button'])
 
     def test_context_with_confirmed_trait(self):
         """The context contains the proper flags for the add/update review buttons."""
@@ -569,10 +521,6 @@ class TaggedTraitDetailDCCAnalystTest(TaggedTraitDetailTestsMixin, DCCAnalystLog
         self.assertFalse(context['show_needs_followup_status'])
         self.assertIn('show_study_response_status', context)
         self.assertFalse(context['show_study_response_status'])
-        self.assertIn('show_study_response_add_buttons', context)
-        self.assertFalse(context['show_study_response_add_buttons'])
-        self.assertIn('show_study_response_update_button', context)
-        self.assertFalse(context['show_study_response_update_button'])
 
     def test_context_with_needs_followup_trait(self):
         """The context contains the proper flags for the add/update review buttons."""
@@ -591,10 +539,6 @@ class TaggedTraitDetailDCCAnalystTest(TaggedTraitDetailTestsMixin, DCCAnalystLog
         self.assertTrue(context['show_needs_followup_status'])
         self.assertIn('show_study_response_status', context)
         self.assertFalse(context['show_study_response_status'])
-        self.assertIn('show_study_response_add_buttons', context)
-        self.assertFalse(context['show_study_response_add_buttons'])
-        self.assertIn('show_study_response_update_button', context)
-        self.assertFalse(context['show_study_response_update_button'])
 
     def test_context_with_reviewed_trait_with_response(self):
         dcc_review = factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait,
@@ -614,10 +558,6 @@ class TaggedTraitDetailDCCAnalystTest(TaggedTraitDetailTestsMixin, DCCAnalystLog
         self.assertTrue(context['show_needs_followup_status'])
         self.assertIn('show_study_response_status', context)
         self.assertTrue(context['show_study_response_status'])
-        self.assertIn('show_study_response_add_buttons', context)
-        self.assertFalse(context['show_study_response_add_buttons'])
-        self.assertIn('show_study_response_update_button', context)
-        self.assertFalse(context['show_study_response_update_button'])
 
     def test_unreviewed_tagged_trait_includes_link_to_review(self):
         """An unreviewed tagged trait includes a link to review for DCC users."""

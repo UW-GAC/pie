@@ -95,8 +95,6 @@ class TaggedTraitDetail(LoginRequiredMixin, DetailView):
         context['show_study_response_status'] = user_has_study_access and response_exists
         context['show_study_agrees'] = user_has_study_access and response_exists and self.object.dcc_review.study_response.status == models.StudyResponse.STATUS_AGREE
         context['show_study_disagrees'] = user_has_study_access and response_exists and self.object.dcc_review.study_response.status == models.StudyResponse.STATUS_DISAGREE
-        context['show_study_response_add_buttons'] = user_is_study_tagger and needs_followup and not response_exists
-        context['show_study_response_update_button'] = user_is_study_tagger and needs_followup and response_exists
         return context
 
 
