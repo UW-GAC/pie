@@ -8,17 +8,20 @@
 
 {% block content %}
 
-  <h2>
-    Explain why  <a href="{{ tagged_trait.trait.get_absolute_url }}">{{ tagged_trait.trait.i_trait_name }}</a>
-    should be tagged with <a href="{{ tagged_trait.tag.get_absolute_url }}">{{ tagged_trait.tag.lower_title }}</a>
+  <h2>Quality review
+    <small>
+      Explain why  <a href="{{ tagged_trait.trait.get_absolute_url }}">{{ tagged_trait.trait.i_trait_name }}</a>
+      should be tagged with <a href="{{ tagged_trait.tag.get_absolute_url }}">{{ tagged_trait.tag.lower_title }}</a>
+    </small>
   </h2>
 
   {% include '_messages.html' %}
 
   <div class="well">
-    Please review the reason that this tagged variable has been flagged for removal.
+    This tagged variable has been flagged for removal by the DCC.
+    Please review the reason given below.
     Click on the "Tag information" and "Study variable information" panels for more details about the tag and variable.
-    Enter a reason in the "Comment" box about why this variable is appropriately tagged and select the "Submit" button.
+    Enter a reason in the "Comment" box about why you think this variable is appropriately tagged and select the "Submit" button.
   </div>
 
   {% include 'tags/_taggedtrait_info.html' with show_all_tags=False collapse_tag_panel=True collapse_trait_panel=True %}
