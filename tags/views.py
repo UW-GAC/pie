@@ -824,6 +824,9 @@ class StudyResponseMixin(object):
         return self.tagged_trait.get_absolute_url()
 
 
+# Note that this view is currently being used.
+# We will likely implement a better way for users to update a StudyResponse.
+# This view either will need significant updates or will need to be rewritten entirely as two separate views.
 class StudyResponseUpdate(LoginRequiredMixin, FormValidMessageMixin, StudyResponseCheckMixin, StudyResponseMixin,
                           UpdateView):
 

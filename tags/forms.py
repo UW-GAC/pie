@@ -560,6 +560,8 @@ class StudyResponseBaseForm(forms.ModelForm):
         }
 
 
+# Note that this form is currently not used because the StudyResponseUpdate view is not being used.
+# It will likely be removed when a better method to update StudyResponses is implemented.
 class StudyResponseForm(StudyResponseBaseForm):
 
     SUBMIT_AGREE = 'agree'
