@@ -387,12 +387,11 @@ class TaggedTraitDetailDCCAnalystTest(TaggedTraitDetailTestsMixin, DCCAnalystLog
 
     def test_archived_taggedtraits(self):
         """Archived tagged traits do not appear in the table."""
-        tagged_trait = self.tagged_traits[0]
-        tagged_trait.archive()
+        self.tagged_trait.archive()
         response = self.client.get(self.get_url(self.study.pk))
         self.assertIn('tagged_trait_table', response.context)
         table = response.context['tagged_trait_table']
-        self.assertNotIn(tagged_trait, table.data)
+        self.assertNotIn(self.tagged_trait, table.data)
 
 
 class TaggedTraitTagCountsByStudyTest(UserLoginTestCase):
