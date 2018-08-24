@@ -155,11 +155,33 @@ class DCCReviewTable(tables.Table):
     dataset = tables.TemplateColumn(verbose_name='Dataset', orderable=False,
                                     template_code="""{{ record.trait.source_dataset.get_name_link_html|safe }}""")
     dcc_comment = tables.Column('Reason for removal', accessor='dcc_review.comment', orderable=False)
+    study_response = tables.Column('Status', accessor='dcc_review.status', orderable=False)
+
+    def render_study_response(self, record):
+
+        if not hasattr(record, 'dcc_review'):
+            return ''
+        elif not hasattr(record.dcc_review, 'study_response'):
+            return ''
+        elif record.dcc_review.study_response.status == models.StudyResponse.STATUS_AGREE:
+            btn_class = 'success'
+            glyphicon = 'glyphicon-ok'
+            text = 'Agreed to remove'
+        elif record.dcc_review.status == models.StudyResponse.STATUS_DISAGREE:
+            btn_class = 'danger'
+            glyphicon = 'glyphicon-remove'
+            text = 'Gave explanation'
+        html = '<p class="text-{btn_class}">{text}</a>'.format(
+            btn_class=btn_class,
+            glyphicon=glyphicon,
+            text=text
+        )
+        return mark_safe(html)
 
     class Meta:
         # It doesn't really matter if we use TaggedTrait or DCCReview because of the one-to-one relationship.
         models.TaggedTrait
-        fields = ('trait', 'dataset', 'dcc_comment', 'details', )
+        fields = ('trait', 'dataset', 'dcc_comment', 'details', 'study_response', )
         attrs = {'class': 'table table-striped table-bordered table-hover'}
         template = 'django_tables2/bootstrap-responsive.html'
 
@@ -171,13 +193,10 @@ class DCCReviewTableWithStudyResponseButtons(DCCReviewTable):
 
     def render_buttons(self, record):
         html = '<button type="button" class="btn btn-xs btn-{btn_type}" disabled="disabled">{text}</button>'
-        if hasattr(record, 'dcc_review') and hasattr(record.dcc_review, 'study_response'):
-            if record.dcc_review.study_response.status == models.StudyResponse.STATUS_AGREE:
-                return mark_safe(html.format(btn_type='success', text='Agreed to remove'))
-            else:
-                return mark_safe(html.format(btn_type='danger', text='Gave explanation'))
-        else:
+        if hasattr(record, 'dcc_review') and not hasattr(record.dcc_review, 'study_response'):
             return get_template('tags/_studyreview_buttons.html').render({'record': record})
+        else:
+            return ''
 
     class Meta(DCCReviewTable.Meta):
         pass

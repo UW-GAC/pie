@@ -147,6 +147,33 @@ class DCCReviewTableTest(TestCase):
         table = self.table_class(self.tagged_traits)
         self.assertEqual(self.model_class.objects.count(), len(table.rows))
 
+    def test_render_status_for_tagged_trait_with_no_study_response(self):
+        """Status is missing for TaggedTraits that need followup have no StudyResponse."""
+        table = self.table_class(self.tagged_traits)
+        tagged_trait = self.tagged_traits[0]
+        factories.DCCReviewFactory.create(tagged_trait=tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP)
+        self.assertEqual(len(table.render_study_response(tagged_trait)), 0)
+
+    def test_render_status_for_need_followup_tagged_trait_with_agree_response(self):
+        """Status is correct for TaggedTraits that need followup and have an "agree" StudyResponse."""
+        table = self.table_class(self.tagged_traits)
+        tagged_trait = self.tagged_traits[0]
+        dcc_review = factories.DCCReviewFactory.create(tagged_trait=tagged_trait,
+                                                       status=models.DCCReview.STATUS_FOLLOWUP)
+        factories.StudyResponseFactory.create(dcc_review=dcc_review,
+                                              status=models.StudyResponse.STATUS_AGREE)
+        self.assertIn('Agreed to remove', table.render_study_response(tagged_trait))
+
+    def test_render_status_for_need_followup_tagged_trait_with_disagree_response(self):
+        """Status is correct for TaggedTraits that need followup and have a "disagree" StudyResponse."""
+        table = self.table_class(self.tagged_traits)
+        tagged_trait = self.tagged_traits[0]
+        dcc_review = factories.DCCReviewFactory.create(tagged_trait=tagged_trait,
+                                                       status=models.DCCReview.STATUS_FOLLOWUP)
+        factories.StudyResponseFactory.create(dcc_review=dcc_review,
+                                              status=models.StudyResponse.STATUS_DISAGREE)
+        self.assertIn('Gave explanation', table.render_study_response(tagged_trait))
+
 
 class DCCReviewTableWithStudyResponseButtonsTest(TestCase):
     table_class = tables.DCCReviewTableWithStudyResponseButtons
@@ -176,11 +203,11 @@ class DCCReviewTableWithStudyResponseButtonsTest(TestCase):
         tagged_trait = self.tagged_traits[0]
         factories.StudyResponseFactory.create(dcc_review=tagged_trait.dcc_review,
                                               status=models.StudyResponse.STATUS_AGREE)
+        self.assertEqual(len(table.render_buttons(tagged_trait)), 0)
         expected_url = reverse('tags:tagged-traits:pk:study-response:create:agree', args=[tagged_trait.pk])
         self.assertNotIn(expected_url, table.render_buttons(tagged_trait))
         expected_url = reverse('tags:tagged-traits:pk:study-response:create:disagree', args=[tagged_trait.pk])
         self.assertNotIn(expected_url, table.render_buttons(tagged_trait))
-        self.assertIn('Agreed to remove', table.render_buttons(tagged_trait))
 
     def test_render_buttons_for_need_followup_tagged_trait_with_disagree_response(self):
         """Buttons are not shown for TaggedTraits that need followup and have a "disagree" StudyResponse."""
@@ -188,8 +215,8 @@ class DCCReviewTableWithStudyResponseButtonsTest(TestCase):
         tagged_trait = self.tagged_traits[0]
         factories.StudyResponseFactory.create(dcc_review=tagged_trait.dcc_review,
                                               status=models.StudyResponse.STATUS_DISAGREE)
+        self.assertEqual(len(table.render_buttons(tagged_trait)), 0)
         expected_url = reverse('tags:tagged-traits:pk:study-response:create:agree', args=[tagged_trait.pk])
         self.assertNotIn(expected_url, table.render_buttons(tagged_trait))
         expected_url = reverse('tags:tagged-traits:pk:study-response:create:disagree', args=[tagged_trait.pk])
         self.assertNotIn(expected_url, table.render_buttons(tagged_trait))
-        self.assertIn('Gave explanation', table.render_buttons(tagged_trait))
