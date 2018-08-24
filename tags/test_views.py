@@ -3476,6 +3476,7 @@ class DCCReviewNeedFollowupCountsPhenotypeTaggerTest(PhenotypeTaggerLoginTestCas
         self.assertEqual(response.status_code, 200)
 
     def test_get_context_data_one_study_with_no_need_followup_traits(self):
+        """Counts are correct with no TaggedTraits."""
         response = self.client.get(self.get_url())
         context = response.context
         self.assertIn('grouped_study_tag_counts', context)
@@ -3483,6 +3484,7 @@ class DCCReviewNeedFollowupCountsPhenotypeTaggerTest(PhenotypeTaggerLoginTestCas
         self.assertEqual(len(counts), 0)
 
     def test_get_context_data_does_not_include_tagged_traits_with_study_response(self):
+        """Count does not include TaggedTraits that have a study response."""
         factories.StudyResponseFactory.create(
             dcc_review__status=models.DCCReview.STATUS_FOLLOWUP,
             dcc_review__tagged_trait__trait__source_dataset__source_study_version__study=self.study
@@ -3494,6 +3496,7 @@ class DCCReviewNeedFollowupCountsPhenotypeTaggerTest(PhenotypeTaggerLoginTestCas
         self.assertEqual(len(counts), 0)
 
     def test_get_context_data_one_study_with_one_need_followup_traits(self):
+        """Counts are correct with one TaggedTrait that needs followup."""
         tag = factories.TagFactory.create()
         factories.DCCReviewFactory.create(
             tagged_trait__tag=tag,
@@ -3510,6 +3513,7 @@ class DCCReviewNeedFollowupCountsPhenotypeTaggerTest(PhenotypeTaggerLoginTestCas
         self.assertEqual(counts[0][1][0]['tt_count'], 1)
 
     def test_get_context_data_one_study_with_two_need_followup_traits(self):
+        """Counts are correct with two TaggedTraits that need followup."""
         tag = factories.TagFactory.create()
         factories.DCCReviewFactory.create_batch(
             2,
@@ -3527,6 +3531,7 @@ class DCCReviewNeedFollowupCountsPhenotypeTaggerTest(PhenotypeTaggerLoginTestCas
         self.assertEqual(counts[0][1][0]['tt_count'], 2)
 
     def test_get_context_data_one_study_two_tags(self):
+        """Counts are correct with one study and two tags."""
         tag1 = factories.TagFactory.create(lower_title='tag1')
         factories.DCCReviewFactory.create_batch(
             2,
@@ -3552,6 +3557,7 @@ class DCCReviewNeedFollowupCountsPhenotypeTaggerTest(PhenotypeTaggerLoginTestCas
         self.assertEqual(counts[0][1][1]['tt_count'], 1)
 
     def test_get_context_data_two_studies_same_tag(self):
+        """Counts are correct with two studies and one tag."""
         # Make sure the second study comes last by appending zzz to the name.
         other_study = StudyFactory.create(i_study_name=self.study.i_study_name + 'zzz')
         self.user.profile.taggable_studies.add(other_study)
@@ -3580,6 +3586,7 @@ class DCCReviewNeedFollowupCountsPhenotypeTaggerTest(PhenotypeTaggerLoginTestCas
         self.assertEqual(counts[1][1][0]['tt_count'], 1)
 
     def test_context_excludes_confirmed_trait(self):
+        """Count does not include a TaggedTrait that is confirmed."""
         factories.DCCReviewFactory.create(
             tagged_trait__trait__source_dataset__source_study_version__study=self.study,
             status=models.DCCReview.STATUS_CONFIRMED
@@ -3591,6 +3598,7 @@ class DCCReviewNeedFollowupCountsPhenotypeTaggerTest(PhenotypeTaggerLoginTestCas
         self.assertEqual(len(counts), 0)
 
     def test_only_taggable_studies(self):
+        """Only studies that the user can tag are included."""
         other_study = StudyFactory.create()
         factories.DCCReviewFactory.create(
             tagged_trait__trait__source_dataset__source_study_version__study=other_study,
@@ -3603,6 +3611,7 @@ class DCCReviewNeedFollowupCountsPhenotypeTaggerTest(PhenotypeTaggerLoginTestCas
         self.assertEqual(len(counts), 0)
 
     def test_context_does_not_include_tags_with_no_followup_traits(self):
+        """Tags are not in context data when they have no TaggedTraits that need followup."""
         tag = factories.TagFactory.create()
         factories.DCCReviewFactory.create(
             tagged_trait__tag=tag,
@@ -3625,6 +3634,7 @@ class DCCReviewNeedFollowupCountsPhenotypeTaggerTest(PhenotypeTaggerLoginTestCas
         self.assertEqual(counts[0][1][0]['tt_count'], 1)
 
     def test_context_does_not_include_tags_with_no_followup_traits_different_studies(self):
+        """Tag for one study is not in context data when they have no TaggedTraits that need followup."""
         other_study = StudyFactory.create(i_study_name=self.study.i_study_name + 'zzz')
         self.user.profile.taggable_studies.add(other_study)
         tag1 = factories.TagFactory.create()
@@ -3735,6 +3745,7 @@ class DCCReviewNeedFollowupListMixin(object):
         self.assertIsInstance(context['tagged_trait_table'], tables.DCCReviewTable)
 
     def test_view_contains_tagged_traits_that_need_followup(self):
+        """Table contains TaggedTraits that need followup."""
         response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
         context = response.context
         table = context['tagged_trait_table']
@@ -3744,6 +3755,7 @@ class DCCReviewNeedFollowupListMixin(object):
                           msg='tagged_trait_table does not contain {}'.format(dcc_review.tagged_trait))
 
     def test_view_table_does_not_contain_unreviewed_tagged_traits(self):
+        """Table does not contains unreviewed TaggedTraits."""
         unreviewed_tagged_trait = factories.TaggedTraitFactory.create(
             tag=self.tag,
             trait__source_dataset__source_study_version__study=self.study
@@ -3758,6 +3770,7 @@ class DCCReviewNeedFollowupListMixin(object):
         self.assertEqual(len(table.data), len(self.dcc_reviews))
 
     def test_view_works_with_no_matching_tagged_traits(self):
+        """Successful response code when there are no TaggedTraits to inclue."""
         other_tag = factories.TagFactory.create()
         response = self.client.get(self.get_url(other_tag.pk, self.study.pk))
         self.assertEqual(response.status_code, 200)
@@ -3765,6 +3778,7 @@ class DCCReviewNeedFollowupListMixin(object):
         self.assertEqual(len(context['tagged_trait_table'].data), 0)
 
     def test_view_does_not_show_tagged_traits_from_a_different_study(self):
+        """Table does not include TaggedTraits from a different study."""
         other_study = StudyFactory.create()
         other_tagged_trait = factories.TaggedTraitFactory.create(
             tag=self.tag, trait__source_dataset__source_study_version__study=other_study)
@@ -3774,6 +3788,7 @@ class DCCReviewNeedFollowupListMixin(object):
         self.assertNotIn(other_tagged_trait, context['tagged_trait_table'].data)
 
     def test_view_does_not_show_tagged_traits_from_a_different_tag(self):
+        """Table does not contain TaggedTraits from a different tag."""
         other_tag = factories.TagFactory.create()
         other_tagged_trait = factories.TaggedTraitFactory.create(
             tag=other_tag, trait__source_dataset__source_study_version__study=self.study)
@@ -3805,6 +3820,7 @@ class DCCReviewNeedFollowupListPhenotypeTaggerTestCase(DCCReviewNeedFollowupList
         self.assertEqual(response.status_code, 200)
 
     def test_table_class(self):
+        """Table class is correct."""
         response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
         self.assertIs(type(response.context['tagged_trait_table']), tables.DCCReviewTableWithStudyResponseButtons)
 
@@ -3833,6 +3849,7 @@ class DCCReviewNeedFollowupListDCCAnalystTestCase(DCCReviewNeedFollowupListMixin
         return reverse('tags:tag:study:quality-review', args=args)
 
     def test_table_class(self):
+        """Table class is correct."""
         response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
         self.assertIs(type(response.context['tagged_trait_table']), tables.DCCReviewTable)
 

@@ -561,6 +561,7 @@ class StudyResponseFormTestMixin(object):
         self.assertTrue(form.has_error('comment', code='agree_comment'))
 
     def test_invalid_missing_status(self):
+        """Form is invalid if status is missing."""
         form_data = {'comment': ''}
         form = self.form_class(form_data)
         self.assertFalse(form.is_valid())
