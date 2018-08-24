@@ -106,6 +106,16 @@ class TaggedTraitTableWithReviewStatusTest(TestCase):
         table = self.table_class(self.tagged_traits)
         self.assertEqual(self.model_class.objects.count(), len(table.rows))
 
+    def test_with_reviewed_tagged_traits_confirmed(self):
+        factories.DCCReviewFactory.create(tagged_trait=self.tagged_traits[0], status=models.DCCReview.STATUS_CONFIRMED)
+        table = self.table_class(self.tagged_traits)
+        self.assertEqual(self.model_class.objects.count(), len(table.rows))
+
+    def test_with_reviewed_tagged_traits_followup(self):
+        factories.DCCReviewFactory.create(tagged_trait=self.tagged_traits[0], status=models.DCCReview.STATUS_FOLLOWUP)
+        table = self.table_class(self.tagged_traits)
+        self.assertEqual(self.model_class.objects.count(), len(table.rows))
+
 
 class TaggedTraitTableWithDCCReviewButtonTest(TestCase):
     table_class = tables.TaggedTraitTableWithDCCReviewButton

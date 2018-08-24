@@ -88,9 +88,26 @@ class TaggedTraitDeleteButtonMixin(tables.Table):
 class TaggedTraitTableReviewStatusMixin(tables.Table):
     """Mixin to show DCCReview status in a TaggedTrait table."""
 
-    dcc_status = tables.Column('DCC review', accessor='dcc_review.status')
-    response_status = tables.Column('Study response', accessor='dcc_review.study_response.status')
+    quality_review = tables.Column('Quality review', accessor='dcc_review.status')
 
+    def render_quality_review(self, record):
+
+        if not hasattr(record, 'dcc_review'):
+            return ''
+        elif record.dcc_review.status == models.DCCReview.STATUS_CONFIRMED:
+            btn_class = 'success'
+            glyphicon = 'glyphicon-ok'
+            text = record.dcc_review.get_status_display()
+        elif record.dcc_review.status == models.DCCReview.STATUS_FOLLOWUP:
+            btn_class = 'danger'
+            glyphicon = 'glyphicon-remove'
+            text = 'Flagged for removal'
+        html = '<p class="text-{btn_class}">{text}</a>'.format(
+            btn_class=btn_class,
+            glyphicon=glyphicon,
+            text=text
+        )
+        return mark_safe(html)
 
 class TaggedTraitTableDCCReviewButtonMixin(TaggedTraitTableReviewStatusMixin):
     """Mixin to show DCCReview status and a button to review a TaggedTrait."""
@@ -118,7 +135,7 @@ class TaggedTraitTableWithReviewStatus(TaggedTraitTableReviewStatusMixin, Tagged
     """Table for displaying TaggedTraits with DCCReview information."""
 
     class Meta(TaggedTraitTable.Meta):
-        fields = ('tag', 'trait', 'description', 'dataset', 'details', 'dcc_status', 'response_status', )
+        fields = ('tag', 'trait', 'description', 'dataset', 'details', 'quality_review', )
 
 
 class TaggedTraitTableWithDCCReviewButton(TaggedTraitTableDCCReviewButtonMixin, TaggedTraitTable):
