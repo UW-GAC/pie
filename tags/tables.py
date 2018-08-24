@@ -6,8 +6,6 @@ from django.utils.safestring import mark_safe
 
 import django_tables2 as tables
 
-from trait_browser.models import Study
-
 from . import models
 
 
@@ -109,6 +107,7 @@ class TaggedTraitTableReviewStatusMixin(tables.Table):
         )
         return mark_safe(html)
 
+
 class TaggedTraitTableDCCReviewButtonMixin(TaggedTraitTableReviewStatusMixin):
     """Mixin to show DCCReview status and a button to review a TaggedTrait."""
 
@@ -145,6 +144,7 @@ class TaggedTraitTableWithDCCReviewButton(TaggedTraitTableDCCReviewButtonMixin, 
         fields = ('tag', 'trait', 'description', 'dataset', 'details', 'dcc_status', 'response_status',
                   'review_button', )
 
+
 class DCCReviewTable(tables.Table):
     """Table for displaying TaggedTrait and DCCReviews."""
 
@@ -168,15 +168,14 @@ class DCCReviewTableWithStudyResponseButtons(DCCReviewTable):
     """Table to display TaggedTrait and DCCReview info plus buttons for creating a StudyResponse."""
 
     buttons = tables.Column(verbose_name='', accessor='pk')
-    # tables.TemplateColumn(verbose_name='', orderable=False,
-    #                               template_name='tags/_studyreview_buttons.html')
 
     def render_buttons(self, record):
+        html = '<button type="button" class="btn btn-xs btn-{btn_type}" disabled="disabled">{text}</button>'
         if hasattr(record, 'dcc_review') and hasattr(record.dcc_review, 'study_response'):
             if record.dcc_review.study_response.status == models.StudyResponse.STATUS_AGREE:
-                return mark_safe('<button type="button" class="btn btn-xs btn-success" disabled="disabled">Agreed to remove</button>')
+                return mark_safe(html.format(btn_type='success', text='Agreed to remove'))
             else:
-                return mark_safe('<button type="button" class="btn btn-xs btn-danger" disabled="disabled">Gave explanation</button>')
+                return mark_safe(html.format(btn_type='danger', text='Gave explanation'))
         else:
             return get_template('tags/_studyreview_buttons.html').render({'record': record})
 

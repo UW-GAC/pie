@@ -3,8 +3,6 @@
 from django.test import TestCase
 from django.urls import reverse
 
-from trait_browser.models import Study
-
 from . import factories
 from . import models
 from . import tables

@@ -237,8 +237,8 @@ class TaggedTraitTest(TestCase):
         self.assertFalse(tagged_trait_unreviewed in qs)
         self.assertFalse(tagged_trait_confirmed in qs)
 
-    def test_need_followup_queryset_method(self):
-        """TaggedTraits with StudyResponses do appear in the needs_followup() queryset."""
+    def test_need_followup_queryset_method_with_study_response(self):
+        """A TaggedTrait with a StudyResponse appears in the needs_followup() queryset."""
         tagged_trait = factories.TaggedTraitFactory.create()
         dcc_review = factories.DCCReviewFactory.create(tagged_trait=tagged_trait,
                                                        status=models.DCCReview.STATUS_FOLLOWUP)

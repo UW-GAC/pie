@@ -354,7 +354,6 @@ class TaggedTraitDetailPhenotypeTaggerTest(TaggedTraitDetailTestsMixin, Phenotyp
         self.assertIn('show_study_disagrees', context)
         self.assertFalse(context['show_study_disagrees'])
 
-
     def test_context_with_needs_followup_trait(self):
         """The context contains the proper flags for the add/update review buttons."""
         factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP)
@@ -446,7 +445,7 @@ class TaggedTraitDetailPhenotypeTaggerTest(TaggedTraitDetailTestsMixin, Phenotyp
         other_tagged_trait = factories.TaggedTraitFactory.create()
         dcc_review = factories.DCCReviewFactory.create(tagged_trait=other_tagged_trait,
                                                        status=models.DCCReview.STATUS_FOLLOWUP)
-        factories.StudyResponseFactory.create(dcc_review = dcc_review)
+        factories.StudyResponseFactory.create(dcc_review=dcc_review)
         response = self.client.get(self.get_url(other_tagged_trait.pk))
         context = response.context
         self.assertIn('show_quality_review_panel', context)
@@ -3785,7 +3784,7 @@ class DCCReviewNeedFollowupListMixin(object):
 
 
 class DCCReviewNeedFollowupListPhenotypeTaggerTestCase(DCCReviewNeedFollowupListMixin,
-                                                         PhenotypeTaggerLoginTestCase):
+                                                       PhenotypeTaggerLoginTestCase):
 
     def setUp(self):
         super().setUp()
@@ -3817,7 +3816,7 @@ class DCCReviewNeedFollowupListPhenotypeTaggerTestCase(DCCReviewNeedFollowupList
 
 
 class DCCReviewNeedFollowupListDCCAnalystTestCase(DCCReviewNeedFollowupListMixin,
-                                                    DCCAnalystLoginTestCase):
+                                                  DCCAnalystLoginTestCase):
 
     def setUp(self):
         super().setUp()
@@ -4158,6 +4157,7 @@ class StudyResponseCreateAgreePhenotypeTaggerTestCase(PhenotypeTaggerLoginTestCa
         """When a StudyResponse is successfully created, it has the appropriate creator."""
         response = self.client.post(self.get_url(self.tagged_trait.pk), {})
         self.assertEqual(self.tagged_trait.dcc_review.study_response.creator, self.user)
+
 
 class StudyResponseCreateAgreeDCCAnalystTestCase(DCCAnalystLoginTestCase):
 

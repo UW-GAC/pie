@@ -14,7 +14,7 @@ from django.views.generic import (CreateView, DetailView, DeleteView, FormView, 
 from braces.views import (FormMessagesMixin, FormValidMessageMixin, LoginRequiredMixin, MessageMixin,
                           PermissionRequiredMixin, UserFormKwargsMixin, UserPassesTestMixin)
 from dal import autocomplete
-from django_tables2 import MultiTableMixin, SingleTableMixin
+from django_tables2 import SingleTableMixin
 
 from core.utils import SessionVariableMixin, ValidateObjectMixin
 from trait_browser.models import Study
@@ -93,8 +93,10 @@ class TaggedTraitDetail(LoginRequiredMixin, DetailView):
         context['show_confirmed_status'] = user_has_study_access and is_confirmed
         context['show_needs_followup_status'] = user_has_study_access and needs_followup
         context['show_study_response_status'] = user_has_study_access and response_exists
-        context['show_study_agrees'] = user_has_study_access and response_exists and self.object.dcc_review.study_response.status == models.StudyResponse.STATUS_AGREE
-        context['show_study_disagrees'] = user_has_study_access and response_exists and self.object.dcc_review.study_response.status == models.StudyResponse.STATUS_DISAGREE
+        context['show_study_agrees'] = user_has_study_access and response_exists and \
+            (self.object.dcc_review.study_response.status == models.StudyResponse.STATUS_AGREE)
+        context['show_study_disagrees'] = user_has_study_access and response_exists and \
+            (self.object.dcc_review.study_response.status == models.StudyResponse.STATUS_DISAGREE)
         return context
 
 
@@ -718,8 +720,8 @@ class DCCReviewNeedFollowupCounts(LoginRequiredMixin, TemplateView):
 
     def get(self, request, *args, **kwargs):
         # Make sure the user is a phenotype tagger and has at least one taggable study.
-        if (self.request.user.groups.filter(name='phenotype_taggers').exists() and
-              self.request.user.profile.taggable_studies.count() > 0):
+        n_studies = self.request.user.profile.taggable_studies.count()
+        if (self.request.user.groups.filter(name='phenotype_taggers').exists() and n_studies > 0):
             return super().get(request, *args, **kwargs)
         return HttpResponseForbidden()
 
@@ -749,7 +751,6 @@ class DCCReviewNeedFollowupList(LoginRequiredMixin, SingleTableMixin, ListView):
         else:
             return HttpResponseForbidden()
 
-
     def get_context_data(self, *args, **kwargs):
         context = super().get_context_data(*args, **kwargs)
         context['study'] = self.study
@@ -758,7 +759,10 @@ class DCCReviewNeedFollowupList(LoginRequiredMixin, SingleTableMixin, ListView):
         return context
 
     def get_table_data(self):
-        return self.study.get_tagged_traits().filter(tag=self.tag).need_followup().order_by('dcc_review__study_response')
+        data = self.study.get_tagged_traits().filter(tag=self.tag).need_followup().order_by(
+            'dcc_review__study_response'
+        )
+        return data
 
 
 class StudyResponseCheckMixin(MessageMixin):
@@ -770,7 +774,7 @@ class StudyResponseCheckMixin(MessageMixin):
     def dispatch(self, request, *args, **kwargs):
         self.tagged_trait = get_object_or_404(models.TaggedTrait, pk=kwargs['pk'])
         study = self.tagged_trait.trait.source_dataset.source_study_version.study
-        if not study in request.user.profile.taggable_studies.all():
+        if study not in request.user.profile.taggable_studies.all():
             return HttpResponseForbidden()
         try:
             dcc_review = self.tagged_trait.dcc_review
@@ -820,7 +824,8 @@ class StudyResponseMixin(object):
         return self.tagged_trait.get_absolute_url()
 
 
-class StudyResponseUpdate(LoginRequiredMixin, FormValidMessageMixin, StudyResponseCheckMixin, StudyResponseMixin, UpdateView):
+class StudyResponseUpdate(LoginRequiredMixin, FormValidMessageMixin, StudyResponseCheckMixin, StudyResponseMixin,
+                          UpdateView):
 
     template_name = 'tags/studyresponse_form.html'
     form_class = forms.StudyResponseForm
@@ -872,8 +877,8 @@ class StudyResponseCreateAgree(LoginRequiredMixin, TaggableStudiesRequiredMixin,
 
     def _create_study_response(self):
         """Create a DCCReview object linked to the given TaggedTrait."""
-        study_response = models.StudyResponse(dcc_review = self.tagged_trait.dcc_review, creator=self.request.user,
-                                    status=models.StudyResponse.STATUS_AGREE)
+        study_response = models.StudyResponse(dcc_review=self.tagged_trait.dcc_review, creator=self.request.user,
+                                              status=models.StudyResponse.STATUS_AGREE)
         study_response.full_clean()
         study_response.save()
         msg = 'Agreed that {} should be removed.'.format(self.tagged_trait)
@@ -920,7 +925,7 @@ class StudyResponseCreateDisagree(LoginRequiredMixin, FormValidMessageMixin, Stu
 
     def form_valid(self, form):
         study_response = models.StudyResponse(
-            dcc_review = self.tagged_trait.dcc_review,
+            dcc_review=self.tagged_trait.dcc_review,
             creator=self.request.user,
             status=models.StudyResponse.STATUS_DISAGREE,
             comment=form.cleaned_data['comment']
