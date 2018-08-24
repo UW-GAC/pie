@@ -1,6 +1,6 @@
 <form action="{% url 'tags:tagged-traits:pk:study-response:create:agree' record.pk %}" method="POST">
   {% csrf_token %}
-  <input type="submit" class="btn btn-xs btn-success" value="Yes, remove {{ record.tag.title }} from {{ record.trait.i_trait_name }}" />
+  <input type="submit" class="btn btn-xs btn-success" value="Yes, remove the {{ record.tag.title }} tag from {{ record.trait.i_trait_name }}" />
   <a href="{% url 'tags:tagged-traits:pk:study-response:create:disagree' record.pk %}" class="btn btn-xs btn-danger" role="button">
     Explain why {{ record.trait.i_trait_name }} should be tagged with {{ record.tag.title }}
   </a>
