@@ -52,8 +52,10 @@ class TagDetailTestsMixin(object):
         response = self.client.get(self.get_url(self.tag.pk))
         context = response.context
         study_names = [el['study_name'] for el in context['study_counts']]
-        self.assertIn(non_archived_tagged_trait.trait.source_dataset.source_study_version.study, study_names)
-        self.assertNotIn(archived_tagged_trait.trait.source_dataset.source_study_version.study, study_names)
+        self.assertIn(
+            non_archived_tagged_trait.trait.source_dataset.source_study_version.study.i_study_name, study_names)
+        self.assertNotIn(
+            archived_tagged_trait.trait.source_dataset.source_study_version.study.i_study_name, study_names)
 
 
 class TagDetailTest(TagDetailTestsMixin, UserLoginTestCase):

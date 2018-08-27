@@ -40,7 +40,7 @@ class TagDetail(LoginRequiredMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super(TagDetail, self).get_context_data(**kwargs)
-        study_counts = models.TaggedTrait.objects.filter(tag=self.object).values(
+        study_counts = models.TaggedTrait.objects.non_archived().filter(tag=self.object).values(
             study_name=F('trait__source_dataset__source_study_version__study__i_study_name'),
             study_pk=F('trait__source_dataset__source_study_version__study__pk')
         ).annotate(
