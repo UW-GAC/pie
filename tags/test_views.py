@@ -464,14 +464,7 @@ class TaggedTraitStudyCountsByTagTest(UserLoginTestCase):
         self.assertEqual(counts[0][1][0]['tt_count'], 1)
 
 
-class TaggedTraitByTagAndStudyListTest(UserLoginTestCase):
-
-    def setUp(self):
-        super(TaggedTraitByTagAndStudyListTest, self).setUp()
-        self.study = StudyFactory.create()
-        self.tag = factories.TagFactory.create()
-        self.tagged_traits = factories.TaggedTraitFactory.create_batch(
-            10, tag=self.tag, trait__source_dataset__source_study_version__study=self.study)
+class TaggedTraitByTagAndStudyListTestsMixin(object):
 
     def get_url(self, *args):
         return reverse('tags:tag:study:list', args=args)
@@ -490,24 +483,6 @@ class TaggedTraitByTagAndStudyListTest(UserLoginTestCase):
         """View returns 404 response code when the pk doesn't exist."""
         response = self.client.get(self.get_url(self.tag.pk + 1, self.study.pk))
         self.assertEqual(response.status_code, 404)
-
-    def test_context_data(self):
-        """View has appropriate data in the context."""
-        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
-        context = response.context
-        self.assertIn('study', context)
-        self.assertIn('tag', context)
-        self.assertIn('tagged_trait_table', context)
-        self.assertEqual(context['study'], self.study)
-        self.assertEqual(context['tag'], self.tag)
-        self.assertIn('show_review_button', context)
-        self.assertFalse(context['show_review_button'])
-
-    def test_table_class(self):
-        """For non-taggers, the tagged trait table class does not have delete buttons."""
-        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
-        context = response.context
-        self.assertIsInstance(context['tagged_trait_table'], tables.TaggedTraitTable)
 
     def test_view_table_contains_correct_records(self):
         response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
@@ -555,7 +530,36 @@ class TaggedTraitByTagAndStudyListTest(UserLoginTestCase):
         self.assertIn(non_archived_tagged_trait, table.data)
 
 
-class TaggedTraitByTagAndStudyListPhenotypeTaggerTest(PhenotypeTaggerLoginTestCase):
+class TaggedTraitByTagAndStudyListTest(TaggedTraitByTagAndStudyListTestsMixin, UserLoginTestCase):
+
+    def setUp(self):
+        super(TaggedTraitByTagAndStudyListTest, self).setUp()
+        self.study = StudyFactory.create()
+        self.tag = factories.TagFactory.create()
+        self.tagged_traits = factories.TaggedTraitFactory.create_batch(
+            10, tag=self.tag, trait__source_dataset__source_study_version__study=self.study)
+
+    def test_context_data(self):
+        """View has appropriate data in the context."""
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        context = response.context
+        self.assertIn('study', context)
+        self.assertIn('tag', context)
+        self.assertIn('tagged_trait_table', context)
+        self.assertEqual(context['study'], self.study)
+        self.assertEqual(context['tag'], self.tag)
+        self.assertIn('show_review_button', context)
+        self.assertFalse(context['show_review_button'])
+
+    def test_table_class(self):
+        """For non-taggers, the tagged trait table class does not have delete buttons."""
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        context = response.context
+        self.assertIsInstance(context['tagged_trait_table'], tables.TaggedTraitTable)
+
+
+class TaggedTraitByTagAndStudyListPhenotypeTaggerTest(TaggedTraitByTagAndStudyListTestsMixin,
+                                                      PhenotypeTaggerLoginTestCase):
 
     def setUp(self):
         super(TaggedTraitByTagAndStudyListPhenotypeTaggerTest, self).setUp()
@@ -564,24 +568,6 @@ class TaggedTraitByTagAndStudyListPhenotypeTaggerTest(PhenotypeTaggerLoginTestCa
             10, trait__source_dataset__source_study_version__study=self.study, tag=self.tag)
         self.user.refresh_from_db()
         self.user.profile.taggable_studies.add(self.study)
-
-    def get_url(self, *args):
-        return reverse('tags:tag:study:list', args=args)
-
-    def test_view_success_code(self):
-        """View returns successful response code."""
-        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
-        self.assertEqual(response.status_code, 200)
-
-    def test_view_with_invalid_study_pk(self):
-        """View returns 404 response code when the study pk doesn't exist."""
-        response = self.client.get(self.get_url(self.tag.pk, self.study.pk + 1))
-        self.assertEqual(response.status_code, 404)
-
-    def test_view_with_invalid_tag_pk(self):
-        """View returns 404 response code when the tag pk doesn't exist."""
-        response = self.client.get(self.get_url(self.tag.pk + 1, self.study.pk))
-        self.assertEqual(response.status_code, 404)
 
     def test_context_data(self):
         """View has appropriate data in the context."""
@@ -601,21 +587,8 @@ class TaggedTraitByTagAndStudyListPhenotypeTaggerTest(PhenotypeTaggerLoginTestCa
         context = response.context
         self.assertIsInstance(context['tagged_trait_table'], tables.TaggedTraitTableWithDCCReviewStatus)
 
-    def test_no_archived_taggedtraits(self):
-        """Archived tagged traits do not appear in the table."""
-        models.TaggedTrait.objects.all().delete()
-        archived_tagged_trait = factories.TaggedTraitFactory.create(
-            tag=self.tag, trait__source_dataset__source_study_version__study=self.study, archived=True)
-        non_archived_tagged_trait = factories.TaggedTraitFactory.create(
-            tag=self.tag, trait__source_dataset__source_study_version__study=self.study, archived=False)
-        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
-        self.assertIn('tagged_trait_table', response.context)
-        table = response.context['tagged_trait_table']
-        self.assertNotIn(archived_tagged_trait, table.data)
-        self.assertIn(non_archived_tagged_trait, table.data)
 
-
-class TaggedTraitByTagAndStudyListDCCAnalystTest(DCCAnalystLoginTestCase):
+class TaggedTraitByTagAndStudyListDCCAnalystTest(TaggedTraitByTagAndStudyListTestsMixin, DCCAnalystLoginTestCase):
 
     def setUp(self):
         super(TaggedTraitByTagAndStudyListDCCAnalystTest, self).setUp()
@@ -624,24 +597,6 @@ class TaggedTraitByTagAndStudyListDCCAnalystTest(DCCAnalystLoginTestCase):
         self.tagged_traits = factories.TaggedTraitFactory.create_batch(
             10, trait__source_dataset__source_study_version__study=self.study, tag=self.tag)
         self.user.refresh_from_db()
-
-    def get_url(self, *args):
-        return reverse('tags:tag:study:list', args=args)
-
-    def test_view_success_code(self):
-        """View returns successful response code."""
-        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
-        self.assertEqual(response.status_code, 200)
-
-    def test_view_with_invalid_study_pk(self):
-        """View returns 404 response code when the study pk doesn't exist."""
-        response = self.client.get(self.get_url(self.tag.pk, self.study.pk + 1))
-        self.assertEqual(response.status_code, 404)
-
-    def test_view_with_invalid_tag_pk(self):
-        """View returns 404 response code when the tag pk doesn't exist."""
-        response = self.client.get(self.get_url(self.tag.pk + 1, self.study.pk))
-        self.assertEqual(response.status_code, 404)
 
     def test_context_data(self):
         """View has appropriate data in the context."""
@@ -660,19 +615,6 @@ class TaggedTraitByTagAndStudyListDCCAnalystTest(DCCAnalystLoginTestCase):
         response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
         context = response.context
         self.assertIsInstance(context['tagged_trait_table'], tables.TaggedTraitTableWithDCCReviewButton)
-
-    def test_no_archived_taggedtraits(self):
-        """Archived tagged traits do not appear in the table."""
-        models.TaggedTrait.objects.all().delete()
-        archived_tagged_trait = factories.TaggedTraitFactory.create(
-            tag=self.tag, trait__source_dataset__source_study_version__study=self.study, archived=True)
-        non_archived_tagged_trait = factories.TaggedTraitFactory.create(
-            tag=self.tag, trait__source_dataset__source_study_version__study=self.study, archived=False)
-        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
-        self.assertIn('tagged_trait_table', response.context)
-        table = response.context['tagged_trait_table']
-        self.assertNotIn(archived_tagged_trait, table.data)
-        self.assertIn(non_archived_tagged_trait, table.data)
 
 
 class TaggedTraitCreateTest(PhenotypeTaggerLoginTestCase):
