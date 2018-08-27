@@ -1000,13 +1000,7 @@ class TaggedTraitDeleteDCCAnalystTest(TaggedTraitDeleteTestsMixin, DCCAnalystLog
         self.assertEqual(response.status_code, 200)
 
 
-class TaggedTraitCreateByTagTest(PhenotypeTaggerLoginTestCase):
-
-    def setUp(self):
-        super(TaggedTraitCreateByTagTest, self).setUp()
-        self.trait = SourceTraitFactory.create(source_dataset__source_study_version__study=self.study)
-        self.tag = factories.TagFactory.create()
-        self.user.refresh_from_db()
+class TaggedTraitCreateByTagTestsMixin(object):
 
     def get_url(self, *args):
         """Get the url for the view this class is supposed to test."""
@@ -1083,17 +1077,6 @@ class TaggedTraitCreateByTagTest(PhenotypeTaggerLoginTestCase):
         new_object = models.TaggedTrait.objects.latest('pk')
         self.assertEqual(self.user, new_object.creator)
 
-    def test_fails_with_other_study_trait(self):
-        """Tagging a trait fails when the trait is not in the user's taggable_studies'."""
-        study2 = StudyFactory.create()
-        trait2 = SourceTraitFactory.create(source_dataset__source_study_version__study=study2)
-        response = self.client.post(self.get_url(self.tag.pk), {'trait': trait2.pk, })
-        # They have taggable studies and they're in the phenotype_taggers group, so view is still accessible.
-        self.assertEqual(response.status_code, 200)
-        messages = list(response.wsgi_request._messages)
-        self.assertEqual(len(messages), 1)
-        self.assertTrue('Oops!' in str(messages[0]))
-
     def test_fails_when_trait_is_already_tagged(self):
         """Tagging a trait fails when the trait has already been tagged with this tag."""
         tagged_trait = factories.TaggedTraitFactory.create(tag=self.tag, trait=self.trait)
@@ -1107,6 +1090,26 @@ class TaggedTraitCreateByTagTest(PhenotypeTaggerLoginTestCase):
         """Tagging a trait fails when the trait has already been tagged with this tag but archived."""
         tagged_trait = factories.TaggedTraitFactory.create(tag=self.tag, trait=self.trait, archived=True)
         response = self.client.post(self.get_url(self.tag.pk), {'trait': self.trait.pk, })
+        self.assertEqual(response.status_code, 200)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertTrue('Oops!' in str(messages[0]))
+
+
+class TaggedTraitCreateByTagPhenotypeTaggerTest(TaggedTraitCreateByTagTestsMixin, PhenotypeTaggerLoginTestCase):
+
+    def setUp(self):
+        super(TaggedTraitCreateByTagPhenotypeTaggerTest, self).setUp()
+        self.trait = SourceTraitFactory.create(source_dataset__source_study_version__study=self.study)
+        self.tag = factories.TagFactory.create()
+        self.user.refresh_from_db()
+
+    def test_fails_with_other_study_trait(self):
+        """Tagging a trait fails when the trait is not in the user's taggable_studies'."""
+        study2 = StudyFactory.create()
+        trait2 = SourceTraitFactory.create(source_dataset__source_study_version__study=study2)
+        response = self.client.post(self.get_url(self.tag.pk), {'trait': trait2.pk, })
+        # They have taggable studies and they're in the phenotype_taggers group, so view is still accessible.
         self.assertEqual(response.status_code, 200)
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
@@ -1126,70 +1129,13 @@ class TaggedTraitCreateByTagTest(PhenotypeTaggerLoginTestCase):
         self.assertEqual(response.status_code, 403)
 
 
-class TaggedTraitCreateByTagDCCAnalystTest(DCCAnalystLoginTestCase):
+class TaggedTraitCreateByTagDCCAnalystTest(TaggedTraitCreateByTagTestsMixin, DCCAnalystLoginTestCase):
 
     def setUp(self):
         super(TaggedTraitCreateByTagDCCAnalystTest, self).setUp()
         self.trait = SourceTraitFactory.create()
         self.tag = factories.TagFactory.create()
         self.user.refresh_from_db()
-
-    def get_url(self, *args):
-        """Get the url for the view this class is supposed to test."""
-        return reverse('tags:add-one:by-tag', args=args)
-
-    def test_view_success_code(self):
-        """View returns successful response code."""
-        response = self.client.get(self.get_url(self.tag.pk))
-        self.assertEqual(response.status_code, 200)
-
-    def test_context_data(self):
-        """View has appropriate data in the context."""
-        response = self.client.get(self.get_url(self.tag.pk))
-        context = response.context
-        self.assertTrue('form' in context)
-        self.assertTrue('tag' in context)
-        self.assertEqual(context['tag'], self.tag)
-
-    def test_creates_new_object(self):
-        """Posting valid data to the form correctly tags a single trait."""
-        # Check on redirection to detail page, M2M links, and creation message.
-        form_data = {'trait': self.trait.pk, }
-        response = self.client.post(self.get_url(self.tag.pk), form_data)
-        self.assertRedirects(response, self.tag.get_absolute_url())
-        new_object = models.TaggedTrait.objects.latest('pk')
-        self.assertIsInstance(new_object, models.TaggedTrait)
-        self.assertEqual(new_object.tag, self.tag)
-        self.assertEqual(new_object.trait, self.trait)
-        self.assertIn(self.trait, self.tag.traits.all())
-        self.assertIn(self.tag, self.trait.tag_set.all())
-        messages = list(response.wsgi_request._messages)
-        self.assertEqual(len(messages), 1)
-        self.assertFalse('Oops!' in str(messages[0]))
-
-    def test_invalid_form_message(self):
-        """Posting invalid data results in a message about the invalidity."""
-        response = self.client.post(self.get_url(self.tag.pk), {'trait': '', })
-        messages = list(response.wsgi_request._messages)
-        self.assertEqual(len(messages), 1)
-        self.assertTrue('Oops!' in str(messages[0]))
-
-    def test_post_blank_trait(self):
-        """Posting bad data to the form doesn't tag the trait and shows a form error."""
-        response = self.client.post(self.get_url(self.tag.pk), {'trait': '', })
-        messages = list(response.wsgi_request._messages)
-        self.assertEqual(len(messages), 1)
-        self.assertTrue('Oops!' in str(messages[0]))
-        form = response.context['form']
-        self.assertTrue(form.has_error('trait'))
-        self.assertNotIn(self.tag, self.trait.tag_set.all())
-
-    def test_adds_user(self):
-        """When a trait is successfully tagged, it has the appropriate creator."""
-        response = self.client.post(self.get_url(self.tag.pk),
-                                    {'trait': self.trait.pk, })
-        new_object = models.TaggedTrait.objects.latest('pk')
-        self.assertEqual(self.user, new_object.creator)
 
     def test_tag_other_study_trait(self):
         """DCC user can tag a trait even when it's not in the user's taggable_studies'."""
@@ -1202,24 +1148,6 @@ class TaggedTraitCreateByTagDCCAnalystTest(DCCAnalystLoginTestCase):
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
         self.assertFalse('Oops!' in str(messages[0]))
-
-    def test_fails_when_trait_is_already_tagged(self):
-        """Tagging a trait fails when the trait has already been tagged with this tag."""
-        tagged_trait = factories.TaggedTraitFactory.create(tag=self.tag, trait=self.trait)
-        response = self.client.post(self.get_url(self.tag.pk), {'trait': self.trait.pk, })
-        self.assertEqual(response.status_code, 200)
-        messages = list(response.wsgi_request._messages)
-        self.assertEqual(len(messages), 1)
-        self.assertTrue('Oops!' in str(messages[0]))
-
-    def test_fails_when_trait_is_already_tagged_but_archived(self):
-        """Tagging a trait fails when the trait has already been tagged with this tag but archived."""
-        tagged_trait = factories.TaggedTraitFactory.create(tag=self.tag, trait=self.trait, archived=True)
-        response = self.client.post(self.get_url(self.tag.pk), {'trait': self.trait.pk, })
-        self.assertEqual(response.status_code, 200)
-        messages = list(response.wsgi_request._messages)
-        self.assertEqual(len(messages), 1)
-        self.assertTrue('Oops!' in str(messages[0]))
 
     def test_view_success_without_phenotype_taggers_group_taggers(self):
         """DCC user can access the view even though they're not in phenotype_taggers."""
