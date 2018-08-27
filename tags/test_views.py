@@ -3024,7 +3024,7 @@ class DCCReviewByTagAndStudyDCCTestsMixin(object):
         # Check for success message.
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
-        self.assertIn('archived', str(messages[0]))
+        self.assertIn('quality review', str(messages[0]))
         self.assertRedirects(response, reverse('tags:tagged-traits:dcc-review:next'), target_status_code=302)
 
     def test_already_reviewed_tagged_trait_with_form_error(self):
@@ -3066,7 +3066,7 @@ class DCCReviewByTagAndStudyDCCTestsMixin(object):
         # Check for success message.
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
-        self.assertIn('archived', str(messages[0]))
+        self.assertIn('quality review', str(messages[0]))
         self.assertRedirects(response, reverse('tags:tagged-traits:dcc-review:next'), target_status_code=302)
 
     def test_can_skip_already_reviewed_tagged_trait(self):
