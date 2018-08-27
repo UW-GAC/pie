@@ -21,11 +21,8 @@ from . import views
 fake = Faker()
 
 
-class TagDetailTest(UserLoginTestCase):
-
-    def setUp(self):
-        super(TagDetailTest, self).setUp()
-        self.tag = factories.TagFactory.create()
+class TagDetailTestsMixin(object):
+    """Mixin to run standard tests for the TagDetail view, for use with TestCase or subclass of TestCase."""
 
     def get_url(self, *args):
         return reverse('tags:tag:detail', args=args)
@@ -48,11 +45,6 @@ class TagDetailTest(UserLoginTestCase):
         self.assertEqual(context['tag'], self.tag)
         self.assertIn('study_counts', context)
 
-    def test_no_tagging_button(self):
-        """Regular user does not see a button to add tags on this detail page."""
-        response = self.client.get(self.get_url(self.tag.pk))
-        self.assertNotContains(response, reverse('tags:add-many:by-tag', kwargs={'pk': self.tag.pk}))
-
     def test_no_archived_taggedtraits(self):
         """A non-archived tagged trait is in the study counts, but not an archived one."""
         archived_tagged_trait = factories.TaggedTraitFactory.create(archived=True, tag=self.tag)
@@ -64,7 +56,19 @@ class TagDetailTest(UserLoginTestCase):
         self.assertNotIn(archived_tagged_trait.trait.source_dataset.source_study_version.study, study_names)
 
 
-class TagDetailPhenotypeTaggerTest(PhenotypeTaggerLoginTestCase):
+class TagDetailTest(TagDetailTestsMixin, UserLoginTestCase):
+
+    def setUp(self):
+        super(TagDetailTest, self).setUp()
+        self.tag = factories.TagFactory.create()
+
+    def test_no_tagging_button(self):
+        """Regular user does not see a button to add tags on this detail page."""
+        response = self.client.get(self.get_url(self.tag.pk))
+        self.assertNotContains(response, reverse('tags:add-many:by-tag', kwargs={'pk': self.tag.pk}))
+
+
+class TagDetailPhenotypeTaggerTest(TagDetailTestsMixin, PhenotypeTaggerLoginTestCase):
 
     def setUp(self):
         super(TagDetailPhenotypeTaggerTest, self).setUp()
@@ -72,31 +76,13 @@ class TagDetailPhenotypeTaggerTest(PhenotypeTaggerLoginTestCase):
         self.tag = factories.TagFactory.create()
         self.user.refresh_from_db()
 
-    def get_url(self, *args):
-        return reverse('tags:tag:detail', args=args)
-
-    def test_view_success_code(self):
-        """View returns successful response code."""
-        response = self.client.get(self.get_url(self.tag.pk))
-        self.assertEqual(response.status_code, 200)
-
     def test_has_tagging_button(self):
         """A phenotype tagger does see a button to add tags on this detail page."""
         response = self.client.get(self.get_url(self.tag.pk))
         self.assertContains(response, reverse('tags:add-many:by-tag', kwargs={'pk': self.tag.pk}))
 
-    def test_no_archived_taggedtraits(self):
-        """A non-archived tagged trait is in the study counts, but not an archived one."""
-        archived_tagged_trait = factories.TaggedTraitFactory.create(archived=True, tag=self.tag)
-        non_archived_tagged_trait = factories.TaggedTraitFactory.create(archived=False, tag=self.tag)
-        response = self.client.get(self.get_url(self.tag.pk))
-        context = response.context
-        study_names = [el['study_name'] for el in context['study_counts']]
-        self.assertIn(non_archived_tagged_trait.trait.source_dataset.source_study_version.study, study_names)
-        self.assertNotIn(archived_tagged_trait.trait.source_dataset.source_study_version.study, study_names)
 
-
-class TagDetailDCCAnalystTest(DCCAnalystLoginTestCase):
+class TagDetailDCCAnalystTest(TagDetailTestsMixin, DCCAnalystLoginTestCase):
 
     def setUp(self):
         super(TagDetailDCCAnalystTest, self).setUp()
@@ -105,28 +91,10 @@ class TagDetailDCCAnalystTest(DCCAnalystLoginTestCase):
         self.tag = factories.TagFactory.create()
         self.user.refresh_from_db()
 
-    def get_url(self, *args):
-        return reverse('tags:tag:detail', args=args)
-
-    def test_view_success_code(self):
-        """View returns successful response code."""
-        response = self.client.get(self.get_url(self.tag.pk))
-        self.assertEqual(response.status_code, 200)
-
     def test_has_tagging_button(self):
         """A DCC analyst does see a button to add tags on this detail page."""
         response = self.client.get(self.get_url(self.tag.pk))
         self.assertContains(response, reverse('tags:add-many:by-tag', kwargs={'pk': self.tag.pk}))
-
-    def test_no_archived_taggedtraits(self):
-        """A non-archived tagged trait is in the study counts, but not an archived one."""
-        archived_tagged_trait = factories.TaggedTraitFactory.create(archived=True, tag=self.tag)
-        non_archived_tagged_trait = factories.TaggedTraitFactory.create(archived=False, tag=self.tag)
-        response = self.client.get(self.get_url(self.tag.pk))
-        context = response.context
-        study_names = [el['study_name'] for el in context['study_counts']]
-        self.assertIn(non_archived_tagged_trait.trait.source_dataset.source_study_version.study, study_names)
-        self.assertNotIn(archived_tagged_trait.trait.source_dataset.source_study_version.study, study_names)
 
 
 class TagListTest(UserLoginTestCase):
