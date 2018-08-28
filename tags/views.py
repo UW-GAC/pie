@@ -87,7 +87,7 @@ class TaggedTraitTagCountsByStudy(LoginRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super(TaggedTraitTagCountsByStudy, self).get_context_data(**kwargs)
-        annotated_studies = models.TaggedTrait.objects.values(
+        annotated_studies = models.TaggedTrait.objects.non_archived().values(
             study_name=F('trait__source_dataset__source_study_version__study__i_study_name'),
             study_pk=F('trait__source_dataset__source_study_version__study__pk'),
             tag_name=F('tag__title'),
@@ -108,7 +108,7 @@ class TaggedTraitStudyCountsByTag(LoginRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super(TaggedTraitStudyCountsByTag, self).get_context_data(**kwargs)
-        annotated_tags = models.TaggedTrait.objects.values(
+        annotated_tags = models.TaggedTrait.objects.non_archived().values(
             study_name=F('trait__source_dataset__source_study_version__study__i_study_name'),
             study_pk=F('trait__source_dataset__source_study_version__study__pk'),
             tag_name=F('tag__title'),
