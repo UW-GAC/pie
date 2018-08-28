@@ -165,19 +165,54 @@ class Study(SourceDBTimeStampedModel):
         url_text = "{{% url 'trait_browser:source:studies:pk:detail' pk={} %}} ".format(self.pk)
         return URL_HTML.format(url=url_text, name=self.i_study_name)
 
-    def get_tag_count(self):
+    def get_all_tags_count(self):
         """Return a count of the number of tags for which traits are tagged in this study."""
         return apps.get_model('tags', 'Tag').objects.filter(
             traits__source_dataset__source_study_version__study=self).distinct().count()
 
-    def get_tagged_traits(self):
-        """Return a queryset of the TaggedTraits from this study."""
+    def get_archived_tags_count(self):
+        """Return a count of the number of tags for which traits are tagged, but archived, in this study."""
+        return apps.get_model('tags', 'TaggedTrait').objects.archived().filter(
+            trait__source_dataset__source_study_version__study=self).aggregate(
+            models.Count('tag', distinct=True))['tag__count']
+
+    def get_non_archived_tags_count(self):
+        """Return a count of the number of tags for which traits are tagged and NOT archived in this study."""
+        return apps.get_model('tags', 'TaggedTrait').objects.non_archived().filter(
+            trait__source_dataset__source_study_version__study=self).aggregate(
+            models.Count('tag', distinct=True))['tag__count']
+
+    def get_all_tagged_traits(self):
+        """Return a queryset of all of the TaggedTraits from this study."""
         return apps.get_model('tags', 'TaggedTrait').objects.filter(
             trait__source_dataset__source_study_version__study=self)
 
-    def get_tagged_trait_count(self):
-        """Return the count of traits that have been tagged in this study."""
-        return SourceTrait.objects.filter(source_dataset__source_study_version__study=self).exclude(tag=None).count()
+    def get_archived_tagged_traits(self):
+        """Return a queryset of the archived TaggedTraits from this study."""
+        return apps.get_model('tags', 'TaggedTrait').objects.archived().filter(
+            trait__source_dataset__source_study_version__study=self)
+
+    def get_non_archived_tagged_traits(self):
+        """Return a queryset of the non-archived TaggedTraits from this study."""
+        return apps.get_model('tags', 'TaggedTrait').objects.non_archived().filter(
+            trait__source_dataset__source_study_version__study=self)
+
+    def get_all_traits_tagged_count(self):
+        """Return the count of all traits that have been tagged in this study."""
+        return SourceTrait.objects.filter(
+            source_dataset__source_study_version__study=self).exclude(tag=None).count()
+
+    def get_archived_traits_tagged_count(self):
+        """Return the count of traits that have been tagged (and the tag archived) in this study."""
+        return apps.get_model('tags', 'TaggedTrait').objects.archived().filter(
+            trait__source_dataset__source_study_version__study=self).aggregate(
+            models.Count('trait', distinct=True))['trait__count']
+
+    def get_non_archived_traits_tagged_count(self):
+        """Return the count of traits that have been tagged (and the tag not archived) in this study."""
+        return apps.get_model('tags', 'TaggedTrait').objects.non_archived().filter(
+            trait__source_dataset__source_study_version__study=self).aggregate(
+            models.Count('trait', distinct=True))['trait__count']
 
     def get_latest_version(self):
         """Return the most recent SourceStudyVersion linked to this study."""

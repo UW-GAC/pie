@@ -140,48 +140,48 @@ class TagTest(TestCase):
         self.assertEqual(len(non_archived), tag.non_archived_traits.count())
 
 
-class StudyTaggedTraitsTest(TestCase):
+class StudyGetAllTaggedTraitsTest(TestCase):
 
     def setUp(self):
         self.study = StudyFactory.create()
         self.tagged_traits = factories.TaggedTraitFactory.create_batch(
             10, trait__source_dataset__source_study_version__study=self.study)
 
-    def test_get_tagged_traits(self):
+    def test_get_all_tagged_traits(self):
         """Returns the correct set of tagged traits for a study."""
-        self.assertEqual(list(self.study.get_tagged_traits()), self.tagged_traits)
+        self.assertEqual(list(self.study.get_all_tagged_traits()), self.tagged_traits)
 
-    def test_get_tagged_traits_empty(self):
+    def test_get_all_tagged_traits_empty(self):
         """Returns an empty queryset when a study has no tagged traits."""
         models.TaggedTrait.objects.all().delete()
-        self.assertEqual(list(self.study.get_tagged_traits()), [])
+        self.assertEqual(list(self.study.get_all_tagged_traits()), [])
 
-    def test_get_tagged_traits_two_studies(self):
+    def test_get_all_tagged_traits_two_studies(self):
         """Returns the correct set of tagged traits for a study, when other studies and tagged traits exist."""
         another_study = StudyFactory.create()
         more_tagged_traits = factories.TaggedTraitFactory.create_batch(
             10, trait__source_dataset__source_study_version__study=another_study)
-        self.assertEqual(list(self.study.get_tagged_traits()), self.tagged_traits)
-        self.assertEqual(list(another_study.get_tagged_traits()), more_tagged_traits)
+        self.assertEqual(list(self.study.get_all_tagged_traits()), self.tagged_traits)
+        self.assertEqual(list(another_study.get_all_tagged_traits()), more_tagged_traits)
 
-    def test_get_tagged_trait_count(self):
+    def test_get_all_traits_tagged_count(self):
         """Returns the correct number of tagged traits for a study."""
-        self.assertEqual(self.study.get_tagged_trait_count(), len(self.tagged_traits))
+        self.assertEqual(self.study.get_all_traits_tagged_count(), len(self.tagged_traits))
 
-    def test_get_tagged_trait_count_empty(self):
+    def test_get_all_traits_tagged_count_empty(self):
         """Returns 0 when a study has no tagged traits."""
-        models.TaggedTrait.objects.all().delete()
-        self.assertEqual(self.study.get_tagged_trait_count(), 0)
+        models.TaggedTrait.objects.all().hard_delete()
+        self.assertEqual(self.study.get_all_traits_tagged_count(), 0)
 
-    def test_get_tagged_trait_count_two_studies(self):
+    def test_get_all_traits_tagged_count_two_studies(self):
         """Returns the correct set of tagged traits for a study, when other studies and tagged traits exist."""
         another_study = StudyFactory.create()
         more_tagged_traits = factories.TaggedTraitFactory.create_batch(
             10, trait__source_dataset__source_study_version__study=another_study)
-        self.assertEqual(self.study.get_tagged_trait_count(), len(self.tagged_traits))
-        self.assertEqual(another_study.get_tagged_trait_count(), len(more_tagged_traits))
+        self.assertEqual(self.study.get_all_traits_tagged_count(), len(self.tagged_traits))
+        self.assertEqual(another_study.get_all_traits_tagged_count(), len(more_tagged_traits))
 
-    def test_get_tagged_trait_count_multiple_tags_per_trait(self):
+    def test_get_all_traits_tagged_count_multiple_tags_per_trait(self):
         """Returns the correct number of tagged traits for a study when a trait has multiple tags."""
         trait = self.tagged_traits[0].trait
         unused_tags = models.Tag.objects.exclude(pk=self.tagged_traits[0].tag.pk)
@@ -189,36 +189,180 @@ class StudyTaggedTraitsTest(TestCase):
         tag2 = unused_tags[1]
         factories.TaggedTraitFactory.create(tag=tag1, trait=trait)
         factories.TaggedTraitFactory.create(tag=tag2, trait=trait)
-        self.assertEqual(self.study.get_tagged_trait_count(), SourceTrait.objects.count())
+        self.assertEqual(self.study.get_all_traits_tagged_count(), SourceTrait.objects.count())
 
-    def test_get_tag_count(self):
+    def test_get_all_tags_count(self):
         """Returns the correct number of tags for a study."""
-        self.assertEqual(self.study.get_tag_count(), models.Tag.objects.all().count())
+        self.assertEqual(self.study.get_all_tags_count(), models.Tag.objects.all().count())
 
-    def test_get_tag_count_none(self):
+    def test_get_all_tags_count_none(self):
         """Returns the correct number of tags for a study when there are none."""
         models.TaggedTrait.objects.all().delete()
-        self.assertEqual(self.study.get_tag_count(), 0)
+        self.assertEqual(self.study.get_all_tags_count(), 0)
 
-    def test_get_tag_count_no_tags(self):
+    def test_get_all_tags_count_no_tags(self):
         """Returns the correct number of tags for a study when there are none."""
         models.TaggedTrait.objects.all().delete()
         models.Tag.objects.all().delete()
-        self.assertEqual(self.study.get_tag_count(), 0)
+        self.assertEqual(self.study.get_all_tags_count(), 0)
 
-    def test_get_tag_count_two_studies(self):
+    def test_get_all_tags_count_two_studies(self):
         """Returns the correct number of tags for a study."""
         another_study = StudyFactory.create()
         more_tagged_traits = factories.TaggedTraitFactory.create_batch(
             10, trait__source_dataset__source_study_version__study=another_study)
-        self.assertEqual(self.study.get_tag_count(),
+        self.assertEqual(self.study.get_all_tags_count(),
                          models.Tag.objects.filter(
                          traits__source_dataset__source_study_version__study=self.study).distinct().count()
                          )
-        self.assertEqual(another_study.get_tag_count(),
+        self.assertEqual(another_study.get_all_tags_count(),
                          models.Tag.objects.filter(
                          traits__source_dataset__source_study_version__study=another_study).distinct().count()
                          )
+
+
+class StudyGetArchivedTaggedTraitsTest(TestCase):
+
+    def setUp(self):
+        self.study = StudyFactory.create()
+        self.archived_tagged_traits = factories.TaggedTraitFactory.create_batch(
+            5, trait__source_dataset__source_study_version__study=self.study, archived=True)
+        self.non_archived_tagged_traits = factories.TaggedTraitFactory.create_batch(
+            4, trait__source_dataset__source_study_version__study=self.study, archived=False)
+
+    def test_get_archived_tagged_traits(self):
+        """Returns the correct set of tagged traits for a study."""
+        self.assertEqual(list(self.study.get_archived_tagged_traits()), self.archived_tagged_traits)
+
+    def test_get_archived_tagged_traits_empty(self):
+        """Returns an empty queryset when a study has no tagged traits."""
+        models.TaggedTrait.objects.all().delete()
+        self.assertEqual(list(self.study.get_archived_tagged_traits()), [])
+
+    def test_get_archived_tagged_traits_two_studies(self):
+        """Returns the correct set of tagged traits for a study, when other studies and tagged traits exist."""
+        another_study = StudyFactory.create()
+        more_tagged_traits = factories.TaggedTraitFactory.create_batch(
+            10, trait__source_dataset__source_study_version__study=another_study, archived=True)
+        self.assertEqual(list(self.study.get_archived_tagged_traits()), self.archived_tagged_traits)
+
+    def test_get_archived_traits_tagged_count(self):
+        """Returns the correct number of tagged traits for a study."""
+        self.assertEqual(self.study.get_archived_traits_tagged_count(), len(self.archived_tagged_traits))
+
+    def test_get_archived_traits_tagged_count_empty(self):
+        """Returns 0 when a study has no archived tagged traits."""
+        models.TaggedTrait.objects.archived().hard_delete()
+        self.assertEqual(self.study.get_archived_traits_tagged_count(), 0)
+
+    def test_get_archived_traits_tagged_count_two_studies(self):
+        """Returns the correct set of tagged traits for a study, when other studies and tagged traits exist."""
+        another_study = StudyFactory.create()
+        more_tagged_traits = factories.TaggedTraitFactory.create_batch(
+            10, trait__source_dataset__source_study_version__study=another_study, archived=True)
+        self.assertEqual(self.study.get_archived_traits_tagged_count(), len(self.archived_tagged_traits))
+
+    def test_get_archived_traits_tagged_count_multiple_tags_per_trait(self):
+        """Returns the correct number of tagged traits for a study when a trait has multiple tags."""
+        models.TaggedTrait.objects.all().hard_delete()
+        trait = SourceTraitFactory.create(source_dataset__source_study_version__study=self.study)
+        tags = factories.TagFactory.create_batch(2)
+        factories.TaggedTraitFactory.create(tag=tags[0], trait=trait, archived=True)
+        factories.TaggedTraitFactory.create(tag=tags[1], trait=trait, archived=True)
+        self.assertEqual(self.study.get_archived_traits_tagged_count(), 1)
+
+    def test_get_archived_tags_count(self):
+        """Returns the correct number of tags for a study."""
+        self.assertEqual(self.study.get_archived_tags_count(), len(self.archived_tagged_traits))
+
+    def test_get_archived_tags_count_none(self):
+        """Returns the correct number of archived tags for a study when there are none."""
+        models.TaggedTrait.objects.archived().hard_delete()
+        self.assertEqual(self.study.get_archived_tags_count(), 0)
+
+    def test_get_archived_tags_count_no_tags(self):
+        """Returns the correct number of archived tags for a study when there are none."""
+        models.TaggedTrait.objects.archived().hard_delete()
+        self.assertEqual(self.study.get_archived_tags_count(), 0)
+
+    def test_get_archived_tags_count_two_studies(self):
+        """Returns the correct number of tags for a study."""
+        another_study = StudyFactory.create()
+        more_tagged_traits = factories.TaggedTraitFactory.create_batch(
+            6, trait__source_dataset__source_study_version__study=another_study, archived=True)
+        self.assertEqual(self.study.get_archived_tags_count(), len(self.archived_tagged_traits))
+
+
+class StudyGetNonArchivedTaggedTraitsTest(TestCase):
+
+    def setUp(self):
+        self.study = StudyFactory.create()
+        self.archived_tagged_traits = factories.TaggedTraitFactory.create_batch(
+            5, trait__source_dataset__source_study_version__study=self.study, archived=True)
+        self.non_archived_tagged_traits = factories.TaggedTraitFactory.create_batch(
+            4, trait__source_dataset__source_study_version__study=self.study, archived=False)
+
+    def test_get_non_archived_tagged_traits(self):
+        """Returns the correct set of tagged traits for a study."""
+        self.assertEqual(list(self.study.get_non_archived_tagged_traits()), self.non_archived_tagged_traits)
+
+    def test_get_non_archived_tagged_traits_empty(self):
+        """Returns an empty queryset when a study has no tagged traits."""
+        models.TaggedTrait.objects.all().delete()
+        self.assertEqual(list(self.study.get_non_archived_tagged_traits()), [])
+
+    def test_get_non_archived_tagged_traits_two_studies(self):
+        """Returns the correct set of tagged traits for a study, when other studies and tagged traits exist."""
+        another_study = StudyFactory.create()
+        more_tagged_traits = factories.TaggedTraitFactory.create_batch(
+            10, trait__source_dataset__source_study_version__study=another_study, archived=True)
+        self.assertEqual(list(self.study.get_non_archived_tagged_traits()), self.non_archived_tagged_traits)
+
+    def test_get_non_archived_traits_tagged_count(self):
+        """Returns the correct number of tagged traits for a study."""
+        self.assertEqual(self.study.get_non_archived_traits_tagged_count(), len(self.non_archived_tagged_traits))
+
+    def test_get_non_archived_traits_tagged_count_empty(self):
+        """Returns 0 when a study has no archived tagged traits."""
+        models.TaggedTrait.objects.non_archived().hard_delete()
+        self.assertEqual(self.study.get_non_archived_traits_tagged_count(), 0)
+
+    def test_get_non_archived_traits_tagged_count_two_studies(self):
+        """Returns the correct set of tagged traits for a study, when other studies and tagged traits exist."""
+        another_study = StudyFactory.create()
+        more_tagged_traits = factories.TaggedTraitFactory.create_batch(
+            10, trait__source_dataset__source_study_version__study=another_study, archived=True)
+        self.assertEqual(self.study.get_non_archived_traits_tagged_count(), len(self.non_archived_tagged_traits))
+
+    def test_get_non_archived_traits_tagged_count_multiple_tags_per_trait(self):
+        """Returns the correct number of tagged traits for a study when a trait has multiple tags."""
+        models.TaggedTrait.objects.all().hard_delete()
+        trait = SourceTraitFactory.create(source_dataset__source_study_version__study=self.study)
+        tags = factories.TagFactory.create_batch(2)
+        factories.TaggedTraitFactory.create(tag=tags[0], trait=trait, archived=False)
+        factories.TaggedTraitFactory.create(tag=tags[1], trait=trait, archived=False)
+        self.assertEqual(self.study.get_non_archived_traits_tagged_count(), 1)
+
+    def test_get_non_archived_tags_count(self):
+        """Returns the correct number of tags for a study."""
+        self.assertEqual(self.study.get_non_archived_tags_count(), len(self.non_archived_tagged_traits))
+
+    def test_get_non_archived_tags_count_none(self):
+        """Returns the correct number of archived tags for a study when there are none."""
+        models.TaggedTrait.objects.non_archived().hard_delete()
+        self.assertEqual(self.study.get_non_archived_tags_count(), 0)
+
+    def test_get_non_archived_tags_count_no_tags(self):
+        """Returns the correct number of archived tags for a study when there are none."""
+        models.TaggedTrait.objects.non_archived().hard_delete()
+        self.assertEqual(self.study.get_non_archived_tags_count(), 0)
+
+    def test_get_non_archived_tags_count_two_studies(self):
+        """Returns the correct number of tags for a study."""
+        another_study = StudyFactory.create()
+        more_tagged_traits = factories.TaggedTraitFactory.create_batch(
+            6, trait__source_dataset__source_study_version__study=another_study, archived=True)
+        self.assertEqual(self.study.get_non_archived_tags_count(), len(self.non_archived_tagged_traits))
 
 
 class TaggedTraitTest(TestCase):
