@@ -135,7 +135,7 @@ class TaggedTraitByTagAndStudyList(LoginRequiredMixin, SingleTableMixin, ListVie
         return super(TaggedTraitByTagAndStudyList, self).get(self, request, *args, **kwargs)
 
     def get_table_data(self):
-        return self.study.get_tagged_traits().filter(tag=self.tag)
+        return self.study.get_non_archived_tagged_traits().filter(tag=self.tag)
 
     def get_table_class(self):
         """Determine whether to use tagged trait table with delete buttons or not."""
