@@ -852,17 +852,14 @@ class TaggedTraitDeleteTestsMixin(object):
         self.assertEqual(len(messages), 1)
         self.assertIn(views.REVIEWED_TAGGED_TRAIT_DELETE_ERROR_MESSAGE, str(messages[0]))
 
-    def test_needs_followup_tagged_trait_get_request_redirects_before_confirmation_view(self):
-        """Redirect when trying to delete a TaggedTrait that was reviewed with needs followup."""
+    def test_needs_followup_tagged_trait_get_request_reaches_confirmation_view(self):
+        """Confirmation view has success code when trying to delete a needs followup reviewed TaggedTrait."""
         dcc_review = factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait, comment='foo',
                                                        status=models.DCCReview.STATUS_FOLLOWUP)
         response = self.client.get(self.get_url(self.tagged_trait.pk))
-        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.status_code, 200)
         # Make sure it wasn't deleted.
         self.assertIn(self.tagged_trait, models.TaggedTrait.objects.all())
-        messages = list(response.wsgi_request._messages)
-        self.assertEqual(len(messages), 1)
-        self.assertIn(views.REVIEWED_TAGGED_TRAIT_DELETE_ERROR_MESSAGE, str(messages[0]))
 
     def test_archives_need_followup(self):
         """Archives a TaggedTrait that was reviewed with needs followup."""
