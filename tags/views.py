@@ -824,47 +824,6 @@ class StudyResponseMixin(object):
         return self.tagged_trait.get_absolute_url()
 
 
-# Note that this view is currently being used.
-# We will likely implement a better way for users to update a StudyResponse.
-# This view either will need significant updates or will need to be rewritten entirely as two separate views.
-class StudyResponseUpdate(LoginRequiredMixin, FormValidMessageMixin, StudyResponseCheckMixin, StudyResponseMixin,
-                          UpdateView):
-
-    template_name = 'tags/studyresponse_form.html'
-    form_class = forms.StudyResponseForm
-
-    def get_object(self, queryset=None):
-        obj = self.tagged_trait.dcc_review.study_response
-        return obj
-
-    def get_failure_url(self):
-        return self.tagged_trait.get_absolute_url()
-
-    def get_not_responded_warning_message(self):
-        msg = '{} does not have a study response yet.'.format(self.tagged_trait)
-        return(msg)
-
-    def get(self, request, *args, **kwargs):
-        try:
-            self.get_object()
-        except ObjectDoesNotExist:
-            self.messages.warning(self.get_not_responded_warning_message())
-            return HttpResponseRedirect(reverse('tags:tagged-traits:pk:detail', args=[self.tagged_trait.pk]))
-        return super().get(request, *args, **kwargs)
-
-    def post(self, request, *args, **kwargs):
-        try:
-            self.get_object()
-        except ObjectDoesNotExist:
-            self.messages.warning(self.get_not_responded_warning_message())
-            return HttpResponseRedirect(reverse('tags:tagged-traits:pk:detail', args=[self.tagged_trait.pk]))
-        return super().post(request, *args, **kwargs)
-
-    def get_form_valid_message(self):
-        msg = 'Successfully changed your response to the quality review for {}.'.format(self.tagged_trait)
-        return msg
-
-
 class StudyResponseCreateAgree(LoginRequiredMixin, TaggableStudiesRequiredMixin, StudyResponseCheckMixin, View):
 
     http_method_names = ['post', 'put', ]

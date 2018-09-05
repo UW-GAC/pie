@@ -568,11 +568,6 @@ class StudyResponseFormTestMixin(object):
         self.assertTrue(form.has_error('status'))
 
 
-class StudyResponseFormTest(StudyResponseFormTestMixin, TestCase):
-
-    form_class = forms.StudyResponseForm
-
-
 class StudyResponseAdminFormTest(StudyResponseFormTestMixin, TestCase):
 
     form_class = forms.StudyResponseAdminForm

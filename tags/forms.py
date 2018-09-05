@@ -560,31 +560,6 @@ class StudyResponseBaseForm(forms.ModelForm):
         }
 
 
-# Note that this form is currently not used because the StudyResponseUpdate view is not being used.
-# It will likely be removed when a better method to update StudyResponses is implemented.
-class StudyResponseForm(StudyResponseBaseForm):
-
-    SUBMIT_AGREE = 'agree'
-    SUBMIT_DISAGREE = 'disagree'
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.helper = FormHelper()
-        self.helper.layout = Layout(
-            'status',
-            'comment',
-            FormActions(
-                Submit(self.SUBMIT_AGREE, 'Agree'),
-                SubmitCssClass(self.SUBMIT_DISAGREE, 'Disagree', css_class='btn-warning')
-            )
-        )
-
-    class Meta(StudyResponseBaseForm.Meta):
-        widgets = {
-            'status': forms.HiddenInput
-        }
-
-
 class StudyResponseAdminForm(StudyResponseBaseForm):
 
     class Meta:
