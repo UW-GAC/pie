@@ -406,7 +406,7 @@ class DCCReviewByTagAndStudySelect(LoginRequiredMixin, PermissionRequiredMixin, 
         # Set session variables for use in the next view.
         study = form.cleaned_data.get('study')
         tag = form.cleaned_data.get('tag')
-        qs = models.TaggedTrait.objects.unreviewed().filter(
+        qs = models.TaggedTrait.objects.non_archived().unreviewed().filter(
             tag=tag,
             trait__source_dataset__source_study_version__study=study
         )

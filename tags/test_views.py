@@ -1753,7 +1753,7 @@ class DCCReviewByTagAndStudySelectDCCTestsMixin(object):
     def test_no_archived_taggedtraits_in_session_variable(self):
         """Sets session variable, without including archived tagged traits."""
         archived_tagged_trait = factories.TaggedTraitFactory.create(
-            tag=self.tag, trait__source_dataset__source_study_version__study=self.study)
+            tag=self.tag, trait__source_dataset__source_study_version__study=self.study, archived=True)
         response = self.client.post(self.get_url(), {'tag': self.tag.pk, 'study': self.study.pk})
         # Check session variables.
         session = self.client.session
@@ -1962,7 +1962,7 @@ class DCCReviewByTagAndStudySelectFromURLDCCTestsMixin(object):
     def test_no_archived_taggedtraits_in_session_variable(self):
         """Does not include archived tagged traits in session variables."""
         archived_tagged_trait = factories.TaggedTraitFactory.create(
-            tag=self.tag, trait__source_dataset__source_study_version__study=self.study)
+            tag=self.tag, trait__source_dataset__source_study_version__study=self.study, archived=True)
         response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
         # Check session variables.
         session = self.client.session
