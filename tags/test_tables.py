@@ -192,9 +192,9 @@ class DCCReviewTableWithStudyResponseButtonsTest(TestCase):
         """Buttons are shown for TaggedTraits that need followup and have no StudyResponse."""
         table = self.table_class(self.tagged_traits)
         tagged_trait = self.tagged_traits[0]
-        expected_url = reverse('tags:tagged-traits:pk:study-response:create:agree', args=[tagged_trait.pk])
+        expected_url = reverse('tags:tagged-traits:pk:quality-review:create:untag', args=[tagged_trait.pk])
         self.assertIn(expected_url, table.render_buttons(tagged_trait))
-        expected_url = reverse('tags:tagged-traits:pk:study-response:create:disagree', args=[tagged_trait.pk])
+        expected_url = reverse('tags:tagged-traits:pk:quality-review:create:explain', args=[tagged_trait.pk])
         self.assertIn(expected_url, table.render_buttons(tagged_trait))
 
     def test_render_buttons_for_need_followup_tagged_trait_with_agree_response(self):
@@ -204,9 +204,9 @@ class DCCReviewTableWithStudyResponseButtonsTest(TestCase):
         factories.StudyResponseFactory.create(dcc_review=tagged_trait.dcc_review,
                                               status=models.StudyResponse.STATUS_AGREE)
         self.assertEqual(len(table.render_buttons(tagged_trait)), 0)
-        expected_url = reverse('tags:tagged-traits:pk:study-response:create:agree', args=[tagged_trait.pk])
+        expected_url = reverse('tags:tagged-traits:pk:quality-review:create:untag', args=[tagged_trait.pk])
         self.assertNotIn(expected_url, table.render_buttons(tagged_trait))
-        expected_url = reverse('tags:tagged-traits:pk:study-response:create:disagree', args=[tagged_trait.pk])
+        expected_url = reverse('tags:tagged-traits:pk:quality-review:create:explain', args=[tagged_trait.pk])
         self.assertNotIn(expected_url, table.render_buttons(tagged_trait))
 
     def test_render_buttons_for_need_followup_tagged_trait_with_disagree_response(self):
@@ -216,7 +216,7 @@ class DCCReviewTableWithStudyResponseButtonsTest(TestCase):
         factories.StudyResponseFactory.create(dcc_review=tagged_trait.dcc_review,
                                               status=models.StudyResponse.STATUS_DISAGREE)
         self.assertEqual(len(table.render_buttons(tagged_trait)), 0)
-        expected_url = reverse('tags:tagged-traits:pk:study-response:create:agree', args=[tagged_trait.pk])
+        expected_url = reverse('tags:tagged-traits:pk:quality-review:create:untag', args=[tagged_trait.pk])
         self.assertNotIn(expected_url, table.render_buttons(tagged_trait))
-        expected_url = reverse('tags:tagged-traits:pk:study-response:create:disagree', args=[tagged_trait.pk])
+        expected_url = reverse('tags:tagged-traits:pk:quality-review:create:explain', args=[tagged_trait.pk])
         self.assertNotIn(expected_url, table.render_buttons(tagged_trait))

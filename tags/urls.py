@@ -45,17 +45,17 @@ single_dcc_review_patterns = ([
 ], 'dcc-review')
 
 single_study_response_create_patterns = ([
-    url(r'^agree/$', views.StudyResponseCreateAgree.as_view(), name='agree'),
-    url(r'^disagree/$', views.StudyResponseCreateDisagree.as_view(), name='disagree'),
+    url(r'^untag/$', views.StudyResponseCreateAgree.as_view(), name='untag'),
+    url(r'^explain/$', views.StudyResponseCreateDisagree.as_view(), name='explain'),
 ], 'create')
 
 single_study_response_patterns = ([
     url(r'^create/', include(single_study_response_create_patterns)),
-], 'study-response')
+], 'quality-review')
 
 single_tagged_trait_patterns = ([
     url(r'^dcc-review/', include(single_dcc_review_patterns)),
-    url(r'^study-response/', include(single_study_response_patterns)),
+    url(r'^quality-review/', include(single_study_response_patterns)),
     url(r'^$', views.TaggedTraitDetail.as_view(), name='detail'),
     url(r'^delete/$', views.TaggedTraitDelete.as_view(), name='delete'),
 ], 'pk')

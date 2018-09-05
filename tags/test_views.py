@@ -3890,7 +3890,7 @@ class StudyResponseCreateAgreeOtherUserTestCase(UserLoginTestCase):
         factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP)
 
     def get_url(self, *args):
-        return reverse('tags:tagged-traits:pk:study-response:create:agree', args=args)
+        return reverse('tags:tagged-traits:pk:quality-review:create:untag', args=args)
 
     def test_post_forbidden(self):
         """Returns a 403 forbidden status code for non-taggers."""
@@ -3915,7 +3915,7 @@ class StudyResponseCreateAgreePhenotypeTaggerTestCase(PhenotypeTaggerLoginTestCa
         factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP)
 
     def get_url(self, *args):
-        return reverse('tags:tagged-traits:pk:study-response:create:agree', args=args)
+        return reverse('tags:tagged-traits:pk:quality-review:create:untag', args=args)
 
     def test_get_method_not_allowed(self):
         """Returns a method not allowed status code for get requests."""
@@ -4003,7 +4003,7 @@ class StudyResponseCreateAgreeDCCAnalystTestCase(DCCAnalystLoginTestCase):
         factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP)
 
     def get_url(self, *args):
-        return reverse('tags:tagged-traits:pk:study-response:create:agree', args=args)
+        return reverse('tags:tagged-traits:pk:quality-review:create:untag', args=args)
 
     def test_post_forbidden(self):
         """Returns a 403 forbidden status code for non-taggers."""
@@ -4025,7 +4025,7 @@ class StudyResponseCreateDisagreeOtherUserTestCase(UserLoginTestCase):
         factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP)
 
     def get_url(self, *args):
-        return reverse('tags:tagged-traits:pk:study-response:create:disagree', args=args)
+        return reverse('tags:tagged-traits:pk:quality-review:create:explain', args=args)
 
     def test_post_forbidden(self):
         """Returns a 403 forbidden status code for non-taggers."""
@@ -4050,7 +4050,7 @@ class StudyResponseCreateDisagreePhenotypeTaggerTestCase(PhenotypeTaggerLoginTes
         factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP)
 
     def get_url(self, *args):
-        return reverse('tags:tagged-traits:pk:study-response:create:disagree', args=args)
+        return reverse('tags:tagged-traits:pk:quality-review:create:explain', args=args)
 
     def test_view_success(self):
         """View loads correctly."""
@@ -4185,7 +4185,7 @@ class StudyResponseCreateDisagreeDCCAnalystTestCase(DCCAnalystLoginTestCase):
         factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP)
 
     def get_url(self, *args):
-        return reverse('tags:tagged-traits:pk:study-response:create:disagree', args=args)
+        return reverse('tags:tagged-traits:pk:quality-review:create:explain', args=args)
 
     def test_post_forbidden(self):
         """Returns a 403 forbidden status code for non-taggers."""
