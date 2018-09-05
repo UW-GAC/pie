@@ -649,10 +649,10 @@ class DCCReviewUpdate(LoginRequiredMixin, PermissionRequiredMixin, FormValidMess
     form_class = forms.DCCReviewForm
 
     def _get_not_reviewed_warning_message(self):
-        return '{} has not been reviewed yet.'.format(self.tagged_trait)
+        return 'Oops! You cannot update the DCC review because {} has not been reviewed yet.'.format(self.tagged_trait)
 
     def _get_study_responded_message(self):
-        return 'Oops! {} cannot be changed because it has a study response.'.format(self.tagged_trait)
+        return 'Oops! The DCC review for {} cannot be changed because it already has a study response.'.format(self.tagged_trait)
 
     def get(self, request, *args, **kwargs):
         try:
