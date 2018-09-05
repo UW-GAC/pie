@@ -60,7 +60,7 @@ class TaggedTrait(TimeStampedModel):
 
     def __str__(self):
         """Pretty printing."""
-        return 'variable {} tagged {}'.format(self.trait.i_trait_name, self.tag.lower_title)
+        return 'variable {} tagged {}'.format(self.trait.i_trait_name, self.tag.title)
 
     def get_absolute_url(self):
         return reverse('tags:tagged-traits:pk:detail', args=[self.pk])
