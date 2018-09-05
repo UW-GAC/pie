@@ -516,7 +516,9 @@ class DCCReviewTagAndStudySelectForm(forms.Form):
 class StudyResponseDisagreeForm(forms.Form):
     """Form for phenotype taggers to provide a reason that they disagree with a DCC Review."""
 
-    # Use a Form instead of a ModelForm because comment is required in this case.
+    # Use a Form instead of a ModelForm, because the "comment" field is not required by
+    # the model, but it is required when adding a "disagree" response. The object will
+    # then be created in the view with the appropriate status and the given comment.
     comment = forms.CharField(
         label='Comment',
         help_text='Provide a reason why this variable is appropriately tagged.',
