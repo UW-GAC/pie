@@ -433,7 +433,7 @@ class DCCReviewByTagAndStudySelectFromURL(LoginRequiredMixin, PermissionRequired
     def get(self, request, *args, **kwargs):
         tag = get_object_or_404(models.Tag, pk=self.kwargs['pk'])
         study = get_object_or_404(Study, pk=self.kwargs['pk_study'])
-        qs = models.TaggedTrait.objects.unreviewed().filter(
+        qs = models.TaggedTrait.objects.non_archived().unreviewed().filter(
             tag=tag,
             trait__source_dataset__source_study_version__study=study
         )
