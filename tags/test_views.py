@@ -3830,6 +3830,65 @@ class DCCReviewNeedFollowupListPhenotypeTaggerTestCase(DCCReviewNeedFollowupList
         response = self.client.get(self.get_url(self.tag.pk, other_study.pk))
         self.assertEqual(response.status_code, 403)
 
+    def test_csrf_token(self):
+        """View contains a csrf token when study response buttons are present."""
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        self.assertContains(response, "name='csrfmiddlewaretoken'")
+
+
+    def test_buttons_for_need_followup_tagged_trait(self):
+        """Buttons are shown for TaggedTraits that need followup and have no StudyResponse."""
+        models.TaggedTrait.objects.hard_delete()
+        dcc_review = factories.DCCReviewFactory.create(
+            tagged_trait__tag=self.tag,
+            tagged_trait__trait__source_dataset__source_study_version__study=self.study,
+            status=models.DCCReview.STATUS_FOLLOWUP
+        )
+        tagged_trait = dcc_review.tagged_trait
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        expected_url = reverse('tags:tagged-traits:pk:quality-review:create:untag', args=[tagged_trait.pk])
+        self.assertContains(response, expected_url)
+        expected_url = reverse('tags:tagged-traits:pk:quality-review:create:explain', args=[tagged_trait.pk])
+        self.assertContains(response, expected_url)
+
+    def test_no_buttons_for_need_followup_tagged_trait_with_agree_response(self):
+        """Buttons are not shown for TaggedTraits that need followup and have an "agree" StudyResponse."""
+        models.TaggedTrait.objects.hard_delete()
+        dcc_review = factories.DCCReviewFactory.create(
+            tagged_trait__tag=self.tag,
+            tagged_trait__trait__source_dataset__source_study_version__study=self.study,
+            status=models.DCCReview.STATUS_FOLLOWUP
+        )
+        study_response = factories.StudyResponseFactory.create(
+            dcc_review=dcc_review,
+            status=models.StudyResponse.STATUS_AGREE
+        )
+        tagged_trait = dcc_review.tagged_trait
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        expected_url = reverse('tags:tagged-traits:pk:quality-review:create:untag', args=[tagged_trait.pk])
+        self.assertNotContains(response, expected_url)
+        expected_url = reverse('tags:tagged-traits:pk:quality-review:create:explain', args=[tagged_trait.pk])
+        self.assertNotContains(response, expected_url)
+
+    def test_no_buttons_for_need_followup_tagged_trait_with_disagree_response(self):
+        """Buttons are not shown for TaggedTraits that need followup and have a "disagree" StudyResponse."""
+        models.TaggedTrait.objects.hard_delete()
+        dcc_review = factories.DCCReviewFactory.create(
+            tagged_trait__tag=self.tag,
+            tagged_trait__trait__source_dataset__source_study_version__study=self.study,
+            status=models.DCCReview.STATUS_FOLLOWUP
+        )
+        study_response = factories.StudyResponseFactory.create(
+            dcc_review=dcc_review,
+            status=models.StudyResponse.STATUS_DISAGREE
+        )
+        tagged_trait = dcc_review.tagged_trait
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        expected_url = reverse('tags:tagged-traits:pk:quality-review:create:untag', args=[tagged_trait.pk])
+        self.assertNotContains(response, expected_url)
+        expected_url = reverse('tags:tagged-traits:pk:quality-review:create:explain', args=[tagged_trait.pk])
+        self.assertNotContains(response, expected_url)
+
 
 class DCCReviewNeedFollowupListDCCAnalystTestCase(DCCReviewNeedFollowupListMixin,
                                                   DCCAnalystLoginTestCase):

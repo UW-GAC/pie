@@ -189,14 +189,7 @@ class DCCReviewTable(tables.Table):
 class DCCReviewTableWithStudyResponseButtons(DCCReviewTable):
     """Table to display TaggedTrait and DCCReview info plus buttons for creating a StudyResponse."""
 
-    buttons = tables.Column(verbose_name='', accessor='pk')
-
-    def render_buttons(self, record):
-        html = '<button type="button" class="btn btn-xs btn-{btn_type}" disabled="disabled">{text}</button>'
-        if hasattr(record, 'dcc_review') and not hasattr(record.dcc_review, 'study_response'):
-            return get_template('tags/_studyreview_buttons.html').render({'record': record})
-        else:
-            return ''
+    buttons = tables.TemplateColumn(verbose_name='Quality review', template_name='tags/_studyreview_buttons.html')
 
     class Meta(DCCReviewTable.Meta):
         pass

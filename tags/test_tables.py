@@ -188,35 +188,6 @@ class DCCReviewTableWithStudyResponseButtonsTest(TestCase):
         table = self.table_class(self.tagged_traits)
         self.assertEqual(models.DCCReview.objects.count(), len(table.rows))
 
-    def test_render_buttons_for_need_followup_tagged_trait(self):
-        """Buttons are shown for TaggedTraits that need followup and have no StudyResponse."""
-        table = self.table_class(self.tagged_traits)
-        tagged_trait = self.tagged_traits[0]
-        expected_url = reverse('tags:tagged-traits:pk:quality-review:create:untag', args=[tagged_trait.pk])
-        self.assertIn(expected_url, table.render_buttons(tagged_trait))
-        expected_url = reverse('tags:tagged-traits:pk:quality-review:create:explain', args=[tagged_trait.pk])
-        self.assertIn(expected_url, table.render_buttons(tagged_trait))
-
-    def test_render_buttons_for_need_followup_tagged_trait_with_agree_response(self):
-        """Buttons are not shown for TaggedTraits that need followup and have an "agree" StudyResponse."""
-        table = self.table_class(self.tagged_traits)
-        tagged_trait = self.tagged_traits[0]
-        factories.StudyResponseFactory.create(dcc_review=tagged_trait.dcc_review,
-                                              status=models.StudyResponse.STATUS_AGREE)
-        self.assertEqual(len(table.render_buttons(tagged_trait)), 0)
-        expected_url = reverse('tags:tagged-traits:pk:quality-review:create:untag', args=[tagged_trait.pk])
-        self.assertNotIn(expected_url, table.render_buttons(tagged_trait))
-        expected_url = reverse('tags:tagged-traits:pk:quality-review:create:explain', args=[tagged_trait.pk])
-        self.assertNotIn(expected_url, table.render_buttons(tagged_trait))
-
-    def test_render_buttons_for_need_followup_tagged_trait_with_disagree_response(self):
-        """Buttons are not shown for TaggedTraits that need followup and have a "disagree" StudyResponse."""
-        table = self.table_class(self.tagged_traits)
-        tagged_trait = self.tagged_traits[0]
-        factories.StudyResponseFactory.create(dcc_review=tagged_trait.dcc_review,
-                                              status=models.StudyResponse.STATUS_DISAGREE)
-        self.assertEqual(len(table.render_buttons(tagged_trait)), 0)
-        expected_url = reverse('tags:tagged-traits:pk:quality-review:create:untag', args=[tagged_trait.pk])
-        self.assertNotIn(expected_url, table.render_buttons(tagged_trait))
-        expected_url = reverse('tags:tagged-traits:pk:quality-review:create:explain', args=[tagged_trait.pk])
-        self.assertNotIn(expected_url, table.render_buttons(tagged_trait))
+    # I could not find a way to test the conditional rendering of buttons in the
+    # table, since a request is needed to render the template properly. They are
+    # tested in the views that use this table.
