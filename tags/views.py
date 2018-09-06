@@ -579,7 +579,13 @@ class DCCReviewByTagAndStudy(LoginRequiredMixin, PermissionRequiredMixin, Sessio
             # Remove the reviewed tagged trait from the list of pks.
             self._update_session_variables()
             return HttpResponseRedirect(reverse('tags:tagged-traits:dcc-review:next'))
-        # Check if this trait has already been reviewed.
+        # Check if this tagged trait has already been archived.
+        if self.tagged_trait.archived:
+            self._update_session_variables()
+            # Add an informational message.
+            self.messages.warning('Skipped {} because it has been archived.'.format(self.tagged_trait))
+            return HttpResponseRedirect(reverse('tags:tagged-traits:dcc-review:next'))
+        # Check if this tagged trait has already been reviewed.
         if hasattr(self.tagged_trait, 'dcc_review'):
             self._update_session_variables()
             # Add an informational message.
