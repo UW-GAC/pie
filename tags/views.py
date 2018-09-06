@@ -490,12 +490,18 @@ class DCCReviewByTagAndStudyNext(LoginRequiredMixin, PermissionRequiredMixin, Se
         if len(self.pks) > 0:
             # Set the session variable expected by the review view, then redirect.
             pk = self.pks[0]
+            # Check to see if the tagged trait has been deleted since starting the loop.
             try:
                 tt = models.TaggedTrait.objects.get(pk=pk)
             except ObjectDoesNotExist:
                 self._skip_next_tagged_trait()
                 return reverse('tags:tagged-traits:dcc-review:next')
-            if hasattr(tt, 'dcc_review'):
+            # Check to see if the tagged trait has been archived since starting the loop.
+            if tt.archived:
+                self._skip_next_tagged_trait()
+                return reverse('tags:tagged-traits:dcc-review:next')
+            # Check to see if the tagged trait has been reviewed since starting the loop.
+            elif hasattr(tt, 'dcc_review'):
                 self._skip_next_tagged_trait()
                 return reverse('tags:tagged-traits:dcc-review:next')
             info['pk'] = pk
