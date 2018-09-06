@@ -482,6 +482,11 @@ class DCCReviewByTagAndStudyNext(LoginRequiredMixin, PermissionRequiredMixin, Se
         self.request.session['tagged_trait_review_by_tag_and_study_info'] = info
 
     def get_redirect_url(self, *args, **kwargs):
+        """Get the URL to review the next available tagged trait.
+
+        Skip tagged traits that have been archived or deleted since beginning the loop.
+        Return the tag-study table URL if all pks have been reviewed.
+        """
         info = self.request.session.get('tagged_trait_review_by_tag_and_study_info')
         if info is None:
             # The expected session variable has not been set by the previous
@@ -504,9 +509,10 @@ class DCCReviewByTagAndStudyNext(LoginRequiredMixin, PermissionRequiredMixin, Se
             elif hasattr(tt, 'dcc_review'):
                 self._skip_next_tagged_trait()
                 return reverse('tags:tagged-traits:dcc-review:next')
+            # If you make it this far, set the chosen pk as a session variable to reviewed next.
             info['pk'] = pk
             self.request.session['tagged_trait_review_by_tag_and_study_info'] = info
-            # Add a message.
+            # Add a status message.
             msg = ("""You are reviewing variables tagged with <a href="{tag_url}">{tag}</a> """
                    """from study <a href="{study_url}">{study_name}</a>. You have {n_pks} """
                    """tagged variable{s} left to review.""")
@@ -532,6 +538,7 @@ class DCCReviewByTagAndStudyNext(LoginRequiredMixin, PermissionRequiredMixin, Se
 
 class DCCReviewByTagAndStudy(LoginRequiredMixin, PermissionRequiredMixin, SessionVariableMixin, DCCReviewMixin,
                              FormValidMessageMixin, CreateView):
+    """Create a DCCReview for a tagged trait specified by the pk in a session variable."""
 
     template_name = 'tags/dccreview_form.html'
     permission_required = 'tags.add_dccreview'
@@ -575,6 +582,7 @@ class DCCReviewByTagAndStudy(LoginRequiredMixin, PermissionRequiredMixin, Sessio
         return context
 
     def post(self, request, *args, **kwargs):
+        """Handle skipping, or check for archived or already-reviewed tagged traits before proceeding."""
         if self.form_class.SUBMIT_SKIP in request.POST:
             # Remove the reviewed tagged trait from the list of pks.
             self._update_session_variables()
@@ -586,7 +594,7 @@ class DCCReviewByTagAndStudy(LoginRequiredMixin, PermissionRequiredMixin, Sessio
             self.messages.warning('Skipped {} because it has been archived.'.format(self.tagged_trait))
             return HttpResponseRedirect(reverse('tags:tagged-traits:dcc-review:next'))
         # Check if this tagged trait has already been reviewed.
-        if hasattr(self.tagged_trait, 'dcc_review'):
+        elif hasattr(self.tagged_trait, 'dcc_review'):
             self._update_session_variables()
             # Add an informational message.
             self.messages.warning('Skipped {} because it has already been reviewed.'.format(self.tagged_trait))
