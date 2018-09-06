@@ -583,7 +583,7 @@ class DCCReviewByTagAndStudy(LoginRequiredMixin, PermissionRequiredMixin, Sessio
         if hasattr(self.tagged_trait, 'dcc_review'):
             self._update_session_variables()
             # Add an informational message.
-            self.messages.warning('{} has already been reviewed.'.format(self.tagged_trait))
+            self.messages.warning('Skipped {} because it has already been reviewed.'.format(self.tagged_trait))
             return HttpResponseRedirect(reverse('tags:tagged-traits:dcc-review:next'))
         return super(DCCReviewByTagAndStudy, self).post(request, *args, **kwargs)
 
@@ -608,10 +608,13 @@ class DCCReviewCreate(LoginRequiredMixin, PermissionRequiredMixin, FormValidMess
     redirect_unauthenticated_users = True
     form_class = forms.DCCReviewForm
 
+    def _get_already_reviewed_warning_message(self):
+        return 'Oops! Cannot create review for {}, because it has already been reviewed.'.format(self.tagged_trait)
+
     def get(self, request, *args, **kwargs):
         self.tagged_trait = get_object_or_404(models.TaggedTrait, pk=kwargs['pk'])
         if hasattr(self.tagged_trait, 'dcc_review'):
-            self.messages.warning('{} has already been reviewed.'.format(self.tagged_trait))
+            self.messages.warning(self._get_already_reviewed_warning_message())
             return HttpResponseRedirect(reverse('tags:tagged-traits:pk:dcc-review:update',
                                                 args=[self.tagged_trait.pk]))
         return super().get(request, *args, **kwargs)
@@ -619,7 +622,7 @@ class DCCReviewCreate(LoginRequiredMixin, PermissionRequiredMixin, FormValidMess
     def post(self, request, *args, **kwargs):
         self.tagged_trait = get_object_or_404(models.TaggedTrait, pk=kwargs['pk'])
         if hasattr(self.tagged_trait, 'dcc_review'):
-            self.messages.warning('{} has already been reviewed.'.format(self.tagged_trait))
+            self.messages.warning(self._get_already_reviewed_warning_message())
             return HttpResponseRedirect(reverse('tags:tagged-traits:pk:dcc-review:update',
                                                 args=[self.tagged_trait.pk]))
         return super().post(request, *args, **kwargs)
@@ -641,7 +644,7 @@ class DCCReviewUpdate(LoginRequiredMixin, PermissionRequiredMixin, FormValidMess
     form_class = forms.DCCReviewForm
 
     def _get_already_reviewed_warning_message(self):
-        return '{} has not been reviewed yet.'.format(self.tagged_trait)
+        return 'Oops! Cannot update review for {}, because it has not been reviewed yet.'.format(self.tagged_trait)
 
     def get(self, request, *args, **kwargs):
         try:
