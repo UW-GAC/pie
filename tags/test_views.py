@@ -2083,6 +2083,7 @@ class DCCReviewByTagAndStudyNextDCCTestsMixin(object):
         self.assertNotIn('tagged_trait_review_by_tag_and_study_info', self.client.session)
 
     def test_skips_tagged_trait_that_has_been_reviewed(self):
+        """Skips a tagged trait that has been reviewed after starting the loop."""
         tag = factories.TagFactory.create()
         study = StudyFactory.create()
         tagged_traits = factories.TaggedTraitFactory.create_batch(
@@ -2110,6 +2111,7 @@ class DCCReviewByTagAndStudyNextDCCTestsMixin(object):
         self.assertEqual(len(messages), 0)
 
     def test_skips_deleted_tagged_trait(self):
+        """Skips a tagged trait that has been deleted after starting the loop."""
         tag = factories.TagFactory.create()
         study = StudyFactory.create()
         tagged_traits = factories.TaggedTraitFactory.create_batch(
@@ -2135,6 +2137,7 @@ class DCCReviewByTagAndStudyNextDCCTestsMixin(object):
         self.assertRedirects(response, reverse('tags:tagged-traits:dcc-review:next'), target_status_code=302)
 
     def test_skips_archived_tagged_trait(self):
+        """Skips a tagged trait that has been archived after starting the loop."""
         tag = factories.TagFactory.create()
         study = StudyFactory.create()
         tagged_traits = factories.TaggedTraitFactory.create_batch(
