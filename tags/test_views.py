@@ -2768,7 +2768,10 @@ class DCCReviewCreateDCCTestsMixin(object):
         self.tagged_trait.archive()
         url = self.get_url(self.tagged_trait.pk)
         response = self.client.get(url)
-        self.assertEqual(response.status_code, 404)
+        self.assertRedirects(response, self.tagged_trait.get_absolute_url())
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('been archived', str(messages[0]))
 
     def test_post_archived_tagged_trait(self):
         """Returns a 404 page if the session variable pk doesn't exist."""
@@ -2776,7 +2779,10 @@ class DCCReviewCreateDCCTestsMixin(object):
         url = self.get_url(self.tagged_trait.pk)
         form_data = {forms.DCCReviewForm.SUBMIT_CONFIRM: 'Confirm', 'comment': ''}
         response = self.client.post(url, form_data)
-        self.assertEqual(response.status_code, 404)
+        self.assertRedirects(response, self.tagged_trait.get_absolute_url())
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('been archived', str(messages[0]))
 
 
 class DCCReviewCreateDCCAnalystTest(DCCReviewCreateDCCTestsMixin, DCCAnalystLoginTestCase):

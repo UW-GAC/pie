@@ -623,22 +623,34 @@ class DCCReviewCreate(LoginRequiredMixin, PermissionRequiredMixin, FormValidMess
     form_class = forms.DCCReviewForm
 
     def _get_already_reviewed_warning_message(self):
-        return 'Oops! Cannot create review for {}, because it has already been reviewed.'.format(self.tagged_trait)
+        return 'Switched to updating review for {}, because it has already been reviewed.'.format(self.tagged_trait)
 
-    def get(self, request, *args, **kwargs):
+    def _get_archived_warning_message(self):
+        return 'Oops! Cannot create review for {}, because it has been archived.'.format(self.tagged_trait)
+
+    def _check_tagged_trait(self, *args, **kwargs):
+        """Check for deleted, archived, or already-reviewed tagged traits before proceeding."""
         self.tagged_trait = get_object_or_404(models.TaggedTrait, pk=kwargs['pk'])
-        if hasattr(self.tagged_trait, 'dcc_review'):
+        # Redirect if the tagged trait has already been archived.
+        if self.tagged_trait.archived:
+            self.messages.warning(self._get_archived_warning_message())
+            return HttpResponseRedirect(self.get_success_url())
+        # Switch to updating the existing review if the tagged trait has already been reviewed.
+        elif hasattr(self.tagged_trait, 'dcc_review'):
             self.messages.warning(self._get_already_reviewed_warning_message())
             return HttpResponseRedirect(reverse('tags:tagged-traits:pk:dcc-review:update',
                                                 args=[self.tagged_trait.pk]))
+
+    def get(self, request, *args, **kwargs):
+        check_response = self._check_tagged_trait(*args, **kwargs)
+        if check_response is not None:
+            return check_response
         return super().get(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
-        self.tagged_trait = get_object_or_404(models.TaggedTrait, pk=kwargs['pk'])
-        if hasattr(self.tagged_trait, 'dcc_review'):
-            self.messages.warning(self._get_already_reviewed_warning_message())
-            return HttpResponseRedirect(reverse('tags:tagged-traits:pk:dcc-review:update',
-                                                args=[self.tagged_trait.pk]))
+        check_response = self._check_tagged_trait(*args, **kwargs)
+        if check_response is not None:
+            return check_response
         return super().post(request, *args, **kwargs)
 
     def get_form_valid_message(self):
