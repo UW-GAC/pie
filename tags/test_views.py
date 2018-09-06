@@ -2901,14 +2901,14 @@ class DCCReviewUpdateDCCTestsMixin(object):
         self.assertEqual(len(messages), 0)
 
     def test_get_non_existent_tagged_trait(self):
-        """Returns a 404 page with a get request if the tagged trait doesn't exist."""
+        """GET returns a 404 page if the tagged trait doesn't exist."""
         url = self.get_url(self.tagged_trait.pk)
         self.tagged_trait.hard_delete()
         response = self.client.get(url)
         self.assertEqual(response.status_code, 404)
 
     def test_post_non_existent_tagged_trait(self):
-        """Returns a 404 page with a post request if the tagged trait doesn't exist."""
+        """POST returns a 404 page if the tagged trait doesn't exist."""
         url = self.get_url(self.tagged_trait.pk)
         self.tagged_trait.hard_delete()
         form_data = {forms.DCCReviewForm.SUBMIT_CONFIRM: 'Confirm', 'comment': ''}
@@ -2916,7 +2916,7 @@ class DCCReviewUpdateDCCTestsMixin(object):
         self.assertEqual(response.status_code, 404)
 
     def test_get_nonexistent_dcc_review(self):
-        """Redirects to the create view with a warning if the DCCReview doesn't exist."""
+        """GET redirects to the create view with a warning if the DCCReview doesn't exist."""
         self.tagged_trait.dcc_review.delete()
         response = self.client.get(self.get_url(self.tagged_trait.pk))
         self.assertRedirects(response, reverse('tags:tagged-traits:pk:dcc-review:new', args=[self.tagged_trait.pk]))
@@ -2926,8 +2926,7 @@ class DCCReviewUpdateDCCTestsMixin(object):
         self.assertIn('has not been reviewed yet', str(messages[0]))
 
     def test_post_nonexistent_dcc_review(self):
-        """Returns a 404 page with a post request if the dcc_review doesn't exist."""
-        """Redirects to the create view with a warning if the DCCReview doesn't exist."""
+        """POST redirects to the create view with a warning if the DCCReview doesn't exist."""
         self.tagged_trait.dcc_review.delete()
         response = self.client.get(self.get_url(self.tagged_trait.pk))
         self.assertRedirects(response, reverse('tags:tagged-traits:pk:dcc-review:new', args=[self.tagged_trait.pk]))
