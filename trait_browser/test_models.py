@@ -165,6 +165,19 @@ class SourceDatasetTest(TestCase):
         dataset = factories.SourceDatasetFactory.create()
         self.assertIsInstance(dataset.get_name_link_html(), str)
 
+    def test_get_name_link_html_mdash_for_blank_description(self):
+        """get_name_link_html includes an mdash when description is blank."""
+        dataset = factories.SourceDatasetFactory.create(i_dbgap_description='')
+        self.assertIsInstance(dataset.get_name_link_html(), str)
+        self.assertIn('&mdash;', dataset.get_name_link_html())
+
+    def test_get_name_link_html_non_blank_description(self):
+        """get_name_link_html includes an mdash when description is not blank."""
+        desc = 'my dataset description'
+        dataset = factories.SourceDatasetFactory.create(i_dbgap_description=desc)
+        self.assertIsInstance(dataset.get_name_link_html(), str)
+        self.assertIn(desc, dataset.get_name_link_html())
+
 
 class HarmonizedTraitSetTest(TestCase):
 
@@ -336,6 +349,12 @@ class SourceTraitTest(TestCase):
         trait = factories.SourceTraitFactory.create()
         self.assertIsInstance(trait.get_name_link_html(), str)
 
+    def test_get_name_link_html_blank_description(self):
+        """get_name_link_html includes an mdash when description is blank."""
+        trait = factories.SourceTraitFactory.create(i_description='')
+        self.assertIsInstance(trait.get_name_link_html(), str)
+        self.assertIn('&mdash;', trait.get_name_link_html())
+
     def test_current_queryset_method(self):
         """SourceTrait.objects.current() does not return deprecated traits."""
         current_trait = factories.SourceTraitFactory.create()
@@ -419,6 +438,12 @@ class HarmonizedTraitTest(TestCase):
         """get_name_link_html returns a string."""
         trait = factories.HarmonizedTraitFactory.create()
         self.assertIsInstance(trait.get_name_link_html(), str)
+
+    def test_get_name_link_html_blank_description(self):
+        """get_name_link_html includes an mdash when description is blank."""
+        trait = factories.HarmonizedTraitFactory.create(i_description='')
+        self.assertIsInstance(trait.get_name_link_html(), str)
+        self.assertIn('&mdash;', trait.get_name_link_html())
 
     def test_unique_together(self):
         """Adding the same trait name and hts version combination doesn't work."""

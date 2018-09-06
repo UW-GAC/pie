@@ -288,7 +288,11 @@ class SourceDataset(SourceDBTimeStampedModel):
 
     def get_name_link_html(self):
         """Get html for the dataset name linked to the dataset's detail page, with description as popover."""
-        return POPOVER_URL_HTML.format(url=self.get_absolute_url(), popover=self.i_dbgap_description,
+        if not self.i_dbgap_description:
+            description = '&mdash;'
+        else:
+            description = self.i_dbgap_description
+        return POPOVER_URL_HTML.format(url=self.get_absolute_url(), popover=description,
                                        name=self.dataset_name)
 
 
@@ -481,7 +485,11 @@ class SourceTrait(Trait):
 
     def get_name_link_html(self):
         """Get html for the trait name linked to the trait's detail page, with description as popover."""
-        return POPOVER_URL_HTML.format(url=self.get_absolute_url(), popover=self.i_description,
+        if not self.i_description:
+            description = '&mdash;'
+        else:
+            description = self.i_description
+        return POPOVER_URL_HTML.format(url=self.get_absolute_url(), popover=description,
                                        name=self.i_trait_name)
 
 
@@ -550,7 +558,11 @@ class HarmonizedTrait(Trait):
     def get_name_link_html(self):
         """Get html for the trait name linked to the harmonized trait's detail page, with description as popover."""
         url_text = "{{% url 'trait_browser:harmonized:traits:detail' pk={} %}} ".format(self.harmonized_trait_set_version.pk)
-        return POPOVER_URL_HTML.format(url=url_text, popover=self.i_description, name=self.trait_flavor_name)
+        if not self.i_description:
+            description = '&mdash;'
+        else:
+            description = self.i_description
+        return POPOVER_URL_HTML.format(url=url_text, popover=description, name=self.trait_flavor_name)
 
     def get_component_html(self, harmonization_unit):
         """Get html for inline lists of source and harmonized component phenotypes for the harmonized trait."""
