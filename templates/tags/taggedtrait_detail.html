@@ -39,17 +39,13 @@
         <span class="glyphicon glyphicon-sunglasses" aria-hidden="true"></span> Update DCC review
     </a>
   {% endif %}
-  {% if perms.tags.add_taggedtrait %}
-    {% if user_is_study_tagger or request.user.is_staff %}
-      {% if not tagged_trait.dcc_review %}
-        {% comment %}
-          This use of the taggedtrait delete URL can't have ?next={{ request.path }} after it because
-          once the tagged trait is deleted the detail page won't exist.
-        {% endcomment %}
-        <a class="btn btn-danger" href="{% url 'tags:tagged-traits:pk:delete' tagged_trait.pk %}?next={{ request.path }}" role="button">
-            <span class="glyphicon glyphicon-remove" aria-hidden="true"></span> Remove tag
-        </a>
-      {% endif %}
-    {% endif %}
+  {% if show_delete_button %}
+    {% comment %}
+      This use of the taggedtrait delete URL can't have ?next={{ request.path }} after it because
+      once the tagged trait is deleted the detail page won't exist.
+    {% endcomment %}
+    <a class="btn btn-danger" href="{% url 'tags:tagged-traits:pk:delete' tagged_trait.pk %}?next={{ request.path }}" role="button">
+        <span class="glyphicon glyphicon-remove" aria-hidden="true"></span> Remove tag
+    </a>
   {% endif %}
 {% endblock after_panel %}
