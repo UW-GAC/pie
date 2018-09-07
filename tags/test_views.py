@@ -2920,7 +2920,6 @@ class DCCReviewUpdateDCCTestsMixin(object):
         self.tagged_trait.dcc_review.delete()
         response = self.client.get(self.get_url(self.tagged_trait.pk))
         self.assertRedirects(response, reverse('tags:tagged-traits:pk:dcc-review:new', args=[self.tagged_trait.pk]))
-        # Check for warning message.
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
         self.assertIn('has not been reviewed yet', str(messages[0]))
@@ -2930,25 +2929,30 @@ class DCCReviewUpdateDCCTestsMixin(object):
         self.tagged_trait.dcc_review.delete()
         response = self.client.get(self.get_url(self.tagged_trait.pk))
         self.assertRedirects(response, reverse('tags:tagged-traits:pk:dcc-review:new', args=[self.tagged_trait.pk]))
-        # Check for warning message.
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
         self.assertIn('has not been reviewed yet', str(messages[0]))
 
     def test_get_archived_tagged_trait(self):
-        """Returns a 404 page with a get request if the tagged trait is archived."""
+        """GET redirects to detail page if the tagged trait is archived."""
         self.tagged_trait.archive()
         url = self.get_url(self.tagged_trait.pk)
         response = self.client.get(url)
-        self.assertEqual(response.status_code, 404)
+        self.assertRedirects(response, self.tagged_trait.get_absolute_url())
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('archived', str(messages[0]))
 
     def test_post_archived_tagged_trait(self):
-        """Returns a 404 page with a post request if the tagged trait is archived."""
+        """POST redirects to detail page if the tagged trait is archived."""
         self.tagged_trait.archive()
         url = self.get_url(self.tagged_trait.pk)
         form_data = {forms.DCCReviewForm.SUBMIT_CONFIRM: 'Confirm', 'comment': ''}
         response = self.client.post(url, form_data)
-        self.assertEqual(response.status_code, 404)
+        self.assertRedirects(response, self.tagged_trait.get_absolute_url())
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('archived', str(messages[0]))
 
 
 class DCCReviewUpdateDCCAnalystTest(DCCReviewUpdateDCCTestsMixin, DCCAnalystLoginTestCase):

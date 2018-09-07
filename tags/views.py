@@ -10,6 +10,7 @@ from django.utils.safestring import mark_safe
 from django.urls import reverse
 from django.views.generic import (CreateView, DetailView, DeleteView, FormView, ListView, RedirectView, TemplateView,
                                   UpdateView)
+from django.views.generic.edit import ProcessFormView
 
 from braces.views import (FormMessagesMixin, FormValidMessageMixin, LoginRequiredMixin, MessageMixin,
                           PermissionRequiredMixin, UserFormKwargsMixin, UserPassesTestMixin)
@@ -669,27 +670,52 @@ class DCCReviewUpdate(LoginRequiredMixin, PermissionRequiredMixin, FormValidMess
     redirect_unauthenticated_users = True
     form_class = forms.DCCReviewForm
 
-    def _get_already_reviewed_warning_message(self):
-        return 'Oops! Cannot update review for {}, because it has not been reviewed yet.'.format(self.tagged_trait)
+    def _get_not_reviewed_warning_message(self):
+        return 'Switching to creating a new review for {}, because it has not been reviewed yet.'.format(
+            self.tagged_trait)
+
+    def _get_archived_warning_message(self):
+        return 'Oops! Cannot update review for {}, because it has been archived.'.format(self.tagged_trait)
+
+    def _get_response_if_archived_or_not_reviewed(self):
+        """Check for archived tagged trait or missing DCCReview before proceeding."""
+        if self.tagged_trait.archived:
+            self.messages.warning(self._get_archived_warning_message())
+            return HttpResponseRedirect(self.get_success_url())
+        if self.object is None:
+            self.messages.warning(self._get_not_reviewed_warning_message())
+            return HttpResponseRedirect(reverse('tags:tagged-traits:pk:dcc-review:new', args=[self.tagged_trait.pk]))
 
     def get(self, request, *args, **kwargs):
-        try:
-            return super().get(request, *args, **kwargs)
-        except ObjectDoesNotExist:
-            self.messages.warning(self._get_already_reviewed_warning_message())
-            return HttpResponseRedirect(reverse('tags:tagged-traits:pk:dcc-review:new', args=[self.tagged_trait.pk]))
+        """Run get_object, check for archived or deleted tagged trait, and finally run the usual get."""
+        # This doesn't use super() directly because the work on check_response needs to happen in the middle of
+        # what's done in super().get().
+        self.object = self.get_object()
+        check_response = self._get_response_if_archived_or_not_reviewed()
+        if check_response is not None:
+            return check_response
+        # ProcessFormView is the super of the super.
+        return ProcessFormView.get(self, request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
-        try:
-            return super().post(request, *args, **kwargs)
-        except ObjectDoesNotExist:
-            self.messages.warning(self._get_already_reviewed_warning_message())
-            return HttpResponseRedirect(reverse('tags:tagged-traits:pk:dcc-review:new', args=[self.tagged_trait.pk]))
+        """Run get_object, check for archived or deleted tagged trait, and finally run the usual post."""
+        # This doesn't use super() directly because the work on check_response needs to happen in the middle of
+        # what's done in super().post().
+        self.object = self.get_object()
+        check_response = self._get_response_if_archived_or_not_reviewed()
+        if check_response is not None:
+            return check_response
+        # ProcessFormView is the super of the super.
+        return ProcessFormView.post(self, request, *args, **kwargs)
 
     def get_object(self, queryset=None):
+        """Get both the tagged trait and its DCC review."""
         self.tagged_trait = get_object_or_404(models.TaggedTrait, pk=self.kwargs['pk'])
-        obj = self.tagged_trait.dcc_review
-        return obj
+        try:
+            obj = self.tagged_trait.dcc_review
+            return obj
+        except ObjectDoesNotExist:
+            return None
 
     def get_form_valid_message(self):
         msg = 'Successfully updated {}.'.format(self.tagged_trait)
