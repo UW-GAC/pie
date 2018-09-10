@@ -5,8 +5,12 @@ from datetime import datetime
 from django.core.exceptions import ValidationError
 from django.test import TestCase
 
+from faker import Factory
+
 from . import factories
 from . import models
+
+fake = Factory.create()
 
 
 class GlobalStudyTest(TestCase):
@@ -176,6 +180,17 @@ class SourceDatasetTest(TestCase):
         desc = 'my dataset description'
         dataset = factories.SourceDatasetFactory.create(i_dbgap_description=desc)
         self.assertIsInstance(dataset.get_name_link_html(), str)
+        self.assertIn(desc, dataset.get_name_link_html())
+
+    def test_get_name_link_html_truncates_long_description(self):
+        """get_name_link_html truncates a long description."""
+        desc = 'my dataset description with many words'
+        dataset = factories.SourceDatasetFactory.create(i_dbgap_description=desc)
+        self.assertIsInstance(dataset.get_name_link_html(), str)
+        self.assertIn('my dataset', dataset.get_name_link_html(max_popover_words=2))
+        self.assertNotIn('description with many words', dataset.get_name_link_html(max_popover_words=2))
+        self.assertIn('my dataset description...', dataset.get_name_link_html(max_popover_words=3))
+        self.assertNotIn('with many words', dataset.get_name_link_html(max_popover_words=3))
         self.assertIn(desc, dataset.get_name_link_html())
 
 
@@ -355,6 +370,17 @@ class SourceTraitTest(TestCase):
         self.assertIsInstance(trait.get_name_link_html(), str)
         self.assertIn('&mdash;', trait.get_name_link_html())
 
+    def test_get_name_link_html_truncates_long_description(self):
+        """get_name_link_html truncates a long description."""
+        desc = 'my trait description with many words'
+        trait = factories.SourceTraitFactory.create(i_description=desc)
+        self.assertIsInstance(trait.get_name_link_html(), str)
+        self.assertIn('my trait', trait.get_name_link_html(max_popover_words=2))
+        self.assertNotIn('description with many words', trait.get_name_link_html(max_popover_words=2))
+        self.assertIn('my trait description...', trait.get_name_link_html(max_popover_words=3))
+        self.assertNotIn('with many words', trait.get_name_link_html(max_popover_words=3))
+        self.assertIn(desc, trait.get_name_link_html())
+
     def test_current_queryset_method(self):
         """SourceTrait.objects.current() does not return deprecated traits."""
         current_trait = factories.SourceTraitFactory.create()
@@ -444,6 +470,16 @@ class HarmonizedTraitTest(TestCase):
         trait = factories.HarmonizedTraitFactory.create(i_description='')
         self.assertIsInstance(trait.get_name_link_html(), str)
         self.assertIn('&mdash;', trait.get_name_link_html())
+
+    def test_get_name_link_html_truncates_long_description(self):
+        """get_name_link_html truncates a long description."""
+        desc = 'my trait description with many words'
+        trait = factories.HarmonizedTraitFactory.create(i_description=desc)
+        self.assertIsInstance(trait.get_name_link_html(), str)
+        self.assertIn('my trait...', trait.get_name_link_html(max_popover_words=2))
+        self.assertIn('my trait description...', trait.get_name_link_html(max_popover_words=3))
+        self.assertNotIn('with many words', trait.get_name_link_html(max_popover_words=3))
+        self.assertIn(desc, trait.get_name_link_html())
 
     def test_unique_together(self):
         """Adding the same trait name and hts version combination doesn't work."""
