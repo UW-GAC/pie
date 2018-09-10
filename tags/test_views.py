@@ -225,15 +225,15 @@ class TaggedTraitDetailPhenotypeTaggerTest(TaggedTraitDetailTestsMixin, Phenotyp
         response = self.client.get(self.get_url(tagged_trait.pk))
         self.assertNotContains(response, reverse('tags:tagged-traits:pk:delete', kwargs={'pk': tagged_trait.pk}))
 
-    def test_disabled_delete_button_for_reviewed_tagged_trait(self):
-        """A phenotype tagger sees a disabled button to delete the tagged trait."""
+    def test_no_delete_button_for_needfollowup_reviewed_tagged_trait(self):
+        """A phenotype tagger sees no button to delete the tagged trait."""
         factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP,
                                           comment='foo')
         response = self.client.get(self.get_url(self.tagged_trait.pk))
         self.assertNotContains(response, reverse('tags:tagged-traits:pk:delete', kwargs={'pk': self.tagged_trait.pk}))
 
-    def test_disabled_delete_button_for_confirmed_tagged_trait(self):
-        """A phenotype tagger sees a disabled button to delete the tagged trait."""
+    def test_no_delete_button_for_confirmed_reviewed_tagged_trait(self):
+        """A phenotype tagger sees no button to delete the tagged trait."""
         factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait, status=models.DCCReview.STATUS_CONFIRMED)
         response = self.client.get(self.get_url(self.tagged_trait.pk))
         self.assertNotContains(response, reverse('tags:tagged-traits:pk:delete', kwargs={'pk': self.tagged_trait.pk}))
@@ -297,15 +297,15 @@ class TaggedTraitDetailDCCAnalystTest(TaggedTraitDetailTestsMixin, DCCAnalystLog
         response = self.client.get(self.get_url(self.tagged_trait.pk))
         self.assertContains(response, reverse('tags:tagged-traits:pk:delete', kwargs={'pk': self.tagged_trait.pk}))
 
-    def test_disabled_delete_button_for_reviewed_tagged_trait(self):
-        """A phenotype tagger sees a disabled button to delete the tagged trait."""
+    def test_no_delete_button_for_needfollowup_reviewed_tagged_trait(self):
+        """A phenotype tagger sees no button to delete the tagged trait."""
         factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP,
                                           comment='foo')
         response = self.client.get(self.get_url(self.tagged_trait.pk))
         self.assertNotContains(response, reverse('tags:tagged-traits:pk:delete', kwargs={'pk': self.tagged_trait.pk}))
 
-    def test_disabled_delete_button_for_confirmed_tagged_trait(self):
-        """A phenotype tagger sees a disabled button to delete the tagged trait."""
+    def test_no_delete_button_for_confirmed_reviewed_tagged_trait(self):
+        """A phenotype tagger sees no button to delete the tagged trait."""
         factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait, status=models.DCCReview.STATUS_CONFIRMED)
         response = self.client.get(self.get_url(self.tagged_trait.pk))
         self.assertNotContains(response, reverse('tags:tagged-traits:pk:delete', kwargs={'pk': self.tagged_trait.pk}))
