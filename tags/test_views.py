@@ -3495,7 +3495,7 @@ class DCCReviewNeedFollowupCountsPhenotypeTaggerTest(PhenotypeTaggerLoginTestCas
         counts = context['grouped_study_tag_counts']
         self.assertEqual(len(counts), 0)
 
-    def test_get_context_data_one_study_with_one_need_followup_traits(self):
+    def test_get_context_data_one_study_with_one_need_followup_tagged_trait(self):
         """Counts are correct with one TaggedTrait that needs followup."""
         tag = factories.TagFactory.create()
         factories.DCCReviewFactory.create(
@@ -3508,11 +3508,12 @@ class DCCReviewNeedFollowupCountsPhenotypeTaggerTest(PhenotypeTaggerLoginTestCas
         self.assertIn('grouped_study_tag_counts', context)
         counts = context['grouped_study_tag_counts']
         self.assertEqual(len(counts), 1)
+        self.assertEqual(counts[0][0]['study_pk'], self.study.pk)
         self.assertEqual(len(counts[0][1]), 1)
         self.assertEqual(counts[0][1][0]['tag_pk'], tag.pk)
-        self.assertEqual(counts[0][1][0]['tt_count'], 1)
+        self.assertEqual(counts[0][1][0]['tt_remaining_count'], 1)
 
-    def test_get_context_data_one_study_with_two_need_followup_traits(self):
+    def test_get_context_data_one_study_with_two_need_followup_tagged_traits(self):
         """Counts are correct with two TaggedTraits that need followup."""
         tag = factories.TagFactory.create()
         factories.DCCReviewFactory.create_batch(
@@ -3526,9 +3527,10 @@ class DCCReviewNeedFollowupCountsPhenotypeTaggerTest(PhenotypeTaggerLoginTestCas
         self.assertIn('grouped_study_tag_counts', context)
         counts = context['grouped_study_tag_counts']
         self.assertEqual(len(counts), 1)
+        self.assertEqual(counts[0][0]['study_pk'], self.study.pk)
         self.assertEqual(len(counts[0][1]), 1)
         self.assertEqual(counts[0][1][0]['tag_pk'], tag.pk)
-        self.assertEqual(counts[0][1][0]['tt_count'], 2)
+        self.assertEqual(counts[0][1][0]['tt_remaining_count'], 2)
 
     def test_get_context_data_one_study_two_tags(self):
         """Counts are correct with one study and two tags."""
@@ -3550,11 +3552,12 @@ class DCCReviewNeedFollowupCountsPhenotypeTaggerTest(PhenotypeTaggerLoginTestCas
         self.assertIn('grouped_study_tag_counts', context)
         counts = context['grouped_study_tag_counts']
         self.assertEqual(len(counts), 1)
+        self.assertEqual(counts[0][0]['study_pk'], self.study.pk)
         self.assertEqual(len(counts[0][1]), 2)
         self.assertEqual(counts[0][1][0]['tag_pk'], tag1.pk)
-        self.assertEqual(counts[0][1][0]['tt_count'], 2)
+        self.assertEqual(counts[0][1][0]['tt_remaining_count'], 2)
         self.assertEqual(counts[0][1][1]['tag_pk'], tag2.pk)
-        self.assertEqual(counts[0][1][1]['tt_count'], 1)
+        self.assertEqual(counts[0][1][1]['tt_remaining_count'], 1)
 
     def test_get_context_data_two_studies_same_tag(self):
         """Counts are correct with two studies and one tag."""
@@ -3578,12 +3581,16 @@ class DCCReviewNeedFollowupCountsPhenotypeTaggerTest(PhenotypeTaggerLoginTestCas
         self.assertIn('grouped_study_tag_counts', context)
         counts = context['grouped_study_tag_counts']
         self.assertEqual(len(counts), 2)
+        # Check first study.
+        self.assertEqual(counts[0][0]['study_pk'], self.study.pk)
         self.assertEqual(len(counts[0][1]), 1)
         self.assertEqual(counts[0][1][0]['tag_pk'], tag.pk)
-        self.assertEqual(counts[0][1][0]['tt_count'], 2)
+        self.assertEqual(counts[0][1][0]['tt_remaining_count'], 2)
+        # Check second study.
+        self.assertEqual(counts[1][0]['study_pk'], other_study.pk)
         self.assertEqual(len(counts[1][1]), 1)
         self.assertEqual(counts[1][1][0]['tag_pk'], tag.pk)
-        self.assertEqual(counts[1][1][0]['tt_count'], 1)
+        self.assertEqual(counts[1][1][0]['tt_remaining_count'], 1)
 
     def test_context_excludes_confirmed_trait(self):
         """Count does not include a TaggedTrait that is confirmed."""
@@ -3629,9 +3636,10 @@ class DCCReviewNeedFollowupCountsPhenotypeTaggerTest(PhenotypeTaggerLoginTestCas
         self.assertIn('grouped_study_tag_counts', context)
         counts = context['grouped_study_tag_counts']
         self.assertEqual(len(counts), 1)
+        self.assertEqual(counts[0][0]['study_pk'], self.study.pk)
         self.assertEqual(len(counts[0][1]), 1)
         self.assertEqual(counts[0][1][0]['tag_pk'], tag.pk)
-        self.assertEqual(counts[0][1][0]['tt_count'], 1)
+        self.assertEqual(counts[0][1][0]['tt_remaining_count'], 1)
 
     def test_context_does_not_include_tags_with_no_followup_traits_different_studies(self):
         """Tag for one study is not in context data when they have no TaggedTraits that need followup."""
@@ -3666,12 +3674,15 @@ class DCCReviewNeedFollowupCountsPhenotypeTaggerTest(PhenotypeTaggerLoginTestCas
         self.assertIn('grouped_study_tag_counts', context)
         counts = context['grouped_study_tag_counts']
         self.assertEqual(len(counts), 2)
+        self.assertEqual(counts[0][0]['study_pk'], self.study.pk)
         self.assertEqual(len(counts[0][1]), 1)
         self.assertEqual(counts[0][1][0]['tag_pk'], tag1.pk)
-        self.assertEqual(counts[0][1][0]['tt_count'], 1)
+        self.assertEqual(counts[0][1][0]['tt_remaining_count'], 1)
+        # Check second study.
+        self.assertEqual(counts[1][0]['study_pk'], other_study.pk)
         self.assertEqual(len(counts[1][1]), 1)
         self.assertEqual(counts[1][1][0]['tag_pk'], tag2.pk)
-        self.assertEqual(counts[1][1][0]['tt_count'], 2)
+        self.assertEqual(counts[1][1][0]['tt_remaining_count'], 2)
 
     def test_navbar_does_not_contain_link(self):
         """Phenotype taggers do see a link to the main quality review page."""

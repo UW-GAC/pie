@@ -706,9 +706,9 @@ class DCCReviewNeedFollowupCounts(LoginRequiredMixin, TemplateView):
             tag_name=F('tag__title'),
             tag_pk=F('tag__pk')
         ).annotate(
-            tt_count=Count('pk')
+            tt_remaining_count=Count('pk')
         ).values(
-            'study_name', 'study_pk', 'tag_name', 'tt_count', 'tag_pk'
+            'study_name', 'study_pk', 'tag_name', 'tt_remaining_count', 'tag_pk'
         ).order_by(
             'study_name', 'tag_name'
         )

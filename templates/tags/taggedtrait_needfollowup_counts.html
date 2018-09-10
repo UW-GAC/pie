@@ -37,7 +37,7 @@
             {% for tag_data in study_data.1 %}
             <tr>
               <td><a href="{% url 'tags:tag:detail' tag_data.tag_pk %}">{{ tag_data.tag_name }}</a></td>
-              <td>{{ tag_data.tt_count }}</td>
+              <td>{{ tag_data.tt_remaining_count }}</td>
               <td><a class="btn btn-xs btn-primary" href="{% url 'tags:tag:study:quality-review' tag_data.tag_pk study_data.0.study_pk %}" role="button">Begin quality review</a></td>
             </tr>
             {% endfor %}
