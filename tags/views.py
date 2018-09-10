@@ -2,7 +2,7 @@
 
 from itertools import groupby
 
-from django.db.models import Count, F
+from django.db.models import Case, Count, F, IntegerField, Sum, When
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponseRedirect, HttpResponseForbidden
 from django.shortcuts import get_object_or_404
@@ -697,18 +697,34 @@ class DCCReviewNeedFollowupCounts(LoginRequiredMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         studies = self.request.user.profile.taggable_studies.all()
+        # Note that the Django docs caution against using annotate to add more than one column:
+        # https://docs.djangoproject.com/en/1.11/topics/db/aggregation/#combining-multiple-aggregations
+        # https://code.djangoproject.com/ticket/10060
+        # The problem occurs when a join produces duplicated rows. In the queries below, none of the
+        # joins should result in any duplicated TaggedTraits, so multiple annotations should be ok.
         study_tag_counts = models.TaggedTrait.objects.need_followup().filter(
-            trait__source_dataset__source_study_version__study__in=studies,
-            dcc_review__study_response__isnull=True
+            trait__source_dataset__source_study_version__study__in=studies
         ).values(
             study_name=F('trait__source_dataset__source_study_version__study__i_study_name'),
             study_pk=F('trait__source_dataset__source_study_version__study__i_accession'),
             tag_name=F('tag__title'),
             tag_pk=F('tag__pk')
         ).annotate(
-            tt_remaining_count=Count('pk')
+            tt_remaining_count=Sum(Case(
+                When(dcc_review__study_response__isnull=True, then=1),
+                When(dcc_review__study_response__isnull=False, then=0),
+                default_value=0,
+                output_field=IntegerField()
+            ))
+        ).annotate(
+            tt_completed_count=Sum(Case(
+                When(dcc_review__study_response__isnull=False, then=1),
+                When(dcc_review__study_response__isnull=True, then=0),
+                default_value=0,
+                output_field=IntegerField()
+            ))
         ).values(
-            'study_name', 'study_pk', 'tag_name', 'tt_remaining_count', 'tag_pk'
+            'study_name', 'study_pk', 'tag_name', 'tt_remaining_count', 'tt_completed_count', 'tag_pk'
         ).order_by(
             'study_name', 'tag_name'
         )

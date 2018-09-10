@@ -29,7 +29,8 @@
           <thead>
             <tr>
               <th>Tag</th>
-              <th>Number of tagged variables flagged for removal</th>
+              <th>Number requiring review</th>
+              <th>Number reviewed</th>
               <th></th>
             </tr>
           </thead>
@@ -38,7 +39,14 @@
             <tr>
               <td><a href="{% url 'tags:tag:detail' tag_data.tag_pk %}">{{ tag_data.tag_name }}</a></td>
               <td>{{ tag_data.tt_remaining_count }}</td>
-              <td><a class="btn btn-xs btn-primary" href="{% url 'tags:tag:study:quality-review' tag_data.tag_pk study_data.0.study_pk %}" role="button">Begin quality review</a></td>
+              <td>{{ tag_data.tt_completed_count }}</td>
+              <td>
+                {% if tag_data.tt_remaining_count > 0 %}
+                  <a class="btn btn-xs btn-primary" href="{% url 'tags:tag:study:quality-review' tag_data.tag_pk study_data.0.study_pk %}" role="button">Begin quality review</a>
+                {% else %}
+                  Quality review completed
+                {% endif %}
+              </td>
             </tr>
             {% endfor %}
           </tbody>

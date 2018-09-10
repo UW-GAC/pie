@@ -3483,9 +3483,11 @@ class DCCReviewNeedFollowupCountsPhenotypeTaggerTest(PhenotypeTaggerLoginTestCas
         counts = context['grouped_study_tag_counts']
         self.assertEqual(len(counts), 0)
 
-    def test_get_context_data_does_not_include_tagged_traits_with_study_response(self):
-        """Count does not include TaggedTraits that have a study response."""
+    def test_get_context_data_one_study_one_tagged_trait_with_study_response(self):
+        """Count include TaggedTraits that have a study response in the tt_completed_count field."""
+        tag = factories.TagFactory.create()
         factories.StudyResponseFactory.create(
+            dcc_review__tagged_trait__tag=tag,
             dcc_review__status=models.DCCReview.STATUS_FOLLOWUP,
             dcc_review__tagged_trait__trait__source_dataset__source_study_version__study=self.study
         )
@@ -3493,7 +3495,12 @@ class DCCReviewNeedFollowupCountsPhenotypeTaggerTest(PhenotypeTaggerLoginTestCas
         context = response.context
         self.assertIn('grouped_study_tag_counts', context)
         counts = context['grouped_study_tag_counts']
-        self.assertEqual(len(counts), 0)
+        self.assertEqual(len(counts), 1)
+        self.assertEqual(counts[0][0]['study_pk'], self.study.pk)
+        self.assertEqual(len(counts[0][1]), 1)
+        self.assertEqual(counts[0][1][0]['tag_pk'], tag.pk)
+        self.assertEqual(counts[0][1][0]['tt_remaining_count'], 0)
+        self.assertEqual(counts[0][1][0]['tt_completed_count'], 1)
 
     def test_get_context_data_one_study_with_one_need_followup_tagged_trait(self):
         """Counts are correct with one TaggedTrait that needs followup."""
@@ -3512,6 +3519,7 @@ class DCCReviewNeedFollowupCountsPhenotypeTaggerTest(PhenotypeTaggerLoginTestCas
         self.assertEqual(len(counts[0][1]), 1)
         self.assertEqual(counts[0][1][0]['tag_pk'], tag.pk)
         self.assertEqual(counts[0][1][0]['tt_remaining_count'], 1)
+        self.assertEqual(counts[0][1][0]['tt_completed_count'], 0)
 
     def test_get_context_data_one_study_with_two_need_followup_tagged_traits(self):
         """Counts are correct with two TaggedTraits that need followup."""
@@ -3531,17 +3539,18 @@ class DCCReviewNeedFollowupCountsPhenotypeTaggerTest(PhenotypeTaggerLoginTestCas
         self.assertEqual(len(counts[0][1]), 1)
         self.assertEqual(counts[0][1][0]['tag_pk'], tag.pk)
         self.assertEqual(counts[0][1][0]['tt_remaining_count'], 2)
+        self.assertEqual(counts[0][1][0]['tt_completed_count'], 0)
 
     def test_get_context_data_one_study_two_tags(self):
         """Counts are correct with one study and two tags."""
-        tag1 = factories.TagFactory.create(lower_title='tag1')
+        tag1 = factories.TagFactory.create(title='tag1')
         factories.DCCReviewFactory.create_batch(
             2,
             tagged_trait__tag=tag1,
             tagged_trait__trait__source_dataset__source_study_version__study=self.study,
             status=models.DCCReview.STATUS_FOLLOWUP
         )
-        tag2 = factories.TagFactory.create(lower_title='tag2')
+        tag2 = factories.TagFactory.create(title='tag2')
         factories.DCCReviewFactory.create(
             tagged_trait__tag=tag2,
             tagged_trait__trait__source_dataset__source_study_version__study=self.study,
@@ -3556,8 +3565,10 @@ class DCCReviewNeedFollowupCountsPhenotypeTaggerTest(PhenotypeTaggerLoginTestCas
         self.assertEqual(len(counts[0][1]), 2)
         self.assertEqual(counts[0][1][0]['tag_pk'], tag1.pk)
         self.assertEqual(counts[0][1][0]['tt_remaining_count'], 2)
+        self.assertEqual(counts[0][1][0]['tt_completed_count'], 0)
         self.assertEqual(counts[0][1][1]['tag_pk'], tag2.pk)
         self.assertEqual(counts[0][1][1]['tt_remaining_count'], 1)
+        self.assertEqual(counts[0][1][1]['tt_completed_count'], 0)
 
     def test_get_context_data_two_studies_same_tag(self):
         """Counts are correct with two studies and one tag."""
@@ -3586,11 +3597,13 @@ class DCCReviewNeedFollowupCountsPhenotypeTaggerTest(PhenotypeTaggerLoginTestCas
         self.assertEqual(len(counts[0][1]), 1)
         self.assertEqual(counts[0][1][0]['tag_pk'], tag.pk)
         self.assertEqual(counts[0][1][0]['tt_remaining_count'], 2)
+        self.assertEqual(counts[0][1][0]['tt_completed_count'], 0)
         # Check second study.
         self.assertEqual(counts[1][0]['study_pk'], other_study.pk)
         self.assertEqual(len(counts[1][1]), 1)
         self.assertEqual(counts[1][1][0]['tag_pk'], tag.pk)
         self.assertEqual(counts[1][1][0]['tt_remaining_count'], 1)
+        self.assertEqual(counts[1][1][0]['tt_completed_count'], 0)
 
     def test_context_excludes_confirmed_trait(self):
         """Count does not include a TaggedTrait that is confirmed."""
@@ -3640,6 +3653,7 @@ class DCCReviewNeedFollowupCountsPhenotypeTaggerTest(PhenotypeTaggerLoginTestCas
         self.assertEqual(len(counts[0][1]), 1)
         self.assertEqual(counts[0][1][0]['tag_pk'], tag.pk)
         self.assertEqual(counts[0][1][0]['tt_remaining_count'], 1)
+        self.assertEqual(counts[0][1][0]['tt_completed_count'], 0)
 
     def test_context_does_not_include_tags_with_no_followup_traits_different_studies(self):
         """Tag for one study is not in context data when they have no TaggedTraits that need followup."""
@@ -3678,11 +3692,72 @@ class DCCReviewNeedFollowupCountsPhenotypeTaggerTest(PhenotypeTaggerLoginTestCas
         self.assertEqual(len(counts[0][1]), 1)
         self.assertEqual(counts[0][1][0]['tag_pk'], tag1.pk)
         self.assertEqual(counts[0][1][0]['tt_remaining_count'], 1)
+        self.assertEqual(counts[0][1][0]['tt_completed_count'], 0)
         # Check second study.
         self.assertEqual(counts[1][0]['study_pk'], other_study.pk)
         self.assertEqual(len(counts[1][1]), 1)
         self.assertEqual(counts[1][1][0]['tag_pk'], tag2.pk)
         self.assertEqual(counts[1][1][0]['tt_remaining_count'], 2)
+        self.assertEqual(counts[1][1][0]['tt_completed_count'], 0)
+
+    def test_context_with_tagged_traits_with_and_without_responses(self):
+        """Counts are correct with a mix of tagged traits that are reviewed or require review."""
+        n_confirmed = 15
+        n_need_review = 20
+        n_review_completed = 32
+        tag = factories.TagFactory.create()
+        factories.DCCReviewFactory.create_batch(
+            n_confirmed,
+            tagged_trait__tag=tag,
+            tagged_trait__trait__source_dataset__source_study_version__study=self.study,
+            status=models.DCCReview.STATUS_CONFIRMED
+        )
+        factories.DCCReviewFactory.create_batch(
+            n_need_review,
+            tagged_trait__tag=tag,
+            tagged_trait__trait__source_dataset__source_study_version__study=self.study,
+            status=models.DCCReview.STATUS_FOLLOWUP
+        )
+        factories.StudyResponseFactory.create_batch(
+            n_review_completed,
+            dcc_review__tagged_trait__tag=tag,
+            dcc_review__tagged_trait__trait__source_dataset__source_study_version__study=self.study,
+            dcc_review__status=models.DCCReview.STATUS_FOLLOWUP
+        )
+        response = self.client.get(self.get_url())
+        context = response.context
+        self.assertIn('grouped_study_tag_counts', context)
+        counts = context['grouped_study_tag_counts']
+        self.assertEqual(len(counts), 1)
+        self.assertEqual(counts[0][0]['study_pk'], self.study.pk)
+        self.assertEqual(len(counts[0][1]), 1)
+        self.assertEqual(counts[0][1][0]['tag_pk'], tag.pk)
+        self.assertEqual(counts[0][1][0]['tt_remaining_count'], n_need_review)
+        self.assertEqual(counts[0][1][0]['tt_completed_count'], n_review_completed)
+
+    def test_begin_review_button_is_not_present_if_no_tagged_traits_need_review(self):
+        tag = factories.TagFactory.create()
+        factories.StudyResponseFactory.create_batch(
+            2,
+            dcc_review__tagged_trait__tag=tag,
+            dcc_review__tagged_trait__trait__source_dataset__source_study_version__study=self.study,
+            dcc_review__status=models.DCCReview.STATUS_FOLLOWUP
+        )
+        response = self.client.get(self.get_url())
+        self.assertNotContains(response, reverse('tags:tag:study:quality-review', args=[tag.pk, self.study.pk]))
+        self.assertContains(response, "Quality review completed")
+
+    def test_begin_review_button_is_present_if_some_tagged_traits_need_review(self):
+        tag = factories.TagFactory.create()
+        factories.DCCReviewFactory.create_batch(
+            2,
+            tagged_trait__tag=tag,
+            tagged_trait__trait__source_dataset__source_study_version__study=self.study,
+            status=models.DCCReview.STATUS_FOLLOWUP
+        )
+        response = self.client.get(self.get_url())
+        self.assertContains(response, reverse('tags:tag:study:quality-review', args=[tag.pk, self.study.pk]))
+        self.assertNotContains(response, "Quality review completed")
 
     def test_navbar_does_not_contain_link(self):
         """Phenotype taggers do see a link to the main quality review page."""
