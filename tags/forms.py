@@ -571,7 +571,7 @@ class DCCReviewTagAndStudySelectForm(forms.Form):
         study = cleaned_data.get('study')
         if tag and study:
             # Check that some TaggedTraits exist.
-            n = models.TaggedTrait.objects.unreviewed().filter(
+            n = models.TaggedTrait.objects.non_archived().unreviewed().filter(
                 tag=tag,
                 trait__source_dataset__source_study_version__study=study
             ).count()
