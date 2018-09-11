@@ -69,6 +69,7 @@ class TaggedTraitTableWithDCCReviewButtonMixinTest(TestCase):
     table_class = tables.TaggedTraitTableDCCReviewButtonMixin
 
     def test_proper_link_with_reviewed_tagged_trait(self):
+        """Reviewed tagged traits have a link to the DCC Review update view."""
         tagged_trait = factories.TaggedTraitFactory.create()
         dcc_review = factories.DCCReviewFactory.create(tagged_trait=tagged_trait)
         table = self.table_class(models.TaggedTrait.objects.all())
@@ -76,6 +77,7 @@ class TaggedTraitTableWithDCCReviewButtonMixinTest(TestCase):
         self.assertIn(expected_url, table.render_review_button(tagged_trait))
 
     def test_proper_link_with_unreviewed_tagged_trait(self):
+        """Reviewed tagged traits have a link to the DCC Review create view."""
         tagged_trait = factories.TaggedTraitFactory.create()
         table = self.table_class(models.TaggedTrait.objects.all())
         expected_url = reverse('tags:tagged-traits:pk:dcc-review:new', args=[tagged_trait.pk])
