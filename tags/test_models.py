@@ -153,7 +153,7 @@ class StudyGetAllTaggedTraitsTest(TestCase):
 
     def test_get_all_tagged_traits_empty(self):
         """Returns an empty queryset when a study has no tagged traits."""
-        models.TaggedTrait.objects.all().delete()
+        models.TaggedTrait.objects.all().hard_delete()
         self.assertEqual(list(self.study.get_all_tagged_traits()), [])
 
     def test_get_all_tagged_traits_two_studies(self):
@@ -197,12 +197,12 @@ class StudyGetAllTaggedTraitsTest(TestCase):
 
     def test_get_all_tags_count_none(self):
         """Returns the correct number of tags for a study when there are none."""
-        models.TaggedTrait.objects.all().delete()
+        models.TaggedTrait.objects.all().hard_delete()
         self.assertEqual(self.study.get_all_tags_count(), 0)
 
     def test_get_all_tags_count_no_tags(self):
         """Returns the correct number of tags for a study when there are none."""
-        models.TaggedTrait.objects.all().delete()
+        models.TaggedTrait.objects.all().hard_delete()
         models.Tag.objects.all().delete()
         self.assertEqual(self.study.get_all_tags_count(), 0)
 
@@ -236,7 +236,7 @@ class StudyGetArchivedTaggedTraitsTest(TestCase):
 
     def test_get_archived_tagged_traits_empty(self):
         """Returns an empty queryset when a study has no tagged traits."""
-        models.TaggedTrait.objects.all().delete()
+        models.TaggedTrait.objects.all().hard_delete()
         self.assertEqual(list(self.study.get_archived_tagged_traits()), [])
 
     def test_get_archived_tagged_traits_two_studies(self):
@@ -308,7 +308,7 @@ class StudyGetNonArchivedTaggedTraitsTest(TestCase):
 
     def test_get_non_archived_tagged_traits_empty(self):
         """Returns an empty queryset when a study has no tagged traits."""
-        models.TaggedTrait.objects.all().delete()
+        models.TaggedTrait.objects.all().hard_delete()
         self.assertEqual(list(self.study.get_non_archived_tagged_traits()), [])
 
     def test_get_non_archived_tagged_traits_two_studies(self):
