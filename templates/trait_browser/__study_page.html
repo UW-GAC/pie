@@ -12,7 +12,7 @@
   {# <dt>TOPMed abbreviation</dt><dd>{{ study.global_study.topmed_abbreviation }}</dd> #}
   <dt>Number of variables</dt><dd>{{ trait_count }}</dd>
   <dt>Number of datasets</dt><dd>{{ dataset_count }}</dd>
-  <dt>Tagging</dt><dd>{{ study.get_tagged_trait_count }} variables and {{ study.get_tag_count }} tags</dd>
+  <dt>Tagging</dt><dd>{{ study.get_non_archived_traits_tagged_count }} variables and {{ study.get_tag_count }} tags</dd>
 {% endblock detail_fields %}
 
 {% block after_panel %}
@@ -28,7 +28,7 @@
           <span class="glyphicon glyphicon-th-large" aria-hidden="true"></span> Study variables
         </a>
       </p>
-      {% if study.get_tagged_trait_count > 0 %}
+      {% if study.get_non_archived_traits_tagged_count > 0 %}
         <p>
           <a class="btn btn-primary" href="{% url 'trait_browser:source:studies:pk:traits:tagged' study.pk %}" role="button">
             <span class="glyphicon glyphicon-tags" aria-hidden="true"></span> Tagged study variables

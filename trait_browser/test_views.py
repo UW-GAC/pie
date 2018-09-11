@@ -58,6 +58,14 @@ class StudyDetailTest(UserLoginTestCase):
         dataset_count = models.SourceDataset.objects.filter(source_study_version__study=self.study).count()
         self.assertEqual(context['dataset_count'], '{:,}'.format(dataset_count))
 
+    def test_tagged_trait_button_present(self):
+        """The button to show tagged traits is present when there are tagged traits for the study."""
+        tagged_traits = TaggedTraitFactory.create_batch(
+            10, trait__source_dataset__source_study_version__study=self.study)
+        response = self.client.get(self.get_url(self.study.pk))
+        context = response.context
+        self.assertContains(response, self.get_url(self.study.pk))
+
 
 class StudyListTest(UserLoginTestCase):
     """Unit tests for the StudyList view."""
@@ -2282,20 +2290,44 @@ class StudyTaggedTraitListTest(UserLoginTestCase):
         self.assertIn('tag_counts', context)
         # Spot-check one of the tag counts.
         self.assertEqual(context['tag_counts'][0]['tt_count'], 1)
-        # The button linking to this view should be present.
+        # The button linking to this view should be present when study.get_non_archived_traits_tagged_count > 0.
         self.assertContains(response, self.get_url(self.study.pk))
+
+    def test_tag_links_present(self):
+        """Links to each of the tag/study pages are present."""
+        response = self.client.get(self.get_url(self.study.pk))
+        for tagged_trait in self.tagged_traits:
+            tag_study_url = reverse(
+                'tags:tag:study:list', kwargs={'pk': tagged_trait.tag.pk, 'pk_study': self.study.pk})
+            self.assertIn(tag_study_url, str(response.content))
 
     def test_context_data_no_taggedtraits(self):
         """View has appropriate data in the context and works when there are no tagged traits for the study."""
-        TaggedTrait.objects.all().delete()
+        TaggedTrait.objects.all().hard_delete()
         response = self.client.get(self.get_url(self.study.pk))
         context = response.context
         self.assertIn('study', context)
         self.assertEqual(context['study'], self.study)
         self.assertIn('tag_counts', context)
         self.assertEqual(len(context['tag_counts']), 0)
-        # The button linking to this view should not be present.
+        # The button linking to this view shouldn't be present because study.get_non_archived_traits_tagged_count is 0.
         self.assertNotContains(response, self.get_url(self.study.pk))
+
+    def test_context_data_excludes_archived_taggedtraits(self):
+        """View context data does not include archived taggedtraits."""
+        TaggedTrait.objects.all().hard_delete()
+        tag = TagFactory.create()
+        # Make fake tagged traits that all have the same tag.
+        self.tagged_traits = TaggedTraitFactory.create_batch(
+            10, trait__source_dataset__source_study_version__study=self.study, tag=tag)
+        archived_tagged_trait = self.tagged_traits[0]
+        archived_tagged_trait.archive()
+        archived_tagged_trait.refresh_from_db()
+        response = self.client.get(self.get_url(self.study.pk))
+        context = response.context
+        tag_count_row = context['tag_counts'][0]
+        self.assertEqual(tag_count_row['tt_count'], TaggedTrait.objects.non_archived().count())
+        self.assertEqual(tag_count_row['tt_count'], TaggedTrait.objects.all().count() - 1)
 
 
 class PhenotypeTaggerSourceTraitTaggingTest(PhenotypeTaggerLoginTestCase):
