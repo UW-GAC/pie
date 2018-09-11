@@ -544,7 +544,7 @@ class DCCReviewTagAndStudySelectForm(forms.Form):
             url='trait_browser:source:studies:autocomplete:by-name-or-phs',
             forward=(
                 'tag',
-                forward.Const(True, 'unreviewed_tagged_traits_only'),
+                forward.Const(True, 'unreviewed_non_archived_tagged_traits_only'),
             )
         ),
         help_text=("Then select a study. Start typing the study name or phs to filter the list. Only studies with at "

@@ -142,8 +142,8 @@ class StudyNameOrPHSAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySe
     """Auto-complete studies in a form field by phs string.
 
     Accepts two forwarded values: "tag_pk" (to filter to studies with at least
-    one trait tagged with the given tag) and "unreviewed_tagged_traits_only"
-    (requires these tagged traits to be unreviewed).
+    one trait tagged with the given tag) and "unreviewed_non_archived_tagged_traits_only"
+    (requires these tagged traits to be unreviewed and non-archived).
     """
 
     def get_queryset(self):
@@ -174,12 +174,12 @@ class StudyNameOrPHSAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySe
                 retrieved = retrieved.filter(nameQ)
         # Add filtering for studies traits tagged with a specific tag, using data forwarded from a form.
         tag_pk = self.forwarded.get('tag', None)
-        unreviewed = self.forwarded.get('unreviewed_tagged_traits_only', False)
+        unreviewed_non_archived = self.forwarded.get('unreviewed_non_archived_tagged_traits_only', False)
         # tag_pk is a string, so "is not None" is not needed.
         if tag_pk:
             tagged_traits = TaggedTrait.objects.all()
-            if unreviewed:
-                tagged_traits = tagged_traits.unreviewed()
+            if unreviewed_non_archived:
+                tagged_traits = tagged_traits.unreviewed().non_archived()
             studies_with_tag = tagged_traits.filter(
                 tag__pk=tag_pk
             ).values_list('trait__source_dataset__source_study_version__study', flat=True).distinct()
