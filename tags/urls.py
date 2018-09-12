@@ -44,13 +44,9 @@ single_dcc_review_patterns = ([
     url(r'^update/$', views.DCCReviewUpdate.as_view(), name='update'),
 ], 'dcc-review')
 
-single_study_response_create_patterns = ([
-    url(r'^untag/$', views.StudyResponseCreateAgree.as_view(), name='untag'),
-    url(r'^explain/$', views.StudyResponseCreateDisagree.as_view(), name='explain'),
-], 'create')
-
 single_study_response_patterns = ([
-    url(r'^create/', include(single_study_response_create_patterns)),
+    url(r'^remove/$', views.StudyResponseCreateAgree.as_view(), name='remove'),
+    url(r'^explain/$', views.StudyResponseCreateDisagree.as_view(), name='explain'),
 ], 'quality-review')
 
 single_tagged_trait_patterns = ([

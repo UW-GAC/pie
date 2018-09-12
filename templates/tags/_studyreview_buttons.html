@@ -2,10 +2,10 @@
   For some reason, using "if record.dcc_review.study_response is not None" doesn't work here.
 {% endcomment %}
 {% if not record.dcc_review.study_response %}
-  <form action="{% url 'tags:tagged-traits:pk:quality-review:create:untag' record.pk %}" method="POST">
+  <form action="{% url 'tags:tagged-traits:pk:quality-review:remove' record.pk %}" method="POST">
     {% csrf_token %}
     <input type="submit" class="btn btn-xs btn-success" value="Yes, remove the {{ record.tag.title }} tag from {{ record.trait.i_trait_name }}" />
-    <a href="{% url 'tags:tagged-traits:pk:quality-review:create:explain' record.pk %}" class="btn btn-xs btn-danger" role="button">
+    <a href="{% url 'tags:tagged-traits:pk:quality-review:explain' record.pk %}" class="btn btn-xs btn-danger" role="button">
       Explain why {{ record.trait.i_trait_name }} should be tagged with {{ record.tag.title }}
     </a>
   </form>
