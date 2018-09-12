@@ -3,7 +3,7 @@
 from itertools import groupby
 
 from django.db.models import Case, Count, F, IntegerField, Sum, When
-from django.core.exceptions import ObjectDoesNotExist
+from django.core.exceptions import ImproperlyConfigured, ObjectDoesNotExist
 from django.http import HttpResponseRedirect, HttpResponseForbidden
 from django.shortcuts import get_object_or_404
 from django.utils.safestring import mark_safe
@@ -689,6 +689,27 @@ class DCCReviewUpdate(LoginRequiredMixin, PermissionRequiredMixin, FormValidMess
         return self.tagged_trait.get_absolute_url()
 
 
+class SpecificTaggableStudyMixin(UserPassesTestMixin):
+    """Mixin to check if a study is in a user's list of taggable studies or (optionally) if the user is staff."""
+
+    allow_staff = False
+
+    def dispatch(self, request, *args, **kwargs):
+        self.set_study()
+        return super().dispatch(request, *args, **kwargs)
+
+    def set_study(self):
+        raise ImproperlyConfigured(
+            "SpecificTaggableStudyMixin requires a definition for 'set_study()'"
+        )
+
+    def test_func(self, user):
+        if self.allow_staff and user.is_staff:
+            return True
+        else:
+            return self.study in user.profile.taggable_studies.all()
+
+
 class DCCReviewNeedFollowupCounts(LoginRequiredMixin, TemplateView):
     """View to show counts of DCCReviews that need followup by study and tag for phenotype taggers."""
 
@@ -742,9 +763,12 @@ class DCCReviewNeedFollowupCounts(LoginRequiredMixin, TemplateView):
         return HttpResponseForbidden()
 
 
-class DCCReviewNeedFollowupList(LoginRequiredMixin, SingleTableMixin, ListView):
+class DCCReviewNeedFollowupList(LoginRequiredMixin, SpecificTaggableStudyMixin, SingleTableMixin, ListView):
     """List view of DCCReviews that need study followup."""
 
+    redirect_unauthenticated_users = True
+    raise_exception = True
+    allow_staff = True
     template_name = 'tags/dccreview_list.html'
     model = models.TaggedTrait
     context_table_name = 'tagged_trait_table'
@@ -757,15 +781,12 @@ class DCCReviewNeedFollowupList(LoginRequiredMixin, SingleTableMixin, ListView):
         else:
             return tables.DCCReviewTable
 
+    def set_study(self):
+        self.study = get_object_or_404(Study, pk=self.kwargs['pk_study'])
+
     def get(self, request, *args, **kwargs):
         self.tag = get_object_or_404(models.Tag, pk=self.kwargs['pk'])
-        self.study = get_object_or_404(Study, pk=self.kwargs['pk_study'])
-        if request.user.is_staff:
-            return super().get(self, request, *args, **kwargs)
-        elif self.study in request.user.profile.taggable_studies.all():
-            return super().get(self, request, *args, **kwargs)
-        else:
-            return HttpResponseForbidden()
+        return super().get(request, *args, **kwargs)
 
     def get_context_data(self, *args, **kwargs):
         context = super().get_context_data(*args, **kwargs)
@@ -781,17 +802,17 @@ class DCCReviewNeedFollowupList(LoginRequiredMixin, SingleTableMixin, ListView):
         return data
 
 
-class StudyResponseCheckMixin(MessageMixin):
+class StudyResponseCheckMixin(SpecificTaggableStudyMixin, MessageMixin):
     """Mixin to handle checking that it's appropriate to create or update a StudyResponse."""
+
+    def set_study(self):
+        self.study = self.tagged_trait.trait.source_dataset.source_study_version.study
 
     def get_failure_url(self):
         raise NotImplementedError('Implement get_failure_url when using this mixin.')  # pragma: no cover
 
     def dispatch(self, request, *args, **kwargs):
         self.tagged_trait = get_object_or_404(models.TaggedTrait, pk=kwargs['pk'])
-        study = self.tagged_trait.trait.source_dataset.source_study_version.study
-        if study not in request.user.profile.taggable_studies.all():
-            return HttpResponseForbidden()
         try:
             dcc_review = self.tagged_trait.dcc_review
         except AttributeError:
@@ -840,7 +861,7 @@ class StudyResponseMixin(object):
         return self.tagged_trait.get_absolute_url()
 
 
-class StudyResponseCreateAgree(LoginRequiredMixin, TaggableStudiesRequiredMixin, StudyResponseCheckMixin, View):
+class StudyResponseCreateAgree(LoginRequiredMixin, StudyResponseCheckMixin, View):
 
     http_method_names = ['post', 'put', ]
 

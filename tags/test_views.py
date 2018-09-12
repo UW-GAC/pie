@@ -3921,7 +3921,6 @@ class DCCReviewNeedFollowupListPhenotypeTaggerTestCase(DCCReviewNeedFollowupList
         response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
         self.assertContains(response, "name='csrfmiddlewaretoken'")
 
-
     def test_buttons_for_need_followup_tagged_trait(self):
         """Buttons are shown for TaggedTraits that need followup and have no StudyResponse."""
         models.TaggedTrait.objects.hard_delete()
