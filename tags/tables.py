@@ -155,7 +155,8 @@ class DCCReviewTable(tables.Table):
     dataset = tables.TemplateColumn(verbose_name='Dataset', orderable=False,
                                     template_code="""{{ record.trait.source_dataset.get_name_link_html|safe }}""")
     dcc_comment = tables.Column('Reason for removal', accessor='dcc_review.comment', orderable=False)
-    study_response = tables.Column('Status', accessor='dcc_review.status', orderable=True, order_by=('dcc_review__study_response'))
+    study_response = tables.Column('Status', accessor='dcc_review.status', orderable=True,
+                                   order_by=('dcc_review__study_response'))
 
     def render_study_response(self, record):
 
