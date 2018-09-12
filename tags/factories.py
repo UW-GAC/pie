@@ -54,7 +54,7 @@ class DCCReviewFactory(factory.DjangoModelFactory):
 class StudyResponseFactory(factory.DjangoModelFactory):
     """Factory for StudyResponse objects using Faker data."""
 
-    dcc_review = factory.SubFactory(DCCReviewFactory)
+    dcc_review = factory.SubFactory(DCCReviewFactory, status=models.DCCReview.STATUS_FOLLOWUP)
     # factoryboy provides Fuzzy attributes that can do the same thing, but they are being deprecated.
     status = factory.Faker('random_element', elements=[x[0] for x in models.StudyResponse.STATUS_CHOICES])
     creator = factory.SubFactory(UserFactory)
