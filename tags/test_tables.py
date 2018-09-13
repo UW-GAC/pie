@@ -23,6 +23,15 @@ class TagTableTest(TestCase):
         table = self.table_class(self.tags)
         self.assertEqual(self.model_class.objects.count(), len(table.rows))
 
+    def test_tagged_count_excludes_archived_tagged_trait(self):
+        """Number in column for tagged trait count does not include archived tagged trait."""
+        tag = self.tags[0]
+        archived_tagged_trait = factories.TaggedTraitFactory.create(tag=tag, archived=True)
+        non_archived_tagged_trait = factories.TaggedTraitFactory.create(tag=tag, archived=False)
+        table = self.table_class(self.tags)
+        row = table.rows[0]
+        self.assertEqual(row.get_cell('number_tagged_traits'), 1)
+
 
 class TaggedTraitTableTest(TestCase):
     table_class = tables.TaggedTraitTable
