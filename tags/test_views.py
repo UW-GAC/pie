@@ -238,6 +238,12 @@ class TaggedTraitDetailPhenotypeTaggerTest(TaggedTraitDetailTestsMixin, Phenotyp
         response = self.client.get(self.get_url(self.tagged_trait.pk))
         self.assertNotContains(response, reverse('tags:tagged-traits:pk:delete', kwargs={'pk': self.tagged_trait.pk}))
 
+    def test_no_delete_button_for_archived_tagged_trait(self):
+        """Delete button doesn't show up for archived tagged trait."""
+        self.tagged_trait.archive()
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:delete', kwargs={'pk': self.tagged_trait.pk}))
+
     def test_dcc_review_info(self):
         """A phenotype tagger does see DCC review info on this detail page."""
         dcc_review = factories.DCCReviewFactory.create(
@@ -310,6 +316,12 @@ class TaggedTraitDetailDCCAnalystTest(TaggedTraitDetailTestsMixin, DCCAnalystLog
         response = self.client.get(self.get_url(self.tagged_trait.pk))
         self.assertNotContains(response, reverse('tags:tagged-traits:pk:delete', kwargs={'pk': self.tagged_trait.pk}))
 
+    def test_no_delete_button_for_archived_tagged_trait(self):
+        """Delete button doesn't show up for archived tagged trait."""
+        self.tagged_trait.archive()
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:delete', kwargs={'pk': self.tagged_trait.pk}))
+
     def test_dcc_review_info(self):
         """A DCC analyst does see DCC review info on this detail page."""
         dcc_review = factories.DCCReviewFactory.create(
@@ -337,6 +349,12 @@ class TaggedTraitDetailDCCAnalystTest(TaggedTraitDetailTestsMixin, DCCAnalystLog
         response = self.client.get(self.get_url(self.tagged_trait.pk))
         self.assertContains(response, reverse('tags:tagged-traits:pk:dcc-review:new', args=[self.tagged_trait.pk]))
 
+    def test_archived_tagged_trait_missing_link_to_review(self):
+        """An archived tagged trait does not include a link to review for DCC users."""
+        self.tagged_trait.archive()
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-review:new', args=[self.tagged_trait.pk]))
+
     def test_context_with_reviewed_trait(self):
         """The context contains the proper flags when the tagged trait has been reviewed.."""
         factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait)
@@ -354,6 +372,14 @@ class TaggedTraitDetailDCCAnalystTest(TaggedTraitDetailTestsMixin, DCCAnalystLog
         factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait)
         response = self.client.get(self.get_url(self.tagged_trait.pk))
         self.assertContains(response, reverse('tags:tagged-traits:pk:dcc-review:update', args=[self.tagged_trait.pk]))
+
+    def test_archived_tagged_trait_missing_link_to_udpate(self):
+        """An archived tagged trait does not include a link to update the dcc review."""
+        factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait)
+        self.tagged_trait.archive()
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        self.assertNotContains(
+            response, reverse('tags:tagged-traits:pk:dcc-review:update', args=[self.tagged_trait.pk]))
 
 
 class TaggedTraitTagCountsByStudyTest(UserLoginTestCase):

@@ -71,6 +71,7 @@ class TaggedTraitDetail(LoginRequiredMixin, DetailView):
         user_studies = list(self.request.user.profile.taggable_studies.all())
         user_is_study_tagger = self.object.trait.source_dataset.source_study_version.study in user_studies
         user_is_staff = self.request.user.is_staff
+        is_non_archived = not self.object.archived
         context['user_is_study_tagger'] = user_is_study_tagger
         # DCC review checks.
         review_exists = hasattr(self.object, 'dcc_review')
@@ -79,10 +80,11 @@ class TaggedTraitDetail(LoginRequiredMixin, DetailView):
         # Check if DCCReview info should be shown.
         context['show_dcc_review_info'] = (user_is_staff or user_is_study_tagger) and review_exists
         # Check if the review add or update buttons should be shown.
-        context['show_dcc_review_add_button'] = (not review_exists and has_dccreview_add_perms)
-        context['show_dcc_review_update_button'] = review_exists and has_dccreview_change_perms
+        context['show_dcc_review_add_button'] = is_non_archived and (not review_exists and has_dccreview_add_perms)
+        context['show_dcc_review_update_button'] = (review_exists and has_dccreview_change_perms) and is_non_archived
         # Check if the delete button should be shown.
-        context['show_delete_button'] = (user_is_staff or user_is_study_tagger) and not review_exists
+        context['show_delete_button'] = (
+            user_is_staff or user_is_study_tagger) and (not review_exists) and is_non_archived
         return context
 
 
