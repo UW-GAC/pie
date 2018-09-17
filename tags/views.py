@@ -800,7 +800,15 @@ class DCCReviewNeedFollowupList(LoginRequiredMixin, SpecificTaggableStudyMixin, 
         return context
 
     def get_table_data(self):
-        data = self.study.get_tagged_traits().filter(tag=self.tag).need_followup().order_by(
+        data = self.study.get_tagged_traits().need_followup().filter(
+            tag=self.tag
+        ).prefetch_related(
+            'dcc_review',
+            'dcc_review__study_response',
+            'tag',
+            'trait',
+            'trait__source_dataset'
+        ).order_by(
             'dcc_review__study_response'
         )
         return data
