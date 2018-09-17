@@ -802,7 +802,7 @@ class DCCReviewNeedFollowupList(LoginRequiredMixin, SpecificTaggableStudyMixin, 
     def get_table_data(self):
         data = self.study.get_tagged_traits().need_followup().filter(
             tag=self.tag
-        ).prefetch_related(
+        ).select_related(
             'dcc_review',
             'dcc_review__study_response',
             'tag',
