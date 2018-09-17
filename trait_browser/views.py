@@ -215,7 +215,9 @@ class SourceDatasetList(LoginRequiredMixin, SingleTableView):
     table_pagination = {'per_page': TABLE_PER_PAGE}
 
     def get_table_data(self):
-        return models.SourceDataset.objects.current()
+        return models.SourceDataset.objects.current().select_related(
+            'source_study_version__study'
+        )
 
 
 class StudySourceDatasetList(SingleTableMixin, StudyDetail):
@@ -246,6 +248,8 @@ class SourceDatasetSearch(LoginRequiredMixin, SearchFormMixin, SingleTableMixin,
             description=description,
             match_exact_name=match_exact_name,
             studies=studies
+        ).select_related(
+            'source_study_version__study'
         )
 
 
@@ -271,6 +275,9 @@ class StudySourceDatasetSearch(LoginRequiredMixin, SearchFormMixin, SingleObject
             description=description,
             match_exact_name=match_exact_name,
             studies=[self.object.pk]
+        ).select_related(
+            'source_study_version',
+            'source_study_version__study'
         )
 
 
@@ -403,7 +410,11 @@ class SourceTraitList(LoginRequiredMixin, SingleTableMixin, ListView):
     table_pagination = {'per_page': TABLE_PER_PAGE}
 
     def get_table_data(self):
-        return models.SourceTrait.objects.current()
+        return models.SourceTrait.objects.current().select_related(
+            'source_dataset',
+            'source_dataset__source_study_version',
+            'source_dataset__source_study_version__study'
+        )
 
 
 class StudySourceTraitList(SingleTableMixin, StudyDetail):
@@ -416,7 +427,12 @@ class StudySourceTraitList(SingleTableMixin, StudyDetail):
 
     def get_table_data(self):
         return models.SourceTrait.objects.current().filter(
-            source_dataset__source_study_version__study=self.object)
+            source_dataset__source_study_version__study=self.object
+        ).select_related(
+            'source_dataset',
+            'source_dataset__source_study_version',
+            'source_dataset__source_study_version__study'
+        )
 
 
 class StudyTaggedTraitList(StudyDetail):
@@ -507,6 +523,10 @@ class SourceTraitSearch(LoginRequiredMixin, SearchFormMixin, SingleTableMixin, M
             description=description,
             match_exact_name=match_exact_name,
             **extra_kwargs
+        ).select_related(
+            'source_dataset',
+            'source_dataset__source_study_version',
+            'source_dataset__source_study_version__study'
         )
         return results
 
@@ -540,7 +560,12 @@ class StudySourceTraitSearch(LoginRequiredMixin, SearchFormMixin, SingleObjectMi
         datasets = search_kwargs.pop('datasets')
         if len(datasets) == 0:
             datasets = searches.search_source_datasets(studies=[self.object.pk])
-        return searches.search_source_traits(datasets=datasets, **search_kwargs)
+        results = searches.search_source_traits(datasets=datasets, **search_kwargs).select_related(
+            'source_dataset',
+            'source_dataset__source_study_version',
+            'source_dataset__source_study_version__study'
+        )
+        return results
 
 
 class SourceTraitPHVAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
@@ -796,7 +821,9 @@ class HarmonizedTraitList(LoginRequiredMixin, SingleTableMixin, ListView):
     table_pagination = {'per_page': TABLE_PER_PAGE}
 
     def get_table_data(self):
-        return models.HarmonizedTrait.objects.current().non_unique_keys()
+        return models.HarmonizedTrait.objects.current().non_unique_keys().select_related(
+            'harmonized_trait_set_version'
+        )
 
 
 class HarmonizedTraitFlavorNameAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
@@ -823,7 +850,9 @@ class HarmonizedTraitSearch(LoginRequiredMixin, SearchFormMixin, SingleTableMixi
     table_data = models.HarmonizedTrait.objects.none()
 
     def search(self, **search_kwargs):
-        return searches.search_harmonized_traits(**search_kwargs)
+        return searches.search_harmonized_traits(**search_kwargs).select_related(
+            'harmonized_trait_set_version'
+        )
 
 
 class HarmonizedTraitSetVersionDetail(LoginRequiredMixin, FormMessagesMixin, DetailView):
