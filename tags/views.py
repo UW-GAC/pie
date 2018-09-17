@@ -865,11 +865,11 @@ class StudyResponseMixin(object):
         return self.tagged_trait.get_absolute_url()
 
 
-class StudyResponseCreateAgree(LoginRequiredMixin, StudyResponseCheckMixin, View):
+class StudyResponseCreateAgree(LoginRequiredMixin, PermissionRequiredMixin, StudyResponseCheckMixin, View):
 
     http_method_names = ['post', 'put', ]
 
-    # permission_required = 'tags.add_studyresponse'
+    permission_required = 'tags.add_studyresponse'
     raise_exception = True
     redirect_unauthenticated_users = True
 
@@ -906,9 +906,10 @@ class StudyResponseCreateAgree(LoginRequiredMixin, StudyResponseCheckMixin, View
         return HttpResponseRedirect(self.get_redirect_url())
 
 
-class StudyResponseCreateDisagree(LoginRequiredMixin, FormValidMessageMixin, StudyResponseCheckMixin, FormView):
+class StudyResponseCreateDisagree(LoginRequiredMixin, PermissionRequiredMixin, FormValidMessageMixin,
+                                  StudyResponseCheckMixin, FormView):
 
-    # permission_required = 'tags.add_studyresponse'
+    permission_required = 'tags.add_studyresponse'
     raise_exception = True
     redirect_unauthenticated_users = True
     form_class = forms.StudyResponseDisagreeForm
