@@ -12,7 +12,7 @@
   {# <dt>TOPMed abbreviation</dt><dd>{{ study.global_study.topmed_abbreviation }}</dd> #}
   <dt>Number of variables</dt><dd>{{ trait_count }}</dd>
   <dt>Number of datasets</dt><dd>{{ dataset_count }}</dd>
-  <dt>Tagging</dt><dd>{{ study.get_non_archived_traits_tagged_count }} variables and {{ study.get_tag_count }} tags</dd>
+  <dt>Tagging</dt><dd>{{ study.get_non_archived_traits_tagged_count }} variables and {{ study.get_non_archived_tags_count }} tags</dd>
 {% endblock detail_fields %}
 
 {% block after_panel %}
