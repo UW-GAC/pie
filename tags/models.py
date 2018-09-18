@@ -20,7 +20,7 @@ class Tag(TimeStampedModel):
     description = models.TextField()
     instructions = models.TextField()
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, blank=True, on_delete=models.CASCADE)
-    traits = models.ManyToManyField('trait_browser.SourceTrait', through='TaggedTrait')
+    all_traits = models.ManyToManyField('trait_browser.SourceTrait', through='TaggedTrait', related_name='all_tags')
 
     class Meta:
         verbose_name = 'phenotype tag'

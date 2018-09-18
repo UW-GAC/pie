@@ -349,8 +349,8 @@ class SourceTraitTest(TestCase):
         trait = factories.SourceTraitFactory.create()
         archived = TaggedTraitFactory.create(archived=True, trait=trait)
         non_archived = TaggedTraitFactory.create(archived=False, trait=trait)
-        self.assertIn(archived.tag, trait.tag_set.all())
-        self.assertIn(non_archived.tag, trait.tag_set.all())
+        self.assertIn(archived.tag, trait.all_tags.all())
+        self.assertIn(non_archived.tag, trait.all_tags.all())
         self.assertIn(archived.tag, trait.archived_tags)
         self.assertIn(non_archived.tag, trait.non_archived_tags)
         self.assertNotIn(archived.tag, trait.non_archived_tags)
@@ -358,7 +358,7 @@ class SourceTraitTest(TestCase):
 
     def test_archived_tags_and_non_archived_tags_are_querysets(self):
         """The properties archived_traits and non_archived_traits are QuerySets."""
-        # These need to be querysets to behave similarly to tag.traits and trait.tag_set.
+        # These need to be querysets to behave similarly to tag.traits and trait.all_tags.
         trait = factories.SourceTraitFactory.create()
         archived = TaggedTraitFactory.create(archived=True, trait=trait)
         non_archived = TaggedTraitFactory.create(archived=False, trait=trait)
@@ -371,7 +371,7 @@ class SourceTraitTest(TestCase):
         archived = TaggedTraitFactory.create_batch(5, archived=True, trait=trait)
         non_archived = TaggedTraitFactory.create_batch(6, archived=False, trait=trait)
         for tagged_trait in archived:
-            self.assertIn(tagged_trait.tag, trait.tag_set.all())
+            self.assertIn(tagged_trait.tag, trait.all_tags.all())
             self.assertIn(tagged_trait.tag, trait.archived_tags)
             self.assertNotIn(tagged_trait.tag, trait.non_archived_tags)
         self.assertEqual(len(archived), trait.archived_tags.count())
@@ -382,7 +382,7 @@ class SourceTraitTest(TestCase):
         archived = TaggedTraitFactory.create_batch(5, archived=True, trait=trait)
         non_archived = TaggedTraitFactory.create_batch(6, archived=False, trait=trait)
         for tagged_trait in non_archived:
-            self.assertIn(tagged_trait.tag, trait.tag_set.all())
+            self.assertIn(tagged_trait.tag, trait.all_tags.all())
             self.assertIn(tagged_trait.tag, trait.non_archived_tags)
             self.assertNotIn(tagged_trait.tag, trait.archived_tags)
         self.assertEqual(len(non_archived), trait.non_archived_tags.count())
@@ -391,7 +391,8 @@ class SourceTraitTest(TestCase):
         """Test the method to get all of the trait's tags."""
         trait = factories.SourceTraitFactory.create()
         tagged_traits = TaggedTraitFactory.create_batch(10, trait=trait)
-        self.assertListEqual(list(trait.tag_set.all()), list(Tag.objects.all()))
+        print(dir(trait))
+        self.assertListEqual(list(trait.all_tags.all()), list(Tag.objects.all()))
 
 
 class HarmonizedTraitTest(TestCase):

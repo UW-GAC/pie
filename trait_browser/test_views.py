@@ -2370,8 +2370,8 @@ class PhenotypeTaggerSourceTraitTaggingTest(PhenotypeTaggerLoginTestCase):
         self.assertRedirects(response, reverse('trait_browser:source:traits:detail', args=[self.trait.pk]))
         self.assertEqual(new_object.tag, self.tag)
         self.assertEqual(new_object.trait, self.trait)
-        self.assertIn(self.trait, self.tag.traits.all())
-        self.assertIn(self.tag, self.trait.tag_set.all())
+        self.assertIn(self.trait, self.tag.all_traits.all())
+        self.assertIn(self.tag, self.trait.all_tags.all())
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
         self.assertFalse('Oops!' in str(messages[0]))
@@ -2391,7 +2391,7 @@ class PhenotypeTaggerSourceTraitTaggingTest(PhenotypeTaggerLoginTestCase):
         self.assertTrue('Oops!' in str(messages[0]))
         form = response.context['form']
         self.assertEqual(form['tag'].errors, [u'This field is required.'])
-        self.assertNotIn(self.tag, self.trait.tag_set.all())
+        self.assertNotIn(self.tag, self.trait.all_tags.all())
 
     def test_adds_user(self):
         """When a trait is successfully tagged, it has the appropriate creator."""
@@ -2481,8 +2481,8 @@ class DCCAnalystSourceTraitTaggingTest(DCCAnalystLoginTestCase):
         self.assertRedirects(response, reverse('trait_browser:source:traits:detail', args=[self.trait.pk]))
         self.assertEqual(new_object.tag, self.tag)
         self.assertEqual(new_object.trait, self.trait)
-        self.assertIn(self.trait, self.tag.traits.all())
-        self.assertIn(self.tag, self.trait.tag_set.all())
+        self.assertIn(self.trait, self.tag.all_traits.all())
+        self.assertIn(self.tag, self.trait.all_tags.all())
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
         self.assertFalse('Oops!' in str(messages[0]))
@@ -2502,7 +2502,7 @@ class DCCAnalystSourceTraitTaggingTest(DCCAnalystLoginTestCase):
         self.assertTrue('Oops!' in str(messages[0]))
         form = response.context['form']
         self.assertEqual(form['tag'].errors, [u'This field is required.'])
-        self.assertNotIn(self.tag, self.trait.tag_set.all())
+        self.assertNotIn(self.tag, self.trait.all_tags.all())
 
     def test_adds_user(self):
         """When a trait is successfully tagged, it has the appropriate creator."""

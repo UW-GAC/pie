@@ -671,8 +671,8 @@ class TaggedTraitCreateTestsMixin(object):
         self.assertRedirects(response, reverse('tags:tag:detail', args=[new_object.tag.pk]))
         self.assertEqual(new_object.tag, self.tag)
         self.assertEqual(new_object.trait, self.trait)
-        self.assertIn(self.trait, self.tag.traits.all())
-        self.assertIn(self.tag, self.trait.tag_set.all())
+        self.assertIn(self.trait, self.tag.all_traits.all())
+        self.assertIn(self.tag, self.trait.all_tags.all())
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
         self.assertFalse('Oops!' in str(messages[0]))
@@ -692,8 +692,8 @@ class TaggedTraitCreateTestsMixin(object):
         for trait_pk in [self.trait.pk, trait2.pk]:
             trait = SourceTrait.objects.get(pk=trait_pk)
             tagged_trait = models.TaggedTrait.objects.get(trait__pk=trait_pk, tag=self.tag)
-            self.assertIn(trait, self.tag.traits.all())
-            self.assertIn(self.tag, trait.tag_set.all())
+            self.assertIn(trait, self.tag.all_traits.all())
+            self.assertIn(self.tag, trait.all_tags.all())
 
     def test_invalid_form_message(self):
         """Posting invalid data results in a message about the invalidity."""
@@ -710,7 +710,7 @@ class TaggedTraitCreateTestsMixin(object):
         self.assertTrue('Oops!' in str(messages[0]))
         form = response.context['form']
         self.assertEqual(form['trait'].errors, [u'This field is required.'])
-        self.assertNotIn(self.tag, self.trait.tag_set.all())
+        self.assertNotIn(self.tag, self.trait.all_tags.all())
 
     def test_adds_user(self):
         """When a trait is successfully tagged, it has the appropriate creator."""
@@ -1054,8 +1054,8 @@ class TaggedTraitCreateByTagTestsMixin(object):
         self.assertIsInstance(new_object, models.TaggedTrait)
         self.assertEqual(new_object.tag, self.tag)
         self.assertEqual(new_object.trait, self.trait)
-        self.assertIn(self.trait, self.tag.traits.all())
-        self.assertIn(self.tag, self.trait.tag_set.all())
+        self.assertIn(self.trait, self.tag.all_traits.all())
+        self.assertIn(self.tag, self.trait.all_tags.all())
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
         self.assertFalse('Oops!' in str(messages[0]))
@@ -1075,8 +1075,8 @@ class TaggedTraitCreateByTagTestsMixin(object):
         for trait_pk in [self.trait.pk, trait2.pk]:
             trait = SourceTrait.objects.get(pk=trait_pk)
             tagged_trait = models.TaggedTrait.objects.get(trait__pk=trait_pk, tag=self.tag)
-            self.assertIn(trait, self.tag.traits.all())
-            self.assertIn(self.tag, trait.tag_set.all())
+            self.assertIn(trait, self.tag.all_traits.all())
+            self.assertIn(self.tag, trait.all_tags.all())
 
     def test_invalid_form_message(self):
         """Posting invalid data results in a message about the invalidity."""
@@ -1093,7 +1093,7 @@ class TaggedTraitCreateByTagTestsMixin(object):
         self.assertTrue('Oops!' in str(messages[0]))
         form = response.context['form']
         self.assertTrue(form.has_error('trait'))
-        self.assertNotIn(self.tag, self.trait.tag_set.all())
+        self.assertNotIn(self.tag, self.trait.all_tags.all())
 
     def test_adds_user(self):
         """When a trait is successfully tagged, it has the appropriate creator."""
@@ -1217,8 +1217,8 @@ class ManyTaggedTraitsCreateTestsMixin(object):
         self.assertFalse('Oops!' in str(messages[0]))
         # Correctly creates a tagged_trait for each trait.
         tagged_trait = models.TaggedTrait.objects.get(trait=this_trait, tag=self.tag)
-        self.assertIn(this_trait, self.tag.traits.all())
-        self.assertIn(self.tag, this_trait.tag_set.all())
+        self.assertIn(this_trait, self.tag.all_traits.all())
+        self.assertIn(self.tag, this_trait.all_tags.all())
 
     def test_creates_two_new_objects(self):
         """Posting valid data to the form correctly tags two traits."""
@@ -1228,8 +1228,8 @@ class ManyTaggedTraitsCreateTestsMixin(object):
                                     {'traits': [str(t.pk) for t in some_traits], 'tag': self.tag.pk})
         self.assertRedirects(response, self.tag.get_absolute_url())
         for trait in some_traits:
-            self.assertIn(trait, self.tag.traits.all())
-            self.assertIn(self.tag, trait.tag_set.all())
+            self.assertIn(trait, self.tag.all_traits.all())
+            self.assertIn(self.tag, trait.all_tags.all())
         new_objects = models.TaggedTrait.objects.all()
         for tt in new_objects:
             self.assertEqual(tt.tag, self.tag)
@@ -1250,8 +1250,8 @@ class ManyTaggedTraitsCreateTestsMixin(object):
         for trait_pk in form_data['traits']:
             trait = SourceTrait.objects.get(pk=trait_pk)
             tagged_trait = models.TaggedTrait.objects.get(trait__pk=trait_pk, tag=self.tag)
-            self.assertIn(trait, self.tag.traits.all())
-            self.assertIn(self.tag, trait.tag_set.all())
+            self.assertIn(trait, self.tag.all_traits.all())
+            self.assertIn(self.tag, trait.all_tags.all())
 
     def test_invalid_form_message(self):
         """Posting invalid data results in a message about the invalidity."""
@@ -1268,7 +1268,7 @@ class ManyTaggedTraitsCreateTestsMixin(object):
         self.assertTrue('Oops!' in str(messages[0]))
         form = response.context['form']
         self.assertTrue(form.has_error('traits'))
-        self.assertNotIn(self.tag, self.traits[0].tag_set.all())
+        self.assertNotIn(self.tag, self.traits[0].all_tags.all())
 
     def test_adds_user(self):
         """When a trait is successfully tagged, it has the appropriate creator."""
@@ -1323,8 +1323,8 @@ class ManyTaggedTraitsCreatePhenotypeTaggerTest(ManyTaggedTraitsCreateTestsMixin
         for trait_pk in form_data['traits']:
             trait = SourceTrait.objects.get(pk=trait_pk)
             tagged_trait = models.TaggedTrait.objects.get(trait__pk=trait_pk, tag=self.tag)
-            self.assertIn(trait, self.tag.traits.all())
-            self.assertIn(self.tag, trait.tag_set.all())
+            self.assertIn(trait, self.tag.all_traits.all())
+            self.assertIn(self.tag, trait.all_tags.all())
 
     def test_fails_with_other_study_traits(self):
         """Tagging a trait fails when the trait is not in the user's taggable_studies'."""
@@ -1390,8 +1390,8 @@ class ManyTaggedTraitsCreateDCCAnalystTest(ManyTaggedTraitsCreateTestsMixin, DCC
         for trait_pk in form_data['traits']:
             trait = SourceTrait.objects.get(pk=trait_pk)
             tagged_trait = models.TaggedTrait.objects.get(trait__pk=trait_pk, tag=self.tag)
-            self.assertIn(trait, self.tag.traits.all())
-            self.assertIn(self.tag, trait.tag_set.all())
+            self.assertIn(trait, self.tag.all_traits.all())
+            self.assertIn(self.tag, trait.all_tags.all())
 
     def test_view_success_without_phenotype_taggers_group(self):
         """View is accessible even when the DCC user is not in phenotype_taggers."""
@@ -1433,8 +1433,8 @@ class ManyTaggedTraitsCreateByTagTestsMixin(object):
         self.assertIsInstance(new_object, models.TaggedTrait)
         self.assertEqual(new_object.tag, self.tag)
         self.assertEqual(new_object.trait, self.traits[0])
-        self.assertIn(self.traits[0], self.tag.traits.all())
-        self.assertIn(self.tag, self.traits[0].tag_set.all())
+        self.assertIn(self.traits[0], self.tag.all_traits.all())
+        self.assertIn(self.tag, self.traits[0].all_tags.all())
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
         self.assertFalse('Oops!' in str(messages[0]))
@@ -1446,8 +1446,8 @@ class ManyTaggedTraitsCreateByTagTestsMixin(object):
         response = self.client.post(self.get_url(self.tag.pk), {'traits': [str(t.pk) for t in some_traits]})
         self.assertRedirects(response, self.tag.get_absolute_url())
         for trait in some_traits:
-            self.assertIn(trait, self.tag.traits.all())
-            self.assertIn(self.tag, trait.tag_set.all())
+            self.assertIn(trait, self.tag.all_traits.all())
+            self.assertIn(self.tag, trait.all_tags.all())
         new_objects = models.TaggedTrait.objects.all()
         for tt in new_objects:
             self.assertEqual(tt.tag, self.tag)
@@ -1462,8 +1462,8 @@ class ManyTaggedTraitsCreateByTagTestsMixin(object):
                                     {'traits': [str(t.pk) for t in self.traits], })
         self.assertRedirects(response, self.tag.get_absolute_url())
         for trait in self.traits:
-            self.assertIn(trait, self.tag.traits.all())
-            self.assertIn(self.tag, trait.tag_set.all())
+            self.assertIn(trait, self.tag.all_traits.all())
+            self.assertIn(self.tag, trait.all_tags.all())
         new_objects = models.TaggedTrait.objects.all()
         for tt in new_objects:
             self.assertEqual(tt.tag, self.tag)
@@ -1486,7 +1486,7 @@ class ManyTaggedTraitsCreateByTagTestsMixin(object):
         self.assertTrue('Oops!' in str(messages[0]))
         form = response.context['form']
         self.assertTrue(form.has_error('traits'))
-        self.assertNotIn(self.tag, self.traits[0].tag_set.all())
+        self.assertNotIn(self.tag, self.traits[0].all_tags.all())
 
     def test_adds_user(self):
         """When a trait is successfully tagged, it has the appropriate creator."""
@@ -1564,8 +1564,8 @@ class ManyTaggedTraitsCreateByTagPhenotypeTaggerTest(ManyTaggedTraitsCreateByTag
         for trait_pk in form_data['traits']:
             trait = SourceTrait.objects.get(pk=trait_pk)
             tagged_trait = models.TaggedTrait.objects.get(trait__pk=trait_pk, tag=self.tag)
-            self.assertIn(trait, self.tag.traits.all())
-            self.assertIn(self.tag, trait.tag_set.all())
+            self.assertIn(trait, self.tag.all_traits.all())
+            self.assertIn(self.tag, trait.all_tags.all())
 
     def test_fails_with_other_study_traits(self):
         """Tagging a trait fails when the trait is not in the user's taggable_studies'."""

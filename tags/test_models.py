@@ -94,15 +94,15 @@ class TagTest(TestCase):
         tag = factories.TagFactory.create()
         tagged_trait = models.TaggedTrait(trait=trait, tag=tag, creator=self.user)
         tagged_trait.save()
-        self.assertIn(trait, tag.traits.all())
+        self.assertIn(trait, tag.all_traits.all())
 
     def test_archived_traits_and_non_archived_traits(self):
         """Archived traits and non archived traits linked to the tag are where they should be."""
         tag = factories.TagFactory.create()
         archived = factories.TaggedTraitFactory.create(archived=True, tag=tag)
         non_archived = factories.TaggedTraitFactory.create(archived=False, tag=tag)
-        self.assertIn(archived.trait, tag.traits.all())
-        self.assertIn(non_archived.trait, tag.traits.all())
+        self.assertIn(archived.trait, tag.all_traits.all())
+        self.assertIn(non_archived.trait, tag.all_traits.all())
         self.assertIn(archived.trait, tag.archived_traits)
         self.assertIn(non_archived.trait, tag.non_archived_traits)
         self.assertNotIn(archived.trait, tag.non_archived_traits)
@@ -123,7 +123,7 @@ class TagTest(TestCase):
         archived = factories.TaggedTraitFactory.create_batch(5, archived=True, tag=tag)
         non_archived = factories.TaggedTraitFactory.create_batch(6, archived=False, tag=tag)
         for tagged_trait in archived:
-            self.assertIn(tagged_trait.trait, tag.traits.all())
+            self.assertIn(tagged_trait.trait, tag.all_traits.all())
             self.assertIn(tagged_trait.trait, tag.archived_traits)
             self.assertNotIn(tagged_trait.trait, tag.non_archived_traits)
         self.assertEqual(len(archived), tag.archived_traits.count())
@@ -134,7 +134,7 @@ class TagTest(TestCase):
         archived = factories.TaggedTraitFactory.create_batch(5, archived=True, tag=tag)
         non_archived = factories.TaggedTraitFactory.create_batch(6, archived=False, tag=tag)
         for tagged_trait in non_archived:
-            self.assertIn(tagged_trait.trait, tag.traits.all())
+            self.assertIn(tagged_trait.trait, tag.all_traits.all())
             self.assertIn(tagged_trait.trait, tag.non_archived_traits)
             self.assertNotIn(tagged_trait.trait, tag.archived_traits)
         self.assertEqual(len(non_archived), tag.non_archived_traits.count())
@@ -143,7 +143,7 @@ class TagTest(TestCase):
         """Test the method to get all of the tag's linked traits."""
         tag = factories.TagFactory.create()
         tagged_traits = factories.TaggedTraitFactory.create_batch(10, tag=tag)
-        self.assertListEqual(list(SourceTrait.objects.all()), list(tag.traits.all()))
+        self.assertListEqual(list(SourceTrait.objects.all()), list(tag.all_traits.all()))
 
 
 class StudyGetAllTaggedTraitsTest(TestCase):
@@ -217,14 +217,8 @@ class StudyGetAllTaggedTraitsTest(TestCase):
         another_study = StudyFactory.create()
         more_tagged_traits = factories.TaggedTraitFactory.create_batch(
             10, trait__source_dataset__source_study_version__study=another_study)
-        self.assertEqual(self.study.get_all_tags_count(),
-                         models.Tag.objects.filter(
-                         traits__source_dataset__source_study_version__study=self.study).distinct().count()
-                         )
-        self.assertEqual(another_study.get_all_tags_count(),
-                         models.Tag.objects.filter(
-                         traits__source_dataset__source_study_version__study=another_study).distinct().count()
-                         )
+        self.assertEqual(self.study.get_all_tags_count(), len(self.tagged_traits))
+        self.assertEqual(another_study.get_all_tags_count(), len(more_tagged_traits))
 
 
 class StudyGetArchivedTaggedTraitsTest(TestCase):

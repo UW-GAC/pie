@@ -126,7 +126,7 @@ class TaggedTraitForm(forms.ModelForm):
         trait = cleaned_data.get('trait')
         tag = cleaned_data.get('tag')
         if tag is not None and trait is not None:
-            if trait in tag.traits.all():
+            if trait in tag.all_traits.all():
                 taggedtrait = models.TaggedTrait.objects.get(trait=trait, tag=tag)
                 if taggedtrait.archived:
                     # Because this is a ModelForm, a non-field error is added when the TaggedTrait already exists.
@@ -164,7 +164,7 @@ class TaggedTraitAdminForm(forms.ModelForm):
         trait = cleaned_data.get('trait')
         tag = cleaned_data.get('tag')
         if tag is not None and trait is not None:
-            if trait in tag.traits.all():
+            if trait in tag.all_traits.all():
                 taggedtrait = models.TaggedTrait.objects.get(trait=trait, tag=tag)
                 if taggedtrait.archived:
                     archived_taggedtrait_error = forms.ValidationError(
@@ -234,7 +234,7 @@ class TaggedTraitByTagForm(forms.Form):
         cleaned_data = super(TaggedTraitByTagForm, self).clean()
         trait = cleaned_data.get('trait')
         if trait is not None:
-            if trait in self.tag.traits.all():
+            if trait in self.tag.all_traits.all():
                 taggedtrait = models.TaggedTrait.objects.get(trait=trait, tag=self.tag)
                 if taggedtrait.archived:
                     archived_taggedtrait_error = forms.ValidationError(
@@ -307,7 +307,7 @@ class ManyTaggedTraitsForm(forms.Form):
         tag = cleaned_data.get('tag')
         if tag is not None:
             for trait in traits:
-                if trait in tag.traits.all():
+                if trait in tag.all_traits.all():
                     taggedtrait = models.TaggedTrait.objects.get(trait=trait, tag=tag)
                     if taggedtrait.archived:
                         archived_taggedtrait_error = forms.ValidationError(
@@ -378,7 +378,7 @@ class ManyTaggedTraitsByTagForm(forms.Form):
         cleaned_data = super(ManyTaggedTraitsByTagForm, self).clean()
         traits = cleaned_data.get('traits', [])
         for trait in traits:
-            if trait in self.tag.traits.all():
+            if trait in self.tag.all_traits.all():
                 taggedtrait = models.TaggedTrait.objects.get(trait=trait, tag=self.tag)
                 if taggedtrait.archived:
                     archived_taggedtrait_error = forms.ValidationError(
@@ -423,7 +423,7 @@ class TagSpecificTraitForm(forms.Form):
         cleaned_data = super(TagSpecificTraitForm, self).clean()
         tag = cleaned_data.get('tag', None)
         if tag is not None:
-            if self.trait in tag.traits.all():
+            if self.trait in tag.all_traits.all():
                 taggedtrait = models.TaggedTrait.objects.get(trait=self.trait, tag=tag)
                 if taggedtrait.archived:
                     archived_taggedtrait_error = forms.ValidationError(

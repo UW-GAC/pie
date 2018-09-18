@@ -168,7 +168,7 @@ class Study(SourceDBTimeStampedModel):
     def get_all_tags_count(self):
         """Return a count of the number of tags for which traits are tagged in this study."""
         return apps.get_model('tags', 'Tag').objects.filter(
-            traits__source_dataset__source_study_version__study=self).distinct().count()
+            all_traits__source_dataset__source_study_version__study=self).distinct().count()
 
     def get_archived_tags_count(self):
         """Return a count of the number of tags for which traits are tagged, but archived, in this study."""
@@ -200,7 +200,7 @@ class Study(SourceDBTimeStampedModel):
     def get_all_traits_tagged_count(self):
         """Return the count of all traits that have been tagged in this study."""
         return SourceTrait.objects.filter(
-            source_dataset__source_study_version__study=self).exclude(tag=None).count()
+            source_dataset__source_study_version__study=self).exclude(all_tags=None).count()
 
     def get_archived_traits_tagged_count(self):
         """Return the count of traits that have been tagged (and the tag archived) in this study."""
