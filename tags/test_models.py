@@ -215,8 +215,7 @@ class TaggedTraitTest(TestCase):
         """Only TaggedTraits that have not been reviewed are returned by the .unreviewed() filter."""
         tagged_trait_unreviewed = factories.TaggedTraitFactory.create()
         tagged_trait_followup = factories.TaggedTraitFactory.create()
-        factories.DCCReviewFactory.create(tagged_trait=tagged_trait_followup, status=models.DCCReview.STATUS_FOLLOWUP,
-                                          comment='foo')
+        factories.DCCReviewFactory.create(tagged_trait=tagged_trait_followup, status=models.DCCReview.STATUS_FOLLOWUP)
         tagged_trait_confirmed = factories.TaggedTraitFactory.create()
         factories.DCCReviewFactory.create(tagged_trait=tagged_trait_confirmed,
                                           status=models.DCCReview.STATUS_CONFIRMED)
@@ -229,8 +228,7 @@ class TaggedTraitTest(TestCase):
         """Only TaggedTraits that need study followup are returned by the .needs_followup() filter."""
         tagged_trait_unreviewed = factories.TaggedTraitFactory.create()
         tagged_trait_followup = factories.TaggedTraitFactory.create()
-        factories.DCCReviewFactory.create(tagged_trait=tagged_trait_followup, status=models.DCCReview.STATUS_FOLLOWUP,
-                                          comment='foo')
+        factories.DCCReviewFactory.create(tagged_trait=tagged_trait_followup, status=models.DCCReview.STATUS_FOLLOWUP)
         tagged_trait_confirmed = factories.TaggedTraitFactory.create()
         factories.DCCReviewFactory.create(tagged_trait=tagged_trait_confirmed,
                                           status=models.DCCReview.STATUS_CONFIRMED)
@@ -238,6 +236,16 @@ class TaggedTraitTest(TestCase):
         self.assertTrue(tagged_trait_followup in qs)
         self.assertFalse(tagged_trait_unreviewed in qs)
         self.assertFalse(tagged_trait_confirmed in qs)
+
+    def test_need_followup_queryset_method_with_study_response(self):
+        """A TaggedTrait with a StudyResponse appears in the needs_followup() queryset."""
+        tagged_trait = factories.TaggedTraitFactory.create()
+        dcc_review = factories.DCCReviewFactory.create(tagged_trait=tagged_trait,
+                                                       status=models.DCCReview.STATUS_FOLLOWUP)
+        factories.StudyResponseFactory.create(dcc_review=dcc_review)
+        qs = models.TaggedTrait.objects.need_followup()
+        self.assertEqual(qs.count(), 1)
+        self.assertIn(tagged_trait, qs)
 
     def test_get_absolute_url(self):
         """get_absolute_url function doesn't fail."""
@@ -248,8 +256,7 @@ class TaggedTraitTest(TestCase):
     def test_unable_to_delete_with_dccreview_need_followup(self):
         """A reviewed TaggedTrait with needs followup status cannot be deleted."""
         tagged_trait = self.model_factory.create(**self.model_args)
-        factories.DCCReviewFactory.create(tagged_trait=tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP,
-                                          comment='foo')
+        factories.DCCReviewFactory.create(tagged_trait=tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP)
         with self.assertRaises(DeleteNotAllowedError):
             tagged_trait.delete()
         tagged_trait.refresh_from_db()
@@ -272,8 +279,7 @@ class TaggedTraitTest(TestCase):
     def test_can_hard_delete_tagged_trait_with_dccreview_need_followup(self):
         """A reviewed TaggedTrait with needs followup status can be deleted with hard_delete."""
         tagged_trait = self.model_factory.create(**self.model_args)
-        factories.DCCReviewFactory.create(tagged_trait=tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP,
-                                          comment='foo')
+        factories.DCCReviewFactory.create(tagged_trait=tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP)
         tagged_trait.hard_delete()
         with self.assertRaises(ObjectDoesNotExist):
             tagged_trait.refresh_from_db()
@@ -303,8 +309,7 @@ class TaggedTraitTest(TestCase):
         """The TaggedTrait queryset method does not delete anything if any tagged traits are reviewed."""
         tagged_traits = factories.TaggedTraitFactory.create_batch(5)
         tagged_trait_to_review = tagged_traits[1]
-        factories.DCCReviewFactory.create(tagged_trait=tagged_trait_to_review, comment='foo',
-                                          status=models.DCCReview.STATUS_FOLLOWUP)
+        factories.DCCReviewFactory.create(tagged_trait=tagged_trait_to_review, status=models.DCCReview.STATUS_FOLLOWUP)
         with self.assertRaises(DeleteNotAllowedError):
             models.TaggedTrait.objects.all().delete()
         self.assertEqual(models.TaggedTrait.objects.count(), 5)
@@ -324,8 +329,7 @@ class TaggedTraitTest(TestCase):
         tagged_traits = factories.TaggedTraitFactory.create_batch(5)
         factories.DCCReviewFactory.create(tagged_trait=tagged_traits[1],
                                           status=models.DCCReview.STATUS_CONFIRMED)
-        factories.DCCReviewFactory.create(tagged_trait=tagged_traits[3], comment='foo',
-                                          status=models.DCCReview.STATUS_FOLLOWUP)
+        factories.DCCReviewFactory.create(tagged_trait=tagged_traits[3], status=models.DCCReview.STATUS_FOLLOWUP)
         with self.assertRaises(DeleteNotAllowedError):
             models.TaggedTrait.objects.all().delete()
         self.assertEqual(models.TaggedTrait.objects.count(), 5)
@@ -340,8 +344,7 @@ class TaggedTraitTest(TestCase):
         """The TaggedTrait queryset hard_delete method deletes regardless of review status."""
         tagged_traits = factories.TaggedTraitFactory.create_batch(5)
         tagged_trait_to_review = tagged_traits[1]
-        factories.DCCReviewFactory.create(tagged_trait=tagged_trait_to_review, comment='foo',
-                                          status=models.DCCReview.STATUS_FOLLOWUP)
+        factories.DCCReviewFactory.create(tagged_trait=tagged_trait_to_review, status=models.DCCReview.STATUS_FOLLOWUP)
         models.TaggedTrait.objects.all().hard_delete()
         self.assertEqual(models.TaggedTrait.objects.count(), 0)
 
@@ -365,6 +368,147 @@ class DCCReviewTest(TestCase):
         self.comment = 'a test comment'
         self.user = UserFactory.create()
         self.model_args = {'tagged_trait': self.tagged_trait, 'status': self.status, 'comment': self.comment,
+                           'creator': self.user}
+
+    def test_model_saving(self):
+        """Creation using the model constructor and .save() works."""
+        instance = self.model(**self.model_args)
+        instance.save()
+        self.assertIsInstance(instance, self.model)
+
+    def test_model_saving_with_comment(self):
+        """Creation using the model constructor and .save() works."""
+        instance = self.model(**self.model_args)
+        instance.save()
+        self.assertIsInstance(instance, self.model)
+
+    def test_model_factory(self):
+        """Creation using the model factory."""
+        instance = self.model_factory.create()
+        self.assertIsInstance(self.model_factory._meta.model.objects.get(pk=instance.pk),
+                              self.model_factory._meta.model)
+
+    def test_printing(self):
+        """The custom __str__ method returns a string."""
+        instance = self.model_factory.create()
+        self.assertIsInstance(instance.__str__(), str)
+
+    def test_unable_to_delete_with_studyresponse_agree(self):
+        """A DCCReview with a study response cannot be deleted."""
+        dcc_review = self.model_factory.create(**self.model_args)
+        factories.StudyResponseFactory.create(dcc_review=dcc_review, status=models.StudyResponse.STATUS_AGREE)
+        with self.assertRaises(DeleteNotAllowedError):
+            dcc_review.delete()
+        dcc_review.refresh_from_db()
+
+    def test_unable_to_delete_with_studyresponse_disagree(self):
+        """A DCCReview with a study response cannot be deleted."""
+        dcc_review = self.model_factory.create(**self.model_args)
+        factories.StudyResponseFactory.create(dcc_review=dcc_review, status=models.StudyResponse.STATUS_DISAGREE)
+        with self.assertRaises(DeleteNotAllowedError):
+            dcc_review.delete()
+        dcc_review.refresh_from_db()
+
+    def test_can_delete_unreviewed_object(self):
+        """A unreviewed TaggedTrait can be deleted."""
+        dcc_review = self.model_factory.create(**self.model_args)
+        dcc_review.delete()
+        with self.assertRaises(ObjectDoesNotExist):
+            dcc_review.refresh_from_db()
+
+    def test_can_hard_delete_dccreview_with_studyresponse_agree(self):
+        """A reviewed StudyResponse with agree status can be deleted with hard_delete."""
+        dcc_review = self.model_factory.create(**self.model_args)
+        factories.StudyResponseFactory.create(dcc_review=dcc_review, status=models.StudyResponse.STATUS_AGREE)
+        dcc_review.hard_delete()
+        with self.assertRaises(ObjectDoesNotExist):
+            dcc_review.refresh_from_db()
+
+    def test_can_hard_delete_dccreview_with_studyresponse_disagree(self):
+        """A reviewed StudyResponse with disagree status can be deleted with hard_delete."""
+        dcc_review = self.model_factory.create(**self.model_args)
+        factories.StudyResponseFactory.create(dcc_review=dcc_review, status=models.StudyResponse.STATUS_DISAGREE)
+        dcc_review.hard_delete()
+        with self.assertRaises(ObjectDoesNotExist):
+            dcc_review.refresh_from_db()
+
+    def test_can_hard_delete_unreviewed_tagged_trait(self):
+        """An unreviewed StudyResponse can be deleted with hard_delete."""
+        dcc_review = self.model_factory.create(**self.model_args)
+        dcc_review.hard_delete()
+        with self.assertRaises(ObjectDoesNotExist):
+            dcc_review.refresh_from_db()
+
+    def test_can_delete_queryset_with_no_studyresponses(self):
+        """The DCCReview queryset method deletes reviews without StudyResponses."""
+        dcc_review = factories.DCCReviewFactory.create_batch(5)
+        models.DCCReview.objects.all().delete()
+        self.assertEqual(models.DCCReview.objects.count(), 0)
+
+    def test_queryset_delete_with_one_dccreview_with_study_response_agree(self):
+        """The DCCReview queryset method does not delete anything if any have a StudyResponse with status agree."""
+        dcc_reviews = factories.DCCReviewFactory.create_batch(5)
+        dcc_review_to_respond = dcc_reviews[1]
+        factories.StudyResponseFactory.create(dcc_review=dcc_review_to_respond,
+                                              status=models.StudyResponse.STATUS_AGREE)
+        with self.assertRaises(DeleteNotAllowedError):
+            models.DCCReview.objects.all().delete()
+        self.assertEqual(models.DCCReview.objects.count(), 5)
+
+    def test_queryset_delete_with_one_dccreview_with_study_response_disagree(self):
+        """The DCCReview queryset method does not delete anything if any have a StudyResponse with status disagree."""
+        dcc_reviews = factories.DCCReviewFactory.create_batch(5)
+        dcc_review_to_respond = dcc_reviews[1]
+        factories.StudyResponseFactory.create(dcc_review=dcc_review_to_respond,
+                                              status=models.StudyResponse.STATUS_DISAGREE)
+        with self.assertRaises(DeleteNotAllowedError):
+            models.DCCReview.objects.all().delete()
+        self.assertEqual(models.DCCReview.objects.count(), 5)
+
+    def test_queryset_delete_with_multiple_dcc_reviews_with_responses(self):
+        """The DCCReview queryset method does not delete anything if any objects have a response."""
+        dcc_reviews = factories.DCCReviewFactory.create_batch(5)
+        factories.StudyResponseFactory.create(dcc_review=dcc_reviews[1], status=models.StudyResponse.STATUS_AGREE)
+        factories.StudyResponseFactory.create(dcc_review=dcc_reviews[3], status=models.StudyResponse.STATUS_DISAGREE)
+        with self.assertRaises(DeleteNotAllowedError):
+            models.DCCReview.objects.all().delete()
+        self.assertEqual(models.DCCReview.objects.count(), 5)
+
+    def test_can_hard_delete_queryset_with_no_study_responses(self):
+        """The DCCReview queryset hard_delete method deletes DCCReviews with no StudyResponse."""
+        dcc_review = factories.DCCReviewFactory.create_batch(5)
+        models.DCCReview.objects.all().delete()
+        self.assertEqual(models.DCCReview.objects.count(), 0)
+
+    def test_queryset_hard_delete_with_one_response_agree(self):
+        """The DCCReview queryset hard_delete method deletes regardless of review status."""
+        dcc_reviews = factories.DCCReviewFactory.create_batch(5)
+        dcc_review_to_respond = dcc_reviews[1]
+        factories.StudyResponseFactory.create(dcc_review=dcc_review_to_respond,
+                                              status=models.StudyResponse.STATUS_AGREE)
+        models.DCCReview.objects.all().hard_delete()
+        self.assertEqual(models.DCCReview.objects.count(), 0)
+
+    def test_queryset_hard_delete_with_one_response_disagree(self):
+        """The DCCReview queryset hard_delete method deletes regardless of review status."""
+        dcc_reviews = factories.DCCReviewFactory.create_batch(5)
+        dcc_review_to_respond = dcc_reviews[1]
+        factories.StudyResponseFactory.create(dcc_review=dcc_review_to_respond,
+                                              status=models.StudyResponse.STATUS_DISAGREE)
+        models.DCCReview.objects.all().hard_delete()
+        self.assertEqual(models.DCCReview.objects.count(), 0)
+
+
+class StudyResponseTest(TestCase):
+    model = models.StudyResponse
+    model_factory = factories.StudyResponseFactory
+
+    def setUp(self):
+        self.dcc_review = factories.DCCReviewFactory.create()
+        self.status = self.model.STATUS_AGREE
+        self.comment = ''
+        self.user = UserFactory.create()
+        self.model_args = {'dcc_review': self.dcc_review, 'status': self.status, 'comment': self.comment,
                            'creator': self.user}
 
     def test_model_saving(self):

@@ -511,3 +511,59 @@ class DCCReviewTagAndStudySelectForm(forms.Form):
             if n == 0:
                 raise forms.ValidationError(self.ERROR_NO_TAGGED_TRAITS)
         return cleaned_data
+
+
+class StudyResponseDisagreeForm(forms.Form):
+    """Form for phenotype taggers to provide a reason that they disagree with a DCC Review."""
+
+    # Use a Form instead of a ModelForm, because the "comment" field is not required by
+    # the model, but it is required when adding a "disagree" response. The object will
+    # then be created in the view with the appropriate status and the given comment.
+    comment = forms.CharField(
+        label='Comment',
+        help_text='Provide a reason why this variable is appropriately tagged.',
+        widget=forms.Textarea
+    )
+
+    helper = FormHelper()
+    helper.form_class = 'form-horizontal'
+    helper.label_class = 'col-sm-2'
+    helper.field_class = 'col-sm-8'
+    helper.layout = Layout(
+        'comment',
+        FormActions(
+            Submit('submit', 'Submit'),
+        )
+    )
+
+
+class StudyResponseBaseForm(forms.ModelForm):
+
+    def clean(self):
+        """Custom cleaning to check a comment is given for StudyResponses that disagree."""
+        cleaned_data = super().clean()
+        comment = cleaned_data.get('comment')
+        status = cleaned_data.get('status')
+        if status == models.StudyResponse.STATUS_DISAGREE and not comment:
+            error = forms.ValidationError('Comment cannot be blank if you disagree with the DCC review.',
+                                          code='disagree_comment')
+            self.add_error('comment', error)
+        if status == models.StudyResponse.STATUS_AGREE and comment:
+            error = forms.ValidationError('Comment must be blank if you agree with the DCC review.',
+                                          code='agree_comment')
+            self.add_error('comment', error)
+        return cleaned_data
+
+    class Meta:
+        model = models.StudyResponse
+        fields = ('status', 'comment', )
+        help_texts = {
+            'comment': 'Only include a comment when you disagree that this variable is tagged incorrectly.'
+        }
+
+
+class StudyResponseAdminForm(StudyResponseBaseForm):
+
+    class Meta:
+        model = models.StudyResponse
+        fields = ('status', 'comment', )

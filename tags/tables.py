@@ -1,11 +1,10 @@
 """Table classes for tags app, using django-tables2."""
 
+from django.template.loader import get_template
 from django.urls import reverse
 from django.utils.safestring import mark_safe
 
 import django_tables2 as tables
-
-from trait_browser.models import Study
 
 from . import models
 
@@ -84,13 +83,32 @@ class TaggedTraitDeleteButtonMixin(tables.Table):
         return mark_safe(html)
 
 
-class TaggedTraitTableDCCReviewStatusMixin(tables.Table):
+class TaggedTraitTableReviewStatusMixin(tables.Table):
     """Mixin to show DCCReview status in a TaggedTrait table."""
 
-    status = tables.Column('Status', accessor='dcc_review.status')
+    quality_review = tables.Column('Quality review', accessor='dcc_review.status')
+
+    def render_quality_review(self, record):
+
+        if not hasattr(record, 'dcc_review'):
+            return ''
+        elif record.dcc_review.status == models.DCCReview.STATUS_CONFIRMED:
+            btn_class = 'success'
+            glyphicon = 'glyphicon-ok'
+            text = record.dcc_review.get_status_display()
+        elif record.dcc_review.status == models.DCCReview.STATUS_FOLLOWUP:
+            btn_class = 'danger'
+            glyphicon = 'glyphicon-remove'
+            text = 'Flagged for removal'
+        html = '<p class="text-{btn_class}">{text}</a>'.format(
+            btn_class=btn_class,
+            glyphicon=glyphicon,
+            text=text
+        )
+        return mark_safe(html)
 
 
-class TaggedTraitTableDCCReviewButtonMixin(TaggedTraitTableDCCReviewStatusMixin):
+class TaggedTraitTableDCCReviewButtonMixin(TaggedTraitTableReviewStatusMixin):
     """Mixin to show DCCReview status and a button to review a TaggedTrait."""
 
     # This column will display a button to either create a new review or update an existing review.
@@ -102,25 +120,78 @@ class TaggedTraitTableDCCReviewButtonMixin(TaggedTraitTableDCCReviewStatusMixin)
             btn_text = "Add a DCC review"
             btn_class = 'btn-primary'
         else:
-            url = reverse('tags:tagged-traits:pk:dcc-review:update', args=[record.pk])
-            btn_text = "Update DCC review"
-            btn_class = 'btn-warning'
+            if hasattr(record.dcc_review, 'study_response'):
+                return ('')
+            else:
+                url = reverse('tags:tagged-traits:pk:dcc-review:update', args=[record.pk])
+                btn_text = "Update DCC review"
+                btn_class = 'btn-warning'
         html = REVIEW_BUTTON_HTML.format(url=url, btn_text=btn_text, btn_class=btn_class)
         return mark_safe(html)
 
 
-class TaggedTraitTableWithDCCReviewStatus(TaggedTraitTableDCCReviewStatusMixin, TaggedTraitTable):
+class TaggedTraitTableWithReviewStatus(TaggedTraitTableReviewStatusMixin, TaggedTraitTable):
     """Table for displaying TaggedTraits with DCCReview information."""
 
-    details = tables.TemplateColumn(verbose_name='', orderable=False,
-                                    template_code=DETAIL_BUTTON_TEMPLATE)
-
     class Meta(TaggedTraitTable.Meta):
-        fields = ('tag', 'trait', 'description', 'dataset', 'details', 'status', )
+        fields = ('tag', 'trait', 'description', 'dataset', 'details', 'quality_review', )
 
 
 class TaggedTraitTableWithDCCReviewButton(TaggedTraitTableDCCReviewButtonMixin, TaggedTraitTable):
     """Table for displaying TaggedTraits with DCCReview information and review button."""
 
     class Meta(TaggedTraitTable.Meta):
-        fields = ('tag', 'trait', 'description', 'dataset', 'details', 'status', 'review_button', )
+        fields = ('tag', 'trait', 'description', 'dataset', 'details', 'dcc_status', 'response_status',
+                  'review_button', )
+
+
+class DCCReviewTable(tables.Table):
+    """Table for displaying TaggedTrait and DCCReviews."""
+
+    trait = tables.TemplateColumn(verbose_name='Study Variable', orderable=False,
+                                  template_code="""{{ record.trait.get_name_link_html|safe }}""")
+    details = tables.TemplateColumn(verbose_name='', orderable=False,
+                                    template_code=DETAIL_BUTTON_TEMPLATE)
+    dataset = tables.TemplateColumn(verbose_name='Dataset', orderable=False,
+                                    template_code="""{{ record.trait.source_dataset.get_name_link_html|safe }}""")
+    dcc_comment = tables.Column('Reason for removal', accessor='dcc_review.comment', orderable=False)
+    study_response = tables.Column('Status', accessor='dcc_review.status', orderable=True,
+                                   order_by=('dcc_review__study_response'))
+
+    def render_study_response(self, record):
+
+        if not hasattr(record, 'dcc_review'):
+            return ''
+        elif not hasattr(record.dcc_review, 'study_response'):
+            return ''
+        elif record.dcc_review.study_response.status == models.StudyResponse.STATUS_AGREE:
+            btn_class = 'success'
+            glyphicon = 'glyphicon-ok'
+            text = 'Agreed to remove'
+        elif record.dcc_review.status == models.StudyResponse.STATUS_DISAGREE:
+            btn_class = 'danger'
+            glyphicon = 'glyphicon-remove'
+            text = 'Gave explanation'
+        html = '<p class="text-{btn_class}">{text}</a>'.format(
+            btn_class=btn_class,
+            glyphicon=glyphicon,
+            text=text
+        )
+        return mark_safe(html)
+
+    class Meta:
+        # It doesn't really matter if we use TaggedTrait or DCCReview because of the one-to-one relationship.
+        models.TaggedTrait
+        fields = ('trait', 'dataset', 'dcc_comment', 'details', 'study_response', )
+        attrs = {'class': 'table table-striped table-bordered table-hover'}
+        template = 'django_tables2/bootstrap-responsive.html'
+
+
+class DCCReviewTableWithStudyResponseButtons(DCCReviewTable):
+    """Table to display TaggedTrait and DCCReview info plus buttons for creating a StudyResponse."""
+
+    buttons = tables.TemplateColumn(verbose_name='Quality review', template_name='tags/_studyreview_buttons.html',
+                                    orderable=False)
+
+    class Meta(DCCReviewTable.Meta):
+        pass

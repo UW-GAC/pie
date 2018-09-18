@@ -497,3 +497,77 @@ class DCCReviewTagAndStudySelectFormTest(TestCase):
         dcc_review = factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait)
         form = self.form_class({'tag': self.tag.pk, 'study': self.study.pk})
         self.assertFalse(form.is_valid())
+
+
+class StudyResponseDisagreeFormTest(TestCase):
+
+    form_class = forms.StudyResponseDisagreeForm
+
+    def test_valid(self):
+        """Form is valid with all necessary input."""
+        form = self.form_class({'comment': 'a comment'})
+        self.assertTrue(form.is_valid())
+
+    def test_invalid_missing_comment(self):
+        """Form is invalid if missing comment."""
+        form = self.form_class({})
+        self.assertFalse(form.is_valid())
+
+    def test_invalid_whitespace_comment(self):
+        """Form is invalid if comment is only whitespace."""
+        form = self.form_class({'comment': ' '})
+        self.assertFalse(form.is_valid())
+
+
+class StudyResponseFormTestMixin(object):
+
+    def test_valid_if_disagree_with_comment(self):
+        """Form is valid if the study disagrees and a comment is given."""
+        form_data = {'comment': 'foo', 'status': models.StudyResponse.STATUS_DISAGREE}
+        form = self.form_class(form_data)
+        self.assertTrue(form.is_valid())
+
+    def test_invalid_if_disagree_with_no_comment(self):
+        """Form is invalid if the study disagrees and no comment is given."""
+        form_data = {'comment': '', 'status': models.StudyResponse.STATUS_DISAGREE}
+        form = self.form_class(form_data)
+        self.assertFalse(form.is_valid())
+        self.assertTrue(form.has_error('comment', code='disagree_comment'))
+
+    def test_invalid_if_disagree_with_whitespace_comment(self):
+        """Form is invalid if the study disagrees and no comment is given."""
+        form_data = {'comment': ' ', 'status': models.StudyResponse.STATUS_DISAGREE}
+        form = self.form_class(form_data)
+        self.assertFalse(form.is_valid())
+        self.assertTrue(form.has_error('comment', code='disagree_comment'))
+
+    def test_valid_if_agree_with_no_comment(self):
+        """Form is valid if the study agrees and no comment is given."""
+        form_data = {'comment': '', 'status': models.StudyResponse.STATUS_AGREE}
+        form = self.form_class(form_data)
+        self.assertTrue(form.is_valid())
+
+    def test_valid_if_agree_with_whitespace_comment(self):
+        """Form is valid if the study agrees and a whitespace-only comment is given."""
+        form_data = {'comment': '  ', 'status': models.StudyResponse.STATUS_AGREE}
+        form = self.form_class(form_data)
+        self.assertTrue(form.is_valid())
+
+    def test_invalid_if_agree_with_comment(self):
+        """Form is invalid if the study agrees and a comment is given."""
+        form_data = {'comment': 'foo', 'status': models.StudyResponse.STATUS_AGREE}
+        form = self.form_class(form_data)
+        self.assertFalse(form.is_valid())
+        self.assertTrue(form.has_error('comment', code='agree_comment'))
+
+    def test_invalid_missing_status(self):
+        """Form is invalid if status is missing."""
+        form_data = {'comment': ''}
+        form = self.form_class(form_data)
+        self.assertFalse(form.is_valid())
+        self.assertTrue(form.has_error('status'))
+
+
+class StudyResponseAdminFormTest(StudyResponseFormTestMixin, TestCase):
+
+    form_class = forms.StudyResponseAdminForm

@@ -2,14 +2,14 @@
 
 from itertools import groupby
 
-from django.db.models import Count, F
-from django.core.exceptions import ObjectDoesNotExist
-from django.http import HttpResponseRedirect
+from django.db.models import Case, Count, F, IntegerField, Sum, When
+from django.core.exceptions import ImproperlyConfigured, ObjectDoesNotExist
+from django.http import HttpResponseRedirect, HttpResponseForbidden
 from django.shortcuts import get_object_or_404
 from django.utils.safestring import mark_safe
 from django.urls import reverse
 from django.views.generic import (CreateView, DetailView, DeleteView, FormView, ListView, RedirectView, TemplateView,
-                                  UpdateView)
+                                  UpdateView, View)
 
 from braces.views import (FormMessagesMixin, FormValidMessageMixin, LoginRequiredMixin, MessageMixin,
                           PermissionRequiredMixin, UserFormKwargsMixin, UserPassesTestMixin)
@@ -69,15 +69,34 @@ class TaggedTraitDetail(LoginRequiredMixin, DetailView):
         context = super(TaggedTraitDetail, self).get_context_data(**kwargs)
         user_studies = list(self.request.user.profile.taggable_studies.all())
         user_is_study_tagger = self.object.trait.source_dataset.source_study_version.study in user_studies
+        user_is_staff = self.request.user.is_staff
         context['user_is_study_tagger'] = user_is_study_tagger
-        review_exists = hasattr(self.object, 'dcc_review')
-        has_add_perms = self.request.user.has_perm('tags.add_dccreview')
-        has_change_perms = self.request.user.has_perm('tags.change_dccreview')
+        user_has_study_access = user_is_staff or user_is_study_tagger
         # Check if DCCReview info should be shown.
-        context['show_dcc_review_info'] = (self.request.user.is_staff or user_is_study_tagger) and review_exists
-        # Check if the review add or update buttons should be shown.
-        context['show_dcc_review_add_button'] = (not review_exists and has_add_perms)
-        context['show_dcc_review_update_button'] = review_exists and has_change_perms
+        dccreview_exists = hasattr(self.object, 'dcc_review')
+        is_confirmed = dccreview_exists and self.object.dcc_review.status == models.DCCReview.STATUS_CONFIRMED
+        needs_followup = dccreview_exists and self.object.dcc_review.status == models.DCCReview.STATUS_FOLLOWUP
+        user_has_dccreview_add_perms = self.request.user.has_perm('tags.add_dccreview')
+        user_has_dccreview_change_perms = self.request.user.has_perm('tags.change_dccreview')
+        # context['show_dcc_review_info'] = (user_is_staff or user_is_study_tagger) and dccreview_exists
+        # # Check if StudyResponse info should be shown
+        response_exists = dccreview_exists and hasattr(self.object.dcc_review, 'study_response')
+        # context['show_study_response_info'] = (user_is_staff or user_is_study_tagger) and response_exists
+        # # Check if the DCCReview add or update buttons should be shown.
+        # # Check if the StudyResponse buttons should be shown.
+        # context['show_study_response_add_button'] = user_is_study_tagger and needs_followup and not response_exists
+        # context['show_study_response_update_button'] = user_is_study_tagger and response_exists
+        context['show_quality_review_panel'] = user_has_study_access
+        context['show_dcc_review_add_button'] = (not dccreview_exists) and user_has_dccreview_add_perms
+        context['show_dcc_review_update_button'] = dccreview_exists and user_has_dccreview_change_perms \
+            and not response_exists
+        context['show_confirmed_status'] = user_has_study_access and is_confirmed
+        context['show_needs_followup_status'] = user_has_study_access and needs_followup
+        context['show_study_response_status'] = user_has_study_access and response_exists
+        context['show_study_agrees'] = user_has_study_access and response_exists and \
+            (self.object.dcc_review.study_response.status == models.StudyResponse.STATUS_AGREE)
+        context['show_study_disagrees'] = user_has_study_access and response_exists and \
+            (self.object.dcc_review.study_response.status == models.StudyResponse.STATUS_DISAGREE)
         return context
 
 
@@ -143,7 +162,7 @@ class TaggedTraitByTagAndStudyList(LoginRequiredMixin, SingleTableMixin, ListVie
             return tables.TaggedTraitTableWithDCCReviewButton
         elif (self.request.user.groups.filter(name='phenotype_taggers').exists() and
               self.study in self.request.user.profile.taggable_studies.all()):
-            return tables.TaggedTraitTableWithDCCReviewStatus
+            return tables.TaggedTraitTableWithReviewStatus
         else:
             return tables.TaggedTraitTable
 
@@ -501,7 +520,7 @@ class DCCReviewByTagAndStudyNext(LoginRequiredMixin, PermissionRequiredMixin, Se
                    """tagged variable{s} left to review.""")
             msg = msg.format(
                 tag_url=self.tag.get_absolute_url(),
-                tag=self.tag.lower_title,
+                tag=self.tag.title,
                 study_url=self.study.get_absolute_url(),
                 study_name=self.study.i_study_name,
                 n_pks=len(self.pks),
@@ -629,22 +648,37 @@ class DCCReviewUpdate(LoginRequiredMixin, PermissionRequiredMixin, FormValidMess
     redirect_unauthenticated_users = True
     form_class = forms.DCCReviewForm
 
-    def _get_already_reviewed_warning_message(self):
-        return '{} has not been reviewed yet.'.format(self.tagged_trait)
+    def _get_not_reviewed_warning_message(self):
+        return 'Oops! You cannot update the DCC review because {} has not been reviewed yet.'.format(self.tagged_trait)
+
+    def _get_study_responded_message(self):
+
+        msg = 'Oops! The DCC review for {} cannot be changed because it already has a study response.'.format(
+            self.tagged_trait
+        )
+        return msg
 
     def get(self, request, *args, **kwargs):
         try:
-            return super().get(request, *args, **kwargs)
+            self.object = self.get_object()
         except ObjectDoesNotExist:
-            self.messages.warning(self._get_already_reviewed_warning_message())
+            self.messages.warning(self._get_not_reviewed_warning_message())
             return HttpResponseRedirect(reverse('tags:tagged-traits:pk:dcc-review:new', args=[self.tagged_trait.pk]))
+        if hasattr(self.object, 'study_response'):
+            self.messages.error(self._get_study_responded_message())
+            return HttpResponseRedirect(self.tagged_trait.get_absolute_url())
+        return super().get(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
         try:
-            return super().post(request, *args, **kwargs)
+            self.object = self.get_object()
         except ObjectDoesNotExist:
-            self.messages.warning(self._get_already_reviewed_warning_message())
+            self.messages.warning(self._get_not_reviewed_warning_message())
             return HttpResponseRedirect(reverse('tags:tagged-traits:pk:dcc-review:new', args=[self.tagged_trait.pk]))
+        if hasattr(self.object, 'study_response'):
+            self.messages.error(self._get_study_responded_message())
+            return HttpResponseRedirect(self.tagged_trait.get_absolute_url())
+        return super().post(request, *args, **kwargs)
 
     def get_object(self, queryset=None):
         self.tagged_trait = get_object_or_404(models.TaggedTrait, pk=self.kwargs['pk'])
@@ -657,6 +691,281 @@ class DCCReviewUpdate(LoginRequiredMixin, PermissionRequiredMixin, FormValidMess
 
     def get_success_url(self):
         return self.tagged_trait.get_absolute_url()
+
+
+class SpecificTaggableStudyMixin(UserPassesTestMixin):
+    """Mixin to check if a study is in a user's list of taggable studies or (optionally) if the user is staff."""
+
+    allow_staff = False
+
+    def dispatch(self, request, *args, **kwargs):
+        self.set_study()
+        return super().dispatch(request, *args, **kwargs)
+
+    def set_study(self):
+        raise ImproperlyConfigured(
+            "SpecificTaggableStudyMixin requires a definition for 'set_study()'"
+        )
+
+    def test_func(self, user):
+        if self.allow_staff and user.is_staff:
+            return True
+        else:
+            return self.study in user.profile.taggable_studies.all()
+
+
+class DCCReviewNeedFollowupCounts(LoginRequiredMixin, TemplateView):
+    """View to show counts of DCCReviews that need followup by study and tag for phenotype taggers."""
+
+    template_name = 'tags/taggedtrait_needfollowup_counts.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        studies = self.request.user.profile.taggable_studies.all()
+        # Note that the Django docs caution against using annotate to add more than one column:
+        # https://docs.djangoproject.com/en/1.11/topics/db/aggregation/#combining-multiple-aggregations
+        # https://code.djangoproject.com/ticket/10060
+        # The problem occurs when a join produces duplicated rows. In the queries below, none of the
+        # joins should result in any duplicated TaggedTraits, so multiple annotations should be ok.
+        study_tag_counts = models.TaggedTrait.objects.need_followup().filter(
+            trait__source_dataset__source_study_version__study__in=studies
+        ).values(
+            study_name=F('trait__source_dataset__source_study_version__study__i_study_name'),
+            study_pk=F('trait__source_dataset__source_study_version__study__i_accession'),
+            tag_name=F('tag__title'),
+            tag_pk=F('tag__pk')
+        ).annotate(
+            tt_remaining_count=Sum(Case(
+                When(dcc_review__study_response__isnull=True, then=1),
+                When(dcc_review__study_response__isnull=False, then=0),
+                default_value=0,
+                output_field=IntegerField()
+            ))
+        ).annotate(
+            tt_completed_count=Sum(Case(
+                When(dcc_review__study_response__isnull=False, then=1),
+                When(dcc_review__study_response__isnull=True, then=0),
+                default_value=0,
+                output_field=IntegerField()
+            ))
+        ).values(
+            'study_name', 'study_pk', 'tag_name', 'tt_remaining_count', 'tt_completed_count', 'tag_pk'
+        ).order_by(
+            'study_name', 'tag_name'
+        )
+        grouped_study_tag_counts = groupby(study_tag_counts,
+                                           lambda x: {'study_name': x['study_name'], 'study_pk': x['study_pk']})
+        grouped_study_tag_counts = [(key, list(group)) for key, group in grouped_study_tag_counts]
+        context['grouped_study_tag_counts'] = grouped_study_tag_counts
+        return context
+
+    def get(self, request, *args, **kwargs):
+        # Make sure the user is a phenotype tagger and has at least one taggable study.
+        n_studies = self.request.user.profile.taggable_studies.count()
+        if (self.request.user.groups.filter(name='phenotype_taggers').exists() and n_studies > 0):
+            return super().get(request, *args, **kwargs)
+        return HttpResponseForbidden()
+
+
+class DCCReviewNeedFollowupList(LoginRequiredMixin, SpecificTaggableStudyMixin, SingleTableMixin, ListView):
+    """List view of DCCReviews that need study followup."""
+
+    redirect_unauthenticated_users = True
+    raise_exception = True
+    allow_staff = True
+    template_name = 'tags/dccreview_list.html'
+    model = models.TaggedTrait
+    context_table_name = 'tagged_trait_table'
+    context_table_name = 'tagged_trait_table'
+    table_pagination = {'per_page': TABLE_PER_PAGE * 2}
+
+    def get_table_class(self):
+        if self.study in self.request.user.profile.taggable_studies.all():
+            return tables.DCCReviewTableWithStudyResponseButtons
+        else:
+            return tables.DCCReviewTable
+
+    def set_study(self):
+        self.study = get_object_or_404(Study, pk=self.kwargs['pk_study'])
+
+    def get(self, request, *args, **kwargs):
+        self.tag = get_object_or_404(models.Tag, pk=self.kwargs['pk'])
+        return super().get(request, *args, **kwargs)
+
+    def get_context_data(self, *args, **kwargs):
+        context = super().get_context_data(*args, **kwargs)
+        context['study'] = self.study
+        context['tag'] = self.tag
+        context['show_review_button'] = self.request.user.is_staff
+        return context
+
+    def get_table_data(self):
+        data = self.study.get_tagged_traits().need_followup().filter(
+            tag=self.tag
+        ).select_related(
+            'dcc_review',
+            'dcc_review__study_response',
+            'tag',
+            'trait',
+            'trait__source_dataset'
+        ).order_by(
+            'dcc_review__study_response'
+        )
+        return data
+
+
+class StudyResponseCheckMixin(SpecificTaggableStudyMixin, MessageMixin):
+    """Mixin to handle checking that it's appropriate to create or update a StudyResponse."""
+
+    def set_study(self):
+        self.study = self.tagged_trait.trait.source_dataset.source_study_version.study
+
+    def get_failure_url(self):
+        raise NotImplementedError('Implement get_failure_url when using this mixin.')  # pragma: no cover
+
+    def dispatch(self, request, *args, **kwargs):
+        self.tagged_trait = get_object_or_404(models.TaggedTrait, pk=kwargs['pk'])
+        try:
+            dcc_review = self.tagged_trait.dcc_review
+        except AttributeError:
+            self.messages.warning('Oops! {} has not been reviewed by the DCC.'.format(self.tagged_trait))
+            return HttpResponseRedirect(self.get_failure_url())
+        if self.tagged_trait.dcc_review.status == models.DCCReview.STATUS_CONFIRMED:
+            self.messages.warning('Oops! {} has been confirmed by the DCC.'.format(self.tagged_trait))
+            return HttpResponseRedirect(self.get_failure_url())
+        return super().dispatch(request, *args, **kwargs)
+
+
+class StudyResponseMixin(object):
+    """Mixin to respond to DCCReviews with a form. Must be used with CreateView or UpdateView."""
+
+    model = models.StudyResponse
+
+    def get_context_data(self, **kwargs):
+        if 'tagged_trait' not in kwargs:
+            kwargs['tagged_trait'] = self.tagged_trait
+        return super().get_context_data(**kwargs)
+
+    def get_review_status(self):
+        """Return the StudyResponse status based on which submit button was clicked."""
+        if self.request.POST:
+            if self.form_class.SUBMIT_AGREE in self.request.POST:
+                return self.model.STATUS_AGREE
+            elif self.form_class.SUBMIT_DISAGREE in self.request.POST:
+                return self.model.STATUS_DISAGREE
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        if 'data' in kwargs:
+            tmp = kwargs['data'].copy()
+            tmp.update({'status': self.get_review_status()})
+            kwargs['data'] = tmp
+        return kwargs
+
+    def form_valid(self, form):
+        """Create a StudyResponse object linked to the given DCCReview."""
+        form.instance.dcc_review = self.tagged_trait.dcc_review
+        form.instance.creator = self.request.user
+        form.instance.status = self.get_review_status()
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return self.tagged_trait.get_absolute_url()
+
+
+class StudyResponseCreateAgree(LoginRequiredMixin, PermissionRequiredMixin, StudyResponseCheckMixin, View):
+
+    http_method_names = ['post', 'put', ]
+
+    permission_required = 'tags.add_studyresponse'
+    raise_exception = True
+    redirect_unauthenticated_users = True
+
+    def get_failure_url(self):
+        study = self.tagged_trait.trait.source_dataset.source_study_version.study
+        tag = self.tagged_trait.tag
+        return reverse('tags:tag:study:quality-review', args=[tag.pk, study.pk])
+
+    def _create_study_response(self):
+        """Create a DCCReview object linked to the given TaggedTrait."""
+        study_response = models.StudyResponse(dcc_review=self.tagged_trait.dcc_review, creator=self.request.user,
+                                              status=models.StudyResponse.STATUS_AGREE)
+        study_response.full_clean()
+        study_response.save()
+        msg = 'Agreed that {} should be removed.'.format(self.tagged_trait)
+        self.messages.success(msg)
+
+    def get_redirect_url(self, *args, **kwargs):
+        tag = self.tagged_trait.tag
+        study = self.tagged_trait.trait.source_dataset.source_study_version.study
+        return reverse('tags:tag:study:quality-review', args=[tag.pk, study.pk])
+
+    def get(self, request, *args, **kwargs):
+        if hasattr(self.tagged_trait.dcc_review, 'study_response'):
+            self.messages.warning('Oops! {} already has a study response.'.format(self.tagged_trait))
+            return HttpResponseRedirect(self.get_failure_url())
+        return super().get(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        if hasattr(self.tagged_trait.dcc_review, 'study_response'):
+            self.messages.warning('Oops! {} already has a study response.'.format(self.tagged_trait))
+            return HttpResponseRedirect(self.get_failure_url())
+        self._create_study_response()
+        return HttpResponseRedirect(self.get_redirect_url())
+
+
+class StudyResponseCreateDisagree(LoginRequiredMixin, PermissionRequiredMixin, FormValidMessageMixin,
+                                  StudyResponseCheckMixin, FormView):
+
+    permission_required = 'tags.add_studyresponse'
+    raise_exception = True
+    redirect_unauthenticated_users = True
+    form_class = forms.StudyResponseDisagreeForm
+    template_name = 'tags/studyresponse_disagree_form.html'
+    context_object_name = 'tagged_trait'
+    model = models.TaggedTrait
+
+    def get_failure_url(self):
+        tag = self.tagged_trait.tag
+        study = self.tagged_trait.trait.source_dataset.source_study_version.study
+        return reverse('tags:tag:study:quality-review', args=[tag.pk, study.pk])
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['tagged_trait'] = self.tagged_trait
+        return context
+
+    def form_valid(self, form):
+        study_response = models.StudyResponse(
+            dcc_review=self.tagged_trait.dcc_review,
+            creator=self.request.user,
+            status=models.StudyResponse.STATUS_DISAGREE,
+            comment=form.cleaned_data['comment']
+        )
+        study_response.full_clean()
+        study_response.save()
+        return super().form_valid(form)
+
+    def get(self, request, *args, **kwargs):
+        if hasattr(self.tagged_trait.dcc_review, 'study_response'):
+            self.messages.warning('Oops! {} already has a study response.'.format(self.tagged_trait))
+            return HttpResponseRedirect(self.get_failure_url())
+        return super().get(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        if hasattr(self.tagged_trait.dcc_review, 'study_response'):
+            self.messages.warning('Oops! {} already has a study response.'.format(self.tagged_trait))
+            return HttpResponseRedirect(self.get_failure_url())
+        return super().post(request, *args, **kwargs)
+
+    def get_form_valid_message(self):
+        msg = 'Explained why {} should not be removed'.format(self.tagged_trait)
+        return(msg)
+
+    def get_success_url(self):
+        tag = self.tagged_trait.dcc_review.tagged_trait.tag
+        study = self.tagged_trait.dcc_review.tagged_trait.trait.source_dataset.source_study_version.study
+        return reverse('tags:tag:study:quality-review', args=[tag.pk, study.pk])
 
 
 class TagAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):

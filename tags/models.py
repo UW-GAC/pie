@@ -60,7 +60,7 @@ class TaggedTrait(TimeStampedModel):
 
     def __str__(self):
         """Pretty printing."""
-        return 'variable {} tagged {}'.format(self.trait.i_trait_name, self.tag.lower_title)
+        return 'variable {} tagged {}'.format(self.trait.i_trait_name, self.tag.title)
 
     def get_absolute_url(self):
         return reverse('tags:tagged-traits:pk:detail', args=[self.pk])
@@ -90,5 +90,39 @@ class DCCReview(TimeStampedModel):
     comment = models.TextField(blank=True)
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
 
+    # Managers/custom querysets.
+    objects = querysets.DCCReviewQuerySet.as_manager()
+
     class Meta:
         verbose_name = 'dcc review'
+
+    def __str__(self):
+        return 'Review of {}'.format(self.tagged_trait)
+
+    def delete(self, *args, **kwargs):
+        """Only allow DCCReview objects without a StudyResponse to be deleted."""
+        if hasattr(self, 'study_response'):
+            raise DeleteNotAllowedError("Cannot delete a DCCReview with a study response.")
+        super().delete(*args, **kwargs)
+
+    def hard_delete(self, *args, **kwargs):
+        """Delete objects that cannot be deleted with overriden delete method."""
+        super().delete(*args, **kwargs)
+
+
+class StudyResponse(TimeStampedModel):
+    """Model to allow study users to respond to a DCCReview."""
+
+    dcc_review = models.OneToOneField(DCCReview, on_delete=models.CASCADE, related_name='study_response')
+    STATUS_DISAGREE = 0
+    STATUS_AGREE = 1
+    STATUS_CHOICES = (
+        (STATUS_AGREE, 'Agree'),
+        (STATUS_DISAGREE, 'Disagree'),
+    )
+    status = models.IntegerField(choices=STATUS_CHOICES)
+    comment = models.TextField(blank=True)
+    creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+
+    class Meta:
+        verbose_name = 'study response'

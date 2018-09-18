@@ -23,8 +23,9 @@ add_many_patterns = ([
 ], 'add-many', )
 
 tag_study_patterns = ([
+    url(r'^quality-review/$', views.DCCReviewNeedFollowupList.as_view(), name='quality-review'),
     url(r'^$', views.TaggedTraitByTagAndStudyList.as_view(), name='list'),
-    url(r'^dcc-review/$', views.DCCReviewByTagAndStudySelectFromURL.as_view(), name='dcc-review'),
+    url(r'^begin-dcc-review/$', views.DCCReviewByTagAndStudySelectFromURL.as_view(), name='begin-dcc-review'),
 ], 'study', )
 
 tag_patterns = ([
@@ -43,8 +44,14 @@ single_dcc_review_patterns = ([
     url(r'^update/$', views.DCCReviewUpdate.as_view(), name='update'),
 ], 'dcc-review')
 
+single_study_response_patterns = ([
+    url(r'^remove/$', views.StudyResponseCreateAgree.as_view(), name='remove'),
+    url(r'^explain/$', views.StudyResponseCreateDisagree.as_view(), name='explain'),
+], 'quality-review')
+
 single_tagged_trait_patterns = ([
     url(r'^dcc-review/', include(single_dcc_review_patterns)),
+    url(r'^quality-review/', include(single_study_response_patterns)),
     url(r'^$', views.TaggedTraitDetail.as_view(), name='detail'),
     url(r'^delete/$', views.TaggedTraitDelete.as_view(), name='delete'),
 ], 'pk')
@@ -55,6 +62,7 @@ tagged_trait_patterns = ([
     url(r'^(?P<pk>\d+)/', include(single_tagged_trait_patterns)),
     url(r'^by-study/$', views.TaggedTraitTagCountsByStudy.as_view(), name='by-study'),
     url(r'^by-tag/$', views.TaggedTraitStudyCountsByTag.as_view(), name='by-tag'),
+    url(r'^quality-review/$', views.DCCReviewNeedFollowupCounts.as_view(), name='quality-review'),
 ], 'tagged-traits', )
 
 urlpatterns = [

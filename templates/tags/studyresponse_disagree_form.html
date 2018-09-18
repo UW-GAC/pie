@@ -1,0 +1,46 @@
+{% extends '__base.html' %}
+
+{% load crispy_forms_tags %}
+
+{% block head_title %}
+  | Quality review explanation
+{% endblock head_title %}
+
+{% block content %}
+
+  <h2>Quality review
+    <small>
+      Explain why  <a href="{{ tagged_trait.trait.get_absolute_url }}">{{ tagged_trait.trait.i_trait_name }}</a>
+      should be tagged with <a href="{{ tagged_trait.tag.get_absolute_url }}">{{ tagged_trait.tag.title }}</a>
+    </small>
+  </h2>
+
+  {% include '_messages.html' %}
+
+  <div class="well">
+    This tagged variable has been flagged for removal by the DCC.
+    Please review the reason given below.
+    Click on the "Tag information" and "Study variable information" panels for more details about the tag and variable.
+    Enter a reason in the "Comment" box explaining why you think this variable is appropriately tagged and select the "Submit" button.
+  </div>
+
+  {% include 'tags/_taggedtrait_info.html' with show_all_tags=False collapse_tag_panel=True collapse_trait_panel=True %}
+
+  <div class="panel-group">
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <h4 class="panel-title">
+          <a data-toggle="collapse" href="#collapse-dccreview">Reason for removal</a>
+        </h4>
+      </div>
+      <div id="collapse-dccreview" class="panel-collapse in">
+        <div class="panel-body">
+          {{ tagged_trait.dcc_review.comment }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% crispy form %}
+
+{% endblock content %}

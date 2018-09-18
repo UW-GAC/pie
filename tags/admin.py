@@ -24,8 +24,8 @@ class TagAdmin(admin.ModelAdmin):
 class TaggedTraitAdmin(admin.ModelAdmin):
     """Admin class for TaggedTrait objects."""
 
-    list_display = ('tag', 'trait', 'dcc_review_status', 'creator', 'created', 'modified', )
-    list_filter = ('tag', 'creator', 'dcc_review__status')
+    list_display = ('tag', 'trait', 'dcc_review_status', 'study_response_status', 'creator', 'created', 'modified', )
+    list_filter = ('tag', 'creator', 'dcc_review__status', 'dcc_review__study_response__status', )
     search_fields = ('tag', 'trait', )
     form = forms.TaggedTraitAdminForm
 
@@ -37,6 +37,9 @@ class TaggedTraitAdmin(admin.ModelAdmin):
 
     def dcc_review_status(self, obj):
         return obj.dcc_review.get_status_display()
+
+    def study_response_status(self, obj):
+        return obj.dcc_review.study_response.get_status_display()
 
     def has_delete_permission(self, request, obj=None):
         if obj is not None and hasattr(obj, 'dcc_review'):
@@ -52,7 +55,15 @@ class DCCReviewAdmin(admin.ModelAdmin):
     form = forms.DCCReviewAdminForm
 
 
+class StudyResponseAdmin(admin.ModelAdmin):
+    list_display = ('dcc_review', 'status', 'comment', 'creator', 'created', 'modified', )
+    list_filter = ('status', 'creator', )
+    search_fields = ('dcc_review__tagged_trait__tag__title', 'dcc_review__tagged_trait__trait__i_trait_name')
+    form = forms.StudyResponseAdminForm
+
+
 # Register models for showing them in the admin interface.
 admin.site.register(models.Tag, TagAdmin)
 admin.site.register(models.TaggedTrait, TaggedTraitAdmin)
 admin.site.register(models.DCCReview, DCCReviewAdmin)
+admin.site.register(models.StudyResponse, StudyResponseAdmin)

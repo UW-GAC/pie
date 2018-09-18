@@ -62,7 +62,7 @@
 from django.apps import apps
 from django.db import models
 from django.urls import reverse
-
+from django.utils.text import Truncator
 from core.models import TimeStampedModel
 
 from . import querysets
@@ -286,6 +286,15 @@ class SourceDataset(SourceDBTimeStampedModel):
         """Automatically set dbgap_link from dbGaP identifier information."""
         return self.DATASET_URL.format(self.source_study_version.full_accession, self.full_accession)
 
+    def get_name_link_html(self, max_popover_words=80):
+        """Get html for the dataset name linked to the dataset's detail page, with description as popover."""
+        if not self.i_dbgap_description:
+            description = '&mdash;'
+        else:
+            description = Truncator(self.i_dbgap_description).words(max_popover_words)
+        return POPOVER_URL_HTML.format(url=self.get_absolute_url(), popover=description,
+                                       name=self.dataset_name)
+
 
 class HarmonizedTraitSet(SourceDBTimeStampedModel):
     """Model for harmonized trait set from topmed_pheno. Analagous to the SourceDataset for source traits."""
@@ -474,10 +483,14 @@ class SourceTrait(Trait):
         """Gets the absolute URL of the detail page for a given SourceTrait instance."""
         return reverse('trait_browser:source:traits:detail', kwargs={'pk': self.pk})
 
-    def get_name_link_html(self):
+    def get_name_link_html(self, max_popover_words=80):
         """Get html for the trait name linked to the trait's detail page, with description as popover."""
-        url_text = "{{% url 'trait_browser:source:traits:detail' pk={} %}} ".format(self.pk)
-        return POPOVER_URL_HTML.format(url=url_text, popover=self.i_description, name=self.i_trait_name)
+        if not self.i_description:
+            description = '&mdash;'
+        else:
+            description = Truncator(self.i_description).words(max_popover_words)
+        return POPOVER_URL_HTML.format(url=self.get_absolute_url(), popover=description,
+                                       name=self.i_trait_name)
 
 
 class HarmonizedTrait(Trait):
@@ -542,10 +555,14 @@ class HarmonizedTrait(Trait):
         """
         return self.harmonized_trait_set_version.get_absolute_url()
 
-    def get_name_link_html(self):
+    def get_name_link_html(self, max_popover_words=80):
         """Get html for the trait name linked to the harmonized trait's detail page, with description as popover."""
         url_text = "{{% url 'trait_browser:harmonized:traits:detail' pk={} %}} ".format(self.harmonized_trait_set_version.pk)
-        return POPOVER_URL_HTML.format(url=url_text, popover=self.i_description, name=self.trait_flavor_name)
+        if not self.i_description:
+            description = '&mdash;'
+        else:
+            description = Truncator(self.i_description).words(max_popover_words)
+        return POPOVER_URL_HTML.format(url=url_text, popover=description, name=self.trait_flavor_name)
 
     def get_component_html(self, harmonization_unit):
         """Get html for inline lists of source and harmonized component phenotypes for the harmonized trait."""

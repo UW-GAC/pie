@@ -5,6 +5,10 @@
     {% block title %}{% endblock title%}
     <small>{% block subtitle %}{% endblock subtitle %}</small>
   </h2>
+  {% block before_table %}
+  {% endblock before_table %}
   {% block table %}
   {% endblock table %}
+  {% block after_table %}
+  {% endblock after_table %}
 {% endblock content %}
