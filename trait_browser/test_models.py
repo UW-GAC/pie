@@ -7,6 +7,7 @@ from django.core.exceptions import ValidationError
 from django.test import TestCase
 
 from tags.factories import TaggedTraitFactory
+from tags.models import Tag
 
 from . import factories
 from . import models
@@ -385,6 +386,12 @@ class SourceTraitTest(TestCase):
             self.assertIn(tagged_trait.tag, trait.non_archived_tags)
             self.assertNotIn(tagged_trait.tag, trait.archived_tags)
         self.assertEqual(len(non_archived), trait.non_archived_tags.count())
+
+    def test_tags(self):
+        """Test the method to get all of the trait's tags."""
+        trait = factories.SourceTraitFactory.create()
+        tagged_traits = TaggedTraitFactory.create_batch(10, trait=trait)
+        self.assertListEqual(list(trait.tag_set.all()), list(Tag.objects.all()))
 
 
 class HarmonizedTraitTest(TestCase):

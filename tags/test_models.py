@@ -139,6 +139,12 @@ class TagTest(TestCase):
             self.assertNotIn(tagged_trait.trait, tag.archived_traits)
         self.assertEqual(len(non_archived), tag.non_archived_traits.count())
 
+    def test_traits(self):
+        """Test the method to get all of the tag's linked traits."""
+        tag = factories.TagFactory.create()
+        tagged_traits = factories.TaggedTraitFactory.create_batch(10, tag=tag)
+        self.assertListEqual(list(SourceTrait.objects.all()), list(tag.traits.all()))
+
 
 class StudyGetAllTaggedTraitsTest(TestCase):
 
