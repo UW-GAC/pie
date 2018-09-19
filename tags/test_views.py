@@ -864,7 +864,7 @@ class TaggedTraitDeleteTestsMixin(object):
         self.assertIn(self.tagged_trait, models.TaggedTrait.objects.all())
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
-        self.assertIn(views.REVIEWED_TAGGED_TRAIT_DELETE_ERROR_MESSAGE, str(messages[0]))
+        self.assertIn(views.CONFIRMED_TAGGED_TRAIT_DELETE_ERROR_MESSAGE, str(messages[0]))
 
     def test_does_not_delete_confirmed(self):
         """Cannot delete a TaggedTrait that has been confirmed by the DCC."""
@@ -876,7 +876,7 @@ class TaggedTraitDeleteTestsMixin(object):
         self.assertIn(self.tagged_trait, models.TaggedTrait.objects.all())
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
-        self.assertIn(views.REVIEWED_TAGGED_TRAIT_DELETE_ERROR_MESSAGE, str(messages[0]))
+        self.assertIn(views.CONFIRMED_TAGGED_TRAIT_DELETE_ERROR_MESSAGE, str(messages[0]))
 
     def test_needs_followup_tagged_trait_get_request_reaches_confirmation_view(self):
         """Confirmation view has success code when trying to delete a needs followup reviewed TaggedTrait."""
@@ -897,7 +897,7 @@ class TaggedTraitDeleteTestsMixin(object):
         self.assertTrue(self.tagged_trait.archived)
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
-        self.assertNotIn(views.REVIEWED_TAGGED_TRAIT_DELETE_ERROR_MESSAGE, str(messages[0]))
+        self.assertNotIn(views.CONFIRMED_TAGGED_TRAIT_DELETE_ERROR_MESSAGE, str(messages[0]))
 
     def test_next_url(self):
         """next_url in context matches the starting url."""
