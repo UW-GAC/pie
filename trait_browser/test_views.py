@@ -1963,7 +1963,7 @@ class SourceTraitDetailTest(UserLoginTestCase):
         self.assertEqual(context['source_trait'], self.trait)
         self.assertIn('tagged_traits_with_xs', context)
         self.assertEqual([el[0] for el in context['tagged_traits_with_xs']],
-                         list(self.trait.taggedtrait_set.all()))
+                         list(self.trait.all_taggedtraits.non_archived()))
         self.assertIn('user_is_study_tagger', context)
         self.assertFalse(context['user_is_study_tagger'])
 
@@ -2014,7 +2014,7 @@ class SourceTraitDetailPhenotypeTaggerTest(PhenotypeTaggerLoginTestCase):
         response = self.client.get(self.get_url(self.trait.pk))
         context = response.context
         self.assertEqual([el[0] for el in context['tagged_traits_with_xs']],
-                         list(self.trait.taggedtrait_set.all()))
+                         list(self.trait.all_taggedtraits.non_archived()))
 
     def test_has_tagged_trait_remove_buttons(self):
         """The tag removal buttons shows up."""
@@ -2109,7 +2109,7 @@ class SourceTraitDetailDCCAnalystTest(DCCAnalystLoginTestCase):
         response = self.client.get(self.get_url(self.trait.pk))
         context = response.context
         self.assertEqual([el[0] for el in context['tagged_traits_with_xs']],
-                         list(self.trait.taggedtrait_set.all()))
+                         list(self.trait.all_taggedtraits.non_archived()))
 
     def test_has_tagged_trait_remove_buttons(self):
         """The tag removal buttons shows up."""

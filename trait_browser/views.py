@@ -378,7 +378,7 @@ class SourceTraitDetail(LoginRequiredMixin, DetailView):
         user_studies = list(self.request.user.profile.taggable_studies.all())
         context['user_is_study_tagger'] = self.object.source_dataset.source_study_version.study in user_studies
         context['show_tag_button'] = context['user_is_study_tagger'] or self.request.user.is_staff
-        tagged_traits = self.object.taggedtrait_set.all().order_by('tag__lower_title')
+        tagged_traits = self.object.all_taggedtraits.non_archived().order_by('tag__lower_title')
         # If tagging is allowed, check on whether to show the delete button for each tag.
         if context['show_tag_button']:
             show_delete_buttons = []

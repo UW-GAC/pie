@@ -62,8 +62,8 @@ class Tag(TimeStampedModel):
 class TaggedTrait(TimeStampedModel):
     """Intermediate model for connecting Tags and SourceTraits."""
 
-    trait = models.ForeignKey('trait_browser.SourceTrait', on_delete=models.CASCADE)
-    tag = models.ForeignKey(Tag, on_delete=models.CASCADE)
+    trait = models.ForeignKey('trait_browser.SourceTrait', on_delete=models.CASCADE, related_name="all_taggedtraits")
+    tag = models.ForeignKey(Tag, on_delete=models.CASCADE, related_name="all_taggedtraits")
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, blank=True, on_delete=models.CASCADE)
     archived = models.BooleanField(default=False)
 
