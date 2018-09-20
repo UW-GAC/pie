@@ -82,12 +82,22 @@ class TaggedTrait(TimeStampedModel):
         return reverse('tags:tagged-traits:pk:detail', args=[self.pk])
 
     def archive(self):
-        """Set the TaggedTrait to archived."""
+        """Set the TaggedTrait to archived.
+
+        Other than tests, this method should only be used on tagged traits that have
+        linked DCCReviews. Using it on unreviewed tagged traits makes some error
+        messages nonsensical.
+        """
         self.archived = True
         self.save()
 
     def unarchive(self):
-        """Set the TaggedTrait to unarchived."""
+        """Set the TaggedTrait to unarchived.
+
+        Other than tests, this method should only be used on tagged traits that have
+        linked DCCReviews. Using it on unreviewed tagged traits makes some error
+        messages nonsensical.
+        """
         self.archived = False
         self.save()
 
