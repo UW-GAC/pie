@@ -43,6 +43,10 @@ class TaggedTraitAdmin(admin.ModelAdmin):
             return False
         return super().has_delete_permission(request, obj=obj)
 
+    def has_add_permission(self, request, obj=None):
+        """No adding TaggedTraits from the admin."""
+        return False
+
 
 class DCCReviewAdmin(admin.ModelAdmin):
 
@@ -51,6 +55,10 @@ class DCCReviewAdmin(admin.ModelAdmin):
     search_fields = ('tagged_trait__tag__title', 'tagged_trait__trait__i_trait_name', )
     readonly_fields = ('tagged_trait', )
     form = forms.DCCReviewAdminForm
+
+    def has_add_permission(self, request, obj=None):
+        """No adding DCCReviews from the admin."""
+        return False
 
 
 # Register models for showing them in the admin interface.
