@@ -26,7 +26,7 @@
           {% if show_all_tags %}
             <dt>All phenotype tags</dt>
               <dd>
-                {% for other_tag in tagged_trait.trait.tag_set.all %}
+                {% for other_tag in tagged_trait.trait.all_tags.all %}
                   <div class="btn-group btn-group-xs">
                     <a href="{{ other_tag.get_absolute_url }}"
                        class="btn btn-{% if tagged_trait.tag.pk == other_tag.pk%}info{% else %}default{% endif %}"

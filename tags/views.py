@@ -10,6 +10,7 @@ from django.utils.safestring import mark_safe
 from django.urls import reverse
 from django.views.generic import (CreateView, DetailView, DeleteView, FormView, ListView, RedirectView, TemplateView,
                                   UpdateView, View)
+from django.views.generic.edit import ProcessFormView
 
 from braces.views import (FormMessagesMixin, FormValidMessageMixin, LoginRequiredMixin, MessageMixin,
                           PermissionRequiredMixin, UserFormKwargsMixin, UserPassesTestMixin)
@@ -27,8 +28,8 @@ from . import tables
 TABLE_PER_PAGE = 50    # Setting for per_page rows for all table views.
 TAGGING_ERROR_MESSAGE = 'Oops! Applying the tag to a study variable failed.'
 TAGGING_MULTIPLE_ERROR_MESSAGE = 'Oops! Applying the tag to study variables failed.'
-REVIEWED_TAGGED_TRAIT_DELETE_ERROR_MESSAGE = (
-    "Oops! Tagged study variables that have been reviewed by the DCC can't be deleted."
+CONFIRMED_TAGGED_TRAIT_DELETE_ERROR_MESSAGE = (
+    "Oops! Tagged study variables that have been reviewed and confirmed by the DCC can't be removed."
 )
 
 
@@ -40,7 +41,7 @@ class TagDetail(LoginRequiredMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super(TagDetail, self).get_context_data(**kwargs)
-        study_counts = models.TaggedTrait.objects.filter(tag=self.object).values(
+        study_counts = models.TaggedTrait.objects.non_archived().filter(tag=self.object).values(
             study_name=F('trait__source_dataset__source_study_version__study__i_study_name'),
             study_pk=F('trait__source_dataset__source_study_version__study__pk')
         ).annotate(
@@ -72,6 +73,7 @@ class TaggedTraitDetail(LoginRequiredMixin, DetailView):
         user_is_staff = self.request.user.is_staff
         context['user_is_study_tagger'] = user_is_study_tagger
         user_has_study_access = user_is_staff or user_is_study_tagger
+        is_non_archived = not self.object.archived
         # Check if DCCReview info should be shown.
         dccreview_exists = hasattr(self.object, 'dcc_review')
         is_confirmed = dccreview_exists and self.object.dcc_review.status == models.DCCReview.STATUS_CONFIRMED
@@ -87,9 +89,9 @@ class TaggedTraitDetail(LoginRequiredMixin, DetailView):
         # context['show_study_response_add_button'] = user_is_study_tagger and needs_followup and not response_exists
         # context['show_study_response_update_button'] = user_is_study_tagger and response_exists
         context['show_quality_review_panel'] = user_has_study_access
-        context['show_dcc_review_add_button'] = (not dccreview_exists) and user_has_dccreview_add_perms
+        context['show_dcc_review_add_button'] = (not dccreview_exists) and user_has_dccreview_add_perms and is_non_archived
         context['show_dcc_review_update_button'] = dccreview_exists and user_has_dccreview_change_perms \
-            and not response_exists
+            and not response_exists and is_non_archived
         context['show_confirmed_status'] = user_has_study_access and is_confirmed
         context['show_needs_followup_status'] = user_has_study_access and needs_followup
         context['show_study_response_status'] = user_has_study_access and response_exists
@@ -97,6 +99,9 @@ class TaggedTraitDetail(LoginRequiredMixin, DetailView):
             (self.object.dcc_review.study_response.status == models.StudyResponse.STATUS_AGREE)
         context['show_study_disagrees'] = user_has_study_access and response_exists and \
             (self.object.dcc_review.study_response.status == models.StudyResponse.STATUS_DISAGREE)
+        # Check if the delete button should be shown.
+        context['show_delete_button'] = (
+            user_is_staff or user_is_study_tagger) and (not dccreview_exists) and is_non_archived
         return context
 
 
@@ -106,7 +111,7 @@ class TaggedTraitTagCountsByStudy(LoginRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super(TaggedTraitTagCountsByStudy, self).get_context_data(**kwargs)
-        annotated_studies = models.TaggedTrait.objects.values(
+        annotated_studies = models.TaggedTrait.objects.non_archived().values(
             study_name=F('trait__source_dataset__source_study_version__study__i_study_name'),
             study_pk=F('trait__source_dataset__source_study_version__study__pk'),
             tag_name=F('tag__title'),
@@ -127,7 +132,7 @@ class TaggedTraitStudyCountsByTag(LoginRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super(TaggedTraitStudyCountsByTag, self).get_context_data(**kwargs)
-        annotated_tags = models.TaggedTrait.objects.values(
+        annotated_tags = models.TaggedTrait.objects.non_archived().values(
             study_name=F('trait__source_dataset__source_study_version__study__i_study_name'),
             study_pk=F('trait__source_dataset__source_study_version__study__pk'),
             tag_name=F('tag__title'),
@@ -154,7 +159,7 @@ class TaggedTraitByTagAndStudyList(LoginRequiredMixin, SingleTableMixin, ListVie
         return super(TaggedTraitByTagAndStudyList, self).get(self, request, *args, **kwargs)
 
     def get_table_data(self):
-        return self.study.get_tagged_traits().filter(tag=self.tag).select_related(
+        return self.study.get_non_archived_tagged_traits().filter(tag=self.tag).select_related(
             'tag',
             'trait',
             'trait__source_dataset',
@@ -224,9 +229,14 @@ class TaggedTraitDelete(LoginRequiredMixin, PermissionRequiredMixin, TaggableStu
         return self.get_success_url()
 
     def validate_object(self):
+        """Redirect to the failure url if the taggedtrait is reviewed and confirmed.
+
+        Otherwise, will delete or archive as appropriate, using the custom delete method.
+        """
         if hasattr(self.object, 'dcc_review'):
-            self.messages.error(REVIEWED_TAGGED_TRAIT_DELETE_ERROR_MESSAGE)
-            return False
+            if self.object.dcc_review.status == self.object.dcc_review.STATUS_CONFIRMED:
+                self.messages.error(CONFIRMED_TAGGED_TRAIT_DELETE_ERROR_MESSAGE)
+                return False
         return True
 
 
@@ -426,7 +436,7 @@ class DCCReviewByTagAndStudySelect(LoginRequiredMixin, PermissionRequiredMixin, 
         # Set session variables for use in the next view.
         study = form.cleaned_data.get('study')
         tag = form.cleaned_data.get('tag')
-        qs = models.TaggedTrait.objects.unreviewed().filter(
+        qs = models.TaggedTrait.objects.non_archived().unreviewed().filter(
             tag=tag,
             trait__source_dataset__source_study_version__study=study
         )
@@ -453,7 +463,7 @@ class DCCReviewByTagAndStudySelectFromURL(LoginRequiredMixin, PermissionRequired
     def get(self, request, *args, **kwargs):
         tag = get_object_or_404(models.Tag, pk=self.kwargs['pk'])
         study = get_object_or_404(Study, pk=self.kwargs['pk_study'])
-        qs = models.TaggedTrait.objects.unreviewed().filter(
+        qs = models.TaggedTrait.objects.non_archived().unreviewed().filter(
             tag=tag,
             trait__source_dataset__source_study_version__study=study
         )
@@ -502,6 +512,11 @@ class DCCReviewByTagAndStudyNext(LoginRequiredMixin, PermissionRequiredMixin, Se
         self.request.session['tagged_trait_review_by_tag_and_study_info'] = info
 
     def get_redirect_url(self, *args, **kwargs):
+        """Get the URL to review the next available tagged trait.
+
+        Skip tagged traits that have been archived or deleted since beginning the loop.
+        Return the tag-study table URL if all pks have been reviewed.
+        """
         info = self.request.session.get('tagged_trait_review_by_tag_and_study_info')
         if info is None:
             # The expected session variable has not been set by the previous
@@ -510,17 +525,24 @@ class DCCReviewByTagAndStudyNext(LoginRequiredMixin, PermissionRequiredMixin, Se
         if len(self.pks) > 0:
             # Set the session variable expected by the review view, then redirect.
             pk = self.pks[0]
+            # Check to see if the tagged trait has been deleted since starting the loop.
             try:
                 tt = models.TaggedTrait.objects.get(pk=pk)
             except ObjectDoesNotExist:
                 self._skip_next_tagged_trait()
                 return reverse('tags:tagged-traits:dcc-review:next')
-            if hasattr(tt, 'dcc_review'):
+            # Check to see if the tagged trait has been archived since starting the loop.
+            if tt.archived:
                 self._skip_next_tagged_trait()
                 return reverse('tags:tagged-traits:dcc-review:next')
+            # Check to see if the tagged trait has been reviewed since starting the loop.
+            elif hasattr(tt, 'dcc_review'):
+                self._skip_next_tagged_trait()
+                return reverse('tags:tagged-traits:dcc-review:next')
+            # If you make it this far, set the chosen pk as a session variable to reviewed next.
             info['pk'] = pk
             self.request.session['tagged_trait_review_by_tag_and_study_info'] = info
-            # Add a message.
+            # Add a status message.
             msg = ("""You are reviewing variables tagged with <a href="{tag_url}">{tag}</a> """
                    """from study <a href="{study_url}">{study_name}</a>. You have {n_pks} """
                    """tagged variable{s} left to review.""")
@@ -546,6 +568,7 @@ class DCCReviewByTagAndStudyNext(LoginRequiredMixin, PermissionRequiredMixin, Se
 
 class DCCReviewByTagAndStudy(LoginRequiredMixin, PermissionRequiredMixin, SessionVariableMixin, DCCReviewMixin,
                              FormValidMessageMixin, CreateView):
+    """Create a DCCReview for a tagged trait specified by the pk in a session variable."""
 
     template_name = 'tags/dccreview_form.html'
     permission_required = 'tags.add_dccreview'
@@ -589,15 +612,22 @@ class DCCReviewByTagAndStudy(LoginRequiredMixin, PermissionRequiredMixin, Sessio
         return context
 
     def post(self, request, *args, **kwargs):
+        """Handle skipping, or check for archived or already-reviewed tagged traits before proceeding."""
         if self.form_class.SUBMIT_SKIP in request.POST:
             # Remove the reviewed tagged trait from the list of pks.
             self._update_session_variables()
             return HttpResponseRedirect(reverse('tags:tagged-traits:dcc-review:next'))
-        # Check if this trait has already been reviewed.
-        if hasattr(self.tagged_trait, 'dcc_review'):
+        # Check if this tagged trait has already been archived.
+        if self.tagged_trait.archived:
             self._update_session_variables()
             # Add an informational message.
-            self.messages.warning('{} has already been reviewed.'.format(self.tagged_trait))
+            self.messages.warning('Skipped {} because it has been archived.'.format(self.tagged_trait))
+            return HttpResponseRedirect(reverse('tags:tagged-traits:dcc-review:next'))
+        # Check if this tagged trait has already been reviewed.
+        elif hasattr(self.tagged_trait, 'dcc_review'):
+            self._update_session_variables()
+            # Add an informational message.
+            self.messages.warning('Skipped {} because it has already been reviewed.'.format(self.tagged_trait))
             return HttpResponseRedirect(reverse('tags:tagged-traits:dcc-review:next'))
         return super(DCCReviewByTagAndStudy, self).post(request, *args, **kwargs)
 
@@ -622,20 +652,35 @@ class DCCReviewCreate(LoginRequiredMixin, PermissionRequiredMixin, FormValidMess
     redirect_unauthenticated_users = True
     form_class = forms.DCCReviewForm
 
-    def get(self, request, *args, **kwargs):
+    def _get_already_reviewed_warning_message(self):
+        return 'Switched to updating review for {}, because it has already been reviewed.'.format(self.tagged_trait)
+
+    def _get_archived_warning_message(self):
+        return 'Oops! Cannot create review for {}, because it has been archived.'.format(self.tagged_trait)
+
+    def _check_tagged_trait(self, *args, **kwargs):
+        """Check for deleted, archived, or already-reviewed tagged traits before proceeding."""
         self.tagged_trait = get_object_or_404(models.TaggedTrait, pk=kwargs['pk'])
-        if hasattr(self.tagged_trait, 'dcc_review'):
-            self.messages.warning('{} has already been reviewed.'.format(self.tagged_trait))
+        # Redirect if the tagged trait has already been archived.
+        if self.tagged_trait.archived:
+            self.messages.warning(self._get_archived_warning_message())
+            return HttpResponseRedirect(self.get_success_url())
+        # Switch to updating the existing review if the tagged trait has already been reviewed.
+        elif hasattr(self.tagged_trait, 'dcc_review'):
+            self.messages.warning(self._get_already_reviewed_warning_message())
             return HttpResponseRedirect(reverse('tags:tagged-traits:pk:dcc-review:update',
                                                 args=[self.tagged_trait.pk]))
+
+    def get(self, request, *args, **kwargs):
+        check_response = self._check_tagged_trait(*args, **kwargs)
+        if check_response is not None:
+            return check_response
         return super().get(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
-        self.tagged_trait = get_object_or_404(models.TaggedTrait, pk=kwargs['pk'])
-        if hasattr(self.tagged_trait, 'dcc_review'):
-            self.messages.warning('{} has already been reviewed.'.format(self.tagged_trait))
-            return HttpResponseRedirect(reverse('tags:tagged-traits:pk:dcc-review:update',
-                                                args=[self.tagged_trait.pk]))
+        check_response = self._check_tagged_trait(*args, **kwargs)
+        if check_response is not None:
+            return check_response
         return super().post(request, *args, **kwargs)
 
     def get_form_valid_message(self):
@@ -654,20 +699,25 @@ class DCCReviewUpdate(LoginRequiredMixin, PermissionRequiredMixin, FormValidMess
     redirect_unauthenticated_users = True
     form_class = forms.DCCReviewForm
 
-    def _get_not_reviewed_warning_message(self):
-        return 'Oops! You cannot update the DCC review because {} has not been reviewed yet.'.format(self.tagged_trait)
-
     def _get_study_responded_message(self):
-
         msg = 'Oops! The DCC review for {} cannot be changed because it already has a study response.'.format(
             self.tagged_trait
         )
         return msg
 
-    def get(self, request, *args, **kwargs):
-        try:
-            self.object = self.get_object()
-        except ObjectDoesNotExist:
+    def _get_not_reviewed_warning_message(self):
+        return 'Switching to creating a new review for {}, because it has not been reviewed yet.'.format(
+            self.tagged_trait)
+
+    def _get_archived_warning_message(self):
+        return 'Oops! Cannot update review for {}, because it has been archived.'.format(self.tagged_trait)
+
+    def _get_response_if_archived_or_not_reviewed(self):
+        """Check for archived tagged trait or missing DCCReview before proceeding."""
+        if self.tagged_trait.archived:
+            self.messages.warning(self._get_archived_warning_message())
+            return HttpResponseRedirect(self.get_success_url())
+        if self.object is None:
             self.messages.warning(self._get_not_reviewed_warning_message())
             return HttpResponseRedirect(reverse('tags:tagged-traits:pk:dcc-review:new', args=[self.tagged_trait.pk]))
         if hasattr(self.object, 'study_response'):
@@ -675,21 +725,36 @@ class DCCReviewUpdate(LoginRequiredMixin, PermissionRequiredMixin, FormValidMess
             return HttpResponseRedirect(self.tagged_trait.get_absolute_url())
         return super().get(request, *args, **kwargs)
 
+    def get(self, request, *args, **kwargs):
+        """Run get_object, check for archived or deleted tagged trait, and finally run the usual get."""
+        # This doesn't use super() directly because the work on check_response needs to happen in the middle of
+        # what's done in super().get().
+        self.object = self.get_object()
+        check_response = self._get_response_if_archived_or_not_reviewed()
+        if check_response is not None:
+            return check_response
+        # ProcessFormView is the super of the super.
+        return ProcessFormView.get(self, request, *args, **kwargs)
+
     def post(self, request, *args, **kwargs):
-        try:
-            self.object = self.get_object()
-        except ObjectDoesNotExist:
-            self.messages.warning(self._get_not_reviewed_warning_message())
-            return HttpResponseRedirect(reverse('tags:tagged-traits:pk:dcc-review:new', args=[self.tagged_trait.pk]))
-        if hasattr(self.object, 'study_response'):
-            self.messages.error(self._get_study_responded_message())
-            return HttpResponseRedirect(self.tagged_trait.get_absolute_url())
-        return super().post(request, *args, **kwargs)
+        """Run get_object, check for archived or deleted tagged trait, and finally run the usual post."""
+        # This doesn't use super() directly because the work on check_response needs to happen in the middle of
+        # what's done in super().post().
+        self.object = self.get_object()
+        check_response = self._get_response_if_archived_or_not_reviewed()
+        if check_response is not None:
+            return check_response
+        # ProcessFormView is the super of the super.
+        return ProcessFormView.post(self, request, *args, **kwargs)
 
     def get_object(self, queryset=None):
+        """Get both the tagged trait and its DCC review."""
         self.tagged_trait = get_object_or_404(models.TaggedTrait, pk=self.kwargs['pk'])
-        obj = self.tagged_trait.dcc_review
-        return obj
+        try:
+            obj = self.tagged_trait.dcc_review
+            return obj
+        except ObjectDoesNotExist:
+            return None
 
     def get_form_valid_message(self):
         msg = 'Successfully updated {}.'.format(self.tagged_trait)

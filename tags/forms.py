@@ -15,7 +15,10 @@ from . import models
 
 
 EXISTING_TAGGED_TRAIT_ERROR_STRING = u"""The tag {tag_name} has already been applied to study variable {phv}
-                                         ({trait_name}). Select a different phenotype and try again.."""
+                                         ({trait_name}). Change your selection and try again."""
+ARCHIVED_EXISTING_TAGGED_TRAIT_ERROR_STRING = u"""The tag {tag_name} was previously applied to study variable {phv}
+                                                  ({trait_name}) and removed during quality review.
+                                                  Change your selection and try again."""
 LOWER_TITLE_EXISTS_ERROR = forms.ValidationError(
     u"""A tag with the same (case-insensitive) title already exists."""
 )
@@ -123,12 +126,21 @@ class TaggedTraitForm(forms.ModelForm):
         trait = cleaned_data.get('trait')
         tag = cleaned_data.get('tag')
         if tag is not None and trait is not None:
-            if trait in tag.traits.all():
-                already_tagged_error = forms.ValidationError(
-                    EXISTING_TAGGED_TRAIT_ERROR_STRING.format(
-                        tag_name=tag.title, phv=trait.full_accession, trait_name=trait.i_trait_name)
-                )
-                self.add_error('trait', already_tagged_error)
+            if trait in tag.all_traits.all():
+                taggedtrait = models.TaggedTrait.objects.get(trait=trait, tag=tag)
+                if taggedtrait.archived:
+                    # Because this is a ModelForm, a non-field error is added when the TaggedTrait already exists.
+                    archived_taggedtrait_error = forms.ValidationError(
+                        ARCHIVED_EXISTING_TAGGED_TRAIT_ERROR_STRING.format(
+                            tag_name=tag.title, phv=trait.full_accession, trait_name=trait.i_trait_name)
+                    )
+                    self.add_error('trait', archived_taggedtrait_error)
+                else:
+                    already_tagged_error = forms.ValidationError(
+                        EXISTING_TAGGED_TRAIT_ERROR_STRING.format(
+                            tag_name=tag.title, phv=trait.full_accession, trait_name=trait.i_trait_name)
+                    )
+                    self.add_error('trait', already_tagged_error)
         return cleaned_data
 
 
@@ -152,12 +164,20 @@ class TaggedTraitAdminForm(forms.ModelForm):
         trait = cleaned_data.get('trait')
         tag = cleaned_data.get('tag')
         if tag is not None and trait is not None:
-            if trait in tag.traits.all():
-                already_tagged_error = forms.ValidationError(
-                    EXISTING_TAGGED_TRAIT_ERROR_STRING.format(
-                        tag_name=tag.title, phv=trait.full_accession, trait_name=trait.i_trait_name)
-                )
-                self.add_error('trait', already_tagged_error)
+            if trait in tag.all_traits.all():
+                taggedtrait = models.TaggedTrait.objects.get(trait=trait, tag=tag)
+                if taggedtrait.archived:
+                    archived_taggedtrait_error = forms.ValidationError(
+                        ARCHIVED_EXISTING_TAGGED_TRAIT_ERROR_STRING.format(
+                            tag_name=tag.title, phv=trait.full_accession, trait_name=trait.i_trait_name)
+                    )
+                    self.add_error('trait', archived_taggedtrait_error)
+                else:
+                    already_tagged_error = forms.ValidationError(
+                        EXISTING_TAGGED_TRAIT_ERROR_STRING.format(
+                            tag_name=tag.title, phv=trait.full_accession, trait_name=trait.i_trait_name)
+                    )
+                    self.add_error('trait', already_tagged_error)
         return cleaned_data
 
 
@@ -214,12 +234,20 @@ class TaggedTraitByTagForm(forms.Form):
         cleaned_data = super(TaggedTraitByTagForm, self).clean()
         trait = cleaned_data.get('trait')
         if trait is not None:
-            if trait in self.tag.traits.all():
-                already_tagged_error = forms.ValidationError(
-                    EXISTING_TAGGED_TRAIT_ERROR_STRING.format(
-                        tag_name=self.tag.title, phv=trait.full_accession, trait_name=trait.i_trait_name)
-                )
-                self.add_error('trait', already_tagged_error)
+            if trait in self.tag.all_traits.all():
+                taggedtrait = models.TaggedTrait.objects.get(trait=trait, tag=self.tag)
+                if taggedtrait.archived:
+                    archived_taggedtrait_error = forms.ValidationError(
+                        ARCHIVED_EXISTING_TAGGED_TRAIT_ERROR_STRING.format(
+                            tag_name=self.tag.title, phv=trait.full_accession, trait_name=trait.i_trait_name)
+                    )
+                    self.add_error('trait', archived_taggedtrait_error)
+                else:
+                    already_tagged_error = forms.ValidationError(
+                        EXISTING_TAGGED_TRAIT_ERROR_STRING.format(
+                            tag_name=self.tag.title, phv=trait.full_accession, trait_name=trait.i_trait_name)
+                    )
+                    self.add_error('trait', already_tagged_error)
         return cleaned_data
 
 
@@ -279,12 +307,20 @@ class ManyTaggedTraitsForm(forms.Form):
         tag = cleaned_data.get('tag')
         if tag is not None:
             for trait in traits:
-                if trait in tag.traits.all():
-                    already_tagged_error = forms.ValidationError(
-                        EXISTING_TAGGED_TRAIT_ERROR_STRING.format(
-                            tag_name=tag.title, phv=trait.full_accession, trait_name=trait.i_trait_name)
-                    )
-                    self.add_error('traits', already_tagged_error)
+                if trait in tag.all_traits.all():
+                    taggedtrait = models.TaggedTrait.objects.get(trait=trait, tag=tag)
+                    if taggedtrait.archived:
+                        archived_taggedtrait_error = forms.ValidationError(
+                            ARCHIVED_EXISTING_TAGGED_TRAIT_ERROR_STRING.format(
+                                tag_name=tag.title, phv=trait.full_accession, trait_name=trait.i_trait_name)
+                        )
+                        self.add_error('traits', archived_taggedtrait_error)
+                    else:
+                        already_tagged_error = forms.ValidationError(
+                            EXISTING_TAGGED_TRAIT_ERROR_STRING.format(
+                                tag_name=tag.title, phv=trait.full_accession, trait_name=trait.i_trait_name)
+                        )
+                        self.add_error('traits', already_tagged_error)
         return cleaned_data
 
 
@@ -342,12 +378,20 @@ class ManyTaggedTraitsByTagForm(forms.Form):
         cleaned_data = super(ManyTaggedTraitsByTagForm, self).clean()
         traits = cleaned_data.get('traits', [])
         for trait in traits:
-            if trait in self.tag.traits.all():
-                already_tagged_error = forms.ValidationError(
-                    EXISTING_TAGGED_TRAIT_ERROR_STRING.format(
-                        tag_name=self.tag.title, phv=trait.full_accession, trait_name=trait.i_trait_name)
-                )
-                self.add_error('traits', already_tagged_error)
+            if trait in self.tag.all_traits.all():
+                taggedtrait = models.TaggedTrait.objects.get(trait=trait, tag=self.tag)
+                if taggedtrait.archived:
+                    archived_taggedtrait_error = forms.ValidationError(
+                        ARCHIVED_EXISTING_TAGGED_TRAIT_ERROR_STRING.format(
+                            tag_name=self.tag.title, phv=trait.full_accession, trait_name=trait.i_trait_name)
+                    )
+                    self.add_error('traits', archived_taggedtrait_error)
+                else:
+                    already_tagged_error = forms.ValidationError(
+                        EXISTING_TAGGED_TRAIT_ERROR_STRING.format(
+                            tag_name=self.tag.title, phv=trait.full_accession, trait_name=trait.i_trait_name)
+                    )
+                    self.add_error('traits', already_tagged_error)
         return cleaned_data
 
 
@@ -362,6 +406,8 @@ class TagSpecificTraitForm(forms.Form):
                                  help_text=TAG_HELP)
 
     def __init__(self, *args, **kwargs):
+        trait_pk = kwargs.pop('trait_pk')
+        self.trait = get_object_or_404(SourceTrait, pk=trait_pk)
         super(TagSpecificTraitForm, self).__init__(*args, **kwargs)
         # Form formatting and add a submit button.
         self.helper = FormHelper(self)
@@ -371,6 +417,27 @@ class TagSpecificTraitForm(forms.Form):
         self.helper.form_method = 'post'
         button_save = generate_button_html('submit', 'Save', btn_type='submit', css_class='btn-primary')
         self.helper.layout.append(button_save)
+
+    def clean(self):
+        """Custom cleaning to check that traits aren't already tagged."""
+        cleaned_data = super(TagSpecificTraitForm, self).clean()
+        tag = cleaned_data.get('tag', None)
+        if tag is not None:
+            if self.trait in tag.all_traits.all():
+                taggedtrait = models.TaggedTrait.objects.get(trait=self.trait, tag=tag)
+                if taggedtrait.archived:
+                    archived_taggedtrait_error = forms.ValidationError(
+                        ARCHIVED_EXISTING_TAGGED_TRAIT_ERROR_STRING.format(
+                            tag_name=tag.title, phv=self.trait.full_accession, trait_name=self.trait.i_trait_name)
+                    )
+                    self.add_error('tag', archived_taggedtrait_error)
+                else:
+                    already_tagged_error = forms.ValidationError(
+                        EXISTING_TAGGED_TRAIT_ERROR_STRING.format(
+                            tag_name=tag.title, phv=self.trait.full_accession, trait_name=self.trait.i_trait_name)
+                    )
+                    self.add_error('tag', already_tagged_error)
+        return cleaned_data
 
 
 class DCCReviewBaseForm(forms.ModelForm):
@@ -477,7 +544,7 @@ class DCCReviewTagAndStudySelectForm(forms.Form):
             url='trait_browser:source:studies:autocomplete:by-name-or-phs',
             forward=(
                 'tag',
-                forward.Const(True, 'unreviewed_tagged_traits_only'),
+                forward.Const(True, 'unreviewed_non_archived_tagged_traits_only'),
             )
         ),
         help_text=("Then select a study. Start typing the study name or phs to filter the list. Only studies with at "
@@ -504,7 +571,7 @@ class DCCReviewTagAndStudySelectForm(forms.Form):
         study = cleaned_data.get('study')
         if tag and study:
             # Check that some TaggedTraits exist.
-            n = models.TaggedTrait.objects.unreviewed().filter(
+            n = models.TaggedTrait.objects.non_archived().unreviewed().filter(
                 tag=tag,
                 trait__source_dataset__source_study_version__study=study
             ).count()

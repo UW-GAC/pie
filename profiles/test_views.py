@@ -129,8 +129,26 @@ class DCCAnalystLoginTestCaseProfileTest(DCCAnalystLoginTestCase):
         all_tagged_trait_pks = [[[el['taggedtrait_pk'] for el in taggedtraits] for tag, taggedtraits in tag_taggedtraits] for study, tag_taggedtraits in context['user_taggedtraits']]  # noqa
         all_tagged_trait_pks = [x for y in all_tagged_trait_pks for x in y]  # Unnest once.
         all_tagged_trait_pks = [x for y in all_tagged_trait_pks for x in y]  # Unnest twice.
-        self.assertEqual(sorted(all_tagged_trait_pks),
-                         list(TaggedTrait.objects.filter(creator=self.user).values_list('pk', flat=True)))
+        expected_pks = list(TaggedTrait.objects.non_archived().filter(creator=self.user).values_list('pk', flat=True))
+        self.assertEqual(sorted(all_tagged_trait_pks), expected_pks)
+
+    def test_my_tagged_variables_correct_count_with_archived_tagged_trait(self):
+        """The list of 'my tagged traits' has the correct count of taggedtraits when there is one archived."""
+        study = StudyFactory.create()
+        tagged_traits = TaggedTraitFactory.create_batch(
+            2, creator=self.user,
+            trait__source_dataset__source_study_version__study=study)
+        archived_tagged_trait = TaggedTraitFactory.create(
+            trait__source_dataset__source_study_version__study=study, creator=self.user, archived=True)
+        response = self.client.get(self.get_url())
+        context = response.context
+        study_data = context['user_taggedtraits'][0][0]
+        study_tag_data = context['user_taggedtraits'][0][1]
+        all_tagged_trait_pks = [[[el['taggedtrait_pk'] for el in taggedtraits] for tag, taggedtraits in tag_taggedtraits] for study, tag_taggedtraits in context['user_taggedtraits']]  # noqa
+        all_tagged_trait_pks = [x for y in all_tagged_trait_pks for x in y]  # Unnest once.
+        all_tagged_trait_pks = [x for y in all_tagged_trait_pks for x in y]  # Unnest twice.
+        expected_pks = list(TaggedTrait.objects.non_archived().filter(creator=self.user).values_list('pk', flat=True))
+        self.assertEqual(sorted(all_tagged_trait_pks), expected_pks)
 
     def test_my_tagged_variables_excludes_trait_tagged_by_other_user(self):
         """The list of 'my tagged traits' does not include traits tagged by another user."""
@@ -147,8 +165,27 @@ class DCCAnalystLoginTestCaseProfileTest(DCCAnalystLoginTestCase):
         all_tagged_trait_pks = [x for y in all_tagged_trait_pks for x in y]  # Unnest once.
         all_tagged_trait_pks = [x for y in all_tagged_trait_pks for x in y]  # Unnest twice.
         self.assertNotIn(other_tagged_trait.pk, all_tagged_trait_pks)
-        self.assertEqual(sorted(all_tagged_trait_pks),
-                         list(TaggedTrait.objects.filter(creator=self.user).values_list('pk', flat=True)))
+        expected_pks = list(TaggedTrait.objects.non_archived().filter(creator=self.user).values_list('pk', flat=True))
+        self.assertEqual(sorted(all_tagged_trait_pks), expected_pks)
+
+    def test_my_tagged_variables_excludes_archived_tagged_trait(self):
+        """The list of 'my tagged traits' does not include an archived tagged trait."""
+        study = StudyFactory.create()
+        tagged_traits = TaggedTraitFactory.create_batch(
+            2, creator=self.user,
+            trait__source_dataset__source_study_version__study=study)
+        archived_tagged_trait = TaggedTraitFactory.create(
+            trait__source_dataset__source_study_version__study=study, creator=self.user, archived=True)
+        response = self.client.get(self.get_url())
+        context = response.context
+        study_data = context['user_taggedtraits'][0][0]
+        study_tag_data = context['user_taggedtraits'][0][1]
+        all_tagged_trait_pks = [[[el['taggedtrait_pk'] for el in taggedtraits] for tag, taggedtraits in tag_taggedtraits] for study, tag_taggedtraits in context['user_taggedtraits']]  # noqa
+        all_tagged_trait_pks = [x for y in all_tagged_trait_pks for x in y]  # Unnest once.
+        all_tagged_trait_pks = [x for y in all_tagged_trait_pks for x in y]  # Unnest twice.
+        self.assertNotIn(archived_tagged_trait.pk, all_tagged_trait_pks)
+        expected_pks = list(TaggedTrait.objects.non_archived().filter(creator=self.user).values_list('pk', flat=True))
+        self.assertEqual(sorted(all_tagged_trait_pks), expected_pks)
 
     def test_delete_link_present_for_unreviewed_taggedtrait(self):
         """The taggedtrait delete link is present in the html for a taggedtrait that is not reviewed."""
@@ -286,8 +323,26 @@ class PhenotypeTaggerLoginTestCaseProfileTest(PhenotypeTaggerLoginTestCase):
         all_tagged_trait_pks = [[[el['taggedtrait_pk'] for el in taggedtraits] for tag, taggedtraits in tag_taggedtraits] for study, tag_taggedtraits in context['user_taggedtraits']]  # noqa
         all_tagged_trait_pks = [x for y in all_tagged_trait_pks for x in y]  # Unnest once.
         all_tagged_trait_pks = [x for y in all_tagged_trait_pks for x in y]  # Unnest twice.
-        self.assertEqual(sorted(all_tagged_trait_pks),
-                         list(TaggedTrait.objects.filter(creator=self.user).values_list('pk', flat=True)))
+        expected_pks = list(TaggedTrait.objects.non_archived().filter(creator=self.user).values_list('pk', flat=True))
+        self.assertEqual(sorted(all_tagged_trait_pks), expected_pks)
+
+    def test_my_tagged_variables_correct_count_with_archived_tagged_trait(self):
+        """The list of 'my tagged traits' has the correct count of taggedtraits when one is archived."""
+        study = StudyFactory.create()
+        tagged_traits = TaggedTraitFactory.create_batch(
+            2, creator=self.user,
+            trait__source_dataset__source_study_version__study=study)
+        archived_tagged_trait = TaggedTraitFactory.create(
+            trait__source_dataset__source_study_version__study=study, creator=self.user, archived=True)
+        response = self.client.get(self.get_url())
+        context = response.context
+        study_data = context['user_taggedtraits'][0][0]
+        study_tag_data = context['user_taggedtraits'][0][1]
+        all_tagged_trait_pks = [[[el['taggedtrait_pk'] for el in taggedtraits] for tag, taggedtraits in tag_taggedtraits] for study, tag_taggedtraits in context['user_taggedtraits']]  # noqa
+        all_tagged_trait_pks = [x for y in all_tagged_trait_pks for x in y]  # Unnest once.
+        all_tagged_trait_pks = [x for y in all_tagged_trait_pks for x in y]  # Unnest twice.
+        expected_pks = list(TaggedTrait.objects.non_archived().filter(creator=self.user).values_list('pk', flat=True))
+        self.assertEqual(sorted(all_tagged_trait_pks), expected_pks)
 
     def test_my_tagged_variables_excludes_trait_tagged_by_other_user(self):
         """The list of 'my tagged traits' does not include traits tagged by another user."""
@@ -304,8 +359,27 @@ class PhenotypeTaggerLoginTestCaseProfileTest(PhenotypeTaggerLoginTestCase):
         all_tagged_trait_pks = [x for y in all_tagged_trait_pks for x in y]  # Unnest once.
         all_tagged_trait_pks = [x for y in all_tagged_trait_pks for x in y]  # Unnest twice.
         self.assertNotIn(other_tagged_trait.pk, all_tagged_trait_pks)
-        self.assertEqual(sorted(all_tagged_trait_pks),
-                         list(TaggedTrait.objects.filter(creator=self.user).values_list('pk', flat=True)))
+        expected_pks = list(TaggedTrait.objects.non_archived().filter(creator=self.user).values_list('pk', flat=True))
+        self.assertEqual(sorted(all_tagged_trait_pks), expected_pks)
+
+    def test_my_tagged_variables_excludes_archived_tagged_trait(self):
+        """The list of 'my tagged traits' does not include an archived tagged trait."""
+        study = StudyFactory.create()
+        tagged_traits = TaggedTraitFactory.create_batch(
+            2, creator=self.user,
+            trait__source_dataset__source_study_version__study=study)
+        archived_tagged_trait = TaggedTraitFactory.create(
+            trait__source_dataset__source_study_version__study=study, creator=self.user, archived=True)
+        response = self.client.get(self.get_url())
+        context = response.context
+        study_data = context['user_taggedtraits'][0][0]
+        study_tag_data = context['user_taggedtraits'][0][1]
+        all_tagged_trait_pks = [[[el['taggedtrait_pk'] for el in taggedtraits] for tag, taggedtraits in tag_taggedtraits] for study, tag_taggedtraits in context['user_taggedtraits']]  # noqa
+        all_tagged_trait_pks = [x for y in all_tagged_trait_pks for x in y]  # Unnest once.
+        all_tagged_trait_pks = [x for y in all_tagged_trait_pks for x in y]  # Unnest twice.
+        self.assertNotIn(archived_tagged_trait.pk, all_tagged_trait_pks)
+        expected_pks = list(TaggedTrait.objects.non_archived().filter(creator=self.user).values_list('pk', flat=True))
+        self.assertEqual(sorted(all_tagged_trait_pks), expected_pks)
 
     def test_study_tagged_variables_correct_empty(self):
         """The counts of 'tagged variables from my studies' is correct when the study and user have no taggedtraits."""
@@ -327,6 +401,21 @@ class PhenotypeTaggerLoginTestCaseProfileTest(PhenotypeTaggerLoginTestCase):
         self.assertNotIn(other_study_taggedtrait.tag.pk, study1_tag_pks)
         self.assertEqual(study_data[0][1][0]['tt_count'], 1)
 
+    def test_study_tagged_variables_correct_count_with_archived_tagged_trait(self):
+        """The counts of 'tagged variables from my studies' does not include an archived tagged trait."""
+        user_tagged_trait = TaggedTraitFactory.create(
+            creator=self.user, trait__source_dataset__source_study_version__study=self.study)
+        archived_taggedtrait = TaggedTraitFactory.create(
+            creator=self.user, trait__source_dataset__source_study_version__study=self.study, archived=True,
+            tag=user_tagged_trait.tag)
+        response = self.client.get(self.get_url())
+        context = response.context
+        study_data = context['study_taggedtrait_counts']
+        self.assertEqual(self.user.profile.taggable_studies.count(), len(study_data))
+        study1_tag_pks = [el['tag_pk'] for el in study_data[0][1]]
+        self.assertIn(user_tagged_trait.tag.pk, study1_tag_pks)
+        self.assertEqual(study_data[0][1][0]['tt_count'], 1)
+
     def test_study_tagged_variables_includes_trait_tagged_by_other_user(self):
         """The counts of 'tagged variables from my studies' does include traits tagged by another user."""
         user_tagged_trait = TaggedTraitFactory.create(creator=self.user,
@@ -341,6 +430,21 @@ class PhenotypeTaggerLoginTestCaseProfileTest(PhenotypeTaggerLoginTestCase):
         study1_tag_pks = [el['tag_pk'] for el in study_data[0][1]]
         self.assertIn(user_tagged_trait.tag.pk, study1_tag_pks)
         self.assertEqual(study_data[0][1][0]['tt_count'], 2)
+
+    def test_study_tagged_variables_excludes_archived_tagged_trait(self):
+        """The counts of 'tagged variables from my studies' does not include an archived tagged trait."""
+        user_tagged_trait = TaggedTraitFactory.create(
+            creator=self.user, trait__source_dataset__source_study_version__study=self.study)
+        archived_taggedtrait = TaggedTraitFactory.create(
+            creator=self.user, trait__source_dataset__source_study_version__study=self.study, archived=True,
+            tag=user_tagged_trait.tag)
+        response = self.client.get(self.get_url())
+        context = response.context
+        study_data = context['study_taggedtrait_counts']
+        self.assertEqual(self.user.profile.taggable_studies.count(), len(study_data))
+        study1_tag_pks = [el['tag_pk'] for el in study_data[0][1]]
+        self.assertIn(user_tagged_trait.tag.pk, study1_tag_pks)
+        self.assertEqual(study_data[0][1][0]['tt_count'], 1)
 
     def test_delete_link_present_for_unreviewed_taggedtrait(self):
         """The taggedtrait delete link is present in the html for a taggedtrait that is not reviewed."""

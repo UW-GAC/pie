@@ -21,6 +21,15 @@ class TagTableTest(TestCase):
         table = self.table_class(self.tags)
         self.assertEqual(self.model_class.objects.count(), len(table.rows))
 
+    def test_tagged_count_excludes_archived_tagged_trait(self):
+        """Number in column for tagged trait count does not include archived tagged trait."""
+        tag = self.tags[0]
+        archived_tagged_trait = factories.TaggedTraitFactory.create(tag=tag, archived=True)
+        non_archived_tagged_trait = factories.TaggedTraitFactory.create(tag=tag, archived=False)
+        table = self.table_class(self.tags)
+        row = table.rows[0]
+        self.assertEqual(row.get_cell('number_tagged_traits'), 1)
+
 
 class TaggedTraitTableTest(TestCase):
     table_class = tables.TaggedTraitTable
@@ -67,7 +76,7 @@ class TaggedTraitTableWithDCCReviewButtonMixinTest(TestCase):
     table_class = tables.TaggedTraitTableDCCReviewButtonMixin
 
     def test_proper_link_with_reviewed_tagged_trait(self):
-        """Reviewed tagged traits link to DCCReviewUpdate view."""
+        """Reviewed tagged traits have a link to the DCC Review update view."""
         tagged_trait = factories.TaggedTraitFactory.create()
         dcc_review = factories.DCCReviewFactory.create(tagged_trait=tagged_trait)
         table = self.table_class(models.TaggedTrait.objects.all())
@@ -75,7 +84,7 @@ class TaggedTraitTableWithDCCReviewButtonMixinTest(TestCase):
         self.assertIn(expected_url, table.render_review_button(tagged_trait))
 
     def test_proper_link_with_unreviewed_tagged_trait(self):
-        """Unreviewed tagged traits link to DCCReviewCreate view."""
+        """Reviewed tagged traits have a link to the DCC Review create view."""
         tagged_trait = factories.TaggedTraitFactory.create()
         table = self.table_class(models.TaggedTrait.objects.all())
         expected_url = reverse('tags:tagged-traits:pk:dcc-review:new', args=[tagged_trait.pk])

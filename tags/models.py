@@ -1,5 +1,6 @@
 """Models for the tags app."""
 
+from django.apps import apps
 from django.conf import settings
 from django.db import models
 from django.urls import reverse
@@ -19,7 +20,7 @@ class Tag(TimeStampedModel):
     description = models.TextField()
     instructions = models.TextField()
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, blank=True, on_delete=models.CASCADE)
-    traits = models.ManyToManyField('trait_browser.SourceTrait', through='TaggedTrait')
+    all_traits = models.ManyToManyField('trait_browser.SourceTrait', through='TaggedTrait', related_name='all_tags')
 
     class Meta:
         verbose_name = 'phenotype tag'
@@ -43,13 +44,28 @@ class Tag(TimeStampedModel):
     def get_absolute_url(self):
         return reverse('tags:tag:detail', args=[self.pk])
 
+    @property
+    def archived_traits(self):
+        """Return queryset of archived traits tagged with this tag."""
+        archived_tagged_traits = apps.get_model('tags', 'TaggedTrait').objects.archived().filter(tag=self)
+        return apps.get_model('trait_browser', 'SourceTrait').objects.filter(
+            pk__in=archived_tagged_traits.values_list('trait__pk', flat=True))
+
+    @property
+    def non_archived_traits(self):
+        """Return queryset of non-archived traits tagged with this tag."""
+        non_archived_tagged_traits = apps.get_model('tags', 'TaggedTrait').objects.non_archived().filter(tag=self)
+        return apps.get_model('trait_browser', 'SourceTrait').objects.filter(
+            pk__in=non_archived_tagged_traits.values_list('trait__pk', flat=True))
+
 
 class TaggedTrait(TimeStampedModel):
     """Intermediate model for connecting Tags and SourceTraits."""
 
-    trait = models.ForeignKey('trait_browser.SourceTrait', on_delete=models.CASCADE)
-    tag = models.ForeignKey(Tag, on_delete=models.CASCADE)
+    trait = models.ForeignKey('trait_browser.SourceTrait', on_delete=models.CASCADE, related_name="all_taggedtraits")
+    tag = models.ForeignKey(Tag, on_delete=models.CASCADE, related_name="all_taggedtraits")
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, blank=True, on_delete=models.CASCADE)
+    archived = models.BooleanField(default=False)
 
     # Managers/custom querysets.
     objects = querysets.TaggedTraitQuerySet.as_manager()
@@ -65,11 +81,35 @@ class TaggedTrait(TimeStampedModel):
     def get_absolute_url(self):
         return reverse('tags:tagged-traits:pk:detail', args=[self.pk])
 
+    def archive(self):
+        """Set the TaggedTrait to archived.
+
+        Other than tests, this method should only be used on tagged traits that have
+        linked DCCReviews. Using it on unreviewed tagged traits makes some error
+        messages nonsensical.
+        """
+        self.archived = True
+        self.save()
+
+    def unarchive(self):
+        """Set the TaggedTrait to unarchived.
+
+        Other than tests, this method should only be used on tagged traits that have
+        linked DCCReviews. Using it on unreviewed tagged traits makes some error
+        messages nonsensical.
+        """
+        self.archived = False
+        self.save()
+
     def delete(self, *args, **kwargs):
         """Only allow unreviewed TaggedTrait objects to be deleted."""
         if hasattr(self, 'dcc_review'):
-            raise DeleteNotAllowedError("Cannot delete a reviewed TaggedTrait.")
-        super().delete(*args, **kwargs)
+            if self.dcc_review.status == self.dcc_review.STATUS_CONFIRMED:
+                raise DeleteNotAllowedError("Cannot delete a reviewed TaggedTrait.")
+            else:
+                self.archive()
+        else:
+            self.hard_delete()
 
     def hard_delete(self, *args, **kwargs):
         """Delete objects that cannot be deleted with overriden delete method."""
