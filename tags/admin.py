@@ -49,6 +49,7 @@ class DCCReviewAdmin(admin.ModelAdmin):
     list_display = ('tagged_trait', 'status', 'comment', 'creator', 'created', 'modified', )
     list_filter = ('status', 'creator', )
     search_fields = ('tagged_trait__tag__title', 'tagged_trait__trait__i_trait_name', )
+    readonly_fields = ('tagged_trait', )
     form = forms.DCCReviewAdminForm
 
 
