@@ -10,8 +10,8 @@ class TagAdmin(admin.ModelAdmin):
     """Admin class for Tag objects."""
 
     list_display = ('title', 'lower_title', 'description', 'creator', 'created', 'modified', )
-    search_fields = ('lower_title', 'description', )
     list_filter = (('creator', admin.RelatedOnlyFieldListFilter), )
+    search_fields = ('lower_title', 'description', 'instructions', )
     form = forms.TagAdminForm
 
     def save_model(self, request, obj, form, change):
