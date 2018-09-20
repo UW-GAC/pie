@@ -8,20 +8,20 @@ from core.exceptions import DeleteNotAllowedError
 class TaggedTraitQuerySet(models.query.QuerySet):
     """Class to hold custom query set filtering methods for the TaggedTrait model."""
 
-    def delete(self, *args, **kwargs):
-        """Only allow deletion if no objects have an associated DCCReview."""
+    def delete(self, *args, **kwargs):  # noqa
+        """Archive (reviewed) or delete (unreviewed), unless any included objects are confirmed via DCCReview."""
         unreviewed = self.unreviewed()
         need_followup = self.need_followup()
         confirmed = self.confirmed()
         counts = (unreviewed.count(), need_followup.count(), confirmed.count(), )
-
-        unreviewed.hard_delete()
-        for tagged_trait in need_followup:
-            tagged_trait.archive()
+        # First, raise an error if there are any confirmed. Then archive or delete as needed.
         if confirmed.count() > 0:
             msg_part = ', '.join([str(x) for x in confirmed])
             raise DeleteNotAllowedError(
                 "Cannot delete TaggedTraits that are reviewed and confirmed: {}.".format(msg_part))
+        unreviewed.hard_delete()
+        for tagged_trait in need_followup:
+            tagged_trait.archive()
         return counts
 
     def hard_delete(self, *args, **kwargs):

@@ -604,13 +604,12 @@ class TaggedTraitDeleteTest(TestCase):
         n_confirmed = confirmed.count()
         with self.assertRaises(DeleteNotAllowedError):
             models.TaggedTrait.objects.all().delete()
-        self.assertEqual(models.TaggedTrait.objects.count(), n_needs_followup + n_confirmed)
-        self.assertEqual(models.TaggedTrait.objects.archived().count(), n_needs_followup)
-        self.assertEqual(models.TaggedTrait.objects.non_archived().count(), n_confirmed)
-        self.assertEqual(list(models.TaggedTrait.objects.need_followup().values_list('archived', flat=True)),
-                         [True] * n_needs_followup)
-        self.assertEqual(list(models.TaggedTrait.objects.confirmed().values_list('archived', flat=True)),
-                         [False] * n_confirmed)
+        self.assertEqual(models.TaggedTrait.objects.count(), n_needs_followup + n_confirmed + n_unreviewed)
+        self.assertEqual(models.TaggedTrait.objects.archived().count(), 0)
+        self.assertEqual(models.TaggedTrait.objects.non_archived().count(),
+                         n_needs_followup + n_confirmed + n_unreviewed)
+        self.assertEqual(list(models.TaggedTrait.objects.all().values_list('archived', flat=True)),
+                         [False] * models.TaggedTrait.objects.count())
 
     def test_queryset_delete_unreviewed_and_confirmed(self):
         """Deletes unreviewed tagged traits. Raises an error for confirmed."""
@@ -626,13 +625,12 @@ class TaggedTraitDeleteTest(TestCase):
         n_confirmed = confirmed.count()
         with self.assertRaises(DeleteNotAllowedError):
             models.TaggedTrait.objects.all().delete()
-        self.assertEqual(models.TaggedTrait.objects.count(), n_needs_followup + n_confirmed)
-        self.assertEqual(models.TaggedTrait.objects.archived().count(), n_needs_followup)
-        self.assertEqual(models.TaggedTrait.objects.non_archived().count(), n_confirmed)
-        self.assertEqual(list(models.TaggedTrait.objects.need_followup().values_list('archived', flat=True)),
-                         [True] * n_needs_followup)
-        self.assertEqual(list(models.TaggedTrait.objects.confirmed().values_list('archived', flat=True)),
-                         [False] * n_confirmed)
+        self.assertEqual(models.TaggedTrait.objects.count(), n_needs_followup + n_confirmed + n_unreviewed)
+        self.assertEqual(models.TaggedTrait.objects.archived().count(), 0)
+        self.assertEqual(models.TaggedTrait.objects.non_archived().count(),
+                         n_needs_followup + n_confirmed + n_unreviewed)
+        self.assertEqual(list(models.TaggedTrait.objects.all().values_list('archived', flat=True)),
+                         [False] * models.TaggedTrait.objects.count())
 
     def test_queryset_delete_needs_followup_and_confirmed(self):
         """Archives need_followup and raises an error for confirmed."""
@@ -646,10 +644,10 @@ class TaggedTraitDeleteTest(TestCase):
         with self.assertRaises(DeleteNotAllowedError):
             models.TaggedTrait.objects.all().delete()
         self.assertEqual(models.TaggedTrait.objects.count(), n_needs_followup + n_confirmed)
-        self.assertEqual(models.TaggedTrait.objects.archived().count(), n_needs_followup)
-        self.assertEqual(models.TaggedTrait.objects.non_archived().count(), n_confirmed)
+        self.assertEqual(models.TaggedTrait.objects.archived().count(), 0)
+        self.assertEqual(models.TaggedTrait.objects.non_archived().count(), n_confirmed + n_needs_followup)
         self.assertEqual(list(models.TaggedTrait.objects.need_followup().values_list('archived', flat=True)),
-                         [True] * n_needs_followup)
+                         [False] * n_needs_followup)
         self.assertEqual(list(models.TaggedTrait.objects.confirmed().values_list('archived', flat=True)),
                          [False] * n_confirmed)
 
