@@ -40,8 +40,7 @@ class TaggedTraitAdmin(admin.ModelAdmin):
 
     def has_delete_permission(self, request, obj=None):
         if obj is not None and hasattr(obj, 'dcc_review'):
-            if obj.dcc_review.status == models.DCCReview.STATUS_CONFIRMED:
-                return False
+            return False
         return super().has_delete_permission(request, obj=obj)
 
 

@@ -26,7 +26,7 @@ class TaggedTraitAdminTest(SuperuserLoginTestCase):
                                           status=models.DCCReview.STATUS_FOLLOWUP)
         request = RequestFactory()
         request.user = self.user
-        self.assertTrue(self.admin.has_delete_permission(request, obj=tagged_trait))
+        self.assertFalse(self.admin.has_delete_permission(request, obj=tagged_trait))
 
     def test_has_delete_permission_for_a_reviewed_tagged_trait_confirmed(self):
         """Returns False for confirmed tagged traits."""
@@ -63,21 +63,18 @@ class TaggedTraitAdminDeleteTest(DCCAnalystLoginTestCase):
         self.assertIn(tagged_trait, models.TaggedTrait.objects.all())
         self.assertIn(dcc_review, models.DCCReview.objects.all())
 
-    def test_admin_delete_need_followup_tagged_trait_archives(self):
-        """Admin edit page archives a need_followup tagged trait and does not delete its linked dcc review."""
+    def test_admin_delete_need_followup_tagged_trait_fails(self):
+        """Admin edit page does not allow deletion of a need_followup tagged trait and its linked dcc review."""
         dcc_review = factories.DCCReviewFactory.create(status=models.DCCReview.STATUS_FOLLOWUP, comment='foo')
         tagged_trait = dcc_review.tagged_trait
         delete_url = reverse('admin:tags_taggedtrait_delete', args=[tagged_trait.pk])
         get_response = self.client.get(delete_url)
-        self.assertEqual(get_response.status_code, 200)
+        self.assertEqual(get_response.status_code, 403)
         post_response = self.client.post(delete_url, {'submit': ''})
-        self.assertEqual(post_response.status_code, 302)
+        self.assertEqual(post_response.status_code, 403)
         messages = list(post_response.wsgi_request._messages)
-        self.assertEqual(len(messages), 1)
-        self.assertIn('deleted successfully', str(messages[0]))
-        tagged_trait.refresh_from_db()
-        self.assertTrue(tagged_trait.archived)
-        self.assertIn(tagged_trait, models.TaggedTrait.objects.archived())
+        self.assertEqual(len(messages), 0)
+        self.assertIn(tagged_trait, models.TaggedTrait.objects.all())
         self.assertIn(dcc_review, models.DCCReview.objects.all())
 
     def test_admin_delete_unreviewed_tagged_trait_succeeds(self):
