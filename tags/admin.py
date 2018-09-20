@@ -27,6 +27,7 @@ class TaggedTraitAdmin(admin.ModelAdmin):
     list_display = ('tag', 'trait', 'dcc_review_status', 'creator', 'created', 'modified', )
     list_filter = ('dcc_review__status', ('creator', admin.RelatedOnlyFieldListFilter), 'tag', )
     search_fields = ('tag', 'trait', )
+    readonly_fields = ('trait', 'tag', )
     form = forms.TaggedTraitAdminForm
 
     def save_model(self, request, obj, form, change):
