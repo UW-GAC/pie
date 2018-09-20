@@ -10,8 +10,8 @@ class TagAdmin(admin.ModelAdmin):
     """Admin class for Tag objects."""
 
     list_display = ('title', 'lower_title', 'description', 'creator', 'created', 'modified', )
-    list_filter = ('creator', )
     search_fields = ('lower_title', 'description', )
+    list_filter = (('creator', admin.RelatedOnlyFieldListFilter), )
     form = forms.TagAdminForm
 
     def save_model(self, request, obj, form, change):
@@ -25,7 +25,7 @@ class TaggedTraitAdmin(admin.ModelAdmin):
     """Admin class for TaggedTrait objects."""
 
     list_display = ('tag', 'trait', 'dcc_review_status', 'creator', 'created', 'modified', )
-    list_filter = ('tag', 'creator', 'dcc_review__status')
+    list_filter = ('dcc_review__status', ('creator', admin.RelatedOnlyFieldListFilter), 'tag', )
     search_fields = ('tag', 'trait', )
     form = forms.TaggedTraitAdminForm
 
@@ -51,7 +51,7 @@ class TaggedTraitAdmin(admin.ModelAdmin):
 class DCCReviewAdmin(admin.ModelAdmin):
 
     list_display = ('tagged_trait', 'status', 'comment', 'creator', 'created', 'modified', )
-    list_filter = ('status', 'creator', )
+    list_filter = ('status', ('creator', admin.RelatedOnlyFieldListFilter), )
     search_fields = ('tagged_trait__tag__title', 'tagged_trait__trait__i_trait_name', )
     readonly_fields = ('tagged_trait', )
     form = forms.DCCReviewAdminForm
