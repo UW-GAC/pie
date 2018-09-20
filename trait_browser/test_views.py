@@ -2304,7 +2304,7 @@ class StudyTaggedTraitListTest(UserLoginTestCase):
 
     def test_context_data_no_taggedtraits(self):
         """View has appropriate data in the context and works when there are no tagged traits for the study."""
-        TaggedTrait.objects.all().hard_delete()
+        TaggedTrait.objects.all().delete()
         response = self.client.get(self.get_url(self.study.pk))
         context = response.context
         self.assertIn('study', context)
@@ -2316,7 +2316,7 @@ class StudyTaggedTraitListTest(UserLoginTestCase):
 
     def test_context_data_excludes_archived_taggedtraits(self):
         """View context data does not include archived taggedtraits."""
-        TaggedTrait.objects.all().hard_delete()
+        TaggedTrait.objects.all().delete()
         tag = TagFactory.create()
         # Make fake tagged traits that all have the same tag.
         self.tagged_traits = TaggedTraitFactory.create_batch(
