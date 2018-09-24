@@ -52,6 +52,16 @@ class TagDetail(LoginRequiredMixin, DetailView):
         return context
 
 
+class TagAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
+    """View for autocompleting tag model choice fields by title in a form. Case-insensitive."""
+
+    def get_queryset(self):
+        retrieved = models.Tag.objects.all()
+        if self.q:
+            retrieved = retrieved.filter(lower_title__iregex=r'^{}'.format(self.q))
+        return retrieved
+
+
 class TagList(LoginRequiredMixin, SingleTableMixin, ListView):
 
     model = models.Tag
@@ -999,13 +1009,3 @@ class StudyResponseCreateDisagree(LoginRequiredMixin, PermissionRequiredMixin, F
         tag = self.tagged_trait.dcc_review.tagged_trait.tag
         study = self.tagged_trait.dcc_review.tagged_trait.trait.source_dataset.source_study_version.study
         return reverse('tags:tag:study:quality-review', args=[tag.pk, study.pk])
-
-
-class TagAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
-    """View for autocompleting tag model choice fields by title in a form. Case-insensitive."""
-
-    def get_queryset(self):
-        retrieved = models.Tag.objects.all()
-        if self.q:
-            retrieved = retrieved.filter(lower_title__iregex=r'^{}'.format(self.q))
-        return retrieved
