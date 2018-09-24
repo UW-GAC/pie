@@ -701,8 +701,7 @@ class DCCReviewUpdate(LoginRequiredMixin, PermissionRequiredMixin, FormValidMess
 
     def _get_study_responded_message(self):
         msg = 'Oops! The DCC review for {} cannot be changed because it already has a study response.'.format(
-            self.tagged_trait
-        )
+            self.tagged_trait)
         return msg
 
     def _get_not_reviewed_warning_message(self):
@@ -713,7 +712,7 @@ class DCCReviewUpdate(LoginRequiredMixin, PermissionRequiredMixin, FormValidMess
         return 'Oops! Cannot update review for {}, because it has been archived.'.format(self.tagged_trait)
 
     def _get_response_if_archived_or_not_reviewed(self):
-        """Check for archived tagged trait or missing DCCReview before proceeding."""
+        """Check for archived tagged trait, missing DCCReview, or existing StudyResponse before proceeding."""
         if self.tagged_trait.archived:
             self.messages.warning(self._get_archived_warning_message())
             return HttpResponseRedirect(self.get_success_url())
@@ -723,7 +722,6 @@ class DCCReviewUpdate(LoginRequiredMixin, PermissionRequiredMixin, FormValidMess
         if hasattr(self.object, 'study_response'):
             self.messages.error(self._get_study_responded_message())
             return HttpResponseRedirect(self.tagged_trait.get_absolute_url())
-        return super().get(request, *args, **kwargs)
 
     def get(self, request, *args, **kwargs):
         """Run get_object, check for archived or deleted tagged trait, and finally run the usual get."""
