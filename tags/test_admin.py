@@ -22,8 +22,7 @@ class TaggedTraitAdminTest(SuperuserLoginTestCase):
     def test_has_delete_permission_for_a_reviewed_tagged_trait_followup(self):
         """Returns True for tagged traits that require study followup."""
         tagged_trait = factories.TaggedTraitFactory.create()
-        factories.DCCReviewFactory.create(tagged_trait=tagged_trait, comment='foo',
-                                          status=models.DCCReview.STATUS_FOLLOWUP)
+        factories.DCCReviewFactory.create(tagged_trait=tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP)
         request = RequestFactory()
         request.user = self.user
         self.assertFalse(self.admin.has_delete_permission(request, obj=tagged_trait))
@@ -125,7 +124,7 @@ class TaggedTraitAdminDeleteTest(DCCAnalystLoginTestCase):
     def test_admin_bulk_delete_need_followup_and_unreviewed_tagged_traits_archives_and_deletes(self):
         """Admin bulk delete archives one need followup and deletes one unreviewed tagged trait."""
         unreviewed_tagged_trait = factories.TaggedTraitFactory.create()
-        dcc_review = factories.DCCReviewFactory.create(status=models.DCCReview.STATUS_FOLLOWUP, comment='foo')
+        dcc_review = factories.DCCReviewFactory.create(status=models.DCCReview.STATUS_FOLLOWUP)
         need_followup_tagged_trait = dcc_review.tagged_trait
         delete_url = reverse('admin:tags_taggedtrait_changelist')
         post_data = {'action': 'delete_selected',
@@ -163,7 +162,7 @@ class TaggedTraitAdminDeleteTest(DCCAnalystLoginTestCase):
 
     def test_admin_bulk_delete_need_followup_tagged_traits_archives(self):
         """Admin bulk delete successfully archives two unreviewed tagged traits, doesn't delete DCCReviews."""
-        dcc_reviews = factories.DCCReviewFactory.create_batch(2, status=models.DCCReview.STATUS_FOLLOWUP, comment='foo')
+        dcc_reviews = factories.DCCReviewFactory.create_batch(2, status=models.DCCReview.STATUS_FOLLOWUP)
         tagged_traits = models.TaggedTrait.objects.all()
         delete_url = reverse('admin:tags_taggedtrait_changelist')
         post_data = {'action': 'delete_selected',

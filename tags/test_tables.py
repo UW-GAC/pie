@@ -65,8 +65,7 @@ class TaggedTraitDeleteButtonMixinTest(TestCase):
     def test_delete_button_needs_followup(self):
         """The delete button is disabled for reviewed tagged traits that need followup."""
         tagged_trait = factories.TaggedTraitFactory.create()
-        factories.DCCReviewFactory.create(tagged_trait=tagged_trait, comment='foo',
-                                          status=models.DCCReview.STATUS_FOLLOWUP)
+        factories.DCCReviewFactory.create(tagged_trait=tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP)
         table = self.table_class(models.TaggedTrait.objects.all())
         self.assertIn('disabled', table.render_delete_button(tagged_trait))
 

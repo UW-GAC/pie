@@ -581,8 +581,7 @@ class TaggedTraitDeleteTest(TestCase):
 
     def test_queryset_delete_needs_followup_and_unreviewed(self):
         """Archives need_followup and deletes unreviewed tagged traits."""
-        dcc_reviews = factories.DCCReviewFactory.create_batch(5, comment='foo',
-                                                              status=models.DCCReview.STATUS_FOLLOWUP)
+        dcc_reviews = factories.DCCReviewFactory.create_batch(5, status=models.DCCReview.STATUS_FOLLOWUP)
         needs_followup = models.TaggedTrait.objects.all()
         n_needs_followup = needs_followup.count()
         unreviewed = factories.TaggedTraitFactory.create_batch(4)
@@ -638,8 +637,7 @@ class TaggedTraitDeleteTest(TestCase):
 
     def test_queryset_delete_needs_followup_and_confirmed(self):
         """Archives need_followup and raises an error for confirmed."""
-        dcc_reviews = factories.DCCReviewFactory.create_batch(4, comment='foo',
-                                                              status=models.DCCReview.STATUS_FOLLOWUP)
+        dcc_reviews = factories.DCCReviewFactory.create_batch(4, status=models.DCCReview.STATUS_FOLLOWUP)
         confirmed_dcc_reviews = factories.DCCReviewFactory.create_batch(3, status=models.DCCReview.STATUS_CONFIRMED)
         confirmed = models.TaggedTrait.objects.confirmed()
         needs_followup = models.TaggedTrait.objects.need_followup()
@@ -694,7 +692,7 @@ class TaggedTraitDeleteTest(TestCase):
 
     def test_queryset_hard_delete_unreviewed_and_need_followup_and_confirmed(self):
         """Deletes unreviewed and need_followup and confirmed tagged traits."""
-        factories.DCCReviewFactory.create_batch(5, comment='foo', status=models.DCCReview.STATUS_FOLLOWUP)
+        factories.DCCReviewFactory.create_batch(5, status=models.DCCReview.STATUS_FOLLOWUP)
         factories.DCCReviewFactory.create_batch(5, status=models.DCCReview.STATUS_CONFIRMED)
         factories.TaggedTraitFactory.create_batch(5)
         models.TaggedTrait.objects.all().hard_delete()
