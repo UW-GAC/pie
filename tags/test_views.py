@@ -2458,8 +2458,7 @@ class DCCReviewByTagAndStudyNextDCCTestsMixin(object):
         self.assertNotContains(response, """<a href="{}">""".format(self.get_url()))
 
 
-class DCCReviewByTagAndStudyNextDCCAnalystTest(DCCReviewByTagAndStudyNextDCCTestsMixin,
-                                               DCCAnalystLoginTestCase):
+class DCCReviewByTagAndStudyNextDCCAnalystTest(DCCReviewByTagAndStudyNextDCCTestsMixin, DCCAnalystLoginTestCase):
 
     # Run all tests in DCCReviewByTagAndStudyNextDCCTestsMixin, as a DCC analyst.
     pass
@@ -3576,6 +3575,7 @@ class DCCReviewNeedFollowupCountsDCCAnalystTest(DCCAnalystLoginTestCase):
 
 
 class DCCReviewNeedFollowupCountsOtherUserTest(UserLoginTestCase):
+
     def get_url(self, *args):
         """Get the url for the view this class is supposed to test."""
         return reverse('tags:tagged-traits:quality-review', args=args)
@@ -3675,8 +3675,7 @@ class DCCReviewNeedFollowupListMixin(object):
         self.assertNotIn(other_tagged_trait, context['tagged_trait_table'].data)
 
 
-class DCCReviewNeedFollowupListPhenotypeTaggerTest(DCCReviewNeedFollowupListMixin,
-                                                       PhenotypeTaggerLoginTestCase):
+class DCCReviewNeedFollowupListPhenotypeTaggerTest(DCCReviewNeedFollowupListMixin, PhenotypeTaggerLoginTestCase):
 
     def setUp(self):
         super().setUp()
@@ -3766,8 +3765,7 @@ class DCCReviewNeedFollowupListPhenotypeTaggerTest(DCCReviewNeedFollowupListMixi
         self.assertNotContains(response, expected_url)
 
 
-class DCCReviewNeedFollowupListDCCAnalystTest(DCCReviewNeedFollowupListMixin,
-                                                  DCCAnalystLoginTestCase):
+class DCCReviewNeedFollowupListDCCAnalystTest(DCCReviewNeedFollowupListMixin, DCCAnalystLoginTestCase):
 
     def setUp(self):
         super().setUp()

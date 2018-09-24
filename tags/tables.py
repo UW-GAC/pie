@@ -1,6 +1,5 @@
 """Table classes for tags app, using django-tables2."""
 
-from django.template.loader import get_template
 from django.urls import reverse
 from django.utils.safestring import mark_safe
 

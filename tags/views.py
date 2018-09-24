@@ -89,7 +89,8 @@ class TaggedTraitDetail(LoginRequiredMixin, DetailView):
         # context['show_study_response_add_button'] = user_is_study_tagger and needs_followup and not response_exists
         # context['show_study_response_update_button'] = user_is_study_tagger and response_exists
         context['show_quality_review_panel'] = user_has_study_access
-        context['show_dcc_review_add_button'] = (not dccreview_exists) and user_has_dccreview_add_perms and is_non_archived
+        context['show_dcc_review_add_button'] = (not dccreview_exists) and user_has_dccreview_add_perms \
+            and is_non_archived
         context['show_dcc_review_update_button'] = dccreview_exists and user_has_dccreview_change_perms \
             and not response_exists and is_non_archived
         context['show_confirmed_status'] = user_has_study_access and is_confirmed

@@ -87,7 +87,7 @@ class TaggedTraitForm(forms.ModelForm):
         fields = ('tag', 'trait', )
 
     def __init__(self, *args, **kwargs):
-        """Override __init__ to make the form study-specific."""
+        """Give the form options specific to the user and their taggable studies."""
         # Get the user and remove it from kwargs (b/c/ of UserFormKwargsMixin on the view.)
         self.user = kwargs.pop('user')
         # Call super here to set up all of the fields.
@@ -193,8 +193,8 @@ class TaggedTraitByTagForm(forms.Form):
         help_text=TRAIT_HELP)
 
     def __init__(self, *args, **kwargs):
-        # Get the user and remove it from kwargs (b/c/ of UserFormKwargsMixin on the view.)
-        self.user = kwargs.pop('user')
+        """Give the form options specific to the user and their taggable studies."""
+        self.user = kwargs.pop('user')  # For UserFormKwargsMixin.
         tag_pk = kwargs.pop('tag_pk')
         self.tag = get_object_or_404(models.Tag, pk=tag_pk)
         # Call super here to set up all of the fields.
@@ -268,8 +268,8 @@ class ManyTaggedTraitsForm(forms.Form):
         help_text=MANY_TRAITS_HELP)
 
     def __init__(self, *args, **kwargs):
-        # Get the user and remove it from kwargs (b/c/ of UserFormKwargsMixin on the view.)
-        self.user = kwargs.pop('user')
+        """Give the form options specific to the user and their taggable studies."""
+        self.user = kwargs.pop('user')  # For UserFormKwargsMixin.
         # Call super here to set up all of the fields.
         super(ManyTaggedTraitsForm, self).__init__(*args, **kwargs)
         # Filter the queryset of traits by the user's taggable studies, and only non-deprecated.
@@ -337,8 +337,8 @@ class ManyTaggedTraitsByTagForm(forms.Form):
         help_text=MANY_TRAITS_HELP)
 
     def __init__(self, *args, **kwargs):
-        # Get the user and remove it from kwargs (b/c/ of UserFormKwargsMixin on the view.)
-        self.user = kwargs.pop('user')
+        """Give the form options specific to the user and their taggable studies."""
+        self.user = kwargs.pop('user')  # For UserFormKwargsMixin.
         tag_pk = kwargs.pop('tag_pk')
         self.tag = get_object_or_404(models.Tag, pk=tag_pk)
         # Call super here to set up all of the fields.
@@ -406,7 +406,8 @@ class TagSpecificTraitForm(forms.Form):
                                  help_text=TAG_HELP)
 
     def __init__(self, *args, **kwargs):
-        trait_pk = kwargs.pop('trait_pk')
+        """Give the form options specific to the trait to be tagged."""
+        trait_pk = kwargs.pop('trait_pk')  # trait_pk added in the view.
         self.trait = get_object_or_404(SourceTrait, pk=trait_pk)
         super(TagSpecificTraitForm, self).__init__(*args, **kwargs)
         # Form formatting and add a submit button.
@@ -475,6 +476,7 @@ class SubmitCssClass(Submit):
     """Create a submit button with a different class than the default."""
 
     def __init__(self, *args, **kwargs):
+        """Change CSS class of the submit button if given."""
         css_class = kwargs.get('css_class')
         super().__init__(*args, **kwargs)
         if css_class is not None:
@@ -487,7 +489,7 @@ class DCCReviewByTagAndStudyForm(DCCReviewBaseForm):
     SUBMIT_SKIP = 'skip'
 
     def __init__(self, *args, **kwargs):
-
+        """Add submit buttons."""
         super().__init__(*args, **kwargs)
         self.helper = FormHelper()
         self.helper.layout = Layout(
@@ -507,6 +509,7 @@ class DCCReviewByTagAndStudyForm(DCCReviewBaseForm):
 class DCCReviewForm(DCCReviewBaseForm):
 
     def __init__(self, *args, **kwargs):
+        """Add submit buttons."""
         super().__init__(*args, **kwargs)
         self.helper = FormHelper()
         self.helper.layout = Layout(
