@@ -1,6 +1,6 @@
 """Tests of models for the tags app."""
 
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db.models.query import QuerySet
 from django.db.utils import IntegrityError
 from django.test import TestCase
