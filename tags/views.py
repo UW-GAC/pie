@@ -658,8 +658,8 @@ class DCCReviewCreate(LoginRequiredMixin, PermissionRequiredMixin, FormValidMess
     def _get_archived_warning_message(self):
         return 'Oops! Cannot create review for {}, because it has been archived.'.format(self.tagged_trait)
 
-    def _check_tagged_trait(self, *args, **kwargs):
-        """Check for deleted, archived, or already-reviewed tagged traits before proceeding."""
+    def _get_warning_response(self, *args, **kwargs):
+        """Get the appropriate response for deleted, archived, or already-reviewed tagged traits."""
         self.tagged_trait = get_object_or_404(models.TaggedTrait, pk=kwargs['pk'])
         # Redirect if the tagged trait has already been archived.
         if self.tagged_trait.archived:
@@ -672,13 +672,13 @@ class DCCReviewCreate(LoginRequiredMixin, PermissionRequiredMixin, FormValidMess
                                                 args=[self.tagged_trait.pk]))
 
     def get(self, request, *args, **kwargs):
-        check_response = self._check_tagged_trait(*args, **kwargs)
+        check_response = self._get_warning_response(*args, **kwargs)
         if check_response is not None:
             return check_response
         return super().get(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
-        check_response = self._check_tagged_trait(*args, **kwargs)
+        check_response = self._get_warning_response(*args, **kwargs)
         if check_response is not None:
             return check_response
         return super().post(request, *args, **kwargs)
@@ -711,8 +711,8 @@ class DCCReviewUpdate(LoginRequiredMixin, PermissionRequiredMixin, FormValidMess
     def _get_archived_warning_message(self):
         return 'Oops! Cannot update review for {}, because it has been archived.'.format(self.tagged_trait)
 
-    def _get_response_if_archived_or_not_reviewed(self):
-        """Check for archived tagged trait, missing DCCReview, or existing StudyResponse before proceeding."""
+    def _get_warning_response(self):
+        """Get the appropriate response for archived tagged trait, missing DCCReview, or existing StudyResponse."""
         if self.tagged_trait.archived:
             self.messages.warning(self._get_archived_warning_message())
             return HttpResponseRedirect(self.get_success_url())
@@ -728,7 +728,7 @@ class DCCReviewUpdate(LoginRequiredMixin, PermissionRequiredMixin, FormValidMess
         # This doesn't use super() directly because the work on check_response needs to happen in the middle of
         # what's done in super().get().
         self.object = self.get_object()
-        check_response = self._get_response_if_archived_or_not_reviewed()
+        check_response = self._get_warning_response()
         if check_response is not None:
             return check_response
         # ProcessFormView is the super of the super.
@@ -739,7 +739,7 @@ class DCCReviewUpdate(LoginRequiredMixin, PermissionRequiredMixin, FormValidMess
         # This doesn't use super() directly because the work on check_response needs to happen in the middle of
         # what's done in super().post().
         self.object = self.get_object()
-        check_response = self._get_response_if_archived_or_not_reviewed()
+        check_response = self._get_warning_response()
         if check_response is not None:
             return check_response
         # ProcessFormView is the super of the super.
