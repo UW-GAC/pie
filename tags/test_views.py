@@ -3575,7 +3575,7 @@ class DCCReviewNeedFollowupCountsDCCAnalystTest(DCCAnalystLoginTestCase):
         self.assertNotContains(response, """<a href="{}">""".format(self.get_url()))
 
 
-class DCCReviewNeedFollowupCountsOtherUseTest(UserLoginTestCase):
+class DCCReviewNeedFollowupCountsOtherUserTest(UserLoginTestCase):
     def get_url(self, *args):
         """Get the url for the view this class is supposed to test."""
         return reverse('tags:tagged-traits:quality-review', args=args)
@@ -3675,7 +3675,7 @@ class DCCReviewNeedFollowupListMixin(object):
         self.assertNotIn(other_tagged_trait, context['tagged_trait_table'].data)
 
 
-class DCCReviewNeedFollowupListPhenotypeTaggerTestCase(DCCReviewNeedFollowupListMixin,
+class DCCReviewNeedFollowupListPhenotypeTaggerTest(DCCReviewNeedFollowupListMixin,
                                                        PhenotypeTaggerLoginTestCase):
 
     def setUp(self):
@@ -3766,7 +3766,7 @@ class DCCReviewNeedFollowupListPhenotypeTaggerTestCase(DCCReviewNeedFollowupList
         self.assertNotContains(response, expected_url)
 
 
-class DCCReviewNeedFollowupListDCCAnalystTestCase(DCCReviewNeedFollowupListMixin,
+class DCCReviewNeedFollowupListDCCAnalystTest(DCCReviewNeedFollowupListMixin,
                                                   DCCAnalystLoginTestCase):
 
     def setUp(self):
@@ -3794,7 +3794,7 @@ class DCCReviewNeedFollowupListDCCAnalystTestCase(DCCReviewNeedFollowupListMixin
         self.assertEqual(response.status_code, 200)
 
 
-class DCCReviewNeedFollowupListOtherUserTestCase(UserLoginTestCase):
+class DCCReviewNeedFollowupListOtherUserTest(UserLoginTestCase):
 
     def setUp(self):
         super().setUp()
@@ -3816,7 +3816,7 @@ class DCCReviewNeedFollowupListOtherUserTestCase(UserLoginTestCase):
         self.assertEqual(response.status_code, 403)
 
 
-class StudyResponseCreateAgreeOtherUserTestCase(UserLoginTestCase):
+class StudyResponseCreateAgreeOtherUserTest(UserLoginTestCase):
 
     def setUp(self):
         super().setUp()
@@ -3838,7 +3838,7 @@ class StudyResponseCreateAgreeOtherUserTestCase(UserLoginTestCase):
         self.assertEqual(response.status_code, 403)
 
 
-class StudyResponseCreateAgreePhenotypeTaggerTestCase(PhenotypeTaggerLoginTestCase):
+class StudyResponseCreateAgreePhenotypeTaggerTest(PhenotypeTaggerLoginTestCase):
 
     def setUp(self):
         super().setUp()
@@ -3929,7 +3929,7 @@ class StudyResponseCreateAgreePhenotypeTaggerTestCase(PhenotypeTaggerLoginTestCa
         self.assertEqual(self.tagged_trait.dcc_review.study_response.creator, self.user)
 
 
-class StudyResponseCreateAgreeDCCAnalystTestCase(DCCAnalystLoginTestCase):
+class StudyResponseCreateAgreeDCCAnalystTest(DCCAnalystLoginTestCase):
 
     def setUp(self):
         super().setUp()
@@ -3951,7 +3951,7 @@ class StudyResponseCreateAgreeDCCAnalystTestCase(DCCAnalystLoginTestCase):
         self.assertEqual(response.status_code, 403)
 
 
-class StudyResponseCreateDisagreeOtherUserTestCase(UserLoginTestCase):
+class StudyResponseCreateDisagreeOtherUserTest(UserLoginTestCase):
 
     def setUp(self):
         super().setUp()
@@ -3973,7 +3973,7 @@ class StudyResponseCreateDisagreeOtherUserTestCase(UserLoginTestCase):
         self.assertEqual(response.status_code, 403)
 
 
-class StudyResponseCreateDisagreePhenotypeTaggerTestCase(PhenotypeTaggerLoginTestCase):
+class StudyResponseCreateDisagreePhenotypeTaggerTest(PhenotypeTaggerLoginTestCase):
 
     def setUp(self):
         super().setUp()
@@ -4111,7 +4111,7 @@ class StudyResponseCreateDisagreePhenotypeTaggerTestCase(PhenotypeTaggerLoginTes
         self.assertEqual(self.tagged_trait.dcc_review.study_response.creator, self.user)
 
 
-class StudyResponseCreateDisagreeDCCAnalystTestCase(DCCAnalystLoginTestCase):
+class StudyResponseCreateDisagreeDCCAnalystTest(DCCAnalystLoginTestCase):
 
     def setUp(self):
         super().setUp()
