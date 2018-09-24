@@ -606,7 +606,8 @@ class HarmonizedTrait(Trait):
 
     def get_name_link_html(self, max_popover_words=80):
         """Get html for the trait name linked to the harmonized trait's detail page, with description as popover."""
-        url_text = "{{% url 'trait_browser:harmonized:traits:detail' pk={} %}} ".format(self.harmonized_trait_set_version.pk)
+        url_text = "{{% url 'trait_browser:harmonized:traits:detail' pk={} %}} ".format(
+            self.harmonized_trait_set_version.pk)
         if not self.i_description:
             description = '&mdash;'
         else:
