@@ -906,43 +906,6 @@ class StudyResponseCheckMixin(SpecificTaggableStudyMixin, MessageMixin):
         return super().dispatch(request, *args, **kwargs)
 
 
-class StudyResponseMixin(object):
-    """Mixin to respond to DCCReviews with a form. Must be used with CreateView or UpdateView."""
-
-    model = models.StudyResponse
-
-    def get_context_data(self, **kwargs):
-        if 'tagged_trait' not in kwargs:
-            kwargs['tagged_trait'] = self.tagged_trait
-        return super().get_context_data(**kwargs)
-
-    def get_review_status(self):
-        """Return the StudyResponse status based on which submit button was clicked."""
-        if self.request.POST:
-            if self.form_class.SUBMIT_AGREE in self.request.POST:
-                return self.model.STATUS_AGREE
-            elif self.form_class.SUBMIT_DISAGREE in self.request.POST:
-                return self.model.STATUS_DISAGREE
-
-    def get_form_kwargs(self):
-        kwargs = super().get_form_kwargs()
-        if 'data' in kwargs:
-            tmp = kwargs['data'].copy()
-            tmp.update({'status': self.get_review_status()})
-            kwargs['data'] = tmp
-        return kwargs
-
-    def form_valid(self, form):
-        """Create a StudyResponse object linked to the given DCCReview."""
-        form.instance.dcc_review = self.tagged_trait.dcc_review
-        form.instance.creator = self.request.user
-        form.instance.status = self.get_review_status()
-        return super().form_valid(form)
-
-    def get_success_url(self):
-        return self.tagged_trait.get_absolute_url()
-
-
 class StudyResponseCreateAgree(LoginRequiredMixin, PermissionRequiredMixin, StudyResponseCheckMixin, View):
 
     http_method_names = ['post', 'put', ]
