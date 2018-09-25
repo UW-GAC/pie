@@ -81,23 +81,15 @@ class TaggedTraitDetail(LoginRequiredMixin, DetailView):
         user_studies = list(self.request.user.profile.taggable_studies.all())
         user_is_study_tagger = self.object.trait.source_dataset.source_study_version.study in user_studies
         user_is_staff = self.request.user.is_staff
-        context['user_is_study_tagger'] = user_is_study_tagger
         user_has_study_access = user_is_staff or user_is_study_tagger
         is_non_archived = not self.object.archived
-        # Check if DCCReview info should be shown.
         dccreview_exists = hasattr(self.object, 'dcc_review')
         is_confirmed = dccreview_exists and self.object.dcc_review.status == models.DCCReview.STATUS_CONFIRMED
         needs_followup = dccreview_exists and self.object.dcc_review.status == models.DCCReview.STATUS_FOLLOWUP
         user_has_dccreview_add_perms = self.request.user.has_perm('tags.add_dccreview')
         user_has_dccreview_change_perms = self.request.user.has_perm('tags.change_dccreview')
-        # context['show_dcc_review_info'] = (user_is_staff or user_is_study_tagger) and dccreview_exists
-        # # Check if StudyResponse info should be shown
         response_exists = dccreview_exists and hasattr(self.object.dcc_review, 'study_response')
-        # context['show_study_response_info'] = (user_is_staff or user_is_study_tagger) and response_exists
-        # # Check if the DCCReview add or update buttons should be shown.
-        # # Check if the StudyResponse buttons should be shown.
-        # context['show_study_response_add_button'] = user_is_study_tagger and needs_followup and not response_exists
-        # context['show_study_response_update_button'] = user_is_study_tagger and response_exists
+        # Set context variables for controlling view options.
         context['show_quality_review_panel'] = user_has_study_access
         context['show_dcc_review_add_button'] = (not dccreview_exists) and user_has_dccreview_add_perms \
             and is_non_archived
@@ -110,9 +102,7 @@ class TaggedTraitDetail(LoginRequiredMixin, DetailView):
             (self.object.dcc_review.study_response.status == models.StudyResponse.STATUS_AGREE)
         context['show_study_disagrees'] = user_has_study_access and response_exists and \
             (self.object.dcc_review.study_response.status == models.StudyResponse.STATUS_DISAGREE)
-        # Check if the delete button should be shown.
-        context['show_delete_button'] = (
-            user_is_staff or user_is_study_tagger) and (not dccreview_exists) and is_non_archived
+        context['show_delete_button'] = user_has_study_access and (not dccreview_exists) and is_non_archived
         return context
 
 
@@ -409,7 +399,12 @@ class DCCReviewMixin(object):
     def get_context_data(self, **kwargs):
         if 'tagged_trait' not in kwargs:
             kwargs['tagged_trait'] = self.tagged_trait
-        return super(DCCReviewMixin, self).get_context_data(**kwargs)
+        context = super(DCCReviewMixin, self).get_context_data(**kwargs)
+        # Add context variables to control display of tags in _taggedtrait_info panel.
+        context['show_other_tags'] = True
+        context['other_tags'] = self.tagged_trait.trait.non_archived_tags.all().exclude(pk=self.tagged_trait.tag.pk)
+        context['archived_other_tags'] = self.tagged_trait.trait.archived_tags.all()  # Views don't work for archived.
+        return context
 
     def get_review_status(self):
         """Return the DCCReview status based on which submit button was clicked."""

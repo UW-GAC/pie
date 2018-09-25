@@ -199,6 +199,16 @@ class TaggedTraitDetailTestsMixin(object):
         self.assertIn('tagged_trait', context)
         self.assertEqual(context['tagged_trait'], self.tagged_trait)
 
+    def test_no_other_tags(self):
+        """Other tags linked to the same trait are not included in the page."""
+        another_tagged_trait = factories.TaggedTraitFactory.create(trait=self.tagged_trait.trait)
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        context = response.context
+        self.assertNotIn('show_other_tags', context)
+        content = str(response.content)
+        self.assertNotIn(another_tagged_trait.tag.title, content)
+        self.assertIn(self.tagged_trait.tag.title, content)
+
 
 class TaggedTraitDetailTest(TaggedTraitDetailTestsMixin, UserLoginTestCase):
 
@@ -2891,6 +2901,26 @@ class DCCReviewByTagAndStudyDCCTestsMixin(object):
         response = self.client.post(self.get_url(), {})
         self.assertRedirects(response, reverse('tags:tagged-traits:dcc-review:next'), target_status_code=302)
 
+    def test_shows_other_tags(self):
+        """Other tags linked to the same trait are included in the page."""
+        another_tagged_trait = factories.TaggedTraitFactory.create(trait=self.tagged_trait.trait)
+        response = self.client.get(self.get_url())
+        context = response.context
+        self.assertTrue(context['show_other_tags'])
+        content = str(response.content)
+        self.assertIn(another_tagged_trait.tag.title, content)
+        self.assertIn(self.tagged_trait.tag.title, content)
+
+    def test_shows_archived_other_tags(self):
+        """Other tags linked to the same trait are included in the page."""
+        another_tagged_trait = factories.TaggedTraitFactory.create(trait=self.tagged_trait.trait, archived=True)
+        response = self.client.get(self.get_url())
+        context = response.context
+        self.assertTrue(context['show_other_tags'])
+        content = str(response.content)
+        self.assertIn(another_tagged_trait.tag.title, content)
+        self.assertIn(self.tagged_trait.tag.title, content)
+
 
 class DCCReviewByTagAndStudyDCCAnalystTest(DCCReviewByTagAndStudyDCCTestsMixin, DCCAnalystLoginTestCase):
 
@@ -3074,6 +3104,26 @@ class DCCReviewCreateDCCTestsMixin(object):
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
         self.assertIn('been archived', str(messages[0]))
+
+    def test_shows_other_tags(self):
+        """Other tags linked to the same trait are included in the page."""
+        another_tagged_trait = factories.TaggedTraitFactory.create(trait=self.tagged_trait.trait)
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        context = response.context
+        self.assertTrue(context['show_other_tags'])
+        content = str(response.content)
+        self.assertIn(another_tagged_trait.tag.title, content)
+        self.assertIn(self.tagged_trait.tag.title, content)
+
+    def test_shows_archived_other_tags(self):
+        """Other tags linked to the same trait are included in the page."""
+        another_tagged_trait = factories.TaggedTraitFactory.create(trait=self.tagged_trait.trait, archived=True)
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        context = response.context
+        self.assertTrue(context['show_other_tags'])
+        content = str(response.content)
+        self.assertIn(another_tagged_trait.tag.title, content)
+        self.assertIn(self.tagged_trait.tag.title, content)
 
 
 class DCCReviewCreateDCCAnalystTest(DCCReviewCreateDCCTestsMixin, DCCAnalystLoginTestCase):
@@ -3273,6 +3323,26 @@ class DCCReviewUpdateDCCTestsMixin(object):
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
         self.assertIn('Oops!', str(messages[0]))
+
+    def test_shows_other_tags(self):
+        """Other tags linked to the same trait are included in the page."""
+        another_tagged_trait = factories.TaggedTraitFactory.create(trait=self.tagged_trait.trait)
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        context = response.context
+        self.assertTrue(context['show_other_tags'])
+        content = str(response.content)
+        self.assertIn(another_tagged_trait.tag.title, content)
+        self.assertIn(self.tagged_trait.tag.title, content)
+
+    def test_shows_archived_other_tags(self):
+        """Other tags linked to the same trait are included in the page."""
+        another_tagged_trait = factories.TaggedTraitFactory.create(trait=self.tagged_trait.trait, archived=True)
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        context = response.context
+        self.assertTrue(context['show_other_tags'])
+        content = str(response.content)
+        self.assertIn(another_tagged_trait.tag.title, content)
+        self.assertIn(self.tagged_trait.tag.title, content)
 
 
 class DCCReviewUpdateDCCAnalystTest(DCCReviewUpdateDCCTestsMixin, DCCAnalystLoginTestCase):
@@ -4162,6 +4232,16 @@ class StudyResponseCreateDisagreePhenotypeTaggerTest(PhenotypeTaggerLoginTestCas
         """When a StudyResponse is successfully created, it has the appropriate creator."""
         response = self.client.post(self.get_url(self.tagged_trait.pk), {'comment': 'a comment', })
         self.assertEqual(self.tagged_trait.dcc_review.study_response.creator, self.user)
+
+    def test_no_other_tags(self):
+        """Other tags linked to the same trait are not included in the page."""
+        another_tagged_trait = factories.TaggedTraitFactory.create(trait=self.tagged_trait.trait)
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        context = response.context
+        self.assertNotIn('show_other_tags', context)
+        content = str(response.content)
+        self.assertNotIn(another_tagged_trait.tag.title, content)
+        self.assertIn(self.tagged_trait.tag.title, content)
 
 
 class StudyResponseCreateDisagreeDCCAnalystTest(DCCAnalystLoginTestCase):
