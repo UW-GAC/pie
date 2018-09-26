@@ -2,7 +2,7 @@
 
 from itertools import groupby
 
-from django.db.models import Case, Count, F, IntegerField, Sum, When
+from django.db.models import Case, Count, F, IntegerField, Sum, Q, When
 from django.core.exceptions import ImproperlyConfigured, ObjectDoesNotExist
 from django.http import HttpResponseRedirect, HttpResponseForbidden
 from django.shortcuts import get_object_or_404
@@ -811,15 +811,15 @@ class DCCReviewNeedFollowupCounts(LoginRequiredMixin, TemplateView):
             tag_pk=F('tag__pk')
         ).annotate(
             tt_remaining_count=Sum(Case(
-                When(dcc_review__study_response__isnull=True, then=1),
-                When(dcc_review__study_response__isnull=False, then=0),
+                When(Q(dcc_review__study_response__isnull=True) and Q(archived=False), then=1),
+                When(Q(dcc_review__study_response__isnull=False) | Q(archived=True), then=0),
                 default_value=0,
                 output_field=IntegerField()
             ))
         ).annotate(
             tt_completed_count=Sum(Case(
-                When(dcc_review__study_response__isnull=False, then=1),
-                When(dcc_review__study_response__isnull=True, then=0),
+                When(Q(dcc_review__study_response__isnull=True) and Q(archived=False), then=0),
+                When(Q(dcc_review__study_response__isnull=False) | Q(archived=True), then=1),
                 default_value=0,
                 output_field=IntegerField()
             ))

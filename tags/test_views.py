@@ -3456,6 +3456,26 @@ class DCCReviewNeedFollowupCountsPhenotypeTaggerTest(PhenotypeTaggerLoginTestCas
         self.assertEqual(counts[0][1][0]['tt_remaining_count'], 2)
         self.assertEqual(counts[0][1][0]['tt_completed_count'], 0)
 
+    def test_get_context_data_archived_in_tt_completed_and_not_tt_remaining_counts(self):
+        """Counts are correct with two TaggedTraits that need followup."""
+        tag = factories.TagFactory.create()
+        dcc_reviews = factories.DCCReviewFactory.create_batch(
+            3, tagged_trait__tag=tag,
+            tagged_trait__trait__source_dataset__source_study_version__study=self.study,
+            status=models.DCCReview.STATUS_FOLLOWUP)
+        archived_tagged_trait = dcc_reviews[0].tagged_trait
+        archived_tagged_trait.archive()
+        response = self.client.get(self.get_url())
+        context = response.context
+        self.assertIn('grouped_study_tag_counts', context)
+        counts = context['grouped_study_tag_counts']
+        self.assertEqual(len(counts), 1)
+        self.assertEqual(counts[0][0]['study_pk'], self.study.pk)
+        self.assertEqual(len(counts[0][1]), 1)
+        self.assertEqual(counts[0][1][0]['tag_pk'], tag.pk)
+        self.assertEqual(counts[0][1][0]['tt_remaining_count'], 2)
+        self.assertEqual(counts[0][1][0]['tt_completed_count'], 1)
+
     def test_get_context_data_one_study_two_tags(self):
         """Counts are correct with one study and two tags."""
         tag1 = factories.TagFactory.create(title='tag1')
