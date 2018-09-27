@@ -3924,6 +3924,51 @@ class DCCReviewNeedFollowupListPhenotypeTaggerTest(DCCReviewNeedFollowupListMixi
         expected_url = reverse('tags:tagged-traits:pk:quality-review:explain', args=[tagged_trait.pk])
         self.assertNotContains(response, expected_url)
 
+    def test_no_buttons_for_need_followup_tagged_trait_no_response_and_archived(self):
+        """Buttons are not shown for TaggedTraits that need followup, have no StudyResponse, and are archived."""
+        models.TaggedTrait.objects.hard_delete()
+        dcc_review = factories.DCCReviewFactory.create(
+            tagged_trait__tag=self.tag,
+            tagged_trait__trait__source_dataset__source_study_version__study=self.study,
+            status=models.DCCReview.STATUS_FOLLOWUP
+        )
+        tagged_trait = dcc_review.tagged_trait
+        tagged_trait.archive()
+        tagged_trait.refresh_from_db()
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        expected_url = reverse('tags:tagged-traits:pk:quality-review:remove', args=[tagged_trait.pk])
+        self.assertNotContains(response, expected_url)
+        expected_url = reverse('tags:tagged-traits:pk:quality-review:explain', args=[tagged_trait.pk])
+        self.assertNotContains(response, expected_url)
+
+    def test_no_buttons_for_need_followup_tagged_trait_with_response_and_archived(self):
+        """Buttons are not shown for TaggedTraits that need followup, have an agree StudyResponse, and are archived."""
+        models.TaggedTrait.objects.hard_delete()
+        dcc_review = factories.DCCReviewFactory.create(
+            tagged_trait__tag=self.tag,
+            tagged_trait__trait__source_dataset__source_study_version__study=self.study,
+            status=models.DCCReview.STATUS_FOLLOWUP)
+        study_response = factories.StudyResponseFactory.create(
+            dcc_review=dcc_review,
+            status=models.StudyResponse.STATUS_AGREE)
+        tagged_trait = dcc_review.tagged_trait
+        tagged_trait.archive()
+        tagged_trait.refresh_from_db()
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        expected_url = reverse('tags:tagged-traits:pk:quality-review:remove', args=[tagged_trait.pk])
+        self.assertNotContains(response, expected_url)
+        expected_url = reverse('tags:tagged-traits:pk:quality-review:explain', args=[tagged_trait.pk])
+        self.assertNotContains(response, expected_url)
+
+    def test_table_includes_archived_tagged_trait(self):
+        """An archived tagged trait that needs followup is included in the table."""
+        archived_tagged_trait = models.TaggedTrait.objects.first()
+        archived_tagged_trait.archive()
+        archived_tagged_trait.refresh_from_db()
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        table = response.context['tagged_trait_table']
+        self.assertIn(archived_tagged_trait, table.data)
+
 
 class DCCReviewNeedFollowupListDCCAnalystTest(DCCReviewNeedFollowupListMixin, DCCAnalystLoginTestCase):
 
