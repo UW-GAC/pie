@@ -3671,6 +3671,7 @@ class DCCReviewNeedFollowupCountsPhenotypeTaggerTest(PhenotypeTaggerLoginTestCas
         self.assertEqual(counts[0][1][0]['tt_completed_count'], n_review_completed)
 
     def test_begin_review_button_is_not_present_if_no_tagged_traits_need_review(self):
+        """Final column says 'quality review completed' instead of link to quality review page if completed."""
         tag = factories.TagFactory.create()
         factories.StudyResponseFactory.create_batch(
             2,
@@ -3682,7 +3683,21 @@ class DCCReviewNeedFollowupCountsPhenotypeTaggerTest(PhenotypeTaggerLoginTestCas
         self.assertNotContains(response, reverse('tags:tag:study:quality-review', args=[tag.pk, self.study.pk]))
         self.assertContains(response, "Quality review completed")
 
+    def test_begin_review_button_is_not_present_if_all_tagged_traits_are_archived_without_study_response(self):
+        """Final column says 'quality review completed' instead of link to quality review page if all archived."""
+        tag = factories.TagFactory.create()
+        factories.DCCReviewFactory.create_batch(
+            2, tagged_trait__tag=tag,
+            tagged_trait__trait__source_dataset__source_study_version__study=self.study,
+            status=models.DCCReview.STATUS_FOLLOWUP
+        )
+        models.TaggedTrait.objects.update(archived=True)
+        response = self.client.get(self.get_url())
+        self.assertNotContains(response, reverse('tags:tag:study:quality-review', args=[tag.pk, self.study.pk]))
+        self.assertContains(response, "Quality review completed")
+
     def test_begin_review_button_is_present_if_some_tagged_traits_need_review(self):
+        """Final column has link to quality review page if tagged traits remain to be responded to."""
         tag = factories.TagFactory.create()
         factories.DCCReviewFactory.create_batch(
             2,
