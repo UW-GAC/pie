@@ -50,12 +50,10 @@ class TaggedTraitTable(tables.Table):
     tag = tables.LinkColumn(
         'tags:tag:detail', args=[tables.utils.A('tag.pk')], verbose_name='Tag',
         text=lambda record: record.tag.title, orderable=True)
-    details = tables.TemplateColumn(verbose_name='', orderable=False,
-                                    template_code=DETAIL_BUTTON_TEMPLATE)
 
     class Meta:
         model = models.TaggedTrait
-        fields = ('tag', 'trait', 'description', 'dataset', 'details', )
+        fields = ('tag', 'trait', 'description', 'dataset', )
         attrs = {'class': 'table table-striped table-bordered table-hover', 'style': 'width: auto;'}
         template = 'django_tables2/bootstrap-responsive.html'
         order_by = ('tag', )
@@ -82,9 +80,10 @@ class TaggedTraitDeleteButtonMixin(tables.Table):
         return mark_safe(html)
 
 
-class TaggedTraitTableReviewStatusMixin(tables.Table):
-    """Mixin to show DCCReview status in a TaggedTrait table."""
+class TaggedTraitTableReviewStatusAndDetailsMixin(tables.Table):
+    """Mixin to show DCCReview status and links to detail pages in a TaggedTrait table."""
 
+    details = tables.TemplateColumn(verbose_name='', orderable=False, template_code=DETAIL_BUTTON_TEMPLATE)
     quality_review = tables.Column('Quality review', accessor='dcc_review.status')
 
     def render_quality_review(self, record):
@@ -107,7 +106,7 @@ class TaggedTraitTableReviewStatusMixin(tables.Table):
         return mark_safe(html)
 
 
-class TaggedTraitTableDCCReviewButtonMixin(TaggedTraitTableReviewStatusMixin):
+class TaggedTraitTableDCCReviewButtonMixin(TaggedTraitTableReviewStatusAndDetailsMixin):
     """Mixin to show DCCReview status and a button to review a TaggedTrait."""
 
     # This column will display a button to either create a new review or update an existing review.
@@ -129,7 +128,7 @@ class TaggedTraitTableDCCReviewButtonMixin(TaggedTraitTableReviewStatusMixin):
         return mark_safe(html)
 
 
-class TaggedTraitTableWithReviewStatus(TaggedTraitTableReviewStatusMixin, TaggedTraitTable):
+class TaggedTraitTableWithReviewStatus(TaggedTraitTableReviewStatusAndDetailsMixin, TaggedTraitTable):
     """Table for displaying TaggedTraits with DCCReview information."""
 
     class Meta(TaggedTraitTable.Meta):
