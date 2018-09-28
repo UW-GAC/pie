@@ -98,11 +98,15 @@ class TagList(LoginRequiredMixin, SingleTableMixin, ListView):
     table_pagination = {'per_page': TABLE_PER_PAGE * 2}
 
 
-class TaggedTraitDetail(LoginRequiredMixin, DetailView):
+class TaggedTraitDetail(LoginRequiredMixin, PermissionRequiredMixin, SpecificTaggableStudyRequiredMixin, DetailView):
 
     model = models.TaggedTrait
     context_object_name = 'tagged_trait'
     template_name = 'tags/taggedtrait_detail.html'
+    redirect_unauthenticated_users = True
+    raise_exception = True
+    allow_staff = True
+    permission_required = 'tags.add_taggedtrait'
 
     def get_context_data(self, **kwargs):
         context = super(TaggedTraitDetail, self).get_context_data(**kwargs)
@@ -132,6 +136,9 @@ class TaggedTraitDetail(LoginRequiredMixin, DetailView):
             (self.object.dcc_review.study_response.status == models.StudyResponse.STATUS_DISAGREE)
         context['show_delete_button'] = user_has_study_access and (not dccreview_exists) and is_non_archived
         return context
+
+    def set_study(self):
+        self.study = self.get_object().trait.source_dataset.source_study_version.study
 
 
 class TaggedTraitTagCountsByStudy(LoginRequiredMixin, TemplateView):
