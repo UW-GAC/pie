@@ -717,6 +717,12 @@ class TaggedTraitByTagAndStudyListTest(TaggedTraitByTagAndStudyListTestsMixin, U
         context = response.context
         self.assertIsInstance(context['tagged_trait_table'], tables.TaggedTraitTable)
 
+    def test_no_detail_page_links(self):
+        """Contains no links to the TaggedTraitDetail view."""
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        for tagged_trait in self.tagged_traits:
+            self.assertNotIn(tagged_trait.get_absolute_url(), str(response.content))
+
 
 class TaggedTraitByTagAndStudyListPhenotypeTaggerTest(TaggedTraitByTagAndStudyListTestsMixin,
                                                       PhenotypeTaggerLoginTestCase):
@@ -747,6 +753,12 @@ class TaggedTraitByTagAndStudyListPhenotypeTaggerTest(TaggedTraitByTagAndStudyLi
         context = response.context
         self.assertIsInstance(context['tagged_trait_table'], tables.TaggedTraitTableWithReviewStatus)
 
+    def test_contains_detail_page_links(self):
+        """Contains links to the TaggedTraitDetail view."""
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        for tagged_trait in self.tagged_traits:
+            self.assertIn(tagged_trait.get_absolute_url(), str(response.content))
+
 
 class TaggedTraitByTagAndStudyListDCCAnalystTest(TaggedTraitByTagAndStudyListTestsMixin, DCCAnalystLoginTestCase):
 
@@ -775,6 +787,12 @@ class TaggedTraitByTagAndStudyListDCCAnalystTest(TaggedTraitByTagAndStudyListTes
         response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
         context = response.context
         self.assertIsInstance(context['tagged_trait_table'], tables.TaggedTraitTableWithDCCReviewButton)
+
+    def test_contains_detail_page_links(self):
+        """Contains links to the TaggedTraitDetail view."""
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        for tagged_trait in self.tagged_traits:
+            self.assertIn(tagged_trait.get_absolute_url(), str(response.content))
 
 
 class TaggedTraitCreateTestsMixin(object):
