@@ -33,6 +33,34 @@ CONFIRMED_TAGGED_TRAIT_DELETE_ERROR_MESSAGE = (
 )
 
 
+class TaggableStudiesRequiredMixin(UserPassesTestMixin):
+    """Mixin requiring that the user have 1 or more taggable studies designated, or be staff."""
+
+    def test_func(self, user):
+        return user.profile.taggable_studies.count() > 0 or user.is_staff
+
+
+class SpecificTaggableStudyRequiredMixin(UserPassesTestMixin):
+    """Mixin to check if a study is in a user's list of taggable studies or (optionally) if the user is staff."""
+
+    allow_staff = False
+
+    def dispatch(self, request, *args, **kwargs):
+        self.set_study()
+        return super().dispatch(request, *args, **kwargs)
+
+    def set_study(self):
+        raise ImproperlyConfigured(
+            "SpecificTaggableStudyRequiredMixin requires a definition for 'set_study()'"
+        )
+
+    def test_func(self, user):
+        if self.allow_staff and user.is_staff:
+            return True
+        else:
+            return self.study in user.profile.taggable_studies.all()
+
+
 class TagDetail(LoginRequiredMixin, DetailView):
     """Detail view class for Tag."""
 
@@ -184,13 +212,6 @@ class TaggedTraitByTagAndStudyList(LoginRequiredMixin, SingleTableMixin, ListVie
         context['tag'] = self.tag
         context['show_review_button'] = self.request.user.is_staff
         return context
-
-
-class TaggableStudiesRequiredMixin(UserPassesTestMixin):
-    """Mixin requiring that the user have 1 or more taggable studies designated, or be staff."""
-
-    def test_func(self, user):
-        return user.profile.taggable_studies.count() > 0 or user.is_staff
 
 
 class TaggedTraitDelete(LoginRequiredMixin, PermissionRequiredMixin, TaggableStudiesRequiredMixin,
@@ -768,27 +789,6 @@ class DCCReviewUpdate(LoginRequiredMixin, PermissionRequiredMixin, FormValidMess
         return self.tagged_trait.get_absolute_url()
 
 
-class SpecificTaggableStudyMixin(UserPassesTestMixin):
-    """Mixin to check if a study is in a user's list of taggable studies or (optionally) if the user is staff."""
-
-    allow_staff = False
-
-    def dispatch(self, request, *args, **kwargs):
-        self.set_study()
-        return super().dispatch(request, *args, **kwargs)
-
-    def set_study(self):
-        raise ImproperlyConfigured(
-            "SpecificTaggableStudyMixin requires a definition for 'set_study()'"
-        )
-
-    def test_func(self, user):
-        if self.allow_staff and user.is_staff:
-            return True
-        else:
-            return self.study in user.profile.taggable_studies.all()
-
-
 class DCCReviewNeedFollowupCounts(LoginRequiredMixin, TemplateView):
     """View to show counts of DCCReviews that need followup by study and tag for phenotype taggers."""
 
@@ -842,7 +842,7 @@ class DCCReviewNeedFollowupCounts(LoginRequiredMixin, TemplateView):
         return HttpResponseForbidden()
 
 
-class DCCReviewNeedFollowupList(LoginRequiredMixin, SpecificTaggableStudyMixin, SingleTableMixin, ListView):
+class DCCReviewNeedFollowupList(LoginRequiredMixin, SpecificTaggableStudyRequiredMixin, SingleTableMixin, ListView):
     """List view of DCCReviews that need study followup."""
 
     redirect_unauthenticated_users = True
@@ -889,7 +889,7 @@ class DCCReviewNeedFollowupList(LoginRequiredMixin, SpecificTaggableStudyMixin, 
         return data
 
 
-class StudyResponseCheckMixin(SpecificTaggableStudyMixin, MessageMixin):
+class StudyResponseCheckMixin(SpecificTaggableStudyRequiredMixin, MessageMixin):
     """Mixin to handle checking that it's appropriate to create or update a StudyResponse."""
 
     def set_study(self):
