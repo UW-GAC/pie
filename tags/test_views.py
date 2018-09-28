@@ -4142,6 +4142,12 @@ class StudyResponseCreateAgreePhenotypeTaggerTest(PhenotypeTaggerLoginTestCase):
         response = self.client.post(self.get_url(self.tagged_trait.pk), {})
         self.assertEqual(self.tagged_trait.dcc_review.study_response.creator, self.user)
 
+    def test_archives_tagged_trait(self):
+        """When a StudyResponse is successfully created, the tagged trait is archived."""
+        response = self.client.post(self.get_url(self.tagged_trait.pk), {})
+        self.tagged_trait.refresh_from_db()
+        self.assertTrue(self.tagged_trait.archived)
+
 
 class StudyResponseCreateAgreeDCCAnalystTest(DCCAnalystLoginTestCase):
 
@@ -4354,6 +4360,12 @@ class StudyResponseCreateDisagreePhenotypeTaggerTest(PhenotypeTaggerLoginTestCas
         """When a StudyResponse is successfully created, it has the appropriate creator."""
         response = self.client.post(self.get_url(self.tagged_trait.pk), {'comment': 'a comment', })
         self.assertEqual(self.tagged_trait.dcc_review.study_response.creator, self.user)
+
+    def test_does_not_archive_tagged_trait(self):
+        """When a disagree StudyResponse is successfully created, the tagged trait is not archived."""
+        response = self.client.post(self.get_url(self.tagged_trait.pk), {'comment': 'a comment', })
+        self.tagged_trait.refresh_from_db()
+        self.assertFalse(self.tagged_trait.archived)
 
     def test_no_other_tags(self):
         """Other tags linked to the same trait are not included in the page."""

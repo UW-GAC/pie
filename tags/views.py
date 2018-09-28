@@ -948,10 +948,12 @@ class StudyResponseCreateAgree(LoginRequiredMixin, PermissionRequiredMixin, Stud
         return super().get(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
+        """Create a StudyResponse with status agree and archive the tagged trait."""
         if hasattr(self.tagged_trait.dcc_review, 'study_response'):
             self.messages.warning('Oops! {} already has a study response.'.format(self.tagged_trait))
             return HttpResponseRedirect(self.get_failure_url())
         self._create_study_response()
+        self.tagged_trait.archive()
         return HttpResponseRedirect(self.get_redirect_url())
 
 
