@@ -905,6 +905,9 @@ class StudyResponseCheckMixin(SpecificTaggableStudyMixin, MessageMixin):
         except AttributeError:
             self.messages.warning('Oops! {} has not been reviewed by the DCC.'.format(self.tagged_trait))
             return HttpResponseRedirect(self.get_failure_url())
+        if self.tagged_trait.archived:
+            self.messages.warning('Oops! {} has been removed by the DCC.'.format(self.tagged_trait))
+            return HttpResponseRedirect(self.get_failure_url())
         if self.tagged_trait.dcc_review.status == models.DCCReview.STATUS_CONFIRMED:
             self.messages.warning('Oops! {} has been confirmed by the DCC.'.format(self.tagged_trait))
             return HttpResponseRedirect(self.get_failure_url())

@@ -4089,6 +4089,17 @@ class StudyResponseCreateAgreePhenotypeTaggerTest(PhenotypeTaggerLoginTestCase):
         self.assertTrue('Oops!' in str(messages[0]))
         self.assertTrue('has not been reviewed' in str(messages[0]))
 
+    def test_archived_tagged_trait(self):
+        """Redirects with warning message if the tagged trait has been archived."""
+        self.tagged_trait.archive()
+        response = self.client.post(self.get_url(self.tagged_trait.pk), {})
+        self.assertRedirects(response, reverse('tags:tag:study:quality-review',
+                                               args=[self.tag.pk, self.study.pk]))
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertTrue('Oops!' in str(messages[0]))
+        self.assertTrue('removed' in str(messages[0]))
+
     def test_confirmed_dcc_review(self):
         """Redirects with warning message if DCCReview status is confirmed."""
         self.tagged_trait.dcc_review.delete()
@@ -4248,6 +4259,37 @@ class StudyResponseCreateDisagreePhenotypeTaggerTest(PhenotypeTaggerLoginTestCas
         self.assertEqual(len(messages), 1)
         self.assertTrue('Oops!' in str(messages[0]))
         self.assertTrue('has not been reviewed' in str(messages[0]))
+
+    def test_post_missing_dcc_review(self):
+        """Redirects with warning message if a DCCReview doesn't exist."""
+        self.tagged_trait.dcc_review.delete()
+        response = self.client.post(self.get_url(self.tagged_trait.pk), {'comment': 'a comment'})
+        self.assertRedirects(response, reverse('tags:tag:study:quality-review',
+                                               args=[self.tag.pk, self.study.pk]))
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertTrue('Oops!' in str(messages[0]))
+
+    def test_get_archived_tagged_trait(self):
+        """Redirects with warning message if the tagged trait has been archived."""
+        self.tagged_trait.archive()
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        self.assertRedirects(response, reverse('tags:tag:study:quality-review',
+                                               args=[self.tag.pk, self.study.pk]))
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertTrue('Oops!' in str(messages[0]))
+        self.assertTrue('removed' in str(messages[0]))
+
+    def test_post_archived_tagged_trait(self):
+        """Redirects with warning message if the tagged trait has been archived."""
+        self.tagged_trait.archive()
+        response = self.client.post(self.get_url(self.tagged_trait.pk), {'comment': 'a comment'})
+        self.assertRedirects(response, reverse('tags:tag:study:quality-review',
+                                               args=[self.tag.pk, self.study.pk]))
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertTrue('Oops!' in str(messages[0]))
 
     def test_confirmed_dcc_review(self):
         """Redirects with warning message if DCCReview status is confirmed."""
