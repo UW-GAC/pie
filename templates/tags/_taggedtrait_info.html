@@ -40,10 +40,10 @@
                     </a>
                   </div>
                 {% endfor %}
-                {# Show archived tags in grey. #}
+                {# Show archived tags in yellow. #}
                 {% for archived_tag in archived_other_tags %}
                   <div class="btn-group btn-group-xs">
-                    <a href="{{ archived_tag.get_absolute_url }}" class="btn btn-danger" role="button">
+                    <a href="{{ archived_tag.get_absolute_url }}" class="btn btn-warning" role="button">
                       {{ archived_tag.title }}
                     </a>
                   </div>

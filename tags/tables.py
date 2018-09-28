@@ -147,6 +147,10 @@ class TaggedTraitTableWithDCCReviewButton(TaggedTraitTableDCCReviewButtonMixin, 
 class DCCReviewTable(tables.Table):
     """Table for displaying TaggedTrait and DCCReviews."""
 
+    AGREE_STATUS = 'Agreed to remove'
+    DISAGREE_STATUS = 'Gave explanation'
+    ARCHIVED_STATUS = 'Removed by DCC'
+
     trait = tables.TemplateColumn(verbose_name='Study Variable', orderable=False,
                                   template_code="""{{ record.trait.get_name_link_html|safe }}""")
     details = tables.TemplateColumn(verbose_name='', orderable=False,
@@ -158,24 +162,17 @@ class DCCReviewTable(tables.Table):
                                    order_by=('dcc_review__study_response'))
 
     def render_study_response(self, record):
-
+        html_template = '<p class="text-{text_class}">{text}</p>'
         if not hasattr(record, 'dcc_review'):
             return ''
         elif not hasattr(record.dcc_review, 'study_response'):
-            return ''
+            html = ''
         elif record.dcc_review.study_response.status == models.StudyResponse.STATUS_AGREE:
-            btn_class = 'success'
-            glyphicon = 'glyphicon-ok'
-            text = 'Agreed to remove'
+            html = html_template.format(text_class='success', text=self.AGREE_STATUS)
         elif record.dcc_review.status == models.StudyResponse.STATUS_DISAGREE:
-            btn_class = 'danger'
-            glyphicon = 'glyphicon-remove'
-            text = 'Gave explanation'
-        html = '<p class="text-{btn_class}">{text}</a>'.format(
-            btn_class=btn_class,
-            glyphicon=glyphicon,
-            text=text
-        )
+            html = html_template.format(text_class='danger', text=self.DISAGREE_STATUS)
+        if record.archived:
+            html += '\n' + html_template.format(text_class='warning', text=self.ARCHIVED_STATUS)
         return mark_safe(html)
 
     class Meta:
