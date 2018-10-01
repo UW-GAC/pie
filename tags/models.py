@@ -92,3 +92,6 @@ class DCCReview(TimeStampedModel):
 
     class Meta:
         verbose_name = 'dcc review'
+
+    def get_absolute_url(self):
+        return self.tagged_trait.get_absolute_url()

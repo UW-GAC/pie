@@ -389,3 +389,9 @@ class DCCReviewTest(TestCase):
         """The custom __str__ method returns a string."""
         instance = self.model_factory.create()
         self.assertIsInstance(instance.__str__(), str)
+
+    def test_get_absolute_url(self):
+        """get_absolute_url function doesn't fail."""
+        instance = self.model_factory.create()
+        url = instance.get_absolute_url()
+        # Just test that this function works.
