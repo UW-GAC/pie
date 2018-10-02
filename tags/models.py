@@ -99,6 +99,9 @@ class DCCReview(TimeStampedModel):
     def __str__(self):
         return 'Review of {}'.format(self.tagged_trait)
 
+    def get_absolute_url(self):
+        return self.tagged_trait.get_absolute_url()
+
     def delete(self, *args, **kwargs):
         """Only allow DCCReview objects without a StudyResponse to be deleted."""
         if hasattr(self, 'study_response'):

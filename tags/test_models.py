@@ -393,6 +393,12 @@ class DCCReviewTest(TestCase):
         instance = self.model_factory.create()
         self.assertIsInstance(instance.__str__(), str)
 
+    def test_get_absolute_url(self):
+        """get_absolute_url function doesn't fail."""
+        instance = self.model_factory.create()
+        url = instance.get_absolute_url()
+        # Just test that this function works.
+
     def test_unable_to_delete_with_studyresponse_agree(self):
         """A DCCReview with a study response cannot be deleted."""
         dcc_review = self.model_factory.create(**self.model_args)
