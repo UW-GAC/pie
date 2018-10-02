@@ -255,7 +255,7 @@ class TaggedTraitDetailPhenotypeTaggerTest(TaggedTraitDetailTestsMixin, Phenotyp
         self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-review:update',
                                                  args=[self.tagged_trait.pk]))
 
-    def test_context_with_unreviewed_trait(self):
+    def test_context_with_unreviewed_tagged_trait(self):
         """The context contains the proper flags for the add/update review buttons."""
         response = self.client.get(self.get_url(self.tagged_trait.pk))
         context = response.context
@@ -276,7 +276,7 @@ class TaggedTraitDetailPhenotypeTaggerTest(TaggedTraitDetailTestsMixin, Phenotyp
         self.assertIn('show_study_disagrees', context)
         self.assertFalse(context['show_study_disagrees'])
 
-    def test_context_with_confirmed_trait(self):
+    def test_context_with_confirmed_tagged_trait(self):
         """The context contains the proper flags for the add/update review buttons."""
         factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait, status=models.DCCReview.STATUS_CONFIRMED)
         response = self.client.get(self.get_url(self.tagged_trait.pk))
@@ -298,7 +298,7 @@ class TaggedTraitDetailPhenotypeTaggerTest(TaggedTraitDetailTestsMixin, Phenotyp
         self.assertIn('show_study_disagrees', context)
         self.assertFalse(context['show_study_disagrees'])
 
-    def test_context_with_needs_followup_trait(self):
+    def test_context_with_needs_followup_tagged_trait(self):
         """The context contains the proper flags for the add/update review buttons."""
         factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP)
         response = self.client.get(self.get_url(self.tagged_trait.pk))
@@ -320,7 +320,8 @@ class TaggedTraitDetailPhenotypeTaggerTest(TaggedTraitDetailTestsMixin, Phenotyp
         self.assertIn('show_study_disagrees', context)
         self.assertFalse(context['show_study_disagrees'])
 
-    def test_context_with_reviewed_trait_with_agree_response(self):
+    def test_context_with_followup_agree_nonarchived(self):
+        """Correct context flags for tagged trait needs followup, agree, and nonarchived."""
         dcc_review = factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait,
                                                        status=models.DCCReview.STATUS_FOLLOWUP)
         factories.StudyResponseFactory.create(dcc_review=dcc_review, status=models.StudyResponse.STATUS_AGREE)
@@ -370,7 +371,8 @@ class TaggedTraitDetailPhenotypeTaggerTest(TaggedTraitDetailTestsMixin, Phenotyp
         self.assertIn('show_archived', context)
         self.assertTrue(context['show_archived'])
 
-    def test_context_with_reviewed_trait_with_disagree_response(self):
+    def test_context_with_followup_disagree_nonarchived_tagged_trait(self):
+        """Correct context flags for tagged trait needs followup, disagree, and nonarchived."""
         dcc_review = factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait,
                                                        status=models.DCCReview.STATUS_FOLLOWUP)
         factories.StudyResponseFactory.create(dcc_review=dcc_review, status=models.StudyResponse.STATUS_DISAGREE)
@@ -452,7 +454,7 @@ class TaggedTraitDetailDCCAnalystTest(TaggedTraitDetailTestsMixin, DCCAnalystLog
         response = self.client.get(self.get_url(self.tagged_trait.pk))
         self.assertContains(response, reverse('tags:tagged-traits:pk:delete', kwargs={'pk': self.tagged_trait.pk}))
 
-    def test_context_with_unreviewed_trait(self):
+    def test_context_with_unreviewed_tagged_trait(self):
         """The context contains the proper flags for the add/update review buttons."""
         response = self.client.get(self.get_url(self.tagged_trait.pk))
         context = response.context
@@ -469,7 +471,7 @@ class TaggedTraitDetailDCCAnalystTest(TaggedTraitDetailTestsMixin, DCCAnalystLog
         self.assertIn('show_study_response_status', context)
         self.assertFalse(context['show_study_response_status'])
 
-    def test_context_with_confirmed_trait(self):
+    def test_context_with_confirmed_tagged_trait(self):
         """The context contains the proper flags for the add/update review buttons."""
         factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait, status=models.DCCReview.STATUS_CONFIRMED)
         response = self.client.get(self.get_url(self.tagged_trait.pk))
@@ -487,7 +489,7 @@ class TaggedTraitDetailDCCAnalystTest(TaggedTraitDetailTestsMixin, DCCAnalystLog
         self.assertIn('show_study_response_status', context)
         self.assertFalse(context['show_study_response_status'])
 
-    def test_context_with_needs_followup_trait(self):
+    def test_context_with_needs_followup_tagged_trait(self):
         """The context contains the proper flags for the add/update review buttons."""
         factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP)
         response = self.client.get(self.get_url(self.tagged_trait.pk))
@@ -767,7 +769,8 @@ class TaggedTraitByTagAndStudyListTestsMixin(object):
         response = self.client.get(self.get_url(self.tag.pk + 1, self.study.pk))
         self.assertEqual(response.status_code, 404)
 
-    def test_view_table_contains_correct_records(self):
+    def test_table_contains_correct_records(self):
+        """All expected tagged traits are in the table."""
         response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
         context = response.context
         table = context['tagged_trait_table']
@@ -775,7 +778,8 @@ class TaggedTraitByTagAndStudyListTestsMixin(object):
         for tagged_trait in self.tagged_traits:
             self.assertIn(tagged_trait, table.data, msg='tagged_trait_table does not contain {}'.format(tagged_trait))
 
-    def test_view_works_with_no_tagged_traits_in_study(self):
+    def test_works_with_no_tagged_traits_in_study(self):
+        """Table has zero rows when there are no tagged traits."""
         other_study = StudyFactory.create()
         other_tag = factories.TagFactory.create()
         response = self.client.get(self.get_url(other_tag.pk, other_study.pk))
@@ -783,7 +787,8 @@ class TaggedTraitByTagAndStudyListTestsMixin(object):
         context = response.context
         self.assertEqual(len(context['tagged_trait_table'].data), 0)
 
-    def test_view_does_not_show_tagged_traits_from_a_different_study(self):
+    def test_does_not_show_tagged_traits_from_a_different_study(self):
+        """Table does not include tagged trait from a different study."""
         other_study = StudyFactory.create()
         other_tagged_trait = factories.TaggedTraitFactory.create(
             tag=self.tag, trait__source_dataset__source_study_version__study=other_study)
@@ -791,7 +796,8 @@ class TaggedTraitByTagAndStudyListTestsMixin(object):
         context = response.context
         self.assertNotIn(other_tagged_trait, context['tagged_trait_table'].data)
 
-    def test_view_does_not_show_tagged_traits_from_a_different_tag(self):
+    def test_does_not_show_tagged_traits_from_a_different_tag(self):
+        """Table does not include tagged trait with a different tag."""
         other_tag = factories.TagFactory.create()
         other_tagged_trait = factories.TaggedTraitFactory.create(
             tag=other_tag, trait__source_dataset__source_study_version__study=self.study)
