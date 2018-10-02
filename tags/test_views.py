@@ -209,6 +209,24 @@ class TaggedTraitDetailTestsMixin(object):
         self.assertNotIn(another_tagged_trait.tag.title, content)
         self.assertIn(self.tagged_trait.tag.title, content)
 
+    def test_no_delete_button_for_needfollowup_reviewed_tagged_trait(self):
+        """Shows no button to delete a need_followup tagged trait."""
+        factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP)
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:delete', kwargs={'pk': self.tagged_trait.pk}))
+
+    def test_no_delete_button_for_confirmed_reviewed_tagged_trait(self):
+        """Shows no button to delete a confirmed tagged trait."""
+        factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait, status=models.DCCReview.STATUS_CONFIRMED)
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:delete', kwargs={'pk': self.tagged_trait.pk}))
+
+    def test_no_delete_button_for_archived_tagged_trait(self):
+        """Shows no button to delete an archived tagged trait."""
+        self.tagged_trait.archive()
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:delete', kwargs={'pk': self.tagged_trait.pk}))
+
 
 class TaggedTraitDetailPhenotypeTaggerTest(TaggedTraitDetailTestsMixin, PhenotypeTaggerLoginTestCase):
 
@@ -224,24 +242,6 @@ class TaggedTraitDetailPhenotypeTaggerTest(TaggedTraitDetailTestsMixin, Phenotyp
         """A phenotype tagger does see a button to delete the tagged trait."""
         response = self.client.get(self.get_url(self.tagged_trait.pk))
         self.assertContains(response, reverse('tags:tagged-traits:pk:delete', kwargs={'pk': self.tagged_trait.pk}))
-
-    def test_no_delete_button_for_needfollowup_reviewed_tagged_trait(self):
-        """A phenotype tagger sees no button to delete the tagged trait."""
-        factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP)
-        response = self.client.get(self.get_url(self.tagged_trait.pk))
-        self.assertNotContains(response, reverse('tags:tagged-traits:pk:delete', kwargs={'pk': self.tagged_trait.pk}))
-
-    def test_no_delete_button_for_confirmed_reviewed_tagged_trait(self):
-        """A phenotype tagger sees no button to delete the tagged trait."""
-        factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait, status=models.DCCReview.STATUS_CONFIRMED)
-        response = self.client.get(self.get_url(self.tagged_trait.pk))
-        self.assertNotContains(response, reverse('tags:tagged-traits:pk:delete', kwargs={'pk': self.tagged_trait.pk}))
-
-    def test_no_delete_button_for_archived_tagged_trait(self):
-        """Delete button doesn't show up for archived tagged trait."""
-        self.tagged_trait.archive()
-        response = self.client.get(self.get_url(self.tagged_trait.pk))
-        self.assertNotContains(response, reverse('tags:tagged-traits:pk:delete', kwargs={'pk': self.tagged_trait.pk}))
 
     def test_unreviewed_tagged_trait_missing_link_to_review(self):
         """An unreviewed tagged trait does not include a link to review for Phenotype taggers."""
@@ -343,6 +343,33 @@ class TaggedTraitDetailPhenotypeTaggerTest(TaggedTraitDetailTestsMixin, Phenotyp
         self.assertIn('show_study_disagrees', context)
         self.assertFalse(context['show_study_disagrees'])
 
+    def test_context_with_followup_agree_archived_tagged_trait(self):
+        """Correct context flags for tagged trait needs followup, agree, and archived."""
+        dcc_review = factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait,
+                                                       status=models.DCCReview.STATUS_FOLLOWUP)
+        factories.StudyResponseFactory.create(dcc_review=dcc_review, status=models.StudyResponse.STATUS_AGREE)
+        dcc_review.tagged_trait.archive()
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        context = response.context
+        self.assertIn('show_quality_review_panel', context)
+        self.assertTrue(context['show_quality_review_panel'])
+        self.assertIn('show_dcc_review_add_button', context)
+        self.assertFalse(context['show_dcc_review_add_button'])
+        self.assertIn('show_dcc_review_update_button', context)
+        self.assertFalse(context['show_dcc_review_update_button'])
+        self.assertIn('show_confirmed_status', context)
+        self.assertFalse(context['show_confirmed_status'])
+        self.assertIn('show_needs_followup_status', context)
+        self.assertTrue(context['show_needs_followup_status'])
+        self.assertIn('show_study_response_status', context)
+        self.assertTrue(context['show_study_response_status'])
+        self.assertIn('show_study_agrees', context)
+        self.assertTrue(context['show_study_agrees'])
+        self.assertIn('show_study_disagrees', context)
+        self.assertFalse(context['show_study_disagrees'])
+        self.assertIn('show_archived', context)
+        self.assertTrue(context['show_archived'])
+
     def test_context_with_reviewed_trait_with_disagree_response(self):
         dcc_review = factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait,
                                                        status=models.DCCReview.STATUS_FOLLOWUP)
@@ -365,6 +392,33 @@ class TaggedTraitDetailPhenotypeTaggerTest(TaggedTraitDetailTestsMixin, Phenotyp
         self.assertFalse(context['show_study_agrees'])
         self.assertIn('show_study_disagrees', context)
         self.assertTrue(context['show_study_disagrees'])
+
+    def test_context_with_followup_disagree_archived_tagged_trait(self):
+        """Correct context flags for tagged trait needs followup, disagree, and archived."""
+        dcc_review = factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait,
+                                                       status=models.DCCReview.STATUS_FOLLOWUP)
+        factories.StudyResponseFactory.create(dcc_review=dcc_review, status=models.StudyResponse.STATUS_DISAGREE)
+        dcc_review.tagged_trait.archive()
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        context = response.context
+        self.assertIn('show_quality_review_panel', context)
+        self.assertTrue(context['show_quality_review_panel'])
+        self.assertIn('show_dcc_review_add_button', context)
+        self.assertFalse(context['show_dcc_review_add_button'])
+        self.assertIn('show_dcc_review_update_button', context)
+        self.assertFalse(context['show_dcc_review_update_button'])
+        self.assertIn('show_confirmed_status', context)
+        self.assertFalse(context['show_confirmed_status'])
+        self.assertIn('show_needs_followup_status', context)
+        self.assertTrue(context['show_needs_followup_status'])
+        self.assertIn('show_study_response_status', context)
+        self.assertTrue(context['show_study_response_status'])
+        self.assertIn('show_study_agrees', context)
+        self.assertFalse(context['show_study_agrees'])
+        self.assertIn('show_study_disagrees', context)
+        self.assertTrue(context['show_study_disagrees'])
+        self.assertIn('show_archived', context)
+        self.assertTrue(context['show_archived'])
 
     def test_forbidden_non_taggers(self):
         """View returns 403 code when the user is not in phenotype_taggers."""
@@ -397,24 +451,6 @@ class TaggedTraitDetailDCCAnalystTest(TaggedTraitDetailTestsMixin, DCCAnalystLog
         """A DCC analyst does see a button to delete the tagged trait."""
         response = self.client.get(self.get_url(self.tagged_trait.pk))
         self.assertContains(response, reverse('tags:tagged-traits:pk:delete', kwargs={'pk': self.tagged_trait.pk}))
-
-    def test_no_delete_button_for_needfollowup_reviewed_tagged_trait(self):
-        """A phenotype tagger sees no button to delete the tagged trait."""
-        factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP)
-        response = self.client.get(self.get_url(self.tagged_trait.pk))
-        self.assertNotContains(response, reverse('tags:tagged-traits:pk:delete', kwargs={'pk': self.tagged_trait.pk}))
-
-    def test_no_delete_button_for_confirmed_reviewed_tagged_trait(self):
-        """A phenotype tagger sees no button to delete the tagged trait."""
-        factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait, status=models.DCCReview.STATUS_CONFIRMED)
-        response = self.client.get(self.get_url(self.tagged_trait.pk))
-        self.assertNotContains(response, reverse('tags:tagged-traits:pk:delete', kwargs={'pk': self.tagged_trait.pk}))
-
-    def test_no_delete_button_for_archived_tagged_trait(self):
-        """Delete button doesn't show up for archived tagged trait."""
-        self.tagged_trait.archive()
-        response = self.client.get(self.get_url(self.tagged_trait.pk))
-        self.assertNotContains(response, reverse('tags:tagged-traits:pk:delete', kwargs={'pk': self.tagged_trait.pk}))
 
     def test_context_with_unreviewed_trait(self):
         """The context contains the proper flags for the add/update review buttons."""
@@ -469,10 +505,11 @@ class TaggedTraitDetailDCCAnalystTest(TaggedTraitDetailTestsMixin, DCCAnalystLog
         self.assertIn('show_study_response_status', context)
         self.assertFalse(context['show_study_response_status'])
 
-    def test_context_with_reviewed_trait_with_response(self):
+    def test_context_with_followup_agree_nonarchived_tagged_trait(self):
+        """Correct context flags for tagged trait needs followup, agree, and non-archived."""
         dcc_review = factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait,
                                                        status=models.DCCReview.STATUS_FOLLOWUP)
-        factories.StudyResponseFactory.create(dcc_review=dcc_review)
+        factories.StudyResponseFactory.create(dcc_review=dcc_review, status=models.StudyResponse.STATUS_AGREE)
         response = self.client.get(self.get_url(self.tagged_trait.pk))
         context = response.context
         self.assertIn('show_quality_review_panel', context)
@@ -487,6 +524,92 @@ class TaggedTraitDetailDCCAnalystTest(TaggedTraitDetailTestsMixin, DCCAnalystLog
         self.assertTrue(context['show_needs_followup_status'])
         self.assertIn('show_study_response_status', context)
         self.assertTrue(context['show_study_response_status'])
+        self.assertIn('show_study_agrees', context)
+        self.assertTrue(context['show_study_agrees'])
+        self.assertIn('show_study_disagrees', context)
+        self.assertFalse(context['show_study_disagrees'])
+        self.assertIn('show_archived', context)
+        self.assertFalse(context['show_archived'])
+
+    def test_context_with_followup_agree_archived_tagged_trait(self):
+        """Correct context flags for tagged trait needs followup, agree, and archived."""
+        dcc_review = factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait,
+                                                       status=models.DCCReview.STATUS_FOLLOWUP)
+        factories.StudyResponseFactory.create(dcc_review=dcc_review, status=models.StudyResponse.STATUS_AGREE)
+        dcc_review.tagged_trait.archive()
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        context = response.context
+        self.assertIn('show_quality_review_panel', context)
+        self.assertTrue(context['show_quality_review_panel'])
+        self.assertIn('show_dcc_review_add_button', context)
+        self.assertFalse(context['show_dcc_review_add_button'])
+        self.assertIn('show_dcc_review_update_button', context)
+        self.assertFalse(context['show_dcc_review_update_button'])
+        self.assertIn('show_confirmed_status', context)
+        self.assertFalse(context['show_confirmed_status'])
+        self.assertIn('show_needs_followup_status', context)
+        self.assertTrue(context['show_needs_followup_status'])
+        self.assertIn('show_study_response_status', context)
+        self.assertTrue(context['show_study_response_status'])
+        self.assertIn('show_study_agrees', context)
+        self.assertTrue(context['show_study_agrees'])
+        self.assertIn('show_study_disagrees', context)
+        self.assertFalse(context['show_study_disagrees'])
+        self.assertIn('show_archived', context)
+        self.assertTrue(context['show_archived'])
+
+    def test_context_with_followup_disagree_nonarchived_tagged_trait(self):
+        """Correct context flags for tagged trait needs followup, disagree, and non-archived."""
+        dcc_review = factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait,
+                                                       status=models.DCCReview.STATUS_FOLLOWUP)
+        factories.StudyResponseFactory.create(dcc_review=dcc_review, status=models.StudyResponse.STATUS_DISAGREE)
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        context = response.context
+        self.assertIn('show_quality_review_panel', context)
+        self.assertTrue(context['show_quality_review_panel'])
+        self.assertIn('show_dcc_review_add_button', context)
+        self.assertFalse(context['show_dcc_review_add_button'])
+        self.assertIn('show_dcc_review_update_button', context)
+        self.assertFalse(context['show_dcc_review_update_button'])
+        self.assertIn('show_confirmed_status', context)
+        self.assertFalse(context['show_confirmed_status'])
+        self.assertIn('show_needs_followup_status', context)
+        self.assertTrue(context['show_needs_followup_status'])
+        self.assertIn('show_study_response_status', context)
+        self.assertTrue(context['show_study_response_status'])
+        self.assertIn('show_study_agrees', context)
+        self.assertFalse(context['show_study_agrees'])
+        self.assertIn('show_study_disagrees', context)
+        self.assertTrue(context['show_study_disagrees'])
+        self.assertIn('show_archived', context)
+        self.assertFalse(context['show_archived'])
+
+    def test_context_with_followup_disagree_archived_tagged_trait(self):
+        """Correct context flags for tagged trait needs followup, disagree, and archived."""
+        dcc_review = factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait,
+                                                       status=models.DCCReview.STATUS_FOLLOWUP)
+        factories.StudyResponseFactory.create(dcc_review=dcc_review, status=models.StudyResponse.STATUS_DISAGREE)
+        dcc_review.tagged_trait.archive()
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        context = response.context
+        self.assertIn('show_quality_review_panel', context)
+        self.assertTrue(context['show_quality_review_panel'])
+        self.assertIn('show_dcc_review_add_button', context)
+        self.assertFalse(context['show_dcc_review_add_button'])
+        self.assertIn('show_dcc_review_update_button', context)
+        self.assertFalse(context['show_dcc_review_update_button'])
+        self.assertIn('show_confirmed_status', context)
+        self.assertFalse(context['show_confirmed_status'])
+        self.assertIn('show_needs_followup_status', context)
+        self.assertTrue(context['show_needs_followup_status'])
+        self.assertIn('show_study_response_status', context)
+        self.assertTrue(context['show_study_response_status'])
+        self.assertIn('show_study_agrees', context)
+        self.assertFalse(context['show_study_agrees'])
+        self.assertIn('show_study_disagrees', context)
+        self.assertTrue(context['show_study_disagrees'])
+        self.assertIn('show_archived', context)
+        self.assertTrue(context['show_archived'])
 
     def test_archived_tagged_trait_missing_link_to_review(self):
         """An archived tagged trait does not include a link to review for DCC users."""

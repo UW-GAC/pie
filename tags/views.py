@@ -135,6 +135,7 @@ class TaggedTraitDetail(LoginRequiredMixin, PermissionRequiredMixin, SpecificTag
         context['show_study_disagrees'] = user_has_study_access and response_exists and \
             (self.object.dcc_review.study_response.status == models.StudyResponse.STATUS_DISAGREE)
         context['show_delete_button'] = user_has_study_access and (not dccreview_exists) and is_non_archived
+        context['show_archived'] = not is_non_archived
         return context
 
     def set_study(self):
