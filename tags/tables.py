@@ -139,8 +139,7 @@ class TaggedTraitTableWithDCCReviewButton(TaggedTraitTableDCCReviewButtonMixin, 
     """Table for displaying TaggedTraits with DCCReview information and review button."""
 
     class Meta(TaggedTraitTable.Meta):
-        fields = ('tag', 'trait', 'description', 'dataset', 'details', 'dcc_status', 'response_status',
-                  'review_button', )
+        fields = ('tag', 'trait', 'description', 'dataset', 'details', 'quality_review', 'review_button', )
 
 
 class DCCReviewTable(tables.Table):
