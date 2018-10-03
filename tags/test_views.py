@@ -876,19 +876,6 @@ class TaggedTraitByTagAndStudyListTestsMixin(object):
         context = response.context
         self.assertNotIn(other_tagged_trait, context['tagged_trait_table'].data)
 
-    def test_no_archived_taggedtraits(self):
-        """Archived tagged traits do not appear in the table."""
-        models.TaggedTrait.objects.all().delete()
-        archived_tagged_trait = factories.TaggedTraitFactory.create(
-            tag=self.tag, trait__source_dataset__source_study_version__study=self.study, archived=True)
-        non_archived_tagged_trait = factories.TaggedTraitFactory.create(
-            tag=self.tag, trait__source_dataset__source_study_version__study=self.study, archived=False)
-        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
-        self.assertIn('tagged_trait_table', response.context)
-        table = response.context['tagged_trait_table']
-        self.assertNotIn(archived_tagged_trait, table.data)
-        self.assertIn(non_archived_tagged_trait, table.data)
-
 
 class TaggedTraitByTagAndStudyListTest(TaggedTraitByTagAndStudyListTestsMixin, UserLoginTestCase):
 
@@ -922,6 +909,19 @@ class TaggedTraitByTagAndStudyListTest(TaggedTraitByTagAndStudyListTestsMixin, U
         response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
         for tagged_trait in self.tagged_traits:
             self.assertNotIn(tagged_trait.get_absolute_url(), str(response.content))
+
+    def test_no_archived_taggedtraits(self):
+        """Archived tagged traits do not appear in the table."""
+        models.TaggedTrait.objects.all().delete()
+        archived_tagged_trait = factories.TaggedTraitFactory.create(
+            tag=self.tag, trait__source_dataset__source_study_version__study=self.study, archived=True)
+        non_archived_tagged_trait = factories.TaggedTraitFactory.create(
+            tag=self.tag, trait__source_dataset__source_study_version__study=self.study, archived=False)
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        self.assertIn('tagged_trait_table', response.context)
+        table = response.context['tagged_trait_table']
+        self.assertNotIn(archived_tagged_trait, table.data)
+        self.assertIn(non_archived_tagged_trait, table.data)
 
 
 class TaggedTraitByTagAndStudyListPhenotypeTaggerTest(TaggedTraitByTagAndStudyListTestsMixin,
@@ -959,6 +959,19 @@ class TaggedTraitByTagAndStudyListPhenotypeTaggerTest(TaggedTraitByTagAndStudyLi
         for tagged_trait in self.tagged_traits:
             self.assertIn(tagged_trait.get_absolute_url(), str(response.content))
 
+    def test_no_archived_taggedtraits(self):
+        """Archived tagged traits do not appear in the table."""
+        models.TaggedTrait.objects.all().delete()
+        archived_tagged_trait = factories.TaggedTraitFactory.create(
+            tag=self.tag, trait__source_dataset__source_study_version__study=self.study, archived=True)
+        non_archived_tagged_trait = factories.TaggedTraitFactory.create(
+            tag=self.tag, trait__source_dataset__source_study_version__study=self.study, archived=False)
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        self.assertIn('tagged_trait_table', response.context)
+        table = response.context['tagged_trait_table']
+        self.assertNotIn(archived_tagged_trait, table.data)
+        self.assertIn(non_archived_tagged_trait, table.data)
+
 
 class TaggedTraitByTagAndStudyListDCCAnalystTest(TaggedTraitByTagAndStudyListTestsMixin, DCCAnalystLoginTestCase):
 
@@ -993,6 +1006,19 @@ class TaggedTraitByTagAndStudyListDCCAnalystTest(TaggedTraitByTagAndStudyListTes
         response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
         for tagged_trait in self.tagged_traits:
             self.assertIn(tagged_trait.get_absolute_url(), str(response.content))
+
+    def test_includes_archived_taggedtraits(self):
+        """Archived tagged traits do appear in the table."""
+        models.TaggedTrait.objects.all().delete()
+        archived_tagged_trait = factories.TaggedTraitFactory.create(
+            tag=self.tag, trait__source_dataset__source_study_version__study=self.study, archived=True)
+        non_archived_tagged_trait = factories.TaggedTraitFactory.create(
+            tag=self.tag, trait__source_dataset__source_study_version__study=self.study, archived=False)
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        self.assertIn('tagged_trait_table', response.context)
+        table = response.context['tagged_trait_table']
+        self.assertIn(archived_tagged_trait, table.data)
+        self.assertIn(non_archived_tagged_trait, table.data)
 
 
 class TaggedTraitCreateTestsMixin(object):
