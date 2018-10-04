@@ -8,6 +8,7 @@ import django_tables2 as tables
 from . import models
 
 
+# HTML template strings
 DETAIL_BUTTON_TEMPLATE = """
 <a class="btn btn-xs btn-info" href="{% url 'tags:tagged-traits:pk:detail' record.pk %}" role="button">
   Details
@@ -18,6 +19,21 @@ REVIEW_BUTTON_HTML = """
   {btn_text}
 </a>
 """
+STATUS_TEXT_HTML = '<p class="text-{text_class}">{text}</p>'
+
+# Text for use in status columns
+AGREE_TEXT = 'Agreed to remove'
+DISAGREE_TEXT = 'Gave explanation'
+ARCHIVED_TEXT = 'Removed by DCC'
+CONFIRMED_TEXT = 'Confirmed'
+FOLLOWUP_TEXT = 'Needs study followup'
+FOLLOWUP_STUDY_USER_TEXT = 'Flagged for removal'
+
+AGREE_CLASS = 'success'
+DISAGREE_CLASS = 'danger'
+ARCHIVED_CLASS = 'warning'
+CONFIRMED_CLASS = 'success'
+FOLLOWUP_CLASS = 'danger'
 
 
 class TagTable(tables.Table):
@@ -59,7 +75,7 @@ class TaggedTraitTable(tables.Table):
         order_by = ('tag', )
 
 
-class TaggedTraitDeleteButtonMixin(tables.Table):
+class TaggedTraitDeleteButtonColumnMixin(tables.Table):
     """Mixin to include a delete button in a TaggedTrait table."""
 
     delete_button = tables.Column(empty_values=(), verbose_name='', orderable=False)
@@ -80,36 +96,96 @@ class TaggedTraitDeleteButtonMixin(tables.Table):
         return mark_safe(html)
 
 
-class TaggedTraitTableReviewStatusAndDetailsMixin(tables.Table):
-    """Mixin to show DCCReview status and links to detail pages in a TaggedTrait table."""
+class TaggedTraitDetailColumnMixin(tables.Table):
+    """Mixin to show buttons linking to detail pages in a TaggedTrait table."""
 
     details = tables.TemplateColumn(verbose_name='', orderable=False, template_code=DETAIL_BUTTON_TEMPLATE)
+
+
+class TaggedTraitQualityReviewColumnMixin(tables.Table):
+    """Mixin to show 'quality review' column in a TaggedTrait table.
+
+    Quality review status includes study response status and archived status.
+    This column is intended for viewing by study users, and lacks the detail
+    that DCC users will want to see.
+    So far, the view on which this is used does not include archived tagged
+    traits, so in practice this part isn't used.
+    """
+
     quality_review = tables.Column('Quality review', accessor='dcc_review.status')
 
     def render_quality_review(self, record):
-
+        html = ''
         if not hasattr(record, 'dcc_review'):
-            return ''
+            return html
+        # Add status info for DCC review.
         elif record.dcc_review.status == models.DCCReview.STATUS_CONFIRMED:
-            btn_class = 'success'
-            glyphicon = 'glyphicon-ok'
-            text = record.dcc_review.get_status_display()
+            html += STATUS_TEXT_HTML.format(text=CONFIRMED_TEXT, text_class=CONFIRMED_CLASS)
         elif record.dcc_review.status == models.DCCReview.STATUS_FOLLOWUP:
-            btn_class = 'danger'
-            glyphicon = 'glyphicon-remove'
-            text = 'Flagged for removal'
-        html = '<p class="text-{btn_class}">{text}</a>'.format(
-            btn_class=btn_class,
-            glyphicon=glyphicon,
-            text=text
-        )
+            html += STATUS_TEXT_HTML.format(text=FOLLOWUP_STUDY_USER_TEXT, text_class=FOLLOWUP_CLASS)
+            if hasattr(record.dcc_review, 'study_response'):
+                # Add status info for study response, if it exists.
+                if record.dcc_review.study_response.status == models.StudyResponse.STATUS_AGREE:
+                    html += '\n' + STATUS_TEXT_HTML.format(text=AGREE_TEXT, text_class=AGREE_CLASS)
+                elif record.dcc_review.study_response.status == models.StudyResponse.STATUS_DISAGREE:
+                    html += '\n' + STATUS_TEXT_HTML.format(text=DISAGREE_TEXT, text_class=DISAGREE_CLASS)
+        # Add status info for archiving.
+        if record.archived:
+            html += '\n' + STATUS_TEXT_HTML.format(text=ARCHIVED_TEXT, text_class=ARCHIVED_CLASS)
         return mark_safe(html)
 
 
-class TaggedTraitTableDCCReviewButtonMixin(TaggedTraitTableReviewStatusAndDetailsMixin):
-    """Mixin to show DCCReview status and a button to review a TaggedTrait."""
+class TaggedTraitDCCReviewStatusColumnMixin(tables.Table):
+    """Mixin to show 'DCC review status' column in a TaggedTrait table."""
 
-    # This column will display a button to either create a new review or update an existing review.
+    dcc_review_status = tables.Column('DCC review status', accessor='dcc_review.status')
+
+    def render_dcc_review_status(self, record):
+        if not hasattr(record, 'dcc_review'):
+            return ''
+        elif record.dcc_review.status == models.DCCReview.STATUS_CONFIRMED:
+            html = STATUS_TEXT_HTML.format(text=CONFIRMED_TEXT, text_class=CONFIRMED_CLASS)
+        elif record.dcc_review.status == models.DCCReview.STATUS_FOLLOWUP:
+            html = STATUS_TEXT_HTML.format(text=FOLLOWUP_TEXT, text_class=FOLLOWUP_CLASS)
+        return mark_safe(html)
+
+
+class TaggedTraitStudyResponseStatusColumnMixin(tables.Table):
+    """Mixin to show 'Study response status' column in a TaggedTrait table."""
+
+    study_response_status = tables.Column('Study response status', accessor='dcc_review.study_response.status')
+
+    def render_study_response_status(self, record):
+        if not hasattr(record, 'dcc_review'):
+            return ''
+        elif not hasattr(record.dcc_review, 'study_response'):
+            return ''
+        elif record.dcc_review.study_response.status == models.StudyResponse.STATUS_AGREE:
+            html = STATUS_TEXT_HTML.format(text=AGREE_TEXT, text_class=AGREE_CLASS)
+        elif record.dcc_review.study_response.status == models.StudyResponse.STATUS_DISAGREE:
+            html = STATUS_TEXT_HTML.format(text=DISAGREE_TEXT, text_class=DISAGREE_CLASS)
+        return mark_safe(html)
+
+
+class TaggedTraitArchivedColumnMixin(tables.Table):
+    """Mixin to show 'Archived' column in a TaggedTrait table."""
+
+    archived = tables.Column('Archived', accessor='archived')
+
+    def render_archived(self, record):
+        if record.archived:
+            html = STATUS_TEXT_HTML.format(text=ARCHIVED_TEXT, text_class=ARCHIVED_CLASS)
+            return mark_safe(html)
+        else:
+            return ''
+
+
+class TaggedTraitDCCReviewButtonMixin(tables.Table):
+    """Mixin to show buttons for reviewing a TaggedTrait.
+
+    This column will display a button to either create a new review or update an existing review.
+    """
+
     review_button = tables.Column(verbose_name='', accessor='pk')
 
     def render_review_button(self, record):
@@ -120,6 +196,8 @@ class TaggedTraitTableDCCReviewButtonMixin(TaggedTraitTableReviewStatusAndDetail
         else:
             if hasattr(record.dcc_review, 'study_response'):
                 return ('')
+            elif record.archived:
+                return ('')
             else:
                 url = reverse('tags:tagged-traits:pk:dcc-review:update', args=[record.pk])
                 btn_text = "Update DCC review"
@@ -128,26 +206,34 @@ class TaggedTraitTableDCCReviewButtonMixin(TaggedTraitTableReviewStatusAndDetail
         return mark_safe(html)
 
 
-class TaggedTraitTableWithReviewStatus(TaggedTraitTableReviewStatusAndDetailsMixin, TaggedTraitTable):
-    """Table for displaying TaggedTraits with DCCReview information."""
+class TaggedTraitTableForStudyTaggers(TaggedTraitDetailColumnMixin, TaggedTraitQualityReviewColumnMixin,
+                                      TaggedTraitTable):
+    """Table to display tagged traits to phenotype taggers from the study being shown.
+
+    Used for TaggedTraitByTagAndStudyList. Includes a column with links to detail pages, and a column
+    with the quality review status.
+    """
 
     class Meta(TaggedTraitTable.Meta):
         fields = ('tag', 'trait', 'description', 'dataset', 'details', 'quality_review', )
 
 
-class TaggedTraitTableWithDCCReviewButton(TaggedTraitTableDCCReviewButtonMixin, TaggedTraitTable):
-    """Table for displaying TaggedTraits with DCCReview information and review button."""
+class TaggedTraitTableForDCCStaff(TaggedTraitDetailColumnMixin, TaggedTraitDCCReviewButtonMixin,
+                                  TaggedTraitDCCReviewStatusColumnMixin, TaggedTraitStudyResponseStatusColumnMixin,
+                                  TaggedTraitArchivedColumnMixin, TaggedTraitTable):
+    """Table for displaying TaggedTraits to DCC staff users.
+
+    Used for TaggedTraitByTagAndStudyList. Includes columns for DCC review, study response, and archived
+    status. Includes column with DCC Review create/update button and links to detail pages.
+    """
 
     class Meta(TaggedTraitTable.Meta):
-        fields = ('tag', 'trait', 'description', 'dataset', 'details', 'quality_review', 'review_button', )
+        fields = ('tag', 'trait', 'description', 'dataset', 'details', 'review_button', 'dcc_review_status',
+                  'study_response_status', 'archived', )
 
 
 class DCCReviewTable(tables.Table):
     """Table for displaying TaggedTrait and DCCReviews."""
-
-    AGREE_STATUS = 'Agreed to remove'
-    DISAGREE_STATUS = 'Gave explanation'
-    ARCHIVED_STATUS = 'Removed by DCC'
 
     trait = tables.TemplateColumn(verbose_name='Study Variable', orderable=False,
                                   template_code="""{{ record.trait.get_name_link_html|safe }}""")
@@ -160,17 +246,16 @@ class DCCReviewTable(tables.Table):
                                    order_by=('dcc_review__study_response'))
 
     def render_study_response(self, record):
-        html_template = '<p class="text-{text_class}">{text}</p>'
         if not hasattr(record, 'dcc_review'):
             return ''
         elif not hasattr(record.dcc_review, 'study_response'):
             html = ''
         elif record.dcc_review.study_response.status == models.StudyResponse.STATUS_AGREE:
-            html = html_template.format(text_class='success', text=self.AGREE_STATUS)
+            html = STATUS_TEXT_HTML.format(text_class='success', text=AGREE_TEXT)
         elif record.dcc_review.status == models.StudyResponse.STATUS_DISAGREE:
-            html = html_template.format(text_class='danger', text=self.DISAGREE_STATUS)
+            html = STATUS_TEXT_HTML.format(text_class='danger', text=DISAGREE_TEXT)
         if record.archived:
-            html += '\n' + html_template.format(text_class='warning', text=self.ARCHIVED_STATUS)
+            html += '\n' + STATUS_TEXT_HTML.format(text_class='warning', text=ARCHIVED_TEXT)
         return mark_safe(html)
 
     class Meta:

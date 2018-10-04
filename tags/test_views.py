@@ -951,7 +951,7 @@ class TaggedTraitByTagAndStudyListPhenotypeTaggerTest(TaggedTraitByTagAndStudyLi
         """For taggers, the tagged trait table class is correct."""
         response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
         context = response.context
-        self.assertIsInstance(context['tagged_trait_table'], tables.TaggedTraitTableWithReviewStatus)
+        self.assertIsInstance(context['tagged_trait_table'], tables.TaggedTraitTableForStudyTaggers)
 
     def test_contains_detail_page_links(self):
         """Contains links to the TaggedTraitDetail view."""
@@ -999,7 +999,7 @@ class TaggedTraitByTagAndStudyListDCCAnalystTest(TaggedTraitByTagAndStudyListTes
         """For DCC Analysts, the tagged trait table class has delete buttons."""
         response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
         context = response.context
-        self.assertIsInstance(context['tagged_trait_table'], tables.TaggedTraitTableWithDCCReviewButton)
+        self.assertIsInstance(context['tagged_trait_table'], tables.TaggedTraitTableForDCCStaff)
 
     def test_contains_detail_page_links(self):
         """Contains links to the TaggedTraitDetail view."""
