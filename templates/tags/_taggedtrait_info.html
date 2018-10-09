@@ -2,7 +2,6 @@
 {% comment %}
   Usage: {% include 'tags/_taggedtrait_info.html' with show_all_tags=XXX collapse_tag_panel=XXX collapse_trait_panel=XXX%}
   Arguments:
-    show_all_tags: logical indicator if all tags applied to this trait should be shown.
     collapse_tag_panel: logical indicator if the tag information should be collapsed.
     collapse_trait_panel: logical indicator if the trait information panel should be collapsed.
 {% endcomment %}
@@ -23,20 +22,37 @@
           <dt>Variable description</dt><dd>{{ tagged_trait.trait.i_description }}</dd>
           <dt>Dataset</dt><dd><a href="{{ tagged_trait.trait.source_dataset.get_absolute_url }}">{{ tagged_trait.trait.source_dataset.dataset_name }}</a></dd>
           <dt>Dataset description</dt><dd>{{ tagged_trait.trait.source_dataset.i_dbgap_description }}</dd>
-          {% if show_all_tags %}
+          {# This "if" won't be executed if show_other_tags is unassigned in the context (None). #}
+          {% if show_other_tags %} 
             <dt>All phenotype tags</dt>
               <dd>
-                {% for other_tag in tagged_trait.trait.tag_set.all %}
+                {# Show the tag at hand in blue. #}
+                <div class="btn-group btn-group-xs">
+                  <a href="{{ tagged_trait.tag.get_absolute_url }}" class="btn btn-info" role="button">
+                    {{ tagged_trait.tag.title }}
+                  </a>
+                </div>
+                {# Show other tags in white. #}
+                {% for other_tag in other_tags %}
                   <div class="btn-group btn-group-xs">
-                    <a href="{{ other_tag.get_absolute_url }}"
-                       class="btn btn-{% if tagged_trait.tag.pk == other_tag.pk%}info{% else %}default{% endif %}"
-                       role="button">
+                    <a href="{{ other_tag.get_absolute_url }}" class="btn btn-default" role="button">
                       {{ other_tag.title }}
                     </a>
                   </div>
                 {% endfor %}
+                {# Show archived tags in yellow. #}
+                {% for archived_tag in archived_other_tags %}
+                  <div class="btn-group btn-group-xs">
+                    <a href="{{ archived_tag.get_absolute_url }}" class="btn btn-warning" role="button">
+                      {{ archived_tag.title }}
+                    </a>
+                  </div>
+                {% endfor %}
               </dd>
-            <dt></dt><dd><p class="text-muted"><small>Some study variables have multiple tags applied to them. The tag for this tagged variable is highlighted in blue.</small></p></dd>
+            <dt></dt><dd><p class="text-muted"><small>Some study variables have multiple tags applied to them.
+              The tag for this tagged variable is highlighted in blue.
+              Tags that have been archived for this variable are shown in red.
+            </small></p></dd>
           {% endif %}
         </dl>
       </div>

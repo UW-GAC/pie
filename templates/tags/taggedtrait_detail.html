@@ -62,9 +62,15 @@
           {% if show_study_agrees %}
             <p>
               <span class="glyphicon glyphicon-remove"></span>
-              The study agrees that the tag should be removed.
+              The study has agreed that the tag should be removed.
             </p>
           {% endif %}
+        {% endif %}
+        {% if show_archived %}
+          <p>
+            <span class="glyphicon glyphicon-remove"></span>
+            The tag has been removed by the DCC.
+          </p>
         {% endif %}
         {% if show_dcc_review_add_button %}
           <a class="btn btn-xs btn-primary" href="{% url 'tags:tagged-traits:pk:dcc-review:new' tagged_trait.pk %}" role="button">
@@ -82,19 +88,15 @@
   </div>
 {% endif %}
 
-  {% include 'tags/_taggedtrait_info.html' with show_all_tags=False %}
+  {% include 'tags/_taggedtrait_info.html' %}
 
-  {% if perms.tags.add_taggedtrait %}
-    {% if user_is_study_tagger or request.user.is_staff %}
-      {% if not tagged_trait.dcc_review %}
-        {% comment %}
-          This use of the taggedtrait delete URL can't have ?next={{ request.path }} after it because
-          once the tagged trait is deleted the detail page won't exist.
-        {% endcomment %}
-        <a class="btn btn-danger" href="{% url 'tags:tagged-traits:pk:delete' tagged_trait.pk %}?next={{ request.path }}" role="button">
-            <span class="glyphicon glyphicon-remove" aria-hidden="true"></span> Remove tag
-        </a>
-      {% endif %}
-    {% endif %}
+  {% if show_delete_button %}
+    {% comment %}
+      This use of the taggedtrait delete URL can't have ?next={{ request.path }} after it because
+      once the tagged trait is deleted the detail page won't exist.
+    {% endcomment %}
+    <a class="btn btn-danger" href="{% url 'tags:tagged-traits:pk:delete' tagged_trait.pk %}?next={{ request.path }}" role="button">
+        <span class="glyphicon glyphicon-remove" aria-hidden="true"></span> Remove tag
+    </a>
   {% endif %}
 {% endblock after_panel %}
