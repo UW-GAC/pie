@@ -2,11 +2,19 @@
 
 from datetime import datetime
 
+from django.db.models.query import QuerySet
 from django.core.exceptions import ValidationError
 from django.test import TestCase
 
+from faker import Factory
+
+from tags.factories import TaggedTraitFactory
+from tags.models import Tag
+
 from . import factories
 from . import models
+
+fake = Factory.create()
 
 
 class GlobalStudyTest(TestCase):
@@ -159,6 +167,35 @@ class SourceDatasetTest(TestCase):
         deprecated_dataset.source_study_version.save()
         self.assertIn(current_dataset, models.SourceDataset.objects.current())
         self.assertNotIn(deprecated_dataset, models.SourceDataset.objects.current())
+
+    def test_get_name_link_html(self):
+        """get_name_link_html returns a string."""
+        dataset = factories.SourceDatasetFactory.create()
+        self.assertIsInstance(dataset.get_name_link_html(), str)
+
+    def test_get_name_link_html_mdash_for_blank_description(self):
+        """get_name_link_html includes an mdash when description is blank."""
+        dataset = factories.SourceDatasetFactory.create(i_dbgap_description='')
+        self.assertIsInstance(dataset.get_name_link_html(), str)
+        self.assertIn('&mdash;', dataset.get_name_link_html())
+
+    def test_get_name_link_html_non_blank_description(self):
+        """get_name_link_html includes an mdash when description is not blank."""
+        desc = 'my dataset description'
+        dataset = factories.SourceDatasetFactory.create(i_dbgap_description=desc)
+        self.assertIsInstance(dataset.get_name_link_html(), str)
+        self.assertIn(desc, dataset.get_name_link_html())
+
+    def test_get_name_link_html_truncates_long_description(self):
+        """get_name_link_html truncates a long description."""
+        desc = 'my dataset description with many words'
+        dataset = factories.SourceDatasetFactory.create(i_dbgap_description=desc)
+        self.assertIsInstance(dataset.get_name_link_html(), str)
+        self.assertIn('my dataset', dataset.get_name_link_html(max_popover_words=2))
+        self.assertNotIn('description with many words', dataset.get_name_link_html(max_popover_words=2))
+        self.assertIn('my dataset description...', dataset.get_name_link_html(max_popover_words=3))
+        self.assertNotIn('with many words', dataset.get_name_link_html(max_popover_words=3))
+        self.assertIn(desc, dataset.get_name_link_html())
 
 
 class HarmonizedTraitSetTest(TestCase):
@@ -331,6 +368,23 @@ class SourceTraitTest(TestCase):
         trait = factories.SourceTraitFactory.create()
         self.assertIsInstance(trait.get_name_link_html(), str)
 
+    def test_get_name_link_html_blank_description(self):
+        """get_name_link_html includes an mdash when description is blank."""
+        trait = factories.SourceTraitFactory.create(i_description='')
+        self.assertIsInstance(trait.get_name_link_html(), str)
+        self.assertIn('&mdash;', trait.get_name_link_html())
+
+    def test_get_name_link_html_truncates_long_description(self):
+        """get_name_link_html truncates a long description."""
+        desc = 'my trait description with many words'
+        trait = factories.SourceTraitFactory.create(i_description=desc)
+        self.assertIsInstance(trait.get_name_link_html(), str)
+        self.assertIn('my trait', trait.get_name_link_html(max_popover_words=2))
+        self.assertNotIn('description with many words', trait.get_name_link_html(max_popover_words=2))
+        self.assertIn('my trait description...', trait.get_name_link_html(max_popover_words=3))
+        self.assertNotIn('with many words', trait.get_name_link_html(max_popover_words=3))
+        self.assertIn(desc, trait.get_name_link_html())
+
     def test_current_queryset_method(self):
         """SourceTrait.objects.current() does not return deprecated traits."""
         current_trait = factories.SourceTraitFactory.create()
@@ -339,6 +393,56 @@ class SourceTraitTest(TestCase):
         deprecated_trait.source_dataset.source_study_version.save()
         self.assertIn(current_trait, models.SourceTrait.objects.current())
         self.assertNotIn(deprecated_trait, models.SourceTrait.objects.current())
+
+    def test_archived_tags_and_non_archived_tags(self):
+        """Archived tags and non archived tags linked to the trait are where they should be."""
+        trait = factories.SourceTraitFactory.create()
+        archived = TaggedTraitFactory.create(archived=True, trait=trait)
+        non_archived = TaggedTraitFactory.create(archived=False, trait=trait)
+        self.assertIn(archived.tag, trait.all_tags.all())
+        self.assertIn(non_archived.tag, trait.all_tags.all())
+        self.assertIn(archived.tag, trait.archived_tags)
+        self.assertIn(non_archived.tag, trait.non_archived_tags)
+        self.assertNotIn(archived.tag, trait.non_archived_tags)
+        self.assertNotIn(non_archived.tag, trait.archived_tags)
+
+    def test_archived_tags_and_non_archived_tags_are_querysets(self):
+        """The properties archived_traits and non_archived_traits are QuerySets."""
+        # These need to be querysets to behave similarly to tag.traits and trait.all_tags.
+        trait = factories.SourceTraitFactory.create()
+        archived = TaggedTraitFactory.create(archived=True, trait=trait)
+        non_archived = TaggedTraitFactory.create(archived=False, trait=trait)
+        self.assertIsInstance(trait.archived_tags, QuerySet)
+        self.assertIsInstance(trait.non_archived_tags, QuerySet)
+
+    def test_multiple_archived_tags(self):
+        """Archived tags show up in the archived_tags property with multiple tagged traits of each type."""
+        trait = factories.SourceTraitFactory.create()
+        archived = TaggedTraitFactory.create_batch(5, archived=True, trait=trait)
+        non_archived = TaggedTraitFactory.create_batch(6, archived=False, trait=trait)
+        for tagged_trait in archived:
+            self.assertIn(tagged_trait.tag, trait.all_tags.all())
+            self.assertIn(tagged_trait.tag, trait.archived_tags)
+            self.assertNotIn(tagged_trait.tag, trait.non_archived_tags)
+        self.assertEqual(len(archived), trait.archived_tags.count())
+
+    def test_multiple_non_archived_tags(self):
+        """Non-archived tags show up in the non_archived_tags property with multiple of each type."""
+        trait = factories.SourceTraitFactory.create()
+        archived = TaggedTraitFactory.create_batch(5, archived=True, trait=trait)
+        non_archived = TaggedTraitFactory.create_batch(6, archived=False, trait=trait)
+        for tagged_trait in non_archived:
+            self.assertIn(tagged_trait.tag, trait.all_tags.all())
+            self.assertIn(tagged_trait.tag, trait.non_archived_tags)
+            self.assertNotIn(tagged_trait.tag, trait.archived_tags)
+        self.assertEqual(len(non_archived), trait.non_archived_tags.count())
+
+    def test_tags(self):
+        """Test the method to get all of the trait's tags."""
+        trait = factories.SourceTraitFactory.create()
+        tagged_traits = TaggedTraitFactory.create_batch(10, trait=trait)
+        print(dir(trait))
+        self.assertListEqual(list(trait.all_tags.all()), list(Tag.objects.all()))
 
 
 class HarmonizedTraitTest(TestCase):
@@ -414,6 +518,22 @@ class HarmonizedTraitTest(TestCase):
         """get_name_link_html returns a string."""
         trait = factories.HarmonizedTraitFactory.create()
         self.assertIsInstance(trait.get_name_link_html(), str)
+
+    def test_get_name_link_html_blank_description(self):
+        """get_name_link_html includes an mdash when description is blank."""
+        trait = factories.HarmonizedTraitFactory.create(i_description='')
+        self.assertIsInstance(trait.get_name_link_html(), str)
+        self.assertIn('&mdash;', trait.get_name_link_html())
+
+    def test_get_name_link_html_truncates_long_description(self):
+        """get_name_link_html truncates a long description."""
+        desc = 'my trait description with many words'
+        trait = factories.HarmonizedTraitFactory.create(i_description=desc)
+        self.assertIsInstance(trait.get_name_link_html(), str)
+        self.assertIn('my trait...', trait.get_name_link_html(max_popover_words=2))
+        self.assertIn('my trait description...', trait.get_name_link_html(max_popover_words=3))
+        self.assertNotIn('with many words', trait.get_name_link_html(max_popover_words=3))
+        self.assertIn(desc, trait.get_name_link_html())
 
     def test_unique_together(self):
         """Adding the same trait name and hts version combination doesn't work."""

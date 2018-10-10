@@ -1,0 +1,42 @@
+{% extends '__list.html' %}
+{% load render_table from django_tables2 %}
+{% load staticfiles %}
+
+{% block head_title %}
+  | Quality review
+{% endblock head_title %}
+
+{% block title %}
+  Quality review
+{% endblock title %}
+
+{% block subtitle %}
+  variables tagged with <a href="{{ tag.get_absolute_url }}">{{ tag.title }}</a>
+  from <a href="{{ study.get_absolute_url }}">{{ study.i_study_name }}</a>
+{% endblock subtitle %}
+
+{% block before_table %}
+  <div class="well">
+    <p>
+      The DCC has performed initial quality review of tagged variables.
+      The tagged variables shown in this table have been flagged for removal.
+      For each row in the table, please review the reason for removal given in the table and select the appropriate button.
+      If you agree that the tag should be removed from this variable, select the green button that says the tag should be removed.
+      If you think that the variable should remain tagged with this tag, select the red button to be taken to a page to provide further explanation.
+      Once you have made a selection for a row, the response will be shown in the "Status" column.
+    </p>
+    <p>
+      Variable and dataset descriptions can be seen by mousing over the variable name.
+    </p>
+  </div>
+  {% include 'tags/_tag_panel.html' with tag=tag is_collapsed=False %}
+{% endblock before_table %}
+
+{% block table %}
+  {% include '_messages.html' %}
+  {% render_table tagged_trait_table %}
+{% endblock table %}
+
+{% block custom_javascript %}
+  <script src="{% static 'js/popover.js' %}"></script>
+{% endblock custom_javascript %}

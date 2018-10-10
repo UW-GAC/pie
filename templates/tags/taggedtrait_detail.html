@@ -7,7 +7,7 @@
 
 {% block title %}
   <a href="{{ tagged_trait.trait.get_absolute_url }}">{{ tagged_trait.trait.i_trait_name }}</a> tagged with
-  <a href="{{ tagged_trait.tag.get_absolute_url }}">{{ tagged_trait.tag.lower_title }}</a>
+  <a href="{{ tagged_trait.tag.get_absolute_url }}">{{ tagged_trait.tag.title }}</a>
 {% endblock title %}
 
 {% block subtitle %}
@@ -16,34 +16,87 @@
 
 {% block detail_fields %}
   <dt>Tagged by</dt><dd>{{ tagged_trait.creator }}</dd>
-  {% if show_dcc_review_info %}
-    <dt>DCC status</dt><dd>{{ tagged_trait.dcc_review.get_status_display }}</dd>
-    <dt>DCC comment</dt><dd>{{ tagged_trait.dcc_review.comment }}</dd>
-  {% endif %}
 {% endblock detail_fields %}
 
 
 {% block after_panel %}
 
-  {% include 'tags/_taggedtrait_info.html' with show_all_tags=False %}
+{% if show_quality_review_panel %}
+  <div class="panel-group">
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <h4 class="panel-title">
+          <a data-toggle="collapse" href="#collapse-reviewstatus">Quality review status</a>
+        </h4>
+      </div>
+      <div id="collapse-reviewstatus" class="panel-collapse in">
+        {% if show_confirmed_status %}
+          <div class="panel-body bg-success">
+            <p>
+              <span class="glyphicon glyphicon-ok"></span>
+              This tagged variable has been confirmed by the DCC.
+            </p>
+        {% elif show_needs_followup_status %}
+          <div class="panel-body bg-danger">
+            <p>
+              <span class="glyphicon glyphicon-remove"></span>
+              This tagged variable has been flagged for removal by the DCC for the following reason:<br>
+              <span class="glyphicon glyphicon-remove invisible"></span>
+              <span class="text-muted">{{ tagged_trait.dcc_review.comment }}</span>
+            </p>
+        {% else %}
+          <div class="panel-body">
+            <p>
+              This tagged variable has not yet been reviewed by the DCC.
+            </p>
+        {% endif %}
+        {% if show_study_response_status %}
+          {% if show_study_disagrees %}
+            <p>
+              <span class="glyphicon glyphicon-ok"></span>
+              The study has indicated that the variable should remain tagged for the following reason:<br>
+              <span class="glyphicon glyphicon-ok invisible"></span>
+              <span class="text-muted">{{ tagged_trait.dcc_review.study_response.comment }}</span>
+            </p>
+          {% endif %}
+          {% if show_study_agrees %}
+            <p>
+              <span class="glyphicon glyphicon-remove"></span>
+              The study has agreed that the tag should be removed.
+            </p>
+          {% endif %}
+        {% endif %}
+        {% if show_archived %}
+          <p>
+            <span class="glyphicon glyphicon-remove"></span>
+            The tag has been removed by the DCC.
+          </p>
+        {% endif %}
+        {% if show_dcc_review_add_button %}
+          <a class="btn btn-xs btn-primary" href="{% url 'tags:tagged-traits:pk:dcc-review:new' tagged_trait.pk %}" role="button">
+              <span class="glyphicon glyphicon-sunglasses" aria-hidden="true"></span> Review this tagged variable
+          </a>
+        {% endif %}
+        {% if show_dcc_review_update_button %}
+          <a class="btn btn-xs btn-warning" href="{% url 'tags:tagged-traits:pk:dcc-review:update' tagged_trait.pk %}" role="button">
+              <span class="glyphicon glyphicon-sunglasses" aria-hidden="true"></span> Update DCC review
+          </a>
+        {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+{% endif %}
 
-  {% if show_dcc_review_add_button %}
-    <a class="btn btn-primary" href="{% url 'tags:tagged-traits:pk:dcc-review:new' tagged_trait.pk %}" role="button">
-        <span class="glyphicon glyphicon-sunglasses" aria-hidden="true"></span> Review this tagged variable
+  {% include 'tags/_taggedtrait_info.html' %}
+
+  {% if show_delete_button %}
+    {% comment %}
+      This use of the taggedtrait delete URL can't have ?next={{ request.path }} after it because
+      once the tagged trait is deleted the detail page won't exist.
+    {% endcomment %}
+    <a class="btn btn-danger" href="{% url 'tags:tagged-traits:pk:delete' tagged_trait.pk %}?next={{ request.path }}" role="button">
+        <span class="glyphicon glyphicon-remove" aria-hidden="true"></span> Remove tag
     </a>
-  {% endif %}
-  {% if show_dcc_review_update_button %}
-    <a class="btn btn-primary" href="{% url 'tags:tagged-traits:pk:dcc-review:update' tagged_trait.pk %}" role="button">
-        <span class="glyphicon glyphicon-sunglasses" aria-hidden="true"></span> Update review
-    </a>
-  {% endif %}
-  {% if perms.tags.add_taggedtrait %}
-    {% if user_is_study_tagger or request.user.is_staff %}
-      {% if not tagged_trait.dcc_review %}
-        <a class="btn btn-danger" href="{% url 'tags:tagged-traits:pk:delete' tagged_trait.pk %}" role="button">
-            <span class="glyphicon glyphicon-remove" aria-hidden="true"></span> Remove tag
-        </a>
-      {% endif %}
-    {% endif %}
   {% endif %}
 {% endblock after_panel %}

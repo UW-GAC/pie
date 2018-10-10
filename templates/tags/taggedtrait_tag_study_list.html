@@ -6,7 +6,7 @@
 {% endblock head_title %}
 
 {% block title %}
-  Variables tagged with <a href="{{ tag.get_absolute_url }}">{{ tag.lower_title }}</a>
+  Variables tagged with <a href="{{ tag.get_absolute_url }}">{{ tag.title }}</a>
 {% endblock title %}
 
 {% block subtitle %}
@@ -18,7 +18,7 @@
   {% render_table tagged_trait_table %}
   {% if show_review_button %}
     <div class="control-group">
-      <a class="btn btn-primary" href="{% url 'tags:tag:study:dcc-review' tag.pk study.pk %}" role="button">Review tagged variables</a>
+      <a class="btn btn-primary" href="{% url 'tags:tag:study:begin-dcc-review' tag.pk study.pk %}" role="button">Review tagged variables</a>
     </div>
   {% endif %}
 {% endblock table %}

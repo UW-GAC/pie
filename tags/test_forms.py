@@ -112,6 +112,15 @@ class TaggedTraitFormTest(TestCase):
         self.assertTrue(form.has_error('trait'))
         self.assertFalse(form.has_error('tag'))
 
+    def test_invalid_taggedtrait_archived(self):
+        """Form is invalid when the selected trait and tag are in an archived TaggedTrait."""
+        factories.TaggedTraitFactory.create(tag=self.tag, trait=self.trait, creator=self.user, archived=True)
+        form_data = {'trait': self.trait.pk, 'tag': self.tag.pk}
+        form = self.form_class(data=form_data, user=self.user)
+        self.assertFalse(form.is_valid())
+        self.assertTrue(form.has_error('trait'))
+        self.assertFalse(form.has_error('tag'))
+
 
 class TaggedTraitAdminFormTest(TestCase):
     form_class = forms.TaggedTraitAdminForm
@@ -144,6 +153,15 @@ class TaggedTraitAdminFormTest(TestCase):
     def test_invalid_trait_already_tagged(self):
         """Form is invalid when the selected trait is already linked to the selected tag."""
         factories.TaggedTraitFactory.create(tag=self.tag, trait=self.trait)
+        form_data = {'trait': self.trait.pk, 'tag': self.tag.pk}
+        form = self.form_class(data=form_data)
+        self.assertFalse(form.is_valid())
+        self.assertTrue(form.has_error('trait'))
+        self.assertFalse(form.has_error('tag'))
+
+    def test_invalid_taggedtrait_archived(self):
+        """Form is invalid when the selected trait and tag are in an archived TaggedTrait."""
+        factories.TaggedTraitFactory.create(tag=self.tag, trait=self.trait, archived=True)
         form_data = {'trait': self.trait.pk, 'tag': self.tag.pk}
         form = self.form_class(data=form_data)
         self.assertFalse(form.is_valid())
@@ -196,6 +214,15 @@ class TaggedTraitByTagFormTest(TestCase):
         self.assertFalse(form.is_valid())
         self.assertTrue(form.has_error('trait'))
 
+    def test_invalid_taggedtrait_archived(self):
+        """Form is invalid when the selected trait and tag are in an archived TaggedTrait."""
+        factories.TaggedTraitFactory.create(tag=self.tag, trait=self.trait, creator=self.user, archived=True)
+        form_data = {'trait': self.trait.pk}
+        form = self.form_class(data=form_data, user=self.user, tag_pk=self.tag.pk)
+        self.assertFalse(form.is_valid())
+        self.assertTrue(form.has_error('trait'))
+        self.assertFalse(form.has_error('tag'))
+
 
 class ManyTaggedTraitsFormTest(TestCase):
     form_class = forms.ManyTaggedTraitsForm
@@ -247,6 +274,14 @@ class ManyTaggedTraitsFormTest(TestCase):
     def test_invalid_trait_already_tagged(self):
         """Form is invalid when a trait in 'traits' is already linked to the given tag."""
         factories.TaggedTraitFactory.create(tag=self.tag, trait=self.traits[0], creator=self.user)
+        form_data = {'traits': [self.traits[0].pk], 'tag': self.tag.pk}
+        form = self.form_class(data=form_data, user=self.user)
+        self.assertFalse(form.is_valid())
+        self.assertTrue(form.has_error('traits'))
+
+    def test_invalid_taggedtrait_archived(self):
+        """Form is invalid when the selected trait and tag are in an archived TaggedTrait."""
+        factories.TaggedTraitFactory.create(tag=self.tag, trait=self.traits[0], creator=self.user, archived=True)
         form_data = {'traits': [self.traits[0].pk], 'tag': self.tag.pk}
         form = self.form_class(data=form_data, user=self.user)
         self.assertFalse(form.is_valid())
@@ -308,6 +343,14 @@ class ManyTaggedTraitsByTagFormTest(TestCase):
         self.assertFalse(form.is_valid())
         self.assertTrue(form.has_error('traits'))
 
+    def test_invalid_taggedtrait_archived(self):
+        """Form is invalid when the selected trait and tag are in an archived TaggedTrait."""
+        factories.TaggedTraitFactory.create(tag=self.tag, trait=self.traits[0], creator=self.user, archived=True)
+        form_data = {'traits': [self.traits[0].pk]}
+        form = self.form_class(data=form_data, user=self.user, tag_pk=self.tag.pk)
+        self.assertFalse(form.is_valid())
+        self.assertTrue(form.has_error('traits'))
+
 
 class TagSpecificTraitFormTest(TestCase):
     form_class = forms.TagSpecificTraitForm
@@ -320,13 +363,29 @@ class TagSpecificTraitFormTest(TestCase):
     def test_valid(self):
         """Form is valid with all necessary input."""
         form_data = {'tag': self.tag.pk, }
-        form = self.form_class(data=form_data)
+        form = self.form_class(data=form_data, trait_pk=self.traits[0].pk)
         self.assertTrue(form.is_valid())
 
     def test_invalid_missing_tag(self):
         """Form is invalid if tag is omitted."""
         form_data = {'tag': '', }
-        form = self.form_class(data=form_data)
+        form = self.form_class(data=form_data, trait_pk=self.traits[0].pk)
+        self.assertFalse(form.is_valid())
+        self.assertTrue(form.has_error('tag'))
+
+    def test_invalid_trait_already_tagged(self):
+        """Form is invalid when the trait is already linked to the given tag."""
+        factories.TaggedTraitFactory.create(tag=self.tag, trait=self.traits[0])
+        form_data = {'tag': self.tag.pk}
+        form = self.form_class(data=form_data, trait_pk=self.traits[0].pk)
+        self.assertFalse(form.is_valid())
+        self.assertTrue(form.has_error('tag'))
+
+    def test_invalid_taggedtrait_archived(self):
+        """Form is invalid when the selected trait and tag are in an archived TaggedTrait."""
+        factories.TaggedTraitFactory.create(tag=self.tag, trait=self.traits[0], archived=True)
+        form_data = {'tag': self.tag.pk}
+        form = self.form_class(data=form_data, trait_pk=self.traits[0].pk)
         self.assertFalse(form.is_valid())
         self.assertTrue(form.has_error('tag'))
 
@@ -497,3 +556,83 @@ class DCCReviewTagAndStudySelectFormTest(TestCase):
         dcc_review = factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait)
         form = self.form_class({'tag': self.tag.pk, 'study': self.study.pk})
         self.assertFalse(form.is_valid())
+
+    def test_no_archived_tagged_traits(self):
+        """Form is invalid if there are no non-archived tagged traits matching the selected tag and study."""
+        self.tagged_trait.archive()
+        form = self.form_class({'tag': self.tag.pk, 'study': self.study.pk})
+        self.assertFalse(form.is_valid())
+
+
+class StudyResponseDisagreeFormTest(TestCase):
+
+    form_class = forms.StudyResponseDisagreeForm
+
+    def test_valid(self):
+        """Form is valid with all necessary input."""
+        form = self.form_class({'comment': 'a comment'})
+        self.assertTrue(form.is_valid())
+
+    def test_invalid_missing_comment(self):
+        """Form is invalid if missing comment."""
+        form = self.form_class({})
+        self.assertFalse(form.is_valid())
+
+    def test_invalid_whitespace_comment(self):
+        """Form is invalid if comment is only whitespace."""
+        form = self.form_class({'comment': ' '})
+        self.assertFalse(form.is_valid())
+
+
+class StudyResponseFormTestMixin(object):
+
+    def test_valid_if_disagree_with_comment(self):
+        """Form is valid if the study disagrees and a comment is given."""
+        form_data = {'comment': 'foo', 'status': models.StudyResponse.STATUS_DISAGREE}
+        form = self.form_class(form_data)
+        self.assertTrue(form.is_valid())
+
+    def test_invalid_if_disagree_with_no_comment(self):
+        """Form is invalid if the study disagrees and no comment is given."""
+        form_data = {'comment': '', 'status': models.StudyResponse.STATUS_DISAGREE}
+        form = self.form_class(form_data)
+        self.assertFalse(form.is_valid())
+        self.assertTrue(form.has_error('comment', code='disagree_comment'))
+
+    def test_invalid_if_disagree_with_whitespace_comment(self):
+        """Form is invalid if the study disagrees and no comment is given."""
+        form_data = {'comment': ' ', 'status': models.StudyResponse.STATUS_DISAGREE}
+        form = self.form_class(form_data)
+        self.assertFalse(form.is_valid())
+        self.assertTrue(form.has_error('comment', code='disagree_comment'))
+
+    def test_valid_if_agree_with_no_comment(self):
+        """Form is valid if the study agrees and no comment is given."""
+        form_data = {'comment': '', 'status': models.StudyResponse.STATUS_AGREE}
+        form = self.form_class(form_data)
+        self.assertTrue(form.is_valid())
+
+    def test_valid_if_agree_with_whitespace_comment(self):
+        """Form is valid if the study agrees and a whitespace-only comment is given."""
+        form_data = {'comment': '  ', 'status': models.StudyResponse.STATUS_AGREE}
+        form = self.form_class(form_data)
+        self.assertTrue(form.is_valid())
+
+    def test_invalid_if_agree_with_comment(self):
+        """Form is invalid if the study agrees and a comment is given."""
+        form_data = {'comment': 'foo', 'status': models.StudyResponse.STATUS_AGREE}
+        form = self.form_class(form_data)
+        self.assertFalse(form.is_valid())
+        self.assertTrue(form.has_error('comment', code='agree_comment'))
+
+    def test_invalid_missing_status(self):
+        """Form is invalid if status is missing."""
+        form_data = {'comment': ''}
+        form = self.form_class(form_data)
+        self.assertFalse(form.is_valid())
+        self.assertTrue(form.has_error('status'))
+
+
+class StudyResponseAdminFormTest(StudyResponseFormTestMixin, TestCase):
+
+    form_class = forms.StudyResponseAdminForm

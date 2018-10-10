@@ -44,7 +44,7 @@ class Profile(LoginRequiredMixin, TemplateView):
         # Get tagged traits and their study names for phenotype_taggers and staff.
         if is_phenotype_tagger or is_staff:
             context['show_my_tagged'] = True
-            user_taggedtraits = TaggedTrait.objects.filter(creator=self.request.user)
+            user_taggedtraits = TaggedTrait.objects.non_archived().filter(creator=self.request.user)
             user_taggedtraits = user_taggedtraits.values(
                 study_name=F('trait__source_dataset__source_study_version__study__i_study_name'),
                 study_pk=F('trait__source_dataset__source_study_version__study__pk'),
@@ -52,6 +52,7 @@ class Profile(LoginRequiredMixin, TemplateView):
                 tag_pk=F('tag__pk'),
                 variable_name=F('trait__i_trait_name'),
                 dataset_name=F('trait__source_dataset__dataset_name'),
+                review=F('dcc_review'),
                 taggedtrait_pk=F('pk')).order_by('study_name', 'tag_name', 'variable_name')
             # Group by study.
             user_taggedtraits = groupby(user_taggedtraits,
@@ -70,7 +71,7 @@ class Profile(LoginRequiredMixin, TemplateView):
             context['show_study_tagged'] = True
             taggable_studies = self.request.user.profile.taggable_studies.all()
             if len(taggable_studies) > 0:
-                study_taggedtrait_counts = TaggedTrait.objects.filter(
+                study_taggedtrait_counts = TaggedTrait.objects.non_archived().filter(
                     trait__source_dataset__source_study_version__study__in=taggable_studies)
                 study_taggedtrait_counts = study_taggedtrait_counts.values(
                     study_name=F('trait__source_dataset__source_study_version__study__i_study_name'),
@@ -87,5 +88,4 @@ class Profile(LoginRequiredMixin, TemplateView):
                 study_taggedtrait_counts = [
                     (key, list(group)) for key, group in study_taggedtrait_counts]
                 context['study_taggedtrait_counts'] = study_taggedtrait_counts
-
         return context

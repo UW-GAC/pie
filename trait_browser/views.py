@@ -142,8 +142,8 @@ class StudyNameOrPHSAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySe
     """Auto-complete studies in a form field by phs string.
 
     Accepts two forwarded values: "tag_pk" (to filter to studies with at least
-    one trait tagged with the given tag) and "unreviewed_tagged_traits_only"
-    (requires these tagged traits to be unreviewed).
+    one trait tagged with the given tag) and "unreviewed_non_archived_tagged_traits_only"
+    (requires these tagged traits to be unreviewed and non-archived).
     """
 
     def get_queryset(self):
@@ -174,12 +174,12 @@ class StudyNameOrPHSAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySe
                 retrieved = retrieved.filter(nameQ)
         # Add filtering for studies traits tagged with a specific tag, using data forwarded from a form.
         tag_pk = self.forwarded.get('tag', None)
-        unreviewed = self.forwarded.get('unreviewed_tagged_traits_only', False)
+        unreviewed_non_archived = self.forwarded.get('unreviewed_non_archived_tagged_traits_only', False)
         # tag_pk is a string, so "is not None" is not needed.
         if tag_pk:
             tagged_traits = TaggedTrait.objects.all()
-            if unreviewed:
-                tagged_traits = tagged_traits.unreviewed()
+            if unreviewed_non_archived:
+                tagged_traits = tagged_traits.unreviewed().non_archived()
             studies_with_tag = tagged_traits.filter(
                 tag__pk=tag_pk
             ).values_list('trait__source_dataset__source_study_version__study', flat=True).distinct()
@@ -215,7 +215,9 @@ class SourceDatasetList(LoginRequiredMixin, SingleTableView):
     table_pagination = {'per_page': TABLE_PER_PAGE}
 
     def get_table_data(self):
-        return models.SourceDataset.objects.current()
+        return models.SourceDataset.objects.current().select_related(
+            'source_study_version__study'
+        )
 
 
 class StudySourceDatasetList(SingleTableMixin, StudyDetail):
@@ -246,6 +248,8 @@ class SourceDatasetSearch(LoginRequiredMixin, SearchFormMixin, SingleTableMixin,
             description=description,
             match_exact_name=match_exact_name,
             studies=studies
+        ).select_related(
+            'source_study_version__study'
         )
 
 
@@ -271,6 +275,9 @@ class StudySourceDatasetSearch(LoginRequiredMixin, SearchFormMixin, SingleObject
             description=description,
             match_exact_name=match_exact_name,
             studies=[self.object.pk]
+        ).select_related(
+            'source_study_version',
+            'source_study_version__study'
         )
 
 
@@ -378,7 +385,7 @@ class SourceTraitDetail(LoginRequiredMixin, DetailView):
         user_studies = list(self.request.user.profile.taggable_studies.all())
         context['user_is_study_tagger'] = self.object.source_dataset.source_study_version.study in user_studies
         context['show_tag_button'] = context['user_is_study_tagger'] or self.request.user.is_staff
-        tagged_traits = self.object.taggedtrait_set.all().order_by('tag__lower_title')
+        tagged_traits = self.object.all_taggedtraits.non_archived().order_by('tag__lower_title')
         # If tagging is allowed, check on whether to show the delete button for each tag.
         if context['show_tag_button']:
             show_delete_buttons = []
@@ -403,7 +410,11 @@ class SourceTraitList(LoginRequiredMixin, SingleTableMixin, ListView):
     table_pagination = {'per_page': TABLE_PER_PAGE}
 
     def get_table_data(self):
-        return models.SourceTrait.objects.current()
+        return models.SourceTrait.objects.current().select_related(
+            'source_dataset',
+            'source_dataset__source_study_version',
+            'source_dataset__source_study_version__study'
+        )
 
 
 class StudySourceTraitList(SingleTableMixin, StudyDetail):
@@ -416,7 +427,12 @@ class StudySourceTraitList(SingleTableMixin, StudyDetail):
 
     def get_table_data(self):
         return models.SourceTrait.objects.current().filter(
-            source_dataset__source_study_version__study=self.object)
+            source_dataset__source_study_version__study=self.object
+        ).select_related(
+            'source_dataset',
+            'source_dataset__source_study_version',
+            'source_dataset__source_study_version__study'
+        )
 
 
 class StudyTaggedTraitList(StudyDetail):
@@ -425,7 +441,7 @@ class StudyTaggedTraitList(StudyDetail):
 
     def get_context_data(self, *args, **kwargs):
         context = super(StudyTaggedTraitList, self).get_context_data(*args, **kwargs)
-        tag_counts = TaggedTrait.objects.filter(
+        tag_counts = TaggedTrait.objects.non_archived().filter(
             trait__source_dataset__source_study_version__study=self.object
         ).values(
             tag_name=F('tag__title'),
@@ -457,6 +473,12 @@ class SourceTraitTagging(LoginRequiredMixin, PermissionRequiredMixin, UserPasses
         context = super(SourceTraitTagging, self).get_context_data(**kwargs)
         context['trait'] = self.trait
         return context
+
+    def get_form_kwargs(self):
+        kwargs = super(SourceTraitTagging, self).get_form_kwargs()
+        kwargs['trait_pk'] = self.kwargs['pk']
+        get_object_or_404(models.SourceTrait, pk=kwargs['trait_pk'])
+        return kwargs
 
     def form_valid(self, form):
         """Create a TaggedTrait object for the trait and tag specified."""
@@ -507,6 +529,10 @@ class SourceTraitSearch(LoginRequiredMixin, SearchFormMixin, SingleTableMixin, M
             description=description,
             match_exact_name=match_exact_name,
             **extra_kwargs
+        ).select_related(
+            'source_dataset',
+            'source_dataset__source_study_version',
+            'source_dataset__source_study_version__study'
         )
         return results
 
@@ -540,7 +566,12 @@ class StudySourceTraitSearch(LoginRequiredMixin, SearchFormMixin, SingleObjectMi
         datasets = search_kwargs.pop('datasets')
         if len(datasets) == 0:
             datasets = searches.search_source_datasets(studies=[self.object.pk])
-        return searches.search_source_traits(datasets=datasets, **search_kwargs)
+        results = searches.search_source_traits(datasets=datasets, **search_kwargs).select_related(
+            'source_dataset',
+            'source_dataset__source_study_version',
+            'source_dataset__source_study_version__study'
+        )
+        return results
 
 
 class SourceTraitPHVAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
@@ -796,7 +827,9 @@ class HarmonizedTraitList(LoginRequiredMixin, SingleTableMixin, ListView):
     table_pagination = {'per_page': TABLE_PER_PAGE}
 
     def get_table_data(self):
-        return models.HarmonizedTrait.objects.current().non_unique_keys()
+        return models.HarmonizedTrait.objects.current().non_unique_keys().select_related(
+            'harmonized_trait_set_version'
+        )
 
 
 class HarmonizedTraitFlavorNameAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
@@ -823,7 +856,9 @@ class HarmonizedTraitSearch(LoginRequiredMixin, SearchFormMixin, SingleTableMixi
     table_data = models.HarmonizedTrait.objects.none()
 
     def search(self, **search_kwargs):
-        return searches.search_harmonized_traits(**search_kwargs)
+        return searches.search_harmonized_traits(**search_kwargs).select_related(
+            'harmonized_trait_set_version'
+        )
 
 
 class HarmonizedTraitSetVersionDetail(LoginRequiredMixin, FormMessagesMixin, DetailView):

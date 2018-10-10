@@ -58,6 +58,14 @@ class StudyDetailTest(UserLoginTestCase):
         dataset_count = models.SourceDataset.objects.filter(source_study_version__study=self.study).count()
         self.assertEqual(context['dataset_count'], '{:,}'.format(dataset_count))
 
+    def test_tagged_trait_button_present(self):
+        """The button to show tagged traits is present when there are tagged traits for the study."""
+        tagged_traits = TaggedTraitFactory.create_batch(
+            10, trait__source_dataset__source_study_version__study=self.study)
+        response = self.client.get(self.get_url(self.study.pk))
+        context = response.context
+        self.assertContains(response, self.get_url(self.study.pk))
+
 
 class StudyListTest(UserLoginTestCase):
     """Unit tests for the StudyList view."""
@@ -200,6 +208,8 @@ class StudyPHSAutocompleteTest(UserLoginTestCase):
 class StudyNameOrPHSAutocompleteTest(UserLoginTestCase):
     """Autocomplete view works as expected."""
 
+    only_arg = '"unreviewed_non_archived_tagged_traits_only":true'
+
     def setUp(self):
         super(StudyNameOrPHSAutocompleteTest, self).setUp()
         self.studies = []
@@ -325,38 +335,258 @@ class StudyNameOrPHSAutocompleteTest(UserLoginTestCase):
         self.assertEqual(sorted(returned_pks),
                          sorted([name_match.i_accession, phs_match.i_accession]))
 
-    def test_subsets_to_studies_with_traits_with_forwarded_tag(self):
-        study = self.studies[0]
+    def test_returns_all_studies_with_unreviewed_tagged_traits(self):
+        """With no forwards, returns studies for unreviewed tagged traits."""
         tag = TagFactory.create()
-        tagged_trait = TaggedTraitFactory.create(trait__source_dataset__source_study_version__study=study,
-                                                 tag=tag)
+        tagged_traits = []
+        for study in self.studies:
+            tmp = TaggedTraitFactory.create(trait__source_dataset__source_study_version__study=study, tag=tag)
+            tagged_traits.append(tmp)
+        get_data = {'q': ''}
+        response = self.client.get(self.get_url(), get_data)
+        pks = get_autocomplete_view_ids(response)
+        self.assertEqual(sorted([study.pk for study in self.studies]), sorted(pks))
+
+    def test_returns_all_studies_with_archived_tagged_traits(self):
+        """With no forwards, returns studies for archived tagged traits."""
+        tag = TagFactory.create()
+        tagged_traits = []
+        for study in self.studies:
+            tmp = TaggedTraitFactory.create(trait__source_dataset__source_study_version__study=study,
+                                            archived=True, tag=tag)
+            tagged_traits.append(tmp)
+        get_data = {'q': ''}
+        response = self.client.get(self.get_url(), get_data)
+        pks = get_autocomplete_view_ids(response)
+        self.assertEqual(sorted([study.pk for study in self.studies]), sorted(pks))
+
+    def test_returns_all_studies_with_reviewed_tagged_traits(self):
+        """With no forwards, returns studies for reviewed tagged traits."""
+        tag = TagFactory.create()
+        tagged_traits = []
+        for (idx, study) in enumerate(self.studies):
+            tmp = TaggedTraitFactory.create(trait__source_dataset__source_study_version__study=study, tag=tag)
+            tagged_traits.append(tmp)
+            if idx % 2 == 0:
+                status = DCCReview.STATUS_CONFIRMED
+            else:
+                status = DCCReview.STATUS_FOLLOWUP
+            DCCReviewFactory.create(tagged_trait=tmp, status=status)
+        get_data = {'q': ''}
+        response = self.client.get(self.get_url(), get_data)
+        pks = get_autocomplete_view_ids(response)
+        self.assertEqual(sorted([study.pk for study in self.studies]), sorted(pks))
+
+    def test_returns_all_studies_with_tagged_traits_for_multiple_tags(self):
+        """With no forwards, returns studies for tagged traits with multiple tags."""
+        tagged_traits = []
+        for study in self.studies:
+            tmp = TaggedTraitFactory.create(trait__source_dataset__source_study_version__study=study)
+            tagged_traits.append(tmp)
+        get_data = {'q': ''}
+        response = self.client.get(self.get_url(), get_data)
+        pks = get_autocomplete_view_ids(response)
+        self.assertEqual(sorted([study.pk for study in self.studies]), sorted(pks))
+
+    def test_does_not_return_studies_without_tagged_traits_for_given_tag(self):
+        """With tag forwarded, does not return studies without any tagged traits."""
+        tag = TagFactory.create()
+        study = self.studies[0]
+        tagged_trait = TaggedTraitFactory.create(tag=tag, trait__source_dataset__source_study_version__study=study)
+        other_study = self.studies[1]
         get_data = {'q': '', 'forward': ['{"tag":"' + str(tag.pk) + '"}']}
         response = self.client.get(self.get_url(), get_data)
-        pk = get_autocomplete_view_ids(response)
-        self.assertEqual(len(pk), 1)
-        self.assertEqual(pk, [study.pk])
+        pks = get_autocomplete_view_ids(response)
+        self.assertNotIn(other_study.pk, pks)
 
-    def test_subsets_to_studies_with_unreviewed_tagged_traits_if_requested(self):
-        study = self.studies[0]
+    def test_does_not_return_studies_with_unreviewed_tagged_traits_with_other_tag_for_given_tag(self):
+        """With tag forwarded, does not return studies for unreviewed tagged traits with other tags."""
         tag = TagFactory.create()
-        tagged_trait = TaggedTraitFactory.create(trait__source_dataset__source_study_version__study=study,
-                                                 tag=tag)
-        dcc_review = DCCReviewFactory.create(tagged_trait=tagged_trait)
-        get_data = {'q': '', 'forward': ['{"tag":"' + str(tag.pk) + '","unreviewed_tagged_traits_only":true}']}
-        response = self.client.get(self.get_url(), get_data)
-        pk = get_autocomplete_view_ids(response)
-        self.assertEqual(len(pk), 0)
-
-    def test_subsets_to_studies_with_any_tagged_trait_if_not_requested(self):
         study = self.studies[0]
-        tag = TagFactory.create()
-        tagged_trait = TaggedTraitFactory.create(trait__source_dataset__source_study_version__study=study,
-                                                 tag=tag)
-        dcc_review = DCCReviewFactory.create(tagged_trait=tagged_trait)
+        tagged_trait = TaggedTraitFactory.create(tag=tag, trait__source_dataset__source_study_version__study=study)
+        other_tag = TagFactory.create()
+        other_study = self.studies[1]
+        other_tagged_trait = TaggedTraitFactory.create(
+            tag=other_tag, trait__source_dataset__source_study_version__study=other_study)
         get_data = {'q': '', 'forward': ['{"tag":"' + str(tag.pk) + '"}']}
         response = self.client.get(self.get_url(), get_data)
-        pk = get_autocomplete_view_ids(response)
-        self.assertEqual(len(pk), 1)
+        pks = get_autocomplete_view_ids(response)
+        self.assertNotIn(other_study.pk, pks)
+
+    def test_returns_study_with_unreviewed_tagged_trait_for_given_tag(self):
+        """With tag forwarded, returns study with unreviewed tagged traits."""
+        tag = TagFactory.create()
+        study = self.studies[0]
+        tagged_trait = TaggedTraitFactory.create(tag=tag, trait__source_dataset__source_study_version__study=study)
+        get_data = {'q': '', 'forward': ['{"tag":"' + str(tag.pk) + '"}']}
+        response = self.client.get(self.get_url(), get_data)
+        pks = get_autocomplete_view_ids(response)
+        self.assertIn(study.pk, pks)
+
+    def test_returns_study_with_reviewed_needsfollowup_tagged_trait_for_given_tag(self):
+        """With tag forwarded, returns study with reviewed tagged traits that need followup."""
+        tag = TagFactory.create()
+        study = self.studies[0]
+        tagged_trait = TaggedTraitFactory.create(tag=tag, trait__source_dataset__source_study_version__study=study)
+        dcc_review = DCCReviewFactory.create(tagged_trait=tagged_trait, status=DCCReview.STATUS_FOLLOWUP)
+        get_data = {'q': '', 'forward': ['{"tag":"' + str(tag.pk) + '"}']}
+        response = self.client.get(self.get_url(), get_data)
+        pks = get_autocomplete_view_ids(response)
+        self.assertIn(study.pk, pks)
+
+    def test_returns_study_with_reviewed_confirmed_tagged_trait_for_given_tag(self):
+        """With tag forwarded, returns study with reviewed tagged traits that are confirmed."""
+        tag = TagFactory.create()
+        study = self.studies[0]
+        tagged_trait = TaggedTraitFactory.create(tag=tag, trait__source_dataset__source_study_version__study=study)
+        dcc_review = DCCReviewFactory.create(tagged_trait=tagged_trait, status=DCCReview.STATUS_CONFIRMED)
+        get_data = {'q': '', 'forward': ['{"tag":"' + str(tag.pk) + '"}']}
+        response = self.client.get(self.get_url(), get_data)
+        pks = get_autocomplete_view_ids(response)
+        self.assertIn(study.pk, pks)
+
+    def test_returns_study_with_archived_tagged_trait_for_given_tag(self):
+        """With tag forwarded, returns study with archived tagged traits."""
+        tag = TagFactory.create()
+        study = self.studies[0]
+        tagged_trait = TaggedTraitFactory.create(
+            tag=tag, trait__source_dataset__source_study_version__study=study, archived=True)
+        get_data = {'q': '', 'forward': ['{"tag":"' + str(tag.pk) + '"}']}
+        response = self.client.get(self.get_url(), get_data)
+        pks = get_autocomplete_view_ids(response)
+        self.assertIn(study.pk, pks)
+
+    def test_returns_study_with_unreviewed_tagged_trait_for_given_tag_with_only(self):
+        """With tag and only arg forwarded, returns study with unreviewed tagged trait."""
+        tag = TagFactory.create()
+        study = self.studies[0]
+        tagged_trait = TaggedTraitFactory.create(tag=tag, trait__source_dataset__source_study_version__study=study)
+        get_data = {'q': '', 'forward': ['{"tag":"' + str(tag.pk) + '",' + self.only_arg + '}']}
+        response = self.client.get(self.get_url(), get_data)
+        pks = get_autocomplete_view_ids(response)
+        self.assertIn(study.pk, pks)
+
+    def test_does_not_return_study_with_reviewed_confirmed_tagged_trait_for_given_tag_with_only(self):
+        """With tag and only arg forwarded, does not return study with reviewed tagged traits."""
+        tag = TagFactory.create()
+        study = self.studies[0]
+        tagged_trait = TaggedTraitFactory.create(tag=tag, trait__source_dataset__source_study_version__study=study)
+        dcc_review = DCCReviewFactory.create(tagged_trait=tagged_trait, status=DCCReview.STATUS_CONFIRMED)
+        get_data = {'q': '', 'forward': ['{"tag":"' + str(tag.pk) + '",' + self.only_arg + '}']}
+        response = self.client.get(self.get_url(), get_data)
+        pks = get_autocomplete_view_ids(response)
+        self.assertNotIn(study.pk, pks)
+
+    def test_does_not_return_study_with_reviewed_needfollowup_tagged_trait_for_given_tag_with_only(self):
+        """With tag and only arg forwarded, does not return study with reviewed tagged traits."""
+        tag = TagFactory.create()
+        study = self.studies[0]
+        tagged_trait = TaggedTraitFactory.create(tag=tag, trait__source_dataset__source_study_version__study=study)
+        dcc_review = DCCReviewFactory.create(tagged_trait=tagged_trait, status=DCCReview.STATUS_FOLLOWUP)
+        get_data = {'q': '', 'forward': ['{"tag":"' + str(tag.pk) + '",' + self.only_arg + '}']}
+        response = self.client.get(self.get_url(), get_data)
+        pks = get_autocomplete_view_ids(response)
+        self.assertNotIn(study.pk, pks)
+
+    def test_does_not_return_study_with_archived_tagged_trait_for_given_tag_with_only(self):
+        """With tag and only arg forwarded, does not return study with archived tagged traits."""
+        tag = TagFactory.create()
+        study = self.studies[0]
+        tagged_trait = TaggedTraitFactory.create(
+            tag=tag, trait__source_dataset__source_study_version__study=study, archived=True)
+        get_data = {'q': '', 'forward': ['{"tag":"' + str(tag.pk) + '",' + self.only_arg + '}']}
+        response = self.client.get(self.get_url(), get_data)
+        pks = get_autocomplete_view_ids(response)
+        self.assertNotIn(study.pk, pks)
+
+    def test_does_not_return_study_with_no_tagged_traits_for_given_tag_with_only(self):
+        """With tag and only arg forwarded, does not return study with archived tagged traits."""
+        tag = TagFactory.create()
+        study = self.studies[0]
+        get_data = {'q': '', 'forward': ['{"tag":"' + str(tag.pk) + '",' + self.only_arg + '}']}
+        response = self.client.get(self.get_url(), get_data)
+        pks = get_autocomplete_view_ids(response)
+        self.assertNotIn(study.pk, pks)
+
+    def test_does_not_return_studies_with_unreviewed_tagged_trait_with_other_tag_with_only(self):
+        """With tag and only arg forwarded, does not return study with unreviewed tagged traits with other tag."""
+        tag = TagFactory.create()
+        study = self.studies[0]
+        tagged_trait = TaggedTraitFactory.create(tag=tag, trait__source_dataset__source_study_version__study=study)
+        other_tag = TagFactory.create()
+        other_study = self.studies[1]
+        other_tagged_trait = TaggedTraitFactory.create(
+            tag=other_tag, trait__source_dataset__source_study_version__study=other_study)
+        get_data = {'q': '', 'forward': ['{"tag":"' + str(tag.pk) + '",' + self.only_arg + '}']}
+        response = self.client.get(self.get_url(), get_data)
+        pks = get_autocomplete_view_ids(response)
+        self.assertNotIn(other_study.pk, pks)
+
+    def test_returns_all_studies_with_unreviewed_tagged_traits_without_given_tag_with_only(self):
+        """With only arg but no tag forwarded, returns all studies."""
+        tag = TagFactory.create()
+        tagged_traits = []
+        for study in self.studies:
+            tmp = TaggedTraitFactory.create(trait__source_dataset__source_study_version__study=study, tag=tag)
+            tagged_traits.append(tmp)
+        get_data = {'q': '', 'forward': ['{' + self.only_arg + '}']}
+        response = self.client.get(self.get_url(), get_data)
+        pks = get_autocomplete_view_ids(response)
+        self.assertEqual(sorted([study.pk for study in self.studies]), sorted(pks))
+
+    def test_returns_all_studies_with_reviewed_tagged_traits_without_given_tag_with_only(self):
+        """With only arg but no tag forwarded, returns studies with reviewed tagged traits."""
+        tag = TagFactory.create()
+        tagged_traits = []
+        for (idx, study) in enumerate(self.studies):
+            tmp = TaggedTraitFactory.create(trait__source_dataset__source_study_version__study=study, tag=tag)
+            tagged_traits.append(tmp)
+            if idx % 2 == 0:
+                status = DCCReview.STATUS_CONFIRMED
+            else:
+                status = DCCReview.STATUS_FOLLOWUP
+            DCCReviewFactory.create(tagged_trait=tmp, status=status)
+        get_data = {'q': '', 'forward': ['{' + self.only_arg + '}']}
+        response = self.client.get(self.get_url(), get_data)
+        pks = get_autocomplete_view_ids(response)
+        self.assertEqual(sorted([study.pk for study in self.studies]), sorted(pks))
+
+    def test_returns_all_studies_with_archived_tagged_traits_without_given_tag_with_only(self):
+        """With only arg but no tag forwarded, returns studies with archived tagged traits."""
+        tag = TagFactory.create()
+        tagged_traits = []
+        for study in self.studies:
+            tmp = TaggedTraitFactory.create(trait__source_dataset__source_study_version__study=study,
+                                            archived=True, tag=tag)
+            tagged_traits.append(tmp)
+        get_data = {'q': '', 'forward': ['{' + self.only_arg + '}']}
+        response = self.client.get(self.get_url(), get_data)
+        pks = get_autocomplete_view_ids(response)
+        self.assertEqual(sorted([study.pk for study in self.studies]), sorted(pks))
+
+    def test_returns_all_studies_with_other_tag_without_given_tag_with_only(self):
+        """With only arg but no tag forwarded, returns studies with tagged traits with other tag."""
+        tag = TagFactory.create()
+        study = self.studies[0]
+        tagged_trait = TaggedTraitFactory.create(tag=tag, trait__source_dataset__source_study_version__study=study)
+        other_tag = TagFactory.create()
+        other_study = self.studies[1]
+        other_tagged_trait = TaggedTraitFactory.create(
+            tag=other_tag, trait__source_dataset__source_study_version__study=other_study)
+        get_data = {'q': '', 'forward': ['{' + self.only_arg + '}']}
+        response = self.client.get(self.get_url(), get_data)
+        pks = get_autocomplete_view_ids(response)
+        self.assertIn(other_study.pk, pks)
+        self.assertEqual(sorted([study.pk for study in self.studies]), sorted(pks))
+
+    def test_returns_all_studies_without_tagged_traits_without_given_tag_with_only(self):
+        """With only arg but no tag forwarded, returns even studies without any tagged traits."""
+        tag = TagFactory.create()
+        study = self.studies[0]
+        get_data = {'q': '', 'forward': ['{' + self.only_arg + '}']}
+        response = self.client.get(self.get_url(), get_data)
+        pks = get_autocomplete_view_ids(response)
+        self.assertEqual(sorted([study.pk for study in self.studies]), sorted(pks))
 
 
 class StudySourceTableViewsTest(UserLoginTestCase):
@@ -1733,7 +1963,7 @@ class SourceTraitDetailTest(UserLoginTestCase):
         self.assertEqual(context['source_trait'], self.trait)
         self.assertIn('tagged_traits_with_xs', context)
         self.assertEqual([el[0] for el in context['tagged_traits_with_xs']],
-                         list(self.trait.taggedtrait_set.all()))
+                         list(self.trait.all_taggedtraits.non_archived()))
         self.assertIn('user_is_study_tagger', context)
         self.assertFalse(context['user_is_study_tagger'])
 
@@ -1784,7 +2014,7 @@ class SourceTraitDetailPhenotypeTaggerTest(PhenotypeTaggerLoginTestCase):
         response = self.client.get(self.get_url(self.trait.pk))
         context = response.context
         self.assertEqual([el[0] for el in context['tagged_traits_with_xs']],
-                         list(self.trait.taggedtrait_set.all()))
+                         list(self.trait.all_taggedtraits.non_archived()))
 
     def test_has_tagged_trait_remove_buttons(self):
         """The tag removal buttons shows up."""
@@ -1799,8 +2029,7 @@ class SourceTraitDetailPhenotypeTaggerTest(PhenotypeTaggerLoginTestCase):
     def test_no_tagged_trait_remove_buttons_if_reviewed(self):
         """The tag removal button does not show up for reviewed tagged traits that need followup."""
         tagged_traits = TaggedTraitFactory.create_batch(3, trait=self.trait)
-        dcc_review = DCCReviewFactory.create(
-            tagged_trait=tagged_traits[0], status=DCCReview.STATUS_FOLLOWUP, comment='foo')
+        dcc_review = DCCReviewFactory.create(tagged_trait=tagged_traits[0], status=DCCReview.STATUS_FOLLOWUP)
         response = self.client.get(self.get_url(self.trait.pk))
         context = response.context
         for (a, b) in context['tagged_traits_with_xs']:
@@ -1879,7 +2108,7 @@ class SourceTraitDetailDCCAnalystTest(DCCAnalystLoginTestCase):
         response = self.client.get(self.get_url(self.trait.pk))
         context = response.context
         self.assertEqual([el[0] for el in context['tagged_traits_with_xs']],
-                         list(self.trait.taggedtrait_set.all()))
+                         list(self.trait.all_taggedtraits.non_archived()))
 
     def test_has_tagged_trait_remove_buttons(self):
         """The tag removal buttons shows up."""
@@ -1895,7 +2124,7 @@ class SourceTraitDetailDCCAnalystTest(DCCAnalystLoginTestCase):
         """The tag removal button does not show up for reviewed tagged traits that need followup."""
         tagged_traits = TaggedTraitFactory.create_batch(3, trait=self.trait)
         dcc_review = DCCReviewFactory.create(
-            tagged_trait=tagged_traits[0], status=DCCReview.STATUS_FOLLOWUP, comment='foo')
+            tagged_trait=tagged_traits[0], status=DCCReview.STATUS_FOLLOWUP)
         response = self.client.get(self.get_url(self.trait.pk))
         context = response.context
         for (a, b) in context['tagged_traits_with_xs']:
@@ -2061,8 +2290,16 @@ class StudyTaggedTraitListTest(UserLoginTestCase):
         self.assertIn('tag_counts', context)
         # Spot-check one of the tag counts.
         self.assertEqual(context['tag_counts'][0]['tt_count'], 1)
-        # The button linking to this view should be present.
-        self.assertIn(self.get_url(self.study.pk), str(response.content))
+        # The button linking to this view should be present when study.get_non_archived_traits_tagged_count > 0.
+        self.assertContains(response, self.get_url(self.study.pk))
+
+    def test_tag_links_present(self):
+        """Links to each of the tag/study pages are present."""
+        response = self.client.get(self.get_url(self.study.pk))
+        for tagged_trait in self.tagged_traits:
+            tag_study_url = reverse(
+                'tags:tag:study:list', kwargs={'pk': tagged_trait.tag.pk, 'pk_study': self.study.pk})
+            self.assertIn(tag_study_url, str(response.content))
 
     def test_context_data_no_taggedtraits(self):
         """View has appropriate data in the context and works when there are no tagged traits for the study."""
@@ -2073,8 +2310,24 @@ class StudyTaggedTraitListTest(UserLoginTestCase):
         self.assertEqual(context['study'], self.study)
         self.assertIn('tag_counts', context)
         self.assertEqual(len(context['tag_counts']), 0)
-        # The button linking to this view should not be present.
-        self.assertNotIn(self.get_url(self.study.pk), str(response.content))
+        # The button linking to this view shouldn't be present because study.get_non_archived_traits_tagged_count is 0.
+        self.assertNotContains(response, self.get_url(self.study.pk))
+
+    def test_context_data_excludes_archived_taggedtraits(self):
+        """View context data does not include archived taggedtraits."""
+        TaggedTrait.objects.all().delete()
+        tag = TagFactory.create()
+        # Make fake tagged traits that all have the same tag.
+        self.tagged_traits = TaggedTraitFactory.create_batch(
+            10, trait__source_dataset__source_study_version__study=self.study, tag=tag)
+        archived_tagged_trait = self.tagged_traits[0]
+        archived_tagged_trait.archive()
+        archived_tagged_trait.refresh_from_db()
+        response = self.client.get(self.get_url(self.study.pk))
+        context = response.context
+        tag_count_row = context['tag_counts'][0]
+        self.assertEqual(tag_count_row['tt_count'], TaggedTrait.objects.non_archived().count())
+        self.assertEqual(tag_count_row['tt_count'], TaggedTrait.objects.all().count() - 1)
 
 
 class PhenotypeTaggerSourceTraitTaggingTest(PhenotypeTaggerLoginTestCase):
@@ -2116,8 +2369,8 @@ class PhenotypeTaggerSourceTraitTaggingTest(PhenotypeTaggerLoginTestCase):
         self.assertRedirects(response, reverse('trait_browser:source:traits:detail', args=[self.trait.pk]))
         self.assertEqual(new_object.tag, self.tag)
         self.assertEqual(new_object.trait, self.trait)
-        self.assertIn(self.trait, self.tag.traits.all())
-        self.assertIn(self.tag, self.trait.tag_set.all())
+        self.assertIn(self.trait, self.tag.all_traits.all())
+        self.assertIn(self.tag, self.trait.all_tags.all())
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
         self.assertFalse('Oops!' in str(messages[0]))
@@ -2137,7 +2390,7 @@ class PhenotypeTaggerSourceTraitTaggingTest(PhenotypeTaggerLoginTestCase):
         self.assertTrue('Oops!' in str(messages[0]))
         form = response.context['form']
         self.assertEqual(form['tag'].errors, [u'This field is required.'])
-        self.assertNotIn(self.tag, self.trait.tag_set.all())
+        self.assertNotIn(self.tag, self.trait.all_tags.all())
 
     def test_adds_user(self):
         """When a trait is successfully tagged, it has the appropriate creator."""
@@ -2167,6 +2420,24 @@ class PhenotypeTaggerSourceTraitTaggingTest(PhenotypeTaggerLoginTestCase):
         self.user.profile.taggable_studies.add(another_study)
         response = self.client.get(self.get_url(self.trait.pk))
         self.assertEqual(response.status_code, 403)
+
+    def test_fails_when_trait_is_already_tagged(self):
+        """Tagging a trait fails when the trait has already been tagged with this tag."""
+        tagged_trait = TaggedTraitFactory.create(tag=self.tag, trait=self.trait)
+        response = self.client.post(self.get_url(self.trait.pk), {'tag': self.tag.pk, })
+        self.assertEqual(response.status_code, 200)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertTrue('Oops!' in str(messages[0]))
+
+    def test_fails_when_trait_is_already_tagged_but_archived(self):
+        """Tagging a trait fails when the trait has already been tagged with this tag, but archived."""
+        tagged_trait = TaggedTraitFactory.create(tag=self.tag, trait=self.trait, archived=True)
+        response = self.client.post(self.get_url(self.trait.pk), {'tag': self.tag.pk, })
+        self.assertEqual(response.status_code, 200)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertTrue('Oops!' in str(messages[0]))
 
 
 class DCCAnalystSourceTraitTaggingTest(DCCAnalystLoginTestCase):
@@ -2209,8 +2480,8 @@ class DCCAnalystSourceTraitTaggingTest(DCCAnalystLoginTestCase):
         self.assertRedirects(response, reverse('trait_browser:source:traits:detail', args=[self.trait.pk]))
         self.assertEqual(new_object.tag, self.tag)
         self.assertEqual(new_object.trait, self.trait)
-        self.assertIn(self.trait, self.tag.traits.all())
-        self.assertIn(self.tag, self.trait.tag_set.all())
+        self.assertIn(self.trait, self.tag.all_traits.all())
+        self.assertIn(self.tag, self.trait.all_tags.all())
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
         self.assertFalse('Oops!' in str(messages[0]))
@@ -2230,7 +2501,7 @@ class DCCAnalystSourceTraitTaggingTest(DCCAnalystLoginTestCase):
         self.assertTrue('Oops!' in str(messages[0]))
         form = response.context['form']
         self.assertEqual(form['tag'].errors, [u'This field is required.'])
-        self.assertNotIn(self.tag, self.trait.tag_set.all())
+        self.assertNotIn(self.tag, self.trait.all_tags.all())
 
     def test_adds_user(self):
         """When a trait is successfully tagged, it has the appropriate creator."""
@@ -2263,6 +2534,24 @@ class DCCAnalystSourceTraitTaggingTest(DCCAnalystLoginTestCase):
         self.user.profile.taggable_studies.add(another_study)
         response = self.client.get(self.get_url(self.trait.pk))
         self.assertEqual(response.status_code, 200)
+
+    def test_fails_when_trait_is_already_tagged(self):
+        """Tagging a trait fails when the trait has already been tagged with this tag."""
+        tagged_trait = TaggedTraitFactory.create(tag=self.tag, trait=self.trait)
+        response = self.client.post(self.get_url(self.trait.pk), {'tag': self.tag.pk, })
+        self.assertEqual(response.status_code, 200)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertTrue('Oops!' in str(messages[0]))
+
+    def test_fails_when_trait_is_already_tagged_but_archived(self):
+        """Tagging a trait fails when the trait has already been tagged with this tag, but archived."""
+        tagged_trait = TaggedTraitFactory.create(tag=self.tag, trait=self.trait, archived=True)
+        response = self.client.post(self.get_url(self.trait.pk), {'tag': self.tag.pk, })
+        self.assertEqual(response.status_code, 200)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertTrue('Oops!' in str(messages[0]))
 
 
 class SourceTraitSearchTest(ClearSearchIndexMixin, UserLoginTestCase):

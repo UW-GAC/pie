@@ -86,3 +86,14 @@ class DCCReviewFactoryTest(TestCase):
         instances = self.model_factory.create_batch(5)
         for one in instances:
             self.assertIsInstance(one, self.model)
+
+    def test_status_confirmed(self):
+        """A comment is not created if the status is confirmed."""
+        instance = self.model_factory.create(status=models.DCCReview.STATUS_CONFIRMED)
+        self.assertEqual(instance.comment, '')
+
+    def test_status_followup(self):
+        """A comment is created if the status is needs followup."""
+        instance = self.model_factory.create(status=models.DCCReview.STATUS_FOLLOWUP)
+        self.assertNotEqual(instance.comment, '')
+        self.assertIsInstance(instance.comment, str)

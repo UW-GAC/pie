@@ -37,8 +37,32 @@ class DCCReviewFactory(factory.DjangoModelFactory):
     """Factory for DCCReview objects using Faker data."""
 
     tagged_trait = factory.SubFactory(TaggedTraitFactory)
+    # factoryboy provides Fuzzy attributes that can do the same thing, but they are being deprecated.
     status = models.DCCReview.STATUS_CONFIRMED
     creator = factory.SubFactory(UserFactory)
+    # Set comment based on the status field.
+    comment = factory.Maybe(
+        'status',
+        yes_declaration='',
+        no_declaration=factory.Faker('sentence')
+    )
 
     class Meta:
         model = models.DCCReview
+
+
+class StudyResponseFactory(factory.DjangoModelFactory):
+    """Factory for StudyResponse objects using Faker data."""
+
+    dcc_review = factory.SubFactory(DCCReviewFactory, status=models.DCCReview.STATUS_FOLLOWUP)
+    # factoryboy provides Fuzzy attributes that can do the same thing, but they are being deprecated.
+    status = models.StudyResponse.STATUS_AGREE
+    creator = factory.SubFactory(UserFactory)
+    comment = factory.Maybe(
+        'status',
+        yes_declaration='',
+        no_declaration=factory.Faker('sentence')
+    )
+
+    class Meta:
+        model = models.StudyResponse
