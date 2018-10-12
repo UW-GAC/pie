@@ -2,6 +2,7 @@
 
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db.models.query import QuerySet
+from django.db.models.deletion import ProtectedError
 from django.db.utils import IntegrityError
 from django.test import TestCase
 
@@ -144,6 +145,12 @@ class TagTest(TestCase):
         tag = factories.TagFactory.create()
         tagged_traits = factories.TaggedTraitFactory.create_batch(10, tag=tag)
         self.assertListEqual(list(SourceTrait.objects.all()), list(tag.all_traits.all()))
+
+    def test_cannot_delete_user_who_created_tag(self):
+        """Unable to delete a user who has created a tag."""
+        tag = factories.TagFactory.create()
+        with self.assertRaises(ProtectedError):
+            tag.creator.delete()
 
 
 class StudyGetAllTaggedTraitsTest(TestCase):
@@ -488,6 +495,12 @@ class TaggedTraitTest(TestCase):
         instance = self.model_factory.create()
         url = instance.get_absolute_url()
         # Just test that this function works.
+
+    def test_cannot_delete_user_who_created_tagged_trait(self):
+        """Unable to delete a user who has created a tagged_trait."""
+        tagged_trait = factories.TaggedTraitFactory.create()
+        with self.assertRaises(ProtectedError):
+            tagged_trait.creator.delete()
 
 
 class TaggedTraitDeleteTest(TestCase):
@@ -845,6 +858,12 @@ class DCCReviewTest(TestCase):
         models.DCCReview.objects.all().hard_delete()
         self.assertEqual(models.DCCReview.objects.count(), 0)
 
+    def test_cannot_delete_user_who_created_dcc_review(self):
+        """Unable to delete a user who has created a dcc_review."""
+        dcc_review = factories.DCCReviewFactory.create()
+        with self.assertRaises(ProtectedError):
+            dcc_review.creator.delete()
+
 
 class StudyResponseTest(TestCase):
     model = models.StudyResponse
@@ -880,3 +899,9 @@ class StudyResponseTest(TestCase):
         """The custom __str__ method returns a string."""
         instance = self.model_factory.create()
         self.assertIsInstance(instance.__str__(), str)
+
+    def test_cannot_delete_user_who_created_study_response(self):
+        """Unable to delete a user who has created a study_response."""
+        study_response = factories.StudyResponseFactory.create()
+        with self.assertRaises(ProtectedError):
+            study_response.creator.delete()

@@ -19,7 +19,7 @@ class Tag(TimeStampedModel):
     lower_title = models.CharField(max_length=255, unique=True, blank=True)
     description = models.TextField()
     instructions = models.TextField()
-    creator = models.ForeignKey(settings.AUTH_USER_MODEL, blank=True, on_delete=models.CASCADE)
+    creator = models.ForeignKey(settings.AUTH_USER_MODEL, blank=True, on_delete=models.PROTECT)
     all_traits = models.ManyToManyField('trait_browser.SourceTrait', through='TaggedTrait', related_name='all_tags')
 
     class Meta:
@@ -64,7 +64,7 @@ class TaggedTrait(TimeStampedModel):
 
     trait = models.ForeignKey('trait_browser.SourceTrait', on_delete=models.CASCADE, related_name="all_taggedtraits")
     tag = models.ForeignKey(Tag, on_delete=models.CASCADE, related_name="all_taggedtraits")
-    creator = models.ForeignKey(settings.AUTH_USER_MODEL, blank=True, on_delete=models.CASCADE)
+    creator = models.ForeignKey(settings.AUTH_USER_MODEL, blank=True, on_delete=models.PROTECT)
     archived = models.BooleanField(default=False)
 
     # Managers/custom querysets.
@@ -128,7 +128,7 @@ class DCCReview(TimeStampedModel):
     )
     status = models.IntegerField(choices=STATUS_CHOICES)
     comment = models.TextField(blank=True)
-    creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
 
     # Managers/custom querysets.
     objects = querysets.DCCReviewQuerySet.as_manager()
@@ -165,7 +165,7 @@ class StudyResponse(TimeStampedModel):
     )
     status = models.IntegerField(choices=STATUS_CHOICES)
     comment = models.TextField(blank=True)
-    creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
 
     class Meta:
         verbose_name = 'study response'
