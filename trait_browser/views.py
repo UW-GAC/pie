@@ -203,6 +203,7 @@ class SourceDatasetDetail(LoginRequiredMixin, SingleTableMixin, DetailView):
         context = super(SourceDatasetDetail, self).get_context_data(**kwargs)
         trait = self.object.sourcetrait_set.first()
         context['trait_count'] = '{:,}'.format(self.object.sourcetrait_set.count())
+        context['show_deprecated_message'] = self.object.source_study_version.i_is_deprecated
         return context
 
 

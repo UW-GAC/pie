@@ -661,6 +661,18 @@ class SourceDatasetDetailTest(UserLoginTestCase):
         self.assertIn('trait_table', context)
         self.assertIsInstance(context['trait_table'], tables.SourceTraitDatasetTable)
         self.assertIn('trait_count', context)
+        self.assertIn('show_deprecated_message', context)
+        self.assertFalse(context['show_deprecated_message'])
+
+    def test_context_deprecated_flag_for_deprecated_dataset(self):
+        """View has appropriate data in the context."""
+        sv = self.dataset.source_study_version
+        sv.i_is_deprecated = True
+        sv.save()
+        response = self.client.get(self.get_url(self.dataset.pk))
+        context = response.context
+        self.assertIn('show_deprecated_message', context)
+        self.assertTrue(context['show_deprecated_message'])
 
 
 class SourceDatasetListTest(UserLoginTestCase):
