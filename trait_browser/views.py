@@ -399,6 +399,7 @@ class SourceTraitDetail(LoginRequiredMixin, DetailView):
         else:
             show_delete_buttons = [False] * len(tagged_traits)
         context['tagged_traits_with_xs'] = list(zip(tagged_traits, show_delete_buttons))
+        context['show_deprecated_message'] = self.object.source_dataset.source_study_version.i_is_deprecated
         return context
 
 

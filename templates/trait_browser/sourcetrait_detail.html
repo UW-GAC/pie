@@ -12,6 +12,9 @@
 
 {% block subtitle %}
   study variable details
+  {% if show_deprecated_message %}
+    - <strong>Old version!</strong>
+  {% endif %}
 {% endblock subtitle %}
 
 {% block detail_fields %}

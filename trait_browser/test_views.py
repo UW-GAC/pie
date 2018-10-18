@@ -1966,6 +1966,22 @@ class SourceTraitDetailTest(UserLoginTestCase):
                          list(self.trait.all_taggedtraits.non_archived()))
         self.assertIn('user_is_study_tagger', context)
         self.assertFalse(context['user_is_study_tagger'])
+        self.assertIn('show_deprecated_message', context)
+        self.assertFalse(context['show_deprecated_message'])
+
+    def test_context_data_for_deprecated_trait(self):
+        """View has appropriate data in the context if the trait is deprecated."""
+        study_version = self.trait.source_dataset.source_study_version
+        study_version.i_is_deprecated = True
+        study_version.save()
+        response = self.client.get(self.get_url(self.trait.pk))
+        context = response.context
+        self.assertIn('source_trait', context)
+        self.assertEqual(context['source_trait'], self.trait)
+        self.assertIn('user_is_study_tagger', context)
+        self.assertFalse(context['user_is_study_tagger'])
+        self.assertIn('show_deprecated_message', context)
+        self.assertTrue(context['show_deprecated_message'])
 
     def test_no_tagged_trait_remove_button(self):
         """The tag removal button shows up."""
