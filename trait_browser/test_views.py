@@ -2087,6 +2087,16 @@ class SourceTraitDetailPhenotypeTaggerTest(PhenotypeTaggerLoginTestCase):
         self.assertTrue(context['show_tag_button'])
         self.assertContains(response, reverse('trait_browser:source:traits:tagging', kwargs={'pk': self.trait.pk}))
 
+    def test_no_tagging_button_if_deprecated(self):
+        """A phenotype tagger doesn't see a button to add tags if the trait is deprecated."""
+        study_version = self.trait.source_dataset.source_study_version
+        study_version.i_is_deprecated = True
+        study_version.save()
+        response = self.client.get(self.get_url(self.trait.pk))
+        context = response.context
+        self.assertFalse(context['show_tag_button'])
+        self.assertNotContains(response, reverse('trait_browser:source:traits:tagging', kwargs={'pk': self.trait.pk}))
+
     def test_user_is_study_tagger_true(self):
         """user_is_study_tagger is true in the view's context."""
         response = self.client.get(self.get_url(self.trait.pk))
@@ -2172,6 +2182,16 @@ class SourceTraitDetailDCCAnalystTest(DCCAnalystLoginTestCase):
         context = response.context
         self.assertTrue(context['show_tag_button'])
         self.assertContains(response, reverse('trait_browser:source:traits:tagging', kwargs={'pk': self.trait.pk}))
+
+    def test_no_tagging_button_if_deprecated(self):
+        """A phenotype tagger doesn't see a button to add tags if the trait is deprecated."""
+        study_version = self.trait.source_dataset.source_study_version
+        study_version.i_is_deprecated = True
+        study_version.save()
+        response = self.client.get(self.get_url(self.trait.pk))
+        context = response.context
+        self.assertFalse(context['show_tag_button'])
+        self.assertNotContains(response, reverse('trait_browser:source:traits:tagging', kwargs={'pk': self.trait.pk}))
 
     def test_user_is_study_tagger_false(self):
         """user_is_study_tagger is false in the view's context."""

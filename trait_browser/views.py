@@ -381,10 +381,12 @@ class SourceTraitDetail(LoginRequiredMixin, DetailView):
     context_object_name = 'source_trait'
 
     def get_context_data(self, **kwargs):
+        is_deprecated = self.object.source_dataset.source_study_version.i_is_deprecated
         context = super(SourceTraitDetail, self).get_context_data(**kwargs)
         user_studies = list(self.request.user.profile.taggable_studies.all())
         context['user_is_study_tagger'] = self.object.source_dataset.source_study_version.study in user_studies
-        context['show_tag_button'] = context['user_is_study_tagger'] or self.request.user.is_staff
+        context['show_tag_button'] = (context['user_is_study_tagger'] or self.request.user.is_staff) and \
+            not is_deprecated
         tagged_traits = self.object.all_taggedtraits.non_archived().order_by('tag__lower_title')
         # If tagging is allowed, check on whether to show the delete button for each tag.
         if context['show_tag_button']:
@@ -399,7 +401,7 @@ class SourceTraitDetail(LoginRequiredMixin, DetailView):
         else:
             show_delete_buttons = [False] * len(tagged_traits)
         context['tagged_traits_with_xs'] = list(zip(tagged_traits, show_delete_buttons))
-        context['show_deprecated_message'] = self.object.source_dataset.source_study_version.i_is_deprecated
+        context['show_deprecated_message'] = is_deprecated
         return context
 
 
