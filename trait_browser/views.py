@@ -500,6 +500,24 @@ class SourceTraitTagging(LoginRequiredMixin, PermissionRequiredMixin, UserPasses
             user_studies = list(user.profile.taggable_studies.all())
             return self.trait.source_dataset.source_study_version.study in user_studies
 
+    def _get_deprecated_response(self, *args, **kwargs):
+        self.trait = get_object_or_404(models.SourceTrait, pk=kwargs['pk'])
+        if self.trait.source_dataset.source_study_version.i_is_deprecated:
+            self.messages.warning('Oops! This study variable is from an outdated study version and cannot be tagged.')
+            return HttpResponseRedirect(self.trait.get_absolute_url())
+
+    def get(self, request, *args, **kwargs):
+        check_response = self._get_deprecated_response(*args, **kwargs)
+        if check_response is not None:
+            return check_response
+        return super().get(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        check_response = self._get_deprecated_response(*args, **kwargs)
+        if check_response is not None:
+            return check_response
+        return super().post(request, *args, **kwargs)
+
     def get_success_url(self):
         return self.trait.get_absolute_url()
 

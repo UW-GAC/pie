@@ -2487,6 +2487,30 @@ class PhenotypeTaggerSourceTraitTaggingTest(PhenotypeTaggerLoginTestCase):
         self.assertEqual(len(messages), 1)
         self.assertTrue('Oops!' in str(messages[0]))
 
+    def test_get_redirect_deprecated_traits(self):
+        """Redirects to the detail page when attempting to tag a deprecated source trait."""
+        sv = self.trait.source_dataset.source_study_version
+        sv.i_is_deprecated = True
+        sv.save()
+        response = self.client.get(self.get_url(self.trait.pk))
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, self.trait.get_absolute_url())
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertTrue('Oops!' in str(messages[0]))
+
+    def test_post_redirect_deprecated_traits(self):
+        """Redirects to the detail page when attempting to tag a deprecated source trait."""
+        sv = self.trait.source_dataset.source_study_version
+        sv.i_is_deprecated = True
+        sv.save()
+        response = self.client.post(self.get_url(self.trait.pk), {'tag': self.tag.pk})
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, self.trait.get_absolute_url())
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertTrue('Oops!' in str(messages[0]))
+
 
 class DCCAnalystSourceTraitTaggingTest(DCCAnalystLoginTestCase):
 
@@ -2597,6 +2621,30 @@ class DCCAnalystSourceTraitTaggingTest(DCCAnalystLoginTestCase):
         tagged_trait = TaggedTraitFactory.create(tag=self.tag, trait=self.trait, archived=True)
         response = self.client.post(self.get_url(self.trait.pk), {'tag': self.tag.pk, })
         self.assertEqual(response.status_code, 200)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertTrue('Oops!' in str(messages[0]))
+
+    def test_get_redirect_deprecated_traits(self):
+        """Redirects to the detail page when attempting to tag a deprecated source trait."""
+        sv = self.trait.source_dataset.source_study_version
+        sv.i_is_deprecated = True
+        sv.save()
+        response = self.client.get(self.get_url(self.trait.pk))
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, self.trait.get_absolute_url())
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertTrue('Oops!' in str(messages[0]))
+
+    def test_post_redirect_deprecated_traits(self):
+        """Redirects to the detail page when attempting to tag a deprecated source trait."""
+        sv = self.trait.source_dataset.source_study_version
+        sv.i_is_deprecated = True
+        sv.save()
+        response = self.client.post(self.get_url(self.trait.pk), {'tag': self.tag.pk})
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, self.trait.get_absolute_url())
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
         self.assertTrue('Oops!' in str(messages[0]))
