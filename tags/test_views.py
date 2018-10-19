@@ -1113,6 +1113,17 @@ class TaggedTraitCreateTestsMixin(object):
         self.assertEqual(len(messages), 1)
         self.assertTrue('Oops!' in str(messages[0]))
 
+    def test_fails_when_trait_is_deprecated(self):
+        """Can't tag a deprecated source trait."""
+        sv = self.trait.source_dataset.source_study_version
+        sv.i_is_deprecated = True
+        sv.save()
+        response = self.client.post(self.get_url(), {'trait': self.trait.pk, 'tag': self.tag.pk, })
+        self.assertEqual(response.status_code, 200)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertTrue('Oops!' in str(messages[0]))
+
 
 class TaggedTraitCreatePhenotypeTaggerTest(TaggedTraitCreateTestsMixin, PhenotypeTaggerLoginTestCase):
 
@@ -1496,6 +1507,17 @@ class TaggedTraitCreateByTagTestsMixin(object):
         self.assertEqual(len(messages), 1)
         self.assertTrue('Oops!' in str(messages[0]))
 
+    def test_fails_when_trait_is_deprecated(self):
+        """Can't tag a deprecated source trait."""
+        sv = self.trait.source_dataset.source_study_version
+        sv.i_is_deprecated = True
+        sv.save()
+        response = self.client.post(self.get_url(self.tag.pk), {'trait': self.trait.pk, })
+        self.assertEqual(response.status_code, 200)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertTrue('Oops!' in str(messages[0]))
+
 
 class TaggedTraitCreateByTagPhenotypeTaggerTest(TaggedTraitCreateByTagTestsMixin, PhenotypeTaggerLoginTestCase):
 
@@ -1668,6 +1690,38 @@ class ManyTaggedTraitsCreateTestsMixin(object):
         already_tagged = factories.TaggedTraitFactory.create(tag=self.tag, trait=self.traits[0], archived=True)
         response = self.client.post(self.get_url(),
                                     {'traits': [t.pk for t in self.traits[0:5]], 'tag': self.tag.pk, })
+        self.assertEqual(response.status_code, 200)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertTrue('Oops!' in str(messages[0]))
+
+    def test_fails_when_one_trait_is_deprecated(self):
+        """Can't tag one deprecated source trait."""
+        sv = self.traits[0].source_dataset.source_study_version
+        sv.i_is_deprecated = True
+        sv.save()
+        response = self.client.post(self.get_url(), {'trait': [self.traits[0].pk], })
+        self.assertEqual(response.status_code, 200)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertTrue('Oops!' in str(messages[0]))
+
+    def test_fails_when_one_of_two_traits_is_deprecated(self):
+        """Can't tag one deprecated source trait."""
+        deprecated_trait = SourceTraitFactory.create(source_dataset__source_study_version__i_is_deprecated=True)
+        self.user.profile.taggable_studies.add(deprecated_trait.source_dataset.source_study_version.study)
+        response = self.client.post(self.get_url(), {'trait': [self.traits[0].pk, deprecated_trait.pk], })
+        self.assertEqual(response.status_code, 200)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertTrue('Oops!' in str(messages[0]))
+
+    def test_fails_when_two_traits_are_deprecated(self):
+        """Can't tag two deprecated source traits."""
+        sv = self.traits[0].source_dataset.source_study_version
+        sv.i_is_deprecated = True
+        sv.save()
+        response = self.client.post(self.get_url(), {'trait': self.traits[0].pk, 'tag': self.tag.pk, })
         self.assertEqual(response.status_code, 200)
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
@@ -1909,6 +1963,38 @@ class ManyTaggedTraitsCreateByTagTestsMixin(object):
         already_tagged2 = factories.TaggedTraitFactory.create(tag=self.tag, trait=self.traits[1], archived=True)
         response = self.client.post(self.get_url(self.tag.pk),
                                     {'traits': [t.pk for t in self.traits[0:5]], })
+        self.assertEqual(response.status_code, 200)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertTrue('Oops!' in str(messages[0]))
+
+    def test_fails_when_one_trait_is_deprecated(self):
+        """Can't tag one deprecated source trait."""
+        sv = self.traits[0].source_dataset.source_study_version
+        sv.i_is_deprecated = True
+        sv.save()
+        response = self.client.post(self.get_url(self.tag.pk), {'trait': [self.traits[0].pk], })
+        self.assertEqual(response.status_code, 200)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertTrue('Oops!' in str(messages[0]))
+
+    def test_fails_when_one_of_two_traits_is_deprecated(self):
+        """Can't tag one deprecated source trait."""
+        deprecated_trait = SourceTraitFactory.create(source_dataset__source_study_version__i_is_deprecated=True)
+        self.user.profile.taggable_studies.add(deprecated_trait.source_dataset.source_study_version.study)
+        response = self.client.post(self.get_url(self.tag.pk), {'trait': [self.traits[0].pk, deprecated_trait.pk], })
+        self.assertEqual(response.status_code, 200)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertTrue('Oops!' in str(messages[0]))
+
+    def test_fails_when_two_traits_are_deprecated(self):
+        """Can't tag two deprecated source traits."""
+        sv = self.traits[0].source_dataset.source_study_version
+        sv.i_is_deprecated = True
+        sv.save()
+        response = self.client.post(self.get_url(self.tag.pk), {'trait': self.traits[0].pk, })
         self.assertEqual(response.status_code, 200)
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
