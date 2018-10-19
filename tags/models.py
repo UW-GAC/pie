@@ -169,3 +169,15 @@ class StudyResponse(TimeStampedModel):
 
     class Meta:
         verbose_name = 'study response'
+
+
+class DCCDecision(TimeStampedModel):
+    """Model for making a final decision about whether to keep a tagged trait."""
+
+    dcc_review = models.OneToOneField(DCCReview, on_delete=models.CASCADE, related_name='dcc_decision')
+    DECISION_REMOVE = 0
+    DECISION_CONFIRM = 1
+    DECISION_CHOICES = ((DECISION_CONFIRM, 'Confirm'), (DECISION_REMOVE, 'Remove'))
+    decision = models.IntegerField(choices=DECISION_CHOICES)
+    comment = models.TextField()
+    creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)

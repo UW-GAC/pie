@@ -905,3 +905,45 @@ class StudyResponseTest(TestCase):
         study_response = factories.StudyResponseFactory.create()
         with self.assertRaises(ProtectedError):
             study_response.creator.delete()
+
+
+class DCCDecisionTest(TestCase):
+    model = models.DCCDecision
+    model_factory = factories.DCCDecisionFactory
+
+    def setUp(self):
+        self.dcc_review = factories.DCCReviewFactory.create(status=models.DCCReview.STATUS_FOLLOWUP)
+        self.decision = self.model.DECISION_REMOVE
+        self.comment = ''
+        self.user = UserFactory.create()
+        self.model_args = {'dcc_review': self.dcc_review, 'decision': self.decision, 'comment': self.comment,
+                           'creator': self.user}
+
+    def test_model_saving(self):
+        """Creation using the model constructor and .save() works."""
+        instance = self.model(**self.model_args)
+        instance.save()
+        self.assertIsInstance(instance, self.model)
+
+    def test_model_saving_with_comment(self):
+        """Creation using the model constructor and .save() works."""
+        instance = self.model(**self.model_args)
+        instance.save()
+        self.assertIsInstance(instance, self.model)
+
+    def test_model_factory(self):
+        """Creation using the model factory."""
+        instance = self.model_factory.create()
+        self.assertIsInstance(self.model_factory._meta.model.objects.get(pk=instance.pk),
+                              self.model_factory._meta.model)
+
+    def test_printing(self):
+        """The custom __str__ method returns a string."""
+        instance = self.model_factory.create()
+        self.assertIsInstance(instance.__str__(), str)
+
+    def test_cannot_delete_user_who_created_dcc_decision(self):
+        """Unable to delete a user who has created a dcc decision."""
+        instance = self.model_factory.create()
+        with self.assertRaises(ProtectedError):
+            instance.creator.delete()

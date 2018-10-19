@@ -66,3 +66,16 @@ class StudyResponseFactory(factory.DjangoModelFactory):
 
     class Meta:
         model = models.StudyResponse
+
+
+class DCCDecisionFactory(factory.DjangoModelFactory):
+    """Factory for DCCDecision objects using Faker data."""
+
+    dcc_review = factory.SubFactory(DCCReviewFactory, status=models.DCCReview.STATUS_FOLLOWUP)
+    # If you want a dcc_review with a study response, you will need to specify that explicitly.
+    decision = models.DCCDecision.DECISION_REMOVE
+    creator = factory.SubFactory(UserFactory)
+    comment = factory.Faker('sentence')
+
+    class Meta:
+        model = models.DCCDecision
