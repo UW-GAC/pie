@@ -9,7 +9,7 @@ from django.urls import reverse
 from core.factories import UserFactory
 from core.utils import (LoginRequiredTestCase, PhenotypeTaggerLoginTestCase, UserLoginTestCase,
                         DCCAnalystLoginTestCase, DCCDeveloperLoginTestCase, get_autocomplete_view_ids)
-from trait_browser.factories import SourceTraitFactory, StudyFactory
+from trait_browser.factories import SourceStudyVersionFactory, SourceTraitFactory, StudyFactory
 from trait_browser.models import SourceTrait
 
 from . import factories
@@ -1679,7 +1679,8 @@ class ManyTaggedTraitsCreatePhenotypeTaggerTest(ManyTaggedTraitsCreateTestsMixin
     def setUp(self):
         super(ManyTaggedTraitsCreatePhenotypeTaggerTest, self).setUp()
         self.tag = factories.TagFactory.create()
-        self.traits = SourceTraitFactory.create_batch(10, source_dataset__source_study_version__study=self.study)
+        study_version = SourceStudyVersionFactory.create(study=self.study)
+        self.traits = SourceTraitFactory.create_batch(10, source_dataset__source_study_version=study_version)
         self.user.refresh_from_db()
 
     def test_creates_all_new_objects_from_multiple_studies(self):
@@ -1920,7 +1921,8 @@ class ManyTaggedTraitsCreateByTagPhenotypeTaggerTest(ManyTaggedTraitsCreateByTag
     def setUp(self):
         super(ManyTaggedTraitsCreateByTagPhenotypeTaggerTest, self).setUp()
         self.tag = factories.TagFactory.create()
-        self.traits = SourceTraitFactory.create_batch(10, source_dataset__source_study_version__study=self.study)
+        study_version = SourceStudyVersionFactory.create(study=self.study)
+        self.traits = SourceTraitFactory.create_batch(10, source_dataset__source_study_version=study_version)
         self.user.refresh_from_db()
 
     def test_creates_all_new_objects_from_multiple_studies(self):
