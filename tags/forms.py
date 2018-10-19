@@ -123,6 +123,9 @@ class TaggedTraitForm(forms.ModelForm):
     def clean(self):
         """Custom cleaning to check that traits aren't already tagged."""
         cleaned_data = super(TaggedTraitForm, self).clean()
+        # We don't need to check that the trait comes from a non-deprecated study version. That
+        # is handled by the super's clean() method because the form __init__ method already uses
+        # a filtered queryset for traits.
         trait = cleaned_data.get('trait')
         tag = cleaned_data.get('tag')
         if tag is not None and trait is not None:
@@ -231,6 +234,9 @@ class TaggedTraitByTagForm(forms.Form):
 
     def clean(self):
         """Custom cleaning to check that traits aren't already tagged."""
+        # We don't need to check that the trait comes from a non-deprecated study version. That
+        # is handled by the super's clean() method because the form __init__ method already uses
+        # a filtered queryset for traits.
         cleaned_data = super(TaggedTraitByTagForm, self).clean()
         trait = cleaned_data.get('trait')
         if trait is not None:
@@ -302,6 +308,9 @@ class ManyTaggedTraitsForm(forms.Form):
 
     def clean(self):
         """Custom cleaning to check that traits aren't already tagged."""
+        # We don't need to check that the trait comes from a non-deprecated study version. That
+        # is handled by the super's clean() method because the form __init__ method already uses
+        # a filtered queryset for traits.
         cleaned_data = super(ManyTaggedTraitsForm, self).clean()
         traits = cleaned_data.get('traits', [])
         tag = cleaned_data.get('tag')
@@ -375,6 +384,9 @@ class ManyTaggedTraitsByTagForm(forms.Form):
 
     def clean(self):
         """Custom cleaning to check that traits aren't already tagged."""
+        # We don't need to check that the trait comes from a non-deprecated study version. That
+        # is handled by the super's clean() method because the form __init__ method already uses
+        # a filtered queryset for traits.
         cleaned_data = super(ManyTaggedTraitsByTagForm, self).clean()
         traits = cleaned_data.get('traits', [])
         for trait in traits:
@@ -421,8 +433,12 @@ class TagSpecificTraitForm(forms.Form):
 
     def clean(self):
         """Custom cleaning to check that traits aren't already tagged."""
+        # I don't think it makes sense to
         cleaned_data = super(TagSpecificTraitForm, self).clean()
         tag = cleaned_data.get('tag', None)
+        if self.trait not in SourceTrait.objects.current():
+            deprecated_error = 'This variable is from an outdated study version and cannot be tagged.'
+            self.add_error(None, deprecated_error)
         if tag is not None:
             if self.trait in tag.all_traits.all():
                 taggedtrait = models.TaggedTrait.objects.get(trait=self.trait, tag=tag)
