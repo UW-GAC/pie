@@ -559,6 +559,23 @@ class SourceTrait(Trait):
         return POPOVER_URL_HTML.format(url=self.get_absolute_url(), popover=description,
                                        name=self.i_trait_name)
 
+    def get_current_version(self):
+        """Return the current version of a trait."""
+        study = self.source_dataset.source_study_version.study
+        try:
+            current_study_version = SourceStudyVersion.objects.get(i_is_deprecated=False, study=study)
+        except ObjectDoesNotExist:
+            return None
+        # Find the same trait associated with the current study version.
+        try:
+            current_trait = SourceTrait.objects.get(
+                source_dataset__source_study_version=current_study_version,
+                i_dbgap_variable_accession=self.i_dbgap_variable_accession
+            )
+        except ObjectDoesNotExist:
+            return None
+        return current_trait
+
 
 class HarmonizedTrait(Trait):
     """Model for traits harmonized by the DCC.
