@@ -503,7 +503,8 @@ class SourceTraitTagging(LoginRequiredMixin, PermissionRequiredMixin, UserPasses
     def _get_deprecated_response(self, *args, **kwargs):
         self.trait = get_object_or_404(models.SourceTrait, pk=kwargs['pk'])
         if self.trait.source_dataset.source_study_version.i_is_deprecated:
-            self.messages.warning('Oops! This study variable is from an outdated study version and cannot be tagged.')
+            msg = 'Oops! Cannot tag this study variable, because there is a more recent version available.'
+            self.messages.warning(msg)
             return HttpResponseRedirect(self.trait.get_absolute_url())
 
     def get(self, request, *args, **kwargs):

@@ -437,7 +437,7 @@ class TagSpecificTraitForm(forms.Form):
         cleaned_data = super(TagSpecificTraitForm, self).clean()
         tag = cleaned_data.get('tag', None)
         if self.trait not in SourceTrait.objects.current():
-            deprecated_error = 'This variable is from an outdated study version and cannot be tagged.'
+            deprecated_error = 'This study variable cannot be tagged because there is a more recent version available.'
             self.add_error(None, deprecated_error)
         if tag is not None:
             if self.trait in tag.all_traits.all():
