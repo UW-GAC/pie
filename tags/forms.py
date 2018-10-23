@@ -433,7 +433,6 @@ class TagSpecificTraitForm(forms.Form):
 
     def clean(self):
         """Custom cleaning to check that traits aren't already tagged."""
-        # I don't think it makes sense to
         cleaned_data = super(TagSpecificTraitForm, self).clean()
         tag = cleaned_data.get('tag', None)
         if self.trait not in SourceTrait.objects.current():
