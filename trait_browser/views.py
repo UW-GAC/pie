@@ -416,6 +416,18 @@ class SourceTraitDetail(LoginRequiredMixin, DetailView):
             show_delete_buttons = [False] * len(tagged_traits)
         context['tagged_traits_with_xs'] = list(zip(tagged_traits, show_delete_buttons))
         context['show_deprecated_message'] = is_deprecated
+        if is_deprecated:
+            current_version = self.object.get_current_version()
+            if current_version is not None:
+                msg = """There is a newer version of this study variable available:
+                         <a class="alert-link" href="{}">{}</a>.""".format(
+                    current_version.get_absolute_url(),
+                    current_version.i_trait_name
+                )
+                context['deprecation_message'] = mark_safe(msg)
+            else:
+                msg = """This variable does not exist in the most recent study version."""
+                context['deprecation_message'] = msg
         return context
 
 

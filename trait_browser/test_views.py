@@ -2000,20 +2000,37 @@ class SourceTraitDetailTest(UserLoginTestCase):
         self.assertFalse(context['user_is_study_tagger'])
         self.assertIn('show_deprecated_message', context)
         self.assertFalse(context['show_deprecated_message'])
+        self.assertNotIn('deprecation_message', context)
 
-    def test_context_data_for_deprecated_trait(self):
-        """View has appropriate data in the context if the trait is deprecated."""
-        study_version = self.trait.source_dataset.source_study_version
-        study_version.i_is_deprecated = True
-        study_version.save()
+    def test_context_deprecated_trait_with_no_newer_version(self):
+        """View has appropriate deprecation message with no newer version."""
+        sv = self.trait.source_dataset.source_study_version
+        sv.i_is_deprecated = True
+        sv.save()
         response = self.client.get(self.get_url(self.trait.pk))
         context = response.context
-        self.assertIn('source_trait', context)
-        self.assertEqual(context['source_trait'], self.trait)
-        self.assertIn('user_is_study_tagger', context)
-        self.assertFalse(context['user_is_study_tagger'])
         self.assertIn('show_deprecated_message', context)
         self.assertTrue(context['show_deprecated_message'])
+        self.assertIn('deprecation_message', context)
+        self.assertIn("does not exist in the most recent study version", context['deprecation_message'])
+
+    def test_context_deprecated_trait_with_newer_version(self):
+        """View has appropriate deprecation message with a newer version."""
+        sv = self.trait.source_dataset.source_study_version
+        sv.i_is_deprecated = True
+        sv.save()
+        current_dataset = factories.SourceTraitFactory.create(
+            source_dataset__source_study_version__study=sv.study,
+            i_dbgap_variable_accession=self.trait.i_dbgap_variable_accession,
+            i_dbgap_variable_version=self.trait.i_dbgap_variable_version
+        )
+        response = self.client.get(self.get_url(self.trait.pk))
+        context = response.context
+        self.assertIn('show_deprecated_message', context)
+        self.assertTrue(context['show_deprecated_message'])
+        self.assertIn('deprecation_message', context)
+        self.assertIn("There is a newer version", context['deprecation_message'])
+        self.assertIn(current_dataset.get_absolute_url(), context['deprecation_message'])
 
     def test_no_tagged_trait_remove_button(self):
         """The tag removal button shows up."""
