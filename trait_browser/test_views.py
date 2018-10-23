@@ -663,9 +663,10 @@ class SourceDatasetDetailTest(UserLoginTestCase):
         self.assertIn('trait_count', context)
         self.assertIn('show_deprecated_message', context)
         self.assertFalse(context['show_deprecated_message'])
+        self.assertNotIn('deprecation_message', context)
 
-    def test_context_deprecated_flag_for_deprecated_dataset(self):
-        """View has appropriate data in the context."""
+    def test_context_deprecated_dataset_with_no_newer_version(self):
+        """View has appropriate deprecation message with no newer version."""
         sv = self.dataset.source_study_version
         sv.i_is_deprecated = True
         sv.save()
@@ -673,7 +674,26 @@ class SourceDatasetDetailTest(UserLoginTestCase):
         context = response.context
         self.assertIn('show_deprecated_message', context)
         self.assertTrue(context['show_deprecated_message'])
+        self.assertIn('deprecation_message', context)
+        self.assertIn("does not exist in the most recent study version", context['deprecation_message'])
 
+    def test_context_deprecated_dataset_with_newer_version(self):
+        """View has appropriate deprecation message with a newer version."""
+        sv = self.dataset.source_study_version
+        sv.i_is_deprecated = True
+        sv.save()
+        current_dataset = factories.SourceDatasetFactory.create(
+            source_study_version__study=sv.study,
+            i_accession=self.dataset.i_accession,
+            i_version=self.dataset.i_version
+        )
+        response = self.client.get(self.get_url(self.dataset.pk))
+        context = response.context
+        self.assertIn('show_deprecated_message', context)
+        self.assertTrue(context['show_deprecated_message'])
+        self.assertIn('deprecation_message', context)
+        self.assertIn("There is a newer version", context['deprecation_message'])
+        self.assertIn(current_dataset.get_absolute_url(), context['deprecation_message'])
 
 class SourceDatasetListTest(UserLoginTestCase):
     """Unit tests for the SourceDataset views."""

@@ -17,7 +17,7 @@
 {% block before_panel %}
   {% if show_deprecated_message %}
   <div class="alert alert-danger" role="alert">
-    There is a more recent version of this study dataset available.
+    {{ deprecation_message }}
   </div>
   {% endif %}
 {% endblock before_panel %}
