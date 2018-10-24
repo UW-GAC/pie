@@ -12,8 +12,8 @@ from django.views.generic import (CreateView, DetailView, DeleteView, FormView, 
                                   UpdateView, View)
 from django.views.generic.edit import ProcessFormView
 
-from braces.views import (FormMessagesMixin, FormValidMessageMixin, LoginRequiredMixin, MessageMixin,
-                          PermissionRequiredMixin, UserFormKwargsMixin, UserPassesTestMixin)
+from braces.views import (FormMessagesMixin, FormValidMessageMixin, GroupRequiredMixin, LoginRequiredMixin,
+                          MessageMixin, PermissionRequiredMixin, UserFormKwargsMixin, UserPassesTestMixin)
 from dal import autocomplete
 from django_tables2 import SingleTableMixin
 
@@ -1026,3 +1026,36 @@ class StudyResponseCreateDisagree(LoginRequiredMixin, PermissionRequiredMixin, F
         tag = self.tagged_trait.dcc_review.tagged_trait.tag
         study = self.tagged_trait.dcc_review.tagged_trait.trait.source_dataset.source_study_version.study
         return reverse('tags:tag:study:quality-review', args=[tag.pk, study.pk])
+
+
+class TaggedTraitsNeedDCCDecisionSummary(LoginRequiredMixin, GroupRequiredMixin, TemplateView):
+    """View to show counts of StudyResponses with status disagree by study and tag for DCC staff."""
+
+    template_name = 'tags/taggedtrait_need_dccdecision_summary.html'
+    group_required = [u'dcc_analysts', u'dcc_developers', ]
+    raise_exception = True
+    redirect_unauthenticated_users = True
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # This view only considers tagged traits with study responses of "disagree".
+        # Tagged traits without study responses are not included.
+        disagree_responses = models.StudyResponse.objects.filter(status=models.StudyResponse.STATUS_DISAGREE).values(
+            study_name=F('dcc_review__tagged_trait__trait__source_dataset__source_study_version__study__i_study_name'),
+            study_pk=F('dcc_review__tagged_trait__trait__source_dataset__source_study_version__study__i_accession'),
+            tag_name=F('dcc_review__tagged_trait__tag__title'),
+            tag_pk=F('dcc_review__tagged_trait__tag__pk'),
+        ).annotate(
+            tt_total=Count('pk'),
+            tt_decision_required_count=Sum(Case(
+                When(dcc_review__dcc_decision__isnull=True, then=1),
+                When(dcc_review__dcc_decision__isnull=False, then=0),
+                default_value=0,
+                output_field=IntegerField()
+            ))
+        ).order_by('study_name', 'tag_name')
+        grouped_study_tag_counts = groupby(disagree_responses,
+                                           lambda x: {'study_name': x['study_name'], 'study_pk': x['study_pk']})
+        grouped_study_tag_counts = [(key, list(group)) for key, group in grouped_study_tag_counts]
+        context['grouped_study_tag_counts'] = grouped_study_tag_counts
+        return context

@@ -112,6 +112,13 @@
                 </li>
               {% endif %}
             {% endif %}
+            {% if perms.tags.add_dccdecision %}
+              <li>
+                <a href="{% url 'tags:tagged-traits:dcc-decision' %}"><span class="glyphicon glyphicon-ok-circle"></span>
+                  Make final decisions
+                </a>
+              </li>
+            {% endif %}
           </ul>
         </li>
         {# Harmonization Recipes dropdown #}

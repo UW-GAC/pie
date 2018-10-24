@@ -63,6 +63,7 @@ tagged_trait_patterns = ([
     url(r'^by-study/$', views.TaggedTraitTagCountsByStudy.as_view(), name='by-study'),
     url(r'^by-tag/$', views.TaggedTraitStudyCountsByTag.as_view(), name='by-tag'),
     url(r'^quality-review/$', views.DCCReviewNeedFollowupCounts.as_view(), name='quality-review'),
+    url(r'^dcc-decision/$', views.TaggedTraitsNeedDCCDecisionSummary.as_view(), name='dcc-decision'),
 ], 'tagged-traits', )
 
 urlpatterns = [
