@@ -675,7 +675,7 @@ class SourceDatasetDetailTest(UserLoginTestCase):
         self.assertIn('show_deprecated_message', context)
         self.assertTrue(context['show_deprecated_message'])
         self.assertIn('deprecation_message', context)
-        self.assertIn("does not exist in the most recent study version", context['deprecation_message'])
+        self.assertIn("was removed from the most recent study version", context['deprecation_message'])
 
     def test_context_deprecated_dataset_with_newer_version(self):
         """View has appropriate deprecation message with a newer version."""
@@ -2012,7 +2012,7 @@ class SourceTraitDetailTest(UserLoginTestCase):
         self.assertIn('show_deprecated_message', context)
         self.assertTrue(context['show_deprecated_message'])
         self.assertIn('deprecation_message', context)
-        self.assertIn("does not exist in the most recent study version", context['deprecation_message'])
+        self.assertIn("was removed from the most recent study version", context['deprecation_message'])
 
     def test_context_deprecated_trait_with_newer_version(self):
         """View has appropriate deprecation message with a newer version."""

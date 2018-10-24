@@ -215,7 +215,7 @@ class SourceDatasetDetail(LoginRequiredMixin, SingleTableMixin, DetailView):
                 )
                 context['deprecation_message'] = mark_safe(msg)
             else:
-                msg = """This dataset does not exist in the most recent study version."""
+                msg = """This dataset was removed from the most recent study version."""
                 context['deprecation_message'] = msg
         return context
 
@@ -426,7 +426,7 @@ class SourceTraitDetail(LoginRequiredMixin, DetailView):
                 )
                 context['deprecation_message'] = mark_safe(msg)
             else:
-                msg = """This variable does not exist in the most recent study version."""
+                msg = """This variable was removed from the most recent study version."""
                 context['deprecation_message'] = msg
         return context
 
