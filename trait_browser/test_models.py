@@ -1,6 +1,8 @@
 """Test functions and classes from models.py."""
 
-from datetime import datetime
+from datetime import datetime, timedelta
+import pytz
+from time import sleep
 
 from django.db.models.query import QuerySet
 from django.core.exceptions import ValidationError
@@ -303,6 +305,61 @@ class SourceDatasetTest(TestCase):
         deprecated_study_version = factories.SourceStudyVersionFactory.create(study=study, i_is_deprecated=True)
         deprecated_dataset = factories.SourceDatasetFactory.create(source_study_version=deprecated_study_version)
         self.assertIsNone(deprecated_dataset.get_current_version())
+
+    def test_get_current_version_breaks_ties_with_i_version(self):
+        """get_current_version chooses highest version for two non-deprecated versions."""
+        study = factories.StudyFactory.create()
+        deprecated_study_version = factories.SourceStudyVersionFactory.create(study=study, i_is_deprecated=True)
+        deprecated_dataset = factories.SourceDatasetFactory.create(source_study_version=deprecated_study_version)
+        now = datetime.now(tz=pytz.UTC)
+        current_study_version_1 = factories.SourceStudyVersionFactory.create(
+            study=study,
+            i_version=deprecated_study_version.i_version + 1,
+            i_date_added=datetime.now(tz=pytz.UTC)
+        )
+        current_dataset_1 = factories.SourceDatasetFactory.create(
+            source_study_version=current_study_version_1,
+            i_accession=deprecated_dataset.i_accession,
+            i_version=deprecated_dataset.i_version + 1
+        )
+        current_study_version_2 = factories.SourceStudyVersionFactory.create(
+            study=study,
+            i_version=deprecated_study_version.i_version + 2,
+            i_date_added=datetime.now(tz=pytz.UTC) - timedelta(hours=1)
+        )
+        current_dataset_2 = factories.SourceDatasetFactory.create(
+            source_study_version=current_study_version_2,
+            i_accession=deprecated_dataset.i_accession,
+            i_version=deprecated_dataset.i_version + 1
+        )
+        self.assertEqual(deprecated_dataset.get_current_version(), current_dataset_2)
+
+    def test_get_current_version_breaks_ties_with_i_date_added(self):
+        """get_current_version chooses most recent i_date_added field if version is the same."""
+        study = factories.StudyFactory.create()
+        deprecated_study_version = factories.SourceStudyVersionFactory.create(study=study, i_is_deprecated=True)
+        deprecated_dataset = factories.SourceDatasetFactory.create(source_study_version=deprecated_study_version)
+        current_study_version_1 = factories.SourceStudyVersionFactory.create(
+            study=study,
+            i_version=deprecated_study_version.i_version + 1,
+            i_date_added=datetime.now(tz=pytz.UTC)
+        )
+        current_dataset_1 = factories.SourceDatasetFactory.create(
+            source_study_version=current_study_version_1,
+            i_accession=deprecated_dataset.i_accession,
+            i_version=deprecated_dataset.i_version + 1
+        )
+        current_study_version_2 = factories.SourceStudyVersionFactory.create(
+            study=study,
+            i_version=deprecated_study_version.i_version + 1,
+            i_date_added=datetime.now(tz=pytz.UTC) - timedelta(hours=1)
+        )
+        current_dataset_2 = factories.SourceDatasetFactory.create(
+            source_study_version=current_study_version_2,
+            i_accession=deprecated_dataset.i_accession,
+            i_version=deprecated_dataset.i_version + 1
+        )
+        self.assertEqual(deprecated_dataset.get_current_version(), current_dataset_1)
 
 
 class HarmonizedTraitSetTest(TestCase):
@@ -666,6 +723,63 @@ class SourceTraitTest(TestCase):
         deprecated_trait = factories.SourceTraitFactory.create(
             source_dataset__source_study_version__i_is_deprecated=True)
         self.assertIsNone(deprecated_trait.get_current_version())
+
+    def test_get_current_version_breaks_ties_with_i_version(self):
+        """get_current_version chooses highest version for two non-deprecated versions."""
+        study = factories.StudyFactory.create()
+        deprecated_study_version = factories.SourceStudyVersionFactory.create(study=study, i_is_deprecated=True)
+        deprecated_trait = factories.SourceTraitFactory.create(
+            source_dataset__source_study_version=deprecated_study_version)
+        now = datetime.now(tz=pytz.UTC)
+        current_study_version_1 = factories.SourceStudyVersionFactory.create(
+            study=study,
+            i_version=deprecated_study_version.i_version + 1,
+            i_date_added=datetime.now(tz=pytz.UTC)
+        )
+        current_trait_1 = factories.SourceTraitFactory.create(
+            source_dataset__source_study_version=current_study_version_1,
+            i_dbgap_variable_accession=deprecated_trait.i_dbgap_variable_accession,
+            i_dbgap_variable_version=deprecated_trait.i_dbgap_variable_version
+        )
+        current_study_version_2 = factories.SourceStudyVersionFactory.create(
+            study=study,
+            i_version=deprecated_study_version.i_version + 2,
+            i_date_added=datetime.now(tz=pytz.UTC) - timedelta(hours=1)
+        )
+        current_trait_2 = factories.SourceTraitFactory.create(
+            source_dataset__source_study_version=current_study_version_2,
+            i_dbgap_variable_accession=deprecated_trait.i_dbgap_variable_accession,
+            i_dbgap_variable_version=deprecated_trait.i_dbgap_variable_version
+        )
+        self.assertEqual(deprecated_trait.get_current_version(), current_trait_2)
+
+    def test_get_current_version_breaks_ties_with_i_date_added(self):
+        """get_current_version chooses most recent i_date_added field if version is the same."""
+        study = factories.StudyFactory.create()
+        deprecated_study_version = factories.SourceStudyVersionFactory.create(study=study, i_is_deprecated=True)
+        deprecated_trait = factories.SourceTraitFactory.create(
+            source_dataset__source_study_version=deprecated_study_version)
+        current_study_version_1 = factories.SourceStudyVersionFactory.create(
+            study=study,
+            i_version=deprecated_study_version.i_version + 1,
+            i_date_added=datetime.now(tz=pytz.UTC)
+        )
+        current_trait_1 = factories.SourceTraitFactory.create(
+            source_dataset__source_study_version=current_study_version_1,
+            i_dbgap_variable_accession=deprecated_trait.i_dbgap_variable_accession,
+            i_dbgap_variable_version=deprecated_trait.i_dbgap_variable_version
+        )
+        current_study_version_2 = factories.SourceStudyVersionFactory.create(
+            study=study,
+            i_version=deprecated_study_version.i_version + 1,
+            i_date_added=datetime.now(tz=pytz.UTC) - timedelta(hours=1)
+        )
+        current_trait_2 = factories.SourceTraitFactory.create(
+            source_dataset__source_study_version=current_study_version_2,
+            i_dbgap_variable_accession=deprecated_trait.i_dbgap_variable_accession,
+            i_dbgap_variable_version=deprecated_trait.i_dbgap_variable_version
+        )
+        self.assertEqual(deprecated_trait.get_current_version(), current_trait_1)
 
 
 class HarmonizedTraitTest(TestCase):

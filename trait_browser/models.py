@@ -335,7 +335,13 @@ class SourceDataset(SourceDBTimeStampedModel):
         """Find the current version of this dataset."""
         study = self.source_study_version.study
         try:
-            current_study_version = SourceStudyVersion.objects.get(i_is_deprecated=False, study=study)
+            current_study_version = SourceStudyVersion.objects.filter(
+                i_is_deprecated=False,
+                study=study
+            ).order_by( # We can't use "latest" since it only accepts one field in Django 1.11.
+                '-i_version',
+                '-i_date_added'
+            ).first()
         except ObjectDoesNotExist:
             return None
         # Find the same dataset associated with the current study version.
@@ -563,7 +569,13 @@ class SourceTrait(Trait):
         """Return the current version of a trait."""
         study = self.source_dataset.source_study_version.study
         try:
-            current_study_version = SourceStudyVersion.objects.get(i_is_deprecated=False, study=study)
+            current_study_version = SourceStudyVersion.objects.filter(
+                i_is_deprecated=False,
+                study=study
+            ).order_by( # We can't use "latest" since it only accepts one field in Django 1.11.
+                '-i_version',
+                '-i_date_added'
+            ).first()
         except ObjectDoesNotExist:
             return None
         # Find the same trait associated with the current study version.
