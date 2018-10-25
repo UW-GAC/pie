@@ -45,6 +45,8 @@ class GroupMigrationTest(TestCase):
                 ('tags', 'dccreview', 'add'),
                 ('tags', 'dccreview', 'change'),
                 ('tags', 'dccreview', 'delete'),
+                ('tags', 'dccdecision', 'add'),
+                ('tags', 'dccdecision', 'change'),
             ),
             'dcc_developers': (
                 ('flatpages', 'flatpage', 'add'),
@@ -68,6 +70,9 @@ class GroupMigrationTest(TestCase):
                 ('tags', 'dccreview', 'add'),
                 ('tags', 'dccreview', 'change'),
                 ('tags', 'dccreview', 'delete'),
+                ('tags', 'dccdecision', 'add'),
+                ('tags', 'dccdecision', 'change'),
+                ('tags', 'dccdecision', 'delete'),
             ),
             'phenotype_taggers': (
                 ('tags', 'taggedtrait', 'add'),
@@ -115,12 +120,11 @@ class GroupMigrationTest(TestCase):
                 perm = self.Permission.objects.get(content_type__app_label=perm_description[0],
                                                    content_type__model=perm_description[1],
                                                    codename__startswith=perm_description[2])
+                perm_string = '.'.join((perm.content_type.app_label, perm.codename))
                 if perm not in group.permissions.all():
-                    msg = 'Group {} missing permission {}.{}'.format(group_name, perm.content_type.app_label,
-                                                                     perm.codename)
+                    msg = 'Group {} missing permission {}'.format(group_name, perm_string)
                     missing_permission_msgs.append(msg)
-                if not user.has_perm('.'.join([perm.content_type.app_label, perm.codename])):
-                    msg = 'User from group {} missing permission {}.{}'.format(group_name, perm.content_type.app_label,
-                                                                               perm.codename)
+                if not user.has_perm(perm_string):
+                    msg = 'User from group {} missing permission {}'.format(group_name, perm_string)
                     missing_permission_msgs.append(msg)
-            self.assertEqual(len(missing_permission_msgs), 0, msg='\n'.join(missing_permission_msgs))
+        self.assertEqual(len(missing_permission_msgs), 0, msg='\n'.join(missing_permission_msgs))
