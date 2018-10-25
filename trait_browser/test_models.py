@@ -97,6 +97,65 @@ class StudyTest(TestCase):
         ssv2 = factories.SourceStudyVersionFactory.create(study=study, i_version=2)
         self.assertEqual(study.get_latest_version_link(), ssv2.dbgap_link)
 
+    def test_get_latest_version_with_one_non_deprecated_version(self):
+        """get_latest_version returns the proper version if there is only one non-deprecated version."""
+        study = factories.StudyFactory.create()
+        version = factories.SourceStudyVersionFactory.create(
+            study=study
+        )
+        self.assertEqual(study.get_latest_version(), version)
+
+    def test_get_latest_version_with_deprecated_old_versions(self):
+        """get_latest_version returns the proper version if one non-deprecated and deprecated versions exist."""
+        study = factories.StudyFactory.create()
+        deprecated_study_version = factories.SourceStudyVersionFactory.create(study=study, i_is_deprecated=True)
+        current_study_version = factories.SourceStudyVersionFactory.create(
+            study=study,
+            i_version=deprecated_study_version.i_version + 1
+        )
+        self.assertEqual(study.get_latest_version(), current_study_version)
+
+    def test_get_latest_version_no_versions(self):
+        """get_latest_version returns None if there is no study version."""
+        study = factories.StudyFactory.create()
+        self.assertIsNone(study.get_latest_version())
+
+    def test_get_latest_version_no_current_version(self):
+        """get_latest_version returns None if there is no non-deprecated version."""
+        study = factories.StudyFactory.create()
+        deprecated_study_version = factories.SourceStudyVersionFactory.create(study=study, i_is_deprecated=True)
+        self.assertIsNone(study.get_latest_version())
+
+    def test_get_latest_version_breaks_ties_with_i_version(self):
+        """get_latest_version chooses highest version for two non-deprecated versions."""
+        study = factories.StudyFactory.create()
+        now = datetime.now(tz=pytz.UTC)
+        study_version_1 = factories.SourceStudyVersionFactory.create(
+            study=study,
+            i_date_added=datetime.now(tz=pytz.UTC)
+        )
+        study_version_2 = factories.SourceStudyVersionFactory.create(
+            study=study,
+            i_version=study_version_1.i_version + 1,
+            i_date_added=datetime.now(tz=pytz.UTC) - timedelta(hours=1)
+        )
+        self.assertEqual(study.get_latest_version(), study_version_2)
+
+    def test_get_latest_version_breaks_ties_with_i_date_added(self):
+        """get_latest_version chooses most recent i_date_added field if version is the same."""
+        study = factories.StudyFactory.create()
+        study_version_1 = factories.SourceStudyVersionFactory.create(
+            study=study,
+            i_version=1,
+            i_date_added=datetime.now(tz=pytz.UTC)
+        )
+        study_version_2 = factories.SourceStudyVersionFactory.create(
+            study=study,
+            i_version=1,
+            i_date_added=datetime.now(tz=pytz.UTC) - timedelta(hours=1)
+        )
+        self.assertEqual(study.get_latest_version(), study_version_1)
+
 
 class SourceStudyVersionTest(TestCase):
 

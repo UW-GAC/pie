@@ -217,7 +217,16 @@ class Study(SourceDBTimeStampedModel):
 
     def get_latest_version(self):
         """Return the most recent SourceStudyVersion linked to this study."""
-        return self.sourcestudyversion_set.filter(i_is_deprecated=False).latest('i_version')
+        try:
+            version = self.sourcestudyversion_set.filter(
+                i_is_deprecated=False
+            ).order_by( # We can't use "latest" since it only accepts one field in Django 1.11.
+                '-i_version',
+                '-i_date_added'
+            ).first()
+        except ObjectDoesNotExist:
+            return None
+        return version
 
     def get_latest_version_link(self):
         """Return a dbGaP link to the page for the latest SourceStudyVersion."""
