@@ -206,7 +206,7 @@ class SourceDatasetDetail(LoginRequiredMixin, SingleTableMixin, DetailView):
         context['trait_count'] = '{:,}'.format(self.object.sourcetrait_set.count())
         context['show_deprecated_message'] = is_deprecated
         if is_deprecated:
-            current_version = self.object.get_current_version()
+            current_version = self.object.get_latest_version()
             if current_version is not None:
                 msg = """There is a newer version of this study dataset available:
                          <a class="alert-link" href="{}">{}</a>.""".format(
@@ -417,7 +417,7 @@ class SourceTraitDetail(LoginRequiredMixin, DetailView):
         context['tagged_traits_with_xs'] = list(zip(tagged_traits, show_delete_buttons))
         context['show_deprecated_message'] = is_deprecated
         if is_deprecated:
-            current_version = self.object.get_current_version()
+            current_version = self.object.get_latest_version()
             if current_version is not None:
                 msg = """There is a newer version of this study variable available:
                          <a class="alert-link" href="{}">{}</a>.""".format(

@@ -340,8 +340,8 @@ class SourceDataset(SourceDBTimeStampedModel):
         return POPOVER_URL_HTML.format(url=self.get_absolute_url(), popover=description,
                                        name=self.dataset_name)
 
-    def get_current_version(self):
-        """Find the current version of this dataset."""
+    def get_latest_version(self):
+        """Find the most recent version of this dataset."""
         study = self.source_study_version.study
         current_study_version = self.source_study_version.study.get_latest_version()
         if current_study_version is None:
@@ -567,8 +567,8 @@ class SourceTrait(Trait):
         return POPOVER_URL_HTML.format(url=self.get_absolute_url(), popover=description,
                                        name=self.i_trait_name)
 
-    def get_current_version(self):
-        """Return the current version of a trait."""
+    def get_latest_version(self):
+        """Return the most recent version of a trait."""
         current_study_version = self.source_dataset.source_study_version.study.get_latest_version()
         if current_study_version is None:
             return None
