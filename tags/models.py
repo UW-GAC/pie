@@ -181,3 +181,6 @@ class DCCDecision(TimeStampedModel):
     decision = models.IntegerField(choices=DECISION_CHOICES)
     comment = models.TextField()
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+
+    def __str__(self):
+        return 'DCC decision to {} {}'.format(self.get_decision_display(), self.dcc_review.tagged_trait)
