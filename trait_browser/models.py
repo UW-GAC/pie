@@ -220,7 +220,7 @@ class Study(SourceDBTimeStampedModel):
         try:
             version = self.sourcestudyversion_set.filter(
                 i_is_deprecated=False
-            ).order_by( # We can't use "latest" since it only accepts one field in Django 1.11.
+            ).order_by(  # We can't use "latest" since it only accepts one field in Django 1.11.
                 '-i_version',
                 '-i_date_added'
             ).first()

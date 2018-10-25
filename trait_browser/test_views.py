@@ -695,6 +695,7 @@ class SourceDatasetDetailTest(UserLoginTestCase):
         self.assertIn("There is a newer version", context['deprecation_message'])
         self.assertIn(current_dataset.get_absolute_url(), context['deprecation_message'])
 
+
 class SourceDatasetListTest(UserLoginTestCase):
     """Unit tests for the SourceDataset views."""
 

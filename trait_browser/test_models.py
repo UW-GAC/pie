@@ -2,7 +2,6 @@
 
 from datetime import datetime, timedelta
 import pytz
-from time import sleep
 
 from django.db.models.query import QuerySet
 from django.core.exceptions import ValidationError
@@ -720,8 +719,10 @@ class SourceTraitTest(TestCase):
             i_dbgap_variable_accession=deprecated_trait.i_dbgap_variable_accession,
             i_dbgap_variable_version=deprecated_trait.i_dbgap_variable_version
         )
-        other_traits = factories.SourceTraitFactory.create_batch(10,
-            source_dataset__source_study_version=current_study_version)
+        other_traits = factories.SourceTraitFactory.create_batch(
+            10,
+            source_dataset__source_study_version=current_study_version
+        )
         self.assertEqual(deprecated_trait.get_latest_version(), current_trait)
 
     def test_get_latest_version_old_version(self):
@@ -739,8 +740,10 @@ class SourceTraitTest(TestCase):
             i_dbgap_variable_accession=deprecated_trait.i_dbgap_variable_accession,
             i_dbgap_variable_version=deprecated_trait.i_dbgap_variable_version + 1
         )
-        other_traits = factories.SourceTraitFactory.create_batch(10,
-            source_dataset__source_study_version=current_study_version)
+        other_traits = factories.SourceTraitFactory.create_batch(
+            10,
+            source_dataset__source_study_version=current_study_version
+        )
         self.assertEqual(deprecated_trait.get_latest_version(), current_trait)
 
     def test_get_latest_version_new_study_version_with_same_version(self):
@@ -758,8 +761,10 @@ class SourceTraitTest(TestCase):
             i_dbgap_variable_accession=deprecated_trait.i_dbgap_variable_accession,
             i_dbgap_variable_version=deprecated_trait.i_dbgap_variable_version
         )
-        other_traits = factories.SourceTraitFactory.create_batch(10,
-            source_dataset__source_study_version=current_study_version)
+        other_traits = factories.SourceTraitFactory.create_batch(
+            10,
+            source_dataset__source_study_version=current_study_version
+        )
         self.assertEqual(deprecated_trait.get_latest_version(), current_trait)
 
     def test_get_latest_version_no_new_version(self):
@@ -772,8 +777,10 @@ class SourceTraitTest(TestCase):
             study=study,
             i_version=deprecated_study_version.i_version + 1
         )
-        other_traits = factories.SourceTraitFactory.create_batch(10,
-            source_dataset__source_study_version=current_study_version)
+        other_traits = factories.SourceTraitFactory.create_batch(
+            10,
+            source_dataset__source_study_version=current_study_version
+        )
         self.assertIsNone(deprecated_trait.get_latest_version())
 
     def test_get_latest_version_no_new_study_version(self):
