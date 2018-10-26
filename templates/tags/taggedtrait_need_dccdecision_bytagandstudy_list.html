@@ -1,0 +1,37 @@
+{% extends '__list.html' %}
+{% load render_table from django_tables2 %}
+{% load staticfiles %}
+
+{% block head_title %}
+  | Decisions for {{ tag }} and {{ study }}
+{% endblock head_title %}
+
+{% block title %}
+  Made final decisions
+{% endblock title %}
+
+{% block subtitle %}
+  variables tagged with <a href="{{ tag.get_absolute_url }}">{{ tag.title }}</a>
+  from <a href="{{ study.get_absolute_url }}">{{ study.i_study_name }}</a>
+{% endblock subtitle %}
+
+{% block before_table %}
+  <div class="well">
+    <p>
+      Detailed explanation here.
+    </p>
+    <p>
+      Variable and dataset descriptions can be seen by mousing over the variable name.
+    </p>
+  </div>
+  {% include 'tags/_tag_panel.html' with tag=tag is_collapsed=False %}
+{% endblock before_table %}
+
+{% block table %}
+  {% include '_messages.html' %}
+  {% render_table tagged_trait_table %}
+{% endblock table %}
+
+{% block custom_javascript %}
+  <script src="{% static 'js/popover.js' %}"></script>
+{% endblock custom_javascript %}

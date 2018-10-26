@@ -23,9 +23,10 @@ add_many_patterns = ([
 ], 'add-many', )
 
 tag_study_patterns = ([
-    url(r'^quality-review/$', views.DCCReviewNeedFollowupList.as_view(), name='quality-review'),
     url(r'^$', views.TaggedTraitByTagAndStudyList.as_view(), name='list'),
     url(r'^begin-dcc-review/$', views.DCCReviewByTagAndStudySelectFromURL.as_view(), name='begin-dcc-review'),
+    url(r'^quality-review/$', views.DCCReviewNeedFollowupList.as_view(), name='quality-review'),
+    url(r'^dcc-decision/$', views.TaggedTraitsNeedDCCDecisionByTagAndStudyList.as_view(), name='dcc-decision'),
 ], 'study', )
 
 tag_patterns = ([

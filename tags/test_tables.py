@@ -881,3 +881,20 @@ class DCCReviewTableWithStudyResponseButtonsTest(TestCase):
     # I could not find a way to test the conditional rendering of buttons in the
     # table, since a request is needed to render the template properly. They are
     # tested in the views that use this table.
+
+
+class TaggedTraitDCCDecisionTable(TestCase):
+
+    table_class = tables.TaggedTraitDCCDecisionTable
+    model_class = models.TaggedTrait
+
+    def setUp(self):
+        super().setUp()
+        self.study_responses = factories.StudyResponseFactory.create_batch(
+            10, status=models.StudyResponse.STATUS_DISAGREE)
+        self.tagged_traits = models.TaggedTrait.objects.all()
+
+    def test_row_count(self):
+        """Number of rows in table matches number of tagged traits."""
+        table = self.table_class(self.tagged_traits)
+        self.assertEqual(self.model_class.objects.count(), len(table.rows))

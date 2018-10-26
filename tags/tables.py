@@ -274,3 +274,11 @@ class DCCReviewTableWithStudyResponseButtons(DCCReviewTable):
 
     class Meta(DCCReviewTable.Meta):
         pass
+
+
+class TaggedTraitDCCDecisionTable(TaggedTraitTableForDCCStaff):
+    """Table for displaying tagged traits that need DCC Decisions for one study + tag combination."""
+
+    class Meta(TaggedTraitTableForDCCStaff.Meta):
+        fields = ('tag', 'trait', 'description', 'dataset', 'details', 'dcc_review_status',
+                  'study_response_status', 'archived', )

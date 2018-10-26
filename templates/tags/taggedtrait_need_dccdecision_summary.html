@@ -42,8 +42,9 @@
               <td>{{ tag_data.tt_total }}</td>
               <td>{{ tag_data.tt_decision_required_count }}</td>
               <td>
-              {# {% url 'tags:tag:study:quality-review' tag_data.tag_pk study_data.0.study_pk %} #}
-              <a class="btn btn-xs btn-primary" href="#" role="button">
+              <a class="btn btn-xs btn-primary"
+                 href="{% url 'tags:tag:study:dcc-decision' tag_data.tag_pk study_data.0.study_pk %}"
+                 role="button">
                 {% if tag_data.tt_decision_required_count > 0 %} Make
                 {% else %} View
                 {% endif %}

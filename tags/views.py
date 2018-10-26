@@ -1059,3 +1059,36 @@ class TaggedTraitsNeedDCCDecisionSummary(LoginRequiredMixin, GroupRequiredMixin,
         grouped_study_tag_counts = [(key, list(group)) for key, group in grouped_study_tag_counts]
         context['grouped_study_tag_counts'] = grouped_study_tag_counts
         return context
+
+
+class TaggedTraitsNeedDCCDecisionByTagAndStudyList(LoginRequiredMixin, GroupRequiredMixin, SingleTableMixin, ListView):
+    """View to show list of TaggedTraits that need a DCCDecision, with buttons for deciding."""
+
+    template_name = 'tags/taggedtrait_need_dccdecision_bytagandstudy_list.html'
+    group_required = [u'dcc_analysts', u'dcc_developers', ]
+    redirect_unauthenticated_users = True
+    raise_exception = True
+    model = models.TaggedTrait
+    context_table_name = 'tagged_trait_table'
+    table_pagination = {'per_page': TABLE_PER_PAGE * 2}
+    table_class = tables.TaggedTraitDCCDecisionTable
+
+    def get(self, request, *args, **kwargs):
+        self.study = get_object_or_404(Study, pk=self.kwargs['pk_study'])
+        self.tag = get_object_or_404(models.Tag, pk=self.kwargs['pk'])
+        return super().get(request, *args, **kwargs)
+
+    def get_table_data(self):
+        data = models.TaggedTrait.objects.filter(
+            dcc_review__isnull=False,
+            dcc_review__study_response__isnull=False,
+            dcc_review__study_response__status=models.StudyResponse.STATUS_DISAGREE,
+            dcc_review__tagged_trait__tag=self.tag,
+            dcc_review__tagged_trait__trait__source_dataset__source_study_version__study=self.study)
+        return data
+
+    def get_context_data(self, *args, **kwargs):
+        context = super().get_context_data(*args, **kwargs)
+        context['study'] = self.study
+        context['tag'] = self.tag
+        return context
