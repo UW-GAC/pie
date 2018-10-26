@@ -28,12 +28,16 @@ ARCHIVED_TEXT = 'Removed by DCC'
 CONFIRMED_TEXT = 'Confirmed'
 FOLLOWUP_TEXT = 'Needs study followup'
 FOLLOWUP_STUDY_USER_TEXT = 'Flagged for removal'
+DECISION_CONFIRM_TEXT = 'Confirm'
+DECISION_REMOVE_TEXT = 'Remove'
 
 AGREE_CLASS = 'success'
 DISAGREE_CLASS = 'danger'
 ARCHIVED_CLASS = 'warning'
 CONFIRMED_CLASS = 'success'
 FOLLOWUP_CLASS = 'danger'
+DECISION_CONFIRM_CLASS = 'success'
+DECISION_REMOVE_CLASS = 'danger'
 
 
 class TagTable(tables.Table):
@@ -167,6 +171,25 @@ class TaggedTraitStudyResponseStatusColumnMixin(tables.Table):
         return mark_safe(html)
 
 
+class TaggedTraitDCCDecisionStatusColumnMixin(tables.Table):
+    """Mixin to show 'DCC decision' column in a TaggedTrait table."""
+
+    dcc_decision_status = tables.Column('DCC decision status', accessor='dcc_review.dcc_decision.decision')
+
+    def render_dcc_decision_status(self, record):
+        if not hasattr(record, 'dcc_review'):
+            return ''
+        elif not hasattr(record.dcc_review, 'study_response'):
+            return ''
+        elif not hasattr(record.dcc_review, 'dcc_decision'):
+            return ''
+        elif record.dcc_review.dcc_decision.decision == models.DCCDecision.DECISION_CONFIRM:
+            html = STATUS_TEXT_HTML.format(text=DECISION_CONFIRM_TEXT, text_class=DECISION_CONFIRM_CLASS)
+        elif record.dcc_review.dcc_decision.decision == models.DCCDecision.DECISION_REMOVE:
+            html = STATUS_TEXT_HTML.format(text=DECISION_REMOVE_TEXT, text_class=DECISION_REMOVE_CLASS)
+        return mark_safe(html)
+
+
 class TaggedTraitArchivedColumnMixin(tables.Table):
     """Mixin to show 'Archived' column in a TaggedTrait table."""
 
@@ -203,6 +226,25 @@ class TaggedTraitDCCReviewButtonMixin(tables.Table):
                 btn_text = "Update DCC review"
                 btn_class = 'btn-warning'
         html = REVIEW_BUTTON_HTML.format(url=url, btn_text=btn_text, btn_class=btn_class)
+        return mark_safe(html)
+
+
+class TaggedTraitDCCDecisionButtonMixin(tables.Table):
+    """Mixin to show buttons for deciding on a TaggedTrait.
+
+    This column will display a button to either create a new DCC Decision or update an existing one.
+    """
+
+    decision_buttons = tables.Column(verbose_name='', accessor='pk')
+
+    def render_decision_buttons(self, record):
+        # Have an update button if a decision already exists.
+        if hasattr(record.dcc_review, 'dcc_decision'):
+            html = REVIEW_BUTTON_HTML.format(url='#', btn_text='Update decision', btn_class='btn-warning')
+        else:
+            confirm_button = REVIEW_BUTTON_HTML.format(url='#', btn_text='Confirm', btn_class='btn-success')
+            remove_button = REVIEW_BUTTON_HTML.format(url='#', btn_text='Remove', btn_class='btn-danger')
+            html = confirm_button + remove_button
         return mark_safe(html)
 
 
@@ -276,9 +318,12 @@ class DCCReviewTableWithStudyResponseButtons(DCCReviewTable):
         pass
 
 
-class TaggedTraitDCCDecisionTable(TaggedTraitTableForDCCStaff):
+class TaggedTraitDCCDecisionTable(TaggedTraitDetailColumnMixin, TaggedTraitDCCReviewStatusColumnMixin,
+                                  TaggedTraitStudyResponseStatusColumnMixin, TaggedTraitArchivedColumnMixin,
+                                  TaggedTraitDCCDecisionButtonMixin, TaggedTraitDCCDecisionStatusColumnMixin,
+                                  TaggedTraitTable):
     """Table for displaying tagged traits that need DCC Decisions for one study + tag combination."""
 
-    class Meta(TaggedTraitTableForDCCStaff.Meta):
+    class Meta(TaggedTraitTable.Meta):
         fields = ('tag', 'trait', 'description', 'dataset', 'details', 'dcc_review_status',
-                  'study_response_status', 'archived', )
+                  'study_response_status', 'dcc_decision_status', 'archived', 'decision_buttons', )

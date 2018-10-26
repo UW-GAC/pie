@@ -1084,7 +1084,10 @@ class TaggedTraitsNeedDCCDecisionByTagAndStudyList(LoginRequiredMixin, GroupRequ
             dcc_review__study_response__isnull=False,
             dcc_review__study_response__status=models.StudyResponse.STATUS_DISAGREE,
             dcc_review__tagged_trait__tag=self.tag,
-            dcc_review__tagged_trait__trait__source_dataset__source_study_version__study=self.study)
+            dcc_review__tagged_trait__trait__source_dataset__source_study_version__study=self.study).select_related(
+                'dcc_review', 'dcc_review__study_response', 'dcc_review__dcc_decision', 'tag', 'trait',
+                'trait__source_dataset').order_by(
+                    'dcc_review__dcc_decision')
         return data
 
     def get_context_data(self, *args, **kwargs):
