@@ -636,3 +636,70 @@ class StudyResponseFormTestMixin(object):
 class StudyResponseAdminFormTest(StudyResponseFormTestMixin, TestCase):
 
     form_class = forms.StudyResponseAdminForm
+
+
+class DCCDecisionFormTestMixin(object):
+
+    def test_valid_if_decision_remove_with_comment(self):
+        """Form is valid if the decision is remove and a comment is given."""
+        form_data = {'comment': 'foo', 'decision': models.DCCDecision.DECISION_REMOVE}
+        form = self.form_class(form_data)
+        self.assertTrue(form.is_valid())
+
+    def test_invalid_if_decision_remove_with_no_comment(self):
+        """Form is invalid if the decision is remove and no comment is given."""
+        form_data = {'comment': '', 'status': models.DCCDecision.DECISION_REMOVE}
+        form = self.form_class(form_data)
+        self.assertFalse(form.is_valid())
+        self.assertTrue(form.has_error('comment'))
+
+    def test_invalid_if_decision_remove_with_whitespace_comment(self):
+        """Form is invalid if the decision is remove and no comment is given."""
+        form_data = {'comment': ' ', 'decision': models.DCCDecision.DECISION_REMOVE}
+        form = self.form_class(form_data)
+        self.assertFalse(form.is_valid())
+        self.assertTrue(form.has_error('comment'))
+
+    def test_valid_if_decision_confirm_with_comment(self):
+        """Form is valid if the decision is confirm and a comment is given."""
+        form_data = {'comment': 'foo', 'decision': models.DCCDecision.DECISION_REMOVE}
+        form = self.form_class(form_data)
+        self.assertTrue(form.is_valid())
+
+    def test_invalid_if_decision_confirm_with_no_comment(self):
+        """Form is invalid if the decision is confirm and no comment is given."""
+        form_data = {'comment': '', 'decision': models.DCCDecision.DECISION_REMOVE}
+        form = self.form_class(form_data)
+        self.assertFalse(form.is_valid())
+        self.assertTrue(form.has_error('comment'))
+
+    def test_invalid_if_decision_confirm_with_whitespace_comment(self):
+        """Form is invalid if the decision is confirm and no comment is given."""
+        form_data = {'comment': ' ', 'decision': models.DCCDecision.DECISION_REMOVE}
+        form = self.form_class(form_data)
+        self.assertFalse(form.is_valid())
+        self.assertTrue(form.has_error('comment'))
+
+    def test_invalid_missing_decision(self):
+        form_data = {'comment': ''}
+        form = self.form_class(form_data)
+        self.assertFalse(form.is_valid())
+        self.assertTrue(form.has_error('decision'))
+
+
+class DCCDecisionByTagAndStudyFormTest(DCCDecisionFormTestMixin, TestCase):
+
+    form_class = forms.DCCDecisionByTagAndStudyForm
+
+    def setUp(self):
+        self.study_response = factories.StudyResponseFactory.create(status=models.StudyResponse.STATUS_DISAGREE)
+        self.tagged_trait = self.study_response.dcc_review.tagged_trait
+
+
+class DCCDecisionFormTest(DCCDecisionFormTestMixin, TestCase):
+
+    form_class = forms.DCCDecisionForm
+
+    def setUp(self):
+        self.study_response = factories.StudyResponseFactory.create(status=models.StudyResponse.STATUS_DISAGREE)
+        self.tagged_trait = self.study_response.dcc_review.tagged_trait

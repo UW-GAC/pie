@@ -45,6 +45,17 @@ def generate_button_html(name, value, btn_type="submit", css_class="btn-primary"
     return button_html
 
 
+class SubmitCssClass(Submit):
+    """Create a submit button with a different class than the default."""
+
+    def __init__(self, *args, **kwargs):
+        """Change CSS class of the submit button if given."""
+        css_class = kwargs.get('css_class')
+        super().__init__(*args, **kwargs)
+        if css_class is not None:
+            self.field_classes = 'btn {}'.format(css_class)
+
+
 class TagAdminForm(forms.ModelForm):
     """Custom form for the Tag admin page."""
 
@@ -472,17 +483,6 @@ class DCCReviewBaseForm(forms.ModelForm):
         }
 
 
-class SubmitCssClass(Submit):
-    """Create a submit button with a different class than the default."""
-
-    def __init__(self, *args, **kwargs):
-        """Change CSS class of the submit button if given."""
-        css_class = kwargs.get('css_class')
-        super().__init__(*args, **kwargs)
-        if css_class is not None:
-            self.field_classes = 'btn {}'.format(css_class)
-
-
 class DCCReviewByTagAndStudyForm(DCCReviewBaseForm):
     """Form for creating a single DCCReview object."""
 
@@ -637,3 +637,61 @@ class StudyResponseAdminForm(StudyResponseBaseForm):
     class Meta:
         model = models.StudyResponse
         fields = ('status', 'comment', )
+
+
+class DCCDecisionBaseForm(forms.ModelForm):
+
+    SUBMIT_CONFIRM = 'confirm'
+    SUBMIT_REMOVE = 'remove'
+
+    class Meta:
+        model = models.DCCDecision
+        fields = ('decision', 'comment', )
+        help_texts = {
+            'comment': 'Add a comment explaining why you chose to confirm or remove this tagged variable.'
+        }
+        widgets = {
+            'decision': forms.HiddenInput
+        }
+
+
+class DCCDecisionByTagAndStudyForm(DCCDecisionBaseForm):
+    """Form for creating a single DCCDecision object."""
+
+    SUBMIT_SKIP = 'skip'
+
+    def __init__(self, *args, **kwargs):
+        """Add submit buttons."""
+        super().__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.layout = Layout(
+            'decision',
+            'comment',
+            FormActions(
+                Submit(self.SUBMIT_CONFIRM, 'Confirm'),
+                SubmitCssClass(self.SUBMIT_REMOVE, 'Remove', css_class='btn-warning'),
+                SubmitCssClass(self.SUBMIT_SKIP, 'Skip', css_class='btn-default')
+            )
+        )
+
+    class Meta(DCCDecisionBaseForm.Meta):
+        pass
+
+
+class DCCDecisionForm(DCCDecisionBaseForm):
+
+    def __init__(self, *args, **kwargs):
+        """Add submit buttons."""
+        super().__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.layout = Layout(
+            'status',
+            'comment',
+            FormActions(
+                Submit(self.SUBMIT_CONFIRM, 'Confirm'),
+                SubmitCssClass(self.SUBMIT_REMOVE, 'Remove', css_class='btn-warning')
+            )
+        )
+
+    class Meta(DCCDecisionBaseForm.Meta):
+        pass
