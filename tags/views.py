@@ -469,6 +469,7 @@ class DCCReviewMixin(object):
 
 
 class DCCReviewByTagAndStudySelect(LoginRequiredMixin, PermissionRequiredMixin, MessageMixin, FormView):
+    """Sets session variables from study + tag selection form, then sends to reviewing loop."""
 
     template_name = 'tags/dccreview_tag_and_study_select.html'
     form_class = forms.DCCReviewTagAndStudySelectForm
