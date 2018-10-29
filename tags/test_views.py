@@ -4763,6 +4763,200 @@ class TaggedTraitsNeedDCCDecisionSummaryPhenotypeTaggerTest(PhenotypeTaggerLogin
         self.assertNotContains(response, self.get_url())
 
 
+class TaggedTraitsNeedDCCDecisionByTagAndStudyListDCCAnalystTest(DCCAnalystLoginTestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.tag = factories.TagFactory.create()
+        self.study = StudyFactory.create()
+        self.study_responses = factories.StudyResponseFactory.create_batch(
+            3, dcc_review__tagged_trait__tag=self.tag,
+            dcc_review__tagged_trait__trait__source_dataset__source_study_version__study=self.study,
+            status=models.StudyResponse.STATUS_DISAGREE)
+        self.tagged_traits = list(models.TaggedTrait.objects.all())
+
+    def get_url(self, *args):
+        return reverse('tags:tag:study:dcc-decision', args=args)
+
+    def test_view_success_code(self):
+        """View returns successful response code."""
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        self.assertEqual(response.status_code, 200)
+
+    def test_view_with_invalid_study_pk(self):
+        """View returns 404 response code when the study pk doesn't exist."""
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk + 1))
+        self.assertEqual(response.status_code, 404)
+
+    def test_view_with_invalid_tag_pk(self):
+        """View returns 404 response code when the pk doesn't exist."""
+        response = self.client.get(self.get_url(self.tag.pk + 1, self.study.pk))
+        self.assertEqual(response.status_code, 404)
+
+    def test_context_data(self):
+        """View has appropriate data in the context."""
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        context = response.context
+        self.assertIn('study', context)
+        self.assertIn('tag', context)
+        self.assertIn('tagged_trait_table', context)
+        self.assertEqual(context['study'], self.study)
+        self.assertEqual(context['tag'], self.tag)
+
+    def test_table_class(self):
+        """The table class is appropriate."""
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        context = response.context
+        self.assertIsInstance(context['tagged_trait_table'], tables.TaggedTraitDCCDecisionTable)
+
+    def test_view_contains_tagged_traits_that_need_decision(self):
+        """Table contains TaggedTraits that need dcc decisions."""
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        context = response.context
+        table = context['tagged_trait_table']
+        self.assertEqual(len(table.data), len(self.study_responses))
+        for study_response in self.study_responses:
+            self.assertIn(study_response.dcc_review.tagged_trait, table.data,
+                          msg='tagged_trait_table does not contain {}'.format(study_response.dcc_review.tagged_trait))
+
+    def test_view_table_does_not_contain_unreviewed_tagged_traits(self):
+        """Table does not contain unreviewed TaggedTraits."""
+        unreviewed_tagged_trait = factories.TaggedTraitFactory.create(
+            tag=self.tag, trait__source_dataset__source_study_version__study=self.study)
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        context = response.context
+        table = context['tagged_trait_table']
+        self.assertNotIn(unreviewed_tagged_trait, table.data)
+        for study_response in self.study_responses:
+            self.assertIn(study_response.dcc_review.tagged_trait, table.data,
+                          msg='tagged_trait_table does not contain {}'.format(study_response.dcc_review.tagged_trait))
+        self.assertEqual(len(table.data), len(self.study_responses))
+
+    def test_view_table_does_not_contain_tagged_trait_with_no_study_response(self):
+        """Table does not contain TaggedTrait without a study response."""
+        no_response_dcc_review = factories.DCCReviewFactory.create(
+            tagged_trait__trait__source_dataset__source_study_version__study=self.study,
+            tagged_trait__tag=self.tag,
+            status=models.DCCReview.STATUS_FOLLOWUP)
+        no_response_tagged_trait = no_response_dcc_review.tagged_trait
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        context = response.context
+        table = context['tagged_trait_table']
+        self.assertNotIn(no_response_tagged_trait, table.data)
+        for study_response in self.study_responses:
+            self.assertIn(study_response.dcc_review.tagged_trait, table.data,
+                          msg='tagged_trait_table does not contain {}'.format(study_response.dcc_review.tagged_trait))
+        self.assertEqual(len(table.data), len(self.study_responses))
+
+    def test_view_table_does_not_contain_tagged_trait_with_agree_response(self):
+        """Table does not contain tagged trait with agree study response."""
+        agree_response = factories.StudyResponseFactory.create(
+            dcc_review__tagged_trait__tag=self.tag,
+            dcc_review__tagged_trait__trait__source_dataset__source_study_version__study=self.study,
+            status=models.StudyResponse.STATUS_AGREE)
+        agree_tagged_trait = agree_response.dcc_review.tagged_trait
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        context = response.context
+        table = context['tagged_trait_table']
+        self.assertNotIn(agree_tagged_trait, table.data)
+        for study_response in self.study_responses:
+            self.assertIn(study_response.dcc_review.tagged_trait, table.data,
+                          msg='tagged_trait_table does not contain {}'.format(study_response.dcc_review.tagged_trait))
+        self.assertEqual(len(table.data), len(self.study_responses))
+
+    def test_view_works_with_no_matching_tagged_traits(self):
+        """Successful response code when there are no TaggedTraits to include."""
+        other_tag = factories.TagFactory.create()
+        response = self.client.get(self.get_url(other_tag.pk, self.study.pk))
+        self.assertEqual(response.status_code, 200)
+        context = response.context
+        self.assertEqual(len(context['tagged_trait_table'].data), 0)
+
+    def test_view_does_not_show_tagged_traits_from_a_different_study(self):
+        """Table does not include TaggedTraits from a different study."""
+        other_study = StudyFactory.create()
+        other_study_response = factories.StudyResponseFactory.create(
+            status=models.StudyResponse.STATUS_DISAGREE,
+            dcc_review__tagged_trait__trait__source_dataset__source_study_version__study=other_study)
+        other_tagged_trait = other_study_response.dcc_review.tagged_trait
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        context = response.context
+        self.assertNotIn(other_tagged_trait, context['tagged_trait_table'].data)
+
+    def test_view_does_not_show_tagged_traits_from_a_different_tag(self):
+        """Table does not contain TaggedTraits from a different tag."""
+        other_tag = factories.TagFactory.create()
+        other_study_response = factories.StudyResponseFactory.create(
+            status=models.StudyResponse.STATUS_DISAGREE,
+            dcc_review__tagged_trait__tag=other_tag)
+        other_tagged_trait = other_study_response.dcc_review.tagged_trait
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        context = response.context
+        self.assertNotIn(other_tagged_trait, context['tagged_trait_table'].data)
+
+    def test_decision_links_present_for_nodecision_tagged_traits(self):
+        """Decision buttons are shown for tagged trait without decision."""
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        pass
+        # TODO: add tests once decision create views are added.
+
+    def test_update_link_present_for_decision_confirm_tagged_traits(self):
+        """Update button is shown for tagged trait with confirm."""
+        dcc_decision = factories.DCCDecisionFactory.create(
+            dcc_review=self.study_responses[0].dcc_review, decision=models.DCCDecision.DECISION_CONFIRM)
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        pass
+
+    def test_update_link_present_for_decision_remove_tagged_traits(self):
+        """Update button is shown for tagged trait with remove."""
+        dcc_decision = factories.DCCDecisionFactory.create(
+            dcc_review=self.study_responses[0].dcc_review, decision=models.DCCDecision.DECISION_REMOVE)
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        pass
+
+
+class TaggedTraitsNeedDCCDecisionByTagAndStudyListOtherUserTest(UserLoginTestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.tag = factories.TagFactory.create()
+        self.study = StudyFactory.create()
+        self.study_responses = factories.StudyResponseFactory.create_batch(
+            3, dcc_review__tagged_trait__tag=self.tag,
+            dcc_review__tagged_trait__trait__source_dataset__source_study_version__study=self.study,
+            status=models.StudyResponse.STATUS_DISAGREE)
+        self.tagged_traits = list(models.TaggedTrait.objects.all())
+
+    def get_url(self, *args):
+        return reverse('tags:tag:study:dcc-decision', args=args)
+
+    def test_forbidden(self):
+        """Returns a 403 forbidden status code for regular users."""
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        self.assertEqual(response.status_code, 403)
+
+
+class TaggedTraitsNeedDCCDecisionByTagAndStudyListPhenotypeTaggerTest(PhenotypeTaggerLoginTestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.tag = factories.TagFactory.create()
+        self.study = StudyFactory.create()
+        self.study_responses = factories.StudyResponseFactory.create_batch(
+            3, dcc_review__tagged_trait__tag=self.tag,
+            dcc_review__tagged_trait__trait__source_dataset__source_study_version__study=self.study,
+            status=models.StudyResponse.STATUS_DISAGREE)
+        self.tagged_traits = list(models.TaggedTrait.objects.all())
+
+    def get_url(self, *args):
+        return reverse('tags:tag:study:dcc-decision', args=args)
+
+    def test_forbidden(self):
+        """Returns a 403 forbidden status code for regular users."""
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        self.assertEqual(response.status_code, 403)
+
+
 class TagsLoginRequiredTest(LoginRequiredTestCase):
 
     def test_tags_login_required(self):
