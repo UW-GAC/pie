@@ -448,6 +448,69 @@ class TaggedTraitStudyResponseStatusColumnMixinTest(TestCase):
         self.assertNotIn(tables.FOLLOWUP_STUDY_USER_TEXT, study_response_status)
 
 
+class TaggedTraitDCCDecisionColumnMixinTest(TestCase):
+
+    table_class = tables.TaggedTraitDCCDecisionColumnMixin
+
+    def test_followup_disagree_nodecision_tagged_trait(self):
+        """DCC decision text is correct for a disagree tagged trait without a DCC decision."""
+        tagged_trait = factories.TaggedTraitFactory.create()
+        dcc_review = factories.DCCReviewFactory.create(
+            tagged_trait=tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP)
+        study_response = factories.StudyResponseFactory.create(
+            dcc_review=dcc_review, status=models.StudyResponse.STATUS_DISAGREE)
+        table = self.table_class(models.TaggedTrait.objects.all())
+        dcc_decision_value = table.render_dcc_decision(tagged_trait)
+        self.assertNotIn(tables.CONFIRMED_TEXT, dcc_decision_value)
+        self.assertNotIn(tables.FOLLOWUP_TEXT, dcc_decision_value)
+        self.assertNotIn(tables.AGREE_TEXT, dcc_decision_value)
+        self.assertNotIn(tables.DISAGREE_TEXT, dcc_decision_value)
+        self.assertNotIn(tables.ARCHIVED_TEXT, dcc_decision_value)
+        self.assertNotIn(tables.FOLLOWUP_STUDY_USER_TEXT, dcc_decision_value)
+        self.assertNotIn(tables.DECISION_CONFIRM_TEXT, dcc_decision_value)
+        self.assertNotIn(tables.DECISION_REMOVE_TEXT, dcc_decision_value)
+
+    def test_followup_disagree_decisionconfirm_tagged_trait(self):
+        """DCC decision text is correct for a disagree tagged trait with a decision to confirm."""
+        tagged_trait = factories.TaggedTraitFactory.create()
+        dcc_review = factories.DCCReviewFactory.create(
+            tagged_trait=tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP)
+        study_response = factories.StudyResponseFactory.create(
+            dcc_review=dcc_review, status=models.StudyResponse.STATUS_DISAGREE)
+        dcc_decision = factories.DCCDecisionFactory.create(
+            dcc_review=dcc_review, decision=models.DCCDecision.DECISION_CONFIRM)
+        table = self.table_class(models.TaggedTrait.objects.all())
+        dcc_decision_value = table.render_dcc_decision(tagged_trait)
+        self.assertNotIn(tables.CONFIRMED_TEXT, dcc_decision_value)
+        self.assertNotIn(tables.FOLLOWUP_TEXT, dcc_decision_value)
+        self.assertNotIn(tables.AGREE_TEXT, dcc_decision_value)
+        self.assertNotIn(tables.DISAGREE_TEXT, dcc_decision_value)
+        self.assertNotIn(tables.ARCHIVED_TEXT, dcc_decision_value)
+        self.assertNotIn(tables.FOLLOWUP_STUDY_USER_TEXT, dcc_decision_value)
+        self.assertIn(tables.DECISION_CONFIRM_TEXT, dcc_decision_value)
+        self.assertNotIn(tables.DECISION_REMOVE_TEXT, dcc_decision_value)
+
+    def test_followup_disagree_decisionremove_tagged_trait(self):
+        """DCC decision text is correct for a disagree tagged trait with a decision to remove."""
+        tagged_trait = factories.TaggedTraitFactory.create()
+        dcc_review = factories.DCCReviewFactory.create(
+            tagged_trait=tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP)
+        study_response = factories.StudyResponseFactory.create(
+            dcc_review=dcc_review, status=models.StudyResponse.STATUS_DISAGREE)
+        dcc_decision = factories.DCCDecisionFactory.create(
+            dcc_review=dcc_review, decision=models.DCCDecision.DECISION_REMOVE)
+        table = self.table_class(models.TaggedTrait.objects.all())
+        dcc_decision_value = table.render_dcc_decision(tagged_trait)
+        self.assertNotIn(tables.CONFIRMED_TEXT, dcc_decision_value)
+        self.assertNotIn(tables.FOLLOWUP_TEXT, dcc_decision_value)
+        self.assertNotIn(tables.AGREE_TEXT, dcc_decision_value)
+        self.assertNotIn(tables.DISAGREE_TEXT, dcc_decision_value)
+        self.assertNotIn(tables.ARCHIVED_TEXT, dcc_decision_value)
+        self.assertNotIn(tables.FOLLOWUP_STUDY_USER_TEXT, dcc_decision_value)
+        self.assertNotIn(tables.DECISION_CONFIRM_TEXT, dcc_decision_value)
+        self.assertIn(tables.DECISION_REMOVE_TEXT, dcc_decision_value)
+
+
 class TaggedTraitArchivedColumnMixinTest(TestCase):
 
     table_class = tables.TaggedTraitArchivedColumnMixin
@@ -684,6 +747,54 @@ class TaggedTraitDCCReviewButtonMixinTest(TestCase):
         self.assertNotIn(update_url, review_button)
 
 
+class TaggedTraitDCCDecisionButtonMixinTest(TestCase):
+
+    table_class = tables.TaggedTraitDCCDecisionButtonMixin
+
+    def test_nodecision_tagged_trait(self):
+        """A tagged trait without a decision has the confirm and remove buttons."""
+        tagged_trait = factories.TaggedTraitFactory.create()
+        dcc_review = factories.DCCReviewFactory.create(
+            tagged_trait=tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP)
+        study_response = factories.StudyResponseFactory.create(
+            dcc_review=dcc_review, status=models.StudyResponse.STATUS_DISAGREE)
+        table = self.table_class(models.TaggedTrait.objects.all())
+        dcc_decision_button_value = table.render_decision_buttons(tagged_trait)
+        self.assertIn(tables.DECISION_CONFIRM_TEXT, dcc_decision_button_value)
+        self.assertIn(tables.DECISION_REMOVE_TEXT, dcc_decision_button_value)
+        self.assertNotIn('Update', dcc_decision_button_value)
+
+    def test_decision_confirm_tagged_trait(self):
+        """A tagged trait with decision confirm has the update button."""
+        tagged_trait = factories.TaggedTraitFactory.create()
+        dcc_review = factories.DCCReviewFactory.create(
+            tagged_trait=tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP)
+        study_response = factories.StudyResponseFactory.create(
+            dcc_review=dcc_review, status=models.StudyResponse.STATUS_DISAGREE)
+        dcc_decision = factories.DCCDecisionFactory.create(
+            dcc_review=dcc_review, decision=models.DCCDecision.DECISION_CONFIRM)
+        table = self.table_class(models.TaggedTrait.objects.all())
+        dcc_decision_button_value = table.render_decision_buttons(tagged_trait)
+        self.assertNotIn(tables.DECISION_CONFIRM_TEXT, dcc_decision_button_value)
+        self.assertNotIn(tables.DECISION_REMOVE_TEXT, dcc_decision_button_value)
+        self.assertIn('Update', dcc_decision_button_value)
+
+    def test_decision_remove_tagged_trait(self):
+        """A tagged trait with decision remove has the update button."""
+        tagged_trait = factories.TaggedTraitFactory.create()
+        dcc_review = factories.DCCReviewFactory.create(
+            tagged_trait=tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP)
+        study_response = factories.StudyResponseFactory.create(
+            dcc_review=dcc_review, status=models.StudyResponse.STATUS_DISAGREE)
+        dcc_decision = factories.DCCDecisionFactory.create(
+            dcc_review=dcc_review, decision=models.DCCDecision.DECISION_REMOVE)
+        table = self.table_class(models.TaggedTrait.objects.all())
+        dcc_decision_button_value = table.render_decision_buttons(tagged_trait)
+        self.assertNotIn(tables.DECISION_CONFIRM_TEXT, dcc_decision_button_value)
+        self.assertNotIn(tables.DECISION_REMOVE_TEXT, dcc_decision_button_value)
+        self.assertIn('Update', dcc_decision_button_value)
+
+
 class TaggedTraitTableForStudyTaggersTest(TestCase):
 
     table_class = tables.TaggedTraitTableForStudyTaggers
@@ -898,3 +1009,46 @@ class TaggedTraitDCCDecisionTable(TestCase):
         """Number of rows in table matches number of tagged traits."""
         table = self.table_class(self.tagged_traits)
         self.assertEqual(self.model_class.objects.count(), len(table.rows))
+
+    def test_nodecision_tagged_trait(self):
+        """A tagged trait without a decision has the confirm and remove buttons."""
+        tagged_trait = factories.TaggedTraitFactory.create()
+        dcc_review = factories.DCCReviewFactory.create(
+            tagged_trait=tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP)
+        study_response = factories.StudyResponseFactory.create(
+            dcc_review=dcc_review, status=models.StudyResponse.STATUS_DISAGREE)
+        table = self.table_class(models.TaggedTrait.objects.all())
+        dcc_decision_button_value = table.render_decision_buttons(tagged_trait)
+        self.assertIn(tables.DECISION_CONFIRM_TEXT, dcc_decision_button_value)
+        self.assertIn(tables.DECISION_REMOVE_TEXT, dcc_decision_button_value)
+        self.assertNotIn('Update', dcc_decision_button_value)
+
+    def test_decision_confirm_tagged_trait(self):
+        """A tagged trait with decision confirm has the update button."""
+        tagged_trait = factories.TaggedTraitFactory.create()
+        dcc_review = factories.DCCReviewFactory.create(
+            tagged_trait=tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP)
+        study_response = factories.StudyResponseFactory.create(
+            dcc_review=dcc_review, status=models.StudyResponse.STATUS_DISAGREE)
+        dcc_decision = factories.DCCDecisionFactory.create(
+            dcc_review=dcc_review, decision=models.DCCDecision.DECISION_CONFIRM)
+        table = self.table_class(models.TaggedTrait.objects.all())
+        dcc_decision_button_value = table.render_decision_buttons(tagged_trait)
+        self.assertNotIn(tables.DECISION_CONFIRM_TEXT, dcc_decision_button_value)
+        self.assertNotIn(tables.DECISION_REMOVE_TEXT, dcc_decision_button_value)
+        self.assertIn('Update', dcc_decision_button_value)
+
+    def test_decision_remove_tagged_trait(self):
+        """A tagged trait with decision remove has the update button."""
+        tagged_trait = factories.TaggedTraitFactory.create()
+        dcc_review = factories.DCCReviewFactory.create(
+            tagged_trait=tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP)
+        study_response = factories.StudyResponseFactory.create(
+            dcc_review=dcc_review, status=models.StudyResponse.STATUS_DISAGREE)
+        dcc_decision = factories.DCCDecisionFactory.create(
+            dcc_review=dcc_review, decision=models.DCCDecision.DECISION_REMOVE)
+        table = self.table_class(models.TaggedTrait.objects.all())
+        dcc_decision_button_value = table.render_decision_buttons(tagged_trait)
+        self.assertNotIn(tables.DECISION_CONFIRM_TEXT, dcc_decision_button_value)
+        self.assertNotIn(tables.DECISION_REMOVE_TEXT, dcc_decision_button_value)
+        self.assertIn('Update', dcc_decision_button_value)
