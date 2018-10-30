@@ -4500,7 +4500,7 @@ class TaggedTraitsNeedDCCDecisionSummaryDCCAnalystTest(DCCAnalystLoginTestCase):
 
     def get_url(self, *args):
         """Get the url for the view this class is supposed to test."""
-        return reverse('tags:tagged-traits:dcc-decision', args=args)
+        return reverse('tags:tagged-traits:need-decision', args=args)
 
     def test_view_success(self):
         """View returns successful response code."""
@@ -4731,7 +4731,7 @@ class TaggedTraitsNeedDCCDecisionSummaryOtherUserTest(UserLoginTestCase):
 
     def get_url(self, *args):
         """Get the url for the view this class is supposed to test."""
-        return reverse('tags:tagged-traits:dcc-decision', args=args)
+        return reverse('tags:tagged-traits:need-decision', args=args)
 
     def test_forbidden(self):
         """Returns a 403 forbidden status code for regular users."""
@@ -4749,7 +4749,7 @@ class TaggedTraitsNeedDCCDecisionSummaryPhenotypeTaggerTest(PhenotypeTaggerLogin
 
     def get_url(self, *args):
         """Get the url for the view this class is supposed to test."""
-        return reverse('tags:tagged-traits:dcc-decision', args=args)
+        return reverse('tags:tagged-traits:need-decision', args=args)
 
     def test_forbidden(self):
         """Returns a 403 forbidden status code for regular users."""
