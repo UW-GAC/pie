@@ -1096,3 +1096,235 @@ class TaggedTraitsNeedDCCDecisionByTagAndStudyList(LoginRequiredMixin, GroupRequ
         context['study'] = self.study
         context['tag'] = self.tag
         return context
+
+
+class DCCDecisionMixin(object):
+    """Mixin to create or update DCCDecisions. Must be used with CreateView or UpdateView."""
+
+    model = models.DCCDecision
+
+    def get_context_data(self, **kwargs):
+        if 'tagged_trait' not in kwargs:
+            kwargs['tagged_trait'] = self.tagged_trait
+        context = super(DCCDecisionMixin, self).get_context_data(**kwargs)
+        # Add context variables to control display of tags in _taggedtrait_info panel.
+        context['show_other_tags'] = True
+        context['other_tags'] = self.tagged_trait.trait.non_archived_tags.all().exclude(pk=self.tagged_trait.tag.pk)
+        context['archived_other_tags'] = self.tagged_trait.trait.archived_tags.all()  # Views don't work for archived.
+        return context
+
+    def get_decision(self):
+        """Return the DCCDecision decision based on which submit button was clicked."""
+        if self.request.POST:
+            if self.form_class.SUBMIT_CONFIRM in self.request.POST:
+                return self.model.DECISION_CONFIRM
+            elif self.form_class.SUBMIT_REMOVE in self.request.POST:
+                return self.model.DECISION_REMOVE
+
+    def get_form_kwargs(self):
+        kwargs = super(DCCDecisionMixin, self).get_form_kwargs()
+        if 'data' in kwargs:
+            tmp = kwargs['data'].copy()
+            tmp.update({'decision': self.get_decision()})
+            kwargs['data'] = tmp
+        return kwargs
+
+    def form_valid(self, form):
+        """Create a DCCDecision object linked to the given TaggedTrait."""
+        form.instance.dcc_review = self.tagged_trait.dcc_review
+        form.instance.creator = self.request.user
+        form.instance.decision = self.get_decision()
+        return super(DCCDecisionMixin, self).form_valid(form)
+
+
+class DCCDecisionByTagAndStudySelectFromURL(LoginRequiredMixin, PermissionRequiredMixin, MessageMixin, RedirectView):
+    """View to begin the DCC decision loop using url parameters."""
+
+    permission_required = 'tags.add_dccdecision'
+    raise_exception = True
+    redirect_unauthenticated_users = True
+
+    def get(self, request, *args, **kwargs):
+        tag = get_object_or_404(models.Tag, pk=self.kwargs['pk'])
+        study = get_object_or_404(Study, pk=self.kwargs['pk_study'])
+        disagree_study_responses = models.StudyResponse.objects.filter(
+            status=models.StudyResponse.STATUS_DISAGREE,
+            dcc_review__dcc_decision__isnull=True,
+            dcc_review__tagged_trait__tag=tag,
+            dcc_review__tagged_trait__trait__source_dataset__source_study_version__study=study
+        )
+        session_data = {
+            'study_pk': study.pk,
+            'tag_pk': tag.pk,
+            'tagged_trait_pks': list(disagree_study_responses.values_list('dcc_review__tagged_trait__pk', flat=True)),
+        }
+        if disagree_study_responses.count() == 0:
+            self.messages.warning('No tagged variables to decide on for this tag and study.')
+        # Set a session variable for use in the next view.
+        self.request.session['tagged_trait_decision_by_tag_and_study_info'] = session_data
+        return super().get(self, request, *args, **kwargs)
+
+    def get_redirect_url(self, *args, **kwargs):
+        return reverse('tags:tagged-traits:dcc-decision:next')
+
+
+class DCCDecisionByTagAndStudyNext(LoginRequiredMixin, PermissionRequiredMixin, SessionVariableMixin, MessageMixin,
+                                   RedirectView):
+    """Determine the next tagged trait to decide on and redirect to decision-making page."""
+
+    permission_required = 'tags.add_dccdecision'
+    raise_exception = True
+    redirect_unauthenticated_users = True
+
+    def handle_session_variables(self):
+        # Check that expected session variables are set.
+        if 'tagged_trait_decision_by_tag_and_study_info' not in self.request.session:
+            return HttpResponseRedirect(reverse('tags:tagged-traits:need-decision'))
+        # Check for required variables.
+        required_keys = ('tag_pk', 'study_pk', 'tagged_trait_pks')
+        session_data = self.request.session['tagged_trait_decision_by_tag_and_study_info']
+        for key in required_keys:
+            if key not in session_data:
+                del self.request.session['tagged_trait_decision_by_tag_and_study_info']
+                return HttpResponseRedirect(reverse('tags:tagged-traits:need-decision'))
+        # All variables exist; set view attributes.
+        self.tag = get_object_or_404(models.Tag, pk=session_data['tag_pk'])
+        self.study = get_object_or_404(Study, pk=session_data['study_pk'])
+        self.pks = session_data['tagged_trait_pks']
+
+    def _skip_next_tagged_trait(self):
+        session_data = self.request.session['tagged_trait_decision_by_tag_and_study_info']
+        session_data['tagged_trait_pks'] = session_data['tagged_trait_pks'][1:]
+        self.request.session['tagged_trait_decision_by_tag_and_study_info'] = session_data
+
+    def get_redirect_url(self, *args, **kwargs):
+        """Get the URL to decide on the next available tagged trait.
+
+        Skip tagged traits that have been archived or deleted since beginning the loop.
+        Return the tag-study table URL if all pks have been decided on.
+        """
+        session_data = self.request.session.get('tagged_trait_decision_by_tag_and_study_info')
+        if session_data is None:
+            # The expected session variable has not been set so redirect to the need decision summary view.
+            return reverse('tags:tagged-traits:need-decision')
+        if len(self.pks) > 0:
+            # Set the session variable expected by the decision view, then redirect.
+            pk = self.pks[0]
+            # Check to see if the tagged trait has been deleted since starting the loop.
+            try:
+                tt = models.TaggedTrait.objects.get(pk=pk)
+            except ObjectDoesNotExist:
+                self._skip_next_tagged_trait()
+                return reverse('tags:tagged-traits:dcc-decision:next')
+            # Check to see if the tagged trait has been archived since starting the loop.
+            if tt.archived:
+                self._skip_next_tagged_trait()
+                return reverse('tags:tagged-traits:dcc-decision:next')
+            # Check to see if the tagged trait has had a decision made since starting the loop.
+            elif hasattr(tt, 'dcc_decision'):
+                self._skip_next_tagged_trait()
+                return reverse('tags:tagged-traits:dcc-decision:next')
+            # If you make it this far, set the chosen pk as a session variable to reviewed next.
+            session_data['pk'] = pk
+            self.request.session['tagged_trait_decision_by_tag_and_study_info'] = session_data
+            # Add a status message.
+            msg = ("""You are making final decisions for variables tagged with <a href="{tag_url}">{tag}</a> """
+                   """from study <a href="{study_url}">{study_name}</a>. You have {n_pks} """
+                   """tagged variable{s} left to decide on.""")
+            msg = msg.format(
+                tag_url=self.tag.get_absolute_url(),
+                tag=self.tag.title,
+                study_url=self.study.get_absolute_url(),
+                study_name=self.study.i_study_name,
+                n_pks=len(self.pks),
+                s='s' if len(self.pks) > 1 else ''
+            )
+            self.messages.info(mark_safe(msg))
+            return reverse('tags:tagged-traits:dcc-decision:decide')
+        else:
+            # All TaggedTraits have decisions! Redirect to the tag-study table.
+            # Remove session variables related to this group of views.
+            tag_pk = session_data.get('tag_pk')
+            study_pk = session_data.get('study_pk')
+            url = reverse('tags:tag:study:need-decision', args=[tag_pk, study_pk])
+            del self.request.session['tagged_trait_decision_by_tag_and_study_info']
+            return url
+
+
+class DCCDecisionByTagAndStudy(LoginRequiredMixin, PermissionRequiredMixin, SessionVariableMixin, DCCDecisionMixin,
+                               FormValidMessageMixin, CreateView):
+    """Create a DCCDecision for a tagged trait specified by the pk in a session variable."""
+
+    template_name = 'tags/dccdecision_form.html'
+    permission_required = 'tags.add_dccdecision'
+    raise_exception = True
+    redirect_unauthenticated_users = True
+    form_class = forms.DCCDecisionByTagAndStudyForm
+
+    def handle_session_variables(self):
+        # Check that expected session variables are set.
+        if 'tagged_trait_decision_by_tag_and_study_info' not in self.request.session:
+            return HttpResponseRedirect(reverse('tags:tagged-traits:need-decision'))
+        # Check for required variables.
+        required_keys = ('tag_pk', 'study_pk', 'tagged_trait_pks')
+        session_data = self.request.session['tagged_trait_decision_by_tag_and_study_info']
+        for key in required_keys:
+            if key not in session_data:
+                del self.request.session['tagged_trait_decision_by_tag_and_study_info']
+                return HttpResponseRedirect(reverse('tags:tagged-traits:need-decision'))
+        # Check for pk
+        if 'pk' not in session_data:
+            return HttpResponseRedirect(reverse('tags:tagged-traits:dcc-decision:next'))
+        pk = session_data.get('pk')
+        self.tagged_trait = get_object_or_404(models.TaggedTrait, pk=pk)
+
+    def _update_session_variables(self):
+        """Update session variables used in this series of views."""
+        session_data = self.request.session['tagged_trait_decision_by_tag_and_study_info']
+        session_data['tagged_trait_pks'] = session_data['tagged_trait_pks'][1:]
+        del session_data['pk']
+        self.request.session['tagged_trait_decision_by_tag_and_study_info'] = session_data
+
+    def get_context_data(self, **kwargs):
+        context = super(DCCDecisionByTagAndStudy, self).get_context_data(**kwargs)
+        if 'tag' not in context:
+            context['tag'] = self.tagged_trait.tag
+        if 'study' not in context:
+            context['study'] = self.tagged_trait.trait.source_dataset.source_study_version.study
+        if 'n_tagged_traits_remaining' not in context:
+            n_remaining = len(self.request.session['tagged_trait_decision_by_tag_and_study_info']['tagged_trait_pks'])
+            context['n_tagged_traits_remaining'] = n_remaining
+        return context
+
+    def post(self, request, *args, **kwargs):
+        """Handle skipping, or check for archived or already-decided tagged traits before proceeding."""
+        if self.form_class.SUBMIT_SKIP in request.POST:
+            # Remove the tagged trait from the list of pks.
+            self._update_session_variables()
+            return HttpResponseRedirect(reverse('tags:tagged-traits:dcc-decision:next'))
+        # Check if this tagged trait has already been archived.
+        if self.tagged_trait.archived:
+            self._update_session_variables()
+            # Add an informational message.
+            self.messages.warning('Skipped {} because it has been archived.'.format(self.tagged_trait))
+            return HttpResponseRedirect(reverse('tags:tagged-traits:dcc-decision:next'))
+        # Check if this tagged trait has already had a decision made.
+        elif hasattr(self.tagged_trait.dcc_review, 'dcc_decision'):
+            self._update_session_variables()
+            # Add an informational message.
+            self.messages.warning('Skipped {} because it already has a decision made.'.format(self.tagged_trait))
+            return HttpResponseRedirect(reverse('tags:tagged-traits:dcc-decision:next'))
+        return super(DCCDecisionByTagAndStudy, self).post(request, *args, **kwargs)
+
+    def form_valid(self, form):
+        # Remove the decided tagged trait from the list of pks.
+        self._update_session_variables()
+        return super(DCCDecisionByTagAndStudy, self).form_valid(form)
+
+    def get_form_valid_message(self):
+        msg = 'Successfully made a final decision for {}.'.format(self.tagged_trait)
+        return msg
+
+    def get_success_url(self):
+        return reverse('tags:tagged-traits:dcc-decision:next')
+
