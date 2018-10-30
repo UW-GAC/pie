@@ -230,7 +230,7 @@ class TaggedTraitDCCReviewButtonMixin(tables.Table):
 
 
 class TaggedTraitDCCDecisionButtonMixin(tables.Table):
-    """Mixin to show buttons for deciding on a TaggedTrait.
+    """Mixin to show button for deciding on a TaggedTrait.
 
     This column will display a button to either create a new DCC Decision or update an existing one.
     """
@@ -242,13 +242,7 @@ class TaggedTraitDCCDecisionButtonMixin(tables.Table):
         if hasattr(record.dcc_review, 'dcc_decision'):
             html = REVIEW_BUTTON_HTML.format(url='#', btn_text='Update decision', btn_class='btn-warning')
         else:
-            confirm_button = REVIEW_BUTTON_HTML.format(url='#',
-                                                       btn_text=DECISION_CONFIRM_TEXT,
-                                                       btn_class=DECISION_CONFIRM_CLASS)
-            remove_button = REVIEW_BUTTON_HTML.format(url='#',
-                                                      btn_text=DECISION_REMOVE_TEXT,
-                                                      btn_class=DECISION_REMOVE_CLASS)
-            html = confirm_button + remove_button
+            html = REVIEW_BUTTON_HTML.format(url='#', btn_text='Make decision', btn_class='btn-primary')
         return mark_safe(html)
 
 

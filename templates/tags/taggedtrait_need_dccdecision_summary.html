@@ -42,13 +42,15 @@
               <td>{{ tag_data.tt_total }}</td>
               <td>{{ tag_data.tt_decision_required_count }}</td>
               <td>
+              
+              {% if tag_data.tt_decision_required_count > 0 %}
+                <a class="btn btn-xs btn-primary"
+                   href="{% url 'tags:tag:study:begin-dcc-decision' tag_data.tag_pk study_data.0.study_pk %}"
+                   role="button">Make final decisions</a>
+              {% endif %}
               <a class="btn btn-xs btn-primary"
-                 href="{% url 'tags:tag:study:dcc-decision' tag_data.tag_pk study_data.0.study_pk %}"
-                 role="button">
-                {% if tag_data.tt_decision_required_count > 0 %} Make
-                {% else %} View
-                {% endif %}
-                final decisions</a>
+                 href="{% url 'tags:tag:study:need-decision' tag_data.tag_pk study_data.0.study_pk %}"
+                 role="button">View decisions</a>
               </td>
             </tr>
             {% endfor %}
