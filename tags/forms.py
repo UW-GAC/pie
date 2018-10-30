@@ -669,7 +669,7 @@ class DCCDecisionByTagAndStudyForm(DCCDecisionBaseForm):
             'comment',
             FormActions(
                 Submit(self.SUBMIT_CONFIRM, 'Confirm'),
-                SubmitCssClass(self.SUBMIT_REMOVE, 'Remove', css_class='btn-warning'),
+                SubmitCssClass(self.SUBMIT_REMOVE, 'Remove', css_class='btn-danger'),
                 SubmitCssClass(self.SUBMIT_SKIP, 'Skip', css_class='btn-default')
             )
         )
@@ -689,7 +689,7 @@ class DCCDecisionForm(DCCDecisionBaseForm):
             'comment',
             FormActions(
                 Submit(self.SUBMIT_CONFIRM, 'Confirm'),
-                SubmitCssClass(self.SUBMIT_REMOVE, 'Remove', css_class='btn-warning')
+                SubmitCssClass(self.SUBMIT_REMOVE, 'Remove', css_class='btn-danger')
             )
         )
 
