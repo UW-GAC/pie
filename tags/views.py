@@ -1149,6 +1149,7 @@ class DCCDecisionByTagAndStudySelectFromURL(LoginRequiredMixin, PermissionRequir
         study = get_object_or_404(Study, pk=self.kwargs['pk_study'])
         disagree_study_responses = models.StudyResponse.objects.filter(
             status=models.StudyResponse.STATUS_DISAGREE,
+            dcc_review__tagged_trait__archived=False,
             dcc_review__dcc_decision__isnull=True,
             dcc_review__tagged_trait__tag=tag,
             dcc_review__tagged_trait__trait__source_dataset__source_study_version__study=study
@@ -1221,7 +1222,7 @@ class DCCDecisionByTagAndStudyNext(LoginRequiredMixin, PermissionRequiredMixin, 
                 self._skip_next_tagged_trait()
                 return reverse('tags:tagged-traits:dcc-decision:next')
             # Check to see if the tagged trait has had a decision made since starting the loop.
-            elif hasattr(tt, 'dcc_decision'):
+            elif hasattr(tt.dcc_review, 'dcc_decision'):
                 self._skip_next_tagged_trait()
                 return reverse('tags:tagged-traits:dcc-decision:next')
             # If you make it this far, set the chosen pk as a session variable to reviewed next.
