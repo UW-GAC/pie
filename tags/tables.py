@@ -240,9 +240,11 @@ class TaggedTraitDCCDecisionButtonMixin(tables.Table):
     def render_decision_buttons(self, record):
         # Have an update button if a decision already exists.
         if hasattr(record.dcc_review, 'dcc_decision'):
-            html = REVIEW_BUTTON_HTML.format(url='#', btn_text='Update decision', btn_class='btn-warning')
+            html = REVIEW_BUTTON_HTML.format(url=reverse('tags:tagged-traits:pk:dcc-decision:update', args=[record.pk]),
+                                             btn_text='Update decision', btn_class='btn-warning')
         else:
-            html = REVIEW_BUTTON_HTML.format(url='#', btn_text='Make decision', btn_class='btn-primary')
+            html = REVIEW_BUTTON_HTML.format(url=reverse('tags:tagged-traits:pk:dcc-decision:new', args=[record.pk]),
+                                             btn_text='Make decision', btn_class='btn-primary')
         return mark_safe(html)
 
 

@@ -56,9 +56,15 @@ single_study_response_patterns = ([
     url(r'^explain/$', views.StudyResponseCreateDisagree.as_view(), name='explain'),
 ], 'quality-review')
 
+single_dcc_decision_patterns = ([
+    url(r'^new/$', views.DCCDecisionCreate.as_view(), name='new'),
+    url(r'^update/$', views.DCCDecisionUpdate.as_view(), name='update'),
+], 'dcc-decision')
+
 single_tagged_trait_patterns = ([
     url(r'^dcc-review/', include(single_dcc_review_patterns)),
     url(r'^quality-review/', include(single_study_response_patterns)),
+    url(r'^dcc-decision/', include(single_dcc_decision_patterns)),
     url(r'^$', views.TaggedTraitDetail.as_view(), name='detail'),
     url(r'^delete/$', views.TaggedTraitDelete.as_view(), name='delete'),
 ], 'pk')
