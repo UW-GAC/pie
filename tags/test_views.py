@@ -4957,6 +4957,805 @@ class TaggedTraitsNeedDCCDecisionByTagAndStudyListPhenotypeTaggerTest(PhenotypeT
         self.assertEqual(response.status_code, 403)
 
 
+class DCCDecisionByTagAndStudySelectFromURLDCCTestsMixin(object):
+
+    def setUp(self):
+        super().setUp()
+        self.tag = factories.TagFactory.create()
+        self.study = StudyFactory.create()
+        self.study_responses = factories.StudyResponseFactory.create_batch(
+            10, status=models.StudyResponse.STATUS_DISAGREE, dcc_review__tagged_trait__tag=self.tag,
+            dcc_review__tagged_trait__trait__source_dataset__source_study_version__study=self.study)
+        self.tagged_traits = list(models.TaggedTrait.objects.all())
+
+    def get_url(self, *args):
+        return reverse('tags:tag:study:begin-dcc-decision', args=args)
+
+    def test_view_success_code(self):
+        """View returns successful response code."""
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk), follow=False)
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-decision:next'), fetch_redirect_response=False)
+
+    def test_nonexistent_study_404(self):
+        """View returns 404 if study does not exist."""
+        study_pk = self.study.pk
+        self.study.delete()
+        response = self.client.get(self.get_url(self.tag.pk, study_pk), follow=False)
+        self.assertEqual(response.status_code, 404)
+
+    def test_nonexistent_tag_404(self):
+        """View returns 404 if tag does not exist."""
+        tag_pk = self.tag.pk
+        self.tag.delete()
+        response = self.client.get(self.get_url(tag_pk, self.study.pk), follow=False)
+        self.assertEqual(response.status_code, 404)
+
+    def test_sets_session_variables(self):
+        """View has appropriate data in the context and session variables."""
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk), follow=False)
+        session = self.client.session
+        self.assertIn('tagged_trait_decision_by_tag_and_study_info', session)
+        session_info = session['tagged_trait_decision_by_tag_and_study_info']
+        self.assertIn('study_pk', session_info)
+        self.assertEqual(session_info['study_pk'], self.study.pk)
+        self.assertIn('tag_pk', session_info)
+        self.assertEqual(session_info['tag_pk'], self.tag.pk)
+        self.assertIn('tagged_trait_pks', session_info)
+        self.assertEqual(len(session_info['tagged_trait_pks']), len(self.tagged_traits))
+        for tt in self.tagged_traits:
+            self.assertIn(tt.pk, session_info['tagged_trait_pks'],
+                          msg='TaggedTrait {} not in session tagged_trait_pks'.format(tt.pk))
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-decision:next'), fetch_redirect_response=False)
+
+    def test_excludes_other_tag(self):
+        """List of tagged trait pks does not include a second tag."""
+        other_tag = factories.TagFactory.create()
+        other_study_response = factories.StudyResponseFactory.create(
+            status=models.StudyResponse.STATUS_DISAGREE, dcc_review__tagged_trait__tag=other_tag,
+            dcc_review__tagged_trait__trait__source_dataset__source_study_version__study=self.study
+        )
+        other_tagged_trait = other_study_response.dcc_review.tagged_trait
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk), follow=False)
+        session = self.client.session
+        self.assertIn('tagged_trait_decision_by_tag_and_study_info', session)
+        session_info = session['tagged_trait_decision_by_tag_and_study_info']
+        self.assertIn('tagged_trait_pks', session_info)
+        self.assertEqual(len(session_info['tagged_trait_pks']), len(self.tagged_traits))
+        for tt in self.tagged_traits:
+            self.assertIn(tt.pk, session_info['tagged_trait_pks'],
+                          msg='TaggedTrait {} unexpectedly not in session tagged_trait_pks'.format(tt.pk))
+        self.assertNotIn(other_tagged_trait, session_info['tagged_trait_pks'],
+                         msg='TaggedTrait {} unexpectedly in session tagged_trait_pks'.format(tt.pk))
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-decision:next'), fetch_redirect_response=False)
+
+    def test_excludes_other_study(self):
+        """List of tagged trait pks does not include a different study."""
+        other_study = StudyFactory.create()
+        other_study_response = factories.StudyResponseFactory.create(
+            status=models.StudyResponse.STATUS_DISAGREE, dcc_review__tagged_trait__tag=self.tag,
+            dcc_review__tagged_trait__trait__source_dataset__source_study_version__study=other_study
+        )
+        other_tagged_trait = other_study_response.dcc_review.tagged_trait
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk), follow=False)
+        session = self.client.session
+        self.assertIn('tagged_trait_decision_by_tag_and_study_info', session)
+        session_info = session['tagged_trait_decision_by_tag_and_study_info']
+        self.assertIn('tagged_trait_pks', session_info)
+        self.assertEqual(len(session_info['tagged_trait_pks']), len(self.tagged_traits))
+        for tt in self.tagged_traits:
+            self.assertIn(tt.pk, session_info['tagged_trait_pks'],
+                          msg='TaggedTrait {} unexpectedly not in session tagged_trait_pks'.format(tt.pk))
+        self.assertNotIn(other_tagged_trait, session_info['tagged_trait_pks'],
+                         msg='TaggedTrait {} unexpectedly in session tagged_trait_pks'.format(tt.pk))
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-decision:next'), fetch_redirect_response=False)
+
+    def test_excludes_other_study_and_tag(self):
+        """List of tagged trait pks does not include tagged traits from another study and tag."""
+        other_tag = factories.TagFactory.create()
+        other_study = StudyFactory.create()
+        other_study_response = factories.StudyResponseFactory.create(
+            status=models.StudyResponse.STATUS_DISAGREE, dcc_review__tagged_trait__tag=other_tag,
+            dcc_review__tagged_trait__trait__source_dataset__source_study_version__study=other_study
+        )
+        other_tagged_trait = other_study_response.dcc_review.tagged_trait
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        session = self.client.session
+        self.assertIn('tagged_trait_decision_by_tag_and_study_info', session)
+        session_info = session['tagged_trait_decision_by_tag_and_study_info']
+        for tt in self.tagged_traits:
+            self.assertIn(tt.pk, session_info['tagged_trait_pks'],
+                          msg='TaggedTrait {} unexpectedly not in session tagged_trait_pks'.format(tt.pk))
+        self.assertNotIn(other_tagged_trait, session_info['tagged_trait_pks'],
+                         msg='TaggedTrait {} unexpectedly in session tagged_trait_pks'.format(tt.pk))
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-decision:next'), fetch_redirect_response=False)
+
+    def test_resets_session_variables(self):
+        """A preexisting session variable is overwritten with new data."""
+        self.client.session['tagged_trait_decision_by_tag_and_study_info'] = {
+            'study_pk': self.study.pk + 1,
+            'tag_pk': self.tag.pk + 1,
+            'tagged_trait_pks': [],
+        }
+        self.client.session.save()
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        session = self.client.session
+        self.assertIn('tagged_trait_decision_by_tag_and_study_info', session)
+        session_info = session['tagged_trait_decision_by_tag_and_study_info']
+        self.assertIn('study_pk', session_info)
+        self.assertEqual(session_info['study_pk'], self.study.pk)
+        self.assertIn('tag_pk', session_info)
+        self.assertEqual(session_info['tag_pk'], self.tag.pk)
+        self.assertIn('tagged_trait_pks', session_info)
+        self.assertEqual(len(session_info['tagged_trait_pks']), len(self.tagged_traits))
+        for tt in self.tagged_traits:
+            self.assertIn(tt.pk, session_info['tagged_trait_pks'],
+                          msg='TaggedTrait {} not in session tagged_trait_pks'.format(tt.pk))
+
+    def test_no_tagged_traits_remaining_to_decide_on(self):
+        """View redirects and displays message when there are no tagged traits to decide on for the tag+study."""
+        models.TaggedTrait.objects.all().hard_delete()
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        self.assertEqual(response.status_code, 302)
+        # Check for message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('No tagged variables to decide on', str(messages[0]))
+
+    def test_no_archived_taggedtraits_in_session_variable(self):
+        """Does not include archived tagged traits in session variables."""
+        archived_tagged_trait = self.tagged_traits[0]
+        archived_tagged_trait.archive()
+        archived_tagged_trait.refresh_from_db()
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        # Check session variables.
+        session = self.client.session
+        self.assertIn('tagged_trait_decision_by_tag_and_study_info', session)
+        session_info = session['tagged_trait_decision_by_tag_and_study_info']
+        self.assertIn('study_pk', session_info)
+        self.assertEqual(session_info['study_pk'], self.study.pk)
+        self.assertIn('tag_pk', session_info)
+        self.assertEqual(session_info['tag_pk'], self.tag.pk)
+        self.assertIn('tagged_trait_pks', session_info)
+        for tt in self.tagged_traits[1:]:
+            self.assertIn(tt.pk, session_info['tagged_trait_pks'],
+                          msg='TaggedTrait {} not in session tagged_trait_pks'.format(tt.pk))
+        self.assertNotIn(archived_tagged_trait.pk, session_info['tagged_trait_pks'])
+        # The success url redirects again to a new page, so include the target_status_code argument.
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-decision:next'), target_status_code=302)
+
+
+class DCCDecisionByTagAndStudySelectFromURLDCCAnalystTest(DCCDecisionByTagAndStudySelectFromURLDCCTestsMixin,
+                                                          DCCAnalystLoginTestCase):
+
+    # Run all tests in DCCDecisionByTagAndStudySelectFromURLDCCTestsMixin as a DCC analyst.
+    pass
+
+
+class DCCDecisionByTagAndStudySelectFromURLDCCDeveloperTest(DCCDecisionByTagAndStudySelectFromURLDCCTestsMixin,
+                                                            DCCDeveloperLoginTestCase):
+
+    # Run all tests in DCCDecisionByTagAndStudySelectFromURLDCCTestsMixin as a DCC developer.
+    pass
+
+
+class DCCDecisionByTagAndStudySelectFromURLOtherUserTest(UserLoginTestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.tag = factories.TagFactory.create()
+        self.study = StudyFactory.create()
+        self.study_responses = factories.StudyResponseFactory.create_batch(
+            10, status=models.StudyResponse.STATUS_DISAGREE, dcc_review__tagged_trait__tag=self.tag,
+            dcc_review__tagged_trait__trait__source_dataset__source_study_version__study=self.study)
+        self.tagged_traits = list(models.TaggedTrait.objects.all())
+
+    def get_url(self, *args):
+        return reverse('tags:tag:study:begin-dcc-decision', args=args)
+
+    def test_forbidden_get_request(self):
+        """Returns a response with a forbidden status code for non-DCC users."""
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        self.assertEqual(response.status_code, 403)
+
+
+class DCCDecisionByTagAndStudyNextDCCTestsMixin(object):
+
+    def setUp(self):
+        super().setUp()
+        self.tag = factories.TagFactory.create()
+        self.study = StudyFactory.create()
+        self.study_responses = factories.StudyResponseFactory.create_batch(
+            10, status=models.StudyResponse.STATUS_DISAGREE, dcc_review__tagged_trait__tag=self.tag,
+            dcc_review__tagged_trait__trait__source_dataset__source_study_version__study=self.study)
+        self.tagged_traits = list(models.TaggedTrait.objects.all())
+
+    def get_url(self, *args):
+        """Get the url for the view this class is supposed to test."""
+        return reverse('tags:tagged-traits:dcc-decision:next', args=args)
+
+    def test_view_success_with_no_session_variables(self):
+        """View redirects correctly when no session variables are set."""
+        response = self.client.get(self.get_url())
+        self.assertRedirects(response, reverse('tags:tagged-traits:need-decision'))
+
+    def test_view_success_with_tagged_traits_to_decision(self):
+        """View redirects correctly when there are tagged traits to decide on."""
+        tagged_trait = self.tagged_traits[0]
+        session = self.client.session
+        session['tagged_trait_decision_by_tag_and_study_info'] = {
+            'tag_pk': self.tag.pk,
+            'study_pk': self.study.pk,
+            'tagged_trait_pks': [tagged_trait.pk],
+        }
+        session.save()
+        response = self.client.get(self.get_url())
+        # Make sure a pk session variable was set
+        session = self.client.session
+        self.assertIn('tagged_trait_decision_by_tag_and_study_info', session)
+        self.assertIn('pk', session['tagged_trait_decision_by_tag_and_study_info'])
+        self.assertEqual(session['tagged_trait_decision_by_tag_and_study_info']['pk'], tagged_trait.pk)
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-decision:decide'))
+        # Check messages.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('You have 1 tagged variable left to decide on.', str(messages[0]))
+
+    def test_view_success_with_no_tagged_traits_left(self):
+        """View redirects correctly when no tagged traits are left to decide on."""
+        session = self.client.session
+        session['tagged_trait_decision_by_tag_and_study_info'] = {
+            'tag_pk': self.tag.pk,
+            'study_pk': self.study.pk,
+            'tagged_trait_pks': [],
+        }
+        session.save()
+        response = self.client.get(self.get_url())
+        self.assertRedirects(response, reverse('tags:tag:study:need-decision', args=[self.tag.pk, self.study.pk]))
+        # Check that there are no messages.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 0)
+
+    def test_session_variables_are_unset_when_decisions_completed(self):
+        """View unsets session variables when no tagged traits are left to decide on."""
+        tag = factories.TagFactory.create()
+        study = StudyFactory.create()
+        session = self.client.session
+        session['tagged_trait_decision_by_tag_and_study_info'] = {
+            'tag_pk': tag.pk,
+            'study_pk': study.pk,
+            'tagged_trait_pks': [],
+        }
+        session.save()
+        response = self.client.get(self.get_url())
+        self.assertNotIn('tagged_trait_decision_by_tag_and_study_info', self.client.session)
+
+    def test_skips_tagged_trait_that_has_been_decided_on(self):
+        """Skips a tagged trait that has been decided on after starting the loop."""
+        first_tagged_trait = self.tagged_traits[0]
+        session = self.client.session
+        session['tagged_trait_decision_by_tag_and_study_info'] = {
+            'tag_pk': self.tag.pk,
+            'study_pk': self.study.pk,
+            'tagged_trait_pks': [x.pk for x in self.tagged_traits],
+        }
+        session.save()
+        factories.DCCDecisionFactory.create(dcc_review=first_tagged_trait.dcc_review)
+        response = self.client.get(self.get_url())
+        self.assertIn('tagged_trait_decision_by_tag_and_study_info', self.client.session)
+        session_info = self.client.session['tagged_trait_decision_by_tag_and_study_info']
+        self.assertIn('tagged_trait_pks', session_info)
+        self.assertNotIn('pk', session_info)
+        self.assertNotIn(first_tagged_trait.pk, session_info['tagged_trait_pks'])
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-decision:next'), target_status_code=302)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 0)
+
+    def test_skips_deleted_tagged_trait(self):
+        """Skips a tagged trait that has been deleted after starting the loop."""
+        first_tagged_trait = self.tagged_traits[0]
+        session = self.client.session
+        session['tagged_trait_decision_by_tag_and_study_info'] = {
+            'tag_pk': self.tag.pk,
+            'study_pk': self.study.pk,
+            'tagged_trait_pks': [x.pk for x in self.tagged_traits],
+        }
+        session.save()
+        self.tagged_traits[0].delete()
+        response = self.client.get(self.get_url())
+        self.assertIn('tagged_trait_decision_by_tag_and_study_info', self.client.session)
+        session_info = self.client.session['tagged_trait_decision_by_tag_and_study_info']
+        self.assertIn('tagged_trait_pks', session_info)
+        self.assertNotIn(first_tagged_trait.pk, session_info['tagged_trait_pks'])
+        self.assertEqual(self.tagged_traits[1].pk, session_info['tagged_trait_pks'][0])
+        self.assertNotIn('pk', session_info)
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-decision:next'), target_status_code=302)
+
+    def test_skips_archived_tagged_trait(self):
+        """Skips a tagged trait that has been archived after starting the loop."""
+        first_tagged_trait = self.tagged_traits[0]
+        session = self.client.session
+        session['tagged_trait_decision_by_tag_and_study_info'] = {
+            'tag_pk': self.tag.pk,
+            'study_pk': self.study.pk,
+            'tagged_trait_pks': [x.pk for x in self.tagged_traits],
+        }
+        session.save()
+        first_tagged_trait.archive()
+        response = self.client.get(self.get_url())
+        self.assertIn('tagged_trait_decision_by_tag_and_study_info', self.client.session)
+        session_info = self.client.session['tagged_trait_decision_by_tag_and_study_info']
+        self.assertIn('tagged_trait_pks', session_info)
+        self.assertNotIn(first_tagged_trait.pk, session_info['tagged_trait_pks'])
+        self.assertEqual(self.tagged_traits[1].pk, session_info['tagged_trait_pks'][0])
+        self.assertNotIn('pk', session_info)
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-decision:next'), target_status_code=302)
+
+    def test_session_variables_are_not_properly_set(self):
+        """Redirects to summary view if expected session variable is not set."""
+        response = self.client.get(self.get_url())
+        self.assertRedirects(response, reverse('tags:tagged-traits:need-decision'))
+
+    def test_session_variable_missing_required_keys(self):
+        """Redirects to summary view if expected session variable dictionary keys are missing."""
+        template = {
+            'study_pk': self.study.pk,
+            'tag_pk': self.tag.pk,
+            'tagged_trait_pks': [x.pk for x in self.tagged_traits]
+        }
+        for key in template.keys():
+            session_info = copy.copy(template)
+            session_info.pop(key)
+            session = self.client.session
+            session['tagged_trait_decision_by_tag_and_study_info'] = session_info
+            session.save()
+            response = self.client.get(self.get_url())
+            self.assertNotIn('tagged_trait_decision_by_tag_and_study_info', self.client.session)
+            self.assertRedirects(response, reverse('tags:tagged-traits:need-decision'),
+                                 msg_prefix='did not redirect when missing {} in session'.format(key))
+
+
+class DCCDecisionByTagAndStudyNextDCCAnalystTest(DCCDecisionByTagAndStudyNextDCCTestsMixin, DCCAnalystLoginTestCase):
+
+    # Run all tests in DCCDecisionByTagAndStudyNextDCCTestsMixin, as a DCC analyst.
+    pass
+
+
+class DCCDecisionByTagAndStudyNextDCCDeveloperTest(DCCDecisionByTagAndStudyNextDCCTestsMixin,
+                                                   DCCDeveloperLoginTestCase):
+
+    # Run all tests in DCCDecisionByTagAndStudyNextDCCTestsMixin, as a DCC developer.
+    pass
+
+
+class DCCDecisionByTagAndStudyNextOtherUserTest(UserLoginTestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.tag = factories.TagFactory.create()
+        self.study = StudyFactory.create()
+        self.study_responses = factories.StudyResponseFactory.create_batch(
+            10, status=models.StudyResponse.STATUS_DISAGREE, dcc_review__tagged_trait__tag=self.tag,
+            dcc_review__tagged_trait__trait__source_dataset__source_study_version__study=self.study)
+        self.tagged_traits = list(models.TaggedTrait.objects.all())
+
+    def get_url(self, *args):
+        """Get the url for the view this class is supposed to test."""
+        return reverse('tags:tagged-traits:dcc-decision:next', args=args)
+
+    def test_forbidden_get_request(self):
+        """Returns a response with a forbidden status code for non-DCC users."""
+        response = self.client.get(self.get_url())
+        self.assertEqual(response.status_code, 403)
+
+    def test_forbidden_post_request(self):
+        """Returns a response with a forbidden status code for non-DCC users."""
+        response = self.client.post(self.get_url(), {})
+        self.assertEqual(response.status_code, 403)
+
+
+class DCCDecisionByTagAndStudyDCCTestsMixin(object):
+
+    def setUp(self):
+        super().setUp()
+        self.tag = factories.TagFactory.create()
+        self.study = StudyFactory.create()
+        self.study_response = factories.StudyResponseFactory.create(
+            status=models.StudyResponse.STATUS_DISAGREE, dcc_review__tagged_trait__tag=self.tag,
+            dcc_review__tagged_trait__trait__source_dataset__source_study_version__study=self.study)
+        self.tagged_trait = self.study_response.dcc_review.tagged_trait
+        # Set expected session variables.
+        session = self.client.session
+        session['tagged_trait_decision_by_tag_and_study_info'] = {
+            'study_pk': self.study.pk,
+            'tag_pk': self.tag.pk,
+            'tagged_trait_pks': [self.tagged_trait.pk],
+            'pk': self.tagged_trait.pk,
+        }
+        session.save()
+
+    def get_url(self, *args):
+        """Get the url for the view this class is supposed to test."""
+        return reverse('tags:tagged-traits:dcc-decision:decide', args=args)
+
+    def test_view_success_code(self):
+        """View returns successful response code."""
+        response = self.client.get(self.get_url())
+        self.assertEqual(response.status_code, 200)
+
+    def test_context_data(self):
+        """View has appropriate data in the context."""
+        response = self.client.get(self.get_url())
+        context = response.context
+        self.assertIn('form', context)
+        self.assertIsInstance(context['form'], forms.DCCDecisionByTagAndStudyForm)
+        self.assertIn('tagged_trait', context)
+        self.assertEqual(context['tagged_trait'], self.tagged_trait)
+        self.assertIn('tag', context)
+        self.assertEqual(context['tag'], self.tag)
+        self.assertIn('study', context)
+        self.assertEqual(context['study'], self.study)
+        self.assertIn('n_tagged_traits_remaining', context)
+        self.assertEqual(context['n_tagged_traits_remaining'], 1)
+
+    def test_context_data_with_multiple_remaining_tagged_traits(self):
+        """View has appropriate data in the context if there are multiple tagged traits to decide on."""
+        more_study_responses = factories.StudyResponseFactory.create_batch(
+            3, status=models.StudyResponse.STATUS_DISAGREE, dcc_review__tagged_trait__tag=self.tag,
+            dcc_review__tagged_trait__trait__source_dataset__source_study_version__study=self.study)
+        session = self.client.session
+        tagged_trait_list = list(models.TaggedTrait.objects.values_list('pk', flat=True))
+        session['tagged_trait_decision_by_tag_and_study_info']['tagged_trait_pks'] = tagged_trait_list
+        session.save()
+        response = self.client.get(self.get_url())
+        context = response.context
+        self.assertIn('form', context)
+        self.assertIsInstance(context['form'], forms.DCCDecisionByTagAndStudyForm)
+        self.assertIn('tagged_trait', context)
+        self.assertEqual(context['tagged_trait'], self.tagged_trait)
+        self.assertIn('tag', context)
+        self.assertEqual(context['tag'], self.tag)
+        self.assertIn('study', context)
+        self.assertEqual(context['study'], self.study)
+        self.assertIn('n_tagged_traits_remaining', context)
+        self.assertEqual(context['n_tagged_traits_remaining'], models.TaggedTrait.objects.count())
+
+    def test_successful_post_confirm_decision(self):
+        """Posting valid data to the form correctly creates a DCCDecision."""
+        form_data = {forms.DCCDecisionByTagAndStudyForm.SUBMIT_CONFIRM: 'Confirm', 'comment': 'Looks good.'}
+        response = self.client.post(self.get_url(), form_data)
+        # Correctly creates a DCCDecision for this TaggedTrait.
+        dcc_decision = models.DCCDecision.objects.all().latest('created')
+        self.assertEqual(self.tagged_trait.dcc_review.dcc_decision, dcc_decision)
+        # The pk session variable is correctly unset.
+        session = self.client.session
+        self.assertIn('tagged_trait_decision_by_tag_and_study_info', session)
+        session_info = session['tagged_trait_decision_by_tag_and_study_info']
+        self.assertNotIn('pk', session_info)
+        # Check for success message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Successfully made a final decision', str(messages[0]))
+        # Correctly redirects to the next view (remembering that it is a redirect view).
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-decision:next'), target_status_code=302)
+
+    def test_successful_post_remove_decision(self):
+        """Posting valid data to the form correctly creates a DCCDecision."""
+        form_data = {forms.DCCDecisionByTagAndStudyForm.SUBMIT_REMOVE: 'Remove', 'comment': 'Definitely remove it.'}
+        response = self.client.post(self.get_url(), form_data)
+        # Correctly creates a DCCDecision for this TaggedTrait.
+        dcc_decision = models.DCCDecision.objects.all().latest('created')
+        self.assertEqual(self.tagged_trait.dcc_review.dcc_decision, dcc_decision)
+        # The pk session variable is correctly unset.
+        session = self.client.session
+        self.assertIn('tagged_trait_decision_by_tag_and_study_info', session)
+        session_info = session['tagged_trait_decision_by_tag_and_study_info']
+        self.assertNotIn('pk', session_info)
+        # Check for success message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Successfully made a final decision', str(messages[0]))
+        # Correctly redirects to the next view (remembering that it is a redirect view).
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-decision:next'), target_status_code=302)
+
+    def test_post_invalid_missing_comment(self):
+        """Posting bad data to the form shows a form error and doesn't unset session variables."""
+        form_data = {forms.DCCDecisionByTagAndStudyForm.SUBMIT_REMOVE: 'Remove', 'comment': ''}
+        response = self.client.post(self.get_url(), form_data)
+        self.assertEqual(response.status_code, 200)
+        # Does not create a DCCDecision for this TaggedTrait.
+        self.assertFalse(hasattr(self.tagged_trait.dcc_review, 'dcc_decision'))
+        # The pk session variable is not unset.
+        session = self.client.session
+        self.assertIn('tagged_trait_decision_by_tag_and_study_info', session)
+        session_info = session['tagged_trait_decision_by_tag_and_study_info']
+        self.assertIn('pk', session_info)
+        self.assertEqual(session_info['pk'], self.tagged_trait.pk)
+        # No messages.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 0)
+
+    def test_successfully_skip_tagged_trait(self):
+        """Skipping a TaggedTrait unsets pk and redirects to the next view."""
+        form_data = {forms.DCCDecisionByTagAndStudyForm.SUBMIT_SKIP: 'Skip'}
+        response = self.client.post(self.get_url(), form_data)
+        # Does not create a DCCDecision for this TaggedTrait.
+        self.assertFalse(hasattr(self.tagged_trait.dcc_review, 'dcc_decision'))
+        # Session variables are properly set/unset.
+        session = self.client.session
+        self.assertIn('tagged_trait_decision_by_tag_and_study_info', session)
+        session_info = session['tagged_trait_decision_by_tag_and_study_info']
+        self.assertNotIn('pk', session_info)
+        self.assertIn('tagged_trait_pks', session_info)
+        self.assertNotIn(self.tagged_trait.pk, session_info['tagged_trait_pks'])
+        # The redirect view unsets some session variables, so check it at the end.
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-decision:next'), target_status_code=302)
+
+    def test_failure_for_non_existent_tagged_trait(self):
+        """Returns a 404 page if the session variable pk doesn't exist."""
+        self.tagged_trait.hard_delete()
+        response = self.client.get(self.get_url())
+        self.assertEqual(response.status_code, 404)
+
+    def test_warning_and_failure_when_tagged_trait_already_has_decision(self):
+        """Shows warning message and does not save decision if TaggedTrait is already decided."""
+        dcc_decision = factories.DCCDecisionFactory.create(
+            dcc_review=self.tagged_trait.dcc_review,
+            decision=models.DCCDecision.DECISION_REMOVE
+        )
+        # Now try to decide on it (with different decision) through the web interface.
+        form_data = {forms.DCCDecisionByTagAndStudyForm.SUBMIT_CONFIRM: 'Confirm', 'comment': 'Looks good.'}
+        response = self.client.post(self.get_url(), form_data)
+        # Check session variables.
+        self.assertIn('tagged_trait_decision_by_tag_and_study_info', self.client.session)
+        session_info = self.client.session['tagged_trait_decision_by_tag_and_study_info']
+        self.assertNotIn('pk', session_info)
+        self.assertIn('tagged_trait_pks', session_info)
+        self.assertNotIn(self.tagged_trait.pk, session_info['tagged_trait_pks'])
+        # Check for success message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('already has a decision made', str(messages[0]))
+        # The previous DCCDecision was not updated.
+        self.assertEqual(self.tagged_trait.dcc_review.dcc_decision, dcc_decision)
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-decision:next'), target_status_code=302)
+
+    def test_failure_for_archived_tagged_trait(self):
+        """Shows warning message and does not save decision if TaggedTrait is archived."""
+        self.tagged_trait.archive()
+        # Now try to decide on it through the web interface.
+        form_data = {forms.DCCDecisionByTagAndStudyForm.SUBMIT_CONFIRM: 'Confirm', 'comment': 'Looks good.'}
+        response = self.client.post(self.get_url(), form_data)
+        # Check session variables.
+        self.assertIn('tagged_trait_decision_by_tag_and_study_info', self.client.session)
+        session_info = self.client.session['tagged_trait_decision_by_tag_and_study_info']
+        self.assertNotIn('pk', session_info)
+        self.assertIn('tagged_trait_pks', session_info)
+        self.assertNotIn(self.tagged_trait.pk, session_info['tagged_trait_pks'])
+        # Check for success message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('been archived', str(messages[0]))
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-decision:next'), target_status_code=302)
+
+    def test_warning_and_failure_with_form_error_when_tagged_trait_already_has_decision(self):
+        """Shows warning message and redirects if TaggedTrait already has decision, even if there's a form error."""
+        dcc_decision = factories.DCCDecisionFactory.create(
+            dcc_review=self.tagged_trait.dcc_review,
+            decision=models.DCCDecision.DECISION_CONFIRM,
+            comment='looks good'
+        )
+        # Now try to decide on it through the web interface.
+        form_data = {forms.DCCDecisionByTagAndStudyForm.SUBMIT_REMOVE: 'Remove', 'comment': 'looks bad'}
+        response = self.client.post(self.get_url(), form_data)
+        # Check session variables.
+        self.assertIn('tagged_trait_decision_by_tag_and_study_info', self.client.session)
+        session_info = self.client.session['tagged_trait_decision_by_tag_and_study_info']
+        self.assertNotIn('pk', session_info)
+        self.assertIn('tagged_trait_pks', session_info)
+        self.assertNotIn(self.tagged_trait.pk, session_info['tagged_trait_pks'])
+        # Check for success message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('already has a decision made', str(messages[0]))
+        # The previous DCCDecision was not updated.
+        self.assertEqual(self.tagged_trait.dcc_review.dcc_decision, dcc_decision)
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-decision:next'), target_status_code=302)
+
+    def test_failure_for_archived_tagged_trait_with_form_error(self):
+        """Shows warning message and redirects if TaggedTrait is archived, even if there's a form error."""
+        self.tagged_trait.archive()
+        # Now try to decide on it through the web interface.
+        form_data = {forms.DCCDecisionByTagAndStudyForm.SUBMIT_REMOVE: 'Remove', 'comment': 'looks bad'}
+        response = self.client.post(self.get_url(), form_data)
+        # Check session variables.
+        self.assertIn('tagged_trait_decision_by_tag_and_study_info', self.client.session)
+        session_info = self.client.session['tagged_trait_decision_by_tag_and_study_info']
+        self.assertNotIn('pk', session_info)
+        self.assertIn('tagged_trait_pks', session_info)
+        self.assertNotIn(self.tagged_trait.pk, session_info['tagged_trait_pks'])
+        # Check for success message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('been archived', str(messages[0]))
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-decision:next'), target_status_code=302)
+
+    def test_successful_skip_tagged_trait_with_decision(self):
+        """Redirects without a message if an already-decided tagged trait is skipped."""
+        dcc_decision = factories.DCCDecisionFactory.create(
+            dcc_review=self.tagged_trait.dcc_review,
+            decision=models.DCCDecision.DECISION_CONFIRM,
+            comment='looks good'
+        )
+        # Now try to decide on it through the web interface.
+        form_data = {forms.DCCDecisionByTagAndStudyForm.SUBMIT_SKIP: 'Skip', 'comment': ''}
+        response = self.client.post(self.get_url(), form_data)
+        # Check session variables.
+        self.assertIn('tagged_trait_decision_by_tag_and_study_info', self.client.session)
+        session_info = self.client.session['tagged_trait_decision_by_tag_and_study_info']
+        self.assertNotIn('pk', session_info)
+        self.assertIn('tagged_trait_pks', session_info)
+        self.assertNotIn(self.tagged_trait.pk, session_info['tagged_trait_pks'])
+        # Check that no message was generated.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 0)
+        # The previous DCCDecision was not updated.
+        self.assertEqual(self.tagged_trait.dcc_review.dcc_decision, dcc_decision)
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-decision:next'), target_status_code=302)
+
+    def test_get_redirects_if_session_variables_are_not_properly_set(self):
+        """Redirects to summary view if expected session variable is not set."""
+        session = self.client.session
+        del session['tagged_trait_decision_by_tag_and_study_info']
+        session.save()
+        response = self.client.get(self.get_url())
+        self.assertRedirects(response, reverse('tags:tagged-traits:need-decision'))
+
+    def test_post_redirects_if_session_variables_are_not_properly_set(self):
+        """Redirects to summary view if expected session variable is not set."""
+        session = self.client.session
+        del session['tagged_trait_decision_by_tag_and_study_info']
+        session.save()
+        response = self.client.post(self.get_url(), {})
+        self.assertRedirects(response, reverse('tags:tagged-traits:need-decision'))
+
+    def test_get_redirects_if_session_variable_missing_key_tag_pk(self):
+        """Redirects to summary view if expected session variable dictionary keys are missing."""
+        session = self.client.session
+        session['tagged_trait_decision_by_tag_and_study_info'].pop('tag_pk')
+        session.save()
+        response = self.client.get(self.get_url())
+        self.assertNotIn('tagged_trait_decision_by_tag_and_study_info', self.client.session)
+        self.assertRedirects(response, reverse('tags:tagged-traits:need-decision'))
+
+    def test_get_redirects_if_session_variable_missing_key_study_pk(self):
+        """Redirects to select view if expected session variable dictionary keys are missing."""
+        session = self.client.session
+        session['tagged_trait_decision_by_tag_and_study_info'].pop('study_pk')
+        session.save()
+        response = self.client.get(self.get_url())
+        self.assertNotIn('tagged_trait_decision_by_tag_and_study_info', self.client.session)
+        self.assertRedirects(response, reverse('tags:tagged-traits:need-decision'))
+
+    def test_get_redirects_if_session_variable_missing_key_tagged_trait_pks(self):
+        """Redirects to select view if expected session variable dictionary keys are missing."""
+        session = self.client.session
+        session['tagged_trait_decision_by_tag_and_study_info'].pop('tagged_trait_pks')
+        session.save()
+        response = self.client.get(self.get_url())
+        self.assertNotIn('tagged_trait_decision_by_tag_and_study_info', self.client.session)
+        self.assertRedirects(response, reverse('tags:tagged-traits:need-decision'))
+
+    def test_get_redirects_if_session_variable_missing_key_pk(self):
+        """Redirects to summary view if expected session variable dictionary keys are missing."""
+        session = self.client.session
+        session['tagged_trait_decision_by_tag_and_study_info'].pop('pk')
+        session.save()
+        response = self.client.get(self.get_url())
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-decision:next'), target_status_code=302)
+
+    def test_post_redirects_if_session_variable_missing_key_tag_pk(self):
+        """Redirects to select view if expected session variable dictionary keys are missing."""
+        session = self.client.session
+        session['tagged_trait_decision_by_tag_and_study_info'].pop('tag_pk')
+        session.save()
+        response = self.client.post(self.get_url(), {})
+        self.assertNotIn('tagged_trait_decision_by_tag_and_study_info', self.client.session)
+        self.assertRedirects(response, reverse('tags:tagged-traits:need-decision'))
+
+    def test_post_redirects_if_session_variable_missing_key_study_pk(self):
+        """Redirects to select view if expected session variable dictionary keys are missing."""
+        session = self.client.session
+        session['tagged_trait_decision_by_tag_and_study_info'].pop('study_pk')
+        session.save()
+        response = self.client.post(self.get_url(), {})
+        self.assertNotIn('tagged_trait_decision_by_tag_and_study_info', self.client.session)
+        self.assertRedirects(response, reverse('tags:tagged-traits:need-decision'))
+
+    def test_post_redirects_if_session_variable_missing_key_tagged_trait_pks(self):
+        """Redirects to select view if expected session variable dictionary keys are missing."""
+        session = self.client.session
+        session['tagged_trait_decision_by_tag_and_study_info'].pop('tagged_trait_pks')
+        session.save()
+        response = self.client.post(self.get_url(), {})
+        self.assertNotIn('tagged_trait_decision_by_tag_and_study_info', self.client.session)
+        self.assertRedirects(response, reverse('tags:tagged-traits:need-decision'))
+
+    def test_post_redirects_if_session_variable_missing_key_pk(self):
+        """Redirects to select view if expected session variable dictionary keys are missing."""
+        session = self.client.session
+        session['tagged_trait_decision_by_tag_and_study_info'].pop('pk')
+        session.save()
+        response = self.client.post(self.get_url(), {})
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-decision:next'), target_status_code=302)
+
+    def test_shows_other_tags(self):
+        """Other tags linked to the same trait are included in the page."""
+        another_tagged_trait = factories.TaggedTraitFactory.create(trait=self.tagged_trait.trait)
+        response = self.client.get(self.get_url())
+        context = response.context
+        self.assertTrue(context['show_other_tags'])
+        content = str(response.content)
+        self.assertIn(another_tagged_trait.tag.title, content)
+        self.assertIn(self.tagged_trait.tag.title, content)
+
+    def test_shows_archived_other_tags(self):
+        """Other tags linked to the same trait are included in the page."""
+        another_tagged_trait = factories.TaggedTraitFactory.create(trait=self.tagged_trait.trait, archived=True)
+        response = self.client.get(self.get_url())
+        context = response.context
+        self.assertTrue(context['show_other_tags'])
+        content = str(response.content)
+        self.assertIn(another_tagged_trait.tag.title, content)
+        self.assertIn(self.tagged_trait.tag.title, content)
+
+
+class DCCDecisionByTagAndStudyDCCAnalystTest(DCCDecisionByTagAndStudyDCCTestsMixin, DCCAnalystLoginTestCase):
+
+    # Run all tests in DCCDecisionByTagAndStudyDCCTestsMixin, as a DCC analyst.
+    pass
+
+
+class DCCDecisionByTagAndStudyDCCDeveloperTest(DCCDecisionByTagAndStudyDCCTestsMixin, DCCDeveloperLoginTestCase):
+
+    # Run all tests in DCCDecisionByTagAndStudyDCCTestsMixin, as a DCC developer.
+    pass
+
+
+class DCCDecisionByTagAndStudyOtherUserTest(UserLoginTestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.tag = factories.TagFactory.create()
+        self.study = StudyFactory.create()
+        self.study_response = factories.StudyResponseFactory.create(
+            status=models.StudyResponse.STATUS_DISAGREE, dcc_review__tagged_trait__tag=self.tag,
+            dcc_review__tagged_trait__trait__source_dataset__source_study_version__study=self.study)
+        self.tagged_trait = self.study_response.dcc_review.tagged_trait
+        # Set expected session variables.
+        session = self.client.session
+        session['tagged_trait_decision_by_tag_and_study_info'] = {
+            'study_pk': self.study.pk,
+            'tag_pk': self.tag.pk,
+            'tagged_trait_pks': [self.tagged_trait.pk],
+            'pk': self.tagged_trait.pk,
+        }
+        session.save()
+
+    def get_url(self, *args):
+        """Get the url for the view this class is supposed to test."""
+        return reverse('tags:tagged-traits:dcc-decision:decide', args=args)
+
+    def test_forbidden_get_request(self):
+        """Returns a response with a forbidden status code for non-DCC users."""
+        response = self.client.get(self.get_url())
+        self.assertEqual(response.status_code, 403)
+
+    def test_forbidden_post_request(self):
+        """Returns a response with a forbidden status code for non-DCC users."""
+        response = self.client.post(self.get_url(), {})
+        self.assertEqual(response.status_code, 403)
+
+
 class TagsLoginRequiredTest(LoginRequiredTestCase):
 
     def test_tags_login_required(self):
