@@ -5292,7 +5292,7 @@ class DCCDecisionByTagAndStudyNextDCCTestsMixin(object):
             'tagged_trait_pks': [x.pk for x in self.tagged_traits],
         }
         session.save()
-        self.tagged_traits[0].delete()
+        first_tagged_trait.hard_delete()
         response = self.client.get(self.get_url())
         self.assertIn('tagged_trait_decision_by_tag_and_study_info', self.client.session)
         session_info = self.client.session['tagged_trait_decision_by_tag_and_study_info']
@@ -5313,6 +5313,50 @@ class DCCDecisionByTagAndStudyNextDCCTestsMixin(object):
         }
         session.save()
         first_tagged_trait.archive()
+        response = self.client.get(self.get_url())
+        self.assertIn('tagged_trait_decision_by_tag_and_study_info', self.client.session)
+        session_info = self.client.session['tagged_trait_decision_by_tag_and_study_info']
+        self.assertIn('tagged_trait_pks', session_info)
+        self.assertNotIn(first_tagged_trait.pk, session_info['tagged_trait_pks'])
+        self.assertEqual(self.tagged_traits[1].pk, session_info['tagged_trait_pks'][0])
+        self.assertNotIn('pk', session_info)
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-decision:next'), target_status_code=302)
+
+    def test_skips_review_confirmed_tagged_trait(self):
+        """Skips a tagged trait that has been reviewed as confirmed after starting the loop."""
+        first_tagged_trait = self.tagged_traits[0]
+        session = self.client.session
+        session['tagged_trait_decision_by_tag_and_study_info'] = {
+            'tag_pk': self.tag.pk,
+            'study_pk': self.study.pk,
+            'tagged_trait_pks': [x.pk for x in self.tagged_traits],
+        }
+        session.save()
+        first_dcc_review = first_tagged_trait.dcc_review
+        first_dcc_review.status = models.DCCReview.STATUS_CONFIRMED
+        first_dcc_review.save()
+        response = self.client.get(self.get_url())
+        self.assertIn('tagged_trait_decision_by_tag_and_study_info', self.client.session)
+        session_info = self.client.session['tagged_trait_decision_by_tag_and_study_info']
+        self.assertIn('tagged_trait_pks', session_info)
+        self.assertNotIn(first_tagged_trait.pk, session_info['tagged_trait_pks'])
+        self.assertEqual(self.tagged_traits[1].pk, session_info['tagged_trait_pks'][0])
+        self.assertNotIn('pk', session_info)
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-decision:next'), target_status_code=302)
+
+    def test_skips_response_agree_tagged_trait(self):
+        """Skips a tagged trait that has a study response agree after starting the loop."""
+        first_tagged_trait = self.tagged_traits[0]
+        session = self.client.session
+        session['tagged_trait_decision_by_tag_and_study_info'] = {
+            'tag_pk': self.tag.pk,
+            'study_pk': self.study.pk,
+            'tagged_trait_pks': [x.pk for x in self.tagged_traits],
+        }
+        session.save()
+        first_study_response = first_tagged_trait.dcc_review.study_response
+        first_study_response.status = models.StudyResponse.STATUS_AGREE
+        first_study_response.save()
         response = self.client.get(self.get_url())
         self.assertIn('tagged_trait_decision_by_tag_and_study_info', self.client.session)
         session_info = self.client.session['tagged_trait_decision_by_tag_and_study_info']

@@ -1221,6 +1221,14 @@ class DCCDecisionByTagAndStudyNext(LoginRequiredMixin, PermissionRequiredMixin, 
             if tt.archived:
                 self._skip_next_tagged_trait()
                 return reverse('tags:tagged-traits:dcc-decision:next')
+            # Check to see if the tagged trait's review status has been changed to confirm since starting the loop.
+            elif tt.dcc_review.status == models.DCCReview.STATUS_CONFIRMED:
+                self._skip_next_tagged_trait()
+                return reverse('tags:tagged-traits:dcc-decision:next')
+            # Check to see if the tagged trait's study response status has changed to agree since starting the loop.
+            elif tt.dcc_review.study_response.status == models.StudyResponse.STATUS_AGREE:
+                self._skip_next_tagged_trait()
+                return reverse('tags:tagged-traits:dcc-decision:next')
             # Check to see if the tagged trait has had a decision made since starting the loop.
             elif hasattr(tt.dcc_review, 'dcc_decision'):
                 self._skip_next_tagged_trait()
