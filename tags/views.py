@@ -1211,29 +1211,37 @@ class DCCDecisionByTagAndStudyNext(LoginRequiredMixin, PermissionRequiredMixin, 
         if len(self.pks) > 0:
             # Set the session variable expected by the decision view, then redirect.
             pk = self.pks[0]
-            # Check to see if the tagged trait has been deleted since starting the loop.
+            # Skip the tagged trait if it has been deleted since starting the loop.
             try:
                 tt = models.TaggedTrait.objects.get(pk=pk)
             except ObjectDoesNotExist:
                 self._skip_next_tagged_trait()
                 return reverse('tags:tagged-traits:dcc-decision:next')
-            # Check to see if the tagged trait has been archived since starting the loop.
+            # Skip the tagged trait if it has been archived since starting the loop.
             if tt.archived:
                 self._skip_next_tagged_trait()
                 return reverse('tags:tagged-traits:dcc-decision:next')
-            # Check to see if the tagged trait's review status has been changed to confirm since starting the loop.
+            # Skip the tagged trait if it has no dcc review.
+            elif not hasattr(tt, 'dcc_review'):
+                self._skip_next_tagged_trait()
+                return reverse('tags:tagged-traits:dcc-decision:next')
+            # Skip the tagged trait if it has a confirmed dcc review.
             elif tt.dcc_review.status == models.DCCReview.STATUS_CONFIRMED:
                 self._skip_next_tagged_trait()
                 return reverse('tags:tagged-traits:dcc-decision:next')
-            # Check to see if the tagged trait's study response status has changed to agree since starting the loop.
+            # Skip the tagged trait if it has no study response.
+            elif not hasattr(tt.dcc_review, 'study_response'):
+                self._skip_next_tagged_trait()
+                return reverse('tags:tagged-traits:dcc-decision:next')
+            # Skip the tagged trait if it has an agree study response.
             elif tt.dcc_review.study_response.status == models.StudyResponse.STATUS_AGREE:
                 self._skip_next_tagged_trait()
                 return reverse('tags:tagged-traits:dcc-decision:next')
-            # Check to see if the tagged trait has had a decision made since starting the loop.
+            # Skip the tagged trait if it already has a decision.
             elif hasattr(tt.dcc_review, 'dcc_decision'):
                 self._skip_next_tagged_trait()
                 return reverse('tags:tagged-traits:dcc-decision:next')
-            # If you make it this far, set the chosen pk as a session variable to reviewed next.
+            # If you make it past all of the checks, set the chosen pk as a session variable to decide on next.
             session_data['pk'] = pk
             self.request.session['tagged_trait_decision_by_tag_and_study_info'] = session_data
             # Add a status message.
