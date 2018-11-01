@@ -1319,13 +1319,37 @@ class DCCDecisionByTagAndStudy(LoginRequiredMixin, PermissionRequiredMixin, Sess
             # Remove the tagged trait from the list of pks.
             self._update_session_variables()
             return HttpResponseRedirect(reverse('tags:tagged-traits:dcc-decision:next'))
-        # Check if this tagged trait has already been archived.
+        # Go to next tagged trait if this one is archived.
         if self.tagged_trait.archived:
             self._update_session_variables()
             # Add an informational message.
             self.messages.warning('Skipped {} because it has been archived.'.format(self.tagged_trait))
             return HttpResponseRedirect(reverse('tags:tagged-traits:dcc-decision:next'))
-        # Check if this tagged trait has already had a decision made.
+        # Go to next tagged trait if this one is missing a dcc review.
+        elif not hasattr(self.tagged_trait, 'dcc_review'):
+            self._update_session_variables()
+            # Add an informational message.
+            self.messages.warning('Skipped {} because it is missing a dcc review.'.format(self.tagged_trait))
+            return HttpResponseRedirect(reverse('tags:tagged-traits:dcc-decision:next'))
+        # Go to next tagged trait if this one has a confirmed dcc review.
+        elif self.tagged_trait.dcc_review.status == models.DCCReview.STATUS_CONFIRMED:
+            self._update_session_variables()
+            # Add an informational message.
+            self.messages.warning('Skipped {} because its dcc review status is "confirmed".'.format(self.tagged_trait))
+            return HttpResponseRedirect(reverse('tags:tagged-traits:dcc-decision:next'))
+        # Go to next tagged trait if this one is missing a study response.
+        elif not hasattr(self.tagged_trait.dcc_review, 'study_response'):
+            self._update_session_variables()
+            # Add an informational message.
+            self.messages.warning('Skipped {} because it is missing a study response.'.format(self.tagged_trait))
+            return HttpResponseRedirect(reverse('tags:tagged-traits:dcc-decision:next'))
+        # Go to next tagged trait if this one has an agree study response.
+        elif self.tagged_trait.dcc_review.study_response.status == models.StudyResponse.STATUS_AGREE:
+            self._update_session_variables()
+            # Add an informational message.
+            self.messages.warning('Skipped {} because its study response status is "agree".'.format(self.tagged_trait))
+            return HttpResponseRedirect(reverse('tags:tagged-traits:dcc-decision:next'))
+        # Go to next tagged trait if this one already has a decision.
         elif hasattr(self.tagged_trait.dcc_review, 'dcc_decision'):
             self._update_session_variables()
             # Add an informational message.

@@ -5614,7 +5614,191 @@ class DCCDecisionByTagAndStudyDCCTestsMixin(object):
         response = self.client.get(self.get_url())
         self.assertEqual(response.status_code, 404)
 
-    def test_warning_and_failure_when_tagged_trait_already_has_decision(self):
+    def test_message_and_redirect_for_archived_tagged_trait(self):
+        """Shows warning message and does not save decision if TaggedTrait is archived."""
+        self.tagged_trait.archive()
+        # Now try to decide on it through the web interface.
+        form_data = {forms.DCCDecisionByTagAndStudyForm.SUBMIT_CONFIRM: 'Confirm', 'comment': 'Looks good.'}
+        response = self.client.post(self.get_url(), form_data)
+        # Check session variables.
+        self.assertIn('tagged_trait_decision_by_tag_and_study_info', self.client.session)
+        session_info = self.client.session['tagged_trait_decision_by_tag_and_study_info']
+        self.assertNotIn('pk', session_info)
+        self.assertIn('tagged_trait_pks', session_info)
+        self.assertNotIn(self.tagged_trait.pk, session_info['tagged_trait_pks'])
+        # Check for success message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('been archived', str(messages[0]))
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-decision:next'), target_status_code=302)
+
+    def test_message_and_redirect_for_archived_tagged_trait_with_form_error(self):
+        """Shows warning message and redirects if TaggedTrait is archived, even if there's a form error."""
+        self.tagged_trait.archive()
+        # Now try to decide on it through the web interface.
+        form_data = {forms.DCCDecisionByTagAndStudyForm.SUBMIT_REMOVE: 'Remove', 'comment': ''}
+        response = self.client.post(self.get_url(), form_data)
+        # Check session variables.
+        self.assertIn('tagged_trait_decision_by_tag_and_study_info', self.client.session)
+        session_info = self.client.session['tagged_trait_decision_by_tag_and_study_info']
+        self.assertNotIn('pk', session_info)
+        self.assertIn('tagged_trait_pks', session_info)
+        self.assertNotIn(self.tagged_trait.pk, session_info['tagged_trait_pks'])
+        # Check for success message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('been archived', str(messages[0]))
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-decision:next'), target_status_code=302)
+
+    def test_message_and_redirect_for_no_review_tagged_trait(self):
+        """Shows warning message and does not save decision if TaggedTrait is missing dcc review."""
+        self.tagged_trait.dcc_review.hard_delete()
+        # Now try to decide on it through the web interface.
+        form_data = {forms.DCCDecisionByTagAndStudyForm.SUBMIT_CONFIRM: 'Confirm', 'comment': 'Looks good.'}
+        response = self.client.post(self.get_url(), form_data)
+        # Check session variables.
+        self.assertIn('tagged_trait_decision_by_tag_and_study_info', self.client.session)
+        session_info = self.client.session['tagged_trait_decision_by_tag_and_study_info']
+        self.assertNotIn('pk', session_info)
+        self.assertIn('tagged_trait_pks', session_info)
+        self.assertNotIn(self.tagged_trait.pk, session_info['tagged_trait_pks'])
+        # Check for success message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('missing a dcc review', str(messages[0]))
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-decision:next'), target_status_code=302)
+
+    def test_message_and_redirect_for_no_review_tagged_trait_with_form_error(self):
+        """Shows warning message and redirects if TaggedTrait is missing dcc review, even if there's a form error."""
+        self.tagged_trait.dcc_review.hard_delete()
+        # Now try to decide on it through the web interface.
+        form_data = {forms.DCCDecisionByTagAndStudyForm.SUBMIT_REMOVE: 'Remove', 'comment': ''}
+        response = self.client.post(self.get_url(), form_data)
+        # Check session variables.
+        self.assertIn('tagged_trait_decision_by_tag_and_study_info', self.client.session)
+        session_info = self.client.session['tagged_trait_decision_by_tag_and_study_info']
+        self.assertNotIn('pk', session_info)
+        self.assertIn('tagged_trait_pks', session_info)
+        self.assertNotIn(self.tagged_trait.pk, session_info['tagged_trait_pks'])
+        # Check for success message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('missing a dcc review', str(messages[0]))
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-decision:next'), target_status_code=302)
+
+    def test_message_and_redirect_for_confirmed_review_tagged_trait(self):
+        """Shows warning message and does not save decision if TaggedTrait has review status confirmed."""
+        self.tagged_trait.dcc_review.status = models.DCCReview.STATUS_CONFIRMED
+        self.tagged_trait.dcc_review.save()
+        # Now try to decide on it through the web interface.
+        form_data = {forms.DCCDecisionByTagAndStudyForm.SUBMIT_CONFIRM: 'Confirm', 'comment': 'Looks good.'}
+        response = self.client.post(self.get_url(), form_data)
+        # Check session variables.
+        self.assertIn('tagged_trait_decision_by_tag_and_study_info', self.client.session)
+        session_info = self.client.session['tagged_trait_decision_by_tag_and_study_info']
+        self.assertNotIn('pk', session_info)
+        self.assertIn('tagged_trait_pks', session_info)
+        self.assertNotIn(self.tagged_trait.pk, session_info['tagged_trait_pks'])
+        # Check for success message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('dcc review status is "confirmed"', str(messages[0]))
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-decision:next'), target_status_code=302)
+
+    def test_message_and_redirect_for_confirmed_review_tagged_trait_with_form_error(self):
+        """Shows warning message and redirects if review status confirmed, even if there's a form error."""
+        self.tagged_trait.dcc_review.status = models.DCCReview.STATUS_CONFIRMED
+        self.tagged_trait.dcc_review.save()
+        # Now try to decide on it through the web interface.
+        form_data = {forms.DCCDecisionByTagAndStudyForm.SUBMIT_REMOVE: 'Remove', 'comment': ''}
+        response = self.client.post(self.get_url(), form_data)
+        # Check session variables.
+        self.assertIn('tagged_trait_decision_by_tag_and_study_info', self.client.session)
+        session_info = self.client.session['tagged_trait_decision_by_tag_and_study_info']
+        self.assertNotIn('pk', session_info)
+        self.assertIn('tagged_trait_pks', session_info)
+        self.assertNotIn(self.tagged_trait.pk, session_info['tagged_trait_pks'])
+        # Check for success message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('dcc review status is "confirmed"', str(messages[0]))
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-decision:next'), target_status_code=302)
+
+    def test_message_and_redirect_for_no_response_tagged_trait(self):
+        """Shows warning message and does not save decision if TaggedTrait is missing study response."""
+        self.tagged_trait.dcc_review.study_response.delete()
+        # Now try to decide on it through the web interface.
+        form_data = {forms.DCCDecisionByTagAndStudyForm.SUBMIT_CONFIRM: 'Confirm', 'comment': 'Looks good.'}
+        response = self.client.post(self.get_url(), form_data)
+        # Check session variables.
+        self.assertIn('tagged_trait_decision_by_tag_and_study_info', self.client.session)
+        session_info = self.client.session['tagged_trait_decision_by_tag_and_study_info']
+        self.assertNotIn('pk', session_info)
+        self.assertIn('tagged_trait_pks', session_info)
+        self.assertNotIn(self.tagged_trait.pk, session_info['tagged_trait_pks'])
+        # Check for success message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('missing a study response', str(messages[0]))
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-decision:next'), target_status_code=302)
+
+    def test_message_and_redirect_for_no_response_tagged_trait_with_form_error(self):
+        """Shows warning message and redirects if missing study response, even if there's a form error."""
+        self.tagged_trait.dcc_review.study_response.delete()
+        # Now try to decide on it through the web interface.
+        form_data = {forms.DCCDecisionByTagAndStudyForm.SUBMIT_REMOVE: 'Remove', 'comment': ''}
+        response = self.client.post(self.get_url(), form_data)
+        # Check session variables.
+        self.assertIn('tagged_trait_decision_by_tag_and_study_info', self.client.session)
+        session_info = self.client.session['tagged_trait_decision_by_tag_and_study_info']
+        self.assertNotIn('pk', session_info)
+        self.assertIn('tagged_trait_pks', session_info)
+        self.assertNotIn(self.tagged_trait.pk, session_info['tagged_trait_pks'])
+        # Check for success message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('missing a study response', str(messages[0]))
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-decision:next'), target_status_code=302)
+
+    def test_message_and_redirect_for_agree_response_tagged_trait(self):
+        """Shows warning message and does not save decision if TaggedTrait study response is agree."""
+        self.tagged_trait.dcc_review.study_response.status = models.StudyResponse.STATUS_AGREE
+        self.tagged_trait.dcc_review.study_response.save()
+        # Now try to decide on it through the web interface.
+        form_data = {forms.DCCDecisionByTagAndStudyForm.SUBMIT_CONFIRM: 'Confirm', 'comment': 'Looks good.'}
+        response = self.client.post(self.get_url(), form_data)
+        # Check session variables.
+        self.assertIn('tagged_trait_decision_by_tag_and_study_info', self.client.session)
+        session_info = self.client.session['tagged_trait_decision_by_tag_and_study_info']
+        self.assertNotIn('pk', session_info)
+        self.assertIn('tagged_trait_pks', session_info)
+        self.assertNotIn(self.tagged_trait.pk, session_info['tagged_trait_pks'])
+        # Check for success message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('study response status is "agree"', str(messages[0]))
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-decision:next'), target_status_code=302)
+
+    def test_message_and_redirect_for_agree_response_tagged_trait_with_form_error(self):
+        """Shows warning message and redirects if study response is agree, even if there's a form error."""
+        self.tagged_trait.dcc_review.study_response.status = models.StudyResponse.STATUS_AGREE
+        self.tagged_trait.dcc_review.study_response.save()
+        # Now try to decide on it through the web interface.
+        form_data = {forms.DCCDecisionByTagAndStudyForm.SUBMIT_REMOVE: 'Remove', 'comment': ''}
+        response = self.client.post(self.get_url(), form_data)
+        # Check session variables.
+        self.assertIn('tagged_trait_decision_by_tag_and_study_info', self.client.session)
+        session_info = self.client.session['tagged_trait_decision_by_tag_and_study_info']
+        self.assertNotIn('pk', session_info)
+        self.assertIn('tagged_trait_pks', session_info)
+        self.assertNotIn(self.tagged_trait.pk, session_info['tagged_trait_pks'])
+        # Check for success message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('study response status is "agree"', str(messages[0]))
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-decision:next'), target_status_code=302)
+
+    def test_message_and_redirect_for_tagged_trait_with_decision(self):
         """Shows warning message and does not save decision if TaggedTrait is already decided."""
         dcc_decision = factories.DCCDecisionFactory.create(
             dcc_review=self.tagged_trait.dcc_review,
@@ -5637,25 +5821,7 @@ class DCCDecisionByTagAndStudyDCCTestsMixin(object):
         self.assertEqual(self.tagged_trait.dcc_review.dcc_decision, dcc_decision)
         self.assertRedirects(response, reverse('tags:tagged-traits:dcc-decision:next'), target_status_code=302)
 
-    def test_failure_for_archived_tagged_trait(self):
-        """Shows warning message and does not save decision if TaggedTrait is archived."""
-        self.tagged_trait.archive()
-        # Now try to decide on it through the web interface.
-        form_data = {forms.DCCDecisionByTagAndStudyForm.SUBMIT_CONFIRM: 'Confirm', 'comment': 'Looks good.'}
-        response = self.client.post(self.get_url(), form_data)
-        # Check session variables.
-        self.assertIn('tagged_trait_decision_by_tag_and_study_info', self.client.session)
-        session_info = self.client.session['tagged_trait_decision_by_tag_and_study_info']
-        self.assertNotIn('pk', session_info)
-        self.assertIn('tagged_trait_pks', session_info)
-        self.assertNotIn(self.tagged_trait.pk, session_info['tagged_trait_pks'])
-        # Check for success message.
-        messages = list(response.wsgi_request._messages)
-        self.assertEqual(len(messages), 1)
-        self.assertIn('been archived', str(messages[0]))
-        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-decision:next'), target_status_code=302)
-
-    def test_warning_and_failure_with_form_error_when_tagged_trait_already_has_decision(self):
+    def test_message_and_redirect_for_tagged_trait_with_decision_with_form_error(self):
         """Shows warning message and redirects if TaggedTrait already has decision, even if there's a form error."""
         dcc_decision = factories.DCCDecisionFactory.create(
             dcc_review=self.tagged_trait.dcc_review,
@@ -5663,7 +5829,7 @@ class DCCDecisionByTagAndStudyDCCTestsMixin(object):
             comment='looks good'
         )
         # Now try to decide on it through the web interface.
-        form_data = {forms.DCCDecisionByTagAndStudyForm.SUBMIT_REMOVE: 'Remove', 'comment': 'looks bad'}
+        form_data = {forms.DCCDecisionByTagAndStudyForm.SUBMIT_REMOVE: 'Remove', 'comment': ''}
         response = self.client.post(self.get_url(), form_data)
         # Check session variables.
         self.assertIn('tagged_trait_decision_by_tag_and_study_info', self.client.session)
@@ -5677,24 +5843,6 @@ class DCCDecisionByTagAndStudyDCCTestsMixin(object):
         self.assertIn('already has a decision made', str(messages[0]))
         # The previous DCCDecision was not updated.
         self.assertEqual(self.tagged_trait.dcc_review.dcc_decision, dcc_decision)
-        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-decision:next'), target_status_code=302)
-
-    def test_failure_for_archived_tagged_trait_with_form_error(self):
-        """Shows warning message and redirects if TaggedTrait is archived, even if there's a form error."""
-        self.tagged_trait.archive()
-        # Now try to decide on it through the web interface.
-        form_data = {forms.DCCDecisionByTagAndStudyForm.SUBMIT_REMOVE: 'Remove', 'comment': 'looks bad'}
-        response = self.client.post(self.get_url(), form_data)
-        # Check session variables.
-        self.assertIn('tagged_trait_decision_by_tag_and_study_info', self.client.session)
-        session_info = self.client.session['tagged_trait_decision_by_tag_and_study_info']
-        self.assertNotIn('pk', session_info)
-        self.assertIn('tagged_trait_pks', session_info)
-        self.assertNotIn(self.tagged_trait.pk, session_info['tagged_trait_pks'])
-        # Check for success message.
-        messages = list(response.wsgi_request._messages)
-        self.assertEqual(len(messages), 1)
-        self.assertIn('been archived', str(messages[0]))
         self.assertRedirects(response, reverse('tags:tagged-traits:dcc-decision:next'), target_status_code=302)
 
     def test_successful_skip_tagged_trait_with_decision(self):
