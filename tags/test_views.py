@@ -4496,7 +4496,7 @@ class StudyResponseCreateDisagreeDCCAnalystTest(DCCAnalystLoginTestCase):
         self.assertEqual(response.status_code, 403)
 
 
-class TaggedTraitsNeedDCCDecisionSummaryDCCAnalystTest(DCCAnalystLoginTestCase):
+class TaggedTraitsNeedDCCDecisionSummaryTestMixin(object):
 
     def get_url(self, *args):
         """Get the url for the view this class is supposed to test."""
@@ -4710,21 +4710,41 @@ class TaggedTraitsNeedDCCDecisionSummaryDCCAnalystTest(DCCAnalystLoginTestCase):
         self.assertEqual(study1[1][0]['tt_decision_required_count'], 1)
         self.assertEqual(len(study1[1]), 1)  # Only one tag.
 
-    def test_button_changes_from_make_to_view(self):
-        """Button to the tag+study page says 'make' when no decisions exist."""
+    def test_make_final_decisions_button_present(self):
+        """Button to make final decisions (start the deciding loop) is present when some decisions remain to be made."""
         study_response = factories.StudyResponseFactory.create(status=models.StudyResponse.STATUS_DISAGREE)
         response = self.client.get(self.get_url())
-        self.assertNotContains(response, "View final decisions", html=True)
+        study_tag_pks = [study_response.dcc_review.tagged_trait.tag.pk,
+                         study_response.dcc_review.tagged_trait.trait.source_dataset.source_study_version.study.pk]
+        self.assertContains(response, reverse('tags:tag:study:begin-dcc-decision', args=study_tag_pks))
+
+    def test_make_final_decisions_button_not_present(self):
+        """Button to make final decisions (start the deciding loop) is not present when all decisions are done."""
+        study_response = factories.StudyResponseFactory.create(status=models.StudyResponse.STATUS_DISAGREE)
         decision = factories.DCCDecisionFactory.create(
             dcc_review=study_response.dcc_review, decision=models.DCCDecision.DECISION_REMOVE)
         response = self.client.get(self.get_url())
-        self.assertContains(response, "View final decisions", html=True)
+        study_tag_pks = [study_response.dcc_review.tagged_trait.tag.pk,
+                         study_response.dcc_review.tagged_trait.trait.source_dataset.source_study_version.study.pk]
+        self.assertNotContains(response, reverse('tags:tag:study:begin-dcc-decision', args=study_tag_pks))
 
     def test_navbar_does_contain_link(self):
         """DCC users do see a link to the dcc decisions summary page."""
         response = self.client.get(reverse('home'))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, self.get_url())
+
+
+class TaggedTraitsNeedDCCDecisionSummaryDCCAnalystTest(TaggedTraitsNeedDCCDecisionSummaryTestMixin,
+                                                       DCCAnalystLoginTestCase):
+
+    pass
+
+
+class TaggedTraitsNeedDCCDecisionSummaryDCCDeveloperTest(TaggedTraitsNeedDCCDecisionSummaryTestMixin,
+                                                         DCCDeveloperLoginTestCase):
+
+    pass
 
 
 class TaggedTraitsNeedDCCDecisionSummaryOtherUserTest(UserLoginTestCase):
@@ -4763,7 +4783,7 @@ class TaggedTraitsNeedDCCDecisionSummaryPhenotypeTaggerTest(PhenotypeTaggerLogin
         self.assertNotContains(response, self.get_url())
 
 
-class TaggedTraitsNeedDCCDecisionByTagAndStudyListDCCAnalystTest(DCCAnalystLoginTestCase):
+class TaggedTraitsNeedDCCDecisionByTagAndStudyListMixin(object):
 
     def setUp(self):
         super().setUp()
@@ -4776,7 +4796,7 @@ class TaggedTraitsNeedDCCDecisionByTagAndStudyListDCCAnalystTest(DCCAnalystLogin
         self.tagged_traits = list(models.TaggedTrait.objects.all())
 
     def get_url(self, *args):
-        return reverse('tags:tag:study:dcc-decision', args=args)
+        return reverse('tags:tag:study:need-decision', args=args)
 
     def test_view_success_code(self):
         """View returns successful response code."""
@@ -4915,6 +4935,18 @@ class TaggedTraitsNeedDCCDecisionByTagAndStudyListDCCAnalystTest(DCCAnalystLogin
         pass
 
 
+class TaggedTraitsNeedDCCDecisionByTagAndStudyListDCCAnalystTest(TaggedTraitsNeedDCCDecisionByTagAndStudyListMixin,
+                                                                 DCCAnalystLoginTestCase):
+
+    pass
+
+
+class TaggedTraitsNeedDCCDecisionByTagAndStudyListDCCDeveloperTest(TaggedTraitsNeedDCCDecisionByTagAndStudyListMixin,
+                                                                   DCCDeveloperLoginTestCase):
+
+    pass
+
+
 class TaggedTraitsNeedDCCDecisionByTagAndStudyListOtherUserTest(UserLoginTestCase):
 
     def setUp(self):
@@ -4928,7 +4960,7 @@ class TaggedTraitsNeedDCCDecisionByTagAndStudyListOtherUserTest(UserLoginTestCas
         self.tagged_traits = list(models.TaggedTrait.objects.all())
 
     def get_url(self, *args):
-        return reverse('tags:tag:study:dcc-decision', args=args)
+        return reverse('tags:tag:study:need-decision', args=args)
 
     def test_forbidden(self):
         """Returns a 403 forbidden status code for regular users."""
@@ -4949,7 +4981,7 @@ class TaggedTraitsNeedDCCDecisionByTagAndStudyListPhenotypeTaggerTest(PhenotypeT
         self.tagged_traits = list(models.TaggedTrait.objects.all())
 
     def get_url(self, *args):
-        return reverse('tags:tag:study:dcc-decision', args=args)
+        return reverse('tags:tag:study:need-decision', args=args)
 
     def test_forbidden(self):
         """Returns a 403 forbidden status code for regular users."""
