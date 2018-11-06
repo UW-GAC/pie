@@ -169,8 +169,21 @@ class StudyResponse(TimeStampedModel):
     comment = models.TextField(blank=True)
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
 
+    # Managers/custom querysets.
+    objects = querysets.StudyResponseQuerySet.as_manager()
+
     class Meta:
         verbose_name = 'study response'
+
+    def delete(self, *args, **kwargs):
+        """Prevent deletion of StudyResponses for TaggedTraits that have a DCCDecision."""
+        if hasattr(self.dcc_review, 'dcc_decision'):
+            raise DeleteNotAllowedError("Cannot delete a StudyResponse from a TaggedTrait that has a DCCDecision.")
+        super().delete(*args, **kwargs)
+
+    def hard_delete(self, *args, **kwargs):
+        """Delete objects that cannot be deleted with overridden delete method."""
+        super().delete(*args, **kwargs)
 
 
 class DCCDecision(TimeStampedModel):

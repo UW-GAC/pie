@@ -1024,6 +1024,143 @@ class StudyResponseTest(TestCase):
             study_response.creator.delete()
 
 
+class StudyResponseDeleteTest(TestCase):
+
+    model = models.StudyResponse
+    model_factory = factories.StudyResponseFactory
+
+    def setUp(self):
+        self.tagged_trait = factories.TaggedTraitFactory.create()
+        self.dcc_review = factories.DCCReviewFactory.create(
+            status=models.DCCReview.STATUS_FOLLOWUP, tagged_trait=self.tagged_trait)
+        self.status = self.model.STATUS_AGREE
+        self.comment = 'a test comment'
+        self.user = UserFactory.create()
+        self.model_args = {'dcc_review': self.dcc_review, 'status': self.status, 'comment': self.comment,
+                           'creator': self.user}
+
+    # Tests of the overridden delete().
+    def test_delete_fails_with_dccdecision_confirm(self):
+        """A StudyResponse with a dcc decision cannot be deleted."""
+        study_response = self.model_factory.create(**self.model_args)
+        factories.DCCDecisionFactory.create(dcc_review=self.dcc_review, decision=models.DCCDecision.DECISION_CONFIRM)
+        with self.assertRaises(DeleteNotAllowedError):
+            study_response.delete()
+        study_response.refresh_from_db()
+
+    def test_delete_fails_with_dccdecision_remove(self):
+        """A StudyResponse with a dcc decision cannot be deleted."""
+        study_response = self.model_factory.create(**self.model_args)
+        factories.DCCDecisionFactory.create(dcc_review=self.dcc_review, decision=models.DCCDecision.DECISION_REMOVE)
+        with self.assertRaises(DeleteNotAllowedError):
+            study_response.delete()
+        study_response.refresh_from_db()
+
+    def test_delete_succeeds_without_dccdecision(self):
+        """A StudyResponse without a DCCDecision can be deleted."""
+        study_response = self.model_factory.create(**self.model_args)
+        study_response.delete()
+        with self.assertRaises(ObjectDoesNotExist):
+            study_response.refresh_from_db()
+
+    # Tests of hard_delete().
+    def test_hard_delete_succeeds_studyresponse_with_dccdecision_confirm(self):
+        """A StudyResponse with DCCDecision confirm can be deleted with hard_delete."""
+        study_response = self.model_factory.create(**self.model_args)
+        factories.DCCDecisionFactory.create(dcc_review=self.dcc_review, decision=models.DCCDecision.DECISION_CONFIRM)
+        study_response.hard_delete()
+        with self.assertRaises(ObjectDoesNotExist):
+            study_response.refresh_from_db()
+
+    def test_hard_delete_succeeds_studyresponse_with_dccdecision_remove(self):
+        """A StudyResponse with DCCDecision remove can be deleted with hard_delete."""
+        study_response = self.model_factory.create(**self.model_args)
+        factories.DCCDecisionFactory.create(dcc_review=self.dcc_review, decision=models.DCCDecision.DECISION_REMOVE)
+        study_response.hard_delete()
+        with self.assertRaises(ObjectDoesNotExist):
+            study_response.refresh_from_db()
+
+    def test_hard_delete_succeeds_studyresponse_without_dccdecision(self):
+        """A StudyResponse without DCCDecision can be deleted with hard_delete."""
+        study_response = self.model_factory.create(**self.model_args)
+        study_response.hard_delete()
+        with self.assertRaises(ObjectDoesNotExist):
+            study_response.refresh_from_db()
+
+    # Tests of the queryset delete().
+    def test_queryset_delete_fails_with_one_studyresponse_with_dccdecision_confirm(self):
+        """Does not delete any StudyResponses if one has a DCCDecision with decision confirm."""
+        study_responses = factories.StudyResponseFactory.create_batch(5)
+        study_response_to_decide = study_responses[1]
+        factories.DCCDecisionFactory.create(dcc_review=study_response_to_decide.dcc_review,
+                                            decision=models.DCCDecision.DECISION_CONFIRM)
+        with self.assertRaises(DeleteNotAllowedError):
+            models.StudyResponse.objects.all().delete()
+        self.assertEqual(models.StudyResponse.objects.count(), 5)
+
+    def test_queryset_delete_fails_with_one_dccreview_with_dccdecision_remove(self):
+        """Does not delete any StudyResponses if one has a DCCDecision with decision remove."""
+        study_responses = factories.StudyResponseFactory.create_batch(5)
+        study_response_to_decide = study_responses[1]
+        factories.DCCDecisionFactory.create(dcc_review=study_response_to_decide.dcc_review,
+                                            decision=models.DCCDecision.DECISION_REMOVE)
+        with self.assertRaises(DeleteNotAllowedError):
+            models.StudyResponse.objects.all().delete()
+        self.assertEqual(models.StudyResponse.objects.count(), 5)
+
+    def test_queryset_delete_fails_with_multiple_dcc_reviews_with_dccdecisions(self):
+        """Does not delete any StudyResponses if multiple reviews have a DCCDecision."""
+        study_responses = factories.StudyResponseFactory.create_batch(5)
+        factories.DCCDecisionFactory.create(
+            dcc_review=study_responses[1].dcc_review, decision=models.DCCDecision.DECISION_CONFIRM)
+        factories.DCCDecisionFactory.create(
+            dcc_review=study_responses[3].dcc_review, decision=models.DCCDecision.DECISION_REMOVE)
+        with self.assertRaises(DeleteNotAllowedError):
+            models.StudyResponse.objects.all().delete()
+        self.assertEqual(models.StudyResponse.objects.count(), 5)
+
+    def test_queryset_delete_succeeds_with_no_dccdecisions(self):
+        """Deletes StudyResponses without DCCDecisions."""
+        study_response = factories.StudyResponseFactory.create_batch(5)
+        models.StudyResponse.objects.all().delete()
+        self.assertEqual(models.StudyResponse.objects.count(), 0)
+
+    # Tests of the queryset hard_delete().
+    def test_queryset_hard_delete_succeeds_with_one_dccdecision_remove(self):
+        """hard_delete deletes StudyResponse that has DCCDecision remove."""
+        study_responses = factories.StudyResponseFactory.create_batch(5)
+        study_response_to_decide = study_responses[1]
+        factories.DCCDecisionFactory.create(dcc_review=study_response_to_decide.dcc_review,
+                                            decision=models.DCCDecision.DECISION_REMOVE)
+        models.StudyResponse.objects.all().hard_delete()
+        self.assertEqual(models.StudyResponse.objects.count(), 0)
+
+    def test_queryset_hard_delete_succeeds_with_one_dccdecision_confirm(self):
+        """hard_delete deletes StudyResponse that has DCCDecision confirm."""
+        study_responses = factories.StudyResponseFactory.create_batch(5)
+        study_response_to_decide = study_responses[1]
+        factories.DCCDecisionFactory.create(dcc_review=study_response_to_decide.dcc_review,
+                                            decision=models.DCCDecision.DECISION_CONFIRM)
+        models.StudyResponse.objects.all().hard_delete()
+        self.assertEqual(models.StudyResponse.objects.count(), 0)
+
+    def test_queryset_hard_delete_succeeds_with_multiple_studyresponses_with_dccdecisions(self):
+        """hard_delete deletes multiple study responses regardless of dcc decision existence."""
+        study_responses = factories.StudyResponseFactory.create_batch(5)
+        factories.DCCDecisionFactory.create(
+            dcc_review=study_responses[2].dcc_review, decision=models.DCCDecision.DECISION_CONFIRM)
+        factories.DCCDecisionFactory.create(
+            dcc_review=study_responses[3].dcc_review, decision=models.DCCDecision.DECISION_REMOVE)
+        models.StudyResponse.objects.all().hard_delete()
+        self.assertEqual(models.StudyResponse.objects.count(), 0)
+
+    def test_queryset_hard_delete_succeeds_with_no_dccdecisions(self):
+        """hard_delete deletes StudyResponses with no DCCDecision."""
+        study_response = factories.StudyResponseFactory.create_batch(5)
+        models.StudyResponse.objects.all().hard_delete()
+        self.assertEqual(models.StudyResponse.objects.count(), 0)
+
+
 class DCCDecisionTest(TestCase):
     model = models.DCCDecision
     model_factory = factories.DCCDecisionFactory

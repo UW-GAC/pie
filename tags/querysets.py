@@ -6,7 +6,7 @@ from core.exceptions import DeleteNotAllowedError
 
 
 class TaggedTraitQuerySet(models.query.QuerySet):
-    """Class to hold custom query set filtering methods for the TaggedTrait model."""
+    """Class to hold custom query set filtering and delete methods for the TaggedTrait model."""
 
     def delete(self, *args, **kwargs):  # noqa
         """Archive (reviewed) or delete (unreviewed), unless any included objects are confirmed via DCCReview."""
@@ -52,7 +52,7 @@ class TaggedTraitQuerySet(models.query.QuerySet):
 
 
 class DCCReviewQuerySet(models.query.QuerySet):
-    """Class to hold custom query set filtering methods for the DCCReviewQueryset model."""
+    """Class to hold custom query set filtering and delete methods for the DCCReview model."""
 
     def delete(self, *args, **kwargs):
         """Only allow deletion if no objects have an associated StudyResponse or DCCDecision."""
@@ -71,4 +71,23 @@ class DCCReviewQuerySet(models.query.QuerySet):
 
     def hard_delete(self, *args, **kwargs):
         """Delete the queryset objects regardless of response or decision status."""
+        super().delete(*args, **kwargs)
+
+
+class StudyResponseQuerySet(models.query.QuerySet):
+    """Class to hold custom query set filtering and delete methods for the StudyResponse model."""
+
+    def delete(self, *args, **kwargs):
+        """Only allow deletion if none of the StudyResponses have a related DCCDecision."""
+        responses_with_decision = self.filter(dcc_review__dcc_decision__isnull=False)
+        n_decisions = responses_with_decision.count()
+        if n_decisions > 0:
+            msg_part = ', '.join([str(x) for x in responses_with_decision])
+            error_message = "Cannot delete StudyResponses for TaggedTraits that have DCC decisions: {}.".format(
+                msg_part)
+            raise DeleteNotAllowedError(error_message)
+        super().delete(*args, **kwargs)
+
+    def hard_delete(self, *args, **kwargs):
+        """Delete the queryset objects regardless of decision status."""
         super().delete(*args, **kwargs)
