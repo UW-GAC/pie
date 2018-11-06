@@ -2733,7 +2733,7 @@ class DCCReviewByTagAndStudyDCCTestsMixin(object):
         form_data = {forms.DCCReviewByTagAndStudyForm.SUBMIT_CONFIRM: 'Confirm', 'comment': ''}
         response = self.client.post(self.get_url(), form_data)
         # Correctly creates a DCCReview for this TaggedTrait.
-        dcc_review = models.DCCReview.objects.all().latest('created')
+        dcc_review = models.DCCReview.objects.latest('created')
         self.assertEqual(self.tagged_trait.dcc_review, dcc_review)
         # The pk session variable is correctly unset.
         session = self.client.session
@@ -2752,7 +2752,7 @@ class DCCReviewByTagAndStudyDCCTestsMixin(object):
         form_data = {forms.DCCReviewByTagAndStudyForm.SUBMIT_FOLLOWUP: 'Require study followup', 'comment': 'foo'}
         response = self.client.post(self.get_url(), form_data)
         # Correctly creates a DCCReview for this TaggedTrait.
-        dcc_review = models.DCCReview.objects.all().latest('created')
+        dcc_review = models.DCCReview.objects.latest('created')
         self.assertEqual(self.tagged_trait.dcc_review, dcc_review)
         # The pk session variable is correctly unset.
         session = self.client.session
@@ -3084,7 +3084,7 @@ class DCCReviewCreateDCCTestsMixin(object):
         response = self.client.post(self.get_url(self.tagged_trait.pk), form_data)
         self.assertRedirects(response, self.tagged_trait.get_absolute_url())
         # Correctly creates a DCCReview for this TaggedTrait.
-        dcc_review = models.DCCReview.objects.all().latest('created')
+        dcc_review = models.DCCReview.objects.latest('created')
         self.assertEqual(self.tagged_trait.dcc_review, dcc_review)
         # Check for success message.
         messages = list(response.wsgi_request._messages)
@@ -3097,7 +3097,7 @@ class DCCReviewCreateDCCTestsMixin(object):
         response = self.client.post(self.get_url(self.tagged_trait.pk), form_data)
         self.assertRedirects(response, self.tagged_trait.get_absolute_url())
         # Correctly creates a DCCReview for this TaggedTrait.
-        dcc_review = models.DCCReview.objects.all().latest('created')
+        dcc_review = models.DCCReview.objects.latest('created')
         self.assertEqual(self.tagged_trait.dcc_review, dcc_review)
         # Check for success message.
         messages = list(response.wsgi_request._messages)
@@ -5542,7 +5542,7 @@ class DCCDecisionByTagAndStudyDCCTestsMixin(object):
         form_data = {forms.DCCDecisionByTagAndStudyForm.SUBMIT_CONFIRM: 'Confirm', 'comment': 'Looks good.'}
         response = self.client.post(self.get_url(), form_data)
         # Correctly creates a DCCDecision for this TaggedTrait.
-        dcc_decision = models.DCCDecision.objects.all().latest('created')
+        dcc_decision = models.DCCDecision.objects.latest('created')
         self.assertEqual(self.tagged_trait.dcc_review.dcc_decision, dcc_decision)
         # The pk session variable is correctly unset.
         session = self.client.session
@@ -5561,7 +5561,7 @@ class DCCDecisionByTagAndStudyDCCTestsMixin(object):
         form_data = {forms.DCCDecisionByTagAndStudyForm.SUBMIT_REMOVE: 'Remove', 'comment': 'Definitely remove it.'}
         response = self.client.post(self.get_url(), form_data)
         # Correctly creates a DCCDecision for this TaggedTrait.
-        dcc_decision = models.DCCDecision.objects.all().latest('created')
+        dcc_decision = models.DCCDecision.objects.latest('created')
         self.assertEqual(self.tagged_trait.dcc_review.dcc_decision, dcc_decision)
         # The pk session variable is correctly unset.
         session = self.client.session
@@ -6019,6 +6019,832 @@ class DCCDecisionByTagAndStudyOtherUserTest(UserLoginTestCase):
     def test_forbidden_post_request(self):
         """Returns a response with a forbidden status code for non-DCC users."""
         response = self.client.post(self.get_url(), {})
+        self.assertEqual(response.status_code, 403)
+
+
+class DCCDecisionCreateDCCTestsMixin(object):
+
+    def setUp(self):
+        super().setUp()
+        self.study_response = factories.StudyResponseFactory.create(status=models.StudyResponse.STATUS_DISAGREE)
+        self.tagged_trait = self.study_response.dcc_review.tagged_trait
+        self.need_decision_url = reverse('tags:tag:study:need-decision',
+                                         args=[self.tagged_trait.tag.pk,
+                                               self.tagged_trait.trait.source_dataset.source_study_version.study.pk])
+
+    def get_url(self, *args):
+        """Get the url for the view this class is supposed to test."""
+        return reverse('tags:tagged-traits:pk:dcc-decision:new', args=args)
+
+    def test_view_success_code(self):
+        """View returns successful response code."""
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        self.assertEqual(response.status_code, 200)
+
+    def test_context_data(self):
+        """View has appropriate data in the context."""
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        context = response.context
+        self.assertIn('form', context)
+        self.assertIsInstance(context['form'], forms.DCCDecisionForm)
+        self.assertIn('tagged_trait', context)
+        self.assertEqual(context['tagged_trait'], self.tagged_trait)
+
+    def test_post_confirm_decision_creates_decision(self):
+        """Posting valid data to the form correctly creates a DCCDecision."""
+        form_data = {forms.DCCDecisionForm.SUBMIT_CONFIRM: 'Confirm', 'comment': 'looks good'}
+        response = self.client.post(self.get_url(self.tagged_trait.pk), form_data)
+        self.assertRedirects(response, self.need_decision_url)
+        # Correctly creates a DCCDecision for this TaggedTrait.
+        dcc_decision = models.DCCDecision.objects.latest('created')
+        self.assertEqual(self.tagged_trait.dcc_review.dcc_decision, dcc_decision)
+        # Check for success message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Successfully made final decision for', str(messages[0]))
+
+    def test_remove_decision_creates_decision(self):
+        """Posting valid data to the form correctly creates a DCCDecision."""
+        form_data = {forms.DCCDecisionForm.SUBMIT_REMOVE: 'Remove', 'comment': 'foo'}
+        response = self.client.post(self.get_url(self.tagged_trait.pk), form_data)
+        self.assertRedirects(response, self.need_decision_url)
+        # Correctly creates a DCCDecision for this TaggedTrait.
+        dcc_decision = models.DCCDecision.objects.latest('created')
+        self.assertEqual(self.tagged_trait.dcc_review.dcc_decision, dcc_decision)
+        # Check for success message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Successfully made final decision for', str(messages[0]))
+
+    def test_form_error_missing_comment_for_remove(self):
+        """Posting bad data to the form shows a form error."""
+        form_data = {forms.DCCDecisionForm.SUBMIT_REMOVE: 'Remove', 'comment': ''}
+        response = self.client.post(self.get_url(self.tagged_trait.pk), form_data)
+        self.assertEqual(response.status_code, 200)
+        # Does not create a DCCDecision for this TaggedTrait.
+        self.assertFalse(hasattr(self.tagged_trait.dcc_review, 'dcc_decision'))
+        # No messages.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 0)
+
+    def test_form_error_missing_comment_for_confirm(self):
+        """Posting bad data to the form shows a form error."""
+        form_data = {forms.DCCDecisionForm.SUBMIT_CONFIRM: 'Confirm', 'comment': ''}
+        response = self.client.post(self.get_url(self.tagged_trait.pk), form_data)
+        self.assertEqual(response.status_code, 200)
+        # Does not create a DCCDecision for this TaggedTrait.
+        self.assertFalse(hasattr(self.tagged_trait.dcc_review, 'dcc_decision'))
+        # No messages.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 0)
+
+    def test_get_view_with_invalid_tagged_trait_pk(self):
+        """Returns a 404 page with a get request if the tagged trai doesn't exist."""
+        url = self.get_url(self.tagged_trait.pk + 1)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 404)
+
+    def test_post_view_with_invalid_tagged_trait_pk(self):
+        """Returns a 404 page if the session varaible pk doesn't exist."""
+        url = self.get_url(self.tagged_trait.pk + 1)
+        form_data = {forms.DCCDecisionForm.SUBMIT_CONFIRM: 'Confirm', 'comment': 'looks good'}
+        response = self.client.post(url, form_data)
+        self.assertEqual(response.status_code, 404)
+
+    def test_get_message_and_redirect_archived_tagged_trait(self):
+        """Get request gives a warning message and redirects if the tagged trait is archived."""
+        self.tagged_trait.archive()
+        url = self.get_url(self.tagged_trait.pk)
+        response = self.client.get(url)
+        self.assertRedirects(response, self.need_decision_url)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('been archived', str(messages[0]))
+
+    def test_post_message_and_redirect_archived_tagged_trait(self):
+        """Post request gives a warning message and redirects if the tagged trait is archived."""
+        self.tagged_trait.archive()
+        url = self.get_url(self.tagged_trait.pk)
+        form_data = {forms.DCCDecisionForm.SUBMIT_CONFIRM: 'Confirm', 'comment': 'looks good'}
+        response = self.client.post(url, form_data)
+        self.assertRedirects(response, self.need_decision_url)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('been archived', str(messages[0]))
+
+    def test_post_message_and_redirect_archived_tagged_trait_with_form_error(self):
+        """Post request gives a warning message and redirects if the tagged trait is archived, even with bad data."""
+        self.tagged_trait.archive()
+        url = self.get_url(self.tagged_trait.pk)
+        form_data = {forms.DCCDecisionForm.SUBMIT_CONFIRM: 'Confirm', 'comment': ''}
+        response = self.client.post(url, form_data)
+        self.assertRedirects(response, self.need_decision_url)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('been archived', str(messages[0]))
+
+    def test_get_message_and_redirect_missing_review_tagged_trait(self):
+        """Get request gives a warning message and redirects if the tagged trait has no dcc review."""
+        self.tagged_trait.dcc_review.hard_delete()
+        url = self.get_url(self.tagged_trait.pk)
+        response = self.client.get(url)
+        self.assertRedirects(response, self.need_decision_url)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Cannot create', str(messages[0]))
+
+    def test_post_message_and_redirect_missing_review_tagged_trait(self):
+        """Post request gives a warning message and redirects if the tagged trait has no dcc review."""
+        self.tagged_trait.dcc_review.hard_delete()
+        url = self.get_url(self.tagged_trait.pk)
+        form_data = {forms.DCCDecisionForm.SUBMIT_CONFIRM: 'Confirm', 'comment': 'looks good'}
+        response = self.client.post(url, form_data)
+        self.assertRedirects(response, self.need_decision_url)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Cannot create', str(messages[0]))
+
+    def test_post_message_and_redirect_missing_review_tagged_trait_with_form_error(self):
+        """Post request gives a warning message and redirects if no dcc review, even with bad data."""
+        self.tagged_trait.dcc_review.hard_delete()
+        url = self.get_url(self.tagged_trait.pk)
+        form_data = {forms.DCCDecisionForm.SUBMIT_CONFIRM: 'Confirm', 'comment': ''}
+        response = self.client.post(url, form_data)
+        self.assertRedirects(response, self.need_decision_url)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Cannot create', str(messages[0]))
+
+    def test_get_message_and_redirect_review_confirmed_tagged_trait(self):
+        """Get request gives a warning message and redirects if the tagged trait has dcc review status confirmed."""
+        self.tagged_trait.dcc_review.status = models.DCCReview.STATUS_CONFIRMED
+        self.tagged_trait.dcc_review.save()
+        url = self.get_url(self.tagged_trait.pk)
+        response = self.client.get(url)
+        self.assertRedirects(response, self.need_decision_url)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Cannot create', str(messages[0]))
+
+    def test_post_message_and_redirect_review_confirmed_tagged_trait(self):
+        """Post request gives a warning message and redirects if the tagged trait has dcc review status confirmed."""
+        self.tagged_trait.dcc_review.status = models.DCCReview.STATUS_CONFIRMED
+        self.tagged_trait.dcc_review.save()
+        url = self.get_url(self.tagged_trait.pk)
+        form_data = {forms.DCCDecisionForm.SUBMIT_CONFIRM: 'Confirm', 'comment': 'looks good'}
+        response = self.client.post(url, form_data)
+        self.assertRedirects(response, self.need_decision_url)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Cannot create', str(messages[0]))
+
+    def test_post_message_and_redirect_review_confirmed_tagged_trait_with_form_error(self):
+        """Post request gives a warning message and redirects if dcc review status confirmed, even with bad data."""
+        self.tagged_trait.dcc_review.status = models.DCCReview.STATUS_CONFIRMED
+        self.tagged_trait.dcc_review.save()
+        url = self.get_url(self.tagged_trait.pk)
+        form_data = {forms.DCCDecisionForm.SUBMIT_CONFIRM: 'Confirm', 'comment': ''}
+        response = self.client.post(url, form_data)
+        self.assertRedirects(response, self.need_decision_url)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Cannot create', str(messages[0]))
+
+    def test_get_message_and_redirect_missing_response_tagged_trait(self):
+        """Get request gives a warning message and redirects if the tagged trait has no study response."""
+        self.tagged_trait.dcc_review.study_response.delete()
+        url = self.get_url(self.tagged_trait.pk)
+        response = self.client.get(url)
+        self.assertRedirects(response, self.need_decision_url)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Cannot create', str(messages[0]))
+
+    def test_post_message_and_redirect_missing_response_tagged_trait(self):
+        """Post request gives a warning message and redirects if the tagged trait has no study response."""
+        self.tagged_trait.dcc_review.study_response.delete()
+        url = self.get_url(self.tagged_trait.pk)
+        form_data = {forms.DCCDecisionForm.SUBMIT_CONFIRM: 'Confirm', 'comment': 'looks good'}
+        response = self.client.post(url, form_data)
+        self.assertRedirects(response, self.need_decision_url)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Cannot create', str(messages[0]))
+
+    def test_post_message_and_redirect_missing_response_tagged_trait_with_form_error(self):
+        """Post request gives a warning message and redirects if no study response, even with bad data."""
+        self.tagged_trait.dcc_review.study_response.delete()
+        url = self.get_url(self.tagged_trait.pk)
+        form_data = {forms.DCCDecisionForm.SUBMIT_CONFIRM: 'Confirm', 'comment': ''}
+        response = self.client.post(url, form_data)
+        self.assertRedirects(response, self.need_decision_url)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Cannot create', str(messages[0]))
+
+    def test_get_message_and_redirect_response_agree_tagged_trait(self):
+        """Get request gives a warning message and redirects if the tagged trait has study response status agree."""
+        self.tagged_trait.dcc_review.study_response.status = models.StudyResponse.STATUS_AGREE
+        self.tagged_trait.dcc_review.study_response.save()
+        url = self.get_url(self.tagged_trait.pk)
+        response = self.client.get(url)
+        self.assertRedirects(response, self.need_decision_url)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Cannot create', str(messages[0]))
+
+    def test_post_message_and_redirect_response_agree_tagged_trait(self):
+        """Post request gives a warning message and redirects if the tagged trait has study response status agree."""
+        self.tagged_trait.dcc_review.study_response.status = models.StudyResponse.STATUS_AGREE
+        self.tagged_trait.dcc_review.study_response.save()
+        url = self.get_url(self.tagged_trait.pk)
+        form_data = {forms.DCCDecisionForm.SUBMIT_CONFIRM: 'Confirm', 'comment': 'looks good'}
+        response = self.client.post(url, form_data)
+        self.assertRedirects(response, self.need_decision_url)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Cannot create', str(messages[0]))
+
+    def test_post_message_and_redirect_response_agree_tagged_trait_with_form_error(self):
+        """Post request gives a warning message and redirects if study response status agree, even with bad data."""
+        self.tagged_trait.dcc_review.study_response.status = models.StudyResponse.STATUS_AGREE
+        self.tagged_trait.dcc_review.study_response.save()
+        url = self.get_url(self.tagged_trait.pk)
+        form_data = {forms.DCCDecisionForm.SUBMIT_CONFIRM: 'Confirm', 'comment': ''}
+        response = self.client.post(url, form_data)
+        self.assertRedirects(response, self.need_decision_url)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Cannot create', str(messages[0]))
+
+    def test_get_message_and_redirect_to_update_for_previous_decision(self):
+        """Shows warning message and redirects to update page if TaggedTrait is already decided."""
+        dcc_decision = factories.DCCDecisionFactory.create(
+            dcc_review=self.tagged_trait.dcc_review,
+            decision=models.DCCDecision.DECISION_REMOVE
+        )
+        # Now try to review it through the web interface.
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        self.assertRedirects(
+            response, reverse('tags:tagged-traits:pk:dcc-decision:update', args=[self.tagged_trait.pk]))
+        # Check for warning message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Switched to updating decision', str(messages[0]))
+        # The previous DCCDecision was not updated.
+        self.assertEqual(self.tagged_trait.dcc_review.dcc_decision, dcc_decision)
+
+    def test_post_message_and_redirect_to_update_for_previous_decision(self):
+        """Shows warning message and does not save decision if TaggedTrait is already decided."""
+        dcc_decision = factories.DCCDecisionFactory.create(
+            dcc_review=self.tagged_trait.dcc_review,
+            decision=models.DCCDecision.DECISION_REMOVE
+        )
+        # Now try to review it through the web interface.
+        form_data = {forms.DCCDecisionForm.SUBMIT_CONFIRM: 'Confirm', 'comment': 'looks good'}
+        response = self.client.post(self.get_url(self.tagged_trait.pk), form_data)
+        self.assertRedirects(
+            response, reverse('tags:tagged-traits:pk:dcc-decision:update', args=[self.tagged_trait.pk]))
+        # Check for warning message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Switched to updating', str(messages[0]))
+        # The previous DCCDecision was not updated.
+        self.assertEqual(self.tagged_trait.dcc_review.dcc_decision, dcc_decision)
+
+    def test_post_message_and_redirect_to_update_for_previous_decision_with_form_error(self):
+        """Shows warning message and redirects if TaggedTrait is already decided, with a form error."""
+        dcc_decision = factories.DCCDecisionFactory.create(
+            dcc_review=self.tagged_trait.dcc_review,
+            decision=models.DCCDecision.DECISION_REMOVE
+        )
+        # Now try to review it through the web interface.
+        form_data = {forms.DCCDecisionForm.SUBMIT_REMOVE: 'Confirm', 'comment': ''}
+        response = self.client.post(self.get_url(self.tagged_trait.pk), form_data)
+        self.assertRedirects(
+            response, reverse('tags:tagged-traits:pk:dcc-decision:update', args=[self.tagged_trait.pk]))
+        # Check for warning message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Switched to updating', str(messages[0]))
+        # The previous DCCDecision was not updated.
+        self.assertEqual(self.tagged_trait.dcc_review.dcc_decision, dcc_decision)
+
+    def test_shows_other_tags(self):
+        """Other tags linked to the same trait are included in the page."""
+        another_tagged_trait = factories.TaggedTraitFactory.create(trait=self.tagged_trait.trait)
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        context = response.context
+        self.assertTrue(context['show_other_tags'])
+        content = str(response.content)
+        self.assertIn(another_tagged_trait.tag.title, content)
+        self.assertIn(self.tagged_trait.tag.title, content)
+
+    def test_shows_archived_other_tags(self):
+        """Other tags linked to the same trait are included in the page."""
+        another_tagged_trait = factories.TaggedTraitFactory.create(trait=self.tagged_trait.trait, archived=True)
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        context = response.context
+        self.assertTrue(context['show_other_tags'])
+        content = str(response.content)
+        self.assertIn(another_tagged_trait.tag.title, content)
+        self.assertIn(self.tagged_trait.tag.title, content)
+
+
+class DCCDecisionCreateDCCAnalystTest(DCCDecisionCreateDCCTestsMixin, DCCAnalystLoginTestCase):
+
+    # Run all tests in DCCDecisionCreateDCCTestsMixin, as a DCC analyst.
+    pass
+
+
+class DCCDecisionCreateDCCDeveloperTest(DCCDecisionCreateDCCTestsMixin, DCCDeveloperLoginTestCase):
+
+    # Run all tests in DCCDecisionCreateDCCTestsMixin, as a DCC developer.
+    pass
+
+
+class DCCDecisionCreateOtherUserTest(UserLoginTestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.study_response = factories.StudyResponseFactory.create(status=models.StudyResponse.STATUS_DISAGREE)
+        self.tagged_trait = self.study_response.dcc_review.tagged_trait
+
+    def get_url(self, *args):
+        """Get the url for the view this class is supposed to test."""
+        return reverse('tags:tagged-traits:pk:dcc-decision:new', args=args)
+
+    def test_forbidden_get_request(self):
+        """Returns a response with a forbidden status code for non-DCC users."""
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        self.assertEqual(response.status_code, 403)
+
+    def test_forbidden_post_request(self):
+        """Returns a response with a forbidden status code for non-DCC users."""
+        response = self.client.post(self.get_url(self.tagged_trait.pk), {})
+        self.assertEqual(response.status_code, 403)
+
+    def test_forbidden_get_request_with_existing_decision(self):
+        """Returns a response with a forbidden status code for non-DCC users."""
+        factories.DCCDecisionFactory.create(
+            dcc_review=self.tagged_trait.dcc_review, decision=models.DCCDecision.DECISION_REMOVE)
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        self.assertEqual(response.status_code, 403)
+
+    def test_forbidden_post_request_with_existing_decision(self):
+        """Returns a response with a forbidden status code for non-DCC users."""
+        factories.DCCDecisionFactory.create(
+            dcc_review=self.tagged_trait.dcc_review, decision=models.DCCDecision.DECISION_REMOVE)
+        response = self.client.post(self.get_url(self.tagged_trait.pk), {})
+        self.assertEqual(response.status_code, 403)
+
+
+class DCCDecisionUpdateDCCTestsMixin(object):
+
+    def setUp(self):
+        super().setUp()
+        self.study_response = factories.StudyResponseFactory.create(status=models.StudyResponse.STATUS_DISAGREE)
+        self.tagged_trait = self.study_response.dcc_review.tagged_trait
+        self.dcc_decision = factories.DCCDecisionFactory.create(
+            dcc_review=self.tagged_trait.dcc_review, decision=models.DCCDecision.DECISION_CONFIRM)
+        self.need_decision_url = reverse('tags:tag:study:need-decision',
+                                         args=[self.tagged_trait.tag.pk,
+                                               self.tagged_trait.trait.source_dataset.source_study_version.study.pk])
+
+    def get_url(self, *args):
+        """Get the url for the view this class is supposed to test."""
+        return reverse('tags:tagged-traits:pk:dcc-decision:update', args=args)
+
+    def test_view_success_code(self):
+        """View returns successful response code."""
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        self.assertEqual(response.status_code, 200)
+
+    def test_context_data(self):
+        """View has appropriate data in the context."""
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        context = response.context
+        self.assertIn('form', context)
+        self.assertIsInstance(context['form'], forms.DCCDecisionForm)
+        self.assertIn('tagged_trait', context)
+        self.assertEqual(context['tagged_trait'], self.tagged_trait)
+
+    def test_post_confirm_decision_updates_comment(self):
+        """Posting valid data to the form correctly updates a DCCDecision by changing comment."""
+        original_comment = self.dcc_decision.comment
+        form_data = {forms.DCCDecisionForm.SUBMIT_CONFIRM: 'Confirm', 'comment': 'looks good'}
+        response = self.client.post(self.get_url(self.tagged_trait.pk), form_data)
+        self.assertRedirects(response, self.need_decision_url)
+        self.dcc_decision.refresh_from_db()
+        # Correctly updates a DCCDecision for this TaggedTrait.
+        updated_dcc_decision = models.DCCDecision.objects.latest('modified')
+        self.assertEqual(self.dcc_decision, updated_dcc_decision)
+        self.assertNotEqual(self.dcc_decision.comment, original_comment)
+        # Check for success message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Successfully updated', str(messages[0]))
+
+    def test_post_remove_decision_updates_decision_and_comment(self):
+        """Posting valid data to the form correctly updates a DCCDecision decision and comment."""
+        original_comment = self.dcc_decision.comment
+        form_data = {forms.DCCDecisionForm.SUBMIT_REMOVE: 'Remove', 'comment': 'foo'}
+        response = self.client.post(self.get_url(self.tagged_trait.pk), form_data)
+        self.assertRedirects(response, self.need_decision_url)
+        self.dcc_decision.refresh_from_db()
+        # Correctly updates a DCCDecision for this TaggedTrait.
+        updated_dcc_decision = models.DCCDecision.objects.latest('modified')
+        self.assertEqual(self.dcc_decision, updated_dcc_decision)
+        self.assertNotEqual(self.dcc_decision.comment, original_comment)
+        # Check for success message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Successfully updated', str(messages[0]))
+
+    def test_form_error_missing_comment_for_remove(self):
+        """Posting bad data to the form shows a form error and does not update decision."""
+        form_data = {forms.DCCDecisionForm.SUBMIT_REMOVE: 'Remove', 'comment': ''}
+        response = self.client.post(self.get_url(self.tagged_trait.pk), form_data)
+        self.assertEqual(response.status_code, 200)
+        self.dcc_decision.refresh_from_db()
+        # Does not modify a DCCDecision for this TaggedTrait.
+        self.assertNotEqual(self.dcc_decision.comment, form_data['comment'])
+        self.assertNotEqual(self.dcc_decision.decision, models.DCCDecision.DECISION_REMOVE)
+        # No messages.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 0)
+
+    def test_form_error_missing_comment_for_confirm(self):
+        """Posting bad data to the form shows a form error."""
+        form_data = {forms.DCCDecisionForm.SUBMIT_CONFIRM: 'Confirm', 'comment': ''}
+        response = self.client.post(self.get_url(self.tagged_trait.pk), form_data)
+        self.assertEqual(response.status_code, 200)
+        self.dcc_decision.refresh_from_db()
+        # Does not modify a DCCDecision for this TaggedTrait.
+        self.assertNotEqual(self.dcc_decision.comment, form_data['comment'])
+        # No messages.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 0)
+
+    def test_get_view_with_invalid_tagged_trait_pk(self):
+        """Returns a 404 page with a get request if the tagged trai doesn't exist."""
+        url = self.get_url(self.tagged_trait.pk + 1)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 404)
+
+    def test_post_view_with_invalid_tagged_trait_pk(self):
+        """Returns a 404 page if the session varaible pk doesn't exist."""
+        url = self.get_url(self.tagged_trait.pk + 1)
+        form_data = {forms.DCCDecisionForm.SUBMIT_CONFIRM: 'Confirm', 'comment': 'looks good'}
+        response = self.client.post(url, form_data)
+        self.assertEqual(response.status_code, 404)
+
+    def test_get_message_and_redirect_archived_tagged_trait(self):
+        """Get request gives a warning message and redirects if the tagged trait is archived."""
+        self.tagged_trait.archive()
+        url = self.get_url(self.tagged_trait.pk)
+        response = self.client.get(url)
+        self.assertRedirects(response, self.need_decision_url)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('been archived', str(messages[0]))
+
+    def test_post_message_and_redirect_archived_tagged_trait(self):
+        """Post request gives a warning message and redirects, not changing decision, if tagged trait is archived."""
+        original_comment = self.dcc_decision.comment
+        self.tagged_trait.archive()
+        url = self.get_url(self.tagged_trait.pk)
+        form_data = {forms.DCCDecisionForm.SUBMIT_CONFIRM: 'Confirm', 'comment': 'looks good'}
+        response = self.client.post(url, form_data)
+        self.dcc_decision.refresh_from_db()
+        self.assertRedirects(response, self.need_decision_url)
+        self.assertEqual(original_comment, self.dcc_decision.comment)
+        self.assertNotEqual(self.dcc_decision.comment, form_data['comment'])
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('been archived', str(messages[0]))
+
+    def test_post_message_and_redirect_archived_tagged_trait_with_form_error(self):
+        """Post request gives a warning message and redirects if the tagged trait is archived, even with bad data."""
+        original_comment = self.dcc_decision.comment
+        self.tagged_trait.archive()
+        url = self.get_url(self.tagged_trait.pk)
+        form_data = {forms.DCCDecisionForm.SUBMIT_CONFIRM: 'Confirm', 'comment': ''}
+        response = self.client.post(url, form_data)
+        self.dcc_decision.refresh_from_db()
+        self.assertRedirects(response, self.need_decision_url)
+        self.assertEqual(original_comment, self.dcc_decision.comment)
+        self.assertNotEqual(self.dcc_decision.comment, form_data['comment'])
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('been archived', str(messages[0]))
+
+    def test_get_message_and_redirect_missing_review_tagged_trait(self):
+        """Get request gives a warning message and redirects if the tagged trait has no dcc review."""
+        self.tagged_trait.dcc_review.hard_delete()  # Also deletes dcc_decision and study_response!
+        # Reset the objects saved to this testcase.
+        self.tagged_trait = models.TaggedTrait.objects.get(pk=self.tagged_trait.pk)
+        self.study_response = None
+        self.dcc_decision = None
+        self.assertFalse(hasattr(self.tagged_trait, 'dcc_review'))
+        url = self.get_url(self.tagged_trait.pk)
+        response = self.client.get(url, follow=True)
+        create_decision_url = reverse('tags:tagged-traits:pk:dcc-decision:new', args=[self.tagged_trait.pk])
+        # Redirects first to the create page, then to the need_decision page.
+        self.assertEqual(response.redirect_chain, [(create_decision_url, 302, ), (self.need_decision_url, 302, )])
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 2)
+        self.assertIn('Switched to creating', str(messages[0]))
+        self.assertIn('Cannot create', str(messages[1]))
+        self.assertFalse(hasattr(self.tagged_trait, 'dcc_review'))
+
+    def test_post_message_and_redirect_missing_review_tagged_trait(self):
+        """Post request gives a warning message and redirects if the tagged trait has no dcc review."""
+        self.tagged_trait.dcc_review.hard_delete()  # Also deletes dcc_decision and study_response!
+        # Reset the objects saved to this testcase.
+        self.tagged_trait = models.TaggedTrait.objects.get(pk=self.tagged_trait.pk)
+        self.study_response = None
+        self.dcc_decision = None
+        self.assertFalse(hasattr(self.tagged_trait, 'dcc_review'))
+        url = self.get_url(self.tagged_trait.pk)
+        form_data = {forms.DCCDecisionForm.SUBMIT_CONFIRM: 'Confirm', 'comment': 'looks good'}
+        response = self.client.post(url, form_data, follow=True)
+        create_decision_url = reverse('tags:tagged-traits:pk:dcc-decision:new', args=[self.tagged_trait.pk])
+        # Redirects first to the create page, then to the need_decision page.
+        self.assertEqual(response.redirect_chain, [(create_decision_url, 302, ), (self.need_decision_url, 302, )])
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 2)
+        self.assertIn('Switched to creating', str(messages[0]))
+        self.assertIn('Cannot create', str(messages[1]))
+        self.assertFalse(hasattr(self.tagged_trait, 'dcc_review'))
+
+    def test_post_message_and_redirect_missing_review_tagged_trait_with_form_error(self):
+        """Post request gives a warning message and redirects if no dcc review, even with bad data."""
+        self.tagged_trait.dcc_review.hard_delete()  # Also deletes dcc_decision and study_response!
+        # Reset the objects saved to this testcase.
+        self.tagged_trait = models.TaggedTrait.objects.get(pk=self.tagged_trait.pk)
+        self.study_response = None
+        self.dcc_decision = None
+        self.assertFalse(hasattr(self.tagged_trait, 'dcc_review'))
+        url = self.get_url(self.tagged_trait.pk)
+        form_data = {forms.DCCDecisionForm.SUBMIT_CONFIRM: 'Confirm', 'comment': ''}
+        response = self.client.post(url, form_data, follow=True)
+        create_decision_url = reverse('tags:tagged-traits:pk:dcc-decision:new', args=[self.tagged_trait.pk])
+        # Redirects first to the create page, then to the need_decision page.
+        self.assertEqual(response.redirect_chain, [(create_decision_url, 302, ), (self.need_decision_url, 302, )])
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 2)
+        self.assertIn('Switched to creating', str(messages[0]))
+        self.assertIn('Cannot create', str(messages[1]))
+        self.assertFalse(hasattr(self.tagged_trait, 'dcc_review'))
+
+    def test_get_message_and_redirect_review_confirmed_tagged_trait(self):
+        """Get request gives a warning message and redirects if the tagged trait has dcc review status confirmed."""
+        original_comment = self.dcc_decision.comment
+        self.tagged_trait.dcc_review.status = models.DCCReview.STATUS_CONFIRMED
+        self.tagged_trait.dcc_review.save()
+        url = self.get_url(self.tagged_trait.pk)
+        response = self.client.get(url)
+        self.dcc_decision.refresh_from_db()
+        self.assertRedirects(response, self.need_decision_url)
+        self.assertEqual(original_comment, self.dcc_decision.comment)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Cannot update', str(messages[0]))
+
+    def test_post_message_and_redirect_review_confirmed_tagged_trait(self):
+        """Post request gives a warning message and redirects if the tagged trait has dcc review status confirmed."""
+        original_comment = self.dcc_decision.comment
+        self.tagged_trait.dcc_review.status = models.DCCReview.STATUS_CONFIRMED
+        self.tagged_trait.dcc_review.save()
+        url = self.get_url(self.tagged_trait.pk)
+        form_data = {forms.DCCDecisionForm.SUBMIT_CONFIRM: 'Confirm', 'comment': 'looks good'}
+        response = self.client.post(url, form_data)
+        self.dcc_decision.refresh_from_db()
+        self.assertRedirects(response, self.need_decision_url)
+        self.assertEqual(original_comment, self.dcc_decision.comment)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Cannot update', str(messages[0]))
+
+    def test_post_message_and_redirect_review_confirmed_tagged_trait_with_form_error(self):
+        """Post request gives a warning message and redirects if dcc review status confirmed, even with bad data."""
+        original_comment = self.dcc_decision.comment
+        self.tagged_trait.dcc_review.status = models.DCCReview.STATUS_CONFIRMED
+        self.tagged_trait.dcc_review.save()
+        url = self.get_url(self.tagged_trait.pk)
+        form_data = {forms.DCCDecisionForm.SUBMIT_CONFIRM: 'Confirm', 'comment': ''}
+        response = self.client.post(url, form_data)
+        self.dcc_decision.refresh_from_db()
+        self.assertRedirects(response, self.need_decision_url)
+        self.assertEqual(original_comment, self.dcc_decision.comment)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Cannot update', str(messages[0]))
+
+    def test_get_success_missing_response_tagged_trait(self):
+        """Get response is successful if the tagged trait has no study response."""
+        self.tagged_trait.dcc_review.study_response.delete()
+        url = self.get_url(self.tagged_trait.pk)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 0)
+
+    def test_post_updates_decision_missing_response_tagged_trait(self):
+        """Post request successfully updates decision when the tagged trait has no study response."""
+        original_comment = self.dcc_decision.comment
+        self.tagged_trait.dcc_review.study_response.delete()
+        url = self.get_url(self.tagged_trait.pk)
+        form_data = {forms.DCCDecisionForm.SUBMIT_CONFIRM: 'Confirm', 'comment': 'looks good'}
+        response = self.client.post(url, form_data)
+        self.dcc_decision.refresh_from_db()
+        self.assertRedirects(response, self.need_decision_url)
+        self.assertNotEqual(original_comment, self.dcc_decision.comment)
+        self.assertEqual(self.dcc_decision.comment, form_data['comment'])
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Successfully updated', str(messages[0]))
+
+    def test_post_does_not_redirect_with_missing_response_tagged_trait_with_form_error(self):
+        """Post request does not give message and redirect, but doesn't update decision when study response is missing and data is bad."""  # noqa
+        original_comment = self.dcc_decision.comment
+        self.tagged_trait.dcc_review.study_response.delete()
+        url = self.get_url(self.tagged_trait.pk)
+        form_data = {forms.DCCDecisionForm.SUBMIT_CONFIRM: 'Confirm', 'comment': ''}
+        response = self.client.post(url, form_data)
+        self.dcc_decision.refresh_from_db()
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(original_comment, self.dcc_decision.comment)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 0)
+
+    def test_get_message_and_redirect_response_agree_tagged_trait(self):
+        """Get request gives a warning message and redirects if the tagged trait has study response status agree."""
+        original_comment = self.dcc_decision.comment
+        self.tagged_trait.dcc_review.study_response.status = models.StudyResponse.STATUS_AGREE
+        self.tagged_trait.dcc_review.study_response.save()
+        url = self.get_url(self.tagged_trait.pk)
+        response = self.client.get(url)
+        self.dcc_decision.refresh_from_db()
+        self.assertRedirects(response, self.need_decision_url)
+        self.assertEqual(original_comment, self.dcc_decision.comment)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Cannot update', str(messages[0]))
+
+    def test_post_message_and_redirect_response_agree_tagged_trait(self):
+        """Post request gives a warning message and redirects if the tagged trait has study response status agree."""
+        original_comment = self.dcc_decision.comment
+        self.tagged_trait.dcc_review.study_response.status = models.StudyResponse.STATUS_AGREE
+        self.tagged_trait.dcc_review.study_response.save()
+        url = self.get_url(self.tagged_trait.pk)
+        form_data = {forms.DCCDecisionForm.SUBMIT_CONFIRM: 'Confirm', 'comment': 'looks good'}
+        response = self.client.post(url, form_data)
+        self.dcc_decision.refresh_from_db()
+        self.assertRedirects(response, self.need_decision_url)
+        self.assertEqual(original_comment, self.dcc_decision.comment)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Cannot update', str(messages[0]))
+
+    def test_post_message_and_redirect_response_agree_tagged_trait_with_form_error(self):
+        """Post request gives a warning message and redirects if study response status agree, even with bad data."""
+        original_comment = self.dcc_decision.comment
+        self.tagged_trait.dcc_review.study_response.status = models.StudyResponse.STATUS_AGREE
+        self.tagged_trait.dcc_review.study_response.save()
+        url = self.get_url(self.tagged_trait.pk)
+        form_data = {forms.DCCDecisionForm.SUBMIT_CONFIRM: 'Confirm', 'comment': ''}
+        response = self.client.post(url, form_data)
+        self.dcc_decision.refresh_from_db()
+        self.assertRedirects(response, self.need_decision_url)
+        self.assertEqual(original_comment, self.dcc_decision.comment)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Cannot update', str(messages[0]))
+
+    def test_get_message_and_redirect_to_create_for_missing_decision(self):
+        """Shows warning message and redirects to create page if TaggedTrait has no decision."""
+        # Delete the DCC Decision and reset the other objects saved to this testcase.
+        self.dcc_decision.delete()
+        self.study_response = models.StudyResponse.objects.get(pk=self.study_response.pk)
+        self.tagged_trait = self.study_response.dcc_review.tagged_trait
+        self.dcc_decision = None
+        self.assertFalse(hasattr(self.tagged_trait.dcc_review, 'dcc_decision'))
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        self.assertRedirects(
+            response, reverse('tags:tagged-traits:pk:dcc-decision:new', args=[self.tagged_trait.pk]))
+        # Check for warning message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Switched to creating', str(messages[0]))
+        self.assertFalse(hasattr(self.tagged_trait.dcc_review, 'dcc_decision'))
+
+    def test_post_message_and_redirect_to_create_for_missing_decision(self):
+        """Shows warning message, does not update, and redirects to create view if TaggedTrait has no decision."""
+        # Delete the DCC Decision and reset the other objects saved to this testcase.
+        self.dcc_decision.delete()
+        self.study_response = models.StudyResponse.objects.get(pk=self.study_response.pk)
+        self.tagged_trait = self.study_response.dcc_review.tagged_trait
+        self.dcc_decision = None
+        self.assertFalse(hasattr(self.tagged_trait.dcc_review, 'dcc_decision'))
+        form_data = {forms.DCCDecisionForm.SUBMIT_CONFIRM: 'Confirm', 'comment': 'looks good'}
+        response = self.client.post(self.get_url(self.tagged_trait.pk), form_data)
+        self.assertRedirects(
+            response, reverse('tags:tagged-traits:pk:dcc-decision:new', args=[self.tagged_trait.pk]))
+        # Check for warning message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Switched to creating', str(messages[0]))
+        # The input DCCDecision was not saved.
+        self.assertFalse(hasattr(self.tagged_trait.dcc_review, 'dcc_decision'))
+
+    def test_post_message_and_redirect_to_create_for_missing_decision_with_form_error(self):
+        """Shows warning message, does not update, and redirects to create if no decision exists and data is bad."""
+        # Delete the DCC Decision and reset the other objects saved to this testcase.
+        self.dcc_decision.delete()
+        self.study_response = models.StudyResponse.objects.get(pk=self.study_response.pk)
+        self.tagged_trait = self.study_response.dcc_review.tagged_trait
+        self.dcc_decision = None
+        self.assertFalse(hasattr(self.tagged_trait.dcc_review, 'dcc_decision'))
+        form_data = {forms.DCCDecisionForm.SUBMIT_CONFIRM: 'Confirm', 'comment': ''}
+        response = self.client.post(self.get_url(self.tagged_trait.pk), form_data)
+        self.tagged_trait.dcc_review.refresh_from_db()
+        self.assertRedirects(
+            response, reverse('tags:tagged-traits:pk:dcc-decision:new', args=[self.tagged_trait.pk]))
+        # Check for warning message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Switched to creating', str(messages[0]))
+        # The input DCCDecision was not saved.
+        self.assertFalse(hasattr(self.tagged_trait.dcc_review, 'dcc_decision'))
+
+    def test_shows_other_tags(self):
+        """Other tags linked to the same trait are included in the page."""
+        another_tagged_trait = factories.TaggedTraitFactory.create(trait=self.tagged_trait.trait)
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        context = response.context
+        self.assertTrue(context['show_other_tags'])
+        content = str(response.content)
+        self.assertIn(another_tagged_trait.tag.title, content)
+        self.assertIn(self.tagged_trait.tag.title, content)
+
+    def test_shows_archived_other_tags(self):
+        """Other tags linked to the same trait are included in the page."""
+        another_tagged_trait = factories.TaggedTraitFactory.create(trait=self.tagged_trait.trait, archived=True)
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        context = response.context
+        self.assertTrue(context['show_other_tags'])
+        content = str(response.content)
+        self.assertIn(another_tagged_trait.tag.title, content)
+        self.assertIn(self.tagged_trait.tag.title, content)
+
+
+class DCCDecisionUpdateDCCAnalystTest(DCCDecisionUpdateDCCTestsMixin, DCCAnalystLoginTestCase):
+
+    # Run all tests in DCCDecisionUpdateDCCTestsMixin, as a DCC analyst.
+    pass
+
+
+class DCCDecisionUpdateDCCDeveloperTest(DCCDecisionUpdateDCCTestsMixin, DCCDeveloperLoginTestCase):
+
+    # Run all tests in DCCDecisionUpdateDCCTestsMixin, as a DCC developer.
+    pass
+
+
+class DCCDecisionUpdateOtherUserTest(UserLoginTestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.study_response = factories.StudyResponseFactory.create(status=models.StudyResponse.STATUS_DISAGREE)
+        self.tagged_trait = self.study_response.dcc_review.tagged_trait
+
+    def get_url(self, *args):
+        """Get the url for the view this class is supposed to test."""
+        return reverse('tags:tagged-traits:pk:dcc-decision:update', args=args)
+
+    def test_forbidden_get_request(self):
+        """Returns a response with a forbidden status code for non-DCC users."""
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        self.assertEqual(response.status_code, 403)
+
+    def test_forbidden_post_request(self):
+        """Returns a response with a forbidden status code for non-DCC users."""
+        response = self.client.post(self.get_url(self.tagged_trait.pk), {})
+        self.assertEqual(response.status_code, 403)
+
+    def test_forbidden_get_request_with_existing_decision(self):
+        """Returns a response with a forbidden status code for non-DCC users."""
+        factories.DCCDecisionFactory.create(
+            dcc_review=self.tagged_trait.dcc_review, decision=models.DCCDecision.DECISION_REMOVE)
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        self.assertEqual(response.status_code, 403)
+
+    def test_forbidden_post_request_with_existing_decision(self):
+        """Returns a response with a forbidden status code for non-DCC users."""
+        factories.DCCDecisionFactory.create(
+            dcc_review=self.tagged_trait.dcc_review, decision=models.DCCDecision.DECISION_REMOVE)
+        response = self.client.post(self.get_url(self.tagged_trait.pk), {})
         self.assertEqual(response.status_code, 403)
 
 

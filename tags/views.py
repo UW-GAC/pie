@@ -800,7 +800,7 @@ class DCCReviewUpdate(LoginRequiredMixin, PermissionRequiredMixin, FormValidMess
             return None
 
     def get_form_valid_message(self):
-        msg = 'Successfully updated {}.'.format(self.tagged_trait)
+        msg = 'Successfully updated DCC review for {}.'.format(self.tagged_trait)
         return msg
 
     def get_success_url(self):
@@ -1421,8 +1421,8 @@ class DCCDecisionCreate(LoginRequiredMixin, PermissionRequiredMixin, FormValidMe
             self.messages.warning(self._get_response_agree_warning_message())
             return HttpResponseRedirect(self.get_success_url())
         # Switch to updating the existing decision if the tagged trait already has a decision.
-        elif hasattr(self.tagged_trait, 'dcc_decision'):
-            self.messages.warning(self._get_already_decisioned_warning_message())
+        elif hasattr(self.tagged_trait.dcc_review, 'dcc_decision'):
+            self.messages.warning(self._get_already_decided_warning_message())
             return HttpResponseRedirect(reverse('tags:tagged-traits:pk:dcc-decision:update',
                                                 args=[self.tagged_trait.pk]))
 
@@ -1443,7 +1443,9 @@ class DCCDecisionCreate(LoginRequiredMixin, PermissionRequiredMixin, FormValidMe
         return msg
 
     def get_success_url(self):
-        return self.tagged_trait.get_absolute_url()
+        return reverse('tags:tag:study:need-decision',
+                       args=[self.tagged_trait.tag.pk,
+                             self.tagged_trait.trait.source_dataset.source_study_version.study.pk])
 
 
 class DCCDecisionUpdate(LoginRequiredMixin, PermissionRequiredMixin, FormValidMessageMixin, DCCDecisionMixin,
@@ -1456,11 +1458,14 @@ class DCCDecisionUpdate(LoginRequiredMixin, PermissionRequiredMixin, FormValidMe
     form_class = forms.DCCDecisionForm
 
     def _get_missing_decision_warning_message(self):
-        return 'Switching to creating a new decision for {}, because it does not have a decision yet.'.format(
+        return 'Switched to creating a new decision for {}, because it does not have a decision yet.'.format(
             self.tagged_trait)
 
     def _get_archived_warning_message(self):
         return 'Oops! Cannot update decision for {}, because it has been archived.'.format(self.tagged_trait)
+
+    def _get_missing_dcc_review_warning_message(self):
+        return 'Oops! Cannot update decision for {}, because it is missing a dcc review.'.format(self.tagged_trait)
 
     def _get_review_confirmed_warning_message(self):
         return 'Oops! Cannot update decision for {}, because it has a confirmed dcc review.'.format(self.tagged_trait)
@@ -1478,15 +1483,20 @@ class DCCDecisionUpdate(LoginRequiredMixin, PermissionRequiredMixin, FormValidMe
         if self.tagged_trait.archived:
             self.messages.warning(self._get_archived_warning_message())
             return HttpResponseRedirect(self.get_success_url())
+        # Redirect if the tagged trait is missing a dcc review.
+        elif not hasattr(self.tagged_trait, 'dcc_review'):
+            self.messages.warning(self._get_missing_dcc_review_warning_message())
+            return HttpResponseRedirect(self.get_success_url())
         # Redirect if the tagged trait has dcc review status confirmed.
         elif self.tagged_trait.dcc_review.status == models.DCCReview.STATUS_CONFIRMED:
             self.messages.warning(self._get_review_confirmed_warning_message())
             return HttpResponseRedirect(self.get_success_url())
-        # Redirect if the tagged trait is has study response agree.
-        elif self.tagged_trait.dcc_review.study_response.status == models.StudyResponse.STATUS_AGREE:
+        # Redirect if the tagged trait has study response agree.
+        elif hasattr(self.tagged_trait.dcc_review, 'study_response') and (
+                self.tagged_trait.dcc_review.study_response.status == models.StudyResponse.STATUS_AGREE):
             self.messages.warning(self._get_response_agree_warning_message())
             return HttpResponseRedirect(self.get_success_url())
-        # Omit checks for missing dcc review or missing study response. The only important part is that the dcc
+        # Omit checks for missing study response. The only important part is that the dcc
         # decision exists to be updated.
 
     def get(self, request, *args, **kwargs):
@@ -1521,8 +1531,10 @@ class DCCDecisionUpdate(LoginRequiredMixin, PermissionRequiredMixin, FormValidMe
             return None
 
     def get_form_valid_message(self):
-        msg = 'Successfully updated {}.'.format(self.tagged_trait)
+        msg = 'Successfully updated final decision for {}.'.format(self.tagged_trait)
         return msg
 
     def get_success_url(self):
-        return self.tagged_trait.get_absolute_url()
+        return reverse('tags:tag:study:need-decision',
+                       args=[self.tagged_trait.tag.pk,
+                             self.tagged_trait.trait.source_dataset.source_study_version.study.pk])
