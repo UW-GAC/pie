@@ -666,6 +666,7 @@ class TaggedTraitDeleteTest(TestCase):
         self.assertEqual(list(models.TaggedTrait.objects.confirmed().values_list('archived', flat=True)),
                          [False] * n_confirmed)
 
+    # Tests of the queryset hard_delete().
     def test_queryset_hard_delete_unreviewed(self):
         """Deletes unreviewed tagged traits."""
         tagged_traits = factories.TaggedTraitFactory.create_batch(5)
@@ -774,7 +775,7 @@ class DCCReviewDeleteTest(TestCase):
                            'creator': self.user}
 
     # Tests of the overridden delete().
-    def test_unable_to_delete_with_studyresponse_agree(self):
+    def test_delete_fails_with_studyresponse_agree(self):
         """A DCCReview with a study response cannot be deleted."""
         dcc_review = self.model_factory.create(**self.model_args)
         factories.StudyResponseFactory.create(dcc_review=dcc_review, status=models.StudyResponse.STATUS_AGREE)
@@ -782,7 +783,7 @@ class DCCReviewDeleteTest(TestCase):
             dcc_review.delete()
         dcc_review.refresh_from_db()
 
-    def test_unable_to_delete_with_studyresponse_disagree(self):
+    def test_delete_fails_with_studyresponse_disagree(self):
         """A DCCReview with a study response cannot be deleted."""
         dcc_review = self.model_factory.create(**self.model_args)
         factories.StudyResponseFactory.create(dcc_review=dcc_review, status=models.StudyResponse.STATUS_DISAGREE)
@@ -790,7 +791,7 @@ class DCCReviewDeleteTest(TestCase):
             dcc_review.delete()
         dcc_review.refresh_from_db()
 
-    def test_unable_to_delete_with_dccdecision_confirm(self):
+    def test_delete_fails_with_dccdecision_confirm(self):
         """A DCCReview with a dcc decision cannot be deleted."""
         dcc_review = self.model_factory.create(**self.model_args)
         factories.DCCDecisionFactory.create(dcc_review=dcc_review, decision=models.DCCDecision.DECISION_CONFIRM)
@@ -798,7 +799,7 @@ class DCCReviewDeleteTest(TestCase):
             dcc_review.delete()
         dcc_review.refresh_from_db()
 
-    def test_unable_to_delete_with_dccdecision_remove(self):
+    def test_delete_fails_with_dccdecision_remove(self):
         """A DCCReview with a dcc decision cannot be deleted."""
         dcc_review = self.model_factory.create(**self.model_args)
         factories.DCCDecisionFactory.create(dcc_review=dcc_review, decision=models.DCCDecision.DECISION_REMOVE)
@@ -806,7 +807,7 @@ class DCCReviewDeleteTest(TestCase):
             dcc_review.delete()
         dcc_review.refresh_from_db()
 
-    def test_can_delete_dccreview_without_studyresponse_or_dccdecision(self):
+    def test_delete_succeeds_without_studyresponse_or_dccdecision(self):
         """A DCCReview without a StudyResponse or DCCDecision can be deleted."""
         dcc_review = self.model_factory.create(**self.model_args)
         dcc_review.delete()
@@ -814,7 +815,7 @@ class DCCReviewDeleteTest(TestCase):
             dcc_review.refresh_from_db()
 
     # Tests of hard_delete().
-    def test_can_hard_delete_dccreview_with_studyresponse_agree(self):
+    def test_hard_delete_succeeds_dccreview_with_studyresponse_agree(self):
         """A DCCReview with StudyResponse agree status can be deleted with hard_delete."""
         dcc_review = self.model_factory.create(**self.model_args)
         factories.StudyResponseFactory.create(dcc_review=dcc_review, status=models.StudyResponse.STATUS_AGREE)
@@ -822,7 +823,7 @@ class DCCReviewDeleteTest(TestCase):
         with self.assertRaises(ObjectDoesNotExist):
             dcc_review.refresh_from_db()
 
-    def test_can_hard_delete_dccreview_with_studyresponse_disagree(self):
+    def test_hard_delete_succeeds_dccreview_with_studyresponse_disagree(self):
         """A DCCReview with StudyResponse disagree status can be deleted with hard_delete."""
         dcc_review = self.model_factory.create(**self.model_args)
         factories.StudyResponseFactory.create(dcc_review=dcc_review, status=models.StudyResponse.STATUS_DISAGREE)
@@ -830,7 +831,7 @@ class DCCReviewDeleteTest(TestCase):
         with self.assertRaises(ObjectDoesNotExist):
             dcc_review.refresh_from_db()
 
-    def test_can_hard_delete_dccreview_with_dccdecision_confirm(self):
+    def test_hard_delete_succeeds_dccreview_with_dccdecision_confirm(self):
         """A DCCReview with DCCDecision confirm can be deleted with hard_delete."""
         dcc_review = self.model_factory.create(**self.model_args)
         factories.DCCDecisionFactory.create(dcc_review=dcc_review, decision=models.DCCDecision.DECISION_CONFIRM)
@@ -838,7 +839,7 @@ class DCCReviewDeleteTest(TestCase):
         with self.assertRaises(ObjectDoesNotExist):
             dcc_review.refresh_from_db()
 
-    def test_can_hard_delete_dccreview_with_dccdecision_remove(self):
+    def test_hard_delete_succeeds_dccreview_with_dccdecision_remove(self):
         """A DCCReview with DCCDecision remove can be deleted with hard_delete."""
         dcc_review = self.model_factory.create(**self.model_args)
         factories.DCCDecisionFactory.create(dcc_review=dcc_review, decision=models.DCCDecision.DECISION_REMOVE)
@@ -846,7 +847,7 @@ class DCCReviewDeleteTest(TestCase):
         with self.assertRaises(ObjectDoesNotExist):
             dcc_review.refresh_from_db()
 
-    def test_can_hard_delete_dccreview_without_studyresponse_or_dccdecision(self):
+    def test_hard_delete_succeeds_dccreview_without_studyresponse_or_dccdecision(self):
         """A DCCReview without StudyResponse or DCCDecision can be deleted with hard_delete."""
         dcc_review = self.model_factory.create(**self.model_args)
         dcc_review.hard_delete()
@@ -854,23 +855,7 @@ class DCCReviewDeleteTest(TestCase):
             dcc_review.refresh_from_db()
 
     # Tests of the queryset delete().
-    def test_can_delete_queryset_with_no_studyresponses_or_dccdecisions(self):
-        """Deletes dcc reviews without StudyResponses."""
-        dcc_review = factories.DCCReviewFactory.create_batch(5)
-        models.DCCReview.objects.all().delete()
-        self.assertEqual(models.DCCReview.objects.count(), 0)
-
-    def test_queryset_hard_delete_with_multiple_dcc_reviews_with_responses(self):
-        """hard_delete deletes multiple dcc reviews regardless of study response and dcc decision existence."""
-        dcc_reviews = factories.DCCReviewFactory.create_batch(5)
-        factories.StudyResponseFactory.create(dcc_review=dcc_reviews[0], status=models.StudyResponse.STATUS_AGREE)
-        factories.StudyResponseFactory.create(dcc_review=dcc_reviews[1], status=models.StudyResponse.STATUS_DISAGREE)
-        factories.DCCDecisionFactory.create(dcc_review=dcc_reviews[2], decision=models.DCCDecision.DECISION_CONFIRM)
-        factories.DCCDecisionFactory.create(dcc_review=dcc_reviews[3], decision=models.DCCDecision.DECISION_REMOVE)
-        models.DCCReview.objects.all().hard_delete()
-        self.assertEqual(models.DCCReview.objects.count(), 0)
-
-    def test_queryset_delete_with_one_dccreview_with_study_response_agree(self):
+    def test_queryset_delete_fails_with_one_dccreview_with_study_response_agree(self):
         """Does not delete any DCCReviews if one has a StudyResponse with status agree."""
         dcc_reviews = factories.DCCReviewFactory.create_batch(5)
         dcc_review_to_respond = dcc_reviews[1]
@@ -880,7 +865,7 @@ class DCCReviewDeleteTest(TestCase):
             models.DCCReview.objects.all().delete()
         self.assertEqual(models.DCCReview.objects.count(), 5)
 
-    def test_queryset_delete_with_one_dccreview_with_study_response_disagree(self):
+    def test_queryset_delete_fails_with_one_dccreview_with_study_response_disagree(self):
         """Does not delete any DCCReviews if one has a StudyResponse with status disagree."""
         dcc_reviews = factories.DCCReviewFactory.create_batch(5)
         dcc_review_to_respond = dcc_reviews[1]
@@ -890,7 +875,7 @@ class DCCReviewDeleteTest(TestCase):
             models.DCCReview.objects.all().delete()
         self.assertEqual(models.DCCReview.objects.count(), 5)
 
-    def test_queryset_delete_with_multiple_dcc_reviews_with_responses(self):
+    def test_queryset_delete_fails_with_multiple_dcc_reviews_with_responses(self):
         """Does not delete any DCCReviews if multiple have a StudyResponse."""
         dcc_reviews = factories.DCCReviewFactory.create_batch(5)
         factories.StudyResponseFactory.create(dcc_review=dcc_reviews[1], status=models.StudyResponse.STATUS_AGREE)
@@ -899,31 +884,7 @@ class DCCReviewDeleteTest(TestCase):
             models.DCCReview.objects.all().delete()
         self.assertEqual(models.DCCReview.objects.count(), 5)
 
-    def test_can_hard_delete_queryset_with_no_studyresponses_or_dccdecisions(self):
-        """hard_delete deletes DCCReviews with no StudyResponse or DCCDecision."""
-        dcc_review = factories.DCCReviewFactory.create_batch(5)
-        models.DCCReview.objects.all().delete()
-        self.assertEqual(models.DCCReview.objects.count(), 0)
-
-    def test_queryset_hard_delete_with_one_studyresponse_agree(self):
-        """hard_delete deletes DCCReview regardless of StudyResponse agree existence."""
-        dcc_reviews = factories.DCCReviewFactory.create_batch(5)
-        dcc_review_to_respond = dcc_reviews[1]
-        factories.StudyResponseFactory.create(dcc_review=dcc_review_to_respond,
-                                              status=models.StudyResponse.STATUS_AGREE)
-        models.DCCReview.objects.all().hard_delete()
-        self.assertEqual(models.DCCReview.objects.count(), 0)
-
-    def test_queryset_hard_delete_with_one_response_disagree(self):
-        """hard_delete deletes DCCReview regardless of StudyResponse disagree existence."""
-        dcc_reviews = factories.DCCReviewFactory.create_batch(5)
-        dcc_review_to_respond = dcc_reviews[1]
-        factories.StudyResponseFactory.create(dcc_review=dcc_review_to_respond,
-                                              status=models.StudyResponse.STATUS_DISAGREE)
-        models.DCCReview.objects.all().hard_delete()
-        self.assertEqual(models.DCCReview.objects.count(), 0)
-
-    def test_queryset_delete_with_one_dccreview_with_dccdecision_confirm(self):
+    def test_queryset_delete_fails_with_one_dccreview_with_dccdecision_confirm(self):
         """Does not delete any DCCReviews if one has a DCCDecision with decision confirm."""
         dcc_reviews = factories.DCCReviewFactory.create_batch(5)
         dcc_review_to_respond = dcc_reviews[1]
@@ -933,7 +894,7 @@ class DCCReviewDeleteTest(TestCase):
             models.DCCReview.objects.all().delete()
         self.assertEqual(models.DCCReview.objects.count(), 5)
 
-    def test_queryset_delete_with_one_dccreview_with_dccdecision_remove(self):
+    def test_queryset_delete_fails_with_one_dccreview_with_dccdecision_remove(self):
         """Does not delete any DCCReviews if one has a DCCDecision with decision remove."""
         dcc_reviews = factories.DCCReviewFactory.create_batch(5)
         dcc_review_to_respond = dcc_reviews[1]
@@ -943,7 +904,7 @@ class DCCReviewDeleteTest(TestCase):
             models.DCCReview.objects.all().delete()
         self.assertEqual(models.DCCReview.objects.count(), 5)
 
-    def test_queryset_delete_with_multiple_dcc_reviews_with_dccdecisions(self):
+    def test_queryset_delete_fails_with_multiple_dcc_reviews_with_dccdecisions(self):
         """Does not delete any DCCReviews if multiple reviews have a DCCDecision."""
         dcc_reviews = factories.DCCReviewFactory.create_batch(5)
         factories.DCCDecisionFactory.create(dcc_review=dcc_reviews[1], decision=models.DCCDecision.DECISION_CONFIRM)
@@ -952,7 +913,41 @@ class DCCReviewDeleteTest(TestCase):
             models.DCCReview.objects.all().delete()
         self.assertEqual(models.DCCReview.objects.count(), 5)
 
-    def test_queryset_hard_delete_with_one_dccdecision_confirm(self):
+    def test_queryset_delete_succeeds_with_no_studyresponses_or_dccdecisions(self):
+        """Deletes dcc reviews without StudyResponses."""
+        dcc_review = factories.DCCReviewFactory.create_batch(5)
+        models.DCCReview.objects.all().delete()
+        self.assertEqual(models.DCCReview.objects.count(), 0)
+
+    # Tests of the queryset hard_delete().
+    def test_queryset_hard_delete_succeeds_with_one_studyresponse_agree(self):
+        """hard_delete deletes DCCReview regardless of StudyResponse agree existence."""
+        dcc_reviews = factories.DCCReviewFactory.create_batch(5)
+        dcc_review_to_respond = dcc_reviews[1]
+        factories.StudyResponseFactory.create(dcc_review=dcc_review_to_respond,
+                                              status=models.StudyResponse.STATUS_AGREE)
+        models.DCCReview.objects.all().hard_delete()
+        self.assertEqual(models.DCCReview.objects.count(), 0)
+
+    def test_queryset_hard_delete_succeeds_with_one_studyresponse_disagree(self):
+        """hard_delete deletes DCCReview regardless of StudyResponse disagree existence."""
+        dcc_reviews = factories.DCCReviewFactory.create_batch(5)
+        dcc_review_to_respond = dcc_reviews[1]
+        factories.StudyResponseFactory.create(dcc_review=dcc_review_to_respond,
+                                              status=models.StudyResponse.STATUS_DISAGREE)
+        models.DCCReview.objects.all().hard_delete()
+        self.assertEqual(models.DCCReview.objects.count(), 0)
+
+    def test_queryset_hard_delete_succeeds_with_one_studyresponse_remove(self):
+        """hard_delete deletes DCCReview that has DCCDecision remove."""
+        dcc_reviews = factories.DCCReviewFactory.create_batch(5)
+        dcc_review_to_respond = dcc_reviews[1]
+        factories.DCCDecisionFactory.create(dcc_review=dcc_review_to_respond,
+                                            decision=models.DCCDecision.DECISION_REMOVE)
+        models.DCCReview.objects.all().hard_delete()
+        self.assertEqual(models.DCCReview.objects.count(), 0)
+
+    def test_queryset_hard_delete_succeeds_with_one_dccdecision_confirm(self):
         """hard_delete deletes DCCReview that has DCCDecision confirm."""
         dcc_reviews = factories.DCCReviewFactory.create_batch(5)
         dcc_review_to_respond = dcc_reviews[1]
@@ -961,13 +956,29 @@ class DCCReviewDeleteTest(TestCase):
         models.DCCReview.objects.all().hard_delete()
         self.assertEqual(models.DCCReview.objects.count(), 0)
 
-    def test_queryset_hard_delete_with_one_response_remove(self):
+    def test_queryset_hard_delete_succeeds_with_one_dccdecision_remove(self):
         """hard_delete deletes DCCReview that has DCCDecision remove."""
         dcc_reviews = factories.DCCReviewFactory.create_batch(5)
         dcc_review_to_respond = dcc_reviews[1]
         factories.DCCDecisionFactory.create(dcc_review=dcc_review_to_respond,
                                             decision=models.DCCDecision.DECISION_REMOVE)
         models.DCCReview.objects.all().hard_delete()
+        self.assertEqual(models.DCCReview.objects.count(), 0)
+
+    def test_queryset_hard_delete_succeeds_with_multiple_dcc_reviews_with_responses(self):
+        """hard_delete deletes multiple dcc reviews regardless of study response and dcc decision existence."""
+        dcc_reviews = factories.DCCReviewFactory.create_batch(5)
+        factories.StudyResponseFactory.create(dcc_review=dcc_reviews[0], status=models.StudyResponse.STATUS_AGREE)
+        factories.StudyResponseFactory.create(dcc_review=dcc_reviews[1], status=models.StudyResponse.STATUS_DISAGREE)
+        factories.DCCDecisionFactory.create(dcc_review=dcc_reviews[2], decision=models.DCCDecision.DECISION_CONFIRM)
+        factories.DCCDecisionFactory.create(dcc_review=dcc_reviews[3], decision=models.DCCDecision.DECISION_REMOVE)
+        models.DCCReview.objects.all().hard_delete()
+        self.assertEqual(models.DCCReview.objects.count(), 0)
+
+    def test_queryset_hard_delete_succeeds_with_no_studyresponses_or_dccdecisions(self):
+        """hard_delete deletes DCCReviews with no StudyResponse or DCCDecision."""
+        dcc_review = factories.DCCReviewFactory.create_batch(5)
+        models.DCCReview.objects.all().delete()
         self.assertEqual(models.DCCReview.objects.count(), 0)
 
 
