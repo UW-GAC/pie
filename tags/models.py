@@ -143,13 +143,15 @@ class DCCReview(TimeStampedModel):
         return self.tagged_trait.get_absolute_url()
 
     def delete(self, *args, **kwargs):
-        """Only allow DCCReview objects without a StudyResponse to be deleted."""
+        """Only allow DCCReview objects without a StudyResponse or DCCDecision to be deleted."""
         if hasattr(self, 'study_response'):
             raise DeleteNotAllowedError("Cannot delete a DCCReview with a study response.")
+        if hasattr(self, 'dcc_decision'):
+            raise DeleteNotAllowedError("Cannot delete a DCCReview with a DCC decision.")
         super().delete(*args, **kwargs)
 
     def hard_delete(self, *args, **kwargs):
-        """Delete objects that cannot be deleted with overriden delete method."""
+        """Delete objects that cannot be deleted with overridden delete method."""
         super().delete(*args, **kwargs)
 
 

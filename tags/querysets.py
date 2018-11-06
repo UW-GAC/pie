@@ -55,14 +55,20 @@ class DCCReviewQuerySet(models.query.QuerySet):
     """Class to hold custom query set filtering methods for the DCCReviewQueryset model."""
 
     def delete(self, *args, **kwargs):
-        """Only allow deletion if no objects have an associated StudyResponse."""
-        reviewed_objects = self.filter(study_response__isnull=False)
-        n_reviewed = reviewed_objects.count()
-        if n_reviewed > 0:
-            msg_part = ', '.join([str(x) for x in reviewed_objects])
-            raise DeleteNotAllowedError("Cannot delete DCCReviews that have study responses: {}.".format(msg_part))
+        """Only allow deletion if no objects have an associated StudyResponse or DCCDecision."""
+        reviews_with_response = self.filter(study_response__isnull=False)
+        reviews_with_decision = self.filter(dcc_decision__isnull=False)
+        n_responses = reviews_with_response.count()
+        n_decisions = reviews_with_decision.count()
+        if (n_responses > 0) or (n_decisions > 0):
+            if n_responses > 0:
+                msg_part = ', '.join([str(x) for x in reviews_with_response])
+                raise DeleteNotAllowedError("Cannot delete DCCReviews that have study responses: {}.".format(msg_part))
+            if n_decisions > 0:
+                msg_part = ', '.join([str(x) for x in reviews_with_decision])
+                raise DeleteNotAllowedError("Cannot delete DCCReviews that have DCC decisions: {}.".format(msg_part))
         super().delete(*args, **kwargs)
 
     def hard_delete(self, *args, **kwargs):
-        """Delete the queryset objects regardless of response status."""
+        """Delete the queryset objects regardless of response or decision status."""
         super().delete(*args, **kwargs)
