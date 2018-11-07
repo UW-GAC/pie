@@ -1,6 +1,7 @@
 """Custom QuerySets for the tags app."""
 
 from django.db import models
+from django.db.models import Q
 
 from core.exceptions import DeleteNotAllowedError
 
@@ -29,25 +30,56 @@ class TaggedTraitQuerySet(models.query.QuerySet):
         super().delete(*args, **kwargs)
 
     def unreviewed(self):
-        """Filter to unreviewed TaggedTrait objects only."""
+        """Filter to only unreviewed tagged traits."""
         return self.filter(dcc_review__isnull=True)
 
     def need_followup(self):
-        """Filter to TaggedTrait object that need study followup only."""
+        """Filter to only tagged traits with review status of 'need study followup'."""
         followup_code = self.model._meta.get_field('dcc_review').related_model.STATUS_FOLLOWUP
         return self.filter(dcc_review__status=followup_code)
 
     def confirmed(self):
-        """Filter to TaggedTrait object that are confirmed only."""
-        confirmed_code = self.model._meta.get_field('dcc_review').related_model.STATUS_CONFIRMED
-        return self.filter(dcc_review__status=confirmed_code)
+        """Filter to only confirmed tagged traits (in review or decision)."""
+        review_confirmed_code = self.model._meta.get_field('dcc_review').related_model.STATUS_CONFIRMED
+        review_confirmed = Q(dcc_review__status=review_confirmed_code)
+        decision_confirmed_code = self.model._meta.get_field('dcc_review').related_model._meta.get_field(
+            'dcc_decision').related_model.DECISION_CONFIRM
+        decision_confirmed = Q(dcc_review__dcc_decision__decision=decision_confirmed_code)
+        return self.filter(review_confirmed | decision_confirmed)
+
+    def need_study_response(self):
+        """Filter to the tagged traits that need(ed) a study response.
+
+        Note that this includes tagged traits that did need a study response, but the
+        study response has now been created.
+        Include those tagged traits that have dcc reviews with need followup status, but
+        exclude those that have a dcc decision without a study response. (These excluded
+        tagged traits have been handled by the DCC without a study response.)
+        """
+        missing_study_response = Q(dcc_review__study_response__isnull=True)
+        has_dcc_decision = Q(dcc_review__dcc_decision__isnull=False)
+        return self.need_followup().exclude(missing_study_response & has_dcc_decision)
+
+    def need_decision(self):
+        """Filter to the tagged traits that need(ed) a DCCDecision made ().
+
+        Note that this includes tagged traits that did need a dcc decision, but the
+        dcc decision has now been made.
+        Includes tagged traits with dcc review status of need followup, existing study response,
+        and study response status of disagree.
+        """
+        return self.need_followup().filter(
+            dcc_review__study_response__isnull=False,
+            dcc_review__study_response__status=self.model._meta.get_field('dcc_review').related_model._meta.get_field(
+                'study_response').related_model.STATUS_DISAGREE
+        )
 
     def non_archived(self):
-        """Filter to non-archived tagged traits."""
+        """Filter to only non-archived tagged traits."""
         return self.filter(archived=False)
 
     def archived(self):
-        """Filter to archived tagged traits."""
+        """Filter to only archived tagged traits."""
         return self.filter(archived=True)
 
 

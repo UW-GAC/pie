@@ -406,25 +406,11 @@ class TaggedTraitTest(TestCase):
         with self.assertRaises(ValidationError):
             duplicate.full_clean()
 
-    def test_non_archived_queryset_count(self):
-        """non_archived() queryset method returns correct number of tagged traits."""
-        n_archived = 12
-        n_non_archived = 16
-        archived_taggedtraits = self.model_factory.create_batch(n_archived, archived=True)
-        non_archived_taggedtraits = self.model_factory.create_batch(n_non_archived, archived=False)
-        retrieved_queryset = self.model.objects.non_archived()
-        self.assertEqual(n_non_archived, retrieved_queryset.count())
-
-    def test_non_archived_queryset_no_archived(self):
-        """non_archived() queryset method does not return archived tagged traits."""
-        n_archived = 3
-        n_non_archived = 4
-        archived_taggedtraits = self.model_factory.create_batch(n_archived, archived=True)
-        non_archived_taggedtraits = self.model_factory.create_batch(n_non_archived, archived=False)
-        retrieved_queryset = self.model.objects.non_archived()
-        for archivedtt in archived_taggedtraits:
-            self.assertNotIn(archivedtt, retrieved_queryset)
-        self.assertEqual(n_non_archived, retrieved_queryset.count())
+    def test_get_absolute_url(self):
+        """get_absolute_url function doesn't fail."""
+        instance = self.model_factory.create()
+        url = instance.get_absolute_url()
+        # Just test that this function works.
 
     def test_archive_unarchived_taggedtrait(self):
         """Archive method sets an unarchived taggedtrait to archived."""
@@ -454,34 +440,69 @@ class TaggedTraitTest(TestCase):
         taggedtrait.unarchive()
         self.assertIn(taggedtrait, models.TaggedTrait.objects.non_archived())
 
-    def test_unreviewed_queryset_method(self):
-        """Only TaggedTraits that have not been reviewed are returned by the .unreviewed() filter."""
+    def test_cannot_delete_user_who_created_tagged_trait(self):
+        """Unable to delete a user who has created a tagged_trait."""
+        tagged_trait = factories.TaggedTraitFactory.create()
+        with self.assertRaises(ProtectedError):
+            tagged_trait.creator.delete()
+
+
+class TaggedTraitQuerySetTest(TestCase):
+    model = models.TaggedTrait
+    model_factory = factories.TaggedTraitFactory
+
+    # unreviewed()
+    def test_unreviewed_queryset_excludes_dccreview_followup(self):
+        """unreviewed() queryset does not include tagged trait with dcc review of status followup."""
         tagged_trait_unreviewed = factories.TaggedTraitFactory.create()
         tagged_trait_followup = factories.TaggedTraitFactory.create()
         factories.DCCReviewFactory.create(tagged_trait=tagged_trait_followup, status=models.DCCReview.STATUS_FOLLOWUP)
+        qs = models.TaggedTrait.objects.unreviewed()
+        self.assertIn(tagged_trait_unreviewed, qs)
+        self.assertNotIn(tagged_trait_followup, qs)
+
+    def test_unreviewed_queryset_excludes_dccreview_confirmed(self):
+        """unreviewed() queryset does not include tagged trait with dcc review of status confirmed."""
+        tagged_trait_unreviewed = factories.TaggedTraitFactory.create()
         tagged_trait_confirmed = factories.TaggedTraitFactory.create()
         factories.DCCReviewFactory.create(tagged_trait=tagged_trait_confirmed,
                                           status=models.DCCReview.STATUS_CONFIRMED)
         qs = models.TaggedTrait.objects.unreviewed()
-        self.assertTrue(tagged_trait_unreviewed in qs)
-        self.assertFalse(tagged_trait_followup in qs)
-        self.assertFalse(tagged_trait_confirmed in qs)
+        self.assertIn(tagged_trait_unreviewed, qs)
+        self.assertNotIn(tagged_trait_confirmed, qs)
 
-    def test_need_followup_queryset_method(self):
-        """Only TaggedTraits that need study followup are returned by the .needs_followup() filter."""
-        tagged_trait_unreviewed = factories.TaggedTraitFactory.create()
+    def test_unreviewed_queryset_count(self):
+        """unreviewed() queryset has the correct number of tagged traits in it."""
+        n_unreviewed = 5
+        tagged_trait_unreviewed = factories.TaggedTraitFactory.create_batch(n_unreviewed)
+        factories.DCCReviewFactory.create_batch(n_unreviewed + 1, status=models.DCCReview.STATUS_FOLLOWUP)
+        factories.DCCReviewFactory.create_batch(n_unreviewed + 2, status=models.DCCReview.STATUS_CONFIRMED)
+        qs = models.TaggedTrait.objects.unreviewed()
+        self.assertEqual(qs.count(), n_unreviewed)
+
+    # need_followup()
+    def test_need_followup_queryset_excludes_dccreview_confirmed(self):
+        """need_followup() queryset does not include tagged trait with dcc review status confirmed."""
         tagged_trait_followup = factories.TaggedTraitFactory.create()
         factories.DCCReviewFactory.create(tagged_trait=tagged_trait_followup, status=models.DCCReview.STATUS_FOLLOWUP)
         tagged_trait_confirmed = factories.TaggedTraitFactory.create()
         factories.DCCReviewFactory.create(tagged_trait=tagged_trait_confirmed,
                                           status=models.DCCReview.STATUS_CONFIRMED)
         qs = models.TaggedTrait.objects.need_followup()
-        self.assertTrue(tagged_trait_followup in qs)
-        self.assertFalse(tagged_trait_unreviewed in qs)
-        self.assertFalse(tagged_trait_confirmed in qs)
+        self.assertIn(tagged_trait_followup, qs)
+        self.assertNotIn(tagged_trait_confirmed, qs)
 
-    def test_need_followup_queryset_method_with_study_response(self):
-        """A TaggedTrait with a StudyResponse appears in the needs_followup() queryset."""
+    def test_need_followup_queryset_excludes_unreviewed(self):
+        """need_followup() queryset does not include tagged trait without a dcc review."""
+        tagged_trait_unreviewed = factories.TaggedTraitFactory.create()
+        tagged_trait_followup = factories.TaggedTraitFactory.create()
+        factories.DCCReviewFactory.create(tagged_trait=tagged_trait_followup, status=models.DCCReview.STATUS_FOLLOWUP)
+        qs = models.TaggedTrait.objects.need_followup()
+        self.assertIn(tagged_trait_followup, qs)
+        self.assertNotIn(tagged_trait_unreviewed, qs)
+
+    def test_need_followup_queryset_includes_dccreview_with_studyresponse(self):
+        """need_followup() queryset does include a tagged trait with a study response."""
         tagged_trait = factories.TaggedTraitFactory.create()
         dcc_review = factories.DCCReviewFactory.create(tagged_trait=tagged_trait,
                                                        status=models.DCCReview.STATUS_FOLLOWUP)
@@ -490,17 +511,204 @@ class TaggedTraitTest(TestCase):
         self.assertEqual(qs.count(), 1)
         self.assertIn(tagged_trait, qs)
 
-    def test_get_absolute_url(self):
-        """get_absolute_url function doesn't fail."""
-        instance = self.model_factory.create()
-        url = instance.get_absolute_url()
-        # Just test that this function works.
-
-    def test_cannot_delete_user_who_created_tagged_trait(self):
-        """Unable to delete a user who has created a tagged_trait."""
+    def test_need_followup_queryset_includes_dccreview_with_dccdecision(self):
+        """need_followup() queryset does include a tagged trait with a dcc decision."""
         tagged_trait = factories.TaggedTraitFactory.create()
-        with self.assertRaises(ProtectedError):
-            tagged_trait.creator.delete()
+        dcc_review = factories.DCCReviewFactory.create(
+            tagged_trait=tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP)
+        study_response = factories.StudyResponseFactory.create(dcc_review=dcc_review)
+        dcc_decision = factories.DCCDecisionFactory.create(dcc_review=dcc_review)
+        qs = models.TaggedTrait.objects.need_followup()
+        self.assertEqual(qs.count(), 1)
+        self.assertIn(tagged_trait, qs)
+
+    # confirmed()
+    def test_confirmed_queryset_excludes_unreviewed(self):
+        """confirmed() queryset excludes unreviewed tagged trait."""
+        tagged_trait = factories.TaggedTraitFactory.create()
+        qs = models.TaggedTrait.objects.confirmed()
+        self.assertNotIn(tagged_trait, qs)
+        self.assertEqual(qs.count(), 0)
+
+    def test_confirmed_queryset_excludes_dccreview_followup(self):
+        """confirmed() queryset excludes tagged trait with dcc review status followup."""
+        dcc_review = factories.DCCReviewFactory.create(status=models.DCCReview.STATUS_FOLLOWUP)
+        qs = models.TaggedTrait.objects.confirmed()
+        self.assertNotIn(dcc_review.tagged_trait, qs)
+        self.assertEqual(qs.count(), 0)
+
+    def test_confirmed_queryset_excludes_dccreview_followup_dccdecision_confirm(self):
+        """confirmed() queryset excludes tagged trait with remove dcc decision."""
+        dcc_review = factories.DCCReviewFactory.create(status=models.DCCReview.STATUS_FOLLOWUP)
+        dcc_decision = factories.DCCDecisionFactory.create(
+            dcc_review=dcc_review, decision=models.DCCDecision.DECISION_REMOVE)
+        qs = models.TaggedTrait.objects.confirmed()
+        self.assertNotIn(dcc_review.tagged_trait, qs)
+        self.assertEqual(qs.count(), 0)
+
+    def test_confirmed_queryset_includes_dccreview_confirmed(self):
+        """confirmed() queryset includes tagged trait with confirmed dcc review."""
+        dcc_review = factories.DCCReviewFactory.create(status=models.DCCReview.STATUS_CONFIRMED)
+        qs = models.TaggedTrait.objects.confirmed()
+        self.assertIn(dcc_review.tagged_trait, qs)
+        self.assertEqual(qs.count(), 1)
+
+    def test_confirmed_queryset_includes_dccreview_followup_dccdecision_confirm(self):
+        """confirmed() queryset includes tagged trait with confirm dcc decision."""
+        dcc_review = factories.DCCReviewFactory.create(status=models.DCCReview.STATUS_FOLLOWUP)
+        dcc_decision = factories.DCCDecisionFactory.create(
+            dcc_review=dcc_review, decision=models.DCCDecision.DECISION_CONFIRM)
+        qs = models.TaggedTrait.objects.confirmed()
+        self.assertIn(dcc_review.tagged_trait, qs)
+        self.assertEqual(qs.count(), 1)
+
+    def test_confirmed_queryset_includes_dccreview_confirmed_and_dccdecision_confirm(self):
+        """confirmed() queryset includes both dcc review confirmed and dcc decision confirm ."""
+        confirmed_dcc_review = factories.DCCReviewFactory.create(status=models.DCCReview.STATUS_CONFIRMED)
+        confirm_dcc_decision = factories.DCCDecisionFactory.create(decision=models.DCCDecision.DECISION_CONFIRM)
+        qs = models.TaggedTrait.objects.confirmed()
+        self.assertIn(confirmed_dcc_review.tagged_trait, qs)
+        self.assertIn(confirm_dcc_decision.dcc_review.tagged_trait, qs)
+        self.assertEqual(qs.count(), 2)
+
+    # need_study_response
+    def test_need_study_response_queryset_excludes_dccreview_confirmed(self):
+        """need_study_response() queryset excludes a tagged trait with a confirmed dcc review."""
+        dcc_review = factories.DCCReviewFactory.create(status=models.DCCReview.STATUS_CONFIRMED)
+        qs = models.TaggedTrait.objects.need_study_response()
+        self.assertNotIn(dcc_review.tagged_trait, qs)
+        self.assertEqual(qs.count(), 0)
+
+    def test_need_study_response_queryset_excludes_unreviewed(self):
+        """need_study_response() queryset excludes an unreviewed tagged trait."""
+        tagged_trait = factories.TaggedTraitFactory.create()
+        qs = models.TaggedTrait.objects.need_study_response()
+        self.assertNotIn(tagged_trait, qs)
+        self.assertEqual(qs.count(), 0)
+
+    def test_need_study_response_queryset_excludes_dccdecision_no_studyresponse(self):
+        """need_study_response() queryset excludes a tagged trait with a dcc decision but no study response."""
+        dcc_decision = factories.DCCDecisionFactory.create()
+        qs = models.TaggedTrait.objects.need_study_response()
+        self.assertNotIn(dcc_decision.dcc_review.tagged_trait, qs)
+        self.assertEqual(qs.count(), 0)
+
+    def test_need_study_response_queryset_includes_dccreview_followup_no_studyresponse(self):
+        """need_study_response() queryset includes a tagged trait with followup dcc review but no study response."""
+        dcc_review = factories.DCCReviewFactory.create(status=models.DCCReview.STATUS_FOLLOWUP)
+        qs = models.TaggedTrait.objects.need_study_response()
+        self.assertIn(dcc_review.tagged_trait, qs)
+        self.assertEqual(qs.count(), 1)
+
+    def test_need_study_response_queryset_includes_dccreview_followup_studyresponse_agree(self):
+        """need_study_response() queryset includes a tagged trait with followup dcc review and agree study response."""
+        study_response = factories.StudyResponseFactory.create(status=models.StudyResponse.STATUS_AGREE)
+        qs = models.TaggedTrait.objects.need_study_response()
+        self.assertIn(study_response.dcc_review.tagged_trait, qs)
+        self.assertEqual(qs.count(), 1)
+
+    def test_need_study_response_queryset_includes_dccreview_followup_studyresponse_disagree(self):
+        """need_study_response() queryset includes tagged trait with followup dcc review & disagree study response."""
+        study_response = factories.StudyResponseFactory.create(status=models.StudyResponse.STATUS_DISAGREE)
+        qs = models.TaggedTrait.objects.need_study_response()
+        self.assertIn(study_response.dcc_review.tagged_trait, qs)
+        self.assertEqual(qs.count(), 1)
+
+    # need_decision
+    def test_need_decision_queryset_excludes_unreviewed(self):
+        """need_decision() queryset excludes an unreviewed tagged trait."""
+        tagged_trait = factories.TaggedTraitFactory.create()
+        qs = models.TaggedTrait.objects.need_decision()
+        self.assertNotIn(tagged_trait, qs)
+        self.assertEqual(qs.count(), 0)
+
+    def test_need_decision_queryset_excludes_dccreview_confirmed(self):
+        """need_decision() queryset excludes a tagged trait with confirmed dcc review."""
+        dcc_review = factories.DCCReviewFactory.create(status=models.DCCReview.STATUS_CONFIRMED)
+        qs = models.TaggedTrait.objects.need_decision()
+        self.assertNotIn(dcc_review.tagged_trait, qs)
+        self.assertEqual(qs.count(), 0)
+
+    def test_need_decision_queryset_excludes_studyresponse_agree(self):
+        """need_decision() queryset excludes a tagged trait with an agree study response and followup dcc review."""
+        study_response = factories.StudyResponseFactory.create(status=models.StudyResponse.STATUS_AGREE)
+        qs = models.TaggedTrait.objects.need_decision()
+        self.assertNotIn(study_response.dcc_review.tagged_trait, qs)
+        self.assertEqual(qs.count(), 0)
+
+    def test_need_decision_queryset_excludes_dccreview_followup_no_studyresponse(self):
+        """need_decision() queryset excludes a tagged trait with followup dcc review but no study response."""
+        dcc_review = factories.DCCReviewFactory.create(status=models.DCCReview.STATUS_FOLLOWUP)
+        qs = models.TaggedTrait.objects.need_decision()
+        self.assertNotIn(dcc_review.tagged_trait, qs)
+        self.assertEqual(qs.count(), 0)
+
+    def test_need_decision_queryset_includes_dccreview_followup_studyresponse_disagree_no_dccdecision(self):
+        """need_decision() queryset includes tagged trait with disagree study response but no dcc decision."""
+        study_response = factories.StudyResponseFactory.create(status=models.StudyResponse.STATUS_DISAGREE)
+        qs = models.TaggedTrait.objects.need_decision()
+        self.assertIn(study_response.dcc_review.tagged_trait, qs)
+        self.assertEqual(qs.count(), 1)
+
+    def test_need_decision_queryset_includes_dccreview_followup_studyresponse_disagree_dccdecision_confirm(self):
+        """need_decision() queryset includes tagged trait with confirm dcc decision and disagree study response."""
+        study_response = factories.StudyResponseFactory.create(status=models.StudyResponse.STATUS_DISAGREE)
+        dcc_decision = factories.DCCDecisionFactory.create(
+            dcc_review=study_response.dcc_review, decision=models.DCCDecision.DECISION_CONFIRM)
+        qs = models.TaggedTrait.objects.need_decision()
+        self.assertIn(dcc_decision.dcc_review.tagged_trait, qs)
+        self.assertEqual(qs.count(), 1)
+
+    def test_need_decision_queryset_includes_dccreview_followup_studyresponse_disagree_dccdecision_remove(self):
+        """need_decision() queryset includes tagged trait with remove dcc decision and disagree study response."""
+        study_response = factories.StudyResponseFactory.create(status=models.StudyResponse.STATUS_DISAGREE)
+        dcc_decision = factories.DCCDecisionFactory.create(
+            dcc_review=study_response.dcc_review, decision=models.DCCDecision.DECISION_REMOVE)
+        qs = models.TaggedTrait.objects.need_decision()
+        self.assertIn(dcc_decision.dcc_review.tagged_trait, qs)
+        self.assertEqual(qs.count(), 1)
+
+    # non_archived()
+    def test_non_archived_queryset_count(self):
+        """non_archived() queryset method returns correct number of tagged traits."""
+        n_archived = 12
+        n_non_archived = 16
+        archived_taggedtraits = self.model_factory.create_batch(n_archived, archived=True)
+        non_archived_taggedtraits = self.model_factory.create_batch(n_non_archived, archived=False)
+        retrieved_queryset = self.model.objects.non_archived()
+        self.assertEqual(n_non_archived, retrieved_queryset.count())
+
+    def test_non_archived_queryset_excludes_archived(self):
+        """non_archived() queryset method does not return archived tagged traits."""
+        n_archived = 3
+        n_non_archived = 4
+        archived_taggedtraits = self.model_factory.create_batch(n_archived, archived=True)
+        non_archived_taggedtraits = self.model_factory.create_batch(n_non_archived, archived=False)
+        retrieved_queryset = self.model.objects.non_archived()
+        for archivedtt in archived_taggedtraits:
+            self.assertNotIn(archivedtt, retrieved_queryset)
+        self.assertEqual(n_non_archived, retrieved_queryset.count())
+
+    # archived()
+    def test_archived_queryset_count(self):
+        """archived() queryset method returns correct number of tagged traits."""
+        n_archived = 12
+        n_non_archived = 16
+        archived_taggedtraits = self.model_factory.create_batch(n_archived, archived=True)
+        non_archived_taggedtraits = self.model_factory.create_batch(n_non_archived, archived=False)
+        retrieved_queryset = self.model.objects.archived()
+        self.assertEqual(n_archived, retrieved_queryset.count())
+
+    def test_archived_queryset_excludes_non_archived(self):
+        """archived() queryset method does not return non-archived tagged traits."""
+        n_archived = 3
+        n_non_archived = 4
+        archived_taggedtraits = self.model_factory.create_batch(n_archived, archived=True)
+        non_archived_taggedtraits = self.model_factory.create_batch(n_non_archived, archived=False)
+        retrieved_queryset = self.model.objects.archived()
+        for nonarchivedtt in non_archived_taggedtraits:
+            self.assertNotIn(nonarchivedtt, retrieved_queryset)
+        self.assertEqual(n_archived, retrieved_queryset.count())
 
 
 class TaggedTraitDeleteTest(TestCase):
