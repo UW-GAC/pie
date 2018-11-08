@@ -4899,7 +4899,7 @@ class TaggedTraitsNeedDCCDecisionSummaryTestMixin(object):
         self.assertEqual(len(study1[1]), 1)  # Only one tag.
 
     def test_make_final_decisions_button_present(self):
-        """Button to make final decisions (start the deciding loop) is present when some decisions remain to be made."""
+        """Button to make final decisions (start the deciding loop) is present when some decisions remain unmade."""
         study_response = factories.StudyResponseFactory.create(status=models.StudyResponse.STATUS_DISAGREE)
         response = self.client.get(self.get_url())
         study_tag_pks = [study_response.dcc_review.tagged_trait.tag.pk,
@@ -6687,6 +6687,42 @@ class DCCDecisionUpdateDCCTestsMixin(object):
         self.assertEqual(len(messages), 1)
         self.assertIn('Successfully updated', str(messages[0]))
 
+    def test_change_confirm_to_remove(self):
+        """Updating a dcc decision from confirm to remove is successful."""
+        self.dcc_decision.delete()
+        self.dcc_decision = factories.DCCDecisionFactory.create(
+            dcc_review=self.tagged_trait.dcc_review, decision=models.DCCDecision.DECISION_CONFIRM)
+        form_data = {forms.DCCDecisionForm.SUBMIT_REMOVE: 'Remove', 'comment': 'remove it'}
+        response = self.client.post(self.get_url(self.tagged_trait.pk), form_data)
+        self.assertRedirects(response, self.need_decision_url)
+        self.dcc_decision.refresh_from_db()
+        updated_dcc_decision = models.DCCDecision.objects.latest('modified')
+        self.assertEqual(self.dcc_decision, updated_dcc_decision)
+        self.assertEqual(self.dcc_decision.decision, models.DCCDecision.DECISION_REMOVE)
+        # Check for success message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Successfully updated', str(messages[0]))
+
+    def test_change_remove_to_confirm(self):
+        """Updating a dcc decision from remove to confirm is successful."""
+        self.dcc_decision.delete()
+        self.dcc_decision = factories.DCCDecisionFactory.create(
+            dcc_review=self.tagged_trait.dcc_review, decision=models.DCCDecision.DECISION_REMOVE)
+        self.tagged_trait.archive()
+        self.tagged_trait.refresh_from_db()
+        form_data = {forms.DCCDecisionForm.SUBMIT_CONFIRM: 'Confirm', 'comment': 'keep it'}
+        response = self.client.post(self.get_url(self.tagged_trait.pk), form_data)
+        self.assertRedirects(response, self.need_decision_url)
+        self.dcc_decision.refresh_from_db()
+        updated_dcc_decision = models.DCCDecision.objects.latest('modified')
+        self.assertEqual(self.dcc_decision, updated_dcc_decision)
+        self.assertEqual(self.dcc_decision.decision, models.DCCDecision.DECISION_CONFIRM)
+        # Check for success message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Successfully updated', str(messages[0]))
+
     def test_form_error_missing_comment_for_remove(self):
         """Posting bad data to the form shows a form error and does not update decision."""
         form_data = {forms.DCCDecisionForm.SUBMIT_REMOVE: 'Remove', 'comment': ''}
@@ -6724,46 +6760,6 @@ class DCCDecisionUpdateDCCTestsMixin(object):
         form_data = {forms.DCCDecisionForm.SUBMIT_CONFIRM: 'Confirm', 'comment': 'looks good'}
         response = self.client.post(url, form_data)
         self.assertEqual(response.status_code, 404)
-
-    def test_get_message_and_redirect_archived_tagged_trait(self):
-        """Get request gives a warning message and redirects if the tagged trait is archived."""
-        self.tagged_trait.archive()
-        url = self.get_url(self.tagged_trait.pk)
-        response = self.client.get(url)
-        self.assertRedirects(response, self.need_decision_url)
-        messages = list(response.wsgi_request._messages)
-        self.assertEqual(len(messages), 1)
-        self.assertIn('been archived', str(messages[0]))
-
-    def test_post_message_and_redirect_archived_tagged_trait(self):
-        """Post request gives a warning message and redirects, not changing decision, if tagged trait is archived."""
-        original_comment = self.dcc_decision.comment
-        self.tagged_trait.archive()
-        url = self.get_url(self.tagged_trait.pk)
-        form_data = {forms.DCCDecisionForm.SUBMIT_CONFIRM: 'Confirm', 'comment': 'looks good'}
-        response = self.client.post(url, form_data)
-        self.dcc_decision.refresh_from_db()
-        self.assertRedirects(response, self.need_decision_url)
-        self.assertEqual(original_comment, self.dcc_decision.comment)
-        self.assertNotEqual(self.dcc_decision.comment, form_data['comment'])
-        messages = list(response.wsgi_request._messages)
-        self.assertEqual(len(messages), 1)
-        self.assertIn('been archived', str(messages[0]))
-
-    def test_post_message_and_redirect_archived_tagged_trait_with_form_error(self):
-        """Post request gives a warning message and redirects if the tagged trait is archived, even with bad data."""
-        original_comment = self.dcc_decision.comment
-        self.tagged_trait.archive()
-        url = self.get_url(self.tagged_trait.pk)
-        form_data = {forms.DCCDecisionForm.SUBMIT_CONFIRM: 'Confirm', 'comment': ''}
-        response = self.client.post(url, form_data)
-        self.dcc_decision.refresh_from_db()
-        self.assertRedirects(response, self.need_decision_url)
-        self.assertEqual(original_comment, self.dcc_decision.comment)
-        self.assertNotEqual(self.dcc_decision.comment, form_data['comment'])
-        messages = list(response.wsgi_request._messages)
-        self.assertEqual(len(messages), 1)
-        self.assertIn('been archived', str(messages[0]))
 
     def test_get_message_and_redirect_missing_review_tagged_trait(self):
         """Get request gives a warning message and redirects if the tagged trait has no dcc review."""
@@ -7025,8 +7021,11 @@ class DCCDecisionUpdateDCCTestsMixin(object):
         self.assertIn(another_tagged_trait.tag.title, content)
         self.assertIn(self.tagged_trait.tag.title, content)
 
-    def test_archives_tagged_trait_with_dccdecision_remove(self):
-        """Updating a DCCDecision to remove archives the tagged trait."""
+    def test_archives_tagged_trait_changed_from_confirm_to_remove(self):
+        """Updating a DCCDecision from confirm to remove archives the tagged trait."""
+        self.dcc_decision.delete()
+        self.dcc_decision = factories.DCCDecisionFactory.create(
+            dcc_review=self.tagged_trait.dcc_review, decision=models.DCCDecision.DECISION_CONFIRM)
         self.assertFalse(self.tagged_trait.archived)
         form_data = {forms.DCCDecisionForm.SUBMIT_REMOVE: 'Remove', 'comment': 'get rid of it'}
         response = self.client.post(self.get_url(self.tagged_trait.pk), form_data)
@@ -7035,9 +7034,14 @@ class DCCDecisionUpdateDCCTestsMixin(object):
         self.assertEqual(form_data['comment'], dcc_decision.comment)
         self.assertTrue(self.tagged_trait.archived)
 
-    def test_tagged_trait_nonarchived_after_dccdecision_confirm(self):
-        """Updating a DCCDecision to confirm results in the tagged trait being non-archived."""
-        self.assertFalse(self.tagged_trait.archived)
+    def test_unarchives_tagged_trait_changed_from_remove_to_confirm(self):
+        """Updating a DCCDecision from remove to confirm unarchives."""
+        self.dcc_decision.delete()
+        self.dcc_decision = factories.DCCDecisionFactory.create(
+            dcc_review=self.tagged_trait.dcc_review, decision=models.DCCDecision.DECISION_REMOVE)
+        self.tagged_trait.archive()
+        self.tagged_trait.refresh_from_db()
+        self.assertTrue(self.tagged_trait.archived)
         form_data = {forms.DCCDecisionForm.SUBMIT_CONFIRM: 'Confirm', 'comment': 'looks good'}
         response = self.client.post(self.get_url(self.tagged_trait.pk), form_data)
         dcc_decision = models.DCCDecision.objects.latest('modified')

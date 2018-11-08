@@ -1491,13 +1491,11 @@ class DCCDecisionUpdate(LoginRequiredMixin, PermissionRequiredMixin, FormValidMe
     def _get_warning_response(self):
         """Get the appropriate response unexpected error cases."""
         # Switch to creating a new decision if the tagged trait does not have a decision.
+        # This also handles the case where a tagged trait is archived, but has no dcc decision.
+        # It will switch to the create view, which will check for archived status.
         if self.object is None:
             self.messages.warning(self._get_missing_decision_warning_message())
             return HttpResponseRedirect(reverse('tags:tagged-traits:pk:dcc-decision:new', args=[self.tagged_trait.pk]))
-        # Redirect if the tagged trait has already been archived.
-        if self.tagged_trait.archived:
-            self.messages.warning(self._get_archived_warning_message())
-            return HttpResponseRedirect(self.get_success_url())
         # Redirect if the tagged trait is missing a dcc review.
         elif not hasattr(self.tagged_trait, 'dcc_review'):
             self.messages.warning(self._get_missing_dcc_review_warning_message())
