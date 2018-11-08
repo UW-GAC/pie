@@ -935,6 +935,11 @@ class StudyResponseCheckMixin(SpecificTaggableStudyRequiredMixin, MessageMixin):
         if self.tagged_trait.dcc_review.status == models.DCCReview.STATUS_CONFIRMED:
             self.messages.warning('Oops! {} has been confirmed by the DCC.'.format(self.tagged_trait))
             return HttpResponseRedirect(self.get_failure_url())
+        if hasattr(self.tagged_trait.dcc_review, 'dcc_decision'):
+            already_decided_message = """Oops! {} already has a dcc decision so a study response cannot
+                                         be created or modified"""
+            self.messages.warning(already_decided_message.format(self.tagged_trait))
+            return HttpResponseRedirect(self.get_failure_url())
         return super().dispatch(request, *args, **kwargs)
 
 

@@ -4357,6 +4357,38 @@ class StudyResponseCreateAgreePhenotypeTaggerTest(PhenotypeTaggerLoginTestCase):
         self.assertFalse(hasattr(other_tagged_trait.dcc_review, 'study_response'))
         self.assertEqual(response.status_code, 403)
 
+    def test_cant_create_study_response_for_tagged_trait_with_dcc_decision_confirm(self):
+        """Redirects with warning message if the tagged trait has a confirm dcc decision."""
+        self.tagged_trait.dcc_review.delete()
+        dcc_review = factories.DCCReviewFactory.create(
+            tagged_trait=self.tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP)
+        dcc_decision = factories.DCCDecisionFactory.create(
+            dcc_review=dcc_review, decision=models.DCCDecision.DECISION_CONFIRM)
+        response = self.client.post(self.get_url(self.tagged_trait.pk), {})
+        self.assertRedirects(response, reverse('tags:tag:study:quality-review',
+                                               args=[self.tag.pk, self.study.pk]))
+        self.assertFalse(hasattr(self.tagged_trait.dcc_review, 'study_response'))
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertTrue('Oops!' in str(messages[0]))
+        self.assertTrue('already has a dcc decision' in str(messages[0]))
+
+    def test_cant_create_study_response_for_tagged_trait_with_dcc_decision_remove(self):
+        """Redirects with warning message if the tagged trait has a remove dcc decision."""
+        self.tagged_trait.dcc_review.delete()
+        dcc_review = factories.DCCReviewFactory.create(
+            tagged_trait=self.tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP)
+        dcc_decision = factories.DCCDecisionFactory.create(
+            dcc_review=dcc_review, decision=models.DCCDecision.DECISION_REMOVE)
+        response = self.client.post(self.get_url(self.tagged_trait.pk), {})
+        self.assertRedirects(response, reverse('tags:tag:study:quality-review',
+                                               args=[self.tag.pk, self.study.pk]))
+        self.assertFalse(hasattr(self.tagged_trait.dcc_review, 'study_response'))
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertTrue('Oops!' in str(messages[0]))
+        self.assertTrue('already has a dcc decision' in str(messages[0]))
+
     def test_adds_user(self):
         """When a StudyResponse is successfully created, it has the appropriate creator."""
         response = self.client.post(self.get_url(self.tagged_trait.pk), {})
@@ -4521,7 +4553,7 @@ class StudyResponseCreateDisagreePhenotypeTaggerTest(PhenotypeTaggerLoginTestCas
         """Redirects with warning message if DCCReview status is confirmed."""
         self.tagged_trait.dcc_review.delete()
         factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait, status=models.DCCReview.STATUS_CONFIRMED)
-        response = self.client.post(self.get_url(self.tagged_trait.pk), {})
+        response = self.client.post(self.get_url(self.tagged_trait.pk), {'comment': 'a comment'})
         self.assertRedirects(response, reverse('tags:tag:study:quality-review',
                                                args=[self.tag.pk, self.study.pk]))
         self.assertFalse(hasattr(self.tagged_trait.dcc_review, 'study_response'))
@@ -4529,6 +4561,38 @@ class StudyResponseCreateDisagreePhenotypeTaggerTest(PhenotypeTaggerLoginTestCas
         self.assertEqual(len(messages), 1)
         self.assertTrue('Oops!' in str(messages[0]))
         self.assertTrue('has been confirmed' in str(messages[0]))
+
+    def test_cant_create_study_response_for_tagged_trait_with_dcc_decision_confirm(self):
+        """Redirects with warning message if the tagged trait has a confirm dcc decision."""
+        self.tagged_trait.dcc_review.delete()
+        dcc_review = factories.DCCReviewFactory.create(
+            tagged_trait=self.tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP)
+        dcc_decision = factories.DCCDecisionFactory.create(
+            dcc_review=dcc_review, decision=models.DCCDecision.DECISION_CONFIRM)
+        response = self.client.post(self.get_url(self.tagged_trait.pk), {'comment': 'a comment'})
+        self.assertRedirects(response, reverse('tags:tag:study:quality-review',
+                                               args=[self.tag.pk, self.study.pk]))
+        self.assertFalse(hasattr(self.tagged_trait.dcc_review, 'study_response'))
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertTrue('Oops!' in str(messages[0]))
+        self.assertTrue('already has a dcc decision' in str(messages[0]))
+
+    def test_cant_create_study_response_for_tagged_trait_with_dcc_decision_remove(self):
+        """Redirects with warning message if the tagged trait has a remove dcc decision."""
+        self.tagged_trait.dcc_review.delete()
+        dcc_review = factories.DCCReviewFactory.create(
+            tagged_trait=self.tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP)
+        dcc_decision = factories.DCCDecisionFactory.create(
+            dcc_review=dcc_review, decision=models.DCCDecision.DECISION_REMOVE)
+        response = self.client.post(self.get_url(self.tagged_trait.pk), {'comment': 'a comment'})
+        self.assertRedirects(response, reverse('tags:tag:study:quality-review',
+                                               args=[self.tag.pk, self.study.pk]))
+        self.assertFalse(hasattr(self.tagged_trait.dcc_review, 'study_response'))
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertTrue('Oops!' in str(messages[0]))
+        self.assertTrue('already has a dcc decision' in str(messages[0]))
 
     def test_get_studyresponse_exists(self):
         """Redirects with warning message if a StudyResponse already exists."""
