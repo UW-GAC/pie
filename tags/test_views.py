@@ -3648,6 +3648,66 @@ class DCCReviewNeedFollowupCountsPhenotypeTaggerTest(PhenotypeTaggerLoginTestCas
         counts = context['grouped_study_tag_counts']
         self.assertEqual(len(counts), 0)
 
+    def test_context_includes_taggedtrait_with_dccdecision_confirm_no_studyresponse(self):
+        """Count does not include a TaggedTrait that has a confirm DCCDecision but no StudyResponse."""
+        dcc_review = factories.DCCReviewFactory.create(
+            tagged_trait__trait__source_dataset__source_study_version__study=self.study,
+            status=models.DCCReview.STATUS_FOLLOWUP
+        )
+        dcc_decision = factories.DCCDecisionFactory.create(
+            dcc_review=dcc_review, decision=models.DCCDecision.DECISION_CONFIRM)
+        response = self.client.get(self.get_url())
+        context = response.context
+        self.assertIn('grouped_study_tag_counts', context)
+        counts = context['grouped_study_tag_counts']
+        self.assertEqual(len(counts), 0)
+
+    def test_context_includes_taggedtrait_with_dccdecision_remove_no_studyresponse(self):
+        """Count does not include a TaggedTrait that has a remove DCCDecision but no StudyResponse."""
+        dcc_review = factories.DCCReviewFactory.create(
+            tagged_trait__trait__source_dataset__source_study_version__study=self.study,
+            status=models.DCCReview.STATUS_FOLLOWUP
+        )
+        dcc_decision = factories.DCCDecisionFactory.create(
+            dcc_review=dcc_review, decision=models.DCCDecision.DECISION_REMOVE)
+        response = self.client.get(self.get_url())
+        context = response.context
+        self.assertIn('grouped_study_tag_counts', context)
+        counts = context['grouped_study_tag_counts']
+        self.assertEqual(len(counts), 0)
+
+    def test_context_includes_taggedtrait_with_dccdecision_confirm_studyresponse_disagree(self):
+        """Count does not include a TaggedTrait that has a confirm DCCDecision and a disagree StudyResponse."""
+        dcc_review = factories.DCCReviewFactory.create(
+            tagged_trait__trait__source_dataset__source_study_version__study=self.study,
+            status=models.DCCReview.STATUS_FOLLOWUP
+        )
+        study_response = factories.StudyResponseFactory.create(
+            dcc_review=dcc_review, status=models.StudyResponse.STATUS_DISAGREE)
+        dcc_decision = factories.DCCDecisionFactory.create(
+            dcc_review=dcc_review, decision=models.DCCDecision.DECISION_CONFIRM)
+        response = self.client.get(self.get_url())
+        context = response.context
+        self.assertIn('grouped_study_tag_counts', context)
+        counts = context['grouped_study_tag_counts']
+        self.assertEqual(len(counts), 1)
+
+    def test_context_includes_taggedtrait_with_dccdecision_remove_studyresponse_disagree(self):
+        """Count does not include a TaggedTrait that has a remove DCCDecision and a disagree StudyResponse."""
+        dcc_review = factories.DCCReviewFactory.create(
+            tagged_trait__trait__source_dataset__source_study_version__study=self.study,
+            status=models.DCCReview.STATUS_FOLLOWUP
+        )
+        study_response = factories.StudyResponseFactory.create(
+            dcc_review=dcc_review, status=models.StudyResponse.STATUS_DISAGREE)
+        dcc_decision = factories.DCCDecisionFactory.create(
+            dcc_review=dcc_review, decision=models.DCCDecision.DECISION_REMOVE)
+        response = self.client.get(self.get_url())
+        context = response.context
+        self.assertIn('grouped_study_tag_counts', context)
+        counts = context['grouped_study_tag_counts']
+        self.assertEqual(len(counts), 1)
+
     def test_only_taggable_studies(self):
         """Only studies that the user can tag are included."""
         other_study = StudyFactory.create()
@@ -3877,7 +3937,7 @@ class DCCReviewNeedFollowupListMixin(object):
         context = response.context
         self.assertIsInstance(context['tagged_trait_table'], tables.DCCReviewTable)
 
-    def test_view_contains_tagged_traits_that_need_followup(self):
+    def test_view_table_contains_tagged_traits_that_need_followup(self):
         """Table contains TaggedTraits that need followup."""
         response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
         context = response.context
@@ -3901,6 +3961,70 @@ class DCCReviewNeedFollowupListMixin(object):
             self.assertIn(dcc_review.tagged_trait, table.data,
                           msg='tagged_trait_table does not contain {}'.format(dcc_review.tagged_trait))
         self.assertEqual(len(table.data), len(self.dcc_reviews))
+
+    def test_view_table_does_not_contain_tagged_trait_with_confirm_dccdecision_but_no_studyresponse(self):
+        """Table does not contain a TaggedTrait with no StudyResponse and a confirm DCCDecision."""
+        tagged_trait = factories.TaggedTraitFactory.create(
+            tag=self.tag, trait__source_dataset__source_study_version__study=self.study)
+        dcc_decision = factories.DCCDecisionFactory.create(
+            dcc_review__tagged_trait=tagged_trait, decision=models.DCCDecision.DECISION_CONFIRM)
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        context = response.context
+        table = context['tagged_trait_table']
+        self.assertNotIn(tagged_trait, table.data)
+        for dcc_review in self.dcc_reviews:
+            self.assertIn(dcc_review.tagged_trait, table.data,
+                          msg='tagged_trait_table does not contain {}'.format(dcc_review.tagged_trait))
+        self.assertEqual(len(table.data), len(self.dcc_reviews))
+
+    def test_view_table_does_not_contain_tagged_trait_with_remove_dccdecision_but_no_studyresponse(self):
+        """Table does not contain a TaggedTrait with no StudyResponse and a remove DCCDecision."""
+        tagged_trait = factories.TaggedTraitFactory.create(
+            tag=self.tag, trait__source_dataset__source_study_version__study=self.study)
+        dcc_decision = factories.DCCDecisionFactory.create(
+            dcc_review__tagged_trait=tagged_trait, decision=models.DCCDecision.DECISION_REMOVE)
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        context = response.context
+        table = context['tagged_trait_table']
+        self.assertNotIn(tagged_trait, table.data)
+        for dcc_review in self.dcc_reviews:
+            self.assertIn(dcc_review.tagged_trait, table.data,
+                          msg='tagged_trait_table does not contain {}'.format(dcc_review.tagged_trait))
+        self.assertEqual(len(table.data), len(self.dcc_reviews))
+
+    def test_view_table_contains_tagged_trait_with_confirm_dccdecision_with_studyresponse(self):
+        """Table does not contain a TaggedTrait with disagree StudyResponse and a confirm DCCDecision."""
+        tagged_trait = factories.TaggedTraitFactory.create(
+            tag=self.tag, trait__source_dataset__source_study_version__study=self.study)
+        study_response = factories.StudyResponseFactory.create(
+            dcc_review__tagged_trait=tagged_trait, status=models.StudyResponse.STATUS_DISAGREE)
+        dcc_decision = factories.DCCDecisionFactory.create(
+            dcc_review=study_response.dcc_review, decision=models.DCCDecision.DECISION_CONFIRM)
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        context = response.context
+        table = context['tagged_trait_table']
+        self.assertIn(tagged_trait, table.data)
+        for dcc_review in self.dcc_reviews:
+            self.assertIn(dcc_review.tagged_trait, table.data,
+                          msg='tagged_trait_table does not contain {}'.format(dcc_review.tagged_trait))
+        self.assertEqual(len(table.data), len(self.dcc_reviews) + 1)
+
+    def test_view_table_contains_tagged_trait_with_remove_dccdecision_with_studyresponse(self):
+        """Table does not contain a TaggedTrait with disagree StudyResponse and a remove DCCDecision."""
+        tagged_trait = factories.TaggedTraitFactory.create(
+            tag=self.tag, trait__source_dataset__source_study_version__study=self.study)
+        study_response = factories.StudyResponseFactory.create(
+            dcc_review__tagged_trait=tagged_trait, status=models.StudyResponse.STATUS_DISAGREE)
+        dcc_decision = factories.DCCDecisionFactory.create(
+            dcc_review=study_response.dcc_review, decision=models.DCCDecision.DECISION_REMOVE)
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        context = response.context
+        table = context['tagged_trait_table']
+        self.assertIn(tagged_trait, table.data)
+        for dcc_review in self.dcc_reviews:
+            self.assertIn(dcc_review.tagged_trait, table.data,
+                          msg='tagged_trait_table does not contain {}'.format(dcc_review.tagged_trait))
+        self.assertEqual(len(table.data), len(self.dcc_reviews) + 1)
 
     def test_view_works_with_no_matching_tagged_traits(self):
         """Successful response code when there are no TaggedTraits to inclue."""

@@ -820,7 +820,10 @@ class DCCReviewNeedFollowupCounts(LoginRequiredMixin, TemplateView):
         # https://code.djangoproject.com/ticket/10060
         # The problem occurs when a join produces duplicated rows. In the queries below, none of the
         # joins should result in any duplicated TaggedTraits, so multiple annotations should be ok.
-        study_tag_counts = models.TaggedTrait.objects.need_followup().filter(
+        study_tag_counts = models.TaggedTrait.objects.need_followup().exclude(
+            # Exclude tagged traits missing a study response but with a dcc decision.
+            Q(dcc_review__study_response__isnull=True) & Q(dcc_review__dcc_decision__isnull=False)
+        ).filter(
             trait__source_dataset__source_study_version__study__in=studies
         ).values(
             study_name=F('trait__source_dataset__source_study_version__study__i_study_name'),
@@ -893,7 +896,10 @@ class DCCReviewNeedFollowupList(LoginRequiredMixin, SpecificTaggableStudyRequire
         return context
 
     def get_table_data(self):
-        data = self.study.get_all_tagged_traits().need_followup().filter(
+        data = self.study.get_all_tagged_traits().need_followup().exclude(
+            # Exclude tagged traits missing a study response but with a dcc decision.
+            Q(dcc_review__study_response__isnull=True) & Q(dcc_review__dcc_decision__isnull=False)
+        ).filter(
             tag=self.tag
         ).select_related(
             'dcc_review',
@@ -1080,10 +1086,7 @@ class TaggedTraitsNeedDCCDecisionByTagAndStudyList(LoginRequiredMixin, GroupRequ
         return super().get(request, *args, **kwargs)
 
     def get_table_data(self):
-        data = models.TaggedTrait.objects.filter(
-            dcc_review__isnull=False,
-            dcc_review__study_response__isnull=False,
-            dcc_review__study_response__status=models.StudyResponse.STATUS_DISAGREE,
+        data = models.TaggedTrait.objects.need_decision().filter(
             dcc_review__tagged_trait__tag=self.tag,
             dcc_review__tagged_trait__trait__source_dataset__source_study_version__study=self.study).select_related(
                 'dcc_review', 'dcc_review__study_response', 'dcc_review__dcc_decision', 'tag', 'trait',
