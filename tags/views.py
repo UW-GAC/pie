@@ -1142,7 +1142,14 @@ class DCCDecisionMixin(object):
         form.instance.dcc_review = self.tagged_trait.dcc_review
         form.instance.creator = self.request.user
         form.instance.decision = self.get_decision()
-        return super(DCCDecisionMixin, self).form_valid(form)
+        response = super().form_valid(form)
+        # Archive if necessary.
+        if (self.object.decision == models.DCCDecision.DECISION_REMOVE) and (not self.tagged_trait.archived):
+            self.tagged_trait.archive()
+        # Unarchive if necessary.
+        if (self.object.decision == models.DCCDecision.DECISION_CONFIRM) and (self.tagged_trait.archived):
+            self.tagged_trait.unarchive()
+        return response
 
 
 class DCCDecisionByTagAndStudySelectFromURL(LoginRequiredMixin, PermissionRequiredMixin, MessageMixin, RedirectView):
@@ -1368,7 +1375,7 @@ class DCCDecisionByTagAndStudy(LoginRequiredMixin, PermissionRequiredMixin, Sess
     def form_valid(self, form):
         # Remove the decided tagged trait from the list of pks.
         self._update_session_variables()
-        return super(DCCDecisionByTagAndStudy, self).form_valid(form)
+        return super().form_valid(form)
 
     def get_form_valid_message(self):
         msg = 'Successfully made a final decision for {}.'.format(self.tagged_trait)

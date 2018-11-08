@@ -6162,6 +6162,26 @@ class DCCDecisionByTagAndStudyDCCTestsMixin(object):
         self.assertIn(another_tagged_trait.tag.title, content)
         self.assertIn(self.tagged_trait.tag.title, content)
 
+    def test_archives_tagged_trait_with_dccdecision_remove(self):
+        """Creating a remove DCCDecision archives the tagged trait."""
+        self.assertFalse(self.tagged_trait.archived)
+        form_data = {forms.DCCDecisionByTagAndStudyForm.SUBMIT_REMOVE: 'Remove', 'comment': 'get rid of it'}
+        response = self.client.post(self.get_url(), form_data)
+        dcc_decision = models.DCCDecision.objects.latest('created')
+        self.tagged_trait.refresh_from_db()
+        self.assertTrue(self.tagged_trait.archived)
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-decision:next'), target_status_code=302)
+
+    def test_tagged_trait_nonarchived_after_dccdecision_confirm(self):
+        """Creating a confirm DCCDecision results in the tagged trait being non-archived."""
+        self.assertFalse(self.tagged_trait.archived)
+        form_data = {forms.DCCDecisionForm.SUBMIT_CONFIRM: 'Confirm', 'comment': 'looks good'}
+        response = self.client.post(self.get_url(), form_data)
+        dcc_decision = models.DCCDecision.objects.latest('created')
+        self.tagged_trait.refresh_from_db()
+        self.assertFalse(self.tagged_trait.archived)
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-decision:next'), target_status_code=302)
+
 
 class DCCDecisionByTagAndStudyDCCAnalystTest(DCCDecisionByTagAndStudyDCCTestsMixin, DCCAnalystLoginTestCase):
 
@@ -6537,6 +6557,24 @@ class DCCDecisionCreateDCCTestsMixin(object):
         content = str(response.content)
         self.assertIn(another_tagged_trait.tag.title, content)
         self.assertIn(self.tagged_trait.tag.title, content)
+
+    def test_archives_tagged_trait_with_dccdecision_remove(self):
+        """Creating a remove DCCDecision archives the tagged trait."""
+        self.assertFalse(self.tagged_trait.archived)
+        form_data = {forms.DCCDecisionForm.SUBMIT_REMOVE: 'Remove', 'comment': 'get rid of it'}
+        response = self.client.post(self.get_url(self.tagged_trait.pk), form_data)
+        dcc_decision = models.DCCDecision.objects.latest('created')
+        self.tagged_trait.refresh_from_db()
+        self.assertTrue(self.tagged_trait.archived)
+
+    def test_tagged_trait_nonarchived_after_dccdecision_confirm(self):
+        """Creating a confirm DCCDecision results in the tagged trait being non-archived."""
+        self.assertFalse(self.tagged_trait.archived)
+        form_data = {forms.DCCDecisionForm.SUBMIT_CONFIRM: 'Confirm', 'comment': 'looks good'}
+        response = self.client.post(self.get_url(self.tagged_trait.pk), form_data)
+        dcc_decision = models.DCCDecision.objects.latest('created')
+        self.tagged_trait.refresh_from_db()
+        self.assertFalse(self.tagged_trait.archived)
 
 
 class DCCDecisionCreateDCCAnalystTest(DCCDecisionCreateDCCTestsMixin, DCCAnalystLoginTestCase):
@@ -6986,6 +7024,26 @@ class DCCDecisionUpdateDCCTestsMixin(object):
         content = str(response.content)
         self.assertIn(another_tagged_trait.tag.title, content)
         self.assertIn(self.tagged_trait.tag.title, content)
+
+    def test_archives_tagged_trait_with_dccdecision_remove(self):
+        """Updating a DCCDecision to remove archives the tagged trait."""
+        self.assertFalse(self.tagged_trait.archived)
+        form_data = {forms.DCCDecisionForm.SUBMIT_REMOVE: 'Remove', 'comment': 'get rid of it'}
+        response = self.client.post(self.get_url(self.tagged_trait.pk), form_data)
+        dcc_decision = models.DCCDecision.objects.latest('modified')
+        self.tagged_trait.refresh_from_db()
+        self.assertEqual(form_data['comment'], dcc_decision.comment)
+        self.assertTrue(self.tagged_trait.archived)
+
+    def test_tagged_trait_nonarchived_after_dccdecision_confirm(self):
+        """Updating a DCCDecision to confirm results in the tagged trait being non-archived."""
+        self.assertFalse(self.tagged_trait.archived)
+        form_data = {forms.DCCDecisionForm.SUBMIT_CONFIRM: 'Confirm', 'comment': 'looks good'}
+        response = self.client.post(self.get_url(self.tagged_trait.pk), form_data)
+        dcc_decision = models.DCCDecision.objects.latest('modified')
+        self.tagged_trait.refresh_from_db()
+        self.assertEqual(form_data['comment'], dcc_decision.comment)
+        self.assertFalse(self.tagged_trait.archived)
 
 
 class DCCDecisionUpdateDCCAnalystTest(DCCDecisionUpdateDCCTestsMixin, DCCAnalystLoginTestCase):
