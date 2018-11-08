@@ -6644,7 +6644,7 @@ class DCCDecisionUpdateDCCTestsMixin(object):
 
     def test_get_success_missing_response_tagged_trait(self):
         """Get response is successful if the tagged trait has no study response."""
-        self.tagged_trait.dcc_review.study_response.delete()
+        self.tagged_trait.dcc_review.study_response.hard_delete()
         url = self.get_url(self.tagged_trait.pk)
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
@@ -6654,7 +6654,7 @@ class DCCDecisionUpdateDCCTestsMixin(object):
     def test_post_updates_decision_missing_response_tagged_trait(self):
         """Post request successfully updates decision when the tagged trait has no study response."""
         original_comment = self.dcc_decision.comment
-        self.tagged_trait.dcc_review.study_response.delete()
+        self.tagged_trait.dcc_review.study_response.hard_delete()
         url = self.get_url(self.tagged_trait.pk)
         form_data = {forms.DCCDecisionForm.SUBMIT_CONFIRM: 'Confirm', 'comment': 'looks good'}
         response = self.client.post(url, form_data)
@@ -6669,7 +6669,7 @@ class DCCDecisionUpdateDCCTestsMixin(object):
     def test_post_does_not_redirect_with_missing_response_tagged_trait_with_form_error(self):
         """Post request does not give message and redirect, but doesn't update decision when study response is missing and data is bad."""  # noqa
         original_comment = self.dcc_decision.comment
-        self.tagged_trait.dcc_review.study_response.delete()
+        self.tagged_trait.dcc_review.study_response.hard_delete()
         url = self.get_url(self.tagged_trait.pk)
         form_data = {forms.DCCDecisionForm.SUBMIT_CONFIRM: 'Confirm', 'comment': ''}
         response = self.client.post(url, form_data)
