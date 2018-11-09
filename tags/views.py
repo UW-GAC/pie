@@ -116,26 +116,52 @@ class TaggedTraitDetail(LoginRequiredMixin, PermissionRequiredMixin, SpecificTag
         user_has_study_access = user_is_staff or user_is_study_tagger
         is_non_archived = not self.object.archived
         dccreview_exists = hasattr(self.object, 'dcc_review')
-        is_confirmed = dccreview_exists and self.object.dcc_review.status == models.DCCReview.STATUS_CONFIRMED
+        dccreview_confirmed = dccreview_exists and (self.object.dcc_review.status == models.DCCReview.STATUS_CONFIRMED)
         needs_followup = dccreview_exists and self.object.dcc_review.status == models.DCCReview.STATUS_FOLLOWUP
         user_has_dccreview_add_perms = self.request.user.has_perm('tags.add_dccreview')
         user_has_dccreview_change_perms = self.request.user.has_perm('tags.change_dccreview')
-        response_exists = dccreview_exists and hasattr(self.object.dcc_review, 'study_response')
+        user_has_dccdecision_add_perms = self.request.user.has_perm('tags.add_dccdecision')
+        user_has_dccdecision_change_perms = self.request.user.has_perm('tags.change_dccdecision')
+        studyresponse_exists = dccreview_exists and hasattr(self.object.dcc_review, 'study_response')
+        studyresponse_agree = studyresponse_exists and \
+            (self.object.dcc_review.study_response.status == models.StudyResponse.STATUS_AGREE)
+        studyresponse_disagree = studyresponse_exists and \
+            (self.object.dcc_review.study_response.status == models.StudyResponse.STATUS_DISAGREE)
+        dccdecision_exists = dccreview_exists and hasattr(self.object.dcc_review, 'dcc_decision')
+        dccdecision_remove = dccdecision_exists and \
+            (self.object.dcc_review.dcc_decision.decision == models.DCCDecision.DECISION_REMOVE)
+        dccdecision_confirm = dccdecision_exists and \
+            (self.object.dcc_review.dcc_decision.decision == models.DCCDecision.DECISION_CONFIRM)
+        if dccreview_confirmed:
+            color = 'bg-success'
+        elif dccdecision_confirm:
+            color = 'bg-success'
+        elif not is_non_archived:
+            color = 'bg-danger'
+        else:
+            color = ''
         # Set context variables for controlling view options.
         context['show_quality_review_panel'] = user_has_study_access
         context['show_dcc_review_add_button'] = (not dccreview_exists) and user_has_dccreview_add_perms \
             and is_non_archived
         context['show_dcc_review_update_button'] = dccreview_exists and user_has_dccreview_change_perms \
-            and not response_exists and is_non_archived
-        context['show_confirmed_status'] = user_has_study_access and is_confirmed
-        context['show_needs_followup_status'] = user_has_study_access and needs_followup
-        context['show_study_response_status'] = user_has_study_access and response_exists
-        context['show_study_agrees'] = user_has_study_access and response_exists and \
-            (self.object.dcc_review.study_response.status == models.StudyResponse.STATUS_AGREE)
-        context['show_study_disagrees'] = user_has_study_access and response_exists and \
-            (self.object.dcc_review.study_response.status == models.StudyResponse.STATUS_DISAGREE)
+            and not studyresponse_exists and is_non_archived and not dccdecision_exists
+        context['show_dcc_review_confirmed'] = user_has_study_access and dccreview_confirmed
+        context['show_dcc_review_needs_followup'] = user_has_study_access and needs_followup
+        context['show_study_response_status'] = user_has_study_access and studyresponse_exists
+        context['show_study_agrees'] = user_has_study_access and studyresponse_exists and studyresponse_agree
+        context['show_study_disagrees'] = user_has_study_access and studyresponse_exists and studyresponse_disagree
+        context['show_dcc_decision'] = user_has_study_access and dccdecision_exists
+        context['show_dcc_decision_add_button'] = user_has_study_access and user_has_dccdecision_add_perms \
+            and dccreview_exists and studyresponse_disagree and not dccdecision_exists
+        context['show_dcc_decision_update_button'] = user_has_study_access and user_has_dccdecision_change_perms \
+            and dccreview_exists and dccdecision_exists
+        context['show_decision_remove'] = user_has_study_access and dccdecision_exists and dccdecision_remove
+        context['show_decision_confirm'] = user_has_study_access and dccdecision_exists and dccdecision_confirm
+        context['show_decision_comment'] = user_is_staff and dccdecision_exists
         context['show_delete_button'] = user_has_study_access and (not dccreview_exists) and is_non_archived
         context['show_archived'] = not is_non_archived
+        context['quality_review_panel_color'] = color
         return context
 
     def set_study(self):
