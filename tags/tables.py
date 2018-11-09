@@ -262,6 +262,7 @@ class TaggedTraitTableForStudyTaggers(TaggedTraitDetailColumnMixin, TaggedTraitQ
 
 class TaggedTraitTableForDCCStaff(TaggedTraitDetailColumnMixin, TaggedTraitDCCReviewButtonMixin,
                                   TaggedTraitDCCReviewStatusColumnMixin, TaggedTraitStudyResponseStatusColumnMixin,
+                                  TaggedTraitDCCDecisionColumnMixin,
                                   TaggedTraitArchivedColumnMixin, TaggedTraitTable):
     """Table for displaying TaggedTraits to DCC staff users.
 
@@ -271,7 +272,7 @@ class TaggedTraitTableForDCCStaff(TaggedTraitDetailColumnMixin, TaggedTraitDCCRe
 
     class Meta(TaggedTraitTable.Meta):
         fields = ('tag', 'trait', 'description', 'dataset', 'details', 'review_button', 'dcc_review_status',
-                  'study_response_status', 'archived', )
+                  'study_response_status', 'dcc_decision', 'archived', )
 
 
 class DCCReviewTable(tables.Table):
