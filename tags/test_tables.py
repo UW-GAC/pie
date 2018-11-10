@@ -74,7 +74,7 @@ class TaggedTraitQualityReviewColumnMixinTest(TestCase):
 
     table_class = tables.TaggedTraitQualityReviewColumnMixin
 
-    def test_unreviewed_tagged_trait(self):
+    def test_unreviewed(self):
         """Quality review text is correct for an unreviewed tagged trait."""
         tagged_trait = factories.TaggedTraitFactory.create()
         table = self.table_class(models.TaggedTrait.objects.all())
@@ -85,22 +85,10 @@ class TaggedTraitQualityReviewColumnMixinTest(TestCase):
         self.assertNotIn(tables.DISAGREE_TEXT, quality_review)
         self.assertNotIn(tables.ARCHIVED_TEXT, quality_review)
         self.assertNotIn(tables.FOLLOWUP_STUDY_USER_TEXT, quality_review)
+        self.assertNotIn(tables.DECISION_CONFIRM_STUDY_USER_TEXT, quality_review)
+        self.assertNotIn(tables.DECISION_REMOVE_STUDY_USER_TEXT, quality_review)
 
-    def test_confirmed_tagged_trait(self):
-        """Quality review text is correct for a confirmed tagged trait."""
-        tagged_trait = factories.TaggedTraitFactory.create()
-        dcc_review = factories.DCCReviewFactory.create(
-            tagged_trait=tagged_trait, status=models.DCCReview.STATUS_CONFIRMED)
-        table = self.table_class(models.TaggedTrait.objects.all())
-        quality_review = table.render_quality_review(tagged_trait)
-        self.assertIn(tables.CONFIRMED_TEXT, quality_review)
-        self.assertNotIn(tables.FOLLOWUP_TEXT, quality_review)
-        self.assertNotIn(tables.AGREE_TEXT, quality_review)
-        self.assertNotIn(tables.DISAGREE_TEXT, quality_review)
-        self.assertNotIn(tables.ARCHIVED_TEXT, quality_review)
-        self.assertNotIn(tables.FOLLOWUP_STUDY_USER_TEXT, quality_review)
-
-    def test_followup_noresponse_nonarchived_tagged_trait(self):
+    def test_followup_dccreview_no_studyresponse_no_dccdecision(self):
         """Quality review text is correct for a followup tagged trait with no response."""
         tagged_trait = factories.TaggedTraitFactory.create()
         dcc_review = factories.DCCReviewFactory.create(
@@ -113,12 +101,50 @@ class TaggedTraitQualityReviewColumnMixinTest(TestCase):
         self.assertNotIn(tables.DISAGREE_TEXT, quality_review)
         self.assertNotIn(tables.ARCHIVED_TEXT, quality_review)
         self.assertIn(tables.FOLLOWUP_STUDY_USER_TEXT, quality_review)
+        self.assertNotIn(tables.DECISION_CONFIRM_STUDY_USER_TEXT, quality_review)
+        self.assertNotIn(tables.DECISION_REMOVE_STUDY_USER_TEXT, quality_review)
 
-    def test_followup_noresponse_archived_tagged_trait(self):
-        """Quality review text is correct for an archived followup tagged trait with no response."""
+    def test_followup_dccreview_disagree_studyresponse_no_dccdecision(self):
+        """Quality review text is correct for a followup, disagree, nonarchived tagged trait."""
         tagged_trait = factories.TaggedTraitFactory.create()
         dcc_review = factories.DCCReviewFactory.create(
             tagged_trait=tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP)
+        study_response = factories.StudyResponseFactory.create(
+            dcc_review=dcc_review, status=models.StudyResponse.STATUS_DISAGREE)
+        table = self.table_class(models.TaggedTrait.objects.all())
+        quality_review = table.render_quality_review(tagged_trait)
+        self.assertNotIn(tables.CONFIRMED_TEXT, quality_review)
+        self.assertNotIn(tables.FOLLOWUP_TEXT, quality_review)
+        self.assertNotIn(tables.AGREE_TEXT, quality_review)
+        self.assertIn(tables.DISAGREE_TEXT, quality_review)
+        self.assertNotIn(tables.ARCHIVED_TEXT, quality_review)
+        self.assertIn(tables.FOLLOWUP_STUDY_USER_TEXT, quality_review)
+        self.assertNotIn(tables.DECISION_CONFIRM_STUDY_USER_TEXT, quality_review)
+        self.assertNotIn(tables.DECISION_REMOVE_STUDY_USER_TEXT, quality_review)
+
+    def test_confirmed_dccreview(self):
+        """Quality review text is correct for a confirmed tagged trait."""
+        tagged_trait = factories.TaggedTraitFactory.create()
+        dcc_review = factories.DCCReviewFactory.create(
+            tagged_trait=tagged_trait, status=models.DCCReview.STATUS_CONFIRMED)
+        table = self.table_class(models.TaggedTrait.objects.all())
+        quality_review = table.render_quality_review(tagged_trait)
+        self.assertIn(tables.CONFIRMED_TEXT, quality_review)
+        self.assertNotIn(tables.FOLLOWUP_TEXT, quality_review)
+        self.assertNotIn(tables.AGREE_TEXT, quality_review)
+        self.assertNotIn(tables.DISAGREE_TEXT, quality_review)
+        self.assertNotIn(tables.ARCHIVED_TEXT, quality_review)
+        self.assertNotIn(tables.FOLLOWUP_STUDY_USER_TEXT, quality_review)
+        self.assertNotIn(tables.DECISION_CONFIRM_STUDY_USER_TEXT, quality_review)
+        self.assertNotIn(tables.DECISION_REMOVE_STUDY_USER_TEXT, quality_review)
+
+    def test_followup_dccreview_no_studyresponse_remove_dccdecision_archived(self):
+        """Quality review text is correct for a followup, no response, decision remove, archived tagged trait."""
+        tagged_trait = factories.TaggedTraitFactory.create()
+        dcc_review = factories.DCCReviewFactory.create(
+            tagged_trait=tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP)
+        dcc_decision = factories.DCCDecisionFactory.create(
+            dcc_review=dcc_review, decision=models.DCCDecision.DECISION_REMOVE)
         tagged_trait.archive()
         table = self.table_class(models.TaggedTrait.objects.all())
         quality_review = table.render_quality_review(tagged_trait)
@@ -128,24 +154,28 @@ class TaggedTraitQualityReviewColumnMixinTest(TestCase):
         self.assertNotIn(tables.DISAGREE_TEXT, quality_review)
         self.assertIn(tables.ARCHIVED_TEXT, quality_review)
         self.assertIn(tables.FOLLOWUP_STUDY_USER_TEXT, quality_review)
+        self.assertNotIn(tables.DECISION_CONFIRM_STUDY_USER_TEXT, quality_review)
+        self.assertIn(tables.DECISION_REMOVE_STUDY_USER_TEXT, quality_review)
 
-    def test_followup_agree_nonarchived_tagged_trait(self):
-        """Quality review text is correct for a followup, agree, nonarchived tagged trait."""
+    def test_followup_dccreview_no_studyresponse_confirm_dccdecision(self):
+        """Quality review text is correct for a followup, no response, decision confirm tagged trait."""
         tagged_trait = factories.TaggedTraitFactory.create()
         dcc_review = factories.DCCReviewFactory.create(
             tagged_trait=tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP)
-        study_response = factories.StudyResponseFactory.create(
-            dcc_review=dcc_review, status=models.StudyResponse.STATUS_AGREE)
+        dcc_decision = factories.DCCDecisionFactory.create(
+            dcc_review=dcc_review, decision=models.DCCDecision.DECISION_CONFIRM)
         table = self.table_class(models.TaggedTrait.objects.all())
         quality_review = table.render_quality_review(tagged_trait)
         self.assertNotIn(tables.CONFIRMED_TEXT, quality_review)
         self.assertNotIn(tables.FOLLOWUP_TEXT, quality_review)
-        self.assertIn(tables.AGREE_TEXT, quality_review)
+        self.assertNotIn(tables.AGREE_TEXT, quality_review)
         self.assertNotIn(tables.DISAGREE_TEXT, quality_review)
         self.assertNotIn(tables.ARCHIVED_TEXT, quality_review)
         self.assertIn(tables.FOLLOWUP_STUDY_USER_TEXT, quality_review)
+        self.assertIn(tables.DECISION_CONFIRM_STUDY_USER_TEXT, quality_review)
+        self.assertNotIn(tables.DECISION_REMOVE_STUDY_USER_TEXT, quality_review)
 
-    def test_followup_agree_archived_tagged_trait(self):
+    def test_followup_dccreview_agree_studyresponse_archived(self):
         """Quality review text is correct for a followup, agree, archived tagged trait."""
         tagged_trait = factories.TaggedTraitFactory.create()
         dcc_review = factories.DCCReviewFactory.create(
@@ -161,30 +191,18 @@ class TaggedTraitQualityReviewColumnMixinTest(TestCase):
         self.assertNotIn(tables.DISAGREE_TEXT, quality_review)
         self.assertIn(tables.ARCHIVED_TEXT, quality_review)
         self.assertIn(tables.FOLLOWUP_STUDY_USER_TEXT, quality_review)
+        self.assertNotIn(tables.DECISION_CONFIRM_STUDY_USER_TEXT, quality_review)
+        self.assertNotIn(tables.DECISION_REMOVE_STUDY_USER_TEXT, quality_review)
 
-    def test_followup_disagree_nonarchived_tagged_trait(self):
-        """Quality review text is correct for a followup, disagree, nonarchived tagged trait."""
+    def test_followup_dccreview_disagree_studyresponse_remove_dccdecision_archived(self):
+        """Quality review text is correct for a followup, disagree, decision remove tagged trait."""
         tagged_trait = factories.TaggedTraitFactory.create()
         dcc_review = factories.DCCReviewFactory.create(
             tagged_trait=tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP)
         study_response = factories.StudyResponseFactory.create(
             dcc_review=dcc_review, status=models.StudyResponse.STATUS_DISAGREE)
-        table = self.table_class(models.TaggedTrait.objects.all())
-        quality_review = table.render_quality_review(tagged_trait)
-        self.assertNotIn(tables.CONFIRMED_TEXT, quality_review)
-        self.assertNotIn(tables.FOLLOWUP_TEXT, quality_review)
-        self.assertNotIn(tables.AGREE_TEXT, quality_review)
-        self.assertIn(tables.DISAGREE_TEXT, quality_review)
-        self.assertNotIn(tables.ARCHIVED_TEXT, quality_review)
-        self.assertIn(tables.FOLLOWUP_STUDY_USER_TEXT, quality_review)
-
-    def test_followup_disagree_archived_tagged_trait(self):
-        """Quality review text is correct for a followup, disagree, archived tagged trait."""
-        tagged_trait = factories.TaggedTraitFactory.create()
-        dcc_review = factories.DCCReviewFactory.create(
-            tagged_trait=tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP)
-        study_response = factories.StudyResponseFactory.create(
-            dcc_review=dcc_review, status=models.StudyResponse.STATUS_DISAGREE)
+        dcc_decision = factories.DCCDecisionFactory.create(
+            dcc_review=dcc_review, decision=models.DCCDecision.DECISION_REMOVE)
         tagged_trait.archive()
         table = self.table_class(models.TaggedTrait.objects.all())
         quality_review = table.render_quality_review(tagged_trait)
@@ -194,6 +212,29 @@ class TaggedTraitQualityReviewColumnMixinTest(TestCase):
         self.assertIn(tables.DISAGREE_TEXT, quality_review)
         self.assertIn(tables.ARCHIVED_TEXT, quality_review)
         self.assertIn(tables.FOLLOWUP_STUDY_USER_TEXT, quality_review)
+        self.assertNotIn(tables.DECISION_CONFIRM_STUDY_USER_TEXT, quality_review)
+        self.assertIn(tables.DECISION_REMOVE_STUDY_USER_TEXT, quality_review)
+
+    def test_followup_dccreview_disagree_studyresponse_confirm_dccdecision(self):
+        """Quality review text is correct for a followup, disagree, archived tagged trait."""
+        tagged_trait = factories.TaggedTraitFactory.create()
+        dcc_review = factories.DCCReviewFactory.create(
+            tagged_trait=tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP)
+        study_response = factories.StudyResponseFactory.create(
+            dcc_review=dcc_review, status=models.StudyResponse.STATUS_DISAGREE)
+        tagged_trait.archive()
+        dcc_decision = factories.DCCDecisionFactory.create(
+            dcc_review=dcc_review, decision=models.DCCDecision.DECISION_CONFIRM)
+        table = self.table_class(models.TaggedTrait.objects.all())
+        quality_review = table.render_quality_review(tagged_trait)
+        self.assertNotIn(tables.CONFIRMED_TEXT, quality_review)
+        self.assertNotIn(tables.FOLLOWUP_TEXT, quality_review)
+        self.assertNotIn(tables.AGREE_TEXT, quality_review)
+        self.assertIn(tables.DISAGREE_TEXT, quality_review)
+        self.assertIn(tables.ARCHIVED_TEXT, quality_review)
+        self.assertIn(tables.FOLLOWUP_STUDY_USER_TEXT, quality_review)
+        self.assertIn(tables.DECISION_CONFIRM_STUDY_USER_TEXT, quality_review)
+        self.assertNotIn(tables.DECISION_REMOVE_STUDY_USER_TEXT, quality_review)
 
 
 class TaggedTraitDCCReviewStatusColumnMixinTest(TestCase):

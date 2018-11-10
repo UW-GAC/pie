@@ -30,6 +30,8 @@ FOLLOWUP_TEXT = 'Needs study followup'
 FOLLOWUP_STUDY_USER_TEXT = 'Flagged for removal'
 DECISION_CONFIRM_TEXT = 'Confirm'
 DECISION_REMOVE_TEXT = 'Remove'
+DECISION_CONFIRM_STUDY_USER_TEXT = 'DCC confirmed'
+DECISION_REMOVE_STUDY_USER_TEXT = 'DCC will remove'
 
 AGREE_CLASS = 'success'
 DISAGREE_CLASS = 'danger'
@@ -109,11 +111,10 @@ class TaggedTraitDetailColumnMixin(tables.Table):
 class TaggedTraitQualityReviewColumnMixin(tables.Table):
     """Mixin to show 'quality review' column in a TaggedTrait table.
 
-    Quality review status includes study response status and archived status.
+    Quality review status includes dcc review status, study response status,
+    dcc decision status, and archived status.
     This column is intended for viewing by study users, and lacks the detail
     that DCC users will want to see.
-    So far, the view on which this is used does not include archived tagged
-    traits, so in practice this part isn't used.
     """
 
     quality_review = tables.Column('Quality review status', accessor='dcc_review.status')
@@ -133,6 +134,14 @@ class TaggedTraitQualityReviewColumnMixin(tables.Table):
                     html += '\n' + STATUS_TEXT_HTML.format(text=AGREE_TEXT, text_class=AGREE_CLASS)
                 elif record.dcc_review.study_response.status == models.StudyResponse.STATUS_DISAGREE:
                     html += '\n' + STATUS_TEXT_HTML.format(text=DISAGREE_TEXT, text_class=DISAGREE_CLASS)
+            if hasattr(record.dcc_review, 'dcc_decision'):
+                # Add status info for dcc decision, if it exists.
+                if record.dcc_review.dcc_decision.decision == models.DCCDecision.DECISION_CONFIRM:
+                    html += '\n' + STATUS_TEXT_HTML.format(
+                        text=DECISION_CONFIRM_STUDY_USER_TEXT, text_class=DECISION_CONFIRM_CLASS)
+                elif record.dcc_review.dcc_decision.decision == models.DCCDecision.DECISION_REMOVE:
+                    html += '\n' + STATUS_TEXT_HTML.format(
+                        text=DECISION_REMOVE_STUDY_USER_TEXT, text_class=DECISION_REMOVE_CLASS)
         # Add status info for archiving.
         if record.archived:
             html += '\n' + STATUS_TEXT_HTML.format(text=ARCHIVED_TEXT, text_class=ARCHIVED_CLASS)
