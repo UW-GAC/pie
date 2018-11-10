@@ -212,29 +212,31 @@ class TaggedTraitArchivedColumnMixin(tables.Table):
             return ''
 
 
-class TaggedTraitDCCReviewButtonMixin(tables.Table):
-    """Mixin to show buttons for reviewing a TaggedTrait.
+class TaggedTraitDCCActionButtonMixin(tables.Table):
+    """Mixin to show buttons for reviewing or deciding a TaggedTrait.
 
-    This column will display a button to either create a new review or update an existing review.
+    This column will display a button to either create a new review or update an existing review,
+    or to create a new dcc decision or update an existing decision.
     """
 
-    review_button = tables.Column(verbose_name='', accessor='pk')
+    dcc_action_button = tables.Column(verbose_name='Actions', accessor='pk', orderable=False)
 
-    def render_review_button(self, record):
-        if not hasattr(record, 'dcc_review'):
-            url = reverse('tags:tagged-traits:pk:dcc-review:new', args=[record.pk])
-            btn_text = "Add a DCC review"
-            btn_class = 'btn-primary'
-        else:
-            if hasattr(record.dcc_review, 'study_response'):
-                return ('')
-            elif record.archived:
-                return ('')
-            else:
-                url = reverse('tags:tagged-traits:pk:dcc-review:update', args=[record.pk])
-                btn_text = "Update DCC review"
-                btn_class = 'btn-warning'
-        html = REVIEW_BUTTON_HTML.format(url=url, btn_text=btn_text, btn_class=btn_class)
+    def render_dcc_action_button(self, record):
+        html = ''
+        if (not hasattr(record, 'dcc_review')) and (not record.archived):
+            html = REVIEW_BUTTON_HTML.format(url=reverse('tags:tagged-traits:pk:dcc-review:new', args=[record.pk]),
+                                             btn_text="Add a DCC review", btn_class='btn-primary')
+        if hasattr(record, 'dcc_review') and (not hasattr(record.dcc_review, 'study_response')):
+            html = REVIEW_BUTTON_HTML.format(url=reverse('tags:tagged-traits:pk:dcc-review:update', args=[record.pk]),
+                                             btn_text="Update DCC review", btn_class='btn-warning')
+        if hasattr(record, 'dcc_review') and hasattr(record.dcc_review, 'dcc_decision'):
+            html = REVIEW_BUTTON_HTML.format(url=reverse('tags:tagged-traits:pk:dcc-decision:update', args=[record.pk]),
+                                             btn_text="Update DCC decision", btn_class='btn-warning')
+        if hasattr(record, 'dcc_review') and hasattr(record.dcc_review, 'study_response') and \
+            (record.dcc_review.study_response.status == models.StudyResponse.STATUS_DISAGREE) and \
+            (not hasattr(record.dcc_review, 'dcc_decision')):
+            html = REVIEW_BUTTON_HTML.format(url=reverse('tags:tagged-traits:pk:dcc-decision:new', args=[record.pk]),
+                                             btn_text="Make DCC decision", btn_class='btn-primary')
         return mark_safe(html)
 
 
@@ -269,7 +271,7 @@ class TaggedTraitTableForStudyTaggers(TaggedTraitDetailColumnMixin, TaggedTraitQ
         fields = ('tag', 'trait', 'description', 'dataset', 'details', 'quality_review', )
 
 
-class TaggedTraitTableForDCCStaff(TaggedTraitDetailColumnMixin, TaggedTraitDCCReviewButtonMixin,
+class TaggedTraitTableForDCCStaff(TaggedTraitDetailColumnMixin, TaggedTraitDCCActionButtonMixin,
                                   TaggedTraitDCCReviewStatusColumnMixin, TaggedTraitStudyResponseStatusColumnMixin,
                                   TaggedTraitDCCDecisionColumnMixin,
                                   TaggedTraitArchivedColumnMixin, TaggedTraitTable):
@@ -280,7 +282,7 @@ class TaggedTraitTableForDCCStaff(TaggedTraitDetailColumnMixin, TaggedTraitDCCRe
     """
 
     class Meta(TaggedTraitTable.Meta):
-        fields = ('tag', 'trait', 'description', 'dataset', 'details', 'review_button', 'dcc_review_status',
+        fields = ('tag', 'trait', 'description', 'dataset', 'details', 'dcc_action_button', 'dcc_review_status',
                   'study_response_status', 'dcc_decision', 'archived', )
 
 
