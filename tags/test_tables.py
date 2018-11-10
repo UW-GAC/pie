@@ -760,9 +760,10 @@ class TaggedTraitDCCDecisionButtonMixinTest(TestCase):
             dcc_review=dcc_review, status=models.StudyResponse.STATUS_DISAGREE)
         table = self.table_class(models.TaggedTrait.objects.all())
         dcc_decision_button_value = table.render_decision_buttons(tagged_trait)
-        self.assertIn(tables.DECISION_CONFIRM_TEXT, dcc_decision_button_value)
-        self.assertIn(tables.DECISION_REMOVE_TEXT, dcc_decision_button_value)
-        self.assertNotIn('Update', dcc_decision_button_value)
+        self.assertIn(
+            reverse('tags:tagged-traits:pk:dcc-decision:new', args=[tagged_trait.pk]), dcc_decision_button_value)
+        self.assertNotIn(
+            reverse('tags:tagged-traits:pk:dcc-decision:update', args=[tagged_trait.pk]), dcc_decision_button_value)
 
     def test_decision_confirm_tagged_trait(self):
         """A tagged trait with decision confirm has the update button."""
@@ -775,9 +776,10 @@ class TaggedTraitDCCDecisionButtonMixinTest(TestCase):
             dcc_review=dcc_review, decision=models.DCCDecision.DECISION_CONFIRM)
         table = self.table_class(models.TaggedTrait.objects.all())
         dcc_decision_button_value = table.render_decision_buttons(tagged_trait)
-        self.assertNotIn(tables.DECISION_CONFIRM_TEXT, dcc_decision_button_value)
-        self.assertNotIn(tables.DECISION_REMOVE_TEXT, dcc_decision_button_value)
-        self.assertIn('Update', dcc_decision_button_value)
+        self.assertNotIn(
+            reverse('tags:tagged-traits:pk:dcc-decision:new', args=[tagged_trait.pk]), dcc_decision_button_value)
+        self.assertIn(
+            reverse('tags:tagged-traits:pk:dcc-decision:update', args=[tagged_trait.pk]), dcc_decision_button_value)
 
     def test_decision_remove_tagged_trait(self):
         """A tagged trait with decision remove has the update button."""
@@ -790,9 +792,10 @@ class TaggedTraitDCCDecisionButtonMixinTest(TestCase):
             dcc_review=dcc_review, decision=models.DCCDecision.DECISION_REMOVE)
         table = self.table_class(models.TaggedTrait.objects.all())
         dcc_decision_button_value = table.render_decision_buttons(tagged_trait)
-        self.assertNotIn(tables.DECISION_CONFIRM_TEXT, dcc_decision_button_value)
-        self.assertNotIn(tables.DECISION_REMOVE_TEXT, dcc_decision_button_value)
-        self.assertIn('Update', dcc_decision_button_value)
+        self.assertNotIn(
+            reverse('tags:tagged-traits:pk:dcc-decision:new', args=[tagged_trait.pk]), dcc_decision_button_value)
+        self.assertIn(
+            reverse('tags:tagged-traits:pk:dcc-decision:update', args=[tagged_trait.pk]), dcc_decision_button_value)
 
 
 class TaggedTraitTableForStudyTaggersTest(TestCase):
@@ -851,129 +854,6 @@ class DCCReviewTableTest(TestCase):
         table = self.table_class(self.tagged_traits)
         self.assertEqual(self.model_class.objects.count(), len(table.rows))
 
-    def test_unreviewed_tagged_trait(self):
-        """Status text is correct for an unreviewed tagged trait."""
-        # Note this kind of tagged trait should not be in this table.
-        tagged_trait = factories.TaggedTraitFactory.create()
-        table = self.table_class(models.TaggedTrait.objects.all())
-        status_text = table.render_study_response(tagged_trait)
-        self.assertNotIn(tables.CONFIRMED_TEXT, status_text)
-        self.assertNotIn(tables.FOLLOWUP_TEXT, status_text)
-        self.assertNotIn(tables.AGREE_TEXT, status_text)
-        self.assertNotIn(tables.DISAGREE_TEXT, status_text)
-        self.assertNotIn(tables.ARCHIVED_TEXT, status_text)
-        self.assertNotIn(tables.FOLLOWUP_STUDY_USER_TEXT, status_text)
-
-    def test_confirmed_tagged_trait(self):
-        """Status text is correct for a confirmed tagged trait."""
-        # Note this kind of tagged trait should not be in this table.
-        tagged_trait = factories.TaggedTraitFactory.create()
-        dcc_review = factories.DCCReviewFactory.create(
-            tagged_trait=tagged_trait, status=models.DCCReview.STATUS_CONFIRMED)
-        table = self.table_class(models.TaggedTrait.objects.all())
-        status_text = table.render_study_response(tagged_trait)
-        self.assertNotIn(tables.CONFIRMED_TEXT, status_text)
-        self.assertNotIn(tables.FOLLOWUP_TEXT, status_text)
-        self.assertNotIn(tables.AGREE_TEXT, status_text)
-        self.assertNotIn(tables.DISAGREE_TEXT, status_text)
-        self.assertNotIn(tables.ARCHIVED_TEXT, status_text)
-        self.assertNotIn(tables.FOLLOWUP_STUDY_USER_TEXT, status_text)
-
-    def test_followup_noresponse_nonarchived_tagged_trait(self):
-        """Status text is correct for a followup tagged trait with no response."""
-        tagged_trait = factories.TaggedTraitFactory.create()
-        dcc_review = factories.DCCReviewFactory.create(
-            tagged_trait=tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP)
-        table = self.table_class(models.TaggedTrait.objects.all())
-        status_text = table.render_study_response(tagged_trait)
-        self.assertNotIn(tables.CONFIRMED_TEXT, status_text)
-        self.assertNotIn(tables.FOLLOWUP_TEXT, status_text)
-        self.assertNotIn(tables.AGREE_TEXT, status_text)
-        self.assertNotIn(tables.DISAGREE_TEXT, status_text)
-        self.assertNotIn(tables.ARCHIVED_TEXT, status_text)
-        self.assertNotIn(tables.FOLLOWUP_STUDY_USER_TEXT, status_text)
-
-    def test_followup_noresponse_archived_tagged_trait(self):
-        """Status text is correct for an archived followup tagged trait with no response."""
-        tagged_trait = factories.TaggedTraitFactory.create()
-        dcc_review = factories.DCCReviewFactory.create(
-            tagged_trait=tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP)
-        tagged_trait.archive()
-        table = self.table_class(models.TaggedTrait.objects.all())
-        status_text = table.render_study_response(tagged_trait)
-        self.assertNotIn(tables.CONFIRMED_TEXT, status_text)
-        self.assertNotIn(tables.FOLLOWUP_TEXT, status_text)
-        self.assertNotIn(tables.AGREE_TEXT, status_text)
-        self.assertNotIn(tables.DISAGREE_TEXT, status_text)
-        self.assertIn(tables.ARCHIVED_TEXT, status_text)
-        self.assertNotIn(tables.FOLLOWUP_STUDY_USER_TEXT, status_text)
-
-    def test_followup_agree_nonarchived_tagged_trait(self):
-        """Status text is correct for a followup, agree, nonarchived tagged trait."""
-        tagged_trait = factories.TaggedTraitFactory.create()
-        dcc_review = factories.DCCReviewFactory.create(
-            tagged_trait=tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP)
-        study_response = factories.StudyResponseFactory.create(
-            dcc_review=dcc_review, status=models.StudyResponse.STATUS_AGREE)
-        table = self.table_class(models.TaggedTrait.objects.all())
-        status_text = table.render_study_response(tagged_trait)
-        self.assertNotIn(tables.CONFIRMED_TEXT, status_text)
-        self.assertNotIn(tables.FOLLOWUP_TEXT, status_text)
-        self.assertIn(tables.AGREE_TEXT, status_text)
-        self.assertNotIn(tables.DISAGREE_TEXT, status_text)
-        self.assertNotIn(tables.ARCHIVED_TEXT, status_text)
-        self.assertNotIn(tables.FOLLOWUP_STUDY_USER_TEXT, status_text)
-
-    def test_followup_agree_archived_tagged_trait(self):
-        """Status text is correct for a followup, agree, archived tagged trait."""
-        tagged_trait = factories.TaggedTraitFactory.create()
-        dcc_review = factories.DCCReviewFactory.create(
-            tagged_trait=tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP)
-        study_response = factories.StudyResponseFactory.create(
-            dcc_review=dcc_review, status=models.StudyResponse.STATUS_AGREE)
-        tagged_trait.archive()
-        table = self.table_class(models.TaggedTrait.objects.all())
-        status_text = table.render_study_response(tagged_trait)
-        self.assertNotIn(tables.CONFIRMED_TEXT, status_text)
-        self.assertNotIn(tables.FOLLOWUP_TEXT, status_text)
-        self.assertIn(tables.AGREE_TEXT, status_text)
-        self.assertNotIn(tables.DISAGREE_TEXT, status_text)
-        self.assertIn(tables.ARCHIVED_TEXT, status_text)
-        self.assertNotIn(tables.FOLLOWUP_STUDY_USER_TEXT, status_text)
-
-    def test_followup_disagree_nonarchived_tagged_trait(self):
-        """Status text is correct for a followup, disagree, nonarchived tagged trait."""
-        tagged_trait = factories.TaggedTraitFactory.create()
-        dcc_review = factories.DCCReviewFactory.create(
-            tagged_trait=tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP)
-        study_response = factories.StudyResponseFactory.create(
-            dcc_review=dcc_review, status=models.StudyResponse.STATUS_DISAGREE)
-        table = self.table_class(models.TaggedTrait.objects.all())
-        status_text = table.render_study_response(tagged_trait)
-        self.assertNotIn(tables.CONFIRMED_TEXT, status_text)
-        self.assertNotIn(tables.FOLLOWUP_TEXT, status_text)
-        self.assertNotIn(tables.AGREE_TEXT, status_text)
-        self.assertIn(tables.DISAGREE_TEXT, status_text)
-        self.assertNotIn(tables.ARCHIVED_TEXT, status_text)
-        self.assertNotIn(tables.FOLLOWUP_STUDY_USER_TEXT, status_text)
-
-    def test_followup_disagree_archived_tagged_trait(self):
-        """Status text is correct for a followup, disagree, archived tagged trait."""
-        tagged_trait = factories.TaggedTraitFactory.create()
-        dcc_review = factories.DCCReviewFactory.create(
-            tagged_trait=tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP)
-        study_response = factories.StudyResponseFactory.create(
-            dcc_review=dcc_review, status=models.StudyResponse.STATUS_DISAGREE)
-        tagged_trait.archive()
-        table = self.table_class(models.TaggedTrait.objects.all())
-        status_text = table.render_study_response(tagged_trait)
-        self.assertNotIn(tables.CONFIRMED_TEXT, status_text)
-        self.assertNotIn(tables.FOLLOWUP_TEXT, status_text)
-        self.assertNotIn(tables.AGREE_TEXT, status_text)
-        self.assertIn(tables.DISAGREE_TEXT, status_text)
-        self.assertIn(tables.ARCHIVED_TEXT, status_text)
-        self.assertNotIn(tables.FOLLOWUP_STUDY_USER_TEXT, status_text)
-
 
 class DCCReviewTableWithStudyResponseButtonsTest(TestCase):
 
@@ -988,6 +868,129 @@ class DCCReviewTableWithStudyResponseButtonsTest(TestCase):
         """Number of rows in table matches number of tagged traits."""
         table = self.table_class(self.tagged_traits)
         self.assertEqual(models.DCCReview.objects.count(), len(table.rows))
+
+    def test_unreviewed_tagged_trait(self):
+        """Status text is correct for an unreviewed tagged trait."""
+        # Note this kind of tagged trait should not be in this table.
+        tagged_trait = factories.TaggedTraitFactory.create()
+        table = self.table_class(models.TaggedTrait.objects.all())
+        status_text = table.render_quality_review(tagged_trait)
+        self.assertNotIn(tables.CONFIRMED_TEXT, status_text)
+        self.assertNotIn(tables.FOLLOWUP_STUDY_USER_TEXT, status_text)
+        self.assertNotIn(tables.AGREE_TEXT, status_text)
+        self.assertNotIn(tables.DISAGREE_TEXT, status_text)
+        self.assertNotIn(tables.ARCHIVED_TEXT, status_text)
+        self.assertNotIn(tables.FOLLOWUP_TEXT, status_text)
+
+    def test_confirmed_tagged_trait(self):
+        """Status text is correct for a confirmed tagged trait."""
+        # Note this kind of tagged trait should not be in this table.
+        tagged_trait = factories.TaggedTraitFactory.create()
+        dcc_review = factories.DCCReviewFactory.create(
+            tagged_trait=tagged_trait, status=models.DCCReview.STATUS_CONFIRMED)
+        table = self.table_class(models.TaggedTrait.objects.all())
+        status_text = table.render_quality_review(tagged_trait)
+        self.assertIn(tables.CONFIRMED_TEXT, status_text)
+        self.assertNotIn(tables.FOLLOWUP_STUDY_USER_TEXT, status_text)
+        self.assertNotIn(tables.AGREE_TEXT, status_text)
+        self.assertNotIn(tables.DISAGREE_TEXT, status_text)
+        self.assertNotIn(tables.ARCHIVED_TEXT, status_text)
+        self.assertNotIn(tables.FOLLOWUP_TEXT, status_text)
+
+    def test_followup_noresponse_nonarchived_tagged_trait(self):
+        """Status text is correct for a followup tagged trait with no response."""
+        tagged_trait = factories.TaggedTraitFactory.create()
+        dcc_review = factories.DCCReviewFactory.create(
+            tagged_trait=tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP)
+        table = self.table_class(models.TaggedTrait.objects.all())
+        status_text = table.render_quality_review(tagged_trait)
+        self.assertNotIn(tables.CONFIRMED_TEXT, status_text)
+        self.assertIn(tables.FOLLOWUP_STUDY_USER_TEXT, status_text)
+        self.assertNotIn(tables.AGREE_TEXT, status_text)
+        self.assertNotIn(tables.DISAGREE_TEXT, status_text)
+        self.assertNotIn(tables.ARCHIVED_TEXT, status_text)
+        self.assertNotIn(tables.FOLLOWUP_TEXT, status_text)
+
+    def test_followup_noresponse_archived_tagged_trait(self):
+        """Status text is correct for an archived followup tagged trait with no response."""
+        tagged_trait = factories.TaggedTraitFactory.create()
+        dcc_review = factories.DCCReviewFactory.create(
+            tagged_trait=tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP)
+        tagged_trait.archive()
+        table = self.table_class(models.TaggedTrait.objects.all())
+        status_text = table.render_quality_review(tagged_trait)
+        self.assertNotIn(tables.CONFIRMED_TEXT, status_text)
+        self.assertIn(tables.FOLLOWUP_STUDY_USER_TEXT, status_text)
+        self.assertNotIn(tables.AGREE_TEXT, status_text)
+        self.assertNotIn(tables.DISAGREE_TEXT, status_text)
+        self.assertIn(tables.ARCHIVED_TEXT, status_text)
+        self.assertNotIn(tables.FOLLOWUP_TEXT, status_text)
+
+    def test_followup_agree_nonarchived_tagged_trait(self):
+        """Status text is correct for a followup, agree, nonarchived tagged trait."""
+        tagged_trait = factories.TaggedTraitFactory.create()
+        dcc_review = factories.DCCReviewFactory.create(
+            tagged_trait=tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP)
+        study_response = factories.StudyResponseFactory.create(
+            dcc_review=dcc_review, status=models.StudyResponse.STATUS_AGREE)
+        table = self.table_class(models.TaggedTrait.objects.all())
+        status_text = table.render_quality_review(tagged_trait)
+        self.assertNotIn(tables.CONFIRMED_TEXT, status_text)
+        self.assertIn(tables.FOLLOWUP_STUDY_USER_TEXT, status_text)
+        self.assertIn(tables.AGREE_TEXT, status_text)
+        self.assertNotIn(tables.DISAGREE_TEXT, status_text)
+        self.assertNotIn(tables.ARCHIVED_TEXT, status_text)
+        self.assertNotIn(tables.FOLLOWUP_TEXT, status_text)
+
+    def test_followup_agree_archived_tagged_trait(self):
+        """Status text is correct for a followup, agree, archived tagged trait."""
+        tagged_trait = factories.TaggedTraitFactory.create()
+        dcc_review = factories.DCCReviewFactory.create(
+            tagged_trait=tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP)
+        study_response = factories.StudyResponseFactory.create(
+            dcc_review=dcc_review, status=models.StudyResponse.STATUS_AGREE)
+        tagged_trait.archive()
+        table = self.table_class(models.TaggedTrait.objects.all())
+        status_text = table.render_quality_review(tagged_trait)
+        self.assertNotIn(tables.CONFIRMED_TEXT, status_text)
+        self.assertIn(tables.FOLLOWUP_STUDY_USER_TEXT, status_text)
+        self.assertIn(tables.AGREE_TEXT, status_text)
+        self.assertNotIn(tables.DISAGREE_TEXT, status_text)
+        self.assertIn(tables.ARCHIVED_TEXT, status_text)
+        self.assertNotIn(tables.FOLLOWUP_TEXT, status_text)
+
+    def test_followup_disagree_nonarchived_tagged_trait(self):
+        """Status text is correct for a followup, disagree, nonarchived tagged trait."""
+        tagged_trait = factories.TaggedTraitFactory.create()
+        dcc_review = factories.DCCReviewFactory.create(
+            tagged_trait=tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP)
+        study_response = factories.StudyResponseFactory.create(
+            dcc_review=dcc_review, status=models.StudyResponse.STATUS_DISAGREE)
+        table = self.table_class(models.TaggedTrait.objects.all())
+        status_text = table.render_quality_review(tagged_trait)
+        self.assertNotIn(tables.CONFIRMED_TEXT, status_text)
+        self.assertIn(tables.FOLLOWUP_STUDY_USER_TEXT, status_text)
+        self.assertNotIn(tables.AGREE_TEXT, status_text)
+        self.assertIn(tables.DISAGREE_TEXT, status_text)
+        self.assertNotIn(tables.ARCHIVED_TEXT, status_text)
+        self.assertNotIn(tables.FOLLOWUP_TEXT, status_text)
+
+    def test_followup_disagree_archived_tagged_trait(self):
+        """Status text is correct for a followup, disagree, archived tagged trait."""
+        tagged_trait = factories.TaggedTraitFactory.create()
+        dcc_review = factories.DCCReviewFactory.create(
+            tagged_trait=tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP)
+        study_response = factories.StudyResponseFactory.create(
+            dcc_review=dcc_review, status=models.StudyResponse.STATUS_DISAGREE)
+        tagged_trait.archive()
+        table = self.table_class(models.TaggedTrait.objects.all())
+        status_text = table.render_quality_review(tagged_trait)
+        self.assertNotIn(tables.CONFIRMED_TEXT, status_text)
+        self.assertIn(tables.FOLLOWUP_STUDY_USER_TEXT, status_text)
+        self.assertNotIn(tables.AGREE_TEXT, status_text)
+        self.assertIn(tables.DISAGREE_TEXT, status_text)
+        self.assertIn(tables.ARCHIVED_TEXT, status_text)
+        self.assertNotIn(tables.FOLLOWUP_TEXT, status_text)
 
     # I could not find a way to test the conditional rendering of buttons in the
     # table, since a request is needed to render the template properly. They are
@@ -1019,9 +1022,10 @@ class TaggedTraitDCCDecisionTable(TestCase):
             dcc_review=dcc_review, status=models.StudyResponse.STATUS_DISAGREE)
         table = self.table_class(models.TaggedTrait.objects.all())
         dcc_decision_button_value = table.render_decision_buttons(tagged_trait)
-        self.assertIn(tables.DECISION_CONFIRM_TEXT, dcc_decision_button_value)
-        self.assertIn(tables.DECISION_REMOVE_TEXT, dcc_decision_button_value)
-        self.assertNotIn('Update', dcc_decision_button_value)
+        self.assertIn(
+            reverse('tags:tagged-traits:pk:dcc-decision:new', args=[tagged_trait.pk]), dcc_decision_button_value)
+        self.assertNotIn(
+            reverse('tags:tagged-traits:pk:dcc-decision:update', args=[tagged_trait.pk]), dcc_decision_button_value)
 
     def test_decision_confirm_tagged_trait(self):
         """A tagged trait with decision confirm has the update button."""
@@ -1034,9 +1038,10 @@ class TaggedTraitDCCDecisionTable(TestCase):
             dcc_review=dcc_review, decision=models.DCCDecision.DECISION_CONFIRM)
         table = self.table_class(models.TaggedTrait.objects.all())
         dcc_decision_button_value = table.render_decision_buttons(tagged_trait)
-        self.assertNotIn(tables.DECISION_CONFIRM_TEXT, dcc_decision_button_value)
-        self.assertNotIn(tables.DECISION_REMOVE_TEXT, dcc_decision_button_value)
-        self.assertIn('Update', dcc_decision_button_value)
+        self.assertNotIn(
+            reverse('tags:tagged-traits:pk:dcc-decision:new', args=[tagged_trait.pk]), dcc_decision_button_value)
+        self.assertIn(
+            reverse('tags:tagged-traits:pk:dcc-decision:update', args=[tagged_trait.pk]), dcc_decision_button_value)
 
     def test_decision_remove_tagged_trait(self):
         """A tagged trait with decision remove has the update button."""
@@ -1049,6 +1054,7 @@ class TaggedTraitDCCDecisionTable(TestCase):
             dcc_review=dcc_review, decision=models.DCCDecision.DECISION_REMOVE)
         table = self.table_class(models.TaggedTrait.objects.all())
         dcc_decision_button_value = table.render_decision_buttons(tagged_trait)
-        self.assertNotIn(tables.DECISION_CONFIRM_TEXT, dcc_decision_button_value)
-        self.assertNotIn(tables.DECISION_REMOVE_TEXT, dcc_decision_button_value)
-        self.assertIn('Update', dcc_decision_button_value)
+        self.assertNotIn(
+            reverse('tags:tagged-traits:pk:dcc-decision:new', args=[tagged_trait.pk]), dcc_decision_button_value)
+        self.assertIn(
+            reverse('tags:tagged-traits:pk:dcc-decision:update', args=[tagged_trait.pk]), dcc_decision_button_value)
