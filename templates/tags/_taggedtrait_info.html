@@ -22,6 +22,7 @@
           <dt>Variable description</dt><dd>{{ tagged_trait.trait.i_description }}</dd>
           <dt>Dataset</dt><dd><a href="{{ tagged_trait.trait.source_dataset.get_absolute_url }}">{{ tagged_trait.trait.source_dataset.dataset_name }}</a></dd>
           <dt>Dataset description</dt><dd>{{ tagged_trait.trait.source_dataset.i_dbgap_description }}</dd>
+          <dt>Variable on dbGaP</dt> <dd><a target="_blank" href="{{ tagged_trait.trait.dbgap_link }}">{{ tagged_trait.trait.full_accession }}</a></dd>
           {# This "if" won't be executed if show_other_tags is unassigned in the context (None). #}
           {% if show_other_tags %} 
             <dt>All phenotype tags</dt>
