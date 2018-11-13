@@ -770,7 +770,12 @@ class DCCReviewUpdate(LoginRequiredMixin, PermissionRequiredMixin, FormValidMess
     redirect_unauthenticated_users = True
     form_class = forms.DCCReviewForm
 
-    def _get_study_responded_message(self):
+    def _get_dcc_decision_exists_warning_message(self):
+        msg = 'Oops! The DCC review for {} cannot be changed because it already has a DCC decision.'.format(
+            self.tagged_trait)
+        return msg
+
+    def _get_study_response_exists_warning_message(self):
         msg = 'Oops! The DCC review for {} cannot be changed because it already has a study response.'.format(
             self.tagged_trait)
         return msg
@@ -791,7 +796,10 @@ class DCCReviewUpdate(LoginRequiredMixin, PermissionRequiredMixin, FormValidMess
             self.messages.warning(self._get_not_reviewed_warning_message())
             return HttpResponseRedirect(reverse('tags:tagged-traits:pk:dcc-review:new', args=[self.tagged_trait.pk]))
         if hasattr(self.object, 'study_response'):
-            self.messages.error(self._get_study_responded_message())
+            self.messages.error(self._get_study_response_exists_warning_message())
+            return HttpResponseRedirect(self.tagged_trait.get_absolute_url())
+        if hasattr(self.object, 'dcc_decision'):
+            self.messages.error(self._get_dcc_decision_exists_warning_message())
             return HttpResponseRedirect(self.tagged_trait.get_absolute_url())
 
     def get(self, request, *args, **kwargs):

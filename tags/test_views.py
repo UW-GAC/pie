@@ -4063,7 +4063,7 @@ class DCCReviewUpdateDCCTestsMixin(object):
         self.assertEqual(len(messages), 1)
         self.assertIn('archived', str(messages[0]))
 
-    def test_cant_get_dcc_review_if_study_has_responded(self):
+    def test_cant_update_dcc_review_if_study_has_responded(self):
         """Posting data redirects with a message if the study has responded."""
         self.tagged_trait.dcc_review.delete()
         dcc_review = factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait,
@@ -4086,6 +4086,36 @@ class DCCReviewUpdateDCCTestsMixin(object):
         dcc_review = factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait,
                                                        status=models.DCCReview.STATUS_FOLLOWUP)
         factories.StudyResponseFactory.create(dcc_review=dcc_review)
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        self.assertRedirects(response, self.tagged_trait.get_absolute_url())
+        # Check for error message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Oops!', str(messages[0]))
+
+    def test_cant_update_dcc_review_if_dcc_decision_exists(self):
+        """Posting data redirects with a message if a dcc decision exists."""
+        self.tagged_trait.dcc_review.delete()
+        dcc_review = factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait,
+                                                       status=models.DCCReview.STATUS_FOLLOWUP)
+        factories.DCCDecisionFactory.create(dcc_review=dcc_review)
+        form_data = {forms.DCCReviewForm.SUBMIT_CONFIRM: 'Confirm', 'comment': ''}
+        response = self.client.post(self.get_url(self.tagged_trait.pk), form_data)
+        self.assertRedirects(response, self.tagged_trait.get_absolute_url())
+        # Did not update the DCCReview for this TaggedTrait.
+        self.tagged_trait.dcc_review.refresh_from_db()
+        self.assertEqual(self.tagged_trait.dcc_review.status, models.DCCReview.STATUS_FOLLOWUP)
+        # Check for error message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Oops!', str(messages[0]))
+
+    def test_get_redirect_if_dcc_decision_exists(self):
+        """Loading the page redirects with a message if the study has responded."""
+        self.tagged_trait.dcc_review.delete()
+        dcc_review = factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait,
+                                                       status=models.DCCReview.STATUS_FOLLOWUP)
+        factories.DCCDecisionFactory.create(dcc_review=dcc_review)
         response = self.client.get(self.get_url(self.tagged_trait.pk))
         self.assertRedirects(response, self.tagged_trait.get_absolute_url())
         # Check for error message.
