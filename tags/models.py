@@ -194,7 +194,7 @@ class DCCDecision(TimeStampedModel):
     DECISION_CONFIRM = 1
     DECISION_CHOICES = ((DECISION_CONFIRM, 'Confirm'), (DECISION_REMOVE, 'Remove'))
     decision = models.IntegerField(choices=DECISION_CHOICES)
-    comment = models.TextField()
+    comment = models.TextField(blank=True)
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
 
     def __str__(self):

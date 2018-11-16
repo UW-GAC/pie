@@ -22,7 +22,7 @@ class Migration(migrations.Migration):
                 ('created', models.DateTimeField(auto_now_add=True)),
                 ('modified', models.DateTimeField(auto_now=True)),
                 ('decision', models.IntegerField(choices=[(1, 'Confirm'), (0, 'Remove')])),
-                ('comment', models.TextField()),
+                ('comment', models.TextField(blank=True)),
                 ('creator', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, to=settings.AUTH_USER_MODEL)),
                 ('dcc_review', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='dcc_decision', to='tags.DCCReview')),
             ],

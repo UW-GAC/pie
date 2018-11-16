@@ -644,6 +644,20 @@ class DCCDecisionBaseForm(forms.ModelForm):
     SUBMIT_CONFIRM = 'confirm'
     SUBMIT_REMOVE = 'remove'
 
+    def clean(self):
+        """Custom cleaning to require a comment."""
+        # I tried implementing this by setting DCCDecision.comment(blank=False), but this led to an issue where modern
+        # browsers prevent a POST request from being submitted if a "required" (html5 tag) field is empty:
+        # https://stackoverflow.com/questions/5392882/why-is-chrome-showing-a-please-fill-out-this-field-tooltip-on-empty-fields
+        # This prevented the SKIP button from working properly. So instead I set comment(blank=True) and am using
+        # this clean method to make sure a non-blank comment is submitted.
+        cleaned_data = super().clean()
+        comment = cleaned_data.get('comment')
+        if comment == '':
+            error = forms.ValidationError('Comment cannot be blank.', code='comment_required')
+            self.add_error('comment', error)
+        return cleaned_data
+
     class Meta:
         model = models.DCCDecision
         fields = ('decision', 'comment', )
