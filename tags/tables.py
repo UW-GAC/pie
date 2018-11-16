@@ -188,8 +188,6 @@ class TaggedTraitDCCDecisionColumnMixin(tables.Table):
     def render_dcc_decision(self, record):
         if not hasattr(record, 'dcc_review'):
             return ''
-        elif not hasattr(record.dcc_review, 'study_response'):
-            return ''
         elif not hasattr(record.dcc_review, 'dcc_decision'):
             return ''
         elif record.dcc_review.dcc_decision.decision == models.DCCDecision.DECISION_CONFIRM:

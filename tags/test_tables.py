@@ -551,6 +551,42 @@ class TaggedTraitDCCDecisionColumnMixinTest(TestCase):
         self.assertNotIn(tables.DECISION_CONFIRM_TEXT, dcc_decision_value)
         self.assertIn(tables.DECISION_REMOVE_TEXT, dcc_decision_value)
 
+    def test_followup_noresponse_decisionconfirm_tagged_trait(self):
+        """DCC decision text is correct for a followup tagged trait with no study response and confirm decision."""
+        tagged_trait = factories.TaggedTraitFactory.create()
+        dcc_review = factories.DCCReviewFactory.create(
+            tagged_trait=tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP)
+        dcc_decision = factories.DCCDecisionFactory.create(
+            dcc_review=dcc_review, decision=models.DCCDecision.DECISION_CONFIRM)
+        table = self.table_class(models.TaggedTrait.objects.all())
+        dcc_decision_value = table.render_dcc_decision(tagged_trait)
+        self.assertNotIn(tables.CONFIRMED_TEXT, dcc_decision_value)
+        self.assertNotIn(tables.FOLLOWUP_TEXT, dcc_decision_value)
+        self.assertNotIn(tables.AGREE_TEXT, dcc_decision_value)
+        self.assertNotIn(tables.DISAGREE_TEXT, dcc_decision_value)
+        self.assertNotIn(tables.ARCHIVED_TEXT, dcc_decision_value)
+        self.assertNotIn(tables.FOLLOWUP_STUDY_USER_TEXT, dcc_decision_value)
+        self.assertIn(tables.DECISION_CONFIRM_TEXT, dcc_decision_value)
+        self.assertNotIn(tables.DECISION_REMOVE_TEXT, dcc_decision_value)
+
+    def test_followup_noresponse_decisionremove_tagged_trait(self):
+        """DCC decision text is correct for a followup tagged trait with no study response and remove decision."""
+        tagged_trait = factories.TaggedTraitFactory.create()
+        dcc_review = factories.DCCReviewFactory.create(
+            tagged_trait=tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP)
+        dcc_decision = factories.DCCDecisionFactory.create(
+            dcc_review=dcc_review, decision=models.DCCDecision.DECISION_REMOVE)
+        table = self.table_class(models.TaggedTrait.objects.all())
+        dcc_decision_value = table.render_dcc_decision(tagged_trait)
+        self.assertNotIn(tables.CONFIRMED_TEXT, dcc_decision_value)
+        self.assertNotIn(tables.FOLLOWUP_TEXT, dcc_decision_value)
+        self.assertNotIn(tables.AGREE_TEXT, dcc_decision_value)
+        self.assertNotIn(tables.DISAGREE_TEXT, dcc_decision_value)
+        self.assertNotIn(tables.ARCHIVED_TEXT, dcc_decision_value)
+        self.assertNotIn(tables.FOLLOWUP_STUDY_USER_TEXT, dcc_decision_value)
+        self.assertNotIn(tables.DECISION_CONFIRM_TEXT, dcc_decision_value)
+        self.assertIn(tables.DECISION_REMOVE_TEXT, dcc_decision_value)
+
 
 class TaggedTraitArchivedColumnMixinTest(TestCase):
 
