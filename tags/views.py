@@ -1153,6 +1153,33 @@ class DCCDecisionMixin(object):
         context['show_other_tags'] = True
         context['other_tags'] = self.tagged_trait.trait.non_archived_tags.all().exclude(pk=self.tagged_trait.tag.pk)
         context['archived_other_tags'] = self.tagged_trait.trait.archived_tags.all()  # Views don't work for archived.
+        # Set context variables for the quality review panel.
+        context['show_dcc_review_add_button'] = False
+        context['show_dcc_review_update_button'] = False
+        context['show_dcc_review_confirmed'] = False
+        context['show_dcc_review_needs_followup'] = True
+        context['show_study_response_status'] = hasattr(self.tagged_trait.dcc_review, 'study_response')
+        context['show_study_agrees'] = context['show_study_response_status'] and \
+            (self.tagged_trait.dcc_review.study_response.status == models.StudyResponse.STATUS_AGREE)
+        context['show_study_disagrees'] = context['show_study_response_status'] and \
+            (self.tagged_trait.dcc_review.study_response.status == models.StudyResponse.STATUS_DISAGREE)
+        context['show_dcc_decision'] = hasattr(self.tagged_trait.dcc_review, 'dcc_decision')
+        context['show_dcc_decision_add_button'] = False
+        context['show_dcc_decision_update_button'] = False
+        context['show_decision_remove'] = context['show_dcc_decision'] and \
+            (self.tagged_trait.dcc_review.dcc_decision.decision == models.DCCDecision.DECISION_REMOVE)
+        context['show_decision_confirm'] = context['show_dcc_decision'] and \
+            (self.tagged_trait.dcc_review.dcc_decision.decision == models.DCCDecision.DECISION_CONFIRM)
+        context['show_decision_comment'] = context['show_dcc_decision']
+        context['show_delete_button'] = False
+        context['show_archived'] = self.tagged_trait.archived
+        if context['show_decision_confirm']:
+            color = 'bg-success'
+        elif context['show_archived']:
+            color = 'bg-danger'
+        else:
+            color = ''
+        context['quality_review_panel_color'] = color
         return context
 
     def get_decision(self):

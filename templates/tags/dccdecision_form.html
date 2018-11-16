@@ -15,46 +15,7 @@
   </h2>
 
   {% include 'tags/_taggedtrait_info.html' with collapse_tag_panel=True %}
-
-  <div class="panel-group">
-    <div class="panel panel-default">
-      <div class="panel-heading">
-        <h4 class="panel-title">
-          <a data-toggle="collapse" href="#collapse-reviewstatus">Quality review status</a>
-        </h4>
-      </div>
-      <div id="collapse-reviewstatus" class="panel-collapse in">
-          <div class="panel-body bg-danger">
-            <p>
-              <span class="glyphicon glyphicon-remove"></span>
-              This tagged variable has been flagged for removal by the DCC for the following reason:<br>
-              <span class="glyphicon glyphicon-remove invisible"></span>
-              <span class="text-muted">{{ tagged_trait.dcc_review.comment }}</span>
-            </p>
-            <p>
-              <span class="glyphicon glyphicon-ok"></span>
-              The study has indicated that the variable should remain tagged for the following reason:<br>
-              <span class="glyphicon glyphicon-ok invisible"></span>
-              <span class="text-muted">{{ tagged_trait.dcc_review.study_response.comment }}</span>
-            </p>
-        {% if show_archived %}
-          <p>
-            <span class="glyphicon glyphicon-remove"></span>
-            The tag has been removed by the DCC.
-          </p>
-        {% endif %}
-        {% if show_dcc_review_update_button %}
-          <a class="btn btn-xs btn-warning" href="{% url 'tags:tagged-traits:pk:dcc-review:update' tagged_trait.pk %}" role="button">
-              <span class="glyphicon glyphicon-sunglasses" aria-hidden="true"></span> Update DCC review
-          </a>
-        {% endif %}
-        </div>
-      </div>
-    </div>
-  </div>
-
-
-
+  {% include 'tags/_taggedtrait_quality_review_panel.html' %}
 
   <div class="panel-group">
     <div class="panel panel-default">
