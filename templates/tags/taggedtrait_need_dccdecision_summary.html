@@ -23,54 +23,8 @@
       tagged variables for the given tag and study combination. Click on the "View all" button to view a table of the
       tagged variables for each tag and study combination and their quality review status.
     </p>
-    <p>OR</p>
-    <p>
-      Click on the <span class="glyphicon glyphicon-ok-circle"></span> button to begin a loop making the final decisions
-      remaining for each of the tagged variables for the given tag and study combination. If the button is missing all
-      decisions have been made for that tag in that study.
-      Click on the <span class="glyphicon glyphicon-list-alt"></span> button to view a table of the
-      tagged variables for each tag and study combination and their quality review status.
-    </p>
   </div>
 
-
-  <h3>{{ study_data.0.study_name }}</h3>
-  <div class="panel panel-default">
-    <div class="table-responsive">
-      <table class='table table-bordered table-striped table-hover'>
-        <thead>
-          <tr>
-            <th>Study</th>
-            <th>Tags requiring decisions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for study_data in grouped_study_tag_counts %}
-          <tr>
-            <td>{{ study_data.0.study_name }}</td>
-            <td>
-              {% for tag_data in study_data.1 %}
-                <div class="btn-group btn-group-xs">
-                  <button type="button" class="btn btn-default">
-                    {{ tag_data.tag_name }}
-                    <span class="badge">{{ tag_data.tt_total }} total</span>
-                    <span class="badge">{{ tag_data.tt_decision_required_count }} rem.</span>
-                  </button>
-                  {% if tag_data.tt_decision_required_count > 0 %}
-                    <a href="{% url 'tags:tag:study:begin-dcc-decision' tag_data.tag_pk study_data.0.study_pk %}"
-                       class="btn btn-default"><span class="glyphicon glyphicon-ok-circle"></span></a>
-                  {% endif %}
-                  <a href="{% url 'tags:tag:study:need-decision' tag_data.tag_pk study_data.0.study_pk %}"
-                     class="btn btn-default"><span class="glyphicon glyphicon-list-alt"></span></a>
-                </div>
-              {% endfor %}
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </div>
 
   {% for study_data in grouped_study_tag_counts %}
     <h3>{{ study_data.0.study_name }}</h3>
