@@ -467,7 +467,9 @@ class DCCReviewMixin(object):
         # Add context variables to control display of tags in _taggedtrait_info panel.
         context['show_other_tags'] = True
         context['other_tags'] = self.tagged_trait.trait.non_archived_tags.all().exclude(pk=self.tagged_trait.tag.pk)
-        context['archived_other_tags'] = self.tagged_trait.trait.archived_tags.all()  # Views don't work for archived.
+        # Views don't work for archived.
+        context['archived_other_tags'] = self.tagged_trait.trait.archived_tags.all().exclude(
+            pk=self.tagged_trait.tag.pk)
         return context
 
     def get_review_status(self):
@@ -1152,7 +1154,9 @@ class DCCDecisionMixin(object):
         # Add context variables to control display of tags in _taggedtrait_info panel.
         context['show_other_tags'] = True
         context['other_tags'] = self.tagged_trait.trait.non_archived_tags.all().exclude(pk=self.tagged_trait.tag.pk)
-        context['archived_other_tags'] = self.tagged_trait.trait.archived_tags.all()  # Views don't work for archived.
+        # Views don't work for archived.
+        context['archived_other_tags'] = self.tagged_trait.trait.archived_tags.all().exclude(
+            pk=self.tagged_trait.tag.pk)
         # Set context variables for the quality review panel.
         context['show_dcc_review_add_button'] = False
         context['show_dcc_review_update_button'] = False

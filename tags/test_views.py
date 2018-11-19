@@ -3690,6 +3690,16 @@ class DCCReviewByTagAndStudyDCCTestsMixin(object):
         self.assertIn(another_tagged_trait.tag.title, content)
         self.assertIn(self.tagged_trait.tag.title, content)
 
+    def test_shows_tag_only_once_when_it_is_archived(self):
+        """The tag is only shown once, even when the tagged variable is archived."""
+        self.tagged_trait.archive()
+        response = self.client.get(self.get_url())
+        context = response.context
+        self.assertTrue(context['show_other_tags'])
+        content = str(response.content)
+        self.assertNotIn(self.tagged_trait.tag, context['other_tags'])
+        self.assertNotIn(self.tagged_trait.tag, context['archived_other_tags'])
+
 
 class DCCReviewByTagAndStudyDCCAnalystTest(DCCReviewByTagAndStudyDCCTestsMixin, DCCAnalystLoginTestCase):
 
@@ -6865,6 +6875,16 @@ class DCCDecisionByTagAndStudyDCCTestsMixin(object):
         self.assertIn(another_tagged_trait.tag.title, content)
         self.assertIn(self.tagged_trait.tag.title, content)
 
+    def test_shows_tag_only_once_when_it_is_archived(self):
+        """The tag is only shown once, even when the tagged variable is archived."""
+        self.tagged_trait.archive()
+        response = self.client.get(self.get_url())
+        context = response.context
+        self.assertTrue(context['show_other_tags'])
+        content = str(response.content)
+        self.assertNotIn(self.tagged_trait.tag, context['other_tags'])
+        self.assertNotIn(self.tagged_trait.tag, context['archived_other_tags'])
+
     def test_archives_tagged_trait_with_dccdecision_remove(self):
         """Creating a remove DCCDecision archives the tagged trait."""
         self.assertFalse(self.tagged_trait.archived)
@@ -7723,6 +7743,16 @@ class DCCDecisionUpdateDCCTestsMixin(object):
         content = str(response.content)
         self.assertIn(another_tagged_trait.tag.title, content)
         self.assertIn(self.tagged_trait.tag.title, content)
+
+    def test_shows_tag_only_once_when_it_is_archived(self):
+        """The tag is only shown once, even when the tagged variable is archived."""
+        self.tagged_trait.archive()
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        context = response.context
+        self.assertTrue(context['show_other_tags'])
+        content = str(response.content)
+        self.assertNotIn(self.tagged_trait.tag, context['other_tags'])
+        self.assertNotIn(self.tagged_trait.tag, context['archived_other_tags'])
 
     def test_archives_tagged_trait_changed_from_confirm_to_remove(self):
         """Updating a DCCDecision from confirm to remove archives the tagged trait."""
