@@ -662,7 +662,7 @@ class DCCDecisionBaseForm(forms.ModelForm):
         model = models.DCCDecision
         fields = ('decision', 'comment', )
         help_texts = {
-            'comment': 'Add a comment explaining why you chose to confirm or remove this tagged variable.'
+            'comment': 'Add a comment explaining why you decided to confirm or remove this tagged variable.'
         }
         widgets = {
             'decision': forms.HiddenInput

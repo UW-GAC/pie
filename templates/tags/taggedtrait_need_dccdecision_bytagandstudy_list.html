@@ -7,7 +7,7 @@
 {% endblock head_title %}
 
 {% block title %}
-  Made final decisions
+  Final decisions
 {% endblock title %}
 
 {% block subtitle %}
@@ -18,10 +18,12 @@
 {% block before_table %}
   <div class="well">
     <p>
-      Detailed explanation here.
-    </p>
-    <p>
-      Variable and dataset descriptions can be seen by mousing over the variable name.
+      Study representatives have responded to tagged variables that were flagged for removal during initial quality
+      review by the DCC. If they agreed to remove the tag from the variable, the tagged variable was immediately
+      archived. If they disagreed, they provided an explanation for why the tagged variable should remain, and these
+      tagged variables are listed in the table below. You will need to provide a final decision on whether or not
+      to keep the tagged variable on behalf of the DCC. Tagged variables are automatically archived after a decision
+      to remove.
     </p>
   </div>
   {% include 'tags/_tag_panel.html' with tag=tag is_collapsed=False %}

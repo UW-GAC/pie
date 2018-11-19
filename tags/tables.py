@@ -183,7 +183,7 @@ class TaggedTraitStudyResponseStatusColumnMixin(tables.Table):
 class TaggedTraitDCCDecisionColumnMixin(tables.Table):
     """Mixin to show 'DCC decision' column in a TaggedTrait table."""
 
-    dcc_decision = tables.Column('DCC decision', accessor='dcc_review.dcc_decision.decision')
+    dcc_decision = tables.Column('Final decision by DCC', accessor='dcc_review.dcc_decision.decision')
 
     def render_dcc_decision(self, record):
         if not hasattr(record, 'dcc_review'):
@@ -229,12 +229,12 @@ class TaggedTraitDCCActionButtonMixin(tables.Table):
                                              btn_text="Update DCC review", btn_class='btn-warning')
         if hasattr(record, 'dcc_review') and hasattr(record.dcc_review, 'dcc_decision'):
             html = REVIEW_BUTTON_HTML.format(url=reverse('tags:tagged-traits:pk:dcc-decision:update', args=[record.pk]),
-                                             btn_text="Update DCC decision", btn_class='btn-warning')
+                                             btn_text="Update final decision", btn_class='btn-warning')
         if hasattr(record, 'dcc_review') and hasattr(record.dcc_review, 'study_response') and \
             (record.dcc_review.study_response.status == models.StudyResponse.STATUS_DISAGREE) and \
             (not hasattr(record.dcc_review, 'dcc_decision')):
             html = REVIEW_BUTTON_HTML.format(url=reverse('tags:tagged-traits:pk:dcc-decision:new', args=[record.pk]),
-                                             btn_text="Make DCC decision", btn_class='btn-primary')
+                                             btn_text="Make final decision", btn_class='btn-primary')
         return mark_safe(html)
 
 
@@ -250,10 +250,10 @@ class TaggedTraitDCCDecisionButtonMixin(tables.Table):
         # Have an update button if a decision already exists.
         if hasattr(record.dcc_review, 'dcc_decision'):
             html = REVIEW_BUTTON_HTML.format(url=reverse('tags:tagged-traits:pk:dcc-decision:update', args=[record.pk]),
-                                             btn_text='Update decision', btn_class='btn-warning')
+                                             btn_text='Update final decision', btn_class='btn-warning')
         else:
             html = REVIEW_BUTTON_HTML.format(url=reverse('tags:tagged-traits:pk:dcc-decision:new', args=[record.pk]),
-                                             btn_text='Make decision', btn_class='btn-primary')
+                                             btn_text='Make final decision', btn_class='btn-primary')
         return mark_safe(html)
 
 
