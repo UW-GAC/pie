@@ -18,6 +18,11 @@
       tagged variables are summarized in the table below. You will need to provide a final decision on whether or not
       to keep the tagged variable on behalf of the DCC.
     </p>
+    <p>
+      Click on the "Make final decisions" button to begin a loop making the final decisions remaining for each of the
+      tagged variables for the given tag and study combination. Click on the "View all" button to view a table of the
+      tagged variables for each tag and study combination and their quality review status.
+    </p>
   </div>
 
   {% for study_data in grouped_study_tag_counts %}
@@ -49,7 +54,7 @@
               {% endif %}
               <a class="btn btn-xs btn-info"
                  href="{% url 'tags:tag:study:need-decision' tag_data.tag_pk study_data.0.study_pk %}"
-                 role="button">View decisions</a>
+                 role="button">View all</a>
               </td>
             </tr>
             {% endfor %}
