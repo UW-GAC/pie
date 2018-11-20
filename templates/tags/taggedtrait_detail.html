@@ -33,7 +33,7 @@
       once the tagged trait is deleted the detail page won't exist.
     {% endcomment %}
     <a class="btn btn-danger" href="{% url 'tags:tagged-traits:pk:delete' tagged_trait.pk %}?next={{ request.path }}" role="button">
-        <span class="glyphicon glyphicon-remove" aria-hidden="true"></span> Remove tag
+        <span class="glyphicon glyphicon-remove" aria-hidden="true"></span> Remove tagged variable
     </a>
   {% endif %}
 {% endblock after_panel %}
