@@ -223,7 +223,7 @@ class TaggedTraitDCCActionButtonMixin(tables.Table):
         html = ''
         if (not hasattr(record, 'dcc_review')) and (not record.archived):
             html = REVIEW_BUTTON_HTML.format(url=reverse('tags:tagged-traits:pk:dcc-review:new', args=[record.pk]),
-                                             btn_text="Add a DCC review", btn_class='btn-primary')
+                                             btn_text="Add DCC review", btn_class='btn-primary')
         if hasattr(record, 'dcc_review') and (not hasattr(record.dcc_review, 'study_response')):
             html = REVIEW_BUTTON_HTML.format(url=reverse('tags:tagged-traits:pk:dcc-review:update', args=[record.pk]),
                                              btn_text="Update DCC review", btn_class='btn-warning')
