@@ -60,6 +60,7 @@
 
 
 from django.apps import apps
+from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from django.urls import reverse
 from django.utils.text import Truncator
@@ -216,7 +217,16 @@ class Study(SourceDBTimeStampedModel):
 
     def get_latest_version(self):
         """Return the most recent SourceStudyVersion linked to this study."""
-        return self.sourcestudyversion_set.filter(i_is_deprecated=False).latest('i_version')
+        try:
+            version = self.sourcestudyversion_set.filter(
+                i_is_deprecated=False
+            ).order_by(  # We can't use "latest" since it only accepts one field in Django 1.11.
+                '-i_version',
+                '-i_date_added'
+            ).first()
+        except ObjectDoesNotExist:
+            return None
+        return version
 
     def get_latest_version_link(self):
         """Return a dbGaP link to the page for the latest SourceStudyVersion."""
@@ -329,6 +339,22 @@ class SourceDataset(SourceDBTimeStampedModel):
             description = Truncator(self.i_dbgap_description).words(max_popover_words)
         return POPOVER_URL_HTML.format(url=self.get_absolute_url(), popover=description,
                                        name=self.dataset_name)
+
+    def get_latest_version(self):
+        """Find the most recent version of this dataset."""
+        study = self.source_study_version.study
+        current_study_version = self.source_study_version.study.get_latest_version()
+        if current_study_version is None:
+            return None
+        # Find the same dataset associated with the current study version.
+        try:
+            current_dataset = SourceDataset.objects.get(
+                source_study_version=current_study_version,
+                i_accession=self.i_accession
+            )
+        except ObjectDoesNotExist:
+            return None
+        return current_dataset
 
 
 class HarmonizedTraitSet(SourceDBTimeStampedModel):
@@ -540,6 +566,21 @@ class SourceTrait(Trait):
             description = Truncator(self.i_description).words(max_popover_words)
         return POPOVER_URL_HTML.format(url=self.get_absolute_url(), popover=description,
                                        name=self.i_trait_name)
+
+    def get_latest_version(self):
+        """Return the most recent version of a trait."""
+        current_study_version = self.source_dataset.source_study_version.study.get_latest_version()
+        if current_study_version is None:
+            return None
+        # Find the same trait associated with the current study version.
+        try:
+            current_trait = SourceTrait.objects.get(
+                source_dataset__source_study_version=current_study_version,
+                i_dbgap_variable_accession=self.i_dbgap_variable_accession
+            )
+        except ObjectDoesNotExist:
+            return None
+        return current_trait
 
 
 class HarmonizedTrait(Trait):

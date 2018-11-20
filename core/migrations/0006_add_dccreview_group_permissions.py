@@ -26,10 +26,10 @@ def set_permissions_for_dccreview(apps, schema_editor):
     Permission = apps.get_model('auth', 'Permission')
     dcc_review_permissions = Permission.objects.filter(content_type__app_label='tags',
                                                        content_type__model='DCCReview')
-    # Give developers all permissions on the Profile model.
+    # Give developers all permissions on the DCCReview model.
     developers = Group.objects.get(name='dcc_developers')
     developers.permissions.add(*dcc_review_permissions)
-    # Give analysts change permissions on the Profile model.
+    # Give analysts all permissions on the DCCReview model.
     analysts = Group.objects.get(name='dcc_analysts')
     analysts.permissions.add(*dcc_review_permissions)
 
@@ -40,10 +40,10 @@ def delete_permissions_for_dccreview(apps, schema_editor):
     Permission = apps.get_model('auth', 'Permission')
     dcc_review_permissions = Permission.objects.filter(content_type__app_label='tags',
                                                        content_type__model='DCCReview')
-    # Revoke all permissions on the Profile model from developers.
+    # Revoke all permissions on the DCCReview model from developers.
     developers = Group.objects.get(name='dcc_developers')
     developers.permissions.remove(*dcc_review_permissions)
-    # Revoke change permissions on the Profile model from analysts.
+    # Revoke change permissions on the DCCReview model from analysts.
     analysts = Group.objects.get(name='dcc_analysts')
     analysts.permissions.remove(*dcc_review_permissions)
 

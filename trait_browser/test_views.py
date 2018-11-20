@@ -661,6 +661,39 @@ class SourceDatasetDetailTest(UserLoginTestCase):
         self.assertIn('trait_table', context)
         self.assertIsInstance(context['trait_table'], tables.SourceTraitDatasetTable)
         self.assertIn('trait_count', context)
+        self.assertIn('show_deprecated_message', context)
+        self.assertFalse(context['show_deprecated_message'])
+        self.assertNotIn('deprecation_message', context)
+
+    def test_context_deprecated_dataset_with_no_newer_version(self):
+        """View has appropriate deprecation message with no newer version."""
+        sv = self.dataset.source_study_version
+        sv.i_is_deprecated = True
+        sv.save()
+        response = self.client.get(self.get_url(self.dataset.pk))
+        context = response.context
+        self.assertIn('show_deprecated_message', context)
+        self.assertTrue(context['show_deprecated_message'])
+        self.assertIn('deprecation_message', context)
+        self.assertIn("was removed from the most recent study version", context['deprecation_message'])
+
+    def test_context_deprecated_dataset_with_newer_version(self):
+        """View has appropriate deprecation message with a newer version."""
+        sv = self.dataset.source_study_version
+        sv.i_is_deprecated = True
+        sv.save()
+        current_dataset = factories.SourceDatasetFactory.create(
+            source_study_version__study=sv.study,
+            i_accession=self.dataset.i_accession,
+            i_version=self.dataset.i_version
+        )
+        response = self.client.get(self.get_url(self.dataset.pk))
+        context = response.context
+        self.assertIn('show_deprecated_message', context)
+        self.assertTrue(context['show_deprecated_message'])
+        self.assertIn('deprecation_message', context)
+        self.assertIn("There is a newer version", context['deprecation_message'])
+        self.assertIn(current_dataset.get_absolute_url(), context['deprecation_message'])
 
 
 class SourceDatasetListTest(UserLoginTestCase):
@@ -1966,6 +1999,39 @@ class SourceTraitDetailTest(UserLoginTestCase):
                          list(self.trait.all_taggedtraits.non_archived()))
         self.assertIn('user_is_study_tagger', context)
         self.assertFalse(context['user_is_study_tagger'])
+        self.assertIn('show_deprecated_message', context)
+        self.assertFalse(context['show_deprecated_message'])
+        self.assertNotIn('deprecation_message', context)
+
+    def test_context_deprecated_trait_with_no_newer_version(self):
+        """View has appropriate deprecation message with no newer version."""
+        sv = self.trait.source_dataset.source_study_version
+        sv.i_is_deprecated = True
+        sv.save()
+        response = self.client.get(self.get_url(self.trait.pk))
+        context = response.context
+        self.assertIn('show_deprecated_message', context)
+        self.assertTrue(context['show_deprecated_message'])
+        self.assertIn('deprecation_message', context)
+        self.assertIn("was removed from the most recent study version", context['deprecation_message'])
+
+    def test_context_deprecated_trait_with_newer_version(self):
+        """View has appropriate deprecation message with a newer version."""
+        sv = self.trait.source_dataset.source_study_version
+        sv.i_is_deprecated = True
+        sv.save()
+        current_dataset = factories.SourceTraitFactory.create(
+            source_dataset__source_study_version__study=sv.study,
+            i_dbgap_variable_accession=self.trait.i_dbgap_variable_accession,
+            i_dbgap_variable_version=self.trait.i_dbgap_variable_version
+        )
+        response = self.client.get(self.get_url(self.trait.pk))
+        context = response.context
+        self.assertIn('show_deprecated_message', context)
+        self.assertTrue(context['show_deprecated_message'])
+        self.assertIn('deprecation_message', context)
+        self.assertIn("There is a newer version", context['deprecation_message'])
+        self.assertIn(current_dataset.get_absolute_url(), context['deprecation_message'])
 
     def test_no_tagged_trait_remove_button(self):
         """The tag removal button shows up."""
@@ -2071,6 +2137,16 @@ class SourceTraitDetailPhenotypeTaggerTest(PhenotypeTaggerLoginTestCase):
         self.assertTrue(context['show_tag_button'])
         self.assertContains(response, reverse('trait_browser:source:traits:tagging', kwargs={'pk': self.trait.pk}))
 
+    def test_no_tagging_button_if_deprecated(self):
+        """A phenotype tagger doesn't see a button to add tags if the trait is deprecated."""
+        study_version = self.trait.source_dataset.source_study_version
+        study_version.i_is_deprecated = True
+        study_version.save()
+        response = self.client.get(self.get_url(self.trait.pk))
+        context = response.context
+        self.assertFalse(context['show_tag_button'])
+        self.assertNotContains(response, reverse('trait_browser:source:traits:tagging', kwargs={'pk': self.trait.pk}))
+
     def test_user_is_study_tagger_true(self):
         """user_is_study_tagger is true in the view's context."""
         response = self.client.get(self.get_url(self.trait.pk))
@@ -2156,6 +2232,16 @@ class SourceTraitDetailDCCAnalystTest(DCCAnalystLoginTestCase):
         context = response.context
         self.assertTrue(context['show_tag_button'])
         self.assertContains(response, reverse('trait_browser:source:traits:tagging', kwargs={'pk': self.trait.pk}))
+
+    def test_no_tagging_button_if_deprecated(self):
+        """A phenotype tagger doesn't see a button to add tags if the trait is deprecated."""
+        study_version = self.trait.source_dataset.source_study_version
+        study_version.i_is_deprecated = True
+        study_version.save()
+        response = self.client.get(self.get_url(self.trait.pk))
+        context = response.context
+        self.assertFalse(context['show_tag_button'])
+        self.assertNotContains(response, reverse('trait_browser:source:traits:tagging', kwargs={'pk': self.trait.pk}))
 
     def test_user_is_study_tagger_false(self):
         """user_is_study_tagger is false in the view's context."""
@@ -2439,6 +2525,30 @@ class PhenotypeTaggerSourceTraitTaggingTest(PhenotypeTaggerLoginTestCase):
         self.assertEqual(len(messages), 1)
         self.assertTrue('Oops!' in str(messages[0]))
 
+    def test_get_redirect_deprecated_traits(self):
+        """Redirects to the detail page when attempting to tag a deprecated source trait."""
+        sv = self.trait.source_dataset.source_study_version
+        sv.i_is_deprecated = True
+        sv.save()
+        response = self.client.get(self.get_url(self.trait.pk))
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, self.trait.get_absolute_url())
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertTrue('Oops!' in str(messages[0]))
+
+    def test_post_redirect_deprecated_traits(self):
+        """Redirects to the detail page when attempting to tag a deprecated source trait."""
+        sv = self.trait.source_dataset.source_study_version
+        sv.i_is_deprecated = True
+        sv.save()
+        response = self.client.post(self.get_url(self.trait.pk), {'tag': self.tag.pk})
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, self.trait.get_absolute_url())
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertTrue('Oops!' in str(messages[0]))
+
 
 class DCCAnalystSourceTraitTaggingTest(DCCAnalystLoginTestCase):
 
@@ -2549,6 +2659,30 @@ class DCCAnalystSourceTraitTaggingTest(DCCAnalystLoginTestCase):
         tagged_trait = TaggedTraitFactory.create(tag=self.tag, trait=self.trait, archived=True)
         response = self.client.post(self.get_url(self.trait.pk), {'tag': self.tag.pk, })
         self.assertEqual(response.status_code, 200)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertTrue('Oops!' in str(messages[0]))
+
+    def test_get_redirect_deprecated_traits(self):
+        """Redirects to the detail page when attempting to tag a deprecated source trait."""
+        sv = self.trait.source_dataset.source_study_version
+        sv.i_is_deprecated = True
+        sv.save()
+        response = self.client.get(self.get_url(self.trait.pk))
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, self.trait.get_absolute_url())
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertTrue('Oops!' in str(messages[0]))
+
+    def test_post_redirect_deprecated_traits(self):
+        """Redirects to the detail page when attempting to tag a deprecated source trait."""
+        sv = self.trait.source_dataset.source_study_version
+        sv.i_is_deprecated = True
+        sv.save()
+        response = self.client.post(self.get_url(self.trait.pk), {'tag': self.tag.pk})
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, self.trait.get_absolute_url())
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
         self.assertTrue('Oops!' in str(messages[0]))

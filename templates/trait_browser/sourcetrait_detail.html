@@ -12,7 +12,15 @@
 
 {% block subtitle %}
   study variable details
-{% endblock subtitle %}
+  {% endblock subtitle %}
+
+{% block before_panel %}
+  {% if show_deprecated_message %}
+  <div class="alert alert-danger" role="alert">
+    {{ deprecation_message }}
+  </div>
+  {% endif %}
+{% endblock before_panel %}
 
 {% block detail_fields %}
   <dt>Description</dt> <dd>{{ source_trait.i_description }}</dd>

@@ -1,0 +1,112 @@
+{# Includable snippet to display quality review status information for a tagged trait. #}
+{% comment %}
+  Usage: {% include 'tags/_taggedtrait_quality_review_panel.html' %}
+  Required context variables:
+      show_dcc_review_add_button
+      show_dcc_review_update_button
+      show_dcc_review_confirmed
+      show_dcc_review_needs_followup
+      show_study_response_status
+      show_study_agrees
+      show_study_disagrees
+      show_dcc_decision
+      show_dcc_decision_add_button
+      show_dcc_decision_update_button
+      show_decision_remove
+      show_decision_confirm
+      show_decision_comment
+      show_delete_button
+      show_archived
+      quality_review_panel_color
+{% endcomment %}
+
+<div class="panel-group">
+  <div class="panel panel-default">
+    <div class="panel-heading">
+      <h4 class="panel-title">
+        <a data-toggle="collapse" href="#collapse-reviewstatus">Quality review status</a>
+      </h4>
+    </div>
+    <div id="collapse-reviewstatus" class="panel-collapse in">
+      <div class="panel-body {{ quality_review_panel_color }}">
+      {% if show_dcc_review_confirmed %}
+          <p>
+            <span class="glyphicon glyphicon-ok"></span>
+            This tagged variable has been confirmed by the DCC.
+          </p>
+      {% elif show_dcc_review_needs_followup %}
+          <p>
+            <span class="glyphicon glyphicon-remove"></span>
+            This tagged variable has been flagged for removal by the DCC for the following reason:<br>
+            <span class="glyphicon glyphicon-remove invisible"></span>
+            <span class="text-muted">C{{ tagged_trait.dcc_review.comment }}</span>
+          </p>
+      {% else %}
+        <div class="panel-body">
+          <p>
+            This tagged variable has not yet been reviewed by the DCC.
+          </p>
+      {% endif %}
+      {% if show_study_response_status %}
+        {% if show_study_disagrees %}
+          <p>
+            <span class="glyphicon glyphicon-ok"></span>
+            The study has indicated that this variable should remain tagged for the following reason:<br>
+            <span class="glyphicon glyphicon-ok invisible"></span>
+            <span class="text-muted">{{ tagged_trait.dcc_review.study_response.comment }}</span>
+          </p>
+        {% endif %}
+        {% if show_study_agrees %}
+          <p>
+            <span class="glyphicon glyphicon-remove"></span>
+            The study has agreed that this tagged variable should be removed.
+          </p>
+        {% endif %}
+      {% endif %}
+      {% if show_dcc_decision %}
+        <p>
+        {% if show_decision_confirm %}
+            <span class="glyphicon glyphicon-ok"></span>
+            This tagged variable has been confirmed by the DCC.
+        {% endif %}
+        {% if show_decision_remove %}
+            <span class="glyphicon glyphicon-remove"></span>
+            This tagged variable will be removed by the DCC.
+        {% endif %}
+        {% if show_decision_comment %}
+          <br>
+          <span class="glyphicon glyphicon-ok invisible"></span>
+          <span class="text-muted">{{ tagged_trait.dcc_review.dcc_decision.comment }}</span>
+        {% endif %}
+        </p>
+      {% endif %}
+      {% if show_archived %}
+        <p>
+          <span class="glyphicon glyphicon-remove"></span>
+          This tagged variable has been removed by the DCC.
+        </p>
+      {% endif %}
+      {% if show_dcc_review_add_button %}
+        <a class="btn btn-xs btn-primary" href="{% url 'tags:tagged-traits:pk:dcc-review:new' tagged_trait.pk %}" role="button">
+            <span class="glyphicon glyphicon-sunglasses" aria-hidden="true"></span> Add DCC review for this tagged variable
+        </a>
+      {% endif %}
+      {% if show_dcc_review_update_button %}
+        <a class="btn btn-xs btn-warning" href="{% url 'tags:tagged-traits:pk:dcc-review:update' tagged_trait.pk %}" role="button">
+            <span class="glyphicon glyphicon-sunglasses" aria-hidden="true"></span> Update DCC review for this tagged variable
+        </a>
+      {% endif %}
+      {% if show_dcc_decision_add_button %}
+        <a class="btn btn-xs btn-primary" href="{% url 'tags:tagged-traits:pk:dcc-decision:new' tagged_trait.pk %}" role="button">
+            <span class="glyphicon glyphicon-ok-circle" aria-hidden="true"></span> Make final decision for this tagged variable
+        </a>
+      {% endif %}
+      {% if show_dcc_decision_update_button %}
+        <a class="btn btn-xs btn-warning" href="{% url 'tags:tagged-traits:pk:dcc-decision:update' tagged_trait.pk %}" role="button">
+            <span class="glyphicon glyphicon-ok-circle" aria-hidden="true"></span> Update final decision for this tagged variable
+        </a>
+      {% endif %}
+      </div>
+    </div>
+  </div>
+</div>

@@ -28,18 +28,16 @@ def create_default_groups(apps, schema_editor):
     # Create the dcc_analysts group.
     analysts = Group.objects.get_or_create(name='dcc_analysts')[0]
     # Since only trait_browser is installed so far, there are no models to give permission to.
-    # Create the dcc_developers group.
+    # Create the dcc_developers group and add permissions for flatpages.
     developers = Group.objects.get_or_create(name='dcc_developers')[0]
-    developers.permissions.add(*Permission.objects.exclude(
-        content_type__app_label__in=['admin', 'auth', custom_user_app, 'contenttypes', 'sites', 'trait_browser']))
-    developers.permissions.remove(*Permission.objects.filter(
-        content_type__app_label__in=['admin', 'auth', custom_user_app, 'contenttypes', 'sites', 'trait_browser']))
+    flatpages_permissions = Permission.objects.filter(
+        content_type__app_label='flatpages', content_type__model='flatpage')
+    developers.permissions.add(*flatpages_permissions)
 
 
 def delete_default_groups(apps, schema_editor):
     """Delete the default DCC developer and analyst groups."""
     Group = apps.get_model('auth', 'Group')
-    Permission = apps.get_model('auth', 'Permission')
     # Delete the dcc_analysts group.
     analysts = Group.objects.get(name='dcc_analysts')
     analysts.delete()

@@ -1,10 +1,11 @@
 """Test forms for the tags app."""
 
 from django.contrib.auth.models import Group
+from django.forms.forms import NON_FIELD_ERRORS
 from django.test import TestCase
 
 from core.factories import UserFactory
-from trait_browser.factories import SourceTraitFactory, StudyFactory
+from trait_browser.factories import SourceStudyVersionFactory, SourceTraitFactory, StudyFactory
 
 from . import forms
 from . import factories
@@ -121,6 +122,17 @@ class TaggedTraitFormTest(TestCase):
         self.assertTrue(form.has_error('trait'))
         self.assertFalse(form.has_error('tag'))
 
+    def test_invalid_trait_deprecated(self):
+        """Form is invalid when the selected trait is in a deprecated study version."""
+        sv = self.trait.source_dataset.source_study_version
+        sv.i_is_deprecated = True
+        sv.save()
+        form_data = {'trait': self.trait.pk, 'tag': self.tag.pk}
+        form = self.form_class(data=form_data, user=self.user)
+        self.assertFalse(form.is_valid())
+        self.assertTrue(form.has_error('trait'))
+        self.assertFalse(form.has_error('tag'))
+
 
 class TaggedTraitAdminFormTest(TestCase):
     form_class = forms.TaggedTraitAdminForm
@@ -162,6 +174,17 @@ class TaggedTraitAdminFormTest(TestCase):
     def test_invalid_taggedtrait_archived(self):
         """Form is invalid when the selected trait and tag are in an archived TaggedTrait."""
         factories.TaggedTraitFactory.create(tag=self.tag, trait=self.trait, archived=True)
+        form_data = {'trait': self.trait.pk, 'tag': self.tag.pk}
+        form = self.form_class(data=form_data)
+        self.assertFalse(form.is_valid())
+        self.assertTrue(form.has_error('trait'))
+        self.assertFalse(form.has_error('tag'))
+
+    def test_invalid_trait_deprecated(self):
+        """Form is invalid when the selected trait is in a deprecated study version."""
+        sv = self.trait.source_dataset.source_study_version
+        sv.i_is_deprecated = True
+        sv.save()
         form_data = {'trait': self.trait.pk, 'tag': self.tag.pk}
         form = self.form_class(data=form_data)
         self.assertFalse(form.is_valid())
@@ -223,6 +246,17 @@ class TaggedTraitByTagFormTest(TestCase):
         self.assertTrue(form.has_error('trait'))
         self.assertFalse(form.has_error('tag'))
 
+    def test_invalid_trait_deprecated(self):
+        """Form is invalid when the selected trait is in a deprecated study version."""
+        sv = self.trait.source_dataset.source_study_version
+        sv.i_is_deprecated = True
+        sv.save()
+        form_data = {'trait': self.trait.pk, 'tag': self.tag.pk}
+        form = self.form_class(data=form_data, user=self.user, tag_pk=self.tag.pk)
+        self.assertFalse(form.is_valid())
+        self.assertTrue(form.has_error('trait'))
+        self.assertFalse(form.has_error('tag'))
+
 
 class ManyTaggedTraitsFormTest(TestCase):
     form_class = forms.ManyTaggedTraitsForm
@@ -231,7 +265,8 @@ class ManyTaggedTraitsFormTest(TestCase):
         super(ManyTaggedTraitsFormTest, self).setUp()
         self.tag = factories.TagFactory.create()
         study = StudyFactory.create()
-        self.traits = SourceTraitFactory.create_batch(10, source_dataset__source_study_version__study=study)
+        self.study_version = SourceStudyVersionFactory.create(study=study)
+        self.traits = SourceTraitFactory.create_batch(10, source_dataset__source_study_version=self.study_version)
         self.user = UserFactory.create()
         phenotype_taggers = Group.objects.get(name='phenotype_taggers')
         self.user.groups.add(phenotype_taggers)
@@ -287,6 +322,23 @@ class ManyTaggedTraitsFormTest(TestCase):
         self.assertFalse(form.is_valid())
         self.assertTrue(form.has_error('traits'))
 
+    def test_invalid_trait_deprecated(self):
+        """Form is invalid when the selected trait is in a deprecated study version."""
+        self.study_version.i_is_deprecated = True
+        self.study_version.save()
+        form_data = {'trait': [self.traits[0].pk], 'tag': self.tag.pk}
+        form = self.form_class(data=form_data, user=self.user)
+        self.assertFalse(form.is_valid())
+        # The form is not valid because the deprecated traits were filtered out, so a required field is blank.
+
+    def test_invalid_only_one_trait_deprecated(self):
+        """Form is invalid when the selected trait is in a deprecated study version."""
+        deprecated_trait = SourceTraitFactory.create(source_dataset__source_study_version__i_is_deprecated=True)
+        form_data = {'trait': [self.traits[0].pk, deprecated_trait.pk], 'tag': self.tag.pk}
+        form = self.form_class(data=form_data, user=self.user)
+        self.assertFalse(form.is_valid())
+        # The form is not valid because the deprecated traits were filtered out, so a required field is blank.
+
 
 class ManyTaggedTraitsByTagFormTest(TestCase):
     form_class = forms.ManyTaggedTraitsByTagForm
@@ -295,7 +347,8 @@ class ManyTaggedTraitsByTagFormTest(TestCase):
         super(ManyTaggedTraitsByTagFormTest, self).setUp()
         self.tag = factories.TagFactory.create()
         study = StudyFactory.create()
-        self.traits = SourceTraitFactory.create_batch(10, source_dataset__source_study_version__study=study)
+        self.study_version = SourceStudyVersionFactory.create(study=study)
+        self.traits = SourceTraitFactory.create_batch(10, source_dataset__source_study_version=self.study_version)
         self.user = UserFactory.create()
         phenotype_taggers = Group.objects.get(name='phenotype_taggers')
         self.user.groups.add(phenotype_taggers)
@@ -351,6 +404,23 @@ class ManyTaggedTraitsByTagFormTest(TestCase):
         self.assertFalse(form.is_valid())
         self.assertTrue(form.has_error('traits'))
 
+    def test_invalid_trait_deprecated(self):
+        """Form is invalid when the selected trait is in a deprecated study version."""
+        self.study_version.i_is_deprecated = True
+        self.study_version.save()
+        form_data = {'trait': [self.traits[0].pk]}
+        form = self.form_class(data=form_data, user=self.user, tag_pk=self.tag.pk)
+        self.assertFalse(form.is_valid())
+        # The form is not valid because the deprecated traits were filtered out, so a required field is blank.
+
+    def test_invalid_only_one_trait_deprecated(self):
+        """Form is invalid when the selected trait is in a deprecated study version."""
+        deprecated_trait = SourceTraitFactory.create(source_dataset__source_study_version__i_is_deprecated=True)
+        form_data = {'trait': [self.traits[0].pk, deprecated_trait.pk]}
+        form = self.form_class(data=form_data, user=self.user, tag_pk=self.tag.pk)
+        self.assertFalse(form.is_valid())
+        # The form is not valid because the deprecated traits were filtered out, so a required field is blank.
+
 
 class TagSpecificTraitFormTest(TestCase):
     form_class = forms.TagSpecificTraitForm
@@ -388,6 +458,16 @@ class TagSpecificTraitFormTest(TestCase):
         form = self.form_class(data=form_data, trait_pk=self.traits[0].pk)
         self.assertFalse(form.is_valid())
         self.assertTrue(form.has_error('tag'))
+
+    def test_invalid_trait_deprecated(self):
+        """Form is invalid when the selected trait is in a deprecated study version."""
+        sv = self.traits[0].source_dataset.source_study_version
+        sv.i_is_deprecated = True
+        sv.save()
+        form_data = {'tag': self.tag.pk}
+        form = self.form_class(data=form_data, trait_pk=self.traits[0].pk)
+        self.assertFalse(form.is_valid())
+        self.assertTrue(form.has_error(NON_FIELD_ERRORS))
 
 
 class DCCReviewFormTestMixin(object):
@@ -636,3 +716,70 @@ class StudyResponseFormTestMixin(object):
 class StudyResponseAdminFormTest(StudyResponseFormTestMixin, TestCase):
 
     form_class = forms.StudyResponseAdminForm
+
+
+class DCCDecisionFormTestMixin(object):
+
+    def test_valid_if_decision_remove_with_comment(self):
+        """Form is valid if the decision is remove and a comment is given."""
+        form_data = {'comment': 'foo', 'decision': models.DCCDecision.DECISION_REMOVE}
+        form = self.form_class(form_data)
+        self.assertTrue(form.is_valid())
+
+    def test_invalid_if_decision_remove_with_no_comment(self):
+        """Form is invalid if the decision is remove and no comment is given."""
+        form_data = {'comment': '', 'status': models.DCCDecision.DECISION_REMOVE}
+        form = self.form_class(form_data)
+        self.assertFalse(form.is_valid())
+        self.assertTrue(form.has_error('comment'))
+
+    def test_invalid_if_decision_remove_with_whitespace_comment(self):
+        """Form is invalid if the decision is remove and no comment is given."""
+        form_data = {'comment': ' ', 'decision': models.DCCDecision.DECISION_REMOVE}
+        form = self.form_class(form_data)
+        self.assertFalse(form.is_valid())
+        self.assertTrue(form.has_error('comment'))
+
+    def test_valid_if_decision_confirm_with_comment(self):
+        """Form is valid if the decision is confirm and a comment is given."""
+        form_data = {'comment': 'foo', 'decision': models.DCCDecision.DECISION_REMOVE}
+        form = self.form_class(form_data)
+        self.assertTrue(form.is_valid())
+
+    def test_invalid_if_decision_confirm_with_no_comment(self):
+        """Form is invalid if the decision is confirm and no comment is given."""
+        form_data = {'comment': '', 'decision': models.DCCDecision.DECISION_REMOVE}
+        form = self.form_class(form_data)
+        self.assertFalse(form.is_valid())
+        self.assertTrue(form.has_error('comment'))
+
+    def test_invalid_if_decision_confirm_with_whitespace_comment(self):
+        """Form is invalid if the decision is confirm and no comment is given."""
+        form_data = {'comment': ' ', 'decision': models.DCCDecision.DECISION_REMOVE}
+        form = self.form_class(form_data)
+        self.assertFalse(form.is_valid())
+        self.assertTrue(form.has_error('comment'))
+
+    def test_invalid_missing_decision(self):
+        form_data = {'comment': ''}
+        form = self.form_class(form_data)
+        self.assertFalse(form.is_valid())
+        self.assertTrue(form.has_error('decision'))
+
+
+class DCCDecisionByTagAndStudyFormTest(DCCDecisionFormTestMixin, TestCase):
+
+    form_class = forms.DCCDecisionByTagAndStudyForm
+
+    def setUp(self):
+        self.study_response = factories.StudyResponseFactory.create(status=models.StudyResponse.STATUS_DISAGREE)
+        self.tagged_trait = self.study_response.dcc_review.tagged_trait
+
+
+class DCCDecisionFormTest(DCCDecisionFormTestMixin, TestCase):
+
+    form_class = forms.DCCDecisionForm
+
+    def setUp(self):
+        self.study_response = factories.StudyResponseFactory.create(status=models.StudyResponse.STATUS_DISAGREE)
+        self.tagged_trait = self.study_response.dcc_review.tagged_trait

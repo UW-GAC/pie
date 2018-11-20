@@ -45,6 +45,17 @@ def generate_button_html(name, value, btn_type="submit", css_class="btn-primary"
     return button_html
 
 
+class SubmitCssClass(Submit):
+    """Create a submit button with a different class than the default."""
+
+    def __init__(self, *args, **kwargs):
+        """Change CSS class of the submit button if given."""
+        css_class = kwargs.get('css_class')
+        super().__init__(*args, **kwargs)
+        if css_class is not None:
+            self.field_classes = 'btn {}'.format(css_class)
+
+
 class TagAdminForm(forms.ModelForm):
     """Custom form for the Tag admin page."""
 
@@ -123,6 +134,9 @@ class TaggedTraitForm(forms.ModelForm):
     def clean(self):
         """Custom cleaning to check that traits aren't already tagged."""
         cleaned_data = super(TaggedTraitForm, self).clean()
+        # We don't need to check that the trait comes from a non-deprecated study version. That
+        # is handled by the super's clean() method because the form __init__ method already uses
+        # a filtered queryset for traits.
         trait = cleaned_data.get('trait')
         tag = cleaned_data.get('tag')
         if tag is not None and trait is not None:
@@ -231,6 +245,9 @@ class TaggedTraitByTagForm(forms.Form):
 
     def clean(self):
         """Custom cleaning to check that traits aren't already tagged."""
+        # We don't need to check that the trait comes from a non-deprecated study version. That
+        # is handled by the super's clean() method because the form __init__ method already uses
+        # a filtered queryset for traits.
         cleaned_data = super(TaggedTraitByTagForm, self).clean()
         trait = cleaned_data.get('trait')
         if trait is not None:
@@ -302,6 +319,9 @@ class ManyTaggedTraitsForm(forms.Form):
 
     def clean(self):
         """Custom cleaning to check that traits aren't already tagged."""
+        # We don't need to check that the trait comes from a non-deprecated study version. That
+        # is handled by the super's clean() method because the form __init__ method already uses
+        # a filtered queryset for traits.
         cleaned_data = super(ManyTaggedTraitsForm, self).clean()
         traits = cleaned_data.get('traits', [])
         tag = cleaned_data.get('tag')
@@ -375,6 +395,9 @@ class ManyTaggedTraitsByTagForm(forms.Form):
 
     def clean(self):
         """Custom cleaning to check that traits aren't already tagged."""
+        # We don't need to check that the trait comes from a non-deprecated study version. That
+        # is handled by the super's clean() method because the form __init__ method already uses
+        # a filtered queryset for traits.
         cleaned_data = super(ManyTaggedTraitsByTagForm, self).clean()
         traits = cleaned_data.get('traits', [])
         for trait in traits:
@@ -423,6 +446,9 @@ class TagSpecificTraitForm(forms.Form):
         """Custom cleaning to check that traits aren't already tagged."""
         cleaned_data = super(TagSpecificTraitForm, self).clean()
         tag = cleaned_data.get('tag', None)
+        if self.trait not in SourceTrait.objects.current():
+            error = 'This study variable cannot be tagged because it is not from the most recent study version.'
+            self.add_error(None, error)
         if tag is not None:
             if self.trait in tag.all_traits.all():
                 taggedtrait = models.TaggedTrait.objects.get(trait=self.trait, tag=tag)
@@ -470,17 +496,6 @@ class DCCReviewBaseForm(forms.ModelForm):
         widgets = {
             'status': forms.HiddenInput
         }
-
-
-class SubmitCssClass(Submit):
-    """Create a submit button with a different class than the default."""
-
-    def __init__(self, *args, **kwargs):
-        """Change CSS class of the submit button if given."""
-        css_class = kwargs.get('css_class')
-        super().__init__(*args, **kwargs)
-        if css_class is not None:
-            self.field_classes = 'btn {}'.format(css_class)
 
 
 class DCCReviewByTagAndStudyForm(DCCReviewBaseForm):
@@ -637,3 +652,75 @@ class StudyResponseAdminForm(StudyResponseBaseForm):
     class Meta:
         model = models.StudyResponse
         fields = ('status', 'comment', )
+
+
+class DCCDecisionBaseForm(forms.ModelForm):
+
+    SUBMIT_CONFIRM = 'confirm'
+    SUBMIT_REMOVE = 'remove'
+
+    def clean(self):
+        """Custom cleaning to require a comment."""
+        # I tried implementing this by setting DCCDecision.comment(blank=False), but this led to an issue where modern
+        # browsers prevent a POST request from being submitted if a "required" (html5 tag) field is empty:
+        # https://stackoverflow.com/questions/5392882/why-is-chrome-showing-a-please-fill-out-this-field-tooltip-on-empty-fields
+        # This prevented the SKIP button from working properly. So instead I set comment(blank=True) and am using
+        # this clean method to make sure a non-blank comment is submitted.
+        cleaned_data = super().clean()
+        comment = cleaned_data.get('comment')
+        if comment == '':
+            error = forms.ValidationError('Comment cannot be blank.', code='comment_required')
+            self.add_error('comment', error)
+        return cleaned_data
+
+    class Meta:
+        model = models.DCCDecision
+        fields = ('decision', 'comment', )
+        help_texts = {
+            'comment': 'Add a comment explaining why you decided to confirm or remove this tagged variable.'
+        }
+        widgets = {
+            'decision': forms.HiddenInput
+        }
+
+
+class DCCDecisionByTagAndStudyForm(DCCDecisionBaseForm):
+    """Form for creating a single DCCDecision object."""
+
+    SUBMIT_SKIP = 'skip'
+
+    def __init__(self, *args, **kwargs):
+        """Add submit buttons."""
+        super().__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.layout = Layout(
+            'decision',
+            'comment',
+            FormActions(
+                Submit(self.SUBMIT_CONFIRM, 'Confirm'),
+                SubmitCssClass(self.SUBMIT_REMOVE, 'Remove', css_class='btn-danger'),
+                SubmitCssClass(self.SUBMIT_SKIP, 'Skip', css_class='btn-default')
+            )
+        )
+
+    class Meta(DCCDecisionBaseForm.Meta):
+        pass
+
+
+class DCCDecisionForm(DCCDecisionBaseForm):
+
+    def __init__(self, *args, **kwargs):
+        """Add submit buttons."""
+        super().__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.layout = Layout(
+            'status',
+            'comment',
+            FormActions(
+                Submit(self.SUBMIT_CONFIRM, 'Confirm'),
+                SubmitCssClass(self.SUBMIT_REMOVE, 'Remove', css_class='btn-danger')
+            )
+        )
+
+    class Meta(DCCDecisionBaseForm.Meta):
+        pass

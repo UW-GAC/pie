@@ -202,7 +202,21 @@ class SourceDatasetDetail(LoginRequiredMixin, SingleTableMixin, DetailView):
     def get_context_data(self, **kwargs):
         context = super(SourceDatasetDetail, self).get_context_data(**kwargs)
         trait = self.object.sourcetrait_set.first()
+        is_deprecated = self.object.source_study_version.i_is_deprecated
         context['trait_count'] = '{:,}'.format(self.object.sourcetrait_set.count())
+        context['show_deprecated_message'] = is_deprecated
+        if is_deprecated:
+            current_version = self.object.get_latest_version()
+            if current_version is not None:
+                msg = """There is a newer version of this study dataset available:
+                         <a class="alert-link" href="{}">{}</a>.""".format(
+                    current_version.get_absolute_url(),
+                    current_version.dataset_name
+                )
+                context['deprecation_message'] = mark_safe(msg)
+            else:
+                msg = """This dataset was removed from the most recent study version."""
+                context['deprecation_message'] = msg
         return context
 
 
@@ -381,10 +395,12 @@ class SourceTraitDetail(LoginRequiredMixin, DetailView):
     context_object_name = 'source_trait'
 
     def get_context_data(self, **kwargs):
+        is_deprecated = self.object.source_dataset.source_study_version.i_is_deprecated
         context = super(SourceTraitDetail, self).get_context_data(**kwargs)
         user_studies = list(self.request.user.profile.taggable_studies.all())
         context['user_is_study_tagger'] = self.object.source_dataset.source_study_version.study in user_studies
-        context['show_tag_button'] = context['user_is_study_tagger'] or self.request.user.is_staff
+        context['show_tag_button'] = (context['user_is_study_tagger'] or self.request.user.is_staff) and \
+            not is_deprecated
         tagged_traits = self.object.all_taggedtraits.non_archived().order_by('tag__lower_title')
         # If tagging is allowed, check on whether to show the delete button for each tag.
         if context['show_tag_button']:
@@ -399,6 +415,19 @@ class SourceTraitDetail(LoginRequiredMixin, DetailView):
         else:
             show_delete_buttons = [False] * len(tagged_traits)
         context['tagged_traits_with_xs'] = list(zip(tagged_traits, show_delete_buttons))
+        context['show_deprecated_message'] = is_deprecated
+        if is_deprecated:
+            current_version = self.object.get_latest_version()
+            if current_version is not None:
+                msg = """There is a newer version of this study variable available:
+                         <a class="alert-link" href="{}">{}</a>.""".format(
+                    current_version.get_absolute_url(),
+                    current_version.i_trait_name
+                )
+                context['deprecation_message'] = mark_safe(msg)
+            else:
+                msg = """This variable was removed from the most recent study version."""
+                context['deprecation_message'] = msg
         return context
 
 
@@ -495,6 +524,25 @@ class SourceTraitTagging(LoginRequiredMixin, PermissionRequiredMixin, UserPasses
         else:
             user_studies = list(user.profile.taggable_studies.all())
             return self.trait.source_dataset.source_study_version.study in user_studies
+
+    def _get_deprecated_response(self, *args, **kwargs):
+        self.trait = get_object_or_404(models.SourceTrait, pk=kwargs['pk'])
+        if self.trait.source_dataset.source_study_version.i_is_deprecated:
+            msg = 'Oops! Cannot tag this study variable, because it is not from the most recent study version.'
+            self.messages.warning(msg)
+            return HttpResponseRedirect(self.trait.get_absolute_url())
+
+    def get(self, request, *args, **kwargs):
+        check_response = self._get_deprecated_response(*args, **kwargs)
+        if check_response is not None:
+            return check_response
+        return super().get(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        check_response = self._get_deprecated_response(*args, **kwargs)
+        if check_response is not None:
+            return check_response
+        return super().post(request, *args, **kwargs)
 
     def get_success_url(self):
         return self.trait.get_absolute_url()
