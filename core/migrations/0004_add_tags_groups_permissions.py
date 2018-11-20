@@ -29,7 +29,8 @@ def set_groups_and_permissions_for_tags(apps, schema_editor):
     phenotype_taggers.permissions.add(*Permission.objects.filter(
         content_type__app_label='tags', content_type__model='taggedtrait'))
     # Add permissions for tags to the dcc groups.
-    tags_permissions = Permission.objects.filter(content_type__app_label='tags')
+    tags_permissions = Permission.objects.filter(
+        content_type__app_label='tags', content_type__model__in=('taggedtrait', 'tag'))
     developers = Group.objects.get(name='dcc_developers')
     developers.permissions.add(*tags_permissions)
     analysts = Group.objects.get(name='dcc_analysts')
@@ -44,7 +45,8 @@ def delete_groups_and_permissions_for_tags(apps, schema_editor):
     phenotype_taggers = Group.objects.get(name='phenotype_taggers')
     phenotype_taggers.delete()
     # Remove permissions for tags to the dcc groups.
-    tags_permissions = Permission.objects.filter(content_type__app_label='tags')
+    tags_permissions = Permission.objects.filter(
+        content_type__app_label='tags', content_type__model__in=('taggedtrait', 'tag'))
     developers = Group.objects.get(name='dcc_developers')
     developers.permissions.remove(*tags_permissions)
     analysts = Group.objects.get(name='dcc_analysts')

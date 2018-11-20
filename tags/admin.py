@@ -74,8 +74,20 @@ class StudyResponseAdmin(admin.ModelAdmin):
     form = forms.StudyResponseAdminForm
 
 
+class DCCDecisionAdmin(admin.ModelAdmin):
+    list_display = ('dcc_review', 'decision', 'comment', 'creator', 'created', 'modified', )
+    list_filter = ('decision', ('creator', admin.RelatedOnlyFieldListFilter), )
+    search_fields = ('dcc_review__tagged_trait__tag__title', 'dcc_review__tagged_trait__trait__i_trait_name', )
+    readonly_fields = ('dcc_review', 'creator', )
+
+    def has_add_permission(self, request, obj=None):
+        """No adding DCCDecisions from the admin."""
+        return False
+
+
 # Register models for showing them in the admin interface.
 admin.site.register(models.Tag, TagAdmin)
 admin.site.register(models.TaggedTrait, TaggedTraitAdmin)
 admin.site.register(models.DCCReview, DCCReviewAdmin)
 admin.site.register(models.StudyResponse, StudyResponseAdmin)
+admin.site.register(models.DCCDecision, DCCDecisionAdmin)

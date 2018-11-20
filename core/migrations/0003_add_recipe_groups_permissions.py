@@ -26,7 +26,8 @@ def set_groups_and_permissions_for_recipes(apps, schema_editor):
     Permission = apps.get_model('auth', 'Permission')
     # Create the recipe_submitters group.
     recipe_submitters = Group.objects.get_or_create(name='recipe_submitters')[0]
-    recipe_permissions = Permission.objects.filter(content_type__app_label='recipes')
+    recipe_permissions = Permission.objects.filter(content_type__app_label='recipes',
+                                                   content_type__model__in=('unitrecipe', 'harmonizationrecipe'))
     recipe_submitters.permissions.add(*recipe_permissions)
     # Add permissions for recipes to the dcc groups.
     developers = Group.objects.get(name='dcc_developers')
@@ -43,7 +44,8 @@ def delete_groups_and_permissions_for_recipes(apps, schema_editor):
     recipe_submitters = Group.objects.get(name='recipe_submitters')
     recipe_submitters.delete()
     # Remove permissions for recipes to the dcc groups.
-    recipe_permissions = Permission.objects.filter(content_type__app_label='recipes')
+    recipe_permissions = Permission.objects.filter(content_type__app_label='recipes',
+                                                   content_type__model__in=('unitrecipe', 'harmonizationrecipe'))
     developers = Group.objects.get(name='dcc_developers')
     developers.permissions.remove(*recipe_permissions)
     analysts = Group.objects.get(name='dcc_analysts')

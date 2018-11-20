@@ -19,7 +19,7 @@ class Tag(TimeStampedModel):
     lower_title = models.CharField(max_length=255, unique=True, blank=True)
     description = models.TextField()
     instructions = models.TextField()
-    creator = models.ForeignKey(settings.AUTH_USER_MODEL, blank=True, on_delete=models.CASCADE)
+    creator = models.ForeignKey(settings.AUTH_USER_MODEL, blank=True, on_delete=models.PROTECT)
     all_traits = models.ManyToManyField('trait_browser.SourceTrait', through='TaggedTrait', related_name='all_tags')
 
     class Meta:
@@ -64,7 +64,7 @@ class TaggedTrait(TimeStampedModel):
 
     trait = models.ForeignKey('trait_browser.SourceTrait', on_delete=models.CASCADE, related_name="all_taggedtraits")
     tag = models.ForeignKey(Tag, on_delete=models.CASCADE, related_name="all_taggedtraits")
-    creator = models.ForeignKey(settings.AUTH_USER_MODEL, blank=True, on_delete=models.CASCADE)
+    creator = models.ForeignKey(settings.AUTH_USER_MODEL, blank=True, on_delete=models.PROTECT)
     archived = models.BooleanField(default=False)
 
     # Managers/custom querysets.
@@ -128,7 +128,7 @@ class DCCReview(TimeStampedModel):
     )
     status = models.IntegerField(choices=STATUS_CHOICES)
     comment = models.TextField(blank=True)
-    creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
 
     # Managers/custom querysets.
     objects = querysets.DCCReviewQuerySet.as_manager()
@@ -143,13 +143,15 @@ class DCCReview(TimeStampedModel):
         return self.tagged_trait.get_absolute_url()
 
     def delete(self, *args, **kwargs):
-        """Only allow DCCReview objects without a StudyResponse to be deleted."""
+        """Only allow DCCReview objects without a StudyResponse or DCCDecision to be deleted."""
         if hasattr(self, 'study_response'):
             raise DeleteNotAllowedError("Cannot delete a DCCReview with a study response.")
+        if hasattr(self, 'dcc_decision'):
+            raise DeleteNotAllowedError("Cannot delete a DCCReview with a DCC decision.")
         super().delete(*args, **kwargs)
 
     def hard_delete(self, *args, **kwargs):
-        """Delete objects that cannot be deleted with overriden delete method."""
+        """Delete objects that cannot be deleted with overridden delete method."""
         super().delete(*args, **kwargs)
 
 
@@ -165,7 +167,35 @@ class StudyResponse(TimeStampedModel):
     )
     status = models.IntegerField(choices=STATUS_CHOICES)
     comment = models.TextField(blank=True)
-    creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+
+    # Managers/custom querysets.
+    objects = querysets.StudyResponseQuerySet.as_manager()
 
     class Meta:
         verbose_name = 'study response'
+
+    def delete(self, *args, **kwargs):
+        """Prevent deletion of StudyResponses for TaggedTraits that have a DCCDecision."""
+        if hasattr(self.dcc_review, 'dcc_decision'):
+            raise DeleteNotAllowedError("Cannot delete a StudyResponse from a TaggedTrait that has a DCCDecision.")
+        super().delete(*args, **kwargs)
+
+    def hard_delete(self, *args, **kwargs):
+        """Delete objects that cannot be deleted with overridden delete method."""
+        super().delete(*args, **kwargs)
+
+
+class DCCDecision(TimeStampedModel):
+    """Model for making a final decision about whether to keep a tagged trait."""
+
+    dcc_review = models.OneToOneField(DCCReview, on_delete=models.CASCADE, related_name='dcc_decision')
+    DECISION_REMOVE = 0
+    DECISION_CONFIRM = 1
+    DECISION_CHOICES = ((DECISION_CONFIRM, 'Confirm'), (DECISION_REMOVE, 'Remove'))
+    decision = models.IntegerField(choices=DECISION_CHOICES)
+    comment = models.TextField(blank=True)
+    creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+
+    def __str__(self):
+        return 'DCC decision to {} {}'.format(self.get_decision_display(), self.dcc_review.tagged_trait)

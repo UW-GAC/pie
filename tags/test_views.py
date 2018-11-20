@@ -179,281 +179,1189 @@ class TagListTest(UserLoginTestCase):
 class TaggedTraitDetailTestsMixin(object):
     """Mixin to run standard tests for the TaggedTraitDetail view, for use with TestCase or subclass of TestCase."""
 
+    def setUp(self):
+        super().setUp()
+        if self.user.profile.taggable_studies.count() > 0:
+            user_study = self.study
+        else:
+            user_study = StudyFactory.create()
+        self.tag = factories.TagFactory.create()
+        # Create a tagged trait of each possible status combination.
+        self.tagged_traits = {}
+        self.tagged_traits['unreviewed'] = factories.TaggedTraitFactory.create(
+                tag=self.tag, trait__source_dataset__source_study_version__study=user_study)
+
+        self.tagged_traits['followup_dccreview_no_studyresponse_no_dccdecision'] = factories.TaggedTraitFactory.create(
+                tag=self.tag, trait__source_dataset__source_study_version__study=user_study)
+        factories.DCCReviewFactory.create(
+            tagged_trait=self.tagged_traits['followup_dccreview_no_studyresponse_no_dccdecision'],
+            status=models.DCCReview.STATUS_FOLLOWUP)
+
+        self.tagged_traits['followup_dccreview_disagree_studyresponse_no_dccdecision'] = factories.TaggedTraitFactory.create(
+                tag=self.tag, trait__source_dataset__source_study_version__study=user_study)
+        factories.DCCReviewFactory.create(
+            tagged_trait=self.tagged_traits['followup_dccreview_disagree_studyresponse_no_dccdecision'],
+            status=models.DCCReview.STATUS_FOLLOWUP)
+        factories.StudyResponseFactory.create(
+            dcc_review=self.tagged_traits['followup_dccreview_disagree_studyresponse_no_dccdecision'].dcc_review,
+            status=models.StudyResponse.STATUS_DISAGREE)
+
+        self.tagged_traits['confirmed_dccreview'] = factories.TaggedTraitFactory.create(
+                tag=self.tag, trait__source_dataset__source_study_version__study=user_study)
+        factories.DCCReviewFactory.create(
+            tagged_trait=self.tagged_traits['confirmed_dccreview'],
+            status=models.DCCReview.STATUS_CONFIRMED)
+
+        self.tagged_traits['followup_dccreview_no_studyresponse_remove_dccdecision_archived'] = factories.TaggedTraitFactory.create(
+                tag=self.tag, trait__source_dataset__source_study_version__study=user_study)
+        factories.DCCReviewFactory.create(
+            tagged_trait=self.tagged_traits['followup_dccreview_no_studyresponse_remove_dccdecision_archived'],
+            status=models.DCCReview.STATUS_FOLLOWUP)
+        factories.DCCDecisionFactory.create(
+            dcc_review=self.tagged_traits['followup_dccreview_no_studyresponse_remove_dccdecision_archived'].dcc_review,
+            decision=models.DCCDecision.DECISION_REMOVE)
+        self.tagged_traits['followup_dccreview_no_studyresponse_remove_dccdecision_archived'].archive()
+
+        self.tagged_traits['followup_dccreview_no_studyresponse_confirm_dccdecision'] = factories.TaggedTraitFactory.create(
+                tag=self.tag, trait__source_dataset__source_study_version__study=user_study)
+        factories.DCCReviewFactory.create(
+            tagged_trait=self.tagged_traits['followup_dccreview_no_studyresponse_confirm_dccdecision'],
+            status=models.DCCReview.STATUS_FOLLOWUP)
+        factories.DCCDecisionFactory.create(
+            dcc_review=self.tagged_traits['followup_dccreview_no_studyresponse_confirm_dccdecision'].dcc_review,
+            decision=models.DCCDecision.DECISION_CONFIRM)
+
+        self.tagged_traits['followup_dccreview_agree_studyresponse_archived'] = factories.TaggedTraitFactory.create(
+                tag=self.tag, trait__source_dataset__source_study_version__study=user_study)
+        factories.DCCReviewFactory.create(
+            tagged_trait=self.tagged_traits['followup_dccreview_agree_studyresponse_archived'],
+            status=models.DCCReview.STATUS_FOLLOWUP)
+        factories.StudyResponseFactory.create(
+            dcc_review=self.tagged_traits['followup_dccreview_agree_studyresponse_archived'].dcc_review,
+            status=models.StudyResponse.STATUS_AGREE)
+        self.tagged_traits['followup_dccreview_agree_studyresponse_archived'].archive()
+
+        self.tagged_traits['followup_dccreview_disagree_studyresponse_remove_dccdecision_archived'] = factories.TaggedTraitFactory.create(
+                tag=self.tag, trait__source_dataset__source_study_version__study=user_study)
+        factories.DCCReviewFactory.create(
+            tagged_trait=self.tagged_traits['followup_dccreview_disagree_studyresponse_remove_dccdecision_archived'],
+            status=models.DCCReview.STATUS_FOLLOWUP)
+        factories.StudyResponseFactory.create(
+            dcc_review=self.tagged_traits['followup_dccreview_disagree_studyresponse_remove_dccdecision_archived'].dcc_review,
+            status=models.StudyResponse.STATUS_DISAGREE)
+        factories.DCCDecisionFactory.create(
+            dcc_review=self.tagged_traits['followup_dccreview_disagree_studyresponse_remove_dccdecision_archived'].dcc_review,
+            decision=models.DCCDecision.DECISION_REMOVE)
+        self.tagged_traits['followup_dccreview_disagree_studyresponse_remove_dccdecision_archived'].archive()
+
+        self.tagged_traits['followup_dccreview_disagree_studyresponse_confirm_dccdecision'] = factories.TaggedTraitFactory.create(
+                tag=self.tag, trait__source_dataset__source_study_version__study=user_study)
+        factories.DCCReviewFactory.create(
+            tagged_trait=self.tagged_traits['followup_dccreview_disagree_studyresponse_confirm_dccdecision'],
+            status=models.DCCReview.STATUS_FOLLOWUP)
+        factories.StudyResponseFactory.create(
+            dcc_review=self.tagged_traits['followup_dccreview_disagree_studyresponse_confirm_dccdecision'].dcc_review,
+            status=models.StudyResponse.STATUS_DISAGREE)
+        factories.DCCDecisionFactory.create(
+            dcc_review=self.tagged_traits['followup_dccreview_disagree_studyresponse_confirm_dccdecision'].dcc_review,
+            decision=models.DCCDecision.DECISION_CONFIRM)
+
     def get_url(self, *args):
         return reverse('tags:tagged-traits:pk:detail', args=args)
 
     def test_view_success_code(self):
         """View returns successful response code."""
-        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        response = self.client.get(self.get_url(self.tagged_traits['unreviewed'].pk))
         self.assertEqual(response.status_code, 200)
 
     def test_view_with_invalid_pk(self):
         """View returns 404 response code when the pk doesn't exist."""
-        response = self.client.get(self.get_url(self.tagged_trait.pk + 1))
+        unreviewed_pk = self.tagged_traits['unreviewed'].pk
+        self.tagged_traits['unreviewed'].delete()
+        response = self.client.get(self.get_url(unreviewed_pk))
         self.assertEqual(response.status_code, 404)
 
     def test_context_data(self):
-        """View has appropriate data in the context."""
-        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        """Expected context variables exist."""
+        response = self.client.get(self.get_url(self.tagged_traits['unreviewed'].pk))
         context = response.context
         self.assertIn('tagged_trait', context)
-        self.assertEqual(context['tagged_trait'], self.tagged_trait)
+        self.assertEqual(context['tagged_trait'], self.tagged_traits['unreviewed'])
+        self.assertIn('show_quality_review_panel', context)
+        self.assertIn('show_dcc_review_add_button', context)
+        self.assertIn('show_dcc_review_update_button', context)
+        self.assertIn('show_dcc_review_confirmed', context)
+        self.assertIn('show_dcc_review_needs_followup', context)
+        self.assertIn('show_study_response_status', context)
+        self.assertIn('show_study_agrees', context)
+        self.assertIn('show_study_disagrees', context)
+        self.assertIn('show_dcc_decision', context)
+        self.assertIn('show_dcc_decision_add_button', context)
+        self.assertIn('show_dcc_decision_update_button', context)
+        self.assertIn('show_decision_remove', context)
+        self.assertIn('show_decision_confirm', context)
+        self.assertIn('show_decision_comment', context)
+        self.assertIn('show_delete_button', context)
+        self.assertIn('show_archived', context)
+        self.assertIn('quality_review_panel_color', context)
 
     def test_no_other_tags(self):
         """Other tags linked to the same trait are not included in the page."""
-        another_tagged_trait = factories.TaggedTraitFactory.create(trait=self.tagged_trait.trait)
-        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        another_tag = factories.TagFactory.create()
+        another_tagged_trait = factories.TaggedTraitFactory.create(
+            trait=self.tagged_traits['unreviewed'].trait, tag=another_tag)
+        response = self.client.get(self.get_url(self.tagged_traits['unreviewed'].pk))
         context = response.context
         self.assertNotIn('show_other_tags', context)
         content = str(response.content)
         self.assertNotIn(another_tagged_trait.tag.title, content)
-        self.assertIn(self.tagged_trait.tag.title, content)
+        self.assertIn(self.tagged_traits['unreviewed'].tag.title, content)
 
-    def test_delete_button_unreviewed(self):
+    def test_delete_link_present_for_unreviewed_tagged_trait(self):
         """Delete button is shown for unreviewed tagged trait."""
-        response = self.client.get(self.get_url(self.tagged_trait.pk))
-        self.assertContains(response, reverse('tags:tagged-traits:pk:delete', kwargs={'pk': self.tagged_trait.pk}))
+        response = self.client.get(self.get_url(self.tagged_traits['unreviewed'].pk))
+        self.assertContains(
+            response, reverse('tags:tagged-traits:pk:delete', kwargs={'pk': self.tagged_traits['unreviewed'].pk}))
 
-    def test_no_delete_button_needfollowup_reviewed_tagged_trait(self):
-        """Shows no button to delete a need_followup tagged trait."""
-        factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP)
-        response = self.client.get(self.get_url(self.tagged_trait.pk))
-        self.assertNotContains(response, reverse('tags:tagged-traits:pk:delete', kwargs={'pk': self.tagged_trait.pk}))
-
-    def test_no_delete_button_confirmed_reviewed_tagged_trait(self):
-        """Shows no button to delete a confirmed tagged trait."""
-        factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait, status=models.DCCReview.STATUS_CONFIRMED)
-        response = self.client.get(self.get_url(self.tagged_trait.pk))
-        self.assertNotContains(response, reverse('tags:tagged-traits:pk:delete', kwargs={'pk': self.tagged_trait.pk}))
-
-    def test_no_delete_button_archived_tagged_trait(self):
-        """Shows no button to delete an archived tagged trait."""
-        self.tagged_trait.archive()
-        response = self.client.get(self.get_url(self.tagged_trait.pk))
-        self.assertNotContains(response, reverse('tags:tagged-traits:pk:delete', kwargs={'pk': self.tagged_trait.pk}))
+    def test_delete_link_not_shown_for_all_reviewed_tagged_traits(self):
+        """Shows no button to delete the rest of tagged traits, which all have reviews."""
+        del self.tagged_traits['unreviewed']
+        for tt_type in self.tagged_traits:
+            tagged_trait = self.tagged_traits[tt_type]
+            response = self.client.get(self.get_url(tagged_trait.pk))
+            self.assertNotContains(response, reverse('tags:tagged-traits:pk:delete', kwargs={'pk': tagged_trait.pk}))
 
 
 class TaggedTraitDetailPhenotypeTaggerTest(TaggedTraitDetailTestsMixin, PhenotypeTaggerLoginTestCase):
 
+    def test_context_unreviewed(self):
+        """Context variables and page content are as expected for this type of tagged trait."""
+        response = self.client.get(self.get_url(self.tagged_traits['unreviewed'].pk))
+        context = response.context
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(context['show_quality_review_panel'])
+        self.assertContains(response, '#collapse-reviewstatus')
+        self.assertContains(response, 'not yet been reviewed')
+        self.assertFalse(context['show_dcc_review_confirmed'])
+        self.assertNotContains(response, 'confirmed by the DCC')
+        self.assertFalse(context['show_dcc_review_needs_followup'])
+        self.assertNotContains(response, 'flagged for removal')
+        self.assertFalse(context['show_study_response_status'])
+        self.assertNotContains(response, 'The study')
+        self.assertFalse(context['show_study_agrees'])
+        self.assertNotContains(response, 'agreed that the tag should be removed')
+        self.assertFalse(context['show_study_disagrees'])
+        self.assertNotContains(response, 'indicated that the variable should remain tagged')
+        self.assertFalse(context['show_dcc_decision'])
+        self.assertFalse(context['show_decision_remove'])
+        self.assertNotContains(response, 'will be removed by the DCC')
+        self.assertFalse(context['show_decision_confirm'])
+        # self.assertNotContains(response, 'confirmed by the DCC')
+        self.assertFalse(context['show_decision_comment'])
+        self.assertFalse(context['show_archived'])
+        self.assertNotContains(response, 'has been removed by the DCC')
+        self.assertFalse(context['show_dcc_review_add_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-review:new', args=[self.tagged_traits['unreviewed'].pk]))
+        self.assertFalse(context['show_dcc_review_update_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-review:update', args=[self.tagged_traits['unreviewed'].pk]))
+        self.assertFalse(context['show_dcc_decision_add_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-decision:new', args=[self.tagged_traits['unreviewed'].pk]))
+        self.assertFalse(context['show_dcc_decision_update_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-decision:update', args=[self.tagged_traits['unreviewed'].pk]))
+        self.assertTrue(context['show_delete_button'])
+        self.assertEqual(context['quality_review_panel_color'], '')
+
+    def test_context_followup_dccreview_no_studyresponse_no_dccdecision(self):
+        """Context variables and page content are as expected for this type of tagged trait."""
+        response = self.client.get(self.get_url(self.tagged_traits['followup_dccreview_no_studyresponse_no_dccdecision'].pk))
+        context = response.context
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(context['show_quality_review_panel'])
+        self.assertContains(response, '#collapse-reviewstatus')
+        self.assertNotContains(response, 'not yet been reviewed')
+        self.assertFalse(context['show_dcc_review_confirmed'])
+        self.assertNotContains(response, 'confirmed by the DCC')
+        self.assertTrue(context['show_dcc_review_needs_followup'])
+        self.assertContains(response, 'flagged for removal')
+        self.assertFalse(context['show_study_response_status'])
+        self.assertNotContains(response, 'The study')
+        self.assertFalse(context['show_study_agrees'])
+        self.assertNotContains(response, 'agreed that the tag should be removed')
+        self.assertFalse(context['show_study_disagrees'])
+        self.assertNotContains(response, 'indicated that the variable should remain tagged')
+        self.assertFalse(context['show_dcc_decision'])
+        self.assertFalse(context['show_decision_remove'])
+        self.assertNotContains(response, 'will be removed by the DCC')
+        self.assertFalse(context['show_decision_confirm'])
+        # self.assertNotContains(response, 'confirmed by the DCC')
+        self.assertFalse(context['show_decision_comment'])
+        self.assertFalse(context['show_archived'])
+        self.assertNotContains(response, 'has been removed by the DCC')
+        self.assertFalse(context['show_dcc_review_add_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-review:new', args=[self.tagged_traits['followup_dccreview_no_studyresponse_no_dccdecision'].pk]))
+        self.assertFalse(context['show_dcc_review_update_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-review:update', args=[self.tagged_traits['followup_dccreview_no_studyresponse_no_dccdecision'].pk]))
+        self.assertFalse(context['show_dcc_decision_add_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-decision:new', args=[self.tagged_traits['followup_dccreview_no_studyresponse_no_dccdecision'].pk]))
+        self.assertFalse(context['show_dcc_decision_update_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-decision:update', args=[self.tagged_traits['followup_dccreview_no_studyresponse_no_dccdecision'].pk]))
+        self.assertFalse(context['show_delete_button'])
+        self.assertEqual(context['quality_review_panel_color'], '')
+
+    def test_context_followup_dccreview_disagree_studyresponse_no_dccdecision(self):
+        """Context variables and page content are as expected for this type of tagged trait."""
+        response = self.client.get(self.get_url(self.tagged_traits['followup_dccreview_disagree_studyresponse_no_dccdecision'].pk))
+        context = response.context
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(context['show_quality_review_panel'])
+        self.assertContains(response, '#collapse-reviewstatus')
+        self.assertNotContains(response, 'not yet been reviewed')
+        self.assertFalse(context['show_dcc_review_confirmed'])
+        self.assertNotContains(response, 'confirmed by the DCC')
+        self.assertTrue(context['show_dcc_review_needs_followup'])
+        self.assertContains(response, 'flagged for removal')
+        self.assertTrue(context['show_study_response_status'])
+        self.assertContains(response, 'The study')
+        self.assertFalse(context['show_study_agrees'])
+        self.assertNotContains(response, 'agreed that the tag should be removed')
+        self.assertTrue(context['show_study_disagrees'])
+        self.assertContains(response, 'indicated that the variable should remain tagged')
+        self.assertContains(response, self.tagged_traits['followup_dccreview_disagree_studyresponse_no_dccdecision'].dcc_review.study_response.comment)
+        self.assertFalse(context['show_dcc_decision'])
+        self.assertFalse(context['show_decision_remove'])
+        self.assertNotContains(response, 'will be removed by the DCC')
+        self.assertFalse(context['show_decision_confirm'])
+        # self.assertNotContains(response, 'confirmed by the DCC')
+        self.assertFalse(context['show_decision_comment'])
+        # self.assertNotContains(response, self.tagged_traits[''].dcc_review.dcc_decision.comment)
+        self.assertFalse(context['show_archived'])
+        self.assertNotContains(response, 'has been removed by the DCC')
+        self.assertFalse(context['show_dcc_review_add_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-review:new', args=[self.tagged_traits['followup_dccreview_disagree_studyresponse_no_dccdecision'].pk]))
+        self.assertFalse(context['show_dcc_review_update_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-review:update', args=[self.tagged_traits['followup_dccreview_disagree_studyresponse_no_dccdecision'].pk]))
+        self.assertFalse(context['show_dcc_decision_add_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-decision:new', args=[self.tagged_traits['followup_dccreview_disagree_studyresponse_no_dccdecision'].pk]))
+        self.assertFalse(context['show_dcc_decision_update_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-decision:update', args=[self.tagged_traits['followup_dccreview_disagree_studyresponse_no_dccdecision'].pk]))
+        self.assertFalse(context['show_delete_button'])
+        self.assertEqual(context['quality_review_panel_color'], '')
+
+    def test_context_confirmed_dccreview(self):
+        """Context variables and page content are as expected for this type of tagged trait."""
+        response = self.client.get(self.get_url(self.tagged_traits['confirmed_dccreview'].pk))
+        context = response.context
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(context['show_quality_review_panel'])
+        self.assertContains(response, '#collapse-reviewstatus')
+        self.assertNotContains(response, 'not yet been reviewed')
+        self.assertTrue(context['show_dcc_review_confirmed'])
+        self.assertContains(response, 'confirmed by the DCC')
+        self.assertFalse(context['show_dcc_review_needs_followup'])
+        self.assertNotContains(response, 'flagged for removal')
+        self.assertFalse(context['show_study_response_status'])
+        self.assertNotContains(response, 'The study')
+        self.assertFalse(context['show_study_agrees'])
+        self.assertNotContains(response, 'agreed that the tag should be removed')
+        self.assertFalse(context['show_study_disagrees'])
+        self.assertNotContains(response, 'indicated that the variable should remain tagged')
+        self.assertFalse(context['show_dcc_decision'])
+        self.assertFalse(context['show_decision_remove'])
+        self.assertNotContains(response, 'will be removed by the DCC')
+        self.assertFalse(context['show_decision_confirm'])
+        # self.assertNotContains(response, 'confirmed by the DCC')
+        self.assertFalse(context['show_decision_comment'])
+        self.assertFalse(context['show_archived'])
+        self.assertNotContains(response, 'has been removed by the DCC')
+        self.assertFalse(context['show_dcc_review_add_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-review:new', args=[self.tagged_traits['confirmed_dccreview'].pk]))
+        self.assertFalse(context['show_dcc_review_update_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-review:update', args=[self.tagged_traits['confirmed_dccreview'].pk]))
+        self.assertFalse(context['show_dcc_decision_add_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-decision:new', args=[self.tagged_traits['confirmed_dccreview'].pk]))
+        self.assertFalse(context['show_dcc_decision_update_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-decision:update', args=[self.tagged_traits['confirmed_dccreview'].pk]))
+        self.assertFalse(context['show_delete_button'])
+        self.assertEqual(context['quality_review_panel_color'], 'bg-success')
+
+    def test_context_followup_dccreview_no_studyresponse_remove_dccdecision_archived(self):
+        """Context variables and page content are as expected for this type of tagged trait."""
+        response = self.client.get(self.get_url(self.tagged_traits['followup_dccreview_no_studyresponse_remove_dccdecision_archived'].pk))
+        context = response.context
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(context['show_quality_review_panel'])
+        self.assertContains(response, '#collapse-reviewstatus')
+        self.assertNotContains(response, 'not yet been reviewed')
+        self.assertFalse(context['show_dcc_review_confirmed'])
+        self.assertNotContains(response, 'confirmed by the DCC')
+        self.assertTrue(context['show_dcc_review_needs_followup'])
+        self.assertContains(response, 'flagged for removal')
+        self.assertFalse(context['show_study_response_status'])
+        self.assertNotContains(response, 'The study')
+        self.assertFalse(context['show_study_agrees'])
+        self.assertNotContains(response, 'agreed that the tag should be removed')
+        self.assertFalse(context['show_study_disagrees'])
+        self.assertNotContains(response, 'indicated that the variable should remain tagged')
+        self.assertTrue(context['show_dcc_decision'])
+        self.assertTrue(context['show_decision_remove'])
+        self.assertContains(response, 'will be removed by the DCC')
+        self.assertFalse(context['show_decision_confirm'])
+        # self.assertNotContains(response, 'confirmed by the DCC')
+        self.assertFalse(context['show_decision_comment'])
+        self.assertNotContains(response, self.tagged_traits['followup_dccreview_no_studyresponse_remove_dccdecision_archived'].dcc_review.dcc_decision.comment)
+        self.assertTrue(context['show_archived'])
+        self.assertContains(response, 'has been removed by the DCC')
+        self.assertFalse(context['show_dcc_review_add_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-review:new', args=[self.tagged_traits['followup_dccreview_no_studyresponse_remove_dccdecision_archived'].pk]))
+        self.assertFalse(context['show_dcc_review_update_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-review:update', args=[self.tagged_traits['followup_dccreview_no_studyresponse_remove_dccdecision_archived'].pk]))
+        self.assertFalse(context['show_dcc_decision_add_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-decision:new', args=[self.tagged_traits['followup_dccreview_no_studyresponse_remove_dccdecision_archived'].pk]))
+        self.assertFalse(context['show_dcc_decision_update_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-decision:update', args=[self.tagged_traits['followup_dccreview_no_studyresponse_remove_dccdecision_archived'].pk]))
+        self.assertFalse(context['show_delete_button'])
+        self.assertEqual(context['quality_review_panel_color'], 'bg-danger')
+
+    def test_context_followup_dccreview_no_studyresponse_confirm_dccdecision(self):
+        """Context variables and page content are as expected for this type of tagged trait."""
+        response = self.client.get(self.get_url(self.tagged_traits['followup_dccreview_no_studyresponse_confirm_dccdecision'].pk))
+        context = response.context
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(context['show_quality_review_panel'])
+        self.assertContains(response, '#collapse-reviewstatus')
+        self.assertNotContains(response, 'not yet been reviewed')
+        self.assertFalse(context['show_dcc_review_confirmed'])
+        # self.assertNotContains(response, 'confirmed by the DCC')
+        self.assertTrue(context['show_dcc_review_needs_followup'])
+        self.assertContains(response, 'flagged for removal')
+        self.assertFalse(context['show_study_response_status'])
+        self.assertNotContains(response, 'The study')
+        self.assertFalse(context['show_study_agrees'])
+        self.assertNotContains(response, 'agreed that the tag should be removed')
+        self.assertFalse(context['show_study_disagrees'])
+        self.assertNotContains(response, 'indicated that the variable should remain tagged')
+        self.assertTrue(context['show_dcc_decision'])
+        self.assertFalse(context['show_decision_remove'])
+        self.assertNotContains(response, 'will be removed by the DCC')
+        self.assertTrue(context['show_decision_confirm'])
+        self.assertContains(response, 'confirmed by the DCC')
+        self.assertFalse(context['show_decision_comment'])
+        self.assertNotContains(response, self.tagged_traits['followup_dccreview_no_studyresponse_confirm_dccdecision'].dcc_review.dcc_decision.comment)
+        self.assertFalse(context['show_archived'])
+        self.assertNotContains(response, 'has been removed by the DCC')
+        self.assertFalse(context['show_dcc_review_add_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-review:new', args=[self.tagged_traits['followup_dccreview_no_studyresponse_confirm_dccdecision'].pk]))
+        self.assertFalse(context['show_dcc_review_update_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-review:update', args=[self.tagged_traits['followup_dccreview_no_studyresponse_confirm_dccdecision'].pk]))
+        self.assertFalse(context['show_dcc_decision_add_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-decision:new', args=[self.tagged_traits['followup_dccreview_no_studyresponse_confirm_dccdecision'].pk]))
+        self.assertFalse(context['show_dcc_decision_update_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-decision:update', args=[self.tagged_traits['followup_dccreview_no_studyresponse_confirm_dccdecision'].pk]))
+        self.assertFalse(context['show_delete_button'])
+        self.assertEqual(context['quality_review_panel_color'], 'bg-success')
+
+    def test_context_followup_dccreview_agree_studyresponse_archived(self):
+        """Context variables and page content are as expected for this type of tagged trait."""
+        response = self.client.get(self.get_url(self.tagged_traits['followup_dccreview_agree_studyresponse_archived'].pk))
+        context = response.context
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(context['show_quality_review_panel'])
+        self.assertContains(response, '#collapse-reviewstatus')
+        self.assertNotContains(response, 'not yet been reviewed')
+        self.assertFalse(context['show_dcc_review_confirmed'])
+        self.assertNotContains(response, 'confirmed by the DCC')
+        self.assertTrue(context['show_dcc_review_needs_followup'])
+        self.assertContains(response, 'flagged for removal')
+        self.assertTrue(context['show_study_response_status'])
+        self.assertContains(response, 'The study')
+        self.assertTrue(context['show_study_agrees'])
+        self.assertContains(response, 'agreed that the tag should be removed')
+        self.assertFalse(context['show_study_disagrees'])
+        self.assertNotContains(response, 'indicated that the variable should remain tagged')
+        self.assertFalse(context['show_dcc_decision'])
+        self.assertFalse(context['show_decision_remove'])
+        self.assertNotContains(response, 'will be removed by the DCC')
+        self.assertFalse(context['show_decision_confirm'])
+        self.assertFalse(context['show_decision_comment'])
+        self.assertTrue(context['show_archived'])
+        self.assertContains(response, 'has been removed by the DCC')
+        self.assertFalse(context['show_dcc_review_add_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-review:new', args=[self.tagged_traits['followup_dccreview_agree_studyresponse_archived'].pk]))
+        self.assertFalse(context['show_dcc_review_update_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-review:update', args=[self.tagged_traits['followup_dccreview_agree_studyresponse_archived'].pk]))
+        self.assertFalse(context['show_dcc_decision_add_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-decision:new', args=[self.tagged_traits['followup_dccreview_agree_studyresponse_archived'].pk]))
+        self.assertFalse(context['show_dcc_decision_update_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-decision:update', args=[self.tagged_traits['followup_dccreview_agree_studyresponse_archived'].pk]))
+        self.assertFalse(context['show_delete_button'])
+        self.assertEqual(context['quality_review_panel_color'], 'bg-danger')
+
+    def test_context_followup_dccreview_disagree_studyresponse_remove_dccdecision_archived(self):
+        """Context variables and page content are as expected for this type of tagged trait."""
+        response = self.client.get(self.get_url(self.tagged_traits['followup_dccreview_disagree_studyresponse_remove_dccdecision_archived'].pk))
+        context = response.context
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(context['show_quality_review_panel'])
+        self.assertContains(response, '#collapse-reviewstatus')
+        self.assertNotContains(response, 'not yet been reviewed')
+        self.assertFalse(context['show_dcc_review_confirmed'])
+        self.assertNotContains(response, 'confirmed by the DCC')
+        self.assertTrue(context['show_dcc_review_needs_followup'])
+        self.assertContains(response, 'flagged for removal')
+        self.assertTrue(context['show_study_response_status'])
+        self.assertContains(response, 'The study')
+        self.assertFalse(context['show_study_agrees'])
+        self.assertNotContains(response, 'agreed that the tag should be removed')
+        self.assertTrue(context['show_study_disagrees'])
+        self.assertContains(response, 'indicated that the variable should remain tagged')
+        self.assertContains(response, self.tagged_traits['followup_dccreview_disagree_studyresponse_remove_dccdecision_archived'].dcc_review.study_response.comment)
+        self.assertTrue(context['show_dcc_decision'])
+        self.assertTrue(context['show_decision_remove'])
+        self.assertContains(response, 'will be removed by the DCC')
+        self.assertFalse(context['show_decision_confirm'])
+        self.assertFalse(context['show_decision_comment'])
+        self.assertTrue(context['show_archived'])
+        self.assertContains(response, 'has been removed by the DCC')
+        self.assertFalse(context['show_dcc_review_add_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-review:new', args=[self.tagged_traits['followup_dccreview_disagree_studyresponse_remove_dccdecision_archived'].pk]))
+        self.assertFalse(context['show_dcc_review_update_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-review:update', args=[self.tagged_traits['followup_dccreview_disagree_studyresponse_remove_dccdecision_archived'].pk]))
+        self.assertFalse(context['show_dcc_decision_add_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-decision:new', args=[self.tagged_traits['followup_dccreview_disagree_studyresponse_remove_dccdecision_archived'].pk]))
+        self.assertFalse(context['show_dcc_decision_update_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-decision:update', args=[self.tagged_traits['followup_dccreview_disagree_studyresponse_remove_dccdecision_archived'].pk]))
+        self.assertFalse(context['show_delete_button'])
+        self.assertEqual(context['quality_review_panel_color'], 'bg-danger')
+
+    def test_context_followup_dccreview_disagree_studyresponse_confirm_dccdecision(self):
+        """Context variables and page content are as expected for this type of tagged trait."""
+        response = self.client.get(self.get_url(self.tagged_traits['followup_dccreview_disagree_studyresponse_confirm_dccdecision'].pk))
+        context = response.context
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(context['show_quality_review_panel'])
+        self.assertContains(response, '#collapse-reviewstatus')
+        self.assertNotContains(response, 'not yet been reviewed')
+        self.assertFalse(context['show_dcc_review_confirmed'])
+        self.assertTrue(context['show_dcc_review_needs_followup'])
+        self.assertContains(response, 'flagged for removal')
+        self.assertTrue(context['show_study_response_status'])
+        self.assertContains(response, 'The study')
+        self.assertFalse(context['show_study_agrees'])
+        self.assertNotContains(response, 'agreed that the tag should be removed')
+        self.assertTrue(context['show_study_disagrees'])
+        self.assertContains(response, 'indicated that the variable should remain tagged')
+        self.assertContains(response, self.tagged_traits['followup_dccreview_disagree_studyresponse_confirm_dccdecision'].dcc_review.study_response.comment)
+        self.assertTrue(context['show_dcc_decision'])
+        self.assertFalse(context['show_decision_remove'])
+        self.assertNotContains(response, 'will be removed by the DCC')
+        self.assertTrue(context['show_decision_confirm'])
+        self.assertContains(response, 'confirmed by the DCC')
+        self.assertFalse(context['show_decision_comment'])
+        self.assertNotContains(response, self.tagged_traits['followup_dccreview_disagree_studyresponse_confirm_dccdecision'].dcc_review.dcc_decision.comment)
+        self.assertFalse(context['show_archived'])
+        self.assertNotContains(response, 'has been removed by the DCC')
+        self.assertFalse(context['show_dcc_review_add_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-review:new', args=[self.tagged_traits['followup_dccreview_disagree_studyresponse_confirm_dccdecision'].pk]))
+        self.assertFalse(context['show_dcc_review_update_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-review:update', args=[self.tagged_traits['followup_dccreview_disagree_studyresponse_confirm_dccdecision'].pk]))
+        self.assertFalse(context['show_dcc_decision_add_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-decision:new', args=[self.tagged_traits['followup_dccreview_disagree_studyresponse_confirm_dccdecision'].pk]))
+        self.assertFalse(context['show_dcc_decision_update_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-decision:update', args=[self.tagged_traits['followup_dccreview_disagree_studyresponse_confirm_dccdecision'].pk]))
+        self.assertFalse(context['show_delete_button'])
+        self.assertEqual(context['quality_review_panel_color'], 'bg-success')
+
+
+class TaggedTraitDetailDCCAnalystTest(TaggedTraitDetailTestsMixin, DCCAnalystLoginTestCase):
+
+    def test_context_unreviewed(self):
+        """Context variables and page content are as expected for this type of tagged trait."""
+        response = self.client.get(self.get_url(self.tagged_traits['unreviewed'].pk))
+        context = response.context
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(context['show_quality_review_panel'])
+        self.assertContains(response, '#collapse-reviewstatus')
+        self.assertContains(response, 'not yet been reviewed')
+        self.assertFalse(context['show_dcc_review_confirmed'])
+        self.assertNotContains(response, 'confirmed by the DCC')
+        self.assertFalse(context['show_dcc_review_needs_followup'])
+        self.assertNotContains(response, 'flagged for removal')
+        self.assertFalse(context['show_study_response_status'])
+        self.assertNotContains(response, 'The study')
+        self.assertFalse(context['show_study_agrees'])
+        self.assertNotContains(response, 'agreed that the tag should be removed')
+        self.assertFalse(context['show_study_disagrees'])
+        self.assertNotContains(response, 'indicated that the variable should remain tagged')
+        self.assertFalse(context['show_dcc_decision'])
+        self.assertFalse(context['show_decision_remove'])
+        self.assertNotContains(response, 'will be removed by the DCC')
+        self.assertFalse(context['show_decision_confirm'])
+        # self.assertNotContains(response, 'confirmed by the DCC')
+        self.assertFalse(context['show_decision_comment'])
+        self.assertFalse(context['show_archived'])
+        self.assertNotContains(response, 'has been removed by the DCC')
+        self.assertTrue(context['show_dcc_review_add_button'])
+        self.assertContains(response, reverse('tags:tagged-traits:pk:dcc-review:new', args=[self.tagged_traits['unreviewed'].pk]))
+        self.assertFalse(context['show_dcc_review_update_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-review:update', args=[self.tagged_traits['unreviewed'].pk]))
+        self.assertFalse(context['show_dcc_decision_add_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-decision:new', args=[self.tagged_traits['unreviewed'].pk]))
+        self.assertFalse(context['show_dcc_decision_update_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-decision:update', args=[self.tagged_traits['unreviewed'].pk]))
+        self.assertTrue(context['show_delete_button'])
+        self.assertEqual(context['quality_review_panel_color'], '')
+
+    def test_context_followup_dccreview_no_studyresponse_no_dccdecision(self):
+        """Context variables and page content are as expected for this type of tagged trait."""
+        response = self.client.get(self.get_url(self.tagged_traits['followup_dccreview_no_studyresponse_no_dccdecision'].pk))
+        context = response.context
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(context['show_quality_review_panel'])
+        self.assertContains(response, '#collapse-reviewstatus')
+        self.assertNotContains(response, 'not yet been reviewed')
+        self.assertFalse(context['show_dcc_review_confirmed'])
+        self.assertNotContains(response, 'confirmed by the DCC')
+        self.assertTrue(context['show_dcc_review_needs_followup'])
+        self.assertContains(response, 'flagged for removal')
+        self.assertFalse(context['show_study_response_status'])
+        self.assertNotContains(response, 'The study')
+        self.assertFalse(context['show_study_agrees'])
+        self.assertNotContains(response, 'agreed that the tag should be removed')
+        self.assertFalse(context['show_study_disagrees'])
+        self.assertNotContains(response, 'indicated that the variable should remain tagged')
+        self.assertFalse(context['show_dcc_decision'])
+        self.assertFalse(context['show_decision_remove'])
+        self.assertNotContains(response, 'will be removed by the DCC')
+        self.assertFalse(context['show_decision_confirm'])
+        # self.assertNotContains(response, 'confirmed by the DCC')
+        self.assertFalse(context['show_decision_comment'])
+        self.assertFalse(context['show_archived'])
+        self.assertNotContains(response, 'has been removed by the DCC')
+        self.assertFalse(context['show_dcc_review_add_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-review:new', args=[self.tagged_traits['followup_dccreview_no_studyresponse_no_dccdecision'].pk]))
+        self.assertTrue(context['show_dcc_review_update_button'])
+        self.assertContains(response, reverse('tags:tagged-traits:pk:dcc-review:update', args=[self.tagged_traits['followup_dccreview_no_studyresponse_no_dccdecision'].pk]))
+        self.assertFalse(context['show_dcc_decision_add_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-decision:new', args=[self.tagged_traits['followup_dccreview_no_studyresponse_no_dccdecision'].pk]))
+        self.assertFalse(context['show_dcc_decision_update_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-decision:update', args=[self.tagged_traits['followup_dccreview_no_studyresponse_no_dccdecision'].pk]))
+        self.assertFalse(context['show_delete_button'])
+        self.assertEqual(context['quality_review_panel_color'], '')
+
+    def test_context_followup_dccreview_disagree_studyresponse_no_dccdecision(self):
+        """Context variables and page content are as expected for this type of tagged trait."""
+        response = self.client.get(self.get_url(self.tagged_traits['followup_dccreview_disagree_studyresponse_no_dccdecision'].pk))
+        context = response.context
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(context['show_quality_review_panel'])
+        self.assertContains(response, '#collapse-reviewstatus')
+        self.assertNotContains(response, 'not yet been reviewed')
+        self.assertFalse(context['show_dcc_review_confirmed'])
+        self.assertNotContains(response, 'confirmed by the DCC')
+        self.assertTrue(context['show_dcc_review_needs_followup'])
+        self.assertContains(response, 'flagged for removal')
+        self.assertTrue(context['show_study_response_status'])
+        self.assertContains(response, 'The study')
+        self.assertFalse(context['show_study_agrees'])
+        self.assertNotContains(response, 'agreed that the tag should be removed')
+        self.assertTrue(context['show_study_disagrees'])
+        self.assertContains(response, 'indicated that the variable should remain tagged')
+        self.assertContains(response, self.tagged_traits['followup_dccreview_disagree_studyresponse_no_dccdecision'].dcc_review.study_response.comment)
+        self.assertFalse(context['show_dcc_decision'])
+        self.assertFalse(context['show_decision_remove'])
+        self.assertNotContains(response, 'will be removed by the DCC')
+        self.assertFalse(context['show_decision_confirm'])
+        # self.assertNotContains(response, 'confirmed by the DCC')
+        self.assertFalse(context['show_decision_comment'])
+        # self.assertNotContains(response, self.tagged_traits[''].dcc_review.dcc_decision.comment)
+        self.assertFalse(context['show_archived'])
+        self.assertNotContains(response, 'has been removed by the DCC')
+        self.assertFalse(context['show_dcc_review_add_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-review:new', args=[self.tagged_traits['followup_dccreview_disagree_studyresponse_no_dccdecision'].pk]))
+        self.assertFalse(context['show_dcc_review_update_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-review:update', args=[self.tagged_traits['followup_dccreview_disagree_studyresponse_no_dccdecision'].pk]))
+        self.assertTrue(context['show_dcc_decision_add_button'])
+        self.assertContains(response, reverse('tags:tagged-traits:pk:dcc-decision:new', args=[self.tagged_traits['followup_dccreview_disagree_studyresponse_no_dccdecision'].pk]))
+        self.assertFalse(context['show_dcc_decision_update_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-decision:update', args=[self.tagged_traits['followup_dccreview_disagree_studyresponse_no_dccdecision'].pk]))
+        self.assertFalse(context['show_delete_button'])
+        self.assertEqual(context['quality_review_panel_color'], '')
+
+    def test_context_confirmed_dccreview(self):
+        """Context variables and page content are as expected for this type of tagged trait."""
+        response = self.client.get(self.get_url(self.tagged_traits['confirmed_dccreview'].pk))
+        context = response.context
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(context['show_quality_review_panel'])
+        self.assertContains(response, '#collapse-reviewstatus')
+        self.assertNotContains(response, 'not yet been reviewed')
+        self.assertTrue(context['show_dcc_review_confirmed'])
+        self.assertContains(response, 'confirmed by the DCC')
+        self.assertFalse(context['show_dcc_review_needs_followup'])
+        self.assertNotContains(response, 'flagged for removal')
+        self.assertFalse(context['show_study_response_status'])
+        self.assertNotContains(response, 'The study')
+        self.assertFalse(context['show_study_agrees'])
+        self.assertNotContains(response, 'agreed that the tag should be removed')
+        self.assertFalse(context['show_study_disagrees'])
+        self.assertNotContains(response, 'indicated that the variable should remain tagged')
+        self.assertFalse(context['show_dcc_decision'])
+        self.assertFalse(context['show_decision_remove'])
+        self.assertNotContains(response, 'will be removed by the DCC')
+        self.assertFalse(context['show_decision_confirm'])
+        # self.assertNotContains(response, 'confirmed by the DCC')
+        self.assertFalse(context['show_decision_comment'])
+        self.assertFalse(context['show_archived'])
+        self.assertNotContains(response, 'has been removed by the DCC')
+        self.assertFalse(context['show_dcc_review_add_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-review:new', args=[self.tagged_traits['confirmed_dccreview'].pk]))
+        self.assertTrue(context['show_dcc_review_update_button'])
+        self.assertContains(response, reverse('tags:tagged-traits:pk:dcc-review:update', args=[self.tagged_traits['confirmed_dccreview'].pk]))
+        self.assertFalse(context['show_dcc_decision_add_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-decision:new', args=[self.tagged_traits['confirmed_dccreview'].pk]))
+        self.assertFalse(context['show_dcc_decision_update_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-decision:update', args=[self.tagged_traits['confirmed_dccreview'].pk]))
+        self.assertFalse(context['show_delete_button'])
+        self.assertEqual(context['quality_review_panel_color'], 'bg-success')
+
+    def test_context_followup_dccreview_no_studyresponse_remove_dccdecision_archived(self):
+        """Context variables and page content are as expected for this type of tagged trait."""
+        response = self.client.get(self.get_url(self.tagged_traits['followup_dccreview_no_studyresponse_remove_dccdecision_archived'].pk))
+        context = response.context
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(context['show_quality_review_panel'])
+        self.assertContains(response, '#collapse-reviewstatus')
+        self.assertNotContains(response, 'not yet been reviewed')
+        self.assertFalse(context['show_dcc_review_confirmed'])
+        self.assertNotContains(response, 'confirmed by the DCC')
+        self.assertTrue(context['show_dcc_review_needs_followup'])
+        self.assertContains(response, 'flagged for removal')
+        self.assertFalse(context['show_study_response_status'])
+        self.assertNotContains(response, 'The study')
+        self.assertFalse(context['show_study_agrees'])
+        self.assertNotContains(response, 'agreed that the tag should be removed')
+        self.assertFalse(context['show_study_disagrees'])
+        self.assertNotContains(response, 'indicated that the variable should remain tagged')
+        self.assertTrue(context['show_dcc_decision'])
+        self.assertTrue(context['show_decision_remove'])
+        self.assertContains(response, 'will be removed by the DCC')
+        self.assertFalse(context['show_decision_confirm'])
+        # self.assertNotContains(response, 'confirmed by the DCC')
+        self.assertTrue(context['show_decision_comment'])
+        self.assertContains(response, self.tagged_traits['followup_dccreview_no_studyresponse_remove_dccdecision_archived'].dcc_review.dcc_decision.comment)
+        self.assertTrue(context['show_archived'])
+        self.assertContains(response, 'has been removed by the DCC')
+        self.assertFalse(context['show_dcc_review_add_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-review:new', args=[self.tagged_traits['followup_dccreview_no_studyresponse_remove_dccdecision_archived'].pk]))
+        self.assertFalse(context['show_dcc_review_update_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-review:update', args=[self.tagged_traits['followup_dccreview_no_studyresponse_remove_dccdecision_archived'].pk]))
+        self.assertFalse(context['show_dcc_decision_add_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-decision:new', args=[self.tagged_traits['followup_dccreview_no_studyresponse_remove_dccdecision_archived'].pk]))
+        self.assertTrue(context['show_dcc_decision_update_button'])
+        self.assertContains(response, reverse('tags:tagged-traits:pk:dcc-decision:update', args=[self.tagged_traits['followup_dccreview_no_studyresponse_remove_dccdecision_archived'].pk]))
+        self.assertFalse(context['show_delete_button'])
+        self.assertEqual(context['quality_review_panel_color'], 'bg-danger')
+
+    def test_context_followup_dccreview_no_studyresponse_confirm_dccdecision(self):
+        """Context variables and page content are as expected for this type of tagged trait."""
+        response = self.client.get(self.get_url(self.tagged_traits['followup_dccreview_no_studyresponse_confirm_dccdecision'].pk))
+        context = response.context
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(context['show_quality_review_panel'])
+        self.assertContains(response, '#collapse-reviewstatus')
+        self.assertNotContains(response, 'not yet been reviewed')
+        self.assertFalse(context['show_dcc_review_confirmed'])
+        # self.assertNotContains(response, 'confirmed by the DCC')
+        self.assertTrue(context['show_dcc_review_needs_followup'])
+        self.assertContains(response, 'flagged for removal')
+        self.assertFalse(context['show_study_response_status'])
+        self.assertNotContains(response, 'The study')
+        self.assertFalse(context['show_study_agrees'])
+        self.assertNotContains(response, 'agreed that the tag should be removed')
+        self.assertFalse(context['show_study_disagrees'])
+        self.assertNotContains(response, 'indicated that the variable should remain tagged')
+        self.assertTrue(context['show_dcc_decision'])
+        self.assertFalse(context['show_decision_remove'])
+        self.assertNotContains(response, 'will be removed by the DCC')
+        self.assertTrue(context['show_decision_confirm'])
+        self.assertContains(response, 'confirmed by the DCC')
+        self.assertTrue(context['show_decision_comment'])
+        self.assertContains(response, self.tagged_traits['followup_dccreview_no_studyresponse_confirm_dccdecision'].dcc_review.dcc_decision.comment)
+        self.assertFalse(context['show_archived'])
+        self.assertNotContains(response, 'has been removed by the DCC')
+        self.assertFalse(context['show_dcc_review_add_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-review:new', args=[self.tagged_traits['followup_dccreview_no_studyresponse_confirm_dccdecision'].pk]))
+        self.assertFalse(context['show_dcc_review_update_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-review:update', args=[self.tagged_traits['followup_dccreview_no_studyresponse_confirm_dccdecision'].pk]))
+        self.assertFalse(context['show_dcc_decision_add_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-decision:new', args=[self.tagged_traits['followup_dccreview_no_studyresponse_confirm_dccdecision'].pk]))
+        self.assertTrue(context['show_dcc_decision_update_button'])
+        self.assertContains(response, reverse('tags:tagged-traits:pk:dcc-decision:update', args=[self.tagged_traits['followup_dccreview_no_studyresponse_confirm_dccdecision'].pk]))
+        self.assertFalse(context['show_delete_button'])
+        self.assertEqual(context['quality_review_panel_color'], 'bg-success')
+
+    def test_context_followup_dccreview_agree_studyresponse_archived(self):
+        """Context variables and page content are as expected for this type of tagged trait."""
+        response = self.client.get(self.get_url(self.tagged_traits['followup_dccreview_agree_studyresponse_archived'].pk))
+        context = response.context
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(context['show_quality_review_panel'])
+        self.assertContains(response, '#collapse-reviewstatus')
+        self.assertNotContains(response, 'not yet been reviewed')
+        self.assertFalse(context['show_dcc_review_confirmed'])
+        self.assertNotContains(response, 'confirmed by the DCC')
+        self.assertTrue(context['show_dcc_review_needs_followup'])
+        self.assertContains(response, 'flagged for removal')
+        self.assertTrue(context['show_study_response_status'])
+        self.assertContains(response, 'The study')
+        self.assertTrue(context['show_study_agrees'])
+        self.assertContains(response, 'agreed that the tag should be removed')
+        self.assertFalse(context['show_study_disagrees'])
+        self.assertNotContains(response, 'indicated that the variable should remain tagged')
+        self.assertFalse(context['show_dcc_decision'])
+        self.assertFalse(context['show_decision_remove'])
+        self.assertNotContains(response, 'will be removed by the DCC')
+        self.assertFalse(context['show_decision_confirm'])
+        self.assertFalse(context['show_decision_comment'])
+        self.assertTrue(context['show_archived'])
+        self.assertContains(response, 'has been removed by the DCC')
+        self.assertFalse(context['show_dcc_review_add_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-review:new', args=[self.tagged_traits['followup_dccreview_agree_studyresponse_archived'].pk]))
+        self.assertFalse(context['show_dcc_review_update_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-review:update', args=[self.tagged_traits['followup_dccreview_agree_studyresponse_archived'].pk]))
+        self.assertFalse(context['show_dcc_decision_add_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-decision:new', args=[self.tagged_traits['followup_dccreview_agree_studyresponse_archived'].pk]))
+        self.assertFalse(context['show_dcc_decision_update_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-decision:update', args=[self.tagged_traits['followup_dccreview_agree_studyresponse_archived'].pk]))
+        self.assertFalse(context['show_delete_button'])
+        self.assertEqual(context['quality_review_panel_color'], 'bg-danger')
+
+    def test_context_followup_dccreview_disagree_studyresponse_remove_dccdecision_archived(self):
+        """Context variables and page content are as expected for this type of tagged trait."""
+        response = self.client.get(self.get_url(self.tagged_traits['followup_dccreview_disagree_studyresponse_remove_dccdecision_archived'].pk))
+        context = response.context
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(context['show_quality_review_panel'])
+        self.assertContains(response, '#collapse-reviewstatus')
+        self.assertNotContains(response, 'not yet been reviewed')
+        self.assertFalse(context['show_dcc_review_confirmed'])
+        self.assertNotContains(response, 'confirmed by the DCC')
+        self.assertTrue(context['show_dcc_review_needs_followup'])
+        self.assertContains(response, 'flagged for removal')
+        self.assertTrue(context['show_study_response_status'])
+        self.assertContains(response, 'The study')
+        self.assertFalse(context['show_study_agrees'])
+        self.assertNotContains(response, 'agreed that the tag should be removed')
+        self.assertTrue(context['show_study_disagrees'])
+        self.assertContains(response, 'indicated that the variable should remain tagged')
+        self.assertContains(response, self.tagged_traits['followup_dccreview_disagree_studyresponse_remove_dccdecision_archived'].dcc_review.study_response.comment)
+        self.assertTrue(context['show_dcc_decision'])
+        self.assertTrue(context['show_decision_remove'])
+        self.assertContains(response, 'will be removed by the DCC')
+        self.assertFalse(context['show_decision_confirm'])
+        self.assertTrue(context['show_decision_comment'])
+        self.assertContains(response, self.tagged_traits['followup_dccreview_disagree_studyresponse_remove_dccdecision_archived'].dcc_review.dcc_decision.comment)
+        self.assertTrue(context['show_archived'])
+        self.assertContains(response, 'has been removed by the DCC')
+        self.assertFalse(context['show_dcc_review_add_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-review:new', args=[self.tagged_traits['followup_dccreview_disagree_studyresponse_remove_dccdecision_archived'].pk]))
+        self.assertFalse(context['show_dcc_review_update_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-review:update', args=[self.tagged_traits['followup_dccreview_disagree_studyresponse_remove_dccdecision_archived'].pk]))
+        self.assertFalse(context['show_dcc_decision_add_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-decision:new', args=[self.tagged_traits['followup_dccreview_disagree_studyresponse_remove_dccdecision_archived'].pk]))
+        self.assertTrue(context['show_dcc_decision_update_button'])
+        self.assertContains(response, reverse('tags:tagged-traits:pk:dcc-decision:update', args=[self.tagged_traits['followup_dccreview_disagree_studyresponse_remove_dccdecision_archived'].pk]))
+        self.assertFalse(context['show_delete_button'])
+        self.assertEqual(context['quality_review_panel_color'], 'bg-danger')
+
+    def test_context_followup_dccreview_disagree_studyresponse_confirm_dccdecision(self):
+        """Context variables and page content are as expected for this type of tagged trait."""
+        response = self.client.get(self.get_url(self.tagged_traits['followup_dccreview_disagree_studyresponse_confirm_dccdecision'].pk))
+        context = response.context
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(context['show_quality_review_panel'])
+        self.assertContains(response, '#collapse-reviewstatus')
+        self.assertNotContains(response, 'not yet been reviewed')
+        self.assertFalse(context['show_dcc_review_confirmed'])
+        self.assertTrue(context['show_dcc_review_needs_followup'])
+        self.assertContains(response, 'flagged for removal')
+        self.assertTrue(context['show_study_response_status'])
+        self.assertContains(response, 'The study')
+        self.assertFalse(context['show_study_agrees'])
+        self.assertNotContains(response, 'agreed that the tag should be removed')
+        self.assertTrue(context['show_study_disagrees'])
+        self.assertContains(response, 'indicated that the variable should remain tagged')
+        self.assertContains(response, self.tagged_traits['followup_dccreview_disagree_studyresponse_confirm_dccdecision'].dcc_review.study_response.comment)
+        self.assertTrue(context['show_dcc_decision'])
+        self.assertFalse(context['show_decision_remove'])
+        self.assertNotContains(response, 'will be removed by the DCC')
+        self.assertTrue(context['show_decision_confirm'])
+        self.assertContains(response, 'confirmed by the DCC')
+        self.assertTrue(context['show_decision_comment'])
+        self.assertContains(response, self.tagged_traits['followup_dccreview_disagree_studyresponse_confirm_dccdecision'].dcc_review.dcc_decision.comment)
+        self.assertFalse(context['show_archived'])
+        self.assertNotContains(response, 'has been removed by the DCC')
+        self.assertFalse(context['show_dcc_review_add_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-review:new', args=[self.tagged_traits['followup_dccreview_disagree_studyresponse_confirm_dccdecision'].pk]))
+        self.assertFalse(context['show_dcc_review_update_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-review:update', args=[self.tagged_traits['followup_dccreview_disagree_studyresponse_confirm_dccdecision'].pk]))
+        self.assertFalse(context['show_dcc_decision_add_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-decision:new', args=[self.tagged_traits['followup_dccreview_disagree_studyresponse_confirm_dccdecision'].pk]))
+        self.assertTrue(context['show_dcc_decision_update_button'])
+        self.assertContains(response, reverse('tags:tagged-traits:pk:dcc-decision:update', args=[self.tagged_traits['followup_dccreview_disagree_studyresponse_confirm_dccdecision'].pk]))
+        self.assertFalse(context['show_delete_button'])
+        self.assertEqual(context['quality_review_panel_color'], 'bg-success')
+
+
+class TaggedTraitDetailDCCDeveloperTest(TaggedTraitDetailTestsMixin, DCCDeveloperLoginTestCase):
+
+    def test_context_unreviewed(self):
+        """Context variables and page content are as expected for this type of tagged trait."""
+        response = self.client.get(self.get_url(self.tagged_traits['unreviewed'].pk))
+        context = response.context
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(context['show_quality_review_panel'])
+        self.assertContains(response, '#collapse-reviewstatus')
+        self.assertContains(response, 'not yet been reviewed')
+        self.assertFalse(context['show_dcc_review_confirmed'])
+        self.assertNotContains(response, 'confirmed by the DCC')
+        self.assertFalse(context['show_dcc_review_needs_followup'])
+        self.assertNotContains(response, 'flagged for removal')
+        self.assertFalse(context['show_study_response_status'])
+        self.assertNotContains(response, 'The study')
+        self.assertFalse(context['show_study_agrees'])
+        self.assertNotContains(response, 'agreed that the tag should be removed')
+        self.assertFalse(context['show_study_disagrees'])
+        self.assertNotContains(response, 'indicated that the variable should remain tagged')
+        self.assertFalse(context['show_dcc_decision'])
+        self.assertFalse(context['show_decision_remove'])
+        self.assertNotContains(response, 'will be removed by the DCC')
+        self.assertFalse(context['show_decision_confirm'])
+        # self.assertNotContains(response, 'confirmed by the DCC')
+        self.assertFalse(context['show_decision_comment'])
+        self.assertFalse(context['show_archived'])
+        self.assertNotContains(response, 'has been removed by the DCC')
+        self.assertTrue(context['show_dcc_review_add_button'])
+        self.assertContains(response, reverse('tags:tagged-traits:pk:dcc-review:new', args=[self.tagged_traits['unreviewed'].pk]))
+        self.assertFalse(context['show_dcc_review_update_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-review:update', args=[self.tagged_traits['unreviewed'].pk]))
+        self.assertFalse(context['show_dcc_decision_add_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-decision:new', args=[self.tagged_traits['unreviewed'].pk]))
+        self.assertFalse(context['show_dcc_decision_update_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-decision:update', args=[self.tagged_traits['unreviewed'].pk]))
+        self.assertTrue(context['show_delete_button'])
+        self.assertEqual(context['quality_review_panel_color'], '')
+
+    def test_context_followup_dccreview_no_studyresponse_no_dccdecision(self):
+        """Context variables and page content are as expected for this type of tagged trait."""
+        response = self.client.get(self.get_url(self.tagged_traits['followup_dccreview_no_studyresponse_no_dccdecision'].pk))
+        context = response.context
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(context['show_quality_review_panel'])
+        self.assertContains(response, '#collapse-reviewstatus')
+        self.assertNotContains(response, 'not yet been reviewed')
+        self.assertFalse(context['show_dcc_review_confirmed'])
+        self.assertNotContains(response, 'confirmed by the DCC')
+        self.assertTrue(context['show_dcc_review_needs_followup'])
+        self.assertContains(response, 'flagged for removal')
+        self.assertFalse(context['show_study_response_status'])
+        self.assertNotContains(response, 'The study')
+        self.assertFalse(context['show_study_agrees'])
+        self.assertNotContains(response, 'agreed that the tag should be removed')
+        self.assertFalse(context['show_study_disagrees'])
+        self.assertNotContains(response, 'indicated that the variable should remain tagged')
+        self.assertFalse(context['show_dcc_decision'])
+        self.assertFalse(context['show_decision_remove'])
+        self.assertNotContains(response, 'will be removed by the DCC')
+        self.assertFalse(context['show_decision_confirm'])
+        # self.assertNotContains(response, 'confirmed by the DCC')
+        self.assertFalse(context['show_decision_comment'])
+        self.assertFalse(context['show_archived'])
+        self.assertNotContains(response, 'has been removed by the DCC')
+        self.assertFalse(context['show_dcc_review_add_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-review:new', args=[self.tagged_traits['followup_dccreview_no_studyresponse_no_dccdecision'].pk]))
+        self.assertTrue(context['show_dcc_review_update_button'])
+        self.assertContains(response, reverse('tags:tagged-traits:pk:dcc-review:update', args=[self.tagged_traits['followup_dccreview_no_studyresponse_no_dccdecision'].pk]))
+        self.assertFalse(context['show_dcc_decision_add_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-decision:new', args=[self.tagged_traits['followup_dccreview_no_studyresponse_no_dccdecision'].pk]))
+        self.assertFalse(context['show_dcc_decision_update_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-decision:update', args=[self.tagged_traits['followup_dccreview_no_studyresponse_no_dccdecision'].pk]))
+        self.assertFalse(context['show_delete_button'])
+        self.assertEqual(context['quality_review_panel_color'], '')
+
+    def test_context_followup_dccreview_disagree_studyresponse_no_dccdecision(self):
+        """Context variables and page content are as expected for this type of tagged trait."""
+        response = self.client.get(self.get_url(self.tagged_traits['followup_dccreview_disagree_studyresponse_no_dccdecision'].pk))
+        context = response.context
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(context['show_quality_review_panel'])
+        self.assertContains(response, '#collapse-reviewstatus')
+        self.assertNotContains(response, 'not yet been reviewed')
+        self.assertFalse(context['show_dcc_review_confirmed'])
+        self.assertNotContains(response, 'confirmed by the DCC')
+        self.assertTrue(context['show_dcc_review_needs_followup'])
+        self.assertContains(response, 'flagged for removal')
+        self.assertTrue(context['show_study_response_status'])
+        self.assertContains(response, 'The study')
+        self.assertFalse(context['show_study_agrees'])
+        self.assertNotContains(response, 'agreed that the tag should be removed')
+        self.assertTrue(context['show_study_disagrees'])
+        self.assertContains(response, 'indicated that the variable should remain tagged')
+        self.assertContains(response, self.tagged_traits['followup_dccreview_disagree_studyresponse_no_dccdecision'].dcc_review.study_response.comment)
+        self.assertFalse(context['show_dcc_decision'])
+        self.assertFalse(context['show_decision_remove'])
+        self.assertNotContains(response, 'will be removed by the DCC')
+        self.assertFalse(context['show_decision_confirm'])
+        # self.assertNotContains(response, 'confirmed by the DCC')
+        self.assertFalse(context['show_decision_comment'])
+        # self.assertNotContains(response, self.tagged_traits[''].dcc_review.dcc_decision.comment)
+        self.assertFalse(context['show_archived'])
+        self.assertNotContains(response, 'has been removed by the DCC')
+        self.assertFalse(context['show_dcc_review_add_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-review:new', args=[self.tagged_traits['followup_dccreview_disagree_studyresponse_no_dccdecision'].pk]))
+        self.assertFalse(context['show_dcc_review_update_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-review:update', args=[self.tagged_traits['followup_dccreview_disagree_studyresponse_no_dccdecision'].pk]))
+        self.assertTrue(context['show_dcc_decision_add_button'])
+        self.assertContains(response, reverse('tags:tagged-traits:pk:dcc-decision:new', args=[self.tagged_traits['followup_dccreview_disagree_studyresponse_no_dccdecision'].pk]))
+        self.assertFalse(context['show_dcc_decision_update_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-decision:update', args=[self.tagged_traits['followup_dccreview_disagree_studyresponse_no_dccdecision'].pk]))
+        self.assertFalse(context['show_delete_button'])
+        self.assertEqual(context['quality_review_panel_color'], '')
+
+    def test_context_confirmed_dccreview(self):
+        """Context variables and page content are as expected for this type of tagged trait."""
+        response = self.client.get(self.get_url(self.tagged_traits['confirmed_dccreview'].pk))
+        context = response.context
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(context['show_quality_review_panel'])
+        self.assertContains(response, '#collapse-reviewstatus')
+        self.assertNotContains(response, 'not yet been reviewed')
+        self.assertTrue(context['show_dcc_review_confirmed'])
+        self.assertContains(response, 'confirmed by the DCC')
+        self.assertFalse(context['show_dcc_review_needs_followup'])
+        self.assertNotContains(response, 'flagged for removal')
+        self.assertFalse(context['show_study_response_status'])
+        self.assertNotContains(response, 'The study')
+        self.assertFalse(context['show_study_agrees'])
+        self.assertNotContains(response, 'agreed that the tag should be removed')
+        self.assertFalse(context['show_study_disagrees'])
+        self.assertNotContains(response, 'indicated that the variable should remain tagged')
+        self.assertFalse(context['show_dcc_decision'])
+        self.assertFalse(context['show_decision_remove'])
+        self.assertNotContains(response, 'will be removed by the DCC')
+        self.assertFalse(context['show_decision_confirm'])
+        # self.assertNotContains(response, 'confirmed by the DCC')
+        self.assertFalse(context['show_decision_comment'])
+        self.assertFalse(context['show_archived'])
+        self.assertNotContains(response, 'has been removed by the DCC')
+        self.assertFalse(context['show_dcc_review_add_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-review:new', args=[self.tagged_traits['confirmed_dccreview'].pk]))
+        self.assertTrue(context['show_dcc_review_update_button'])
+        self.assertContains(response, reverse('tags:tagged-traits:pk:dcc-review:update', args=[self.tagged_traits['confirmed_dccreview'].pk]))
+        self.assertFalse(context['show_dcc_decision_add_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-decision:new', args=[self.tagged_traits['confirmed_dccreview'].pk]))
+        self.assertFalse(context['show_dcc_decision_update_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-decision:update', args=[self.tagged_traits['confirmed_dccreview'].pk]))
+        self.assertFalse(context['show_delete_button'])
+        self.assertEqual(context['quality_review_panel_color'], 'bg-success')
+
+    def test_context_followup_dccreview_no_studyresponse_remove_dccdecision_archived(self):
+        """Context variables and page content are as expected for this type of tagged trait."""
+        response = self.client.get(self.get_url(self.tagged_traits['followup_dccreview_no_studyresponse_remove_dccdecision_archived'].pk))
+        context = response.context
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(context['show_quality_review_panel'])
+        self.assertContains(response, '#collapse-reviewstatus')
+        self.assertNotContains(response, 'not yet been reviewed')
+        self.assertFalse(context['show_dcc_review_confirmed'])
+        self.assertNotContains(response, 'confirmed by the DCC')
+        self.assertTrue(context['show_dcc_review_needs_followup'])
+        self.assertContains(response, 'flagged for removal')
+        self.assertFalse(context['show_study_response_status'])
+        self.assertNotContains(response, 'The study')
+        self.assertFalse(context['show_study_agrees'])
+        self.assertNotContains(response, 'agreed that the tag should be removed')
+        self.assertFalse(context['show_study_disagrees'])
+        self.assertNotContains(response, 'indicated that the variable should remain tagged')
+        self.assertTrue(context['show_dcc_decision'])
+        self.assertTrue(context['show_decision_remove'])
+        self.assertContains(response, 'will be removed by the DCC')
+        self.assertFalse(context['show_decision_confirm'])
+        # self.assertNotContains(response, 'confirmed by the DCC')
+        self.assertTrue(context['show_decision_comment'])
+        self.assertContains(response, self.tagged_traits['followup_dccreview_no_studyresponse_remove_dccdecision_archived'].dcc_review.dcc_decision.comment)
+        self.assertTrue(context['show_archived'])
+        self.assertContains(response, 'has been removed by the DCC')
+        self.assertFalse(context['show_dcc_review_add_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-review:new', args=[self.tagged_traits['followup_dccreview_no_studyresponse_remove_dccdecision_archived'].pk]))
+        self.assertFalse(context['show_dcc_review_update_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-review:update', args=[self.tagged_traits['followup_dccreview_no_studyresponse_remove_dccdecision_archived'].pk]))
+        self.assertFalse(context['show_dcc_decision_add_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-decision:new', args=[self.tagged_traits['followup_dccreview_no_studyresponse_remove_dccdecision_archived'].pk]))
+        self.assertTrue(context['show_dcc_decision_update_button'])
+        self.assertContains(response, reverse('tags:tagged-traits:pk:dcc-decision:update', args=[self.tagged_traits['followup_dccreview_no_studyresponse_remove_dccdecision_archived'].pk]))
+        self.assertFalse(context['show_delete_button'])
+        self.assertEqual(context['quality_review_panel_color'], 'bg-danger')
+
+    def test_context_followup_dccreview_no_studyresponse_confirm_dccdecision(self):
+        """Context variables and page content are as expected for this type of tagged trait."""
+        response = self.client.get(self.get_url(self.tagged_traits['followup_dccreview_no_studyresponse_confirm_dccdecision'].pk))
+        context = response.context
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(context['show_quality_review_panel'])
+        self.assertContains(response, '#collapse-reviewstatus')
+        self.assertNotContains(response, 'not yet been reviewed')
+        self.assertFalse(context['show_dcc_review_confirmed'])
+        # self.assertNotContains(response, 'confirmed by the DCC')
+        self.assertTrue(context['show_dcc_review_needs_followup'])
+        self.assertContains(response, 'flagged for removal')
+        self.assertFalse(context['show_study_response_status'])
+        self.assertNotContains(response, 'The study')
+        self.assertFalse(context['show_study_agrees'])
+        self.assertNotContains(response, 'agreed that the tag should be removed')
+        self.assertFalse(context['show_study_disagrees'])
+        self.assertNotContains(response, 'indicated that the variable should remain tagged')
+        self.assertTrue(context['show_dcc_decision'])
+        self.assertFalse(context['show_decision_remove'])
+        self.assertNotContains(response, 'will be removed by the DCC')
+        self.assertTrue(context['show_decision_confirm'])
+        self.assertContains(response, 'confirmed by the DCC')
+        self.assertTrue(context['show_decision_comment'])
+        self.assertContains(response, self.tagged_traits['followup_dccreview_no_studyresponse_confirm_dccdecision'].dcc_review.dcc_decision.comment)
+        self.assertFalse(context['show_archived'])
+        self.assertNotContains(response, 'has been removed by the DCC')
+        self.assertFalse(context['show_dcc_review_add_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-review:new', args=[self.tagged_traits['followup_dccreview_no_studyresponse_confirm_dccdecision'].pk]))
+        self.assertFalse(context['show_dcc_review_update_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-review:update', args=[self.tagged_traits['followup_dccreview_no_studyresponse_confirm_dccdecision'].pk]))
+        self.assertFalse(context['show_dcc_decision_add_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-decision:new', args=[self.tagged_traits['followup_dccreview_no_studyresponse_confirm_dccdecision'].pk]))
+        self.assertTrue(context['show_dcc_decision_update_button'])
+        self.assertContains(response, reverse('tags:tagged-traits:pk:dcc-decision:update', args=[self.tagged_traits['followup_dccreview_no_studyresponse_confirm_dccdecision'].pk]))
+        self.assertFalse(context['show_delete_button'])
+        self.assertEqual(context['quality_review_panel_color'], 'bg-success')
+
+    def test_context_followup_dccreview_agree_studyresponse_archived(self):
+        """Context variables and page content are as expected for this type of tagged trait."""
+        response = self.client.get(self.get_url(self.tagged_traits['followup_dccreview_agree_studyresponse_archived'].pk))
+        context = response.context
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(context['show_quality_review_panel'])
+        self.assertContains(response, '#collapse-reviewstatus')
+        self.assertNotContains(response, 'not yet been reviewed')
+        self.assertFalse(context['show_dcc_review_confirmed'])
+        self.assertNotContains(response, 'confirmed by the DCC')
+        self.assertTrue(context['show_dcc_review_needs_followup'])
+        self.assertContains(response, 'flagged for removal')
+        self.assertTrue(context['show_study_response_status'])
+        self.assertContains(response, 'The study')
+        self.assertTrue(context['show_study_agrees'])
+        self.assertContains(response, 'agreed that the tag should be removed')
+        self.assertFalse(context['show_study_disagrees'])
+        self.assertNotContains(response, 'indicated that the variable should remain tagged')
+        self.assertFalse(context['show_dcc_decision'])
+        self.assertFalse(context['show_decision_remove'])
+        self.assertNotContains(response, 'will be removed by the DCC')
+        self.assertFalse(context['show_decision_confirm'])
+        self.assertFalse(context['show_decision_comment'])
+        self.assertTrue(context['show_archived'])
+        self.assertContains(response, 'has been removed by the DCC')
+        self.assertFalse(context['show_dcc_review_add_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-review:new', args=[self.tagged_traits['followup_dccreview_agree_studyresponse_archived'].pk]))
+        self.assertFalse(context['show_dcc_review_update_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-review:update', args=[self.tagged_traits['followup_dccreview_agree_studyresponse_archived'].pk]))
+        self.assertFalse(context['show_dcc_decision_add_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-decision:new', args=[self.tagged_traits['followup_dccreview_agree_studyresponse_archived'].pk]))
+        self.assertFalse(context['show_dcc_decision_update_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-decision:update', args=[self.tagged_traits['followup_dccreview_agree_studyresponse_archived'].pk]))
+        self.assertFalse(context['show_delete_button'])
+        self.assertEqual(context['quality_review_panel_color'], 'bg-danger')
+
+    def test_context_followup_dccreview_disagree_studyresponse_remove_dccdecision_archived(self):
+        """Context variables and page content are as expected for this type of tagged trait."""
+        response = self.client.get(self.get_url(self.tagged_traits['followup_dccreview_disagree_studyresponse_remove_dccdecision_archived'].pk))
+        context = response.context
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(context['show_quality_review_panel'])
+        self.assertContains(response, '#collapse-reviewstatus')
+        self.assertNotContains(response, 'not yet been reviewed')
+        self.assertFalse(context['show_dcc_review_confirmed'])
+        self.assertNotContains(response, 'confirmed by the DCC')
+        self.assertTrue(context['show_dcc_review_needs_followup'])
+        self.assertContains(response, 'flagged for removal')
+        self.assertTrue(context['show_study_response_status'])
+        self.assertContains(response, 'The study')
+        self.assertFalse(context['show_study_agrees'])
+        self.assertNotContains(response, 'agreed that the tag should be removed')
+        self.assertTrue(context['show_study_disagrees'])
+        self.assertContains(response, 'indicated that the variable should remain tagged')
+        self.assertContains(response, self.tagged_traits['followup_dccreview_disagree_studyresponse_remove_dccdecision_archived'].dcc_review.study_response.comment)
+        self.assertTrue(context['show_dcc_decision'])
+        self.assertTrue(context['show_decision_remove'])
+        self.assertContains(response, 'will be removed by the DCC')
+        self.assertFalse(context['show_decision_confirm'])
+        self.assertTrue(context['show_decision_comment'])
+        self.assertContains(response, self.tagged_traits['followup_dccreview_disagree_studyresponse_remove_dccdecision_archived'].dcc_review.dcc_decision.comment)
+        self.assertTrue(context['show_archived'])
+        self.assertContains(response, 'has been removed by the DCC')
+        self.assertFalse(context['show_dcc_review_add_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-review:new', args=[self.tagged_traits['followup_dccreview_disagree_studyresponse_remove_dccdecision_archived'].pk]))
+        self.assertFalse(context['show_dcc_review_update_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-review:update', args=[self.tagged_traits['followup_dccreview_disagree_studyresponse_remove_dccdecision_archived'].pk]))
+        self.assertFalse(context['show_dcc_decision_add_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-decision:new', args=[self.tagged_traits['followup_dccreview_disagree_studyresponse_remove_dccdecision_archived'].pk]))
+        self.assertTrue(context['show_dcc_decision_update_button'])
+        self.assertContains(response, reverse('tags:tagged-traits:pk:dcc-decision:update', args=[self.tagged_traits['followup_dccreview_disagree_studyresponse_remove_dccdecision_archived'].pk]))
+        self.assertFalse(context['show_delete_button'])
+        self.assertEqual(context['quality_review_panel_color'], 'bg-danger')
+
+    def test_context_followup_dccreview_disagree_studyresponse_confirm_dccdecision(self):
+        """Context variables and page content are as expected for this type of tagged trait."""
+        response = self.client.get(self.get_url(self.tagged_traits['followup_dccreview_disagree_studyresponse_confirm_dccdecision'].pk))
+        context = response.context
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(context['show_quality_review_panel'])
+        self.assertContains(response, '#collapse-reviewstatus')
+        self.assertNotContains(response, 'not yet been reviewed')
+        self.assertFalse(context['show_dcc_review_confirmed'])
+        self.assertTrue(context['show_dcc_review_needs_followup'])
+        self.assertContains(response, 'flagged for removal')
+        self.assertTrue(context['show_study_response_status'])
+        self.assertContains(response, 'The study')
+        self.assertFalse(context['show_study_agrees'])
+        self.assertNotContains(response, 'agreed that the tag should be removed')
+        self.assertTrue(context['show_study_disagrees'])
+        self.assertContains(response, 'indicated that the variable should remain tagged')
+        self.assertContains(response, self.tagged_traits['followup_dccreview_disagree_studyresponse_confirm_dccdecision'].dcc_review.study_response.comment)
+        self.assertTrue(context['show_dcc_decision'])
+        self.assertFalse(context['show_decision_remove'])
+        self.assertNotContains(response, 'will be removed by the DCC')
+        self.assertTrue(context['show_decision_confirm'])
+        self.assertContains(response, 'confirmed by the DCC')
+        self.assertTrue(context['show_decision_comment'])
+        self.assertContains(response, self.tagged_traits['followup_dccreview_disagree_studyresponse_confirm_dccdecision'].dcc_review.dcc_decision.comment)
+        self.assertFalse(context['show_archived'])
+        self.assertNotContains(response, 'has been removed by the DCC')
+        self.assertFalse(context['show_dcc_review_add_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-review:new', args=[self.tagged_traits['followup_dccreview_disagree_studyresponse_confirm_dccdecision'].pk]))
+        self.assertFalse(context['show_dcc_review_update_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-review:update', args=[self.tagged_traits['followup_dccreview_disagree_studyresponse_confirm_dccdecision'].pk]))
+        self.assertFalse(context['show_dcc_decision_add_button'])
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-decision:new', args=[self.tagged_traits['followup_dccreview_disagree_studyresponse_confirm_dccdecision'].pk]))
+        self.assertTrue(context['show_dcc_decision_update_button'])
+        self.assertContains(response, reverse('tags:tagged-traits:pk:dcc-decision:update', args=[self.tagged_traits['followup_dccreview_disagree_studyresponse_confirm_dccdecision'].pk]))
+        self.assertFalse(context['show_delete_button'])
+        self.assertEqual(context['quality_review_panel_color'], 'bg-success')
+
+
+class TaggedTraitDetailOtherUserTest(UserLoginTestCase):
+
+    def get_url(self, *args):
+        return reverse('tags:tagged-traits:pk:detail', args=args)
+
     def setUp(self):
         super().setUp()
-        self.tagged_trait = factories.TaggedTraitFactory.create(
-            trait__source_dataset__source_study_version__study=self.study,
-            creator=self.user
-        )
-        self.user.refresh_from_db()
-
-    def test_no_review_button(self):
-        """No review button is shown for a phenotype tagger."""
-        response = self.client.get(self.get_url(self.tagged_trait.pk))
-        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-review:new', args=[self.tagged_trait.pk]))
-
-    def test_reviewed_tagged_trait_missing_udpate_review_button(self):
-        """A reviewed tagged trait does not include a link to update the DCCReview for Phenotype taggers."""
-        factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait)
-        response = self.client.get(self.get_url(self.tagged_trait.pk))
-        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-review:update',
-                                                 args=[self.tagged_trait.pk]))
-
-    def test_context_with_unreviewed_tagged_trait(self):
-        """The context contains the proper flags for the add/update review buttons."""
-        response = self.client.get(self.get_url(self.tagged_trait.pk))
-        context = response.context
-        self.assertIn('show_quality_review_panel', context)
-        self.assertTrue(context['show_quality_review_panel'])
-        self.assertIn('show_dcc_review_add_button', context)
-        self.assertFalse(context['show_dcc_review_add_button'])
-        self.assertIn('show_dcc_review_update_button', context)
-        self.assertFalse(context['show_dcc_review_update_button'])
-        self.assertIn('show_confirmed_status', context)
-        self.assertFalse(context['show_confirmed_status'])
-        self.assertIn('show_needs_followup_status', context)
-        self.assertFalse(context['show_needs_followup_status'])
-        self.assertIn('show_study_response_status', context)
-        self.assertFalse(context['show_study_response_status'])
-        self.assertIn('show_study_agrees', context)
-        self.assertFalse(context['show_study_agrees'])
-        self.assertIn('show_study_disagrees', context)
-        self.assertFalse(context['show_study_disagrees'])
-
-    def test_context_with_confirmed_tagged_trait(self):
-        """The context contains the proper flags for the add/update review buttons."""
-        factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait, status=models.DCCReview.STATUS_CONFIRMED)
-        response = self.client.get(self.get_url(self.tagged_trait.pk))
-        context = response.context
-        self.assertIn('show_quality_review_panel', context)
-        self.assertTrue(context['show_quality_review_panel'])
-        self.assertIn('show_dcc_review_add_button', context)
-        self.assertFalse(context['show_dcc_review_add_button'])
-        self.assertIn('show_dcc_review_update_button', context)
-        self.assertFalse(context['show_dcc_review_update_button'])
-        self.assertIn('show_confirmed_status', context)
-        self.assertTrue(context['show_confirmed_status'])
-        self.assertIn('show_needs_followup_status', context)
-        self.assertFalse(context['show_needs_followup_status'])
-        self.assertIn('show_study_response_status', context)
-        self.assertFalse(context['show_study_response_status'])
-        self.assertIn('show_study_agrees', context)
-        self.assertFalse(context['show_study_agrees'])
-        self.assertIn('show_study_disagrees', context)
-        self.assertFalse(context['show_study_disagrees'])
-        self.assertIn('show_archived', context)
-        self.assertFalse(context['show_archived'])
-
-    def test_context_with_needs_followup_no_response_nonarchived_tagged_trait(self):
-        """The context contains the proper flags for the add/update review buttons."""
-        factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP)
-        response = self.client.get(self.get_url(self.tagged_trait.pk))
-        context = response.context
-        self.assertIn('show_quality_review_panel', context)
-        self.assertTrue(context['show_quality_review_panel'])
-        self.assertIn('show_dcc_review_add_button', context)
-        self.assertFalse(context['show_dcc_review_add_button'])
-        self.assertIn('show_dcc_review_update_button', context)
-        self.assertFalse(context['show_dcc_review_update_button'])
-        self.assertIn('show_confirmed_status', context)
-        self.assertFalse(context['show_confirmed_status'])
-        self.assertIn('show_needs_followup_status', context)
-        self.assertTrue(context['show_needs_followup_status'])
-        self.assertIn('show_study_response_status', context)
-        self.assertFalse(context['show_study_response_status'])
-        self.assertIn('show_study_agrees', context)
-        self.assertFalse(context['show_study_agrees'])
-        self.assertIn('show_study_disagrees', context)
-        self.assertFalse(context['show_study_disagrees'])
-        self.assertIn('show_archived', context)
-        self.assertFalse(context['show_archived'])
-
-    def test_context_with_needs_followup_no_response_archived_tagged_trait(self):
-        """The context contains the proper flags for the add/update review buttons."""
-        factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP)
-        self.tagged_trait.archive()
-        response = self.client.get(self.get_url(self.tagged_trait.pk))
-        context = response.context
-        self.assertIn('show_quality_review_panel', context)
-        self.assertTrue(context['show_quality_review_panel'])
-        self.assertIn('show_dcc_review_add_button', context)
-        self.assertFalse(context['show_dcc_review_add_button'])
-        self.assertIn('show_dcc_review_update_button', context)
-        self.assertFalse(context['show_dcc_review_update_button'])
-        self.assertIn('show_confirmed_status', context)
-        self.assertFalse(context['show_confirmed_status'])
-        self.assertIn('show_needs_followup_status', context)
-        self.assertTrue(context['show_needs_followup_status'])
-        self.assertIn('show_study_response_status', context)
-        self.assertFalse(context['show_study_response_status'])
-        self.assertIn('show_study_agrees', context)
-        self.assertFalse(context['show_study_agrees'])
-        self.assertIn('show_study_disagrees', context)
-        self.assertFalse(context['show_study_disagrees'])
-        self.assertIn('show_archived', context)
-        self.assertTrue(context['show_archived'])
-
-    def test_context_with_followup_agree_nonarchived_tagged_trait(self):
-        """Correct context flags for tagged trait needs followup, agree, and nonarchived."""
-        dcc_review = factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait,
-                                                       status=models.DCCReview.STATUS_FOLLOWUP)
-        factories.StudyResponseFactory.create(dcc_review=dcc_review, status=models.StudyResponse.STATUS_AGREE)
-        response = self.client.get(self.get_url(self.tagged_trait.pk))
-        context = response.context
-        self.assertIn('show_quality_review_panel', context)
-        self.assertTrue(context['show_quality_review_panel'])
-        self.assertIn('show_dcc_review_add_button', context)
-        self.assertFalse(context['show_dcc_review_add_button'])
-        self.assertIn('show_dcc_review_update_button', context)
-        self.assertFalse(context['show_dcc_review_update_button'])
-        self.assertIn('show_confirmed_status', context)
-        self.assertFalse(context['show_confirmed_status'])
-        self.assertIn('show_needs_followup_status', context)
-        self.assertTrue(context['show_needs_followup_status'])
-        self.assertIn('show_study_response_status', context)
-        self.assertTrue(context['show_study_response_status'])
-        self.assertIn('show_study_agrees', context)
-        self.assertTrue(context['show_study_agrees'])
-        self.assertIn('show_study_disagrees', context)
-        self.assertFalse(context['show_study_disagrees'])
-        self.assertIn('show_archived', context)
-        self.assertFalse(context['show_archived'])
-
-    def test_context_with_followup_agree_archived_tagged_trait(self):
-        """Correct context flags for tagged trait needs followup, agree, and archived."""
-        dcc_review = factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait,
-                                                       status=models.DCCReview.STATUS_FOLLOWUP)
-        factories.StudyResponseFactory.create(dcc_review=dcc_review, status=models.StudyResponse.STATUS_AGREE)
-        dcc_review.tagged_trait.archive()
-        response = self.client.get(self.get_url(self.tagged_trait.pk))
-        context = response.context
-        self.assertIn('show_quality_review_panel', context)
-        self.assertTrue(context['show_quality_review_panel'])
-        self.assertIn('show_dcc_review_add_button', context)
-        self.assertFalse(context['show_dcc_review_add_button'])
-        self.assertIn('show_dcc_review_update_button', context)
-        self.assertFalse(context['show_dcc_review_update_button'])
-        self.assertIn('show_confirmed_status', context)
-        self.assertFalse(context['show_confirmed_status'])
-        self.assertIn('show_needs_followup_status', context)
-        self.assertTrue(context['show_needs_followup_status'])
-        self.assertIn('show_study_response_status', context)
-        self.assertTrue(context['show_study_response_status'])
-        self.assertIn('show_study_agrees', context)
-        self.assertTrue(context['show_study_agrees'])
-        self.assertIn('show_study_disagrees', context)
-        self.assertFalse(context['show_study_disagrees'])
-        self.assertIn('show_archived', context)
-        self.assertTrue(context['show_archived'])
-
-    def test_context_with_followup_disagree_nonarchived_tagged_trait(self):
-        """Correct context flags for tagged trait needs followup, disagree, and nonarchived."""
-        dcc_review = factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait,
-                                                       status=models.DCCReview.STATUS_FOLLOWUP)
-        factories.StudyResponseFactory.create(dcc_review=dcc_review, status=models.StudyResponse.STATUS_DISAGREE)
-        response = self.client.get(self.get_url(self.tagged_trait.pk))
-        context = response.context
-        self.assertIn('show_quality_review_panel', context)
-        self.assertTrue(context['show_quality_review_panel'])
-        self.assertIn('show_dcc_review_add_button', context)
-        self.assertFalse(context['show_dcc_review_add_button'])
-        self.assertIn('show_dcc_review_update_button', context)
-        self.assertFalse(context['show_dcc_review_update_button'])
-        self.assertIn('show_confirmed_status', context)
-        self.assertFalse(context['show_confirmed_status'])
-        self.assertIn('show_needs_followup_status', context)
-        self.assertTrue(context['show_needs_followup_status'])
-        self.assertIn('show_study_response_status', context)
-        self.assertTrue(context['show_study_response_status'])
-        self.assertIn('show_study_agrees', context)
-        self.assertFalse(context['show_study_agrees'])
-        self.assertIn('show_study_disagrees', context)
-        self.assertTrue(context['show_study_disagrees'])
-        self.assertIn('show_archived', context)
-        self.assertFalse(context['show_archived'])
-
-    def test_context_with_followup_disagree_archived_tagged_trait(self):
-        """Correct context flags for tagged trait needs followup, disagree, and archived."""
-        dcc_review = factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait,
-                                                       status=models.DCCReview.STATUS_FOLLOWUP)
-        factories.StudyResponseFactory.create(dcc_review=dcc_review, status=models.StudyResponse.STATUS_DISAGREE)
-        dcc_review.tagged_trait.archive()
-        response = self.client.get(self.get_url(self.tagged_trait.pk))
-        context = response.context
-        self.assertIn('show_quality_review_panel', context)
-        self.assertTrue(context['show_quality_review_panel'])
-        self.assertIn('show_dcc_review_add_button', context)
-        self.assertFalse(context['show_dcc_review_add_button'])
-        self.assertIn('show_dcc_review_update_button', context)
-        self.assertFalse(context['show_dcc_review_update_button'])
-        self.assertIn('show_confirmed_status', context)
-        self.assertFalse(context['show_confirmed_status'])
-        self.assertIn('show_needs_followup_status', context)
-        self.assertTrue(context['show_needs_followup_status'])
-        self.assertIn('show_study_response_status', context)
-        self.assertTrue(context['show_study_response_status'])
-        self.assertIn('show_study_agrees', context)
-        self.assertFalse(context['show_study_agrees'])
-        self.assertIn('show_study_disagrees', context)
-        self.assertTrue(context['show_study_disagrees'])
-        self.assertIn('show_archived', context)
-        self.assertTrue(context['show_archived'])
+        self.tagged_trait = factories.TaggedTraitFactory.create()
 
     def test_forbidden_non_taggers(self):
         """View returns 403 code when the user is not in phenotype_taggers."""
@@ -473,241 +1381,6 @@ class TaggedTraitDetailPhenotypeTaggerTest(TaggedTraitDetailTestsMixin, Phenotyp
         other_study_tagged_trait = factories.TaggedTraitFactory.create()
         response = self.client.get(self.get_url(other_study_tagged_trait.pk))
         self.assertEqual(response.status_code, 403)
-
-
-class TaggedTraitDetailDCCAnalystTest(TaggedTraitDetailTestsMixin, DCCAnalystLoginTestCase):
-
-    def setUp(self):
-        super().setUp()
-        self.tagged_trait = factories.TaggedTraitFactory.create()
-        self.user.refresh_from_db()
-
-    def test_context_with_unreviewed_tagged_trait(self):
-        """The context contains the proper flags for the add/update review buttons."""
-        response = self.client.get(self.get_url(self.tagged_trait.pk))
-        context = response.context
-        self.assertIn('show_quality_review_panel', context)
-        self.assertTrue(context['show_quality_review_panel'])
-        self.assertIn('show_dcc_review_add_button', context)
-        self.assertTrue(context['show_dcc_review_add_button'])
-        self.assertIn('show_dcc_review_update_button', context)
-        self.assertFalse(context['show_dcc_review_update_button'])
-        self.assertIn('show_confirmed_status', context)
-        self.assertFalse(context['show_confirmed_status'])
-        self.assertIn('show_needs_followup_status', context)
-        self.assertFalse(context['show_needs_followup_status'])
-        self.assertIn('show_study_response_status', context)
-        self.assertFalse(context['show_study_response_status'])
-        self.assertIn('show_study_agrees', context)
-        self.assertFalse(context['show_study_agrees'])
-        self.assertIn('show_study_disagrees', context)
-        self.assertFalse(context['show_study_disagrees'])
-        self.assertIn('show_archived', context)
-        self.assertFalse(context['show_archived'])
-
-    def test_context_with_confirmed_tagged_trait(self):
-        """The context contains the proper flags for the add/update review buttons."""
-        factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait, status=models.DCCReview.STATUS_CONFIRMED)
-        response = self.client.get(self.get_url(self.tagged_trait.pk))
-        context = response.context
-        self.assertIn('show_quality_review_panel', context)
-        self.assertTrue(context['show_quality_review_panel'])
-        self.assertIn('show_dcc_review_add_button', context)
-        self.assertFalse(context['show_dcc_review_add_button'])
-        self.assertIn('show_dcc_review_update_button', context)
-        self.assertTrue(context['show_dcc_review_update_button'])
-        self.assertIn('show_confirmed_status', context)
-        self.assertTrue(context['show_confirmed_status'])
-        self.assertIn('show_needs_followup_status', context)
-        self.assertFalse(context['show_needs_followup_status'])
-        self.assertIn('show_study_response_status', context)
-        self.assertFalse(context['show_study_response_status'])
-        self.assertIn('show_study_agrees', context)
-        self.assertFalse(context['show_study_agrees'])
-        self.assertIn('show_study_disagrees', context)
-        self.assertFalse(context['show_study_disagrees'])
-        self.assertIn('show_archived', context)
-        self.assertFalse(context['show_archived'])
-
-    def test_context_with_needs_followup_no_response_nonarchived_tagged_trait(self):
-        """The context contains the proper flags for the add/update review buttons."""
-        factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP)
-        response = self.client.get(self.get_url(self.tagged_trait.pk))
-        context = response.context
-        self.assertIn('show_quality_review_panel', context)
-        self.assertTrue(context['show_quality_review_panel'])
-        self.assertIn('show_dcc_review_add_button', context)
-        self.assertFalse(context['show_dcc_review_add_button'])
-        self.assertIn('show_dcc_review_update_button', context)
-        self.assertTrue(context['show_dcc_review_update_button'])
-        self.assertIn('show_confirmed_status', context)
-        self.assertFalse(context['show_confirmed_status'])
-        self.assertIn('show_needs_followup_status', context)
-        self.assertTrue(context['show_needs_followup_status'])
-        self.assertIn('show_study_response_status', context)
-        self.assertFalse(context['show_study_response_status'])
-        self.assertIn('show_study_agrees', context)
-        self.assertFalse(context['show_study_agrees'])
-        self.assertIn('show_study_disagrees', context)
-        self.assertFalse(context['show_study_disagrees'])
-        self.assertIn('show_archived', context)
-        self.assertFalse(context['show_archived'])
-
-    def test_context_with_needs_followup_no_response_archived_tagged_trait(self):
-        """The context contains the proper flags for the add/update review buttons."""
-        factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP)
-        self.tagged_trait.archive()
-        response = self.client.get(self.get_url(self.tagged_trait.pk))
-        context = response.context
-        self.assertIn('show_quality_review_panel', context)
-        self.assertTrue(context['show_quality_review_panel'])
-        self.assertIn('show_dcc_review_add_button', context)
-        self.assertFalse(context['show_dcc_review_add_button'])
-        self.assertIn('show_dcc_review_update_button', context)
-        self.assertFalse(context['show_dcc_review_update_button'])
-        self.assertIn('show_confirmed_status', context)
-        self.assertFalse(context['show_confirmed_status'])
-        self.assertIn('show_needs_followup_status', context)
-        self.assertTrue(context['show_needs_followup_status'])
-        self.assertIn('show_study_response_status', context)
-        self.assertFalse(context['show_study_response_status'])
-        self.assertIn('show_study_agrees', context)
-        self.assertFalse(context['show_study_agrees'])
-        self.assertIn('show_study_disagrees', context)
-        self.assertFalse(context['show_study_disagrees'])
-        self.assertIn('show_archived', context)
-        self.assertTrue(context['show_archived'])
-
-    def test_context_with_followup_agree_nonarchived_tagged_trait(self):
-        """Correct context flags for tagged trait needs followup, agree, and non-archived."""
-        dcc_review = factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait,
-                                                       status=models.DCCReview.STATUS_FOLLOWUP)
-        factories.StudyResponseFactory.create(dcc_review=dcc_review, status=models.StudyResponse.STATUS_AGREE)
-        response = self.client.get(self.get_url(self.tagged_trait.pk))
-        context = response.context
-        self.assertIn('show_quality_review_panel', context)
-        self.assertTrue(context['show_quality_review_panel'])
-        self.assertIn('show_dcc_review_add_button', context)
-        self.assertFalse(context['show_dcc_review_add_button'])
-        self.assertIn('show_dcc_review_update_button', context)
-        self.assertFalse(context['show_dcc_review_update_button'])
-        self.assertIn('show_confirmed_status', context)
-        self.assertFalse(context['show_confirmed_status'])
-        self.assertIn('show_needs_followup_status', context)
-        self.assertTrue(context['show_needs_followup_status'])
-        self.assertIn('show_study_response_status', context)
-        self.assertTrue(context['show_study_response_status'])
-        self.assertIn('show_study_agrees', context)
-        self.assertTrue(context['show_study_agrees'])
-        self.assertIn('show_study_disagrees', context)
-        self.assertFalse(context['show_study_disagrees'])
-        self.assertIn('show_archived', context)
-        self.assertFalse(context['show_archived'])
-
-    def test_context_with_followup_agree_archived_tagged_trait(self):
-        """Correct context flags for tagged trait needs followup, agree, and archived."""
-        dcc_review = factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait,
-                                                       status=models.DCCReview.STATUS_FOLLOWUP)
-        factories.StudyResponseFactory.create(dcc_review=dcc_review, status=models.StudyResponse.STATUS_AGREE)
-        dcc_review.tagged_trait.archive()
-        response = self.client.get(self.get_url(self.tagged_trait.pk))
-        context = response.context
-        self.assertIn('show_quality_review_panel', context)
-        self.assertTrue(context['show_quality_review_panel'])
-        self.assertIn('show_dcc_review_add_button', context)
-        self.assertFalse(context['show_dcc_review_add_button'])
-        self.assertIn('show_dcc_review_update_button', context)
-        self.assertFalse(context['show_dcc_review_update_button'])
-        self.assertIn('show_confirmed_status', context)
-        self.assertFalse(context['show_confirmed_status'])
-        self.assertIn('show_needs_followup_status', context)
-        self.assertTrue(context['show_needs_followup_status'])
-        self.assertIn('show_study_response_status', context)
-        self.assertTrue(context['show_study_response_status'])
-        self.assertIn('show_study_agrees', context)
-        self.assertTrue(context['show_study_agrees'])
-        self.assertIn('show_study_disagrees', context)
-        self.assertFalse(context['show_study_disagrees'])
-        self.assertIn('show_archived', context)
-        self.assertTrue(context['show_archived'])
-
-    def test_context_with_followup_disagree_nonarchived_tagged_trait(self):
-        """Correct context flags for tagged trait needs followup, disagree, and non-archived."""
-        dcc_review = factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait,
-                                                       status=models.DCCReview.STATUS_FOLLOWUP)
-        factories.StudyResponseFactory.create(dcc_review=dcc_review, status=models.StudyResponse.STATUS_DISAGREE)
-        response = self.client.get(self.get_url(self.tagged_trait.pk))
-        context = response.context
-        self.assertIn('show_quality_review_panel', context)
-        self.assertTrue(context['show_quality_review_panel'])
-        self.assertIn('show_dcc_review_add_button', context)
-        self.assertFalse(context['show_dcc_review_add_button'])
-        self.assertIn('show_dcc_review_update_button', context)
-        self.assertFalse(context['show_dcc_review_update_button'])
-        self.assertIn('show_confirmed_status', context)
-        self.assertFalse(context['show_confirmed_status'])
-        self.assertIn('show_needs_followup_status', context)
-        self.assertTrue(context['show_needs_followup_status'])
-        self.assertIn('show_study_response_status', context)
-        self.assertTrue(context['show_study_response_status'])
-        self.assertIn('show_study_agrees', context)
-        self.assertFalse(context['show_study_agrees'])
-        self.assertIn('show_study_disagrees', context)
-        self.assertTrue(context['show_study_disagrees'])
-        self.assertIn('show_archived', context)
-        self.assertFalse(context['show_archived'])
-
-    def test_context_with_followup_disagree_archived_tagged_trait(self):
-        """Correct context flags for tagged trait needs followup, disagree, and archived."""
-        dcc_review = factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait,
-                                                       status=models.DCCReview.STATUS_FOLLOWUP)
-        factories.StudyResponseFactory.create(dcc_review=dcc_review, status=models.StudyResponse.STATUS_DISAGREE)
-        dcc_review.tagged_trait.archive()
-        response = self.client.get(self.get_url(self.tagged_trait.pk))
-        context = response.context
-        self.assertIn('show_quality_review_panel', context)
-        self.assertTrue(context['show_quality_review_panel'])
-        self.assertIn('show_dcc_review_add_button', context)
-        self.assertFalse(context['show_dcc_review_add_button'])
-        self.assertIn('show_dcc_review_update_button', context)
-        self.assertFalse(context['show_dcc_review_update_button'])
-        self.assertIn('show_confirmed_status', context)
-        self.assertFalse(context['show_confirmed_status'])
-        self.assertIn('show_needs_followup_status', context)
-        self.assertTrue(context['show_needs_followup_status'])
-        self.assertIn('show_study_response_status', context)
-        self.assertTrue(context['show_study_response_status'])
-        self.assertIn('show_study_agrees', context)
-        self.assertFalse(context['show_study_agrees'])
-        self.assertIn('show_study_disagrees', context)
-        self.assertTrue(context['show_study_disagrees'])
-        self.assertIn('show_archived', context)
-        self.assertTrue(context['show_archived'])
-
-    def test_archived_tagged_trait_missing_link_to_review(self):
-        """An archived tagged trait does not include a link to review for DCC users."""
-        self.tagged_trait.archive()
-        response = self.client.get(self.get_url(self.tagged_trait.pk))
-        self.assertNotContains(response, reverse('tags:tagged-traits:pk:dcc-review:new', args=[self.tagged_trait.pk]))
-
-    def test_unreviewed_tagged_trait_includes_link_to_review(self):
-        """An unreviewed tagged trait includes a link to review for DCC users."""
-        response = self.client.get(self.get_url(self.tagged_trait.pk))
-        self.assertContains(response, reverse('tags:tagged-traits:pk:dcc-review:new', args=[self.tagged_trait.pk]))
-
-    def test_reviewed_tagged_trait_includes_link_to_udpate(self):
-        """The context contains the proper flags when the tagged trait has not been reviewed.."""
-        factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait)
-        response = self.client.get(self.get_url(self.tagged_trait.pk))
-        self.assertContains(response, reverse('tags:tagged-traits:pk:dcc-review:update', args=[self.tagged_trait.pk]))
-
-    def test_archived_tagged_trait_missing_link_to_udpate(self):
-        """An archived tagged trait does not include a link to update the dcc review."""
-        factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait)
-        self.tagged_trait.archive()
-        response = self.client.get(self.get_url(self.tagged_trait.pk))
-        self.assertNotContains(
-            response, reverse('tags:tagged-traits:pk:dcc-review:update', args=[self.tagged_trait.pk]))
 
 
 class TaggedTraitTagCountsByStudyTest(UserLoginTestCase):
@@ -2821,7 +3494,7 @@ class DCCReviewByTagAndStudyDCCTestsMixin(object):
         form_data = {forms.DCCReviewByTagAndStudyForm.SUBMIT_CONFIRM: 'Confirm', 'comment': ''}
         response = self.client.post(self.get_url(), form_data)
         # Correctly creates a DCCReview for this TaggedTrait.
-        dcc_review = models.DCCReview.objects.all().latest('created')
+        dcc_review = models.DCCReview.objects.latest('created')
         self.assertEqual(self.tagged_trait.dcc_review, dcc_review)
         # The pk session variable is correctly unset.
         session = self.client.session
@@ -2840,7 +3513,7 @@ class DCCReviewByTagAndStudyDCCTestsMixin(object):
         form_data = {forms.DCCReviewByTagAndStudyForm.SUBMIT_FOLLOWUP: 'Require study followup', 'comment': 'foo'}
         response = self.client.post(self.get_url(), form_data)
         # Correctly creates a DCCReview for this TaggedTrait.
-        dcc_review = models.DCCReview.objects.all().latest('created')
+        dcc_review = models.DCCReview.objects.latest('created')
         self.assertEqual(self.tagged_trait.dcc_review, dcc_review)
         # The pk session variable is correctly unset.
         session = self.client.session
@@ -3105,6 +3778,16 @@ class DCCReviewByTagAndStudyDCCTestsMixin(object):
         self.assertIn(another_tagged_trait.tag.title, content)
         self.assertIn(self.tagged_trait.tag.title, content)
 
+    def test_shows_tag_only_once_when_it_is_archived(self):
+        """The tag is only shown once, even when the tagged variable is archived."""
+        self.tagged_trait.archive()
+        response = self.client.get(self.get_url())
+        context = response.context
+        self.assertTrue(context['show_other_tags'])
+        content = str(response.content)
+        self.assertNotIn(self.tagged_trait.tag, context['other_tags'])
+        self.assertNotIn(self.tagged_trait.tag, context['archived_other_tags'])
+
 
 class DCCReviewByTagAndStudyDCCAnalystTest(DCCReviewByTagAndStudyDCCTestsMixin, DCCAnalystLoginTestCase):
 
@@ -3172,7 +3855,7 @@ class DCCReviewCreateDCCTestsMixin(object):
         response = self.client.post(self.get_url(self.tagged_trait.pk), form_data)
         self.assertRedirects(response, self.tagged_trait.get_absolute_url())
         # Correctly creates a DCCReview for this TaggedTrait.
-        dcc_review = models.DCCReview.objects.all().latest('created')
+        dcc_review = models.DCCReview.objects.latest('created')
         self.assertEqual(self.tagged_trait.dcc_review, dcc_review)
         # Check for success message.
         messages = list(response.wsgi_request._messages)
@@ -3185,7 +3868,7 @@ class DCCReviewCreateDCCTestsMixin(object):
         response = self.client.post(self.get_url(self.tagged_trait.pk), form_data)
         self.assertRedirects(response, self.tagged_trait.get_absolute_url())
         # Correctly creates a DCCReview for this TaggedTrait.
-        dcc_review = models.DCCReview.objects.all().latest('created')
+        dcc_review = models.DCCReview.objects.latest('created')
         self.assertEqual(self.tagged_trait.dcc_review, dcc_review)
         # Check for success message.
         messages = list(response.wsgi_request._messages)
@@ -3478,7 +4161,7 @@ class DCCReviewUpdateDCCTestsMixin(object):
         self.assertEqual(len(messages), 1)
         self.assertIn('archived', str(messages[0]))
 
-    def test_cant_get_dcc_review_if_study_has_responded(self):
+    def test_cant_update_dcc_review_if_study_has_responded(self):
         """Posting data redirects with a message if the study has responded."""
         self.tagged_trait.dcc_review.delete()
         dcc_review = factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait,
@@ -3501,6 +4184,36 @@ class DCCReviewUpdateDCCTestsMixin(object):
         dcc_review = factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait,
                                                        status=models.DCCReview.STATUS_FOLLOWUP)
         factories.StudyResponseFactory.create(dcc_review=dcc_review)
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        self.assertRedirects(response, self.tagged_trait.get_absolute_url())
+        # Check for error message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Oops!', str(messages[0]))
+
+    def test_cant_update_dcc_review_if_dcc_decision_exists(self):
+        """Posting data redirects with a message if a dcc decision exists."""
+        self.tagged_trait.dcc_review.delete()
+        dcc_review = factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait,
+                                                       status=models.DCCReview.STATUS_FOLLOWUP)
+        factories.DCCDecisionFactory.create(dcc_review=dcc_review)
+        form_data = {forms.DCCReviewForm.SUBMIT_CONFIRM: 'Confirm', 'comment': ''}
+        response = self.client.post(self.get_url(self.tagged_trait.pk), form_data)
+        self.assertRedirects(response, self.tagged_trait.get_absolute_url())
+        # Did not update the DCCReview for this TaggedTrait.
+        self.tagged_trait.dcc_review.refresh_from_db()
+        self.assertEqual(self.tagged_trait.dcc_review.status, models.DCCReview.STATUS_FOLLOWUP)
+        # Check for error message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Oops!', str(messages[0]))
+
+    def test_get_redirect_if_dcc_decision_exists(self):
+        """Loading the page redirects with a message if the study has responded."""
+        self.tagged_trait.dcc_review.delete()
+        dcc_review = factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait,
+                                                       status=models.DCCReview.STATUS_FOLLOWUP)
+        factories.DCCDecisionFactory.create(dcc_review=dcc_review)
         response = self.client.get(self.get_url(self.tagged_trait.pk))
         self.assertRedirects(response, self.tagged_trait.get_absolute_url())
         # Check for error message.
@@ -3736,6 +4449,66 @@ class DCCReviewNeedFollowupCountsPhenotypeTaggerTest(PhenotypeTaggerLoginTestCas
         counts = context['grouped_study_tag_counts']
         self.assertEqual(len(counts), 0)
 
+    def test_context_includes_taggedtrait_with_dccdecision_confirm_no_studyresponse(self):
+        """Count does not include a TaggedTrait that has a confirm DCCDecision but no StudyResponse."""
+        dcc_review = factories.DCCReviewFactory.create(
+            tagged_trait__trait__source_dataset__source_study_version__study=self.study,
+            status=models.DCCReview.STATUS_FOLLOWUP
+        )
+        dcc_decision = factories.DCCDecisionFactory.create(
+            dcc_review=dcc_review, decision=models.DCCDecision.DECISION_CONFIRM)
+        response = self.client.get(self.get_url())
+        context = response.context
+        self.assertIn('grouped_study_tag_counts', context)
+        counts = context['grouped_study_tag_counts']
+        self.assertEqual(len(counts), 0)
+
+    def test_context_includes_taggedtrait_with_dccdecision_remove_no_studyresponse(self):
+        """Count does not include a TaggedTrait that has a remove DCCDecision but no StudyResponse."""
+        dcc_review = factories.DCCReviewFactory.create(
+            tagged_trait__trait__source_dataset__source_study_version__study=self.study,
+            status=models.DCCReview.STATUS_FOLLOWUP
+        )
+        dcc_decision = factories.DCCDecisionFactory.create(
+            dcc_review=dcc_review, decision=models.DCCDecision.DECISION_REMOVE)
+        response = self.client.get(self.get_url())
+        context = response.context
+        self.assertIn('grouped_study_tag_counts', context)
+        counts = context['grouped_study_tag_counts']
+        self.assertEqual(len(counts), 0)
+
+    def test_context_includes_taggedtrait_with_dccdecision_confirm_studyresponse_disagree(self):
+        """Count does not include a TaggedTrait that has a confirm DCCDecision and a disagree StudyResponse."""
+        dcc_review = factories.DCCReviewFactory.create(
+            tagged_trait__trait__source_dataset__source_study_version__study=self.study,
+            status=models.DCCReview.STATUS_FOLLOWUP
+        )
+        study_response = factories.StudyResponseFactory.create(
+            dcc_review=dcc_review, status=models.StudyResponse.STATUS_DISAGREE)
+        dcc_decision = factories.DCCDecisionFactory.create(
+            dcc_review=dcc_review, decision=models.DCCDecision.DECISION_CONFIRM)
+        response = self.client.get(self.get_url())
+        context = response.context
+        self.assertIn('grouped_study_tag_counts', context)
+        counts = context['grouped_study_tag_counts']
+        self.assertEqual(len(counts), 1)
+
+    def test_context_includes_taggedtrait_with_dccdecision_remove_studyresponse_disagree(self):
+        """Count does not include a TaggedTrait that has a remove DCCDecision and a disagree StudyResponse."""
+        dcc_review = factories.DCCReviewFactory.create(
+            tagged_trait__trait__source_dataset__source_study_version__study=self.study,
+            status=models.DCCReview.STATUS_FOLLOWUP
+        )
+        study_response = factories.StudyResponseFactory.create(
+            dcc_review=dcc_review, status=models.StudyResponse.STATUS_DISAGREE)
+        dcc_decision = factories.DCCDecisionFactory.create(
+            dcc_review=dcc_review, decision=models.DCCDecision.DECISION_REMOVE)
+        response = self.client.get(self.get_url())
+        context = response.context
+        self.assertIn('grouped_study_tag_counts', context)
+        counts = context['grouped_study_tag_counts']
+        self.assertEqual(len(counts), 1)
+
     def test_only_taggable_studies(self):
         """Only studies that the user can tag are included."""
         other_study = StudyFactory.create()
@@ -3965,7 +4738,7 @@ class DCCReviewNeedFollowupListMixin(object):
         context = response.context
         self.assertIsInstance(context['tagged_trait_table'], tables.DCCReviewTable)
 
-    def test_view_contains_tagged_traits_that_need_followup(self):
+    def test_view_table_contains_tagged_traits_that_need_followup(self):
         """Table contains TaggedTraits that need followup."""
         response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
         context = response.context
@@ -3989,6 +4762,70 @@ class DCCReviewNeedFollowupListMixin(object):
             self.assertIn(dcc_review.tagged_trait, table.data,
                           msg='tagged_trait_table does not contain {}'.format(dcc_review.tagged_trait))
         self.assertEqual(len(table.data), len(self.dcc_reviews))
+
+    def test_view_table_does_not_contain_tagged_trait_with_confirm_dccdecision_but_no_studyresponse(self):
+        """Table does not contain a TaggedTrait with no StudyResponse and a confirm DCCDecision."""
+        tagged_trait = factories.TaggedTraitFactory.create(
+            tag=self.tag, trait__source_dataset__source_study_version__study=self.study)
+        dcc_decision = factories.DCCDecisionFactory.create(
+            dcc_review__tagged_trait=tagged_trait, decision=models.DCCDecision.DECISION_CONFIRM)
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        context = response.context
+        table = context['tagged_trait_table']
+        self.assertNotIn(tagged_trait, table.data)
+        for dcc_review in self.dcc_reviews:
+            self.assertIn(dcc_review.tagged_trait, table.data,
+                          msg='tagged_trait_table does not contain {}'.format(dcc_review.tagged_trait))
+        self.assertEqual(len(table.data), len(self.dcc_reviews))
+
+    def test_view_table_does_not_contain_tagged_trait_with_remove_dccdecision_but_no_studyresponse(self):
+        """Table does not contain a TaggedTrait with no StudyResponse and a remove DCCDecision."""
+        tagged_trait = factories.TaggedTraitFactory.create(
+            tag=self.tag, trait__source_dataset__source_study_version__study=self.study)
+        dcc_decision = factories.DCCDecisionFactory.create(
+            dcc_review__tagged_trait=tagged_trait, decision=models.DCCDecision.DECISION_REMOVE)
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        context = response.context
+        table = context['tagged_trait_table']
+        self.assertNotIn(tagged_trait, table.data)
+        for dcc_review in self.dcc_reviews:
+            self.assertIn(dcc_review.tagged_trait, table.data,
+                          msg='tagged_trait_table does not contain {}'.format(dcc_review.tagged_trait))
+        self.assertEqual(len(table.data), len(self.dcc_reviews))
+
+    def test_view_table_contains_tagged_trait_with_confirm_dccdecision_with_studyresponse(self):
+        """Table does not contain a TaggedTrait with disagree StudyResponse and a confirm DCCDecision."""
+        tagged_trait = factories.TaggedTraitFactory.create(
+            tag=self.tag, trait__source_dataset__source_study_version__study=self.study)
+        study_response = factories.StudyResponseFactory.create(
+            dcc_review__tagged_trait=tagged_trait, status=models.StudyResponse.STATUS_DISAGREE)
+        dcc_decision = factories.DCCDecisionFactory.create(
+            dcc_review=study_response.dcc_review, decision=models.DCCDecision.DECISION_CONFIRM)
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        context = response.context
+        table = context['tagged_trait_table']
+        self.assertIn(tagged_trait, table.data)
+        for dcc_review in self.dcc_reviews:
+            self.assertIn(dcc_review.tagged_trait, table.data,
+                          msg='tagged_trait_table does not contain {}'.format(dcc_review.tagged_trait))
+        self.assertEqual(len(table.data), len(self.dcc_reviews) + 1)
+
+    def test_view_table_contains_tagged_trait_with_remove_dccdecision_with_studyresponse(self):
+        """Table does not contain a TaggedTrait with disagree StudyResponse and a remove DCCDecision."""
+        tagged_trait = factories.TaggedTraitFactory.create(
+            tag=self.tag, trait__source_dataset__source_study_version__study=self.study)
+        study_response = factories.StudyResponseFactory.create(
+            dcc_review__tagged_trait=tagged_trait, status=models.StudyResponse.STATUS_DISAGREE)
+        dcc_decision = factories.DCCDecisionFactory.create(
+            dcc_review=study_response.dcc_review, decision=models.DCCDecision.DECISION_REMOVE)
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        context = response.context
+        table = context['tagged_trait_table']
+        self.assertIn(tagged_trait, table.data)
+        for dcc_review in self.dcc_reviews:
+            self.assertIn(dcc_review.tagged_trait, table.data,
+                          msg='tagged_trait_table does not contain {}'.format(dcc_review.tagged_trait))
+        self.assertEqual(len(table.data), len(self.dcc_reviews) + 1)
 
     def test_view_works_with_no_matching_tagged_traits(self):
         """Successful response code when there are no TaggedTraits to inclue."""
@@ -4321,6 +5158,38 @@ class StudyResponseCreateAgreePhenotypeTaggerTest(PhenotypeTaggerLoginTestCase):
         self.assertFalse(hasattr(other_tagged_trait.dcc_review, 'study_response'))
         self.assertEqual(response.status_code, 403)
 
+    def test_cant_create_study_response_for_tagged_trait_with_dcc_decision_confirm(self):
+        """Redirects with warning message if the tagged trait has a confirm dcc decision."""
+        self.tagged_trait.dcc_review.delete()
+        dcc_review = factories.DCCReviewFactory.create(
+            tagged_trait=self.tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP)
+        dcc_decision = factories.DCCDecisionFactory.create(
+            dcc_review=dcc_review, decision=models.DCCDecision.DECISION_CONFIRM)
+        response = self.client.post(self.get_url(self.tagged_trait.pk), {})
+        self.assertRedirects(response, reverse('tags:tag:study:quality-review',
+                                               args=[self.tag.pk, self.study.pk]))
+        self.assertFalse(hasattr(self.tagged_trait.dcc_review, 'study_response'))
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertTrue('Oops!' in str(messages[0]))
+        self.assertTrue('already has a dcc decision' in str(messages[0]))
+
+    def test_cant_create_study_response_for_tagged_trait_with_dcc_decision_remove(self):
+        """Redirects with warning message if the tagged trait has a remove dcc decision."""
+        self.tagged_trait.dcc_review.delete()
+        dcc_review = factories.DCCReviewFactory.create(
+            tagged_trait=self.tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP)
+        dcc_decision = factories.DCCDecisionFactory.create(
+            dcc_review=dcc_review, decision=models.DCCDecision.DECISION_REMOVE)
+        response = self.client.post(self.get_url(self.tagged_trait.pk), {})
+        self.assertRedirects(response, reverse('tags:tag:study:quality-review',
+                                               args=[self.tag.pk, self.study.pk]))
+        self.assertFalse(hasattr(self.tagged_trait.dcc_review, 'study_response'))
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertTrue('Oops!' in str(messages[0]))
+        self.assertTrue('already has a dcc decision' in str(messages[0]))
+
     def test_adds_user(self):
         """When a StudyResponse is successfully created, it has the appropriate creator."""
         response = self.client.post(self.get_url(self.tagged_trait.pk), {})
@@ -4485,7 +5354,7 @@ class StudyResponseCreateDisagreePhenotypeTaggerTest(PhenotypeTaggerLoginTestCas
         """Redirects with warning message if DCCReview status is confirmed."""
         self.tagged_trait.dcc_review.delete()
         factories.DCCReviewFactory.create(tagged_trait=self.tagged_trait, status=models.DCCReview.STATUS_CONFIRMED)
-        response = self.client.post(self.get_url(self.tagged_trait.pk), {})
+        response = self.client.post(self.get_url(self.tagged_trait.pk), {'comment': 'a comment'})
         self.assertRedirects(response, reverse('tags:tag:study:quality-review',
                                                args=[self.tag.pk, self.study.pk]))
         self.assertFalse(hasattr(self.tagged_trait.dcc_review, 'study_response'))
@@ -4493,6 +5362,38 @@ class StudyResponseCreateDisagreePhenotypeTaggerTest(PhenotypeTaggerLoginTestCas
         self.assertEqual(len(messages), 1)
         self.assertTrue('Oops!' in str(messages[0]))
         self.assertTrue('has been confirmed' in str(messages[0]))
+
+    def test_cant_create_study_response_for_tagged_trait_with_dcc_decision_confirm(self):
+        """Redirects with warning message if the tagged trait has a confirm dcc decision."""
+        self.tagged_trait.dcc_review.delete()
+        dcc_review = factories.DCCReviewFactory.create(
+            tagged_trait=self.tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP)
+        dcc_decision = factories.DCCDecisionFactory.create(
+            dcc_review=dcc_review, decision=models.DCCDecision.DECISION_CONFIRM)
+        response = self.client.post(self.get_url(self.tagged_trait.pk), {'comment': 'a comment'})
+        self.assertRedirects(response, reverse('tags:tag:study:quality-review',
+                                               args=[self.tag.pk, self.study.pk]))
+        self.assertFalse(hasattr(self.tagged_trait.dcc_review, 'study_response'))
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertTrue('Oops!' in str(messages[0]))
+        self.assertTrue('already has a dcc decision' in str(messages[0]))
+
+    def test_cant_create_study_response_for_tagged_trait_with_dcc_decision_remove(self):
+        """Redirects with warning message if the tagged trait has a remove dcc decision."""
+        self.tagged_trait.dcc_review.delete()
+        dcc_review = factories.DCCReviewFactory.create(
+            tagged_trait=self.tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP)
+        dcc_decision = factories.DCCDecisionFactory.create(
+            dcc_review=dcc_review, decision=models.DCCDecision.DECISION_REMOVE)
+        response = self.client.post(self.get_url(self.tagged_trait.pk), {'comment': 'a comment'})
+        self.assertRedirects(response, reverse('tags:tag:study:quality-review',
+                                               args=[self.tag.pk, self.study.pk]))
+        self.assertFalse(hasattr(self.tagged_trait.dcc_review, 'study_response'))
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertTrue('Oops!' in str(messages[0]))
+        self.assertTrue('already has a dcc decision' in str(messages[0]))
 
     def test_get_studyresponse_exists(self):
         """Redirects with warning message if a StudyResponse already exists."""
@@ -4581,6 +5482,2440 @@ class StudyResponseCreateDisagreeDCCAnalystTest(DCCAnalystLoginTestCase):
     def test_get_forbidden(self):
         """Returns a 403 forbidden status code for non-taggers."""
         response = self.client.get(self.get_url(self.tagged_trait.pk))
+        self.assertEqual(response.status_code, 403)
+
+
+class TaggedTraitsNeedDCCDecisionSummaryTestMixin(object):
+
+    def get_url(self, *args):
+        """Get the url for the view this class is supposed to test."""
+        return reverse('tags:tagged-traits:need-decision', args=args)
+
+    def test_view_success(self):
+        """View returns successful response code."""
+        response = self.client.get(self.get_url())
+        self.assertEqual(response.status_code, 200)
+
+    def test_get_context_data(self):
+        """Context contains expected variables."""
+        response = self.client.get(self.get_url())
+        context = response.context
+        self.assertIn('grouped_study_tag_counts', context)
+
+    def test_counts_blank_with_zero_tagged_traits(self):
+        """Correct count when there are no tagged traits."""
+        response = self.client.get(self.get_url())
+        context = response.context
+        self.assertIn('grouped_study_tag_counts', context)
+        counts = context['grouped_study_tag_counts']
+        self.assertEqual(len(counts), 0)
+
+    def test_counts_exclude_confirmed_tagged_trait(self):
+        """Count does not include tagged trait with DCCReview status confirmed."""
+        dcc_review = factories.DCCReviewFactory.create(status=models.DCCReview.STATUS_CONFIRMED)
+        response = self.client.get(self.get_url())
+        context = response.context
+        self.assertIn('grouped_study_tag_counts', context)
+        counts = context['grouped_study_tag_counts']
+        self.assertEqual(len(counts), 0)
+
+    def test_counts_exclude_needfollowup_noresponse_tagged_trait(self):
+        """Count does not include tagged trait of status need followup with no study response."""
+        dcc_review = factories.DCCReviewFactory.create(status=models.DCCReview.STATUS_FOLLOWUP)
+        response = self.client.get(self.get_url())
+        context = response.context
+        self.assertIn('grouped_study_tag_counts', context)
+        counts = context['grouped_study_tag_counts']
+        self.assertEqual(len(counts), 0)
+
+    def test_counts_exclude_needfollowup_agree_tagged_trait(self):
+        """Count does not include tagged trait of status need followup with agree study response."""
+        study_response = factories.StudyResponseFactory.create(status=models.StudyResponse.STATUS_AGREE)
+        response = self.client.get(self.get_url())
+        context = response.context
+        self.assertIn('grouped_study_tag_counts', context)
+        counts = context['grouped_study_tag_counts']
+        self.assertEqual(len(counts), 0)
+
+    def test_counts_for_needfollowup_disagree_tagged_trait(self):
+        """Correct counts when only one tagged trait needs a decision."""
+        study_response = factories.StudyResponseFactory.create(status=models.StudyResponse.STATUS_DISAGREE)
+        response = self.client.get(self.get_url())
+        context = response.context
+        self.assertIn('grouped_study_tag_counts', context)
+        counts = context['grouped_study_tag_counts']
+        self.assertEqual(len(counts), 1)  # One study.
+        study1 = counts[0]
+        self.assertEqual(study1[1][0]['tt_total'], 1)
+        self.assertEqual(study1[1][0]['tt_decision_required_count'], 1)
+
+    def test_counts_for_needfollowup_disagree_tagged_trait_with_remove_decision(self):
+        """Correct counts when only one tagged trait needed a decision, and it's been decided to remove."""
+        study_response = factories.StudyResponseFactory.create(status=models.StudyResponse.STATUS_DISAGREE)
+        decision = factories.DCCDecisionFactory.create(
+            dcc_review=study_response.dcc_review, decision=models.DCCDecision.DECISION_REMOVE)
+        response = self.client.get(self.get_url())
+        context = response.context
+        self.assertIn('grouped_study_tag_counts', context)
+        counts = context['grouped_study_tag_counts']
+        self.assertEqual(len(counts), 1)  # One study.
+        study1 = counts[0]
+        self.assertEqual(study1[1][0]['tt_total'], 1)
+        self.assertEqual(study1[1][0]['tt_decision_required_count'], 0)  # Decision has been made.
+
+    def test_counts_for_needfollowup_disagree_tagged_trait_with_confirm_decision(self):
+        """Correct counts when only one tagged trait needed a decision, and it's been decided to confirm."""
+        study_response = factories.StudyResponseFactory.create(status=models.StudyResponse.STATUS_DISAGREE)
+        decision = factories.DCCDecisionFactory.create(
+            dcc_review=study_response.dcc_review, decision=models.DCCDecision.DECISION_CONFIRM)
+        response = self.client.get(self.get_url())
+        context = response.context
+        self.assertIn('grouped_study_tag_counts', context)
+        counts = context['grouped_study_tag_counts']
+        self.assertEqual(len(counts), 1)  # One study.
+        study1 = counts[0]
+        self.assertEqual(study1[1][0]['tt_total'], 1)
+        self.assertEqual(study1[1][0]['tt_decision_required_count'], 0)  # Decision has been made.
+
+    def test_counts_for_needfollowup_disagree_tagged_trait_with_remove_decision_archived(self):
+        """Correct counts when only one tagged trait needed a decision, and it's been decided to remove, and it's archived."""  # noqa
+        study_response = factories.StudyResponseFactory.create(status=models.StudyResponse.STATUS_DISAGREE)
+        decision = factories.DCCDecisionFactory.create(
+            dcc_review=study_response.dcc_review, decision=models.DCCDecision.DECISION_REMOVE)
+        study_response.dcc_review.tagged_trait.archive()
+        response = self.client.get(self.get_url())
+        context = response.context
+        self.assertIn('grouped_study_tag_counts', context)
+        counts = context['grouped_study_tag_counts']
+        self.assertEqual(len(counts), 1)  # One study.
+        study1 = counts[0]
+        self.assertEqual(study1[1][0]['tt_total'], 1)
+        self.assertEqual(study1[1][0]['tt_decision_required_count'], 0)  # Decision has been made.
+
+    def test_counts_for_needfollowup_disagree_tagged_traits_from_two_studies(self):
+        """Correct counts when tagged traits from two studies need decisions."""
+        study_response1 = factories.StudyResponseFactory.create(status=models.StudyResponse.STATUS_DISAGREE)
+        study_response2 = factories.StudyResponseFactory.create(status=models.StudyResponse.STATUS_DISAGREE)
+        response = self.client.get(self.get_url())
+        context = response.context
+        self.assertIn('grouped_study_tag_counts', context)
+        counts = context['grouped_study_tag_counts']
+        self.assertEqual(len(counts), 2)  # Two studies.
+        study1 = counts[0]
+        self.assertEqual(study1[1][0]['tt_total'], 1)
+        self.assertEqual(study1[1][0]['tt_decision_required_count'], 1)
+        study2 = counts[1]
+        self.assertEqual(study2[1][0]['tt_total'], 1)
+        self.assertEqual(study2[1][0]['tt_decision_required_count'], 1)
+
+    def test_counts_for_two_needfollowup_disagree_tagged_traits_from_same_study_and_tag(self):
+        """Correct counts when two tagged traits from the same study and tag need decisions."""
+        study_version = SourceStudyVersionFactory.create()
+        tag = factories.TagFactory.create()
+        study_responses = factories.StudyResponseFactory.create_batch(
+            2, status=models.StudyResponse.STATUS_DISAGREE,
+            dcc_review__tagged_trait__trait__source_dataset__source_study_version=study_version,
+            dcc_review__tagged_trait__tag=tag)
+        response = self.client.get(self.get_url())
+        context = response.context
+        self.assertIn('grouped_study_tag_counts', context)
+        counts = context['grouped_study_tag_counts']
+        self.assertEqual(len(counts), 1)  # One study.
+        study1 = counts[0]
+        self.assertEqual(study1[1][0]['tt_total'], 2)
+        self.assertEqual(study1[1][0]['tt_decision_required_count'], 2)
+
+    def test_counts_for_two_needfollowup_disagree_tagged_traits_with_remove_decision_from_same_study_and_tag(self):
+        """Correct counts when two tagged traits from the same study and tag already have decisions to remove."""
+        study_version = SourceStudyVersionFactory.create()
+        tag = factories.TagFactory.create()
+        study_responses = factories.StudyResponseFactory.create_batch(
+            2, status=models.StudyResponse.STATUS_DISAGREE,
+            dcc_review__tagged_trait__trait__source_dataset__source_study_version=study_version,
+            dcc_review__tagged_trait__tag=tag)
+        decisions = [factories.DCCDecisionFactory.create(dcc_review=sr.dcc_review) for sr in study_responses]
+        response = self.client.get(self.get_url())
+        context = response.context
+        self.assertIn('grouped_study_tag_counts', context)
+        counts = context['grouped_study_tag_counts']
+        self.assertEqual(len(counts), 1)  # One study.
+        study1 = counts[0]
+        self.assertEqual(study1[1][0]['tt_total'], 2)
+        self.assertEqual(study1[1][0]['tt_decision_required_count'], 0)  # Decision has been made.
+
+    def test_counts_for_two_studies_and_two_tags(self):
+        """Correct counts in a complex set of tagged traits that need decisions and already have decisions."""
+        # There are two studies, two tags, and some decided and some not decided for each tag+study.
+        study_versions_of_two_studies = SourceStudyVersionFactory.create_batch(2)
+        tags = factories.TagFactory.create_batch(2)
+        # Start with making three tagged traits need a decision (one without decision, and one of each decision type).
+        to_decide = 3
+        counts_to_match = []
+        for sv in study_versions_of_two_studies:
+            study_dict = {'study_name': sv.study.i_study_name, 'study_pk': sv.study.pk}
+            tag_list = []
+            for t in tags:
+                # Make tagged traits for each tag + study.
+                tagged_traits = factories.TaggedTraitFactory.create_batch(
+                    5, tag=t, trait__source_dataset__source_study_version=sv)
+                # Make some that need decisions.
+                study_responses = factories.StudyResponseFactory.create_batch(
+                    to_decide, status=models.StudyResponse.STATUS_DISAGREE,
+                    dcc_review__tagged_trait__trait__source_dataset__source_study_version=sv,
+                    dcc_review__tagged_trait__tag=t)
+                # Make one that has each decision type.
+                factories.DCCDecisionFactory.create(
+                    dcc_review=study_responses[0].dcc_review, decision=models.DCCDecision.DECISION_REMOVE)
+                factories.DCCDecisionFactory.create(
+                    dcc_review=study_responses[1].dcc_review, decision=models.DCCDecision.DECISION_CONFIRM)
+                tag_dict = {'tt_total': to_decide, 'tag_name': t.title, 'study_pk': sv.study.pk, 'tag_pk': t.pk,
+                            'study_name': sv.study.i_study_name, 'tt_decision_required_count': to_decide - 2}
+                tag_list.append(tag_dict)
+                to_decide += 1  # Increment this every time so the counts are distinguishable.
+            counts_to_match.append((study_dict, tag_list))
+        # counts_to_match = tuple(counts_to_match)
+        response = self.client.get(self.get_url())
+        context = response.context
+        self.assertIn('grouped_study_tag_counts', context)
+        counts = context['grouped_study_tag_counts']
+        # Sometimes the order of the studies wasn't quite right, and sorting didn't work due to dicts.
+        # So that's why this study-by-study matching was needed.
+        for study in counts:
+            study_to_match = [el for el in counts_to_match if el[0] == study[0]][0]
+            self.assertEqual(study, study_to_match)
+
+    def test_counts_exclude_tag_without_decisions_needed(self):
+        """Counts exclude a tag that lacks tagged traits requiring decisions."""
+        extra_tag = factories.TagFactory.create()
+        extra_tagged_trait = factories.TaggedTraitFactory.create()
+        study_response = factories.StudyResponseFactory.create(status=models.StudyResponse.STATUS_DISAGREE)
+        response = self.client.get(self.get_url())
+        context = response.context
+        self.assertIn('grouped_study_tag_counts', context)
+        counts = context['grouped_study_tag_counts']
+        self.assertEqual(len(counts), 1)  # One study.
+        study1 = counts[0]
+        self.assertEqual(study1[1][0]['tt_total'], 1)
+        self.assertEqual(study1[1][0]['tt_decision_required_count'], 1)
+        self.assertEqual(len(study1[1]), 1)  # Only one tag.
+
+    def test_make_final_decisions_button_present(self):
+        """Button to make final decisions (start the deciding loop) is present when some decisions remain unmade."""
+        study_response = factories.StudyResponseFactory.create(status=models.StudyResponse.STATUS_DISAGREE)
+        response = self.client.get(self.get_url())
+        study_tag_pks = [study_response.dcc_review.tagged_trait.tag.pk,
+                         study_response.dcc_review.tagged_trait.trait.source_dataset.source_study_version.study.pk]
+        self.assertContains(response, reverse('tags:tag:study:begin-dcc-decision', args=study_tag_pks))
+
+    def test_make_final_decisions_button_not_present(self):
+        """Button to make final decisions (start the deciding loop) is not present when all decisions are done."""
+        study_response = factories.StudyResponseFactory.create(status=models.StudyResponse.STATUS_DISAGREE)
+        decision = factories.DCCDecisionFactory.create(
+            dcc_review=study_response.dcc_review, decision=models.DCCDecision.DECISION_REMOVE)
+        response = self.client.get(self.get_url())
+        study_tag_pks = [study_response.dcc_review.tagged_trait.tag.pk,
+                         study_response.dcc_review.tagged_trait.trait.source_dataset.source_study_version.study.pk]
+        self.assertNotContains(response, reverse('tags:tag:study:begin-dcc-decision', args=study_tag_pks))
+
+    def test_navbar_does_contain_link(self):
+        """DCC users do see a link to the dcc decisions summary page."""
+        response = self.client.get(reverse('home'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.get_url())
+
+
+class TaggedTraitsNeedDCCDecisionSummaryDCCAnalystTest(TaggedTraitsNeedDCCDecisionSummaryTestMixin,
+                                                       DCCAnalystLoginTestCase):
+
+    pass
+
+
+class TaggedTraitsNeedDCCDecisionSummaryDCCDeveloperTest(TaggedTraitsNeedDCCDecisionSummaryTestMixin,
+                                                         DCCDeveloperLoginTestCase):
+
+    pass
+
+
+class TaggedTraitsNeedDCCDecisionSummaryOtherUserTest(UserLoginTestCase):
+
+    def get_url(self, *args):
+        """Get the url for the view this class is supposed to test."""
+        return reverse('tags:tagged-traits:need-decision', args=args)
+
+    def test_forbidden(self):
+        """Returns a 403 forbidden status code for regular users."""
+        response = self.client.get(self.get_url())
+        self.assertEqual(response.status_code, 403)
+
+    def test_navbar_does_not_contain_link(self):
+        """Groupless users do not see a link to the dcc decisions summary page."""
+        response = self.client.get(reverse('home'))
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, self.get_url())
+
+
+class TaggedTraitsNeedDCCDecisionSummaryPhenotypeTaggerTest(PhenotypeTaggerLoginTestCase):
+
+    def get_url(self, *args):
+        """Get the url for the view this class is supposed to test."""
+        return reverse('tags:tagged-traits:need-decision', args=args)
+
+    def test_forbidden(self):
+        """Returns a 403 forbidden status code for regular users."""
+        response = self.client.get(self.get_url())
+        self.assertEqual(response.status_code, 403)
+
+    def test_navbar_does_not_contain_link(self):
+        """Phenotype taggers do not see a link to the dcc decisions summary page."""
+        response = self.client.get(reverse('home'))
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, self.get_url())
+
+
+class TaggedTraitsNeedDCCDecisionByTagAndStudyListMixin(object):
+
+    def setUp(self):
+        super().setUp()
+        self.tag = factories.TagFactory.create()
+        self.study = StudyFactory.create()
+        self.study_responses = factories.StudyResponseFactory.create_batch(
+            3, dcc_review__tagged_trait__tag=self.tag,
+            dcc_review__tagged_trait__trait__source_dataset__source_study_version__study=self.study,
+            status=models.StudyResponse.STATUS_DISAGREE)
+        self.tagged_traits = list(models.TaggedTrait.objects.all())
+
+    def get_url(self, *args):
+        return reverse('tags:tag:study:need-decision', args=args)
+
+    def test_view_success_code(self):
+        """View returns successful response code."""
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        self.assertEqual(response.status_code, 200)
+
+    def test_view_with_invalid_study_pk(self):
+        """View returns 404 response code when the study pk doesn't exist."""
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk + 1))
+        self.assertEqual(response.status_code, 404)
+
+    def test_view_with_invalid_tag_pk(self):
+        """View returns 404 response code when the pk doesn't exist."""
+        response = self.client.get(self.get_url(self.tag.pk + 1, self.study.pk))
+        self.assertEqual(response.status_code, 404)
+
+    def test_context_data(self):
+        """View has appropriate data in the context."""
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        context = response.context
+        self.assertIn('study', context)
+        self.assertIn('tag', context)
+        self.assertIn('tagged_trait_table', context)
+        self.assertEqual(context['study'], self.study)
+        self.assertEqual(context['tag'], self.tag)
+
+    def test_table_class(self):
+        """The table class is appropriate."""
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        context = response.context
+        self.assertIsInstance(context['tagged_trait_table'], tables.TaggedTraitDCCDecisionTable)
+
+    def test_view_contains_tagged_traits_that_need_decision(self):
+        """Table contains TaggedTraits that need dcc decisions."""
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        context = response.context
+        table = context['tagged_trait_table']
+        self.assertEqual(len(table.data), len(self.study_responses))
+        for study_response in self.study_responses:
+            self.assertIn(study_response.dcc_review.tagged_trait, table.data,
+                          msg='tagged_trait_table does not contain {}'.format(study_response.dcc_review.tagged_trait))
+
+    def test_view_table_does_not_contain_unreviewed_tagged_traits(self):
+        """Table does not contain unreviewed TaggedTraits."""
+        unreviewed_tagged_trait = factories.TaggedTraitFactory.create(
+            tag=self.tag, trait__source_dataset__source_study_version__study=self.study)
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        context = response.context
+        table = context['tagged_trait_table']
+        self.assertNotIn(unreviewed_tagged_trait, table.data)
+        for study_response in self.study_responses:
+            self.assertIn(study_response.dcc_review.tagged_trait, table.data,
+                          msg='tagged_trait_table does not contain {}'.format(study_response.dcc_review.tagged_trait))
+        self.assertEqual(len(table.data), len(self.study_responses))
+
+    def test_view_table_does_not_contain_tagged_trait_with_no_study_response(self):
+        """Table does not contain TaggedTrait without a study response."""
+        no_response_dcc_review = factories.DCCReviewFactory.create(
+            tagged_trait__trait__source_dataset__source_study_version__study=self.study,
+            tagged_trait__tag=self.tag,
+            status=models.DCCReview.STATUS_FOLLOWUP)
+        no_response_tagged_trait = no_response_dcc_review.tagged_trait
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        context = response.context
+        table = context['tagged_trait_table']
+        self.assertNotIn(no_response_tagged_trait, table.data)
+        for study_response in self.study_responses:
+            self.assertIn(study_response.dcc_review.tagged_trait, table.data,
+                          msg='tagged_trait_table does not contain {}'.format(study_response.dcc_review.tagged_trait))
+        self.assertEqual(len(table.data), len(self.study_responses))
+
+    def test_view_table_does_not_contain_tagged_trait_with_agree_response(self):
+        """Table does not contain tagged trait with agree study response."""
+        agree_response = factories.StudyResponseFactory.create(
+            dcc_review__tagged_trait__tag=self.tag,
+            dcc_review__tagged_trait__trait__source_dataset__source_study_version__study=self.study,
+            status=models.StudyResponse.STATUS_AGREE)
+        agree_tagged_trait = agree_response.dcc_review.tagged_trait
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        context = response.context
+        table = context['tagged_trait_table']
+        self.assertNotIn(agree_tagged_trait, table.data)
+        for study_response in self.study_responses:
+            self.assertIn(study_response.dcc_review.tagged_trait, table.data,
+                          msg='tagged_trait_table does not contain {}'.format(study_response.dcc_review.tagged_trait))
+        self.assertEqual(len(table.data), len(self.study_responses))
+
+    def test_view_works_with_no_matching_tagged_traits(self):
+        """Successful response code when there are no TaggedTraits to include."""
+        other_tag = factories.TagFactory.create()
+        response = self.client.get(self.get_url(other_tag.pk, self.study.pk))
+        self.assertEqual(response.status_code, 200)
+        context = response.context
+        self.assertEqual(len(context['tagged_trait_table'].data), 0)
+
+    def test_view_does_not_show_tagged_traits_from_a_different_study(self):
+        """Table does not include TaggedTraits from a different study."""
+        other_study = StudyFactory.create()
+        other_study_response = factories.StudyResponseFactory.create(
+            status=models.StudyResponse.STATUS_DISAGREE,
+            dcc_review__tagged_trait__trait__source_dataset__source_study_version__study=other_study)
+        other_tagged_trait = other_study_response.dcc_review.tagged_trait
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        context = response.context
+        self.assertNotIn(other_tagged_trait, context['tagged_trait_table'].data)
+
+    def test_view_does_not_show_tagged_traits_from_a_different_tag(self):
+        """Table does not contain TaggedTraits from a different tag."""
+        other_tag = factories.TagFactory.create()
+        other_study_response = factories.StudyResponseFactory.create(
+            status=models.StudyResponse.STATUS_DISAGREE,
+            dcc_review__tagged_trait__tag=other_tag)
+        other_tagged_trait = other_study_response.dcc_review.tagged_trait
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        context = response.context
+        self.assertNotIn(other_tagged_trait, context['tagged_trait_table'].data)
+
+    def test_decision_links_present_for_nodecision_tagged_traits(self):
+        """Decision buttons are shown for tagged trait without decision."""
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        pass
+        # TODO: add tests once decision create views are added.
+
+    def test_update_link_present_for_decision_confirm_tagged_traits(self):
+        """Update button is shown for tagged trait with confirm."""
+        dcc_decision = factories.DCCDecisionFactory.create(
+            dcc_review=self.study_responses[0].dcc_review, decision=models.DCCDecision.DECISION_CONFIRM)
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        pass
+
+    def test_update_link_present_for_decision_remove_tagged_traits(self):
+        """Update button is shown for tagged trait with remove."""
+        dcc_decision = factories.DCCDecisionFactory.create(
+            dcc_review=self.study_responses[0].dcc_review, decision=models.DCCDecision.DECISION_REMOVE)
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        pass
+
+
+class TaggedTraitsNeedDCCDecisionByTagAndStudyListDCCAnalystTest(TaggedTraitsNeedDCCDecisionByTagAndStudyListMixin,
+                                                                 DCCAnalystLoginTestCase):
+
+    pass
+
+
+class TaggedTraitsNeedDCCDecisionByTagAndStudyListDCCDeveloperTest(TaggedTraitsNeedDCCDecisionByTagAndStudyListMixin,
+                                                                   DCCDeveloperLoginTestCase):
+
+    pass
+
+
+class TaggedTraitsNeedDCCDecisionByTagAndStudyListOtherUserTest(UserLoginTestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.tag = factories.TagFactory.create()
+        self.study = StudyFactory.create()
+        self.study_responses = factories.StudyResponseFactory.create_batch(
+            3, dcc_review__tagged_trait__tag=self.tag,
+            dcc_review__tagged_trait__trait__source_dataset__source_study_version__study=self.study,
+            status=models.StudyResponse.STATUS_DISAGREE)
+        self.tagged_traits = list(models.TaggedTrait.objects.all())
+
+    def get_url(self, *args):
+        return reverse('tags:tag:study:need-decision', args=args)
+
+    def test_forbidden(self):
+        """Returns a 403 forbidden status code for regular users."""
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        self.assertEqual(response.status_code, 403)
+
+
+class TaggedTraitsNeedDCCDecisionByTagAndStudyListPhenotypeTaggerTest(PhenotypeTaggerLoginTestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.tag = factories.TagFactory.create()
+        self.study = StudyFactory.create()
+        self.study_responses = factories.StudyResponseFactory.create_batch(
+            3, dcc_review__tagged_trait__tag=self.tag,
+            dcc_review__tagged_trait__trait__source_dataset__source_study_version__study=self.study,
+            status=models.StudyResponse.STATUS_DISAGREE)
+        self.tagged_traits = list(models.TaggedTrait.objects.all())
+
+    def get_url(self, *args):
+        return reverse('tags:tag:study:need-decision', args=args)
+
+    def test_forbidden(self):
+        """Returns a 403 forbidden status code for regular users."""
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        self.assertEqual(response.status_code, 403)
+
+
+class DCCDecisionByTagAndStudySelectFromURLDCCTestsMixin(object):
+
+    def setUp(self):
+        super().setUp()
+        self.tag = factories.TagFactory.create()
+        self.study = StudyFactory.create()
+        self.study_responses = factories.StudyResponseFactory.create_batch(
+            10, status=models.StudyResponse.STATUS_DISAGREE, dcc_review__tagged_trait__tag=self.tag,
+            dcc_review__tagged_trait__trait__source_dataset__source_study_version__study=self.study)
+        self.tagged_traits = list(models.TaggedTrait.objects.all())
+
+    def get_url(self, *args):
+        return reverse('tags:tag:study:begin-dcc-decision', args=args)
+
+    def test_view_success_code(self):
+        """View returns successful response code."""
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk), follow=False)
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-decision:next'), fetch_redirect_response=False)
+
+    def test_nonexistent_study_404(self):
+        """View returns 404 if study does not exist."""
+        study_pk = self.study.pk
+        self.study.delete()
+        response = self.client.get(self.get_url(self.tag.pk, study_pk), follow=False)
+        self.assertEqual(response.status_code, 404)
+
+    def test_nonexistent_tag_404(self):
+        """View returns 404 if tag does not exist."""
+        tag_pk = self.tag.pk
+        self.tag.delete()
+        response = self.client.get(self.get_url(tag_pk, self.study.pk), follow=False)
+        self.assertEqual(response.status_code, 404)
+
+    def test_sets_session_variables(self):
+        """View has appropriate data in the context and session variables."""
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk), follow=False)
+        session = self.client.session
+        self.assertIn('tagged_trait_decision_by_tag_and_study_info', session)
+        session_info = session['tagged_trait_decision_by_tag_and_study_info']
+        self.assertIn('study_pk', session_info)
+        self.assertEqual(session_info['study_pk'], self.study.pk)
+        self.assertIn('tag_pk', session_info)
+        self.assertEqual(session_info['tag_pk'], self.tag.pk)
+        self.assertIn('tagged_trait_pks', session_info)
+        self.assertEqual(len(session_info['tagged_trait_pks']), len(self.tagged_traits))
+        for tt in self.tagged_traits:
+            self.assertIn(tt.pk, session_info['tagged_trait_pks'],
+                          msg='TaggedTrait {} not in session tagged_trait_pks'.format(tt.pk))
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-decision:next'), fetch_redirect_response=False)
+
+    def test_excludes_other_tag(self):
+        """List of tagged trait pks does not include a second tag."""
+        other_tag = factories.TagFactory.create()
+        other_study_response = factories.StudyResponseFactory.create(
+            status=models.StudyResponse.STATUS_DISAGREE, dcc_review__tagged_trait__tag=other_tag,
+            dcc_review__tagged_trait__trait__source_dataset__source_study_version__study=self.study
+        )
+        other_tagged_trait = other_study_response.dcc_review.tagged_trait
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk), follow=False)
+        session = self.client.session
+        self.assertIn('tagged_trait_decision_by_tag_and_study_info', session)
+        session_info = session['tagged_trait_decision_by_tag_and_study_info']
+        self.assertIn('tagged_trait_pks', session_info)
+        self.assertEqual(len(session_info['tagged_trait_pks']), len(self.tagged_traits))
+        for tt in self.tagged_traits:
+            self.assertIn(tt.pk, session_info['tagged_trait_pks'],
+                          msg='TaggedTrait {} unexpectedly not in session tagged_trait_pks'.format(tt.pk))
+        self.assertNotIn(other_tagged_trait, session_info['tagged_trait_pks'],
+                         msg='TaggedTrait {} unexpectedly in session tagged_trait_pks'.format(tt.pk))
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-decision:next'), fetch_redirect_response=False)
+
+    def test_excludes_other_study(self):
+        """List of tagged trait pks does not include a different study."""
+        other_study = StudyFactory.create()
+        other_study_response = factories.StudyResponseFactory.create(
+            status=models.StudyResponse.STATUS_DISAGREE, dcc_review__tagged_trait__tag=self.tag,
+            dcc_review__tagged_trait__trait__source_dataset__source_study_version__study=other_study
+        )
+        other_tagged_trait = other_study_response.dcc_review.tagged_trait
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk), follow=False)
+        session = self.client.session
+        self.assertIn('tagged_trait_decision_by_tag_and_study_info', session)
+        session_info = session['tagged_trait_decision_by_tag_and_study_info']
+        self.assertIn('tagged_trait_pks', session_info)
+        self.assertEqual(len(session_info['tagged_trait_pks']), len(self.tagged_traits))
+        for tt in self.tagged_traits:
+            self.assertIn(tt.pk, session_info['tagged_trait_pks'],
+                          msg='TaggedTrait {} unexpectedly not in session tagged_trait_pks'.format(tt.pk))
+        self.assertNotIn(other_tagged_trait, session_info['tagged_trait_pks'],
+                         msg='TaggedTrait {} unexpectedly in session tagged_trait_pks'.format(tt.pk))
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-decision:next'), fetch_redirect_response=False)
+
+    def test_excludes_other_study_and_tag(self):
+        """List of tagged trait pks does not include tagged traits from another study and tag."""
+        other_tag = factories.TagFactory.create()
+        other_study = StudyFactory.create()
+        other_study_response = factories.StudyResponseFactory.create(
+            status=models.StudyResponse.STATUS_DISAGREE, dcc_review__tagged_trait__tag=other_tag,
+            dcc_review__tagged_trait__trait__source_dataset__source_study_version__study=other_study
+        )
+        other_tagged_trait = other_study_response.dcc_review.tagged_trait
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        session = self.client.session
+        self.assertIn('tagged_trait_decision_by_tag_and_study_info', session)
+        session_info = session['tagged_trait_decision_by_tag_and_study_info']
+        for tt in self.tagged_traits:
+            self.assertIn(tt.pk, session_info['tagged_trait_pks'],
+                          msg='TaggedTrait {} unexpectedly not in session tagged_trait_pks'.format(tt.pk))
+        self.assertNotIn(other_tagged_trait, session_info['tagged_trait_pks'],
+                         msg='TaggedTrait {} unexpectedly in session tagged_trait_pks'.format(tt.pk))
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-decision:next'), fetch_redirect_response=False)
+
+    def test_resets_session_variables(self):
+        """A preexisting session variable is overwritten with new data."""
+        self.client.session['tagged_trait_decision_by_tag_and_study_info'] = {
+            'study_pk': self.study.pk + 1,
+            'tag_pk': self.tag.pk + 1,
+            'tagged_trait_pks': [],
+        }
+        self.client.session.save()
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        session = self.client.session
+        self.assertIn('tagged_trait_decision_by_tag_and_study_info', session)
+        session_info = session['tagged_trait_decision_by_tag_and_study_info']
+        self.assertIn('study_pk', session_info)
+        self.assertEqual(session_info['study_pk'], self.study.pk)
+        self.assertIn('tag_pk', session_info)
+        self.assertEqual(session_info['tag_pk'], self.tag.pk)
+        self.assertIn('tagged_trait_pks', session_info)
+        self.assertEqual(len(session_info['tagged_trait_pks']), len(self.tagged_traits))
+        for tt in self.tagged_traits:
+            self.assertIn(tt.pk, session_info['tagged_trait_pks'],
+                          msg='TaggedTrait {} not in session tagged_trait_pks'.format(tt.pk))
+
+    def test_no_tagged_traits_remaining_to_decide_on(self):
+        """View redirects and displays message when there are no tagged traits to decide on for the tag+study."""
+        models.TaggedTrait.objects.all().hard_delete()
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        self.assertEqual(response.status_code, 302)
+        # Check for message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('No tagged variables to decide on', str(messages[0]))
+
+    def test_no_archived_taggedtraits_in_session_variable(self):
+        """Does not include archived tagged traits in session variables."""
+        archived_tagged_trait = self.tagged_traits[0]
+        archived_tagged_trait.archive()
+        archived_tagged_trait.refresh_from_db()
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        # Check session variables.
+        session = self.client.session
+        self.assertIn('tagged_trait_decision_by_tag_and_study_info', session)
+        session_info = session['tagged_trait_decision_by_tag_and_study_info']
+        self.assertIn('study_pk', session_info)
+        self.assertEqual(session_info['study_pk'], self.study.pk)
+        self.assertIn('tag_pk', session_info)
+        self.assertEqual(session_info['tag_pk'], self.tag.pk)
+        self.assertIn('tagged_trait_pks', session_info)
+        for tt in self.tagged_traits[1:]:
+            self.assertIn(tt.pk, session_info['tagged_trait_pks'],
+                          msg='TaggedTrait {} not in session tagged_trait_pks'.format(tt.pk))
+        self.assertNotIn(archived_tagged_trait.pk, session_info['tagged_trait_pks'])
+        # The success url redirects again to a new page, so include the target_status_code argument.
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-decision:next'), target_status_code=302)
+
+
+class DCCDecisionByTagAndStudySelectFromURLDCCAnalystTest(DCCDecisionByTagAndStudySelectFromURLDCCTestsMixin,
+                                                          DCCAnalystLoginTestCase):
+
+    # Run all tests in DCCDecisionByTagAndStudySelectFromURLDCCTestsMixin as a DCC analyst.
+    pass
+
+
+class DCCDecisionByTagAndStudySelectFromURLDCCDeveloperTest(DCCDecisionByTagAndStudySelectFromURLDCCTestsMixin,
+                                                            DCCDeveloperLoginTestCase):
+
+    # Run all tests in DCCDecisionByTagAndStudySelectFromURLDCCTestsMixin as a DCC developer.
+    pass
+
+
+class DCCDecisionByTagAndStudySelectFromURLOtherUserTest(UserLoginTestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.tag = factories.TagFactory.create()
+        self.study = StudyFactory.create()
+        self.study_responses = factories.StudyResponseFactory.create_batch(
+            10, status=models.StudyResponse.STATUS_DISAGREE, dcc_review__tagged_trait__tag=self.tag,
+            dcc_review__tagged_trait__trait__source_dataset__source_study_version__study=self.study)
+        self.tagged_traits = list(models.TaggedTrait.objects.all())
+
+    def get_url(self, *args):
+        return reverse('tags:tag:study:begin-dcc-decision', args=args)
+
+    def test_forbidden_get_request(self):
+        """Returns a response with a forbidden status code for non-DCC users."""
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        self.assertEqual(response.status_code, 403)
+
+
+class DCCDecisionByTagAndStudyNextDCCTestsMixin(object):
+
+    def setUp(self):
+        super().setUp()
+        self.tag = factories.TagFactory.create()
+        self.study = StudyFactory.create()
+        self.study_responses = factories.StudyResponseFactory.create_batch(
+            10, status=models.StudyResponse.STATUS_DISAGREE, dcc_review__tagged_trait__tag=self.tag,
+            dcc_review__tagged_trait__trait__source_dataset__source_study_version__study=self.study)
+        self.tagged_traits = list(models.TaggedTrait.objects.all())
+
+    def get_url(self, *args):
+        """Get the url for the view this class is supposed to test."""
+        return reverse('tags:tagged-traits:dcc-decision:next', args=args)
+
+    def test_view_success_with_no_session_variables(self):
+        """View redirects correctly when no session variables are set."""
+        response = self.client.get(self.get_url())
+        self.assertRedirects(response, reverse('tags:tagged-traits:need-decision'))
+
+    def test_view_success_with_tagged_traits_to_decision(self):
+        """View redirects correctly when there are tagged traits to decide on."""
+        tagged_trait = self.tagged_traits[0]
+        session = self.client.session
+        session['tagged_trait_decision_by_tag_and_study_info'] = {
+            'tag_pk': self.tag.pk,
+            'study_pk': self.study.pk,
+            'tagged_trait_pks': [tagged_trait.pk],
+        }
+        session.save()
+        response = self.client.get(self.get_url())
+        # Make sure a pk session variable was set
+        session = self.client.session
+        self.assertIn('tagged_trait_decision_by_tag_and_study_info', session)
+        self.assertIn('pk', session['tagged_trait_decision_by_tag_and_study_info'])
+        self.assertEqual(session['tagged_trait_decision_by_tag_and_study_info']['pk'], tagged_trait.pk)
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-decision:decide'))
+        # Check messages.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('You have 1 tagged variable left to decide on.', str(messages[0]))
+
+    def test_view_success_with_no_tagged_traits_left(self):
+        """View redirects correctly when no tagged traits are left to decide on."""
+        session = self.client.session
+        session['tagged_trait_decision_by_tag_and_study_info'] = {
+            'tag_pk': self.tag.pk,
+            'study_pk': self.study.pk,
+            'tagged_trait_pks': [],
+        }
+        session.save()
+        response = self.client.get(self.get_url())
+        self.assertRedirects(response, reverse('tags:tag:study:need-decision', args=[self.tag.pk, self.study.pk]))
+        # Check that there are no messages.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 0)
+
+    def test_session_variables_are_unset_when_decisions_completed(self):
+        """View unsets session variables when no tagged traits are left to decide on."""
+        tag = factories.TagFactory.create()
+        study = StudyFactory.create()
+        session = self.client.session
+        session['tagged_trait_decision_by_tag_and_study_info'] = {
+            'tag_pk': tag.pk,
+            'study_pk': study.pk,
+            'tagged_trait_pks': [],
+        }
+        session.save()
+        response = self.client.get(self.get_url())
+        self.assertNotIn('tagged_trait_decision_by_tag_and_study_info', self.client.session)
+
+    def test_skips_tagged_trait_with_decision(self):
+        """Skips a tagged trait that has been decided on after starting the loop."""
+        first_tagged_trait = self.tagged_traits[0]
+        session = self.client.session
+        session['tagged_trait_decision_by_tag_and_study_info'] = {
+            'tag_pk': self.tag.pk,
+            'study_pk': self.study.pk,
+            'tagged_trait_pks': [x.pk for x in self.tagged_traits],
+        }
+        session.save()
+        factories.DCCDecisionFactory.create(dcc_review=first_tagged_trait.dcc_review)
+        response = self.client.get(self.get_url())
+        self.assertIn('tagged_trait_decision_by_tag_and_study_info', self.client.session)
+        session_info = self.client.session['tagged_trait_decision_by_tag_and_study_info']
+        self.assertIn('tagged_trait_pks', session_info)
+        self.assertNotIn('pk', session_info)
+        self.assertNotIn(first_tagged_trait.pk, session_info['tagged_trait_pks'])
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-decision:next'), target_status_code=302)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 0)
+
+    def test_skips_deleted_tagged_trait(self):
+        """Skips a tagged trait that has been deleted after starting the loop."""
+        first_tagged_trait = self.tagged_traits[0]
+        session = self.client.session
+        session['tagged_trait_decision_by_tag_and_study_info'] = {
+            'tag_pk': self.tag.pk,
+            'study_pk': self.study.pk,
+            'tagged_trait_pks': [x.pk for x in self.tagged_traits],
+        }
+        session.save()
+        first_tagged_trait.hard_delete()
+        response = self.client.get(self.get_url())
+        self.assertIn('tagged_trait_decision_by_tag_and_study_info', self.client.session)
+        session_info = self.client.session['tagged_trait_decision_by_tag_and_study_info']
+        self.assertIn('tagged_trait_pks', session_info)
+        self.assertNotIn(first_tagged_trait.pk, session_info['tagged_trait_pks'])
+        self.assertEqual(self.tagged_traits[1].pk, session_info['tagged_trait_pks'][0])
+        self.assertNotIn('pk', session_info)
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-decision:next'), target_status_code=302)
+
+    def test_skips_archived_tagged_trait(self):
+        """Skips a tagged trait that has been archived after starting the loop."""
+        first_tagged_trait = self.tagged_traits[0]
+        session = self.client.session
+        session['tagged_trait_decision_by_tag_and_study_info'] = {
+            'tag_pk': self.tag.pk,
+            'study_pk': self.study.pk,
+            'tagged_trait_pks': [x.pk for x in self.tagged_traits],
+        }
+        session.save()
+        first_tagged_trait.archive()
+        response = self.client.get(self.get_url())
+        self.assertIn('tagged_trait_decision_by_tag_and_study_info', self.client.session)
+        session_info = self.client.session['tagged_trait_decision_by_tag_and_study_info']
+        self.assertIn('tagged_trait_pks', session_info)
+        self.assertNotIn(first_tagged_trait.pk, session_info['tagged_trait_pks'])
+        self.assertEqual(self.tagged_traits[1].pk, session_info['tagged_trait_pks'][0])
+        self.assertNotIn('pk', session_info)
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-decision:next'), target_status_code=302)
+
+    def test_skips_no_review_tagged_trait(self):
+        """Skips a tagged trait that has no dcc review after starting the loop."""
+        first_tagged_trait = self.tagged_traits[0]
+        session = self.client.session
+        session['tagged_trait_decision_by_tag_and_study_info'] = {
+            'tag_pk': self.tag.pk,
+            'study_pk': self.study.pk,
+            'tagged_trait_pks': [x.pk for x in self.tagged_traits],
+        }
+        session.save()
+        first_dcc_review = first_tagged_trait.dcc_review
+        first_dcc_review.hard_delete()
+        response = self.client.get(self.get_url())
+        self.assertIn('tagged_trait_decision_by_tag_and_study_info', self.client.session)
+        session_info = self.client.session['tagged_trait_decision_by_tag_and_study_info']
+        self.assertIn('tagged_trait_pks', session_info)
+        self.assertNotIn(first_tagged_trait.pk, session_info['tagged_trait_pks'])
+        self.assertEqual(self.tagged_traits[1].pk, session_info['tagged_trait_pks'][0])
+        self.assertNotIn('pk', session_info)
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-decision:next'), target_status_code=302)
+
+    def test_skips_review_confirmed_tagged_trait(self):
+        """Skips a tagged trait that has been reviewed as confirmed after starting the loop."""
+        first_tagged_trait = self.tagged_traits[0]
+        session = self.client.session
+        session['tagged_trait_decision_by_tag_and_study_info'] = {
+            'tag_pk': self.tag.pk,
+            'study_pk': self.study.pk,
+            'tagged_trait_pks': [x.pk for x in self.tagged_traits],
+        }
+        session.save()
+        first_dcc_review = first_tagged_trait.dcc_review
+        first_dcc_review.status = models.DCCReview.STATUS_CONFIRMED
+        first_dcc_review.save()
+        response = self.client.get(self.get_url())
+        self.assertIn('tagged_trait_decision_by_tag_and_study_info', self.client.session)
+        session_info = self.client.session['tagged_trait_decision_by_tag_and_study_info']
+        self.assertIn('tagged_trait_pks', session_info)
+        self.assertNotIn(first_tagged_trait.pk, session_info['tagged_trait_pks'])
+        self.assertEqual(self.tagged_traits[1].pk, session_info['tagged_trait_pks'][0])
+        self.assertNotIn('pk', session_info)
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-decision:next'), target_status_code=302)
+
+    def test_skips_no_response_tagged_trait(self):
+        """Skips a tagged trait that has no study response after starting the loop."""
+        first_tagged_trait = self.tagged_traits[0]
+        session = self.client.session
+        session['tagged_trait_decision_by_tag_and_study_info'] = {
+            'tag_pk': self.tag.pk,
+            'study_pk': self.study.pk,
+            'tagged_trait_pks': [x.pk for x in self.tagged_traits],
+        }
+        session.save()
+        first_study_response = first_tagged_trait.dcc_review.study_response
+        first_study_response.delete()
+        response = self.client.get(self.get_url())
+        self.assertIn('tagged_trait_decision_by_tag_and_study_info', self.client.session)
+        session_info = self.client.session['tagged_trait_decision_by_tag_and_study_info']
+        self.assertIn('tagged_trait_pks', session_info)
+        self.assertNotIn(first_tagged_trait.pk, session_info['tagged_trait_pks'])
+        self.assertEqual(self.tagged_traits[1].pk, session_info['tagged_trait_pks'][0])
+        self.assertNotIn('pk', session_info)
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-decision:next'), target_status_code=302)
+
+    def test_skips_response_agree_tagged_trait(self):
+        """Skips a tagged trait that has a study response agree after starting the loop."""
+        first_tagged_trait = self.tagged_traits[0]
+        session = self.client.session
+        session['tagged_trait_decision_by_tag_and_study_info'] = {
+            'tag_pk': self.tag.pk,
+            'study_pk': self.study.pk,
+            'tagged_trait_pks': [x.pk for x in self.tagged_traits],
+        }
+        session.save()
+        first_study_response = first_tagged_trait.dcc_review.study_response
+        first_study_response.status = models.StudyResponse.STATUS_AGREE
+        first_study_response.save()
+        response = self.client.get(self.get_url())
+        self.assertIn('tagged_trait_decision_by_tag_and_study_info', self.client.session)
+        session_info = self.client.session['tagged_trait_decision_by_tag_and_study_info']
+        self.assertIn('tagged_trait_pks', session_info)
+        self.assertNotIn(first_tagged_trait.pk, session_info['tagged_trait_pks'])
+        self.assertEqual(self.tagged_traits[1].pk, session_info['tagged_trait_pks'][0])
+        self.assertNotIn('pk', session_info)
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-decision:next'), target_status_code=302)
+
+    def test_session_variables_are_not_properly_set(self):
+        """Redirects to summary view if expected session variable is not set."""
+        response = self.client.get(self.get_url())
+        self.assertRedirects(response, reverse('tags:tagged-traits:need-decision'))
+
+    def test_session_variable_missing_required_keys(self):
+        """Redirects to summary view if expected session variable dictionary keys are missing."""
+        template = {
+            'study_pk': self.study.pk,
+            'tag_pk': self.tag.pk,
+            'tagged_trait_pks': [x.pk for x in self.tagged_traits]
+        }
+        for key in template.keys():
+            session_info = copy.copy(template)
+            session_info.pop(key)
+            session = self.client.session
+            session['tagged_trait_decision_by_tag_and_study_info'] = session_info
+            session.save()
+            response = self.client.get(self.get_url())
+            self.assertNotIn('tagged_trait_decision_by_tag_and_study_info', self.client.session)
+            self.assertRedirects(response, reverse('tags:tagged-traits:need-decision'),
+                                 msg_prefix='did not redirect when missing {} in session'.format(key))
+
+
+class DCCDecisionByTagAndStudyNextDCCAnalystTest(DCCDecisionByTagAndStudyNextDCCTestsMixin, DCCAnalystLoginTestCase):
+
+    # Run all tests in DCCDecisionByTagAndStudyNextDCCTestsMixin, as a DCC analyst.
+    pass
+
+
+class DCCDecisionByTagAndStudyNextDCCDeveloperTest(DCCDecisionByTagAndStudyNextDCCTestsMixin,
+                                                   DCCDeveloperLoginTestCase):
+
+    # Run all tests in DCCDecisionByTagAndStudyNextDCCTestsMixin, as a DCC developer.
+    pass
+
+
+class DCCDecisionByTagAndStudyNextOtherUserTest(UserLoginTestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.tag = factories.TagFactory.create()
+        self.study = StudyFactory.create()
+        self.study_responses = factories.StudyResponseFactory.create_batch(
+            10, status=models.StudyResponse.STATUS_DISAGREE, dcc_review__tagged_trait__tag=self.tag,
+            dcc_review__tagged_trait__trait__source_dataset__source_study_version__study=self.study)
+        self.tagged_traits = list(models.TaggedTrait.objects.all())
+
+    def get_url(self, *args):
+        """Get the url for the view this class is supposed to test."""
+        return reverse('tags:tagged-traits:dcc-decision:next', args=args)
+
+    def test_forbidden_get_request(self):
+        """Returns a response with a forbidden status code for non-DCC users."""
+        response = self.client.get(self.get_url())
+        self.assertEqual(response.status_code, 403)
+
+    def test_forbidden_post_request(self):
+        """Returns a response with a forbidden status code for non-DCC users."""
+        response = self.client.post(self.get_url(), {})
+        self.assertEqual(response.status_code, 403)
+
+
+class DCCDecisionByTagAndStudyDCCTestsMixin(object):
+
+    def setUp(self):
+        super().setUp()
+        self.tag = factories.TagFactory.create()
+        self.study = StudyFactory.create()
+        self.study_response = factories.StudyResponseFactory.create(
+            status=models.StudyResponse.STATUS_DISAGREE, dcc_review__tagged_trait__tag=self.tag,
+            dcc_review__tagged_trait__trait__source_dataset__source_study_version__study=self.study)
+        self.tagged_trait = self.study_response.dcc_review.tagged_trait
+        # Set expected session variables.
+        session = self.client.session
+        session['tagged_trait_decision_by_tag_and_study_info'] = {
+            'study_pk': self.study.pk,
+            'tag_pk': self.tag.pk,
+            'tagged_trait_pks': [self.tagged_trait.pk],
+            'pk': self.tagged_trait.pk,
+        }
+        session.save()
+
+    def get_url(self, *args):
+        """Get the url for the view this class is supposed to test."""
+        return reverse('tags:tagged-traits:dcc-decision:decide', args=args)
+
+    def test_view_success_code(self):
+        """View returns successful response code."""
+        response = self.client.get(self.get_url())
+        self.assertEqual(response.status_code, 200)
+
+    def test_context_data(self):
+        """View has appropriate data in the context."""
+        response = self.client.get(self.get_url())
+        context = response.context
+        self.assertIn('form', context)
+        self.assertIsInstance(context['form'], forms.DCCDecisionByTagAndStudyForm)
+        self.assertIn('tagged_trait', context)
+        self.assertEqual(context['tagged_trait'], self.tagged_trait)
+        self.assertIn('tag', context)
+        self.assertEqual(context['tag'], self.tag)
+        self.assertIn('study', context)
+        self.assertEqual(context['study'], self.study)
+        self.assertIn('n_tagged_traits_remaining', context)
+        self.assertEqual(context['n_tagged_traits_remaining'], 1)
+
+    def test_context_data_with_multiple_remaining_tagged_traits(self):
+        """View has appropriate data in the context if there are multiple tagged traits to decide on."""
+        more_study_responses = factories.StudyResponseFactory.create_batch(
+            3, status=models.StudyResponse.STATUS_DISAGREE, dcc_review__tagged_trait__tag=self.tag,
+            dcc_review__tagged_trait__trait__source_dataset__source_study_version__study=self.study)
+        session = self.client.session
+        tagged_trait_list = list(models.TaggedTrait.objects.values_list('pk', flat=True))
+        session['tagged_trait_decision_by_tag_and_study_info']['tagged_trait_pks'] = tagged_trait_list
+        session.save()
+        response = self.client.get(self.get_url())
+        context = response.context
+        self.assertIn('form', context)
+        self.assertIsInstance(context['form'], forms.DCCDecisionByTagAndStudyForm)
+        self.assertIn('tagged_trait', context)
+        self.assertEqual(context['tagged_trait'], self.tagged_trait)
+        self.assertIn('tag', context)
+        self.assertEqual(context['tag'], self.tag)
+        self.assertIn('study', context)
+        self.assertEqual(context['study'], self.study)
+        self.assertIn('n_tagged_traits_remaining', context)
+        self.assertEqual(context['n_tagged_traits_remaining'], models.TaggedTrait.objects.count())
+
+    def test_successful_post_confirm_decision(self):
+        """Posting valid data to the form correctly creates a DCCDecision."""
+        form_data = {forms.DCCDecisionByTagAndStudyForm.SUBMIT_CONFIRM: 'Confirm', 'comment': 'Looks good.'}
+        response = self.client.post(self.get_url(), form_data)
+        # Correctly creates a DCCDecision for this TaggedTrait.
+        dcc_decision = models.DCCDecision.objects.latest('created')
+        self.assertEqual(self.tagged_trait.dcc_review.dcc_decision, dcc_decision)
+        # The pk session variable is correctly unset.
+        session = self.client.session
+        self.assertIn('tagged_trait_decision_by_tag_and_study_info', session)
+        session_info = session['tagged_trait_decision_by_tag_and_study_info']
+        self.assertNotIn('pk', session_info)
+        # Check for success message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Successfully made a final decision', str(messages[0]))
+        # Correctly redirects to the next view (remembering that it is a redirect view).
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-decision:next'), target_status_code=302)
+
+    def test_successful_post_remove_decision(self):
+        """Posting valid data to the form correctly creates a DCCDecision."""
+        form_data = {forms.DCCDecisionByTagAndStudyForm.SUBMIT_REMOVE: 'Remove', 'comment': 'Definitely remove it.'}
+        response = self.client.post(self.get_url(), form_data)
+        # Correctly creates a DCCDecision for this TaggedTrait.
+        dcc_decision = models.DCCDecision.objects.latest('created')
+        self.assertEqual(self.tagged_trait.dcc_review.dcc_decision, dcc_decision)
+        # The pk session variable is correctly unset.
+        session = self.client.session
+        self.assertIn('tagged_trait_decision_by_tag_and_study_info', session)
+        session_info = session['tagged_trait_decision_by_tag_and_study_info']
+        self.assertNotIn('pk', session_info)
+        # Check for success message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Successfully made a final decision', str(messages[0]))
+        # Correctly redirects to the next view (remembering that it is a redirect view).
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-decision:next'), target_status_code=302)
+
+    def test_post_invalid_missing_comment(self):
+        """Posting bad data to the form shows a form error and doesn't unset session variables."""
+        form_data = {forms.DCCDecisionByTagAndStudyForm.SUBMIT_REMOVE: 'Remove', 'comment': ''}
+        response = self.client.post(self.get_url(), form_data)
+        self.assertEqual(response.status_code, 200)
+        # Does not create a DCCDecision for this TaggedTrait.
+        self.assertFalse(hasattr(self.tagged_trait.dcc_review, 'dcc_decision'))
+        # The pk session variable is not unset.
+        session = self.client.session
+        self.assertIn('tagged_trait_decision_by_tag_and_study_info', session)
+        session_info = session['tagged_trait_decision_by_tag_and_study_info']
+        self.assertIn('pk', session_info)
+        self.assertEqual(session_info['pk'], self.tagged_trait.pk)
+        # No messages.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 0)
+
+    def test_successfully_skip_tagged_trait(self):
+        """Skipping a TaggedTrait unsets pk and redirects to the next view."""
+        form_data = {forms.DCCDecisionByTagAndStudyForm.SUBMIT_SKIP: 'Skip'}
+        response = self.client.post(self.get_url(), form_data)
+        # Does not create a DCCDecision for this TaggedTrait.
+        self.assertFalse(hasattr(self.tagged_trait.dcc_review, 'dcc_decision'))
+        # Session variables are properly set/unset.
+        session = self.client.session
+        self.assertIn('tagged_trait_decision_by_tag_and_study_info', session)
+        session_info = session['tagged_trait_decision_by_tag_and_study_info']
+        self.assertNotIn('pk', session_info)
+        self.assertIn('tagged_trait_pks', session_info)
+        self.assertNotIn(self.tagged_trait.pk, session_info['tagged_trait_pks'])
+        # The redirect view unsets some session variables, so check it at the end.
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-decision:next'), target_status_code=302)
+
+    def test_failure_for_non_existent_tagged_trait(self):
+        """Returns a 404 page if the session variable pk doesn't exist."""
+        self.tagged_trait.hard_delete()
+        response = self.client.get(self.get_url())
+        self.assertEqual(response.status_code, 404)
+
+    def test_message_and_redirect_for_archived_tagged_trait(self):
+        """Shows warning message and does not save decision if TaggedTrait is archived."""
+        self.tagged_trait.archive()
+        # Now try to decide on it through the web interface.
+        form_data = {forms.DCCDecisionByTagAndStudyForm.SUBMIT_CONFIRM: 'Confirm', 'comment': 'Looks good.'}
+        response = self.client.post(self.get_url(), form_data)
+        # Check session variables.
+        self.assertIn('tagged_trait_decision_by_tag_and_study_info', self.client.session)
+        session_info = self.client.session['tagged_trait_decision_by_tag_and_study_info']
+        self.assertNotIn('pk', session_info)
+        self.assertIn('tagged_trait_pks', session_info)
+        self.assertNotIn(self.tagged_trait.pk, session_info['tagged_trait_pks'])
+        # Check for success message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('been archived', str(messages[0]))
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-decision:next'), target_status_code=302)
+
+    def test_message_and_redirect_for_archived_tagged_trait_with_form_error(self):
+        """Shows warning message and redirects if TaggedTrait is archived, even if there's a form error."""
+        self.tagged_trait.archive()
+        # Now try to decide on it through the web interface.
+        form_data = {forms.DCCDecisionByTagAndStudyForm.SUBMIT_REMOVE: 'Remove', 'comment': ''}
+        response = self.client.post(self.get_url(), form_data)
+        # Check session variables.
+        self.assertIn('tagged_trait_decision_by_tag_and_study_info', self.client.session)
+        session_info = self.client.session['tagged_trait_decision_by_tag_and_study_info']
+        self.assertNotIn('pk', session_info)
+        self.assertIn('tagged_trait_pks', session_info)
+        self.assertNotIn(self.tagged_trait.pk, session_info['tagged_trait_pks'])
+        # Check for success message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('been archived', str(messages[0]))
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-decision:next'), target_status_code=302)
+
+    def test_message_and_redirect_for_no_review_tagged_trait(self):
+        """Shows warning message and does not save decision if TaggedTrait is missing dcc review."""
+        self.tagged_trait.dcc_review.hard_delete()
+        # Now try to decide on it through the web interface.
+        form_data = {forms.DCCDecisionByTagAndStudyForm.SUBMIT_CONFIRM: 'Confirm', 'comment': 'Looks good.'}
+        response = self.client.post(self.get_url(), form_data)
+        # Check session variables.
+        self.assertIn('tagged_trait_decision_by_tag_and_study_info', self.client.session)
+        session_info = self.client.session['tagged_trait_decision_by_tag_and_study_info']
+        self.assertNotIn('pk', session_info)
+        self.assertIn('tagged_trait_pks', session_info)
+        self.assertNotIn(self.tagged_trait.pk, session_info['tagged_trait_pks'])
+        # Check for success message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('missing a dcc review', str(messages[0]))
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-decision:next'), target_status_code=302)
+
+    def test_message_and_redirect_for_no_review_tagged_trait_with_form_error(self):
+        """Shows warning message and redirects if TaggedTrait is missing dcc review, even if there's a form error."""
+        self.tagged_trait.dcc_review.hard_delete()
+        # Now try to decide on it through the web interface.
+        form_data = {forms.DCCDecisionByTagAndStudyForm.SUBMIT_REMOVE: 'Remove', 'comment': ''}
+        response = self.client.post(self.get_url(), form_data)
+        # Check session variables.
+        self.assertIn('tagged_trait_decision_by_tag_and_study_info', self.client.session)
+        session_info = self.client.session['tagged_trait_decision_by_tag_and_study_info']
+        self.assertNotIn('pk', session_info)
+        self.assertIn('tagged_trait_pks', session_info)
+        self.assertNotIn(self.tagged_trait.pk, session_info['tagged_trait_pks'])
+        # Check for success message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('missing a dcc review', str(messages[0]))
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-decision:next'), target_status_code=302)
+
+    def test_message_and_redirect_for_confirmed_review_tagged_trait(self):
+        """Shows warning message and does not save decision if TaggedTrait has review status confirmed."""
+        self.tagged_trait.dcc_review.status = models.DCCReview.STATUS_CONFIRMED
+        self.tagged_trait.dcc_review.save()
+        # Now try to decide on it through the web interface.
+        form_data = {forms.DCCDecisionByTagAndStudyForm.SUBMIT_CONFIRM: 'Confirm', 'comment': 'Looks good.'}
+        response = self.client.post(self.get_url(), form_data)
+        # Check session variables.
+        self.assertIn('tagged_trait_decision_by_tag_and_study_info', self.client.session)
+        session_info = self.client.session['tagged_trait_decision_by_tag_and_study_info']
+        self.assertNotIn('pk', session_info)
+        self.assertIn('tagged_trait_pks', session_info)
+        self.assertNotIn(self.tagged_trait.pk, session_info['tagged_trait_pks'])
+        # Check for success message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('dcc review status is "confirmed"', str(messages[0]))
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-decision:next'), target_status_code=302)
+
+    def test_message_and_redirect_for_confirmed_review_tagged_trait_with_form_error(self):
+        """Shows warning message and redirects if review status confirmed, even if there's a form error."""
+        self.tagged_trait.dcc_review.status = models.DCCReview.STATUS_CONFIRMED
+        self.tagged_trait.dcc_review.save()
+        # Now try to decide on it through the web interface.
+        form_data = {forms.DCCDecisionByTagAndStudyForm.SUBMIT_REMOVE: 'Remove', 'comment': ''}
+        response = self.client.post(self.get_url(), form_data)
+        # Check session variables.
+        self.assertIn('tagged_trait_decision_by_tag_and_study_info', self.client.session)
+        session_info = self.client.session['tagged_trait_decision_by_tag_and_study_info']
+        self.assertNotIn('pk', session_info)
+        self.assertIn('tagged_trait_pks', session_info)
+        self.assertNotIn(self.tagged_trait.pk, session_info['tagged_trait_pks'])
+        # Check for success message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('dcc review status is "confirmed"', str(messages[0]))
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-decision:next'), target_status_code=302)
+
+    def test_message_and_redirect_for_no_response_tagged_trait(self):
+        """Shows warning message and does not save decision if TaggedTrait is missing study response."""
+        self.tagged_trait.dcc_review.study_response.delete()
+        # Now try to decide on it through the web interface.
+        form_data = {forms.DCCDecisionByTagAndStudyForm.SUBMIT_CONFIRM: 'Confirm', 'comment': 'Looks good.'}
+        response = self.client.post(self.get_url(), form_data)
+        # Check session variables.
+        self.assertIn('tagged_trait_decision_by_tag_and_study_info', self.client.session)
+        session_info = self.client.session['tagged_trait_decision_by_tag_and_study_info']
+        self.assertNotIn('pk', session_info)
+        self.assertIn('tagged_trait_pks', session_info)
+        self.assertNotIn(self.tagged_trait.pk, session_info['tagged_trait_pks'])
+        # Check for success message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('missing a study response', str(messages[0]))
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-decision:next'), target_status_code=302)
+
+    def test_message_and_redirect_for_no_response_tagged_trait_with_form_error(self):
+        """Shows warning message and redirects if missing study response, even if there's a form error."""
+        self.tagged_trait.dcc_review.study_response.delete()
+        # Now try to decide on it through the web interface.
+        form_data = {forms.DCCDecisionByTagAndStudyForm.SUBMIT_REMOVE: 'Remove', 'comment': ''}
+        response = self.client.post(self.get_url(), form_data)
+        # Check session variables.
+        self.assertIn('tagged_trait_decision_by_tag_and_study_info', self.client.session)
+        session_info = self.client.session['tagged_trait_decision_by_tag_and_study_info']
+        self.assertNotIn('pk', session_info)
+        self.assertIn('tagged_trait_pks', session_info)
+        self.assertNotIn(self.tagged_trait.pk, session_info['tagged_trait_pks'])
+        # Check for success message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('missing a study response', str(messages[0]))
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-decision:next'), target_status_code=302)
+
+    def test_message_and_redirect_for_agree_response_tagged_trait(self):
+        """Shows warning message and does not save decision if TaggedTrait study response is agree."""
+        self.tagged_trait.dcc_review.study_response.status = models.StudyResponse.STATUS_AGREE
+        self.tagged_trait.dcc_review.study_response.save()
+        # Now try to decide on it through the web interface.
+        form_data = {forms.DCCDecisionByTagAndStudyForm.SUBMIT_CONFIRM: 'Confirm', 'comment': 'Looks good.'}
+        response = self.client.post(self.get_url(), form_data)
+        # Check session variables.
+        self.assertIn('tagged_trait_decision_by_tag_and_study_info', self.client.session)
+        session_info = self.client.session['tagged_trait_decision_by_tag_and_study_info']
+        self.assertNotIn('pk', session_info)
+        self.assertIn('tagged_trait_pks', session_info)
+        self.assertNotIn(self.tagged_trait.pk, session_info['tagged_trait_pks'])
+        # Check for success message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('study response status is "agree"', str(messages[0]))
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-decision:next'), target_status_code=302)
+
+    def test_message_and_redirect_for_agree_response_tagged_trait_with_form_error(self):
+        """Shows warning message and redirects if study response is agree, even if there's a form error."""
+        self.tagged_trait.dcc_review.study_response.status = models.StudyResponse.STATUS_AGREE
+        self.tagged_trait.dcc_review.study_response.save()
+        # Now try to decide on it through the web interface.
+        form_data = {forms.DCCDecisionByTagAndStudyForm.SUBMIT_REMOVE: 'Remove', 'comment': ''}
+        response = self.client.post(self.get_url(), form_data)
+        # Check session variables.
+        self.assertIn('tagged_trait_decision_by_tag_and_study_info', self.client.session)
+        session_info = self.client.session['tagged_trait_decision_by_tag_and_study_info']
+        self.assertNotIn('pk', session_info)
+        self.assertIn('tagged_trait_pks', session_info)
+        self.assertNotIn(self.tagged_trait.pk, session_info['tagged_trait_pks'])
+        # Check for success message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('study response status is "agree"', str(messages[0]))
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-decision:next'), target_status_code=302)
+
+    def test_message_and_redirect_for_tagged_trait_with_decision(self):
+        """Shows warning message and does not save decision if TaggedTrait is already decided."""
+        dcc_decision = factories.DCCDecisionFactory.create(
+            dcc_review=self.tagged_trait.dcc_review,
+            decision=models.DCCDecision.DECISION_REMOVE
+        )
+        # Now try to decide on it (with different decision) through the web interface.
+        form_data = {forms.DCCDecisionByTagAndStudyForm.SUBMIT_CONFIRM: 'Confirm', 'comment': 'Looks good.'}
+        response = self.client.post(self.get_url(), form_data)
+        # Check session variables.
+        self.assertIn('tagged_trait_decision_by_tag_and_study_info', self.client.session)
+        session_info = self.client.session['tagged_trait_decision_by_tag_and_study_info']
+        self.assertNotIn('pk', session_info)
+        self.assertIn('tagged_trait_pks', session_info)
+        self.assertNotIn(self.tagged_trait.pk, session_info['tagged_trait_pks'])
+        # Check for success message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('already has a decision made', str(messages[0]))
+        # The previous DCCDecision was not updated.
+        self.assertEqual(self.tagged_trait.dcc_review.dcc_decision, dcc_decision)
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-decision:next'), target_status_code=302)
+
+    def test_message_and_redirect_for_tagged_trait_with_decision_with_form_error(self):
+        """Shows warning message and redirects if TaggedTrait already has decision, even if there's a form error."""
+        dcc_decision = factories.DCCDecisionFactory.create(
+            dcc_review=self.tagged_trait.dcc_review,
+            decision=models.DCCDecision.DECISION_CONFIRM,
+            comment='looks good'
+        )
+        # Now try to decide on it through the web interface.
+        form_data = {forms.DCCDecisionByTagAndStudyForm.SUBMIT_REMOVE: 'Remove', 'comment': ''}
+        response = self.client.post(self.get_url(), form_data)
+        # Check session variables.
+        self.assertIn('tagged_trait_decision_by_tag_and_study_info', self.client.session)
+        session_info = self.client.session['tagged_trait_decision_by_tag_and_study_info']
+        self.assertNotIn('pk', session_info)
+        self.assertIn('tagged_trait_pks', session_info)
+        self.assertNotIn(self.tagged_trait.pk, session_info['tagged_trait_pks'])
+        # Check for success message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('already has a decision made', str(messages[0]))
+        # The previous DCCDecision was not updated.
+        self.assertEqual(self.tagged_trait.dcc_review.dcc_decision, dcc_decision)
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-decision:next'), target_status_code=302)
+
+    def test_successful_skip_tagged_trait_with_decision(self):
+        """Redirects without a message if an already-decided tagged trait is skipped."""
+        dcc_decision = factories.DCCDecisionFactory.create(
+            dcc_review=self.tagged_trait.dcc_review,
+            decision=models.DCCDecision.DECISION_CONFIRM,
+            comment='looks good'
+        )
+        # Now try to decide on it through the web interface.
+        form_data = {forms.DCCDecisionByTagAndStudyForm.SUBMIT_SKIP: 'Skip', 'comment': ''}
+        response = self.client.post(self.get_url(), form_data)
+        # Check session variables.
+        self.assertIn('tagged_trait_decision_by_tag_and_study_info', self.client.session)
+        session_info = self.client.session['tagged_trait_decision_by_tag_and_study_info']
+        self.assertNotIn('pk', session_info)
+        self.assertIn('tagged_trait_pks', session_info)
+        self.assertNotIn(self.tagged_trait.pk, session_info['tagged_trait_pks'])
+        # Check that no message was generated.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 0)
+        # The previous DCCDecision was not updated.
+        self.assertEqual(self.tagged_trait.dcc_review.dcc_decision, dcc_decision)
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-decision:next'), target_status_code=302)
+
+    def test_get_redirects_if_session_variables_are_not_properly_set(self):
+        """Redirects to summary view if expected session variable is not set."""
+        session = self.client.session
+        del session['tagged_trait_decision_by_tag_and_study_info']
+        session.save()
+        response = self.client.get(self.get_url())
+        self.assertRedirects(response, reverse('tags:tagged-traits:need-decision'))
+
+    def test_post_redirects_if_session_variables_are_not_properly_set(self):
+        """Redirects to summary view if expected session variable is not set."""
+        session = self.client.session
+        del session['tagged_trait_decision_by_tag_and_study_info']
+        session.save()
+        response = self.client.post(self.get_url(), {})
+        self.assertRedirects(response, reverse('tags:tagged-traits:need-decision'))
+
+    def test_get_redirects_if_session_variable_missing_key_tag_pk(self):
+        """Redirects to summary view if expected session variable dictionary keys are missing."""
+        session = self.client.session
+        session['tagged_trait_decision_by_tag_and_study_info'].pop('tag_pk')
+        session.save()
+        response = self.client.get(self.get_url())
+        self.assertNotIn('tagged_trait_decision_by_tag_and_study_info', self.client.session)
+        self.assertRedirects(response, reverse('tags:tagged-traits:need-decision'))
+
+    def test_get_redirects_if_session_variable_missing_key_study_pk(self):
+        """Redirects to select view if expected session variable dictionary keys are missing."""
+        session = self.client.session
+        session['tagged_trait_decision_by_tag_and_study_info'].pop('study_pk')
+        session.save()
+        response = self.client.get(self.get_url())
+        self.assertNotIn('tagged_trait_decision_by_tag_and_study_info', self.client.session)
+        self.assertRedirects(response, reverse('tags:tagged-traits:need-decision'))
+
+    def test_get_redirects_if_session_variable_missing_key_tagged_trait_pks(self):
+        """Redirects to select view if expected session variable dictionary keys are missing."""
+        session = self.client.session
+        session['tagged_trait_decision_by_tag_and_study_info'].pop('tagged_trait_pks')
+        session.save()
+        response = self.client.get(self.get_url())
+        self.assertNotIn('tagged_trait_decision_by_tag_and_study_info', self.client.session)
+        self.assertRedirects(response, reverse('tags:tagged-traits:need-decision'))
+
+    def test_get_redirects_if_session_variable_missing_key_pk(self):
+        """Redirects to summary view if expected session variable dictionary keys are missing."""
+        session = self.client.session
+        session['tagged_trait_decision_by_tag_and_study_info'].pop('pk')
+        session.save()
+        response = self.client.get(self.get_url())
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-decision:next'), target_status_code=302)
+
+    def test_post_redirects_if_session_variable_missing_key_tag_pk(self):
+        """Redirects to select view if expected session variable dictionary keys are missing."""
+        session = self.client.session
+        session['tagged_trait_decision_by_tag_and_study_info'].pop('tag_pk')
+        session.save()
+        response = self.client.post(self.get_url(), {})
+        self.assertNotIn('tagged_trait_decision_by_tag_and_study_info', self.client.session)
+        self.assertRedirects(response, reverse('tags:tagged-traits:need-decision'))
+
+    def test_post_redirects_if_session_variable_missing_key_study_pk(self):
+        """Redirects to select view if expected session variable dictionary keys are missing."""
+        session = self.client.session
+        session['tagged_trait_decision_by_tag_and_study_info'].pop('study_pk')
+        session.save()
+        response = self.client.post(self.get_url(), {})
+        self.assertNotIn('tagged_trait_decision_by_tag_and_study_info', self.client.session)
+        self.assertRedirects(response, reverse('tags:tagged-traits:need-decision'))
+
+    def test_post_redirects_if_session_variable_missing_key_tagged_trait_pks(self):
+        """Redirects to select view if expected session variable dictionary keys are missing."""
+        session = self.client.session
+        session['tagged_trait_decision_by_tag_and_study_info'].pop('tagged_trait_pks')
+        session.save()
+        response = self.client.post(self.get_url(), {})
+        self.assertNotIn('tagged_trait_decision_by_tag_and_study_info', self.client.session)
+        self.assertRedirects(response, reverse('tags:tagged-traits:need-decision'))
+
+    def test_post_redirects_if_session_variable_missing_key_pk(self):
+        """Redirects to select view if expected session variable dictionary keys are missing."""
+        session = self.client.session
+        session['tagged_trait_decision_by_tag_and_study_info'].pop('pk')
+        session.save()
+        response = self.client.post(self.get_url(), {})
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-decision:next'), target_status_code=302)
+
+    def test_shows_other_tags(self):
+        """Other tags linked to the same trait are included in the page."""
+        another_tagged_trait = factories.TaggedTraitFactory.create(trait=self.tagged_trait.trait)
+        response = self.client.get(self.get_url())
+        context = response.context
+        self.assertTrue(context['show_other_tags'])
+        content = str(response.content)
+        self.assertIn(another_tagged_trait.tag.title, content)
+        self.assertIn(self.tagged_trait.tag.title, content)
+
+    def test_shows_archived_other_tags(self):
+        """Other tags linked to the same trait are included in the page."""
+        another_tagged_trait = factories.TaggedTraitFactory.create(trait=self.tagged_trait.trait, archived=True)
+        response = self.client.get(self.get_url())
+        context = response.context
+        self.assertTrue(context['show_other_tags'])
+        content = str(response.content)
+        self.assertIn(another_tagged_trait.tag.title, content)
+        self.assertIn(self.tagged_trait.tag.title, content)
+
+    def test_shows_tag_only_once_when_it_is_archived(self):
+        """The tag is only shown once, even when the tagged variable is archived."""
+        self.tagged_trait.archive()
+        response = self.client.get(self.get_url())
+        context = response.context
+        self.assertTrue(context['show_other_tags'])
+        content = str(response.content)
+        self.assertNotIn(self.tagged_trait.tag, context['other_tags'])
+        self.assertNotIn(self.tagged_trait.tag, context['archived_other_tags'])
+
+    def test_archives_tagged_trait_with_dccdecision_remove(self):
+        """Creating a remove DCCDecision archives the tagged trait."""
+        self.assertFalse(self.tagged_trait.archived)
+        form_data = {forms.DCCDecisionByTagAndStudyForm.SUBMIT_REMOVE: 'Remove', 'comment': 'get rid of it'}
+        response = self.client.post(self.get_url(), form_data)
+        dcc_decision = models.DCCDecision.objects.latest('created')
+        self.tagged_trait.refresh_from_db()
+        self.assertTrue(self.tagged_trait.archived)
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-decision:next'), target_status_code=302)
+
+    def test_tagged_trait_nonarchived_after_dccdecision_confirm(self):
+        """Creating a confirm DCCDecision results in the tagged trait being non-archived."""
+        self.assertFalse(self.tagged_trait.archived)
+        form_data = {forms.DCCDecisionForm.SUBMIT_CONFIRM: 'Confirm', 'comment': 'looks good'}
+        response = self.client.post(self.get_url(), form_data)
+        dcc_decision = models.DCCDecision.objects.latest('created')
+        self.tagged_trait.refresh_from_db()
+        self.assertFalse(self.tagged_trait.archived)
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-decision:next'), target_status_code=302)
+
+
+class DCCDecisionByTagAndStudyDCCAnalystTest(DCCDecisionByTagAndStudyDCCTestsMixin, DCCAnalystLoginTestCase):
+
+    # Run all tests in DCCDecisionByTagAndStudyDCCTestsMixin, as a DCC analyst.
+    pass
+
+
+class DCCDecisionByTagAndStudyDCCDeveloperTest(DCCDecisionByTagAndStudyDCCTestsMixin, DCCDeveloperLoginTestCase):
+
+    # Run all tests in DCCDecisionByTagAndStudyDCCTestsMixin, as a DCC developer.
+    pass
+
+
+class DCCDecisionByTagAndStudyOtherUserTest(UserLoginTestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.tag = factories.TagFactory.create()
+        self.study = StudyFactory.create()
+        self.study_response = factories.StudyResponseFactory.create(
+            status=models.StudyResponse.STATUS_DISAGREE, dcc_review__tagged_trait__tag=self.tag,
+            dcc_review__tagged_trait__trait__source_dataset__source_study_version__study=self.study)
+        self.tagged_trait = self.study_response.dcc_review.tagged_trait
+        # Set expected session variables.
+        session = self.client.session
+        session['tagged_trait_decision_by_tag_and_study_info'] = {
+            'study_pk': self.study.pk,
+            'tag_pk': self.tag.pk,
+            'tagged_trait_pks': [self.tagged_trait.pk],
+            'pk': self.tagged_trait.pk,
+        }
+        session.save()
+
+    def get_url(self, *args):
+        """Get the url for the view this class is supposed to test."""
+        return reverse('tags:tagged-traits:dcc-decision:decide', args=args)
+
+    def test_forbidden_get_request(self):
+        """Returns a response with a forbidden status code for non-DCC users."""
+        response = self.client.get(self.get_url())
+        self.assertEqual(response.status_code, 403)
+
+    def test_forbidden_post_request(self):
+        """Returns a response with a forbidden status code for non-DCC users."""
+        response = self.client.post(self.get_url(), {})
+        self.assertEqual(response.status_code, 403)
+
+
+class DCCDecisionCreateDCCTestsMixin(object):
+
+    def setUp(self):
+        super().setUp()
+        self.study_response = factories.StudyResponseFactory.create(status=models.StudyResponse.STATUS_DISAGREE)
+        self.tagged_trait = self.study_response.dcc_review.tagged_trait
+        self.need_decision_url = reverse('tags:tag:study:need-decision',
+                                         args=[self.tagged_trait.tag.pk,
+                                               self.tagged_trait.trait.source_dataset.source_study_version.study.pk])
+
+    def get_url(self, *args):
+        """Get the url for the view this class is supposed to test."""
+        return reverse('tags:tagged-traits:pk:dcc-decision:new', args=args)
+
+    def test_view_success_code(self):
+        """View returns successful response code."""
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        self.assertEqual(response.status_code, 200)
+
+    def test_context_data(self):
+        """View has appropriate data in the context."""
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        context = response.context
+        self.assertIn('form', context)
+        self.assertIsInstance(context['form'], forms.DCCDecisionForm)
+        self.assertIn('tagged_trait', context)
+        self.assertEqual(context['tagged_trait'], self.tagged_trait)
+
+    def test_post_confirm_decision_creates_decision(self):
+        """Posting valid data to the form correctly creates a DCCDecision."""
+        form_data = {forms.DCCDecisionForm.SUBMIT_CONFIRM: 'Confirm', 'comment': 'looks good'}
+        response = self.client.post(self.get_url(self.tagged_trait.pk), form_data)
+        self.assertRedirects(response, self.need_decision_url)
+        # Correctly creates a DCCDecision for this TaggedTrait.
+        dcc_decision = models.DCCDecision.objects.latest('created')
+        self.assertEqual(self.tagged_trait.dcc_review.dcc_decision, dcc_decision)
+        # Check for success message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Successfully made final decision for', str(messages[0]))
+
+    def test_remove_decision_creates_decision(self):
+        """Posting valid data to the form correctly creates a DCCDecision."""
+        form_data = {forms.DCCDecisionForm.SUBMIT_REMOVE: 'Remove', 'comment': 'foo'}
+        response = self.client.post(self.get_url(self.tagged_trait.pk), form_data)
+        self.assertRedirects(response, self.need_decision_url)
+        # Correctly creates a DCCDecision for this TaggedTrait.
+        dcc_decision = models.DCCDecision.objects.latest('created')
+        self.assertEqual(self.tagged_trait.dcc_review.dcc_decision, dcc_decision)
+        # Check for success message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Successfully made final decision for', str(messages[0]))
+
+    def test_form_error_missing_comment_for_remove(self):
+        """Posting bad data to the form shows a form error."""
+        form_data = {forms.DCCDecisionForm.SUBMIT_REMOVE: 'Remove', 'comment': ''}
+        response = self.client.post(self.get_url(self.tagged_trait.pk), form_data)
+        self.assertEqual(response.status_code, 200)
+        # Does not create a DCCDecision for this TaggedTrait.
+        self.assertFalse(hasattr(self.tagged_trait.dcc_review, 'dcc_decision'))
+        # No messages.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 0)
+
+    def test_form_error_missing_comment_for_confirm(self):
+        """Posting bad data to the form shows a form error."""
+        form_data = {forms.DCCDecisionForm.SUBMIT_CONFIRM: 'Confirm', 'comment': ''}
+        response = self.client.post(self.get_url(self.tagged_trait.pk), form_data)
+        self.assertEqual(response.status_code, 200)
+        # Does not create a DCCDecision for this TaggedTrait.
+        self.assertFalse(hasattr(self.tagged_trait.dcc_review, 'dcc_decision'))
+        # No messages.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 0)
+
+    def test_get_view_with_invalid_tagged_trait_pk(self):
+        """Returns a 404 page with a get request if the tagged trai doesn't exist."""
+        url = self.get_url(self.tagged_trait.pk + 1)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 404)
+
+    def test_post_view_with_invalid_tagged_trait_pk(self):
+        """Returns a 404 page if the session varaible pk doesn't exist."""
+        url = self.get_url(self.tagged_trait.pk + 1)
+        form_data = {forms.DCCDecisionForm.SUBMIT_CONFIRM: 'Confirm', 'comment': 'looks good'}
+        response = self.client.post(url, form_data)
+        self.assertEqual(response.status_code, 404)
+
+    def test_get_message_and_redirect_archived_tagged_trait(self):
+        """Get request gives a warning message and redirects if the tagged trait is archived."""
+        self.tagged_trait.archive()
+        url = self.get_url(self.tagged_trait.pk)
+        response = self.client.get(url)
+        self.assertRedirects(response, self.need_decision_url)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('been archived', str(messages[0]))
+
+    def test_post_message_and_redirect_archived_tagged_trait(self):
+        """Post request gives a warning message and redirects if the tagged trait is archived."""
+        self.tagged_trait.archive()
+        url = self.get_url(self.tagged_trait.pk)
+        form_data = {forms.DCCDecisionForm.SUBMIT_CONFIRM: 'Confirm', 'comment': 'looks good'}
+        response = self.client.post(url, form_data)
+        self.assertRedirects(response, self.need_decision_url)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('been archived', str(messages[0]))
+
+    def test_post_message_and_redirect_archived_tagged_trait_with_form_error(self):
+        """Post request gives a warning message and redirects if the tagged trait is archived, even with bad data."""
+        self.tagged_trait.archive()
+        url = self.get_url(self.tagged_trait.pk)
+        form_data = {forms.DCCDecisionForm.SUBMIT_CONFIRM: 'Confirm', 'comment': ''}
+        response = self.client.post(url, form_data)
+        self.assertRedirects(response, self.need_decision_url)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('been archived', str(messages[0]))
+
+    def test_get_message_and_redirect_missing_review_tagged_trait(self):
+        """Get request gives a warning message and redirects if the tagged trait has no dcc review."""
+        self.tagged_trait.dcc_review.hard_delete()
+        url = self.get_url(self.tagged_trait.pk)
+        response = self.client.get(url)
+        self.assertRedirects(response, self.need_decision_url)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Cannot create', str(messages[0]))
+
+    def test_post_message_and_redirect_missing_review_tagged_trait(self):
+        """Post request gives a warning message and redirects if the tagged trait has no dcc review."""
+        self.tagged_trait.dcc_review.hard_delete()
+        url = self.get_url(self.tagged_trait.pk)
+        form_data = {forms.DCCDecisionForm.SUBMIT_CONFIRM: 'Confirm', 'comment': 'looks good'}
+        response = self.client.post(url, form_data)
+        self.assertRedirects(response, self.need_decision_url)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Cannot create', str(messages[0]))
+
+    def test_post_message_and_redirect_missing_review_tagged_trait_with_form_error(self):
+        """Post request gives a warning message and redirects if no dcc review, even with bad data."""
+        self.tagged_trait.dcc_review.hard_delete()
+        url = self.get_url(self.tagged_trait.pk)
+        form_data = {forms.DCCDecisionForm.SUBMIT_CONFIRM: 'Confirm', 'comment': ''}
+        response = self.client.post(url, form_data)
+        self.assertRedirects(response, self.need_decision_url)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Cannot create', str(messages[0]))
+
+    def test_get_message_and_redirect_review_confirmed_tagged_trait(self):
+        """Get request gives a warning message and redirects if the tagged trait has dcc review status confirmed."""
+        self.tagged_trait.dcc_review.status = models.DCCReview.STATUS_CONFIRMED
+        self.tagged_trait.dcc_review.save()
+        url = self.get_url(self.tagged_trait.pk)
+        response = self.client.get(url)
+        self.assertRedirects(response, self.need_decision_url)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Cannot create', str(messages[0]))
+
+    def test_post_message_and_redirect_review_confirmed_tagged_trait(self):
+        """Post request gives a warning message and redirects if the tagged trait has dcc review status confirmed."""
+        self.tagged_trait.dcc_review.status = models.DCCReview.STATUS_CONFIRMED
+        self.tagged_trait.dcc_review.save()
+        url = self.get_url(self.tagged_trait.pk)
+        form_data = {forms.DCCDecisionForm.SUBMIT_CONFIRM: 'Confirm', 'comment': 'looks good'}
+        response = self.client.post(url, form_data)
+        self.assertRedirects(response, self.need_decision_url)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Cannot create', str(messages[0]))
+
+    def test_post_message_and_redirect_review_confirmed_tagged_trait_with_form_error(self):
+        """Post request gives a warning message and redirects if dcc review status confirmed, even with bad data."""
+        self.tagged_trait.dcc_review.status = models.DCCReview.STATUS_CONFIRMED
+        self.tagged_trait.dcc_review.save()
+        url = self.get_url(self.tagged_trait.pk)
+        form_data = {forms.DCCDecisionForm.SUBMIT_CONFIRM: 'Confirm', 'comment': ''}
+        response = self.client.post(url, form_data)
+        self.assertRedirects(response, self.need_decision_url)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Cannot create', str(messages[0]))
+
+    def test_get_message_and_redirect_missing_response_tagged_trait(self):
+        """Get request gives a warning message and redirects if the tagged trait has no study response."""
+        self.tagged_trait.dcc_review.study_response.delete()
+        url = self.get_url(self.tagged_trait.pk)
+        response = self.client.get(url)
+        self.assertRedirects(response, self.need_decision_url)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Cannot create', str(messages[0]))
+
+    def test_post_message_and_redirect_missing_response_tagged_trait(self):
+        """Post request gives a warning message and redirects if the tagged trait has no study response."""
+        self.tagged_trait.dcc_review.study_response.delete()
+        url = self.get_url(self.tagged_trait.pk)
+        form_data = {forms.DCCDecisionForm.SUBMIT_CONFIRM: 'Confirm', 'comment': 'looks good'}
+        response = self.client.post(url, form_data)
+        self.assertRedirects(response, self.need_decision_url)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Cannot create', str(messages[0]))
+
+    def test_post_message_and_redirect_missing_response_tagged_trait_with_form_error(self):
+        """Post request gives a warning message and redirects if no study response, even with bad data."""
+        self.tagged_trait.dcc_review.study_response.delete()
+        url = self.get_url(self.tagged_trait.pk)
+        form_data = {forms.DCCDecisionForm.SUBMIT_CONFIRM: 'Confirm', 'comment': ''}
+        response = self.client.post(url, form_data)
+        self.assertRedirects(response, self.need_decision_url)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Cannot create', str(messages[0]))
+
+    def test_get_message_and_redirect_response_agree_tagged_trait(self):
+        """Get request gives a warning message and redirects if the tagged trait has study response status agree."""
+        self.tagged_trait.dcc_review.study_response.status = models.StudyResponse.STATUS_AGREE
+        self.tagged_trait.dcc_review.study_response.save()
+        url = self.get_url(self.tagged_trait.pk)
+        response = self.client.get(url)
+        self.assertRedirects(response, self.need_decision_url)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Cannot create', str(messages[0]))
+
+    def test_post_message_and_redirect_response_agree_tagged_trait(self):
+        """Post request gives a warning message and redirects if the tagged trait has study response status agree."""
+        self.tagged_trait.dcc_review.study_response.status = models.StudyResponse.STATUS_AGREE
+        self.tagged_trait.dcc_review.study_response.save()
+        url = self.get_url(self.tagged_trait.pk)
+        form_data = {forms.DCCDecisionForm.SUBMIT_CONFIRM: 'Confirm', 'comment': 'looks good'}
+        response = self.client.post(url, form_data)
+        self.assertRedirects(response, self.need_decision_url)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Cannot create', str(messages[0]))
+
+    def test_post_message_and_redirect_response_agree_tagged_trait_with_form_error(self):
+        """Post request gives a warning message and redirects if study response status agree, even with bad data."""
+        self.tagged_trait.dcc_review.study_response.status = models.StudyResponse.STATUS_AGREE
+        self.tagged_trait.dcc_review.study_response.save()
+        url = self.get_url(self.tagged_trait.pk)
+        form_data = {forms.DCCDecisionForm.SUBMIT_CONFIRM: 'Confirm', 'comment': ''}
+        response = self.client.post(url, form_data)
+        self.assertRedirects(response, self.need_decision_url)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Cannot create', str(messages[0]))
+
+    def test_get_message_and_redirect_to_update_for_previous_decision(self):
+        """Shows warning message and redirects to update page if TaggedTrait is already decided."""
+        dcc_decision = factories.DCCDecisionFactory.create(
+            dcc_review=self.tagged_trait.dcc_review,
+            decision=models.DCCDecision.DECISION_REMOVE
+        )
+        # Now try to review it through the web interface.
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        self.assertRedirects(
+            response, reverse('tags:tagged-traits:pk:dcc-decision:update', args=[self.tagged_trait.pk]))
+        # Check for warning message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Switched to updating decision', str(messages[0]))
+        # The previous DCCDecision was not updated.
+        self.assertEqual(self.tagged_trait.dcc_review.dcc_decision, dcc_decision)
+
+    def test_post_message_and_redirect_to_update_for_previous_decision(self):
+        """Shows warning message and does not save decision if TaggedTrait is already decided."""
+        dcc_decision = factories.DCCDecisionFactory.create(
+            dcc_review=self.tagged_trait.dcc_review,
+            decision=models.DCCDecision.DECISION_REMOVE
+        )
+        # Now try to review it through the web interface.
+        form_data = {forms.DCCDecisionForm.SUBMIT_CONFIRM: 'Confirm', 'comment': 'looks good'}
+        response = self.client.post(self.get_url(self.tagged_trait.pk), form_data)
+        self.assertRedirects(
+            response, reverse('tags:tagged-traits:pk:dcc-decision:update', args=[self.tagged_trait.pk]))
+        # Check for warning message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Switched to updating', str(messages[0]))
+        # The previous DCCDecision was not updated.
+        self.assertEqual(self.tagged_trait.dcc_review.dcc_decision, dcc_decision)
+
+    def test_post_message_and_redirect_to_update_for_previous_decision_with_form_error(self):
+        """Shows warning message and redirects if TaggedTrait is already decided, with a form error."""
+        dcc_decision = factories.DCCDecisionFactory.create(
+            dcc_review=self.tagged_trait.dcc_review,
+            decision=models.DCCDecision.DECISION_REMOVE
+        )
+        # Now try to review it through the web interface.
+        form_data = {forms.DCCDecisionForm.SUBMIT_REMOVE: 'Confirm', 'comment': ''}
+        response = self.client.post(self.get_url(self.tagged_trait.pk), form_data)
+        self.assertRedirects(
+            response, reverse('tags:tagged-traits:pk:dcc-decision:update', args=[self.tagged_trait.pk]))
+        # Check for warning message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Switched to updating', str(messages[0]))
+        # The previous DCCDecision was not updated.
+        self.assertEqual(self.tagged_trait.dcc_review.dcc_decision, dcc_decision)
+
+    def test_shows_other_tags(self):
+        """Other tags linked to the same trait are included in the page."""
+        another_tagged_trait = factories.TaggedTraitFactory.create(trait=self.tagged_trait.trait)
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        context = response.context
+        self.assertTrue(context['show_other_tags'])
+        content = str(response.content)
+        self.assertIn(another_tagged_trait.tag.title, content)
+        self.assertIn(self.tagged_trait.tag.title, content)
+
+    def test_shows_archived_other_tags(self):
+        """Other tags linked to the same trait are included in the page."""
+        another_tagged_trait = factories.TaggedTraitFactory.create(trait=self.tagged_trait.trait, archived=True)
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        context = response.context
+        self.assertTrue(context['show_other_tags'])
+        content = str(response.content)
+        self.assertIn(another_tagged_trait.tag.title, content)
+        self.assertIn(self.tagged_trait.tag.title, content)
+
+    def test_archives_tagged_trait_with_dccdecision_remove(self):
+        """Creating a remove DCCDecision archives the tagged trait."""
+        self.assertFalse(self.tagged_trait.archived)
+        form_data = {forms.DCCDecisionForm.SUBMIT_REMOVE: 'Remove', 'comment': 'get rid of it'}
+        response = self.client.post(self.get_url(self.tagged_trait.pk), form_data)
+        dcc_decision = models.DCCDecision.objects.latest('created')
+        self.tagged_trait.refresh_from_db()
+        self.assertTrue(self.tagged_trait.archived)
+
+    def test_tagged_trait_nonarchived_after_dccdecision_confirm(self):
+        """Creating a confirm DCCDecision results in the tagged trait being non-archived."""
+        self.assertFalse(self.tagged_trait.archived)
+        form_data = {forms.DCCDecisionForm.SUBMIT_CONFIRM: 'Confirm', 'comment': 'looks good'}
+        response = self.client.post(self.get_url(self.tagged_trait.pk), form_data)
+        dcc_decision = models.DCCDecision.objects.latest('created')
+        self.tagged_trait.refresh_from_db()
+        self.assertFalse(self.tagged_trait.archived)
+
+
+class DCCDecisionCreateDCCAnalystTest(DCCDecisionCreateDCCTestsMixin, DCCAnalystLoginTestCase):
+
+    # Run all tests in DCCDecisionCreateDCCTestsMixin, as a DCC analyst.
+    pass
+
+
+class DCCDecisionCreateDCCDeveloperTest(DCCDecisionCreateDCCTestsMixin, DCCDeveloperLoginTestCase):
+
+    # Run all tests in DCCDecisionCreateDCCTestsMixin, as a DCC developer.
+    pass
+
+
+class DCCDecisionCreateOtherUserTest(UserLoginTestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.study_response = factories.StudyResponseFactory.create(status=models.StudyResponse.STATUS_DISAGREE)
+        self.tagged_trait = self.study_response.dcc_review.tagged_trait
+
+    def get_url(self, *args):
+        """Get the url for the view this class is supposed to test."""
+        return reverse('tags:tagged-traits:pk:dcc-decision:new', args=args)
+
+    def test_forbidden_get_request(self):
+        """Returns a response with a forbidden status code for non-DCC users."""
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        self.assertEqual(response.status_code, 403)
+
+    def test_forbidden_post_request(self):
+        """Returns a response with a forbidden status code for non-DCC users."""
+        response = self.client.post(self.get_url(self.tagged_trait.pk), {})
+        self.assertEqual(response.status_code, 403)
+
+    def test_forbidden_get_request_with_existing_decision(self):
+        """Returns a response with a forbidden status code for non-DCC users."""
+        factories.DCCDecisionFactory.create(
+            dcc_review=self.tagged_trait.dcc_review, decision=models.DCCDecision.DECISION_REMOVE)
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        self.assertEqual(response.status_code, 403)
+
+    def test_forbidden_post_request_with_existing_decision(self):
+        """Returns a response with a forbidden status code for non-DCC users."""
+        factories.DCCDecisionFactory.create(
+            dcc_review=self.tagged_trait.dcc_review, decision=models.DCCDecision.DECISION_REMOVE)
+        response = self.client.post(self.get_url(self.tagged_trait.pk), {})
+        self.assertEqual(response.status_code, 403)
+
+
+class DCCDecisionUpdateDCCTestsMixin(object):
+
+    def setUp(self):
+        super().setUp()
+        self.study_response = factories.StudyResponseFactory.create(status=models.StudyResponse.STATUS_DISAGREE)
+        self.tagged_trait = self.study_response.dcc_review.tagged_trait
+        self.dcc_decision = factories.DCCDecisionFactory.create(
+            dcc_review=self.tagged_trait.dcc_review, decision=models.DCCDecision.DECISION_CONFIRM)
+        self.need_decision_url = reverse('tags:tag:study:need-decision',
+                                         args=[self.tagged_trait.tag.pk,
+                                               self.tagged_trait.trait.source_dataset.source_study_version.study.pk])
+
+    def get_url(self, *args):
+        """Get the url for the view this class is supposed to test."""
+        return reverse('tags:tagged-traits:pk:dcc-decision:update', args=args)
+
+    def test_view_success_code(self):
+        """View returns successful response code."""
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        self.assertEqual(response.status_code, 200)
+
+    def test_context_data(self):
+        """View has appropriate data in the context."""
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        context = response.context
+        self.assertIn('form', context)
+        self.assertIsInstance(context['form'], forms.DCCDecisionForm)
+        self.assertIn('tagged_trait', context)
+        self.assertEqual(context['tagged_trait'], self.tagged_trait)
+
+    def test_post_confirm_decision_updates_comment(self):
+        """Posting valid data to the form correctly updates a DCCDecision by changing comment."""
+        original_comment = self.dcc_decision.comment
+        form_data = {forms.DCCDecisionForm.SUBMIT_CONFIRM: 'Confirm', 'comment': 'looks good'}
+        response = self.client.post(self.get_url(self.tagged_trait.pk), form_data)
+        self.assertRedirects(response, self.need_decision_url)
+        self.dcc_decision.refresh_from_db()
+        # Correctly updates a DCCDecision for this TaggedTrait.
+        updated_dcc_decision = models.DCCDecision.objects.latest('modified')
+        self.assertEqual(self.dcc_decision, updated_dcc_decision)
+        self.assertNotEqual(self.dcc_decision.comment, original_comment)
+        # Check for success message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Successfully updated', str(messages[0]))
+
+    def test_post_remove_decision_updates_decision_and_comment(self):
+        """Posting valid data to the form correctly updates a DCCDecision decision and comment."""
+        original_comment = self.dcc_decision.comment
+        form_data = {forms.DCCDecisionForm.SUBMIT_REMOVE: 'Remove', 'comment': 'foo'}
+        response = self.client.post(self.get_url(self.tagged_trait.pk), form_data)
+        self.assertRedirects(response, self.need_decision_url)
+        self.dcc_decision.refresh_from_db()
+        # Correctly updates a DCCDecision for this TaggedTrait.
+        updated_dcc_decision = models.DCCDecision.objects.latest('modified')
+        self.assertEqual(self.dcc_decision, updated_dcc_decision)
+        self.assertNotEqual(self.dcc_decision.comment, original_comment)
+        # Check for success message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Successfully updated', str(messages[0]))
+
+    def test_change_confirm_to_remove(self):
+        """Updating a dcc decision from confirm to remove is successful."""
+        self.dcc_decision.delete()
+        self.dcc_decision = factories.DCCDecisionFactory.create(
+            dcc_review=self.tagged_trait.dcc_review, decision=models.DCCDecision.DECISION_CONFIRM)
+        form_data = {forms.DCCDecisionForm.SUBMIT_REMOVE: 'Remove', 'comment': 'remove it'}
+        response = self.client.post(self.get_url(self.tagged_trait.pk), form_data)
+        self.assertRedirects(response, self.need_decision_url)
+        self.dcc_decision.refresh_from_db()
+        updated_dcc_decision = models.DCCDecision.objects.latest('modified')
+        self.assertEqual(self.dcc_decision, updated_dcc_decision)
+        self.assertEqual(self.dcc_decision.decision, models.DCCDecision.DECISION_REMOVE)
+        # Check for success message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Successfully updated', str(messages[0]))
+
+    def test_change_remove_to_confirm(self):
+        """Updating a dcc decision from remove to confirm is successful."""
+        self.dcc_decision.delete()
+        self.dcc_decision = factories.DCCDecisionFactory.create(
+            dcc_review=self.tagged_trait.dcc_review, decision=models.DCCDecision.DECISION_REMOVE)
+        self.tagged_trait.archive()
+        self.tagged_trait.refresh_from_db()
+        form_data = {forms.DCCDecisionForm.SUBMIT_CONFIRM: 'Confirm', 'comment': 'keep it'}
+        response = self.client.post(self.get_url(self.tagged_trait.pk), form_data)
+        self.assertRedirects(response, self.need_decision_url)
+        self.dcc_decision.refresh_from_db()
+        updated_dcc_decision = models.DCCDecision.objects.latest('modified')
+        self.assertEqual(self.dcc_decision, updated_dcc_decision)
+        self.assertEqual(self.dcc_decision.decision, models.DCCDecision.DECISION_CONFIRM)
+        # Check for success message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Successfully updated', str(messages[0]))
+
+    def test_form_error_missing_comment_for_remove(self):
+        """Posting bad data to the form shows a form error and does not update decision."""
+        form_data = {forms.DCCDecisionForm.SUBMIT_REMOVE: 'Remove', 'comment': ''}
+        response = self.client.post(self.get_url(self.tagged_trait.pk), form_data)
+        self.assertEqual(response.status_code, 200)
+        self.dcc_decision.refresh_from_db()
+        # Does not modify a DCCDecision for this TaggedTrait.
+        self.assertNotEqual(self.dcc_decision.comment, form_data['comment'])
+        self.assertNotEqual(self.dcc_decision.decision, models.DCCDecision.DECISION_REMOVE)
+        # No messages.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 0)
+
+    def test_form_error_missing_comment_for_confirm(self):
+        """Posting bad data to the form shows a form error."""
+        form_data = {forms.DCCDecisionForm.SUBMIT_CONFIRM: 'Confirm', 'comment': ''}
+        response = self.client.post(self.get_url(self.tagged_trait.pk), form_data)
+        self.assertEqual(response.status_code, 200)
+        self.dcc_decision.refresh_from_db()
+        # Does not modify a DCCDecision for this TaggedTrait.
+        self.assertNotEqual(self.dcc_decision.comment, form_data['comment'])
+        # No messages.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 0)
+
+    def test_get_view_with_invalid_tagged_trait_pk(self):
+        """Returns a 404 page with a get request if the tagged trai doesn't exist."""
+        url = self.get_url(self.tagged_trait.pk + 1)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 404)
+
+    def test_post_view_with_invalid_tagged_trait_pk(self):
+        """Returns a 404 page if the session varaible pk doesn't exist."""
+        url = self.get_url(self.tagged_trait.pk + 1)
+        form_data = {forms.DCCDecisionForm.SUBMIT_CONFIRM: 'Confirm', 'comment': 'looks good'}
+        response = self.client.post(url, form_data)
+        self.assertEqual(response.status_code, 404)
+
+    def test_get_message_and_redirect_missing_review_tagged_trait(self):
+        """Get request gives a warning message and redirects if the tagged trait has no dcc review."""
+        self.tagged_trait.dcc_review.hard_delete()  # Also deletes dcc_decision and study_response!
+        # Reset the objects saved to this testcase.
+        self.tagged_trait = models.TaggedTrait.objects.get(pk=self.tagged_trait.pk)
+        self.study_response = None
+        self.dcc_decision = None
+        self.assertFalse(hasattr(self.tagged_trait, 'dcc_review'))
+        url = self.get_url(self.tagged_trait.pk)
+        response = self.client.get(url, follow=True)
+        create_decision_url = reverse('tags:tagged-traits:pk:dcc-decision:new', args=[self.tagged_trait.pk])
+        # Redirects first to the create page, then to the need_decision page.
+        self.assertEqual(response.redirect_chain, [(create_decision_url, 302, ), (self.need_decision_url, 302, )])
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 2)
+        self.assertIn('Switched to creating', str(messages[0]))
+        self.assertIn('Cannot create', str(messages[1]))
+        self.assertFalse(hasattr(self.tagged_trait, 'dcc_review'))
+
+    def test_post_message_and_redirect_missing_review_tagged_trait(self):
+        """Post request gives a warning message and redirects if the tagged trait has no dcc review."""
+        self.tagged_trait.dcc_review.hard_delete()  # Also deletes dcc_decision and study_response!
+        # Reset the objects saved to this testcase.
+        self.tagged_trait = models.TaggedTrait.objects.get(pk=self.tagged_trait.pk)
+        self.study_response = None
+        self.dcc_decision = None
+        self.assertFalse(hasattr(self.tagged_trait, 'dcc_review'))
+        url = self.get_url(self.tagged_trait.pk)
+        form_data = {forms.DCCDecisionForm.SUBMIT_CONFIRM: 'Confirm', 'comment': 'looks good'}
+        response = self.client.post(url, form_data, follow=True)
+        create_decision_url = reverse('tags:tagged-traits:pk:dcc-decision:new', args=[self.tagged_trait.pk])
+        # Redirects first to the create page, then to the need_decision page.
+        self.assertEqual(response.redirect_chain, [(create_decision_url, 302, ), (self.need_decision_url, 302, )])
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 2)
+        self.assertIn('Switched to creating', str(messages[0]))
+        self.assertIn('Cannot create', str(messages[1]))
+        self.assertFalse(hasattr(self.tagged_trait, 'dcc_review'))
+
+    def test_post_message_and_redirect_missing_review_tagged_trait_with_form_error(self):
+        """Post request gives a warning message and redirects if no dcc review, even with bad data."""
+        self.tagged_trait.dcc_review.hard_delete()  # Also deletes dcc_decision and study_response!
+        # Reset the objects saved to this testcase.
+        self.tagged_trait = models.TaggedTrait.objects.get(pk=self.tagged_trait.pk)
+        self.study_response = None
+        self.dcc_decision = None
+        self.assertFalse(hasattr(self.tagged_trait, 'dcc_review'))
+        url = self.get_url(self.tagged_trait.pk)
+        form_data = {forms.DCCDecisionForm.SUBMIT_CONFIRM: 'Confirm', 'comment': ''}
+        response = self.client.post(url, form_data, follow=True)
+        create_decision_url = reverse('tags:tagged-traits:pk:dcc-decision:new', args=[self.tagged_trait.pk])
+        # Redirects first to the create page, then to the need_decision page.
+        self.assertEqual(response.redirect_chain, [(create_decision_url, 302, ), (self.need_decision_url, 302, )])
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 2)
+        self.assertIn('Switched to creating', str(messages[0]))
+        self.assertIn('Cannot create', str(messages[1]))
+        self.assertFalse(hasattr(self.tagged_trait, 'dcc_review'))
+
+    def test_get_message_and_redirect_review_confirmed_tagged_trait(self):
+        """Get request gives a warning message and redirects if the tagged trait has dcc review status confirmed."""
+        original_comment = self.dcc_decision.comment
+        self.tagged_trait.dcc_review.status = models.DCCReview.STATUS_CONFIRMED
+        self.tagged_trait.dcc_review.save()
+        url = self.get_url(self.tagged_trait.pk)
+        response = self.client.get(url)
+        self.dcc_decision.refresh_from_db()
+        self.assertRedirects(response, self.need_decision_url)
+        self.assertEqual(original_comment, self.dcc_decision.comment)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Cannot update', str(messages[0]))
+
+    def test_post_message_and_redirect_review_confirmed_tagged_trait(self):
+        """Post request gives a warning message and redirects if the tagged trait has dcc review status confirmed."""
+        original_comment = self.dcc_decision.comment
+        self.tagged_trait.dcc_review.status = models.DCCReview.STATUS_CONFIRMED
+        self.tagged_trait.dcc_review.save()
+        url = self.get_url(self.tagged_trait.pk)
+        form_data = {forms.DCCDecisionForm.SUBMIT_CONFIRM: 'Confirm', 'comment': 'looks good'}
+        response = self.client.post(url, form_data)
+        self.dcc_decision.refresh_from_db()
+        self.assertRedirects(response, self.need_decision_url)
+        self.assertEqual(original_comment, self.dcc_decision.comment)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Cannot update', str(messages[0]))
+
+    def test_post_message_and_redirect_review_confirmed_tagged_trait_with_form_error(self):
+        """Post request gives a warning message and redirects if dcc review status confirmed, even with bad data."""
+        original_comment = self.dcc_decision.comment
+        self.tagged_trait.dcc_review.status = models.DCCReview.STATUS_CONFIRMED
+        self.tagged_trait.dcc_review.save()
+        url = self.get_url(self.tagged_trait.pk)
+        form_data = {forms.DCCDecisionForm.SUBMIT_CONFIRM: 'Confirm', 'comment': ''}
+        response = self.client.post(url, form_data)
+        self.dcc_decision.refresh_from_db()
+        self.assertRedirects(response, self.need_decision_url)
+        self.assertEqual(original_comment, self.dcc_decision.comment)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Cannot update', str(messages[0]))
+
+    def test_get_success_missing_response_tagged_trait(self):
+        """Get response is successful if the tagged trait has no study response."""
+        self.tagged_trait.dcc_review.study_response.hard_delete()
+        url = self.get_url(self.tagged_trait.pk)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 0)
+
+    def test_post_updates_decision_missing_response_tagged_trait(self):
+        """Post request successfully updates decision when the tagged trait has no study response."""
+        original_comment = self.dcc_decision.comment
+        self.tagged_trait.dcc_review.study_response.hard_delete()
+        url = self.get_url(self.tagged_trait.pk)
+        form_data = {forms.DCCDecisionForm.SUBMIT_CONFIRM: 'Confirm', 'comment': 'looks good'}
+        response = self.client.post(url, form_data)
+        self.dcc_decision.refresh_from_db()
+        self.assertRedirects(response, self.need_decision_url)
+        self.assertNotEqual(original_comment, self.dcc_decision.comment)
+        self.assertEqual(self.dcc_decision.comment, form_data['comment'])
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Successfully updated', str(messages[0]))
+
+    def test_post_does_not_redirect_with_missing_response_tagged_trait_with_form_error(self):
+        """Post request does not give message and redirect, but doesn't update decision when study response is missing and data is bad."""  # noqa
+        original_comment = self.dcc_decision.comment
+        self.tagged_trait.dcc_review.study_response.hard_delete()
+        url = self.get_url(self.tagged_trait.pk)
+        form_data = {forms.DCCDecisionForm.SUBMIT_CONFIRM: 'Confirm', 'comment': ''}
+        response = self.client.post(url, form_data)
+        self.dcc_decision.refresh_from_db()
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(original_comment, self.dcc_decision.comment)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 0)
+
+    def test_get_message_and_redirect_response_agree_tagged_trait(self):
+        """Get request gives a warning message and redirects if the tagged trait has study response status agree."""
+        original_comment = self.dcc_decision.comment
+        self.tagged_trait.dcc_review.study_response.status = models.StudyResponse.STATUS_AGREE
+        self.tagged_trait.dcc_review.study_response.save()
+        url = self.get_url(self.tagged_trait.pk)
+        response = self.client.get(url)
+        self.dcc_decision.refresh_from_db()
+        self.assertRedirects(response, self.need_decision_url)
+        self.assertEqual(original_comment, self.dcc_decision.comment)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Cannot update', str(messages[0]))
+
+    def test_post_message_and_redirect_response_agree_tagged_trait(self):
+        """Post request gives a warning message and redirects if the tagged trait has study response status agree."""
+        original_comment = self.dcc_decision.comment
+        self.tagged_trait.dcc_review.study_response.status = models.StudyResponse.STATUS_AGREE
+        self.tagged_trait.dcc_review.study_response.save()
+        url = self.get_url(self.tagged_trait.pk)
+        form_data = {forms.DCCDecisionForm.SUBMIT_CONFIRM: 'Confirm', 'comment': 'looks good'}
+        response = self.client.post(url, form_data)
+        self.dcc_decision.refresh_from_db()
+        self.assertRedirects(response, self.need_decision_url)
+        self.assertEqual(original_comment, self.dcc_decision.comment)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Cannot update', str(messages[0]))
+
+    def test_post_message_and_redirect_response_agree_tagged_trait_with_form_error(self):
+        """Post request gives a warning message and redirects if study response status agree, even with bad data."""
+        original_comment = self.dcc_decision.comment
+        self.tagged_trait.dcc_review.study_response.status = models.StudyResponse.STATUS_AGREE
+        self.tagged_trait.dcc_review.study_response.save()
+        url = self.get_url(self.tagged_trait.pk)
+        form_data = {forms.DCCDecisionForm.SUBMIT_CONFIRM: 'Confirm', 'comment': ''}
+        response = self.client.post(url, form_data)
+        self.dcc_decision.refresh_from_db()
+        self.assertRedirects(response, self.need_decision_url)
+        self.assertEqual(original_comment, self.dcc_decision.comment)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Cannot update', str(messages[0]))
+
+    def test_get_message_and_redirect_to_create_for_missing_decision(self):
+        """Shows warning message and redirects to create page if TaggedTrait has no decision."""
+        # Delete the DCC Decision and reset the other objects saved to this testcase.
+        self.dcc_decision.delete()
+        self.study_response = models.StudyResponse.objects.get(pk=self.study_response.pk)
+        self.tagged_trait = self.study_response.dcc_review.tagged_trait
+        self.dcc_decision = None
+        self.assertFalse(hasattr(self.tagged_trait.dcc_review, 'dcc_decision'))
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        self.assertRedirects(
+            response, reverse('tags:tagged-traits:pk:dcc-decision:new', args=[self.tagged_trait.pk]))
+        # Check for warning message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Switched to creating', str(messages[0]))
+        self.assertFalse(hasattr(self.tagged_trait.dcc_review, 'dcc_decision'))
+
+    def test_post_message_and_redirect_to_create_for_missing_decision(self):
+        """Shows warning message, does not update, and redirects to create view if TaggedTrait has no decision."""
+        # Delete the DCC Decision and reset the other objects saved to this testcase.
+        self.dcc_decision.delete()
+        self.study_response = models.StudyResponse.objects.get(pk=self.study_response.pk)
+        self.tagged_trait = self.study_response.dcc_review.tagged_trait
+        self.dcc_decision = None
+        self.assertFalse(hasattr(self.tagged_trait.dcc_review, 'dcc_decision'))
+        form_data = {forms.DCCDecisionForm.SUBMIT_CONFIRM: 'Confirm', 'comment': 'looks good'}
+        response = self.client.post(self.get_url(self.tagged_trait.pk), form_data)
+        self.assertRedirects(
+            response, reverse('tags:tagged-traits:pk:dcc-decision:new', args=[self.tagged_trait.pk]))
+        # Check for warning message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Switched to creating', str(messages[0]))
+        # The input DCCDecision was not saved.
+        self.assertFalse(hasattr(self.tagged_trait.dcc_review, 'dcc_decision'))
+
+    def test_post_message_and_redirect_to_create_for_missing_decision_with_form_error(self):
+        """Shows warning message, does not update, and redirects to create if no decision exists and data is bad."""
+        # Delete the DCC Decision and reset the other objects saved to this testcase.
+        self.dcc_decision.delete()
+        self.study_response = models.StudyResponse.objects.get(pk=self.study_response.pk)
+        self.tagged_trait = self.study_response.dcc_review.tagged_trait
+        self.dcc_decision = None
+        self.assertFalse(hasattr(self.tagged_trait.dcc_review, 'dcc_decision'))
+        form_data = {forms.DCCDecisionForm.SUBMIT_CONFIRM: 'Confirm', 'comment': ''}
+        response = self.client.post(self.get_url(self.tagged_trait.pk), form_data)
+        self.tagged_trait.dcc_review.refresh_from_db()
+        self.assertRedirects(
+            response, reverse('tags:tagged-traits:pk:dcc-decision:new', args=[self.tagged_trait.pk]))
+        # Check for warning message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Switched to creating', str(messages[0]))
+        # The input DCCDecision was not saved.
+        self.assertFalse(hasattr(self.tagged_trait.dcc_review, 'dcc_decision'))
+
+    def test_shows_other_tags(self):
+        """Other tags linked to the same trait are included in the page."""
+        another_tagged_trait = factories.TaggedTraitFactory.create(trait=self.tagged_trait.trait)
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        context = response.context
+        self.assertTrue(context['show_other_tags'])
+        content = str(response.content)
+        self.assertIn(another_tagged_trait.tag.title, content)
+        self.assertIn(self.tagged_trait.tag.title, content)
+
+    def test_shows_archived_other_tags(self):
+        """Other tags linked to the same trait are included in the page."""
+        another_tagged_trait = factories.TaggedTraitFactory.create(trait=self.tagged_trait.trait, archived=True)
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        context = response.context
+        self.assertTrue(context['show_other_tags'])
+        content = str(response.content)
+        self.assertIn(another_tagged_trait.tag.title, content)
+        self.assertIn(self.tagged_trait.tag.title, content)
+
+    def test_shows_tag_only_once_when_it_is_archived(self):
+        """The tag is only shown once, even when the tagged variable is archived."""
+        self.tagged_trait.archive()
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        context = response.context
+        self.assertTrue(context['show_other_tags'])
+        content = str(response.content)
+        self.assertNotIn(self.tagged_trait.tag, context['other_tags'])
+        self.assertNotIn(self.tagged_trait.tag, context['archived_other_tags'])
+
+    def test_archives_tagged_trait_changed_from_confirm_to_remove(self):
+        """Updating a DCCDecision from confirm to remove archives the tagged trait."""
+        self.dcc_decision.delete()
+        self.dcc_decision = factories.DCCDecisionFactory.create(
+            dcc_review=self.tagged_trait.dcc_review, decision=models.DCCDecision.DECISION_CONFIRM)
+        self.assertFalse(self.tagged_trait.archived)
+        form_data = {forms.DCCDecisionForm.SUBMIT_REMOVE: 'Remove', 'comment': 'get rid of it'}
+        response = self.client.post(self.get_url(self.tagged_trait.pk), form_data)
+        dcc_decision = models.DCCDecision.objects.latest('modified')
+        self.tagged_trait.refresh_from_db()
+        self.assertEqual(form_data['comment'], dcc_decision.comment)
+        self.assertTrue(self.tagged_trait.archived)
+
+    def test_unarchives_tagged_trait_changed_from_remove_to_confirm(self):
+        """Updating a DCCDecision from remove to confirm unarchives."""
+        self.dcc_decision.delete()
+        self.dcc_decision = factories.DCCDecisionFactory.create(
+            dcc_review=self.tagged_trait.dcc_review, decision=models.DCCDecision.DECISION_REMOVE)
+        self.tagged_trait.archive()
+        self.tagged_trait.refresh_from_db()
+        self.assertTrue(self.tagged_trait.archived)
+        form_data = {forms.DCCDecisionForm.SUBMIT_CONFIRM: 'Confirm', 'comment': 'looks good'}
+        response = self.client.post(self.get_url(self.tagged_trait.pk), form_data)
+        dcc_decision = models.DCCDecision.objects.latest('modified')
+        self.tagged_trait.refresh_from_db()
+        self.assertEqual(form_data['comment'], dcc_decision.comment)
+        self.assertFalse(self.tagged_trait.archived)
+
+
+class DCCDecisionUpdateDCCAnalystTest(DCCDecisionUpdateDCCTestsMixin, DCCAnalystLoginTestCase):
+
+    # Run all tests in DCCDecisionUpdateDCCTestsMixin, as a DCC analyst.
+    pass
+
+
+class DCCDecisionUpdateDCCDeveloperTest(DCCDecisionUpdateDCCTestsMixin, DCCDeveloperLoginTestCase):
+
+    # Run all tests in DCCDecisionUpdateDCCTestsMixin, as a DCC developer.
+    pass
+
+
+class DCCDecisionUpdateOtherUserTest(UserLoginTestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.study_response = factories.StudyResponseFactory.create(status=models.StudyResponse.STATUS_DISAGREE)
+        self.tagged_trait = self.study_response.dcc_review.tagged_trait
+
+    def get_url(self, *args):
+        """Get the url for the view this class is supposed to test."""
+        return reverse('tags:tagged-traits:pk:dcc-decision:update', args=args)
+
+    def test_forbidden_get_request(self):
+        """Returns a response with a forbidden status code for non-DCC users."""
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        self.assertEqual(response.status_code, 403)
+
+    def test_forbidden_post_request(self):
+        """Returns a response with a forbidden status code for non-DCC users."""
+        response = self.client.post(self.get_url(self.tagged_trait.pk), {})
+        self.assertEqual(response.status_code, 403)
+
+    def test_forbidden_get_request_with_existing_decision(self):
+        """Returns a response with a forbidden status code for non-DCC users."""
+        factories.DCCDecisionFactory.create(
+            dcc_review=self.tagged_trait.dcc_review, decision=models.DCCDecision.DECISION_REMOVE)
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        self.assertEqual(response.status_code, 403)
+
+    def test_forbidden_post_request_with_existing_decision(self):
+        """Returns a response with a forbidden status code for non-DCC users."""
+        factories.DCCDecisionFactory.create(
+            dcc_review=self.tagged_trait.dcc_review, decision=models.DCCDecision.DECISION_REMOVE)
+        response = self.client.post(self.get_url(self.tagged_trait.pk), {})
         self.assertEqual(response.status_code, 403)
 
 

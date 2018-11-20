@@ -1,0 +1,48 @@
+{% extends '__base.html' %}
+
+{% load crispy_forms_tags %}
+
+{% block head_title %}
+  | Make final decision
+{% endblock head_title %}
+
+{% block content %}
+
+  {% include '_messages.html' %}
+
+  <h2>
+    Make final decision on <a href='{{ tagged_trait.get_absolute_url }}'>{{ tagged_trait }}</a>
+  </h2>
+
+  {% include 'tags/_taggedtrait_info.html' with collapse_tag_panel=True %}
+  {% include 'tags/_taggedtrait_quality_review_panel.html' %}
+
+  <div class="panel-group">
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <h4 class="panel-title">
+          <a data-toggle="collapse" href="#collapse-instructions">Instructions</a>
+        </h4>
+      </div>
+      <div id="collapse-instructions" class="panel-collapse collapse">
+        <div class="panel-body">
+          <p>
+            Carefully review the information for this tagged variable, the comment explaining the initial DCC review that
+            flagged this tagged variable for removal, and the response from the study representative. Use this information
+            to make a final decision on whether to remove (archive) or confirm the tagged variable. A comment explaining
+            your decision is required. Please make this comment reasonably detailed so that other DCC staff members can
+            understand your reasoning. Only DCC staff will be able to see your comment.
+          </p>
+          <p>
+            If you decide to remove the tagged variable, it will be automatically archived, along with all information
+            about its review. As soon as it is archived, only DCC staff members will be able to see the tagged variable
+            in any of the pages on PIE.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% crispy form %}
+
+{% endblock content %}

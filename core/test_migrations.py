@@ -3,6 +3,8 @@
 from django.apps import apps
 from django.test import TestCase
 
+from core.factories import UserFactory
+
 
 class SiteTest(TestCase):
 
@@ -19,14 +21,6 @@ class SiteTest(TestCase):
         self.assertEqual(site.domain, 'topmedphenotypes.org')
 
 
-# To get the current expected group permissions from the shell:
-# for g in Group.objects.all():
-#     print('# --------' + g.name)
-#     for p in g.permissions.all():
-#         print("('{}', '{}', '{}'),".format(
-#             p.content_type.app_label,
-#             p.content_type.model,
-#             p.codename.split('_')[0]))
 class GroupMigrationTest(TestCase):
 
     def setUp(self):
@@ -48,6 +42,11 @@ class GroupMigrationTest(TestCase):
                 ('tags', 'taggedtrait', 'add'),
                 ('tags', 'taggedtrait', 'change'),
                 ('tags', 'taggedtrait', 'delete'),
+                ('tags', 'dccreview', 'add'),
+                ('tags', 'dccreview', 'change'),
+                ('tags', 'dccreview', 'delete'),
+                ('tags', 'dccdecision', 'add'),
+                ('tags', 'dccdecision', 'change'),
             ),
             'dcc_developers': (
                 ('flatpages', 'flatpage', 'add'),
@@ -62,20 +61,25 @@ class GroupMigrationTest(TestCase):
                 ('recipes', 'unitrecipe', 'add'),
                 ('recipes', 'unitrecipe', 'change'),
                 ('recipes', 'unitrecipe', 'delete'),
-                ('sessions', 'session', 'add'),
-                ('sessions', 'session', 'change'),
-                ('sessions', 'session', 'delete'),
                 ('tags', 'tag', 'add'),
                 ('tags', 'tag', 'change'),
                 ('tags', 'tag', 'delete'),
                 ('tags', 'taggedtrait', 'add'),
                 ('tags', 'taggedtrait', 'change'),
                 ('tags', 'taggedtrait', 'delete'),
+                ('tags', 'dccreview', 'add'),
+                ('tags', 'dccreview', 'change'),
+                ('tags', 'dccreview', 'delete'),
+                ('tags', 'dccdecision', 'add'),
+                ('tags', 'dccdecision', 'change'),
+                ('tags', 'dccdecision', 'delete'),
             ),
             'phenotype_taggers': (
                 ('tags', 'taggedtrait', 'add'),
                 ('tags', 'taggedtrait', 'change'),
                 ('tags', 'taggedtrait', 'delete'),
+                ('tags', 'studyresponse', 'add'),
+                ('tags', 'studyresponse', 'change'),
             ),
             'recipe_submitters': (
                 ('recipes', 'harmonizationrecipe', 'add'),
@@ -97,12 +101,30 @@ class GroupMigrationTest(TestCase):
         """No unexpected groups exist."""
         self.assertEqual(self.Group.objects.exclude(name__in=self.expected_group_permissions.keys()).count(), 0)
 
-    def test_analyst_permissions(self):
-        """DCC analysts have correct permissions."""
-        for name in self.expected_group_permissions:
-            group = self.Group.objects.get(name=name)
-            for perm_description in self.expected_group_permissions[name]:
+    def test_group_permissions_expected(self):
+        """Each group has the expected permissions."""
+        # for g in self.Group.objects.all():
+        #     print('# --------' + g.name)
+        #     for p in g.permissions.all():
+        #         print("('{}', '{}', '{}'),".format(
+        #             p.content_type.app_label,
+        #             p.content_type.model,
+        #             p.codename.split('_')[0]))
+        missing_permission_msgs = []
+        for group_name in self.expected_group_permissions:
+            group = self.Group.objects.get(name=group_name)
+            user = UserFactory.create()
+            user.groups.add(group)
+            user.refresh_from_db()
+            for perm_description in self.expected_group_permissions[group_name]:
                 perm = self.Permission.objects.get(content_type__app_label=perm_description[0],
                                                    content_type__model=perm_description[1],
                                                    codename__startswith=perm_description[2])
-                self.assertIsInstance(perm, self.Permission)
+                perm_string = '.'.join((perm.content_type.app_label, perm.codename))
+                if perm not in group.permissions.all():
+                    msg = 'Group {} missing permission {}'.format(group_name, perm_string)
+                    missing_permission_msgs.append(msg)
+                if not user.has_perm(perm_string):
+                    msg = 'User from group {} missing permission {}'.format(group_name, perm_string)
+                    missing_permission_msgs.append(msg)
+        self.assertEqual(len(missing_permission_msgs), 0, msg='\n'.join(missing_permission_msgs))

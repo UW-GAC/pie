@@ -12,8 +12,8 @@ from django.views.generic import (CreateView, DetailView, DeleteView, FormView, 
                                   UpdateView, View)
 from django.views.generic.edit import ProcessFormView
 
-from braces.views import (FormMessagesMixin, FormValidMessageMixin, LoginRequiredMixin, MessageMixin,
-                          PermissionRequiredMixin, UserFormKwargsMixin, UserPassesTestMixin)
+from braces.views import (FormMessagesMixin, FormValidMessageMixin, GroupRequiredMixin, LoginRequiredMixin,
+                          MessageMixin, PermissionRequiredMixin, UserFormKwargsMixin, UserPassesTestMixin)
 from dal import autocomplete
 from django_tables2 import SingleTableMixin
 
@@ -116,26 +116,52 @@ class TaggedTraitDetail(LoginRequiredMixin, PermissionRequiredMixin, SpecificTag
         user_has_study_access = user_is_staff or user_is_study_tagger
         is_non_archived = not self.object.archived
         dccreview_exists = hasattr(self.object, 'dcc_review')
-        is_confirmed = dccreview_exists and self.object.dcc_review.status == models.DCCReview.STATUS_CONFIRMED
+        dccreview_confirmed = dccreview_exists and (self.object.dcc_review.status == models.DCCReview.STATUS_CONFIRMED)
         needs_followup = dccreview_exists and self.object.dcc_review.status == models.DCCReview.STATUS_FOLLOWUP
         user_has_dccreview_add_perms = self.request.user.has_perm('tags.add_dccreview')
         user_has_dccreview_change_perms = self.request.user.has_perm('tags.change_dccreview')
-        response_exists = dccreview_exists and hasattr(self.object.dcc_review, 'study_response')
+        user_has_dccdecision_add_perms = self.request.user.has_perm('tags.add_dccdecision')
+        user_has_dccdecision_change_perms = self.request.user.has_perm('tags.change_dccdecision')
+        studyresponse_exists = dccreview_exists and hasattr(self.object.dcc_review, 'study_response')
+        studyresponse_agree = studyresponse_exists and \
+            (self.object.dcc_review.study_response.status == models.StudyResponse.STATUS_AGREE)
+        studyresponse_disagree = studyresponse_exists and \
+            (self.object.dcc_review.study_response.status == models.StudyResponse.STATUS_DISAGREE)
+        dccdecision_exists = dccreview_exists and hasattr(self.object.dcc_review, 'dcc_decision')
+        dccdecision_remove = dccdecision_exists and \
+            (self.object.dcc_review.dcc_decision.decision == models.DCCDecision.DECISION_REMOVE)
+        dccdecision_confirm = dccdecision_exists and \
+            (self.object.dcc_review.dcc_decision.decision == models.DCCDecision.DECISION_CONFIRM)
+        if dccreview_confirmed:
+            color = 'bg-success'
+        elif dccdecision_confirm:
+            color = 'bg-success'
+        elif not is_non_archived:
+            color = 'bg-danger'
+        else:
+            color = ''
         # Set context variables for controlling view options.
         context['show_quality_review_panel'] = user_has_study_access
         context['show_dcc_review_add_button'] = (not dccreview_exists) and user_has_dccreview_add_perms \
             and is_non_archived
         context['show_dcc_review_update_button'] = dccreview_exists and user_has_dccreview_change_perms \
-            and not response_exists and is_non_archived
-        context['show_confirmed_status'] = user_has_study_access and is_confirmed
-        context['show_needs_followup_status'] = user_has_study_access and needs_followup
-        context['show_study_response_status'] = user_has_study_access and response_exists
-        context['show_study_agrees'] = user_has_study_access and response_exists and \
-            (self.object.dcc_review.study_response.status == models.StudyResponse.STATUS_AGREE)
-        context['show_study_disagrees'] = user_has_study_access and response_exists and \
-            (self.object.dcc_review.study_response.status == models.StudyResponse.STATUS_DISAGREE)
+            and not studyresponse_exists and is_non_archived and not dccdecision_exists
+        context['show_dcc_review_confirmed'] = user_has_study_access and dccreview_confirmed
+        context['show_dcc_review_needs_followup'] = user_has_study_access and needs_followup
+        context['show_study_response_status'] = user_has_study_access and studyresponse_exists
+        context['show_study_agrees'] = user_has_study_access and studyresponse_exists and studyresponse_agree
+        context['show_study_disagrees'] = user_has_study_access and studyresponse_exists and studyresponse_disagree
+        context['show_dcc_decision'] = user_has_study_access and dccdecision_exists
+        context['show_dcc_decision_add_button'] = user_has_study_access and user_has_dccdecision_add_perms \
+            and dccreview_exists and studyresponse_disagree and not dccdecision_exists
+        context['show_dcc_decision_update_button'] = user_has_study_access and user_has_dccdecision_change_perms \
+            and dccreview_exists and dccdecision_exists
+        context['show_decision_remove'] = user_has_study_access and dccdecision_exists and dccdecision_remove
+        context['show_decision_confirm'] = user_has_study_access and dccdecision_exists and dccdecision_confirm
+        context['show_decision_comment'] = user_is_staff and dccdecision_exists
         context['show_delete_button'] = user_has_study_access and (not dccreview_exists) and is_non_archived
         context['show_archived'] = not is_non_archived
+        context['quality_review_panel_color'] = color
         return context
 
     def set_study(self):
@@ -441,7 +467,9 @@ class DCCReviewMixin(object):
         # Add context variables to control display of tags in _taggedtrait_info panel.
         context['show_other_tags'] = True
         context['other_tags'] = self.tagged_trait.trait.non_archived_tags.all().exclude(pk=self.tagged_trait.tag.pk)
-        context['archived_other_tags'] = self.tagged_trait.trait.archived_tags.all()  # Views don't work for archived.
+        # Views don't work for archived.
+        context['archived_other_tags'] = self.tagged_trait.trait.archived_tags.all().exclude(
+            pk=self.tagged_trait.tag.pk)
         return context
 
     def get_review_status(self):
@@ -469,6 +497,7 @@ class DCCReviewMixin(object):
 
 
 class DCCReviewByTagAndStudySelect(LoginRequiredMixin, PermissionRequiredMixin, MessageMixin, FormView):
+    """Sets session variables from study + tag selection form, then sends to reviewing loop."""
 
     template_name = 'tags/dccreview_tag_and_study_select.html'
     form_class = forms.DCCReviewTagAndStudySelectForm
@@ -743,7 +772,12 @@ class DCCReviewUpdate(LoginRequiredMixin, PermissionRequiredMixin, FormValidMess
     redirect_unauthenticated_users = True
     form_class = forms.DCCReviewForm
 
-    def _get_study_responded_message(self):
+    def _get_dcc_decision_exists_warning_message(self):
+        msg = 'Oops! The DCC review for {} cannot be changed because it already has a DCC decision.'.format(
+            self.tagged_trait)
+        return msg
+
+    def _get_study_response_exists_warning_message(self):
         msg = 'Oops! The DCC review for {} cannot be changed because it already has a study response.'.format(
             self.tagged_trait)
         return msg
@@ -764,7 +798,10 @@ class DCCReviewUpdate(LoginRequiredMixin, PermissionRequiredMixin, FormValidMess
             self.messages.warning(self._get_not_reviewed_warning_message())
             return HttpResponseRedirect(reverse('tags:tagged-traits:pk:dcc-review:new', args=[self.tagged_trait.pk]))
         if hasattr(self.object, 'study_response'):
-            self.messages.error(self._get_study_responded_message())
+            self.messages.error(self._get_study_response_exists_warning_message())
+            return HttpResponseRedirect(self.tagged_trait.get_absolute_url())
+        if hasattr(self.object, 'dcc_decision'):
+            self.messages.error(self._get_dcc_decision_exists_warning_message())
             return HttpResponseRedirect(self.tagged_trait.get_absolute_url())
 
     def get(self, request, *args, **kwargs):
@@ -799,7 +836,7 @@ class DCCReviewUpdate(LoginRequiredMixin, PermissionRequiredMixin, FormValidMess
             return None
 
     def get_form_valid_message(self):
-        msg = 'Successfully updated {}.'.format(self.tagged_trait)
+        msg = 'Successfully updated DCC review for {}.'.format(self.tagged_trait)
         return msg
 
     def get_success_url(self):
@@ -819,7 +856,10 @@ class DCCReviewNeedFollowupCounts(LoginRequiredMixin, TemplateView):
         # https://code.djangoproject.com/ticket/10060
         # The problem occurs when a join produces duplicated rows. In the queries below, none of the
         # joins should result in any duplicated TaggedTraits, so multiple annotations should be ok.
-        study_tag_counts = models.TaggedTrait.objects.need_followup().filter(
+        study_tag_counts = models.TaggedTrait.objects.need_followup().exclude(
+            # Exclude tagged traits missing a study response but with a dcc decision.
+            Q(dcc_review__study_response__isnull=True) & Q(dcc_review__dcc_decision__isnull=False)
+        ).filter(
             trait__source_dataset__source_study_version__study__in=studies
         ).values(
             study_name=F('trait__source_dataset__source_study_version__study__i_study_name'),
@@ -892,7 +932,10 @@ class DCCReviewNeedFollowupList(LoginRequiredMixin, SpecificTaggableStudyRequire
         return context
 
     def get_table_data(self):
-        data = self.study.get_all_tagged_traits().need_followup().filter(
+        data = self.study.get_all_tagged_traits().need_followup().exclude(
+            # Exclude tagged traits missing a study response but with a dcc decision.
+            Q(dcc_review__study_response__isnull=True) & Q(dcc_review__dcc_decision__isnull=False)
+        ).filter(
             tag=self.tag
         ).select_related(
             'dcc_review',
@@ -927,6 +970,11 @@ class StudyResponseCheckMixin(SpecificTaggableStudyRequiredMixin, MessageMixin):
             return HttpResponseRedirect(self.get_failure_url())
         if self.tagged_trait.dcc_review.status == models.DCCReview.STATUS_CONFIRMED:
             self.messages.warning('Oops! {} has been confirmed by the DCC.'.format(self.tagged_trait))
+            return HttpResponseRedirect(self.get_failure_url())
+        if hasattr(self.tagged_trait.dcc_review, 'dcc_decision'):
+            already_decided_message = """Oops! {} already has a dcc decision so a study response cannot
+                                         be created or modified"""
+            self.messages.warning(already_decided_message.format(self.tagged_trait))
             return HttpResponseRedirect(self.get_failure_url())
         return super().dispatch(request, *args, **kwargs)
 
@@ -1026,3 +1074,545 @@ class StudyResponseCreateDisagree(LoginRequiredMixin, PermissionRequiredMixin, F
         tag = self.tagged_trait.dcc_review.tagged_trait.tag
         study = self.tagged_trait.dcc_review.tagged_trait.trait.source_dataset.source_study_version.study
         return reverse('tags:tag:study:quality-review', args=[tag.pk, study.pk])
+
+
+class TaggedTraitsNeedDCCDecisionSummary(LoginRequiredMixin, GroupRequiredMixin, TemplateView):
+    """View to show counts of StudyResponses with status disagree by study and tag for DCC staff."""
+
+    template_name = 'tags/taggedtrait_need_dccdecision_summary.html'
+    group_required = [u'dcc_analysts', u'dcc_developers', ]
+    raise_exception = True
+    redirect_unauthenticated_users = True
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # This view only considers tagged traits with study responses of "disagree".
+        # Tagged traits without study responses are not included.
+        disagree_responses = models.StudyResponse.objects.filter(status=models.StudyResponse.STATUS_DISAGREE).values(
+            study_name=F('dcc_review__tagged_trait__trait__source_dataset__source_study_version__study__i_study_name'),
+            study_pk=F('dcc_review__tagged_trait__trait__source_dataset__source_study_version__study__i_accession'),
+            tag_name=F('dcc_review__tagged_trait__tag__title'),
+            tag_pk=F('dcc_review__tagged_trait__tag__pk'),
+        ).annotate(
+            tt_total=Count('pk'),
+            tt_decision_required_count=Sum(Case(
+                When(dcc_review__dcc_decision__isnull=True, then=1),
+                When(dcc_review__dcc_decision__isnull=False, then=0),
+                default_value=0,
+                output_field=IntegerField()
+            ))
+        ).order_by('study_name', 'tag_name')
+        grouped_study_tag_counts = groupby(disagree_responses,
+                                           lambda x: {'study_name': x['study_name'], 'study_pk': x['study_pk']})
+        grouped_study_tag_counts = [(key, list(group)) for key, group in grouped_study_tag_counts]
+        context['grouped_study_tag_counts'] = grouped_study_tag_counts
+        return context
+
+
+class TaggedTraitsNeedDCCDecisionByTagAndStudyList(LoginRequiredMixin, GroupRequiredMixin, SingleTableMixin, ListView):
+    """View to show list of TaggedTraits that need a DCCDecision, with buttons for deciding."""
+
+    template_name = 'tags/taggedtrait_need_dccdecision_bytagandstudy_list.html'
+    group_required = [u'dcc_analysts', u'dcc_developers', ]
+    redirect_unauthenticated_users = True
+    raise_exception = True
+    model = models.TaggedTrait
+    context_table_name = 'tagged_trait_table'
+    table_pagination = {'per_page': TABLE_PER_PAGE * 2}
+    table_class = tables.TaggedTraitDCCDecisionTable
+
+    def get(self, request, *args, **kwargs):
+        self.study = get_object_or_404(Study, pk=self.kwargs['pk_study'])
+        self.tag = get_object_or_404(models.Tag, pk=self.kwargs['pk'])
+        return super().get(request, *args, **kwargs)
+
+    def get_table_data(self):
+        data = models.TaggedTrait.objects.need_decision().filter(
+            dcc_review__tagged_trait__tag=self.tag,
+            dcc_review__tagged_trait__trait__source_dataset__source_study_version__study=self.study).select_related(
+                'dcc_review', 'dcc_review__study_response', 'dcc_review__dcc_decision', 'tag', 'trait',
+                'trait__source_dataset').order_by(
+                    'dcc_review__dcc_decision')
+        return data
+
+    def get_context_data(self, *args, **kwargs):
+        context = super().get_context_data(*args, **kwargs)
+        context['study'] = self.study
+        context['tag'] = self.tag
+        return context
+
+
+class DCCDecisionMixin(object):
+    """Mixin to create or update DCCDecisions. Must be used with CreateView or UpdateView."""
+
+    model = models.DCCDecision
+
+    def get_context_data(self, **kwargs):
+        if 'tagged_trait' not in kwargs:
+            kwargs['tagged_trait'] = self.tagged_trait
+        context = super(DCCDecisionMixin, self).get_context_data(**kwargs)
+        # Add context variables to control display of tags in _taggedtrait_info panel.
+        context['show_other_tags'] = True
+        context['other_tags'] = self.tagged_trait.trait.non_archived_tags.all().exclude(pk=self.tagged_trait.tag.pk)
+        # Views don't work for archived.
+        context['archived_other_tags'] = self.tagged_trait.trait.archived_tags.all().exclude(
+            pk=self.tagged_trait.tag.pk)
+        # Set context variables for the quality review panel.
+        context['show_dcc_review_add_button'] = False
+        context['show_dcc_review_update_button'] = False
+        context['show_dcc_review_confirmed'] = False
+        context['show_dcc_review_needs_followup'] = True
+        context['show_study_response_status'] = hasattr(self.tagged_trait.dcc_review, 'study_response')
+        context['show_study_agrees'] = context['show_study_response_status'] and \
+            (self.tagged_trait.dcc_review.study_response.status == models.StudyResponse.STATUS_AGREE)
+        context['show_study_disagrees'] = context['show_study_response_status'] and \
+            (self.tagged_trait.dcc_review.study_response.status == models.StudyResponse.STATUS_DISAGREE)
+        context['show_dcc_decision'] = hasattr(self.tagged_trait.dcc_review, 'dcc_decision')
+        context['show_dcc_decision_add_button'] = False
+        context['show_dcc_decision_update_button'] = False
+        context['show_decision_remove'] = context['show_dcc_decision'] and \
+            (self.tagged_trait.dcc_review.dcc_decision.decision == models.DCCDecision.DECISION_REMOVE)
+        context['show_decision_confirm'] = context['show_dcc_decision'] and \
+            (self.tagged_trait.dcc_review.dcc_decision.decision == models.DCCDecision.DECISION_CONFIRM)
+        context['show_decision_comment'] = context['show_dcc_decision']
+        context['show_delete_button'] = False
+        context['show_archived'] = self.tagged_trait.archived
+        if context['show_decision_confirm']:
+            color = 'bg-success'
+        elif context['show_archived']:
+            color = 'bg-danger'
+        else:
+            color = ''
+        context['quality_review_panel_color'] = color
+        return context
+
+    def get_decision(self):
+        """Return the DCCDecision decision based on which submit button was clicked."""
+        if self.request.POST:
+            if self.form_class.SUBMIT_CONFIRM in self.request.POST:
+                return self.model.DECISION_CONFIRM
+            elif self.form_class.SUBMIT_REMOVE in self.request.POST:
+                return self.model.DECISION_REMOVE
+
+    def get_form_kwargs(self):
+        kwargs = super(DCCDecisionMixin, self).get_form_kwargs()
+        if 'data' in kwargs:
+            tmp = kwargs['data'].copy()
+            tmp.update({'decision': self.get_decision()})
+            kwargs['data'] = tmp
+        return kwargs
+
+    def form_valid(self, form):
+        """Create a DCCDecision object linked to the given TaggedTrait."""
+        form.instance.dcc_review = self.tagged_trait.dcc_review
+        form.instance.creator = self.request.user
+        form.instance.decision = self.get_decision()
+        response = super().form_valid(form)
+        # Archive if necessary.
+        if (self.object.decision == models.DCCDecision.DECISION_REMOVE) and (not self.tagged_trait.archived):
+            self.tagged_trait.archive()
+        # Unarchive if necessary.
+        if (self.object.decision == models.DCCDecision.DECISION_CONFIRM) and (self.tagged_trait.archived):
+            self.tagged_trait.unarchive()
+        return response
+
+
+class DCCDecisionByTagAndStudySelectFromURL(LoginRequiredMixin, PermissionRequiredMixin, MessageMixin, RedirectView):
+    """View to begin the DCC decision loop using url parameters."""
+
+    permission_required = 'tags.add_dccdecision'
+    raise_exception = True
+    redirect_unauthenticated_users = True
+
+    def get(self, request, *args, **kwargs):
+        tag = get_object_or_404(models.Tag, pk=self.kwargs['pk'])
+        study = get_object_or_404(Study, pk=self.kwargs['pk_study'])
+        disagree_study_responses = models.StudyResponse.objects.filter(
+            status=models.StudyResponse.STATUS_DISAGREE,
+            dcc_review__tagged_trait__archived=False,
+            dcc_review__dcc_decision__isnull=True,
+            dcc_review__tagged_trait__tag=tag,
+            dcc_review__tagged_trait__trait__source_dataset__source_study_version__study=study
+        )
+        session_data = {
+            'study_pk': study.pk,
+            'tag_pk': tag.pk,
+            'tagged_trait_pks': list(disagree_study_responses.values_list('dcc_review__tagged_trait__pk', flat=True)),
+        }
+        if disagree_study_responses.count() == 0:
+            self.messages.warning('No tagged variables to decide on for this tag and study.')
+        # Set a session variable for use in the next view.
+        self.request.session['tagged_trait_decision_by_tag_and_study_info'] = session_data
+        return super().get(self, request, *args, **kwargs)
+
+    def get_redirect_url(self, *args, **kwargs):
+        return reverse('tags:tagged-traits:dcc-decision:next')
+
+
+class DCCDecisionByTagAndStudyNext(LoginRequiredMixin, PermissionRequiredMixin, SessionVariableMixin, MessageMixin,
+                                   RedirectView):
+    """Determine the next tagged trait to decide on and redirect to decision-making page."""
+
+    permission_required = 'tags.add_dccdecision'
+    raise_exception = True
+    redirect_unauthenticated_users = True
+
+    def handle_session_variables(self):
+        # Check that expected session variables are set.
+        if 'tagged_trait_decision_by_tag_and_study_info' not in self.request.session:
+            return HttpResponseRedirect(reverse('tags:tagged-traits:need-decision'))
+        # Check for required variables.
+        required_keys = ('tag_pk', 'study_pk', 'tagged_trait_pks')
+        session_data = self.request.session['tagged_trait_decision_by_tag_and_study_info']
+        for key in required_keys:
+            if key not in session_data:
+                del self.request.session['tagged_trait_decision_by_tag_and_study_info']
+                return HttpResponseRedirect(reverse('tags:tagged-traits:need-decision'))
+        # All variables exist; set view attributes.
+        self.tag = get_object_or_404(models.Tag, pk=session_data['tag_pk'])
+        self.study = get_object_or_404(Study, pk=session_data['study_pk'])
+        self.pks = session_data['tagged_trait_pks']
+
+    def _skip_next_tagged_trait(self):
+        session_data = self.request.session['tagged_trait_decision_by_tag_and_study_info']
+        session_data['tagged_trait_pks'] = session_data['tagged_trait_pks'][1:]
+        self.request.session['tagged_trait_decision_by_tag_and_study_info'] = session_data
+
+    def get_redirect_url(self, *args, **kwargs):
+        """Get the URL to decide on the next available tagged trait.
+
+        Skip tagged traits that have been archived or deleted since beginning the loop.
+        Return the tag-study table URL if all pks have been decided on.
+        """
+        session_data = self.request.session.get('tagged_trait_decision_by_tag_and_study_info')
+        if session_data is None:
+            # The expected session variable has not been set so redirect to the need decision summary view.
+            return reverse('tags:tagged-traits:need-decision')
+        if len(self.pks) > 0:
+            # Set the session variable expected by the decision view, then redirect.
+            pk = self.pks[0]
+            # Skip the tagged trait if it has been deleted since starting the loop.
+            try:
+                tt = models.TaggedTrait.objects.get(pk=pk)
+            except ObjectDoesNotExist:
+                self._skip_next_tagged_trait()
+                return reverse('tags:tagged-traits:dcc-decision:next')
+            # Skip the tagged trait if it has been archived since starting the loop.
+            if tt.archived:
+                self._skip_next_tagged_trait()
+                return reverse('tags:tagged-traits:dcc-decision:next')
+            # Skip the tagged trait if it has no dcc review.
+            elif not hasattr(tt, 'dcc_review'):
+                self._skip_next_tagged_trait()
+                return reverse('tags:tagged-traits:dcc-decision:next')
+            # Skip the tagged trait if it has a confirmed dcc review.
+            elif tt.dcc_review.status == models.DCCReview.STATUS_CONFIRMED:
+                self._skip_next_tagged_trait()
+                return reverse('tags:tagged-traits:dcc-decision:next')
+            # Skip the tagged trait if it has no study response.
+            elif not hasattr(tt.dcc_review, 'study_response'):
+                self._skip_next_tagged_trait()
+                return reverse('tags:tagged-traits:dcc-decision:next')
+            # Skip the tagged trait if it has an agree study response.
+            elif tt.dcc_review.study_response.status == models.StudyResponse.STATUS_AGREE:
+                self._skip_next_tagged_trait()
+                return reverse('tags:tagged-traits:dcc-decision:next')
+            # Skip the tagged trait if it already has a decision.
+            elif hasattr(tt.dcc_review, 'dcc_decision'):
+                self._skip_next_tagged_trait()
+                return reverse('tags:tagged-traits:dcc-decision:next')
+            # If you make it past all of the checks, set the chosen pk as a session variable to decide on next.
+            session_data['pk'] = pk
+            self.request.session['tagged_trait_decision_by_tag_and_study_info'] = session_data
+            # Add a status message.
+            msg = ("""You are making final decisions for variables tagged with <a href="{tag_url}">{tag}</a> """
+                   """from study <a href="{study_url}">{study_name}</a>. You have {n_pks} """
+                   """tagged variable{s} left to decide on.""")
+            msg = msg.format(
+                tag_url=self.tag.get_absolute_url(),
+                tag=self.tag.title,
+                study_url=self.study.get_absolute_url(),
+                study_name=self.study.i_study_name,
+                n_pks=len(self.pks),
+                s='s' if len(self.pks) > 1 else ''
+            )
+            self.messages.info(mark_safe(msg))
+            return reverse('tags:tagged-traits:dcc-decision:decide')
+        else:
+            # All TaggedTraits have decisions! Redirect to the tag-study table.
+            # Remove session variables related to this group of views.
+            tag_pk = session_data.get('tag_pk')
+            study_pk = session_data.get('study_pk')
+            url = reverse('tags:tag:study:need-decision', args=[tag_pk, study_pk])
+            del self.request.session['tagged_trait_decision_by_tag_and_study_info']
+            return url
+
+
+class DCCDecisionByTagAndStudy(LoginRequiredMixin, PermissionRequiredMixin, SessionVariableMixin, DCCDecisionMixin,
+                               FormValidMessageMixin, CreateView):
+    """Create a DCCDecision for a tagged trait specified by the pk in a session variable."""
+
+    template_name = 'tags/dccdecision_form.html'
+    permission_required = 'tags.add_dccdecision'
+    raise_exception = True
+    redirect_unauthenticated_users = True
+    form_class = forms.DCCDecisionByTagAndStudyForm
+
+    def handle_session_variables(self):
+        # Check that expected session variables are set.
+        if 'tagged_trait_decision_by_tag_and_study_info' not in self.request.session:
+            return HttpResponseRedirect(reverse('tags:tagged-traits:need-decision'))
+        # Check for required variables.
+        required_keys = ('tag_pk', 'study_pk', 'tagged_trait_pks')
+        session_data = self.request.session['tagged_trait_decision_by_tag_and_study_info']
+        for key in required_keys:
+            if key not in session_data:
+                del self.request.session['tagged_trait_decision_by_tag_and_study_info']
+                return HttpResponseRedirect(reverse('tags:tagged-traits:need-decision'))
+        # Check for pk
+        if 'pk' not in session_data:
+            return HttpResponseRedirect(reverse('tags:tagged-traits:dcc-decision:next'))
+        pk = session_data.get('pk')
+        self.tagged_trait = get_object_or_404(models.TaggedTrait, pk=pk)
+
+    def _update_session_variables(self):
+        """Update session variables used in this series of views."""
+        session_data = self.request.session['tagged_trait_decision_by_tag_and_study_info']
+        session_data['tagged_trait_pks'] = session_data['tagged_trait_pks'][1:]
+        del session_data['pk']
+        self.request.session['tagged_trait_decision_by_tag_and_study_info'] = session_data
+
+    def get_context_data(self, **kwargs):
+        context = super(DCCDecisionByTagAndStudy, self).get_context_data(**kwargs)
+        if 'tag' not in context:
+            context['tag'] = self.tagged_trait.tag
+        if 'study' not in context:
+            context['study'] = self.tagged_trait.trait.source_dataset.source_study_version.study
+        if 'n_tagged_traits_remaining' not in context:
+            n_remaining = len(self.request.session['tagged_trait_decision_by_tag_and_study_info']['tagged_trait_pks'])
+            context['n_tagged_traits_remaining'] = n_remaining
+        return context
+
+    def post(self, request, *args, **kwargs):
+        """Handle skipping, or check for archived or already-decided tagged traits before proceeding."""
+        if self.form_class.SUBMIT_SKIP in request.POST:
+            # Remove the tagged trait from the list of pks.
+            self._update_session_variables()
+            return HttpResponseRedirect(reverse('tags:tagged-traits:dcc-decision:next'))
+        # Go to next tagged trait if this one is archived.
+        if self.tagged_trait.archived:
+            self._update_session_variables()
+            # Add an informational message.
+            self.messages.warning('Skipped {} because it has been archived.'.format(self.tagged_trait))
+            return HttpResponseRedirect(reverse('tags:tagged-traits:dcc-decision:next'))
+        # Go to next tagged trait if this one is missing a dcc review.
+        elif not hasattr(self.tagged_trait, 'dcc_review'):
+            self._update_session_variables()
+            # Add an informational message.
+            self.messages.warning('Skipped {} because it is missing a dcc review.'.format(self.tagged_trait))
+            return HttpResponseRedirect(reverse('tags:tagged-traits:dcc-decision:next'))
+        # Go to next tagged trait if this one has a confirmed dcc review.
+        elif self.tagged_trait.dcc_review.status == models.DCCReview.STATUS_CONFIRMED:
+            self._update_session_variables()
+            # Add an informational message.
+            self.messages.warning('Skipped {} because its dcc review status is "confirmed".'.format(self.tagged_trait))
+            return HttpResponseRedirect(reverse('tags:tagged-traits:dcc-decision:next'))
+        # Go to next tagged trait if this one is missing a study response.
+        elif not hasattr(self.tagged_trait.dcc_review, 'study_response'):
+            self._update_session_variables()
+            # Add an informational message.
+            self.messages.warning('Skipped {} because it is missing a study response.'.format(self.tagged_trait))
+            return HttpResponseRedirect(reverse('tags:tagged-traits:dcc-decision:next'))
+        # Go to next tagged trait if this one has an agree study response.
+        elif self.tagged_trait.dcc_review.study_response.status == models.StudyResponse.STATUS_AGREE:
+            self._update_session_variables()
+            # Add an informational message.
+            self.messages.warning('Skipped {} because its study response status is "agree".'.format(self.tagged_trait))
+            return HttpResponseRedirect(reverse('tags:tagged-traits:dcc-decision:next'))
+        # Go to next tagged trait if this one already has a decision.
+        elif hasattr(self.tagged_trait.dcc_review, 'dcc_decision'):
+            self._update_session_variables()
+            # Add an informational message.
+            self.messages.warning('Skipped {} because it already has a decision made.'.format(self.tagged_trait))
+            return HttpResponseRedirect(reverse('tags:tagged-traits:dcc-decision:next'))
+        return super(DCCDecisionByTagAndStudy, self).post(request, *args, **kwargs)
+
+    def form_valid(self, form):
+        # Remove the decided tagged trait from the list of pks.
+        self._update_session_variables()
+        return super().form_valid(form)
+
+    def get_form_valid_message(self):
+        msg = 'Successfully made a final decision for {}.'.format(self.tagged_trait)
+        return msg
+
+    def get_success_url(self):
+        return reverse('tags:tagged-traits:dcc-decision:next')
+
+
+class DCCDecisionCreate(LoginRequiredMixin, PermissionRequiredMixin, FormValidMessageMixin, DCCDecisionMixin,
+                        CreateView):
+
+    template_name = 'tags/dccdecision_form.html'
+    permission_required = 'tags.add_dccdecision'
+    raise_exception = True
+    redirect_unauthenticated_users = True
+    form_class = forms.DCCDecisionForm
+
+    def _get_archived_warning_message(self):
+        return 'Oops! Cannot create decision for {}, because it has been archived.'.format(self.tagged_trait)
+
+    def _get_missing_dcc_review_warning_message(self):
+        return 'Oops! Cannot create decision for {}, because it is missing a dcc review.'.format(self.tagged_trait)
+
+    def _get_review_confirmed_warning_message(self):
+        return 'Oops! Cannot create decision for {}, because it has a confirmed dcc review.'.format(self.tagged_trait)
+
+    def _get_missing_study_response_warning_message(self):
+        return 'Oops! Cannot create decision for {}, because it is missing a study response.'.format(self.tagged_trait)
+
+    def _get_response_agree_warning_message(self):
+        return 'Oops! Cannot create decision for {}, because it has an agree study response.'.format(self.tagged_trait)
+
+    def _get_already_decided_warning_message(self):
+        return 'Switched to updating decision for {}, because it already has a decision.'.format(self.tagged_trait)
+
+    def _get_warning_response(self, *args, **kwargs):
+        """Get the appropriate response for deleted, archived, or already-decisioned tagged traits."""
+        self.tagged_trait = get_object_or_404(models.TaggedTrait, pk=kwargs['pk'])
+        # Redirect if the tagged trait has already been archived.
+        if self.tagged_trait.archived:
+            self.messages.warning(self._get_archived_warning_message())
+            return HttpResponseRedirect(self.get_success_url())
+        # Redirect if the tagged trait is missing a dcc review.
+        elif not hasattr(self.tagged_trait, 'dcc_review'):
+            self.messages.warning(self._get_missing_dcc_review_warning_message())
+            return HttpResponseRedirect(self.get_success_url())
+        # Redirect if the tagged trait has dcc review status confirmed.
+        elif self.tagged_trait.dcc_review.status == models.DCCReview.STATUS_CONFIRMED:
+            self.messages.warning(self._get_review_confirmed_warning_message())
+            return HttpResponseRedirect(self.get_success_url())
+        # Redirect if the tagged trait is missing a study response.
+        elif not hasattr(self.tagged_trait.dcc_review, 'study_response'):
+            self.messages.warning(self._get_missing_study_response_warning_message())
+            return HttpResponseRedirect(self.get_success_url())
+        # Redirect if the tagged trait is has study response agree.
+        elif self.tagged_trait.dcc_review.study_response.status == models.StudyResponse.STATUS_AGREE:
+            self.messages.warning(self._get_response_agree_warning_message())
+            return HttpResponseRedirect(self.get_success_url())
+        # Switch to updating the existing decision if the tagged trait already has a decision.
+        elif hasattr(self.tagged_trait.dcc_review, 'dcc_decision'):
+            self.messages.warning(self._get_already_decided_warning_message())
+            return HttpResponseRedirect(reverse('tags:tagged-traits:pk:dcc-decision:update',
+                                                args=[self.tagged_trait.pk]))
+
+    def get(self, request, *args, **kwargs):
+        check_response = self._get_warning_response(*args, **kwargs)
+        if check_response is not None:
+            return check_response
+        return super().get(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        check_response = self._get_warning_response(*args, **kwargs)
+        if check_response is not None:
+            return check_response
+        return super().post(request, *args, **kwargs)
+
+    def get_form_valid_message(self):
+        msg = 'Successfully made final decision for {}.'.format(self.tagged_trait)
+        return msg
+
+    def get_success_url(self):
+        return reverse('tags:tag:study:need-decision',
+                       args=[self.tagged_trait.tag.pk,
+                             self.tagged_trait.trait.source_dataset.source_study_version.study.pk])
+
+
+class DCCDecisionUpdate(LoginRequiredMixin, PermissionRequiredMixin, FormValidMessageMixin, DCCDecisionMixin,
+                        UpdateView):
+
+    template_name = 'tags/dccdecision_form.html'
+    permission_required = 'tags.add_dccdecision'
+    raise_exception = True
+    redirect_unauthenticated_users = True
+    form_class = forms.DCCDecisionForm
+
+    def _get_missing_decision_warning_message(self):
+        return 'Switched to creating a new decision for {}, because it does not have a decision yet.'.format(
+            self.tagged_trait)
+
+    def _get_archived_warning_message(self):
+        return 'Oops! Cannot update decision for {}, because it has been archived.'.format(self.tagged_trait)
+
+    def _get_missing_dcc_review_warning_message(self):
+        return 'Oops! Cannot update decision for {}, because it is missing a dcc review.'.format(self.tagged_trait)
+
+    def _get_review_confirmed_warning_message(self):
+        return 'Oops! Cannot update decision for {}, because it has a confirmed dcc review.'.format(self.tagged_trait)
+
+    def _get_response_agree_warning_message(self):
+        return 'Oops! Cannot update decision for {}, because it has an agree study response.'.format(self.tagged_trait)
+
+    def _get_warning_response(self):
+        """Get the appropriate response unexpected error cases."""
+        # Switch to creating a new decision if the tagged trait does not have a decision.
+        # This also handles the case where a tagged trait is archived, but has no dcc decision.
+        # It will switch to the create view, which will check for archived status.
+        if self.object is None:
+            self.messages.warning(self._get_missing_decision_warning_message())
+            return HttpResponseRedirect(reverse('tags:tagged-traits:pk:dcc-decision:new', args=[self.tagged_trait.pk]))
+        # Redirect if the tagged trait is missing a dcc review.
+        elif not hasattr(self.tagged_trait, 'dcc_review'):
+            self.messages.warning(self._get_missing_dcc_review_warning_message())
+            return HttpResponseRedirect(self.get_success_url())
+        # Redirect if the tagged trait has dcc review status confirmed.
+        elif self.tagged_trait.dcc_review.status == models.DCCReview.STATUS_CONFIRMED:
+            self.messages.warning(self._get_review_confirmed_warning_message())
+            return HttpResponseRedirect(self.get_success_url())
+        # Redirect if the tagged trait has study response agree.
+        elif hasattr(self.tagged_trait.dcc_review, 'study_response') and (
+                self.tagged_trait.dcc_review.study_response.status == models.StudyResponse.STATUS_AGREE):
+            self.messages.warning(self._get_response_agree_warning_message())
+            return HttpResponseRedirect(self.get_success_url())
+        # Omit checks for missing study response. The only important part is that the dcc
+        # decision exists to be updated.
+
+    def get(self, request, *args, **kwargs):
+        """Run get_object, check for unexpected error cases, and finally run the usual get."""
+        # This doesn't use super() directly because the work on check_response needs to happen in the middle of
+        # what's done in super().get().
+        self.object = self.get_object()
+        check_response = self._get_warning_response()
+        if check_response is not None:
+            return check_response
+        # ProcessFormView is the super of the super.
+        return ProcessFormView.get(self, request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        """Run get_object, check for unexpected error cases, and finally run the usual post."""
+        # This doesn't use super() directly because the work on check_response needs to happen in the middle of
+        # what's done in super().post().
+        self.object = self.get_object()
+        check_response = self._get_warning_response()
+        if check_response is not None:
+            return check_response
+        # ProcessFormView is the super of the super.
+        return ProcessFormView.post(self, request, *args, **kwargs)
+
+    def get_object(self, queryset=None):
+        """Get both the tagged trait and its DCC decision."""
+        self.tagged_trait = get_object_or_404(models.TaggedTrait, pk=self.kwargs['pk'])
+        try:
+            obj = self.tagged_trait.dcc_review.dcc_decision
+            return obj
+        except ObjectDoesNotExist:
+            return None
+
+    def get_form_valid_message(self):
+        msg = 'Successfully updated final decision for {}.'.format(self.tagged_trait)
+        return msg
+
+    def get_success_url(self):
+        return reverse('tags:tag:study:need-decision',
+                       args=[self.tagged_trait.tag.pk,
+                             self.tagged_trait.trait.source_dataset.source_study_version.study.pk])
