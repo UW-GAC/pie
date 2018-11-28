@@ -81,10 +81,19 @@ class TagDetail(LoginRequiredMixin, DetailView):
 
 
 class TagAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
-    """View for autocompleting tag model choice fields by title in a form. Case-insensitive."""
+    """View for autocompleting tag model choice fields by title in a form. Case-insensitive.
+
+    Forwarded arguments:
+        unreviewed_only: bool; if true, filters tags to those with unreviewed tagged traits
+    """
 
     def get_queryset(self):
         retrieved = models.Tag.objects.all()
+        # Filter to tags with unreviewed tagged traits.
+        unreviewed_only = self.forwarded.get('unreviewed_only', None)
+        tag_pks = models.TaggedTrait.objects.unreviewed().values_list('tag__pk', flat=True).distinct()
+        if unreviewed_only:
+            retrieved = retrieved.filter(pk__in=tag_pks)
         if self.q:
             retrieved = retrieved.filter(lower_title__iregex=r'^{}'.format(self.q))
         return retrieved
