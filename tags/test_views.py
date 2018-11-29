@@ -114,7 +114,7 @@ class TagAutocompleteTest(UserLoginTestCase):
         response = self.client.get(self.get_url())
         self.assertEqual(response.status_code, 200)
 
-    def test_returns_all_traits(self):
+    def test_returns_all_tags(self):
         """Queryset returns all of the tags with no query (when there are 10, which is the page limit)."""
         url = self.get_url()
         response = self.client.get(url)
@@ -152,6 +152,32 @@ class TagAutocompleteTest(UserLoginTestCase):
         pks = get_autocomplete_view_ids(response)
         self.assertTrue(len(pks) >= 1)
         self.assertIn(tag.pk, pks)
+
+    def test_unreviewed_only_returns_no_tags_without_tagged_traits(self):
+        """Queryset returns only tags with unreviewed tagged traits, with unreviewed_only argument."""
+        url = self.get_url()
+        response = self.client.get(url, {'q': '', 'forward': ['{"unreviewed_only":true}']})
+        pks = get_autocomplete_view_ids(response)
+        self.assertEqual([], pks)
+
+    def test_unreviewed_only_returns_correct_tag(self):
+        """Queryset returns only tags with unreviewed tagged traits, with unreviewed_only argument."""
+        unreviewed_tagged_trait = factories.TaggedTraitFactory.create(tag=self.tags[0])
+        reviewed_tagged_trait = factories.TaggedTraitFactory.create(tag=self.tags[1])
+        factories.DCCReviewFactory.create(tagged_trait=reviewed_tagged_trait)
+        url = self.get_url()
+        response = self.client.get(url, {'q': '', 'forward': ['{"unreviewed_only":true}']})
+        pks = get_autocomplete_view_ids(response)
+        self.assertEqual([unreviewed_tagged_trait.tag.pk], pks)
+
+    def test_unreviewed_only_returns_all_tags(self):
+        """Queryset returns only tags with unreviewed tagged traits, with unreviewed_only argument."""
+        for tag in self.tags:
+            factories.TaggedTraitFactory.create(tag=tag)
+        url = self.get_url()
+        response = self.client.get(url, {'q': '', 'forward': ['{"unreviewed_only":true}']})
+        pks = get_autocomplete_view_ids(response)
+        self.assertEqual(sorted([tag.pk for tag in self.tags]), sorted(pks))
 
 
 class TagListTest(UserLoginTestCase):
@@ -2871,16 +2897,46 @@ class DCCReviewByTagAndStudySelectDCCTestsMixin(object):
         self.assertNotIn(other_tagged_trait, session_info['tagged_trait_pks'],
                          msg='TaggedTrait {} unexpectedly in session tagged_trait_pks'.format(tt.pk))
 
-    def test_no_tagged_traits_with_study_and_tag(self):
-        """Redirects to list view of no tagged traits for this study and tag."""
+    def test_error_no_unreviewed_tagged_traits_with_study_and_tag(self):
+        """Form has non-field error if there are no unreviewed tagged traits for this study with this tag."""
         study = StudyFactory.create()
         tag = factories.TagFactory.create()
+        # Other unreviewed tagged traits for this tag must exist or you'll get an error on the tags field.
+        other_study_unreviewed_tagged_trait = factories.TaggedTraitFactory.create(tag=tag)
         response = self.client.post(self.get_url(), {'tag': tag.pk, 'study': study.pk})
         self.assertEqual(response.status_code, 200)
         # Form errors.
         self.assertIn('form', response.context)
         self.assertFormError(response, 'form', None, forms.DCCReviewTagAndStudySelectForm.ERROR_NO_TAGGED_TRAITS)
         # Make sure no variables were set.
+        session = self.client.session
+        self.assertNotIn('tagged_trait_review_by_tag_and_study_info', session)
+
+    def test_error_with_no_tagged_traits_for_tag(self):
+        """Form has error on tags if selecting a tag without any tagged traits."""
+        study = StudyFactory.create()
+        tag = factories.TagFactory.create()
+        response = self.client.post(self.get_url(), {'tag': tag.pk, 'study': study.pk})
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('form', response.context)
+        self.assertFormError(response, 'form', 'tag',
+                             'Select a valid choice. That choice is not one of the available choices.')
+        # Make sure no session variables were set.
+        session = self.client.session
+        self.assertNotIn('tagged_trait_review_by_tag_and_study_info', session)
+
+    def test_error_with_tag_with_completed_review(self):
+        """Form has error on tags if selecting a tag without any unreviewed tagged traits."""
+        study = StudyFactory.create()
+        tag = factories.TagFactory.create()
+        reviewed_tagged_trait = factories.TaggedTraitFactory.create(tag=tag)
+        factories.DCCReviewFactory.create(tagged_trait=reviewed_tagged_trait)
+        response = self.client.post(self.get_url(), {'tag': tag.pk, 'study': study.pk})
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('form', response.context)
+        self.assertFormError(response, 'form', 'tag',
+                             'Select a valid choice. That choice is not one of the available choices.')
+        # Make sure no session variables were set.
         session = self.client.session
         self.assertNotIn('tagged_trait_review_by_tag_and_study_info', session)
 
