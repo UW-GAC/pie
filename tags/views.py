@@ -917,7 +917,6 @@ class DCCReviewNeedFollowupList(LoginRequiredMixin, SpecificTaggableStudyRequire
     template_name = 'tags/dccreview_list.html'
     model = models.TaggedTrait
     context_table_name = 'tagged_trait_table'
-    context_table_name = 'tagged_trait_table'
     table_pagination = {'per_page': TABLE_PER_PAGE * 2}
 
     def get_table_class(self):
