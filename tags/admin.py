@@ -69,7 +69,7 @@ class DCCReviewAdmin(admin.ModelAdmin):
 
 class StudyResponseAdmin(admin.ModelAdmin):
     list_display = ('dcc_review', 'status', 'comment', 'creator', 'created', 'modified', )
-    list_filter = ('status', 'creator', )
+    list_filter = ('status', ('creator', admin.RelatedOnlyFieldListFilter), )
     search_fields = ('dcc_review__tagged_trait__tag__title', 'dcc_review__tagged_trait__trait__i_trait_name')
     readonly_fields = ('dcc_review', )
     form = forms.StudyResponseAdminForm
