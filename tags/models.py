@@ -137,7 +137,7 @@ class DCCReview(TimeStampedModel):
         verbose_name = 'dcc review'
 
     def __str__(self):
-        return 'Review of {}'.format(self.tagged_trait)
+        return 'Review with status {} of {}'.format(self.get_status_display(), self.tagged_trait)
 
     def get_absolute_url(self):
         return self.tagged_trait.get_absolute_url()
@@ -174,6 +174,9 @@ class StudyResponse(TimeStampedModel):
 
     class Meta:
         verbose_name = 'study response'
+
+    def __str__(self):
+        return 'Study response {}ing to remove {}'.format(self.get_status_display(), self.dcc_review.tagged_trait)
 
     def delete(self, *args, **kwargs):
         """Prevent deletion of StudyResponses for TaggedTraits that have a DCCDecision."""
