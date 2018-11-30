@@ -4693,8 +4693,8 @@ class DCCReviewNeedFollowupCountsPhenotypeTaggerTest(PhenotypeTaggerLoginTestCas
             dcc_review__status=models.DCCReview.STATUS_FOLLOWUP
         )
         response = self.client.get(self.get_url())
-        self.assertNotContains(response, reverse('tags:tag:study:quality-review', args=[tag.pk, self.study.pk]))
-        self.assertContains(response, "Quality review completed")
+        self.assertNotContains(response, 'Begin quality review')
+        self.assertContains(response, 'View quality review')
 
     def test_begin_review_button_is_not_present_if_all_tagged_traits_are_archived_without_study_response(self):
         """Final column says 'quality review completed' instead of link to quality review page if all archived."""
@@ -4706,8 +4706,8 @@ class DCCReviewNeedFollowupCountsPhenotypeTaggerTest(PhenotypeTaggerLoginTestCas
         )
         models.TaggedTrait.objects.update(archived=True)
         response = self.client.get(self.get_url())
-        self.assertNotContains(response, reverse('tags:tag:study:quality-review', args=[tag.pk, self.study.pk]))
-        self.assertContains(response, "Quality review completed")
+        self.assertNotContains(response, 'Begin quality review')
+        self.assertContains(response, 'View quality review')
 
     def test_begin_review_button_is_present_if_some_tagged_traits_need_review(self):
         """Final column has link to quality review page if tagged traits remain to be responded to."""
@@ -4719,8 +4719,8 @@ class DCCReviewNeedFollowupCountsPhenotypeTaggerTest(PhenotypeTaggerLoginTestCas
             status=models.DCCReview.STATUS_FOLLOWUP
         )
         response = self.client.get(self.get_url())
-        self.assertContains(response, reverse('tags:tag:study:quality-review', args=[tag.pk, self.study.pk]))
-        self.assertNotContains(response, "Quality review completed")
+        self.assertContains(response, 'Begin quality review')
+        self.assertNotContains(response, 'View quality review')
 
     def test_navbar_does_not_contain_link(self):
         """Phenotype taggers do see a link to the main quality review page."""

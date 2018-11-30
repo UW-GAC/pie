@@ -15,7 +15,8 @@
       The DCC has performed initial quality review of tagged variables.
       Those that don't fit the tag description or instructions have been flagged for removal.
       The table below shows the number of tagged variables flagged for removal for each tag.
-      For a given tag, click on the blue button that says "Begin quality review" to be taken to a page to review the reasons that these tagged variables are flagged for removal.
+      For a given tag, click on the dark blue "Begin" button to be taken to a page to review the reasons that these tagged variables are flagged for removal.
+      When a given tag is completed, click on the light blue "View" button to view the quality review you've finished.
     </p>
   </div>
 
@@ -42,9 +43,13 @@
               <td>{{ tag_data.tt_completed_count }}</td>
               <td>
                 {% if tag_data.tt_remaining_count > 0 %}
-                  <a class="btn btn-xs btn-primary" href="{% url 'tags:tag:study:quality-review' tag_data.tag_pk study_data.0.study_pk %}" role="button">Begin quality review</a>
+                  <a class="btn btn-xs btn-primary"
+                  href="{% url 'tags:tag:study:quality-review' tag_data.tag_pk study_data.0.study_pk %}" role="button">
+                      Begin quality review</a>
                 {% else %}
-                  Quality review completed
+                  <a class="btn btn-xs btn-info"
+                  href="{% url 'tags:tag:study:quality-review' tag_data.tag_pk study_data.0.study_pk %}" role="button">
+                      View quality review</a>
                 {% endif %}
               </td>
             </tr>
