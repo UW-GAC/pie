@@ -4332,7 +4332,7 @@ class DCCReviewUpdateOtherUserTest(UserLoginTestCase):
         self.assertEqual(response.status_code, 403)
 
 
-class DCCReviewNeedFollowupCountsPhenotypeTaggerTest(PhenotypeTaggerLoginTestCase):
+class TaggedTraitsNeedStudyResponseSummaryPhenotypeTaggerTest(PhenotypeTaggerLoginTestCase):
 
     def get_url(self, *args):
         """Get the url for the view this class is supposed to test."""
@@ -4729,7 +4729,7 @@ class DCCReviewNeedFollowupCountsPhenotypeTaggerTest(PhenotypeTaggerLoginTestCas
         self.assertContains(response, """<a href="{}">""".format(self.get_url()))
 
 
-class DCCReviewNeedFollowupCountsDCCAnalystTest(DCCAnalystLoginTestCase):
+class TaggedTraitsNeedStudyResponseSummaryDCCAnalystTest(DCCAnalystLoginTestCase):
 
     def get_url(self, *args):
         """Get the url for the view this class is supposed to test."""
@@ -4747,7 +4747,7 @@ class DCCReviewNeedFollowupCountsDCCAnalystTest(DCCAnalystLoginTestCase):
         self.assertNotContains(response, """<a href="{}">""".format(self.get_url()))
 
 
-class DCCReviewNeedFollowupCountsOtherUserTest(UserLoginTestCase):
+class TaggedTraitsNeedStudyResponseSummaryOtherUserTest(UserLoginTestCase):
 
     def get_url(self, *args):
         """Get the url for the view this class is supposed to test."""
@@ -4765,7 +4765,7 @@ class DCCReviewNeedFollowupCountsOtherUserTest(UserLoginTestCase):
         self.assertNotContains(response, """<a href="{}">""".format(self.get_url()))
 
 
-class DCCReviewNeedFollowupListMixin(object):
+class TaggedTraitsNeedStudyResponseByTagAndStudyListMixin(object):
     """Tests to include in all user type test cases for this view."""
 
     def test_view_with_invalid_study_pk(self):
@@ -4912,7 +4912,7 @@ class DCCReviewNeedFollowupListMixin(object):
         self.assertNotIn(other_tagged_trait, context['tagged_trait_table'].data)
 
 
-class DCCReviewNeedFollowupListPhenotypeTaggerTest(DCCReviewNeedFollowupListMixin, PhenotypeTaggerLoginTestCase):
+class TaggedTraitsNeedStudyResponseByTagAndStudyListPhenotypeTaggerTest(TaggedTraitsNeedStudyResponseByTagAndStudyListMixin, PhenotypeTaggerLoginTestCase):
 
     def setUp(self):
         super().setUp()
@@ -5047,7 +5047,7 @@ class DCCReviewNeedFollowupListPhenotypeTaggerTest(DCCReviewNeedFollowupListMixi
         self.assertIn(archived_tagged_trait, table.data)
 
 
-class DCCReviewNeedFollowupListDCCAnalystTest(DCCReviewNeedFollowupListMixin, DCCAnalystLoginTestCase):
+class TaggedTraitsNeedStudyResponseByTagAndStudyListDCCAnalystTest(TaggedTraitsNeedStudyResponseByTagAndStudyListMixin, DCCAnalystLoginTestCase):
 
     def setUp(self):
         super().setUp()
@@ -5074,7 +5074,7 @@ class DCCReviewNeedFollowupListDCCAnalystTest(DCCReviewNeedFollowupListMixin, DC
         self.assertEqual(response.status_code, 200)
 
 
-class DCCReviewNeedFollowupListOtherUserTest(UserLoginTestCase):
+class TaggedTraitsNeedStudyResponseByTagAndStudyListOtherUserTest(UserLoginTestCase):
 
     def setUp(self):
         super().setUp()
