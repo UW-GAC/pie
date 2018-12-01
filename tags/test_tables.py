@@ -933,9 +933,9 @@ class TaggedTraitDCCDecisionButtonMixinTest(TestCase):
             reverse('tags:tagged-traits:pk:dcc-decision:update', args=[tagged_trait.pk]), dcc_decision_button_value)
 
 
-class TaggedTraitTableForStudyTaggersTest(TestCase):
+class TaggedTraitTableForPhenotypeTaggersFromStudyTest(TestCase):
 
-    table_class = tables.TaggedTraitTableForStudyTaggers
+    table_class = tables.TaggedTraitTableForPhenotypeTaggersFromStudy
     model_class = models.TaggedTrait
 
     def setUp(self):
@@ -960,9 +960,9 @@ class TaggedTraitTableForStudyTaggersTest(TestCase):
         self.assertEqual(self.model_class.objects.count(), len(table.rows))
 
 
-class TaggedTraitTableForDCCStaffTest(TestCase):
+class TaggedTraitTableForStaffByStudyTest(TestCase):
 
-    table_class = tables.TaggedTraitTableForDCCStaff
+    table_class = tables.TaggedTraitTableForStaffByStudy
     model_class = models.TaggedTrait
 
     def setUp(self):
@@ -977,7 +977,7 @@ class TaggedTraitTableForDCCStaffTest(TestCase):
 
 class DCCReviewTableTest(TestCase):
 
-    table_class = tables.DCCReviewTable
+    table_class = tables.TaggedTraitDCCReviewTable
     model_class = models.TaggedTrait
 
     def setUp(self):
@@ -990,9 +990,9 @@ class DCCReviewTableTest(TestCase):
         self.assertEqual(self.model_class.objects.count(), len(table.rows))
 
 
-class DCCReviewTableWithStudyResponseButtonsTest(TestCase):
+class TaggedTraitDCCReviewStudyResponseButtonTableTest(TestCase):
 
-    table_class = tables.DCCReviewTableWithStudyResponseButtons
+    table_class = tables.TaggedTraitDCCReviewStudyResponseButtonTable
 
     def setUp(self):
         super().setUp()

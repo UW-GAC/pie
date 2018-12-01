@@ -1650,7 +1650,7 @@ class TaggedTraitByTagAndStudyListPhenotypeTaggerTest(TaggedTraitByTagAndStudyLi
         """For taggers, the tagged trait table class is correct."""
         response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
         context = response.context
-        self.assertIsInstance(context['tagged_trait_table'], tables.TaggedTraitTableForStudyTaggers)
+        self.assertIsInstance(context['tagged_trait_table'], tables.TaggedTraitTableForPhenotypeTaggersFromStudy)
 
     def test_contains_detail_page_links(self):
         """Contains links to the TaggedTraitDetail view."""
@@ -1698,7 +1698,7 @@ class TaggedTraitByTagAndStudyListDCCAnalystTest(TaggedTraitByTagAndStudyListTes
         """For DCC Analysts, the tagged trait table class has delete buttons."""
         response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
         context = response.context
-        self.assertIsInstance(context['tagged_trait_table'], tables.TaggedTraitTableForDCCStaff)
+        self.assertIsInstance(context['tagged_trait_table'], tables.TaggedTraitTableForStaffByStudy)
 
     def test_contains_detail_page_links(self):
         """Contains links to the TaggedTraitDetail view."""
@@ -4792,7 +4792,7 @@ class TaggedTraitsNeedStudyResponseByTagAndStudyListMixin(object):
         """The table class is appropriate."""
         response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
         context = response.context
-        self.assertIsInstance(context['tagged_trait_table'], tables.DCCReviewTable)
+        self.assertIsInstance(context['tagged_trait_table'], tables.TaggedTraitDCCReviewTable)
 
     def test_includes_tagged_traits_that_need_followup(self):
         """Table includes TaggedTraits that need followup."""
@@ -4935,7 +4935,7 @@ class TaggedTraitsNeedStudyResponseByTagAndStudyListPhenotypeTaggerTest(TaggedTr
     def test_table_class(self):
         """Table class is correct."""
         response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
-        self.assertIs(type(response.context['tagged_trait_table']), tables.DCCReviewTableWithStudyResponseButtons)
+        self.assertIs(type(response.context['tagged_trait_table']), tables.TaggedTraitDCCReviewStudyResponseButtonTable)
 
     def test_forbidden_for_other_study(self):
         """Returns forbidden response code for a study that the user can't tag."""
@@ -5066,7 +5066,7 @@ class TaggedTraitsNeedStudyResponseByTagAndStudyListDCCAnalystTest(TaggedTraitsN
     def test_table_class(self):
         """Table class is correct."""
         response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
-        self.assertIs(type(response.context['tagged_trait_table']), tables.DCCReviewTable)
+        self.assertIs(type(response.context['tagged_trait_table']), tables.TaggedTraitDCCReviewTable)
 
     def test_view_success_code(self):
         """Returns successful response code."""

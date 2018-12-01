@@ -251,10 +251,10 @@ class TaggedTraitByTagAndStudyList(LoginRequiredMixin, SingleTableMixin, ListVie
     def get_table_class(self):
         """Determine whether to use tagged trait table with delete buttons or not."""
         if self.request.user.is_staff:
-            return tables.TaggedTraitTableForDCCStaff
+            return tables.TaggedTraitTableForStaffByStudy
         elif (self.request.user.groups.filter(name='phenotype_taggers').exists() and
               self.study in self.request.user.profile.taggable_studies.all()):
-            return tables.TaggedTraitTableForStudyTaggers
+            return tables.TaggedTraitTableForPhenotypeTaggersFromStudy
         else:
             return tables.TaggedTraitTable
 
@@ -921,9 +921,9 @@ class TaggedTraitsNeedStudyResponseByTagAndStudyList(LoginRequiredMixin, Specifi
 
     def get_table_class(self):
         if self.study in self.request.user.profile.taggable_studies.all():
-            return tables.DCCReviewTableWithStudyResponseButtons
+            return tables.TaggedTraitDCCReviewStudyResponseButtonTable
         else:
-            return tables.DCCReviewTable
+            return tables.TaggedTraitDCCReviewTable
 
     def set_study(self):
         self.study = get_object_or_404(Study, pk=self.kwargs['pk_study'])
