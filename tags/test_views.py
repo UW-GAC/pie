@@ -4765,7 +4765,7 @@ class TaggedTraitsNeedStudyResponseSummaryOtherUserTest(UserLoginTestCase):
         self.assertNotContains(response, """<a href="{}">""".format(self.get_url()))
 
 
-class TaggedTraitsNeedStudyResponseByTagAndStudyListMixin(object):
+class TaggedTraitsNeedStudyResponseByTagAndStudyListTestsMixin(object):
     """Tests to include in all user type test cases for this view."""
 
     def test_view_with_invalid_study_pk(self):
@@ -4912,7 +4912,7 @@ class TaggedTraitsNeedStudyResponseByTagAndStudyListMixin(object):
         self.assertNotIn(other_tagged_trait, context['tagged_trait_table'].data)
 
 
-class TaggedTraitsNeedStudyResponseByTagAndStudyListPhenotypeTaggerTest(TaggedTraitsNeedStudyResponseByTagAndStudyListMixin, PhenotypeTaggerLoginTestCase):
+class TaggedTraitsNeedStudyResponseByTagAndStudyListPhenotypeTaggerTest(TaggedTraitsNeedStudyResponseByTagAndStudyListTestsMixin, PhenotypeTaggerLoginTestCase):
 
     def setUp(self):
         super().setUp()
@@ -5047,7 +5047,7 @@ class TaggedTraitsNeedStudyResponseByTagAndStudyListPhenotypeTaggerTest(TaggedTr
         self.assertIn(archived_tagged_trait, table.data)
 
 
-class TaggedTraitsNeedStudyResponseByTagAndStudyListDCCAnalystTest(TaggedTraitsNeedStudyResponseByTagAndStudyListMixin, DCCAnalystLoginTestCase):
+class TaggedTraitsNeedStudyResponseByTagAndStudyListDCCAnalystTest(TaggedTraitsNeedStudyResponseByTagAndStudyListTestsMixin, DCCAnalystLoginTestCase):
 
     def setUp(self):
         super().setUp()
