@@ -1773,6 +1773,7 @@ class TaggedTraitCreateTestsMixin(object):
     def test_invalid_form_message(self):
         """Posting invalid data results in a message about the invalidity."""
         response = self.client.post(self.get_url(), {'trait': '', 'tag': self.tag.pk, })
+        self.assertFormError(response, 'form', 'trait', 'This field is required.')
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
         self.assertTrue('Oops!' in str(messages[0]))
@@ -1780,6 +1781,7 @@ class TaggedTraitCreateTestsMixin(object):
     def test_post_blank_trait(self):
         """Posting bad data to the form doesn't tag the trait and shows a form error."""
         response = self.client.post(self.get_url(), {'trait': '', 'tag': self.tag.pk, })
+        self.assertFormError(response, 'form', 'trait', 'This field is required.')
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
         self.assertTrue('Oops!' in str(messages[0]))
@@ -1798,6 +1800,9 @@ class TaggedTraitCreateTestsMixin(object):
         """Tagging a trait fails when the trait has already been tagged with this tag."""
         tagged_trait = factories.TaggedTraitFactory.create(tag=self.tag, trait=self.trait)
         response = self.client.post(self.get_url(), {'trait': self.trait.pk, 'tag': self.tag.pk, })
+        expected_error = forms.EXISTING_TAGGED_TRAIT_ERROR_STRING.format(
+            tag_name=self.tag.title, phv=self.trait.full_accession, trait_name=self.trait.i_trait_name)
+        self.assertFormError(response, 'form', 'trait', expected_error)
         self.assertEqual(response.status_code, 200)
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
@@ -1807,6 +1812,8 @@ class TaggedTraitCreateTestsMixin(object):
         """Tagging a trait fails when the trait has already been tagged with this tag and archived."""
         tagged_trait = factories.TaggedTraitFactory.create(tag=self.tag, trait=self.trait, archived=True)
         response = self.client.post(self.get_url(), {'trait': self.trait.pk, 'tag': self.tag.pk, })
+        expected_error = forms.ARCHIVED_EXISTING_TAGGED_TRAIT_ERROR_STRING.format(
+            tag_name=self.tag.title, phv=self.trait.full_accession, trait_name=self.trait.i_trait_name)
         self.assertEqual(response.status_code, 200)
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
@@ -1818,6 +1825,8 @@ class TaggedTraitCreateTestsMixin(object):
         sv.i_is_deprecated = True
         sv.save()
         response = self.client.post(self.get_url(), {'trait': self.trait.pk, 'tag': self.tag.pk, })
+        self.assertFormError(response, 'form', 'trait',
+                             'Select a valid choice. That choice is not one of the available choices.')
         self.assertEqual(response.status_code, 200)
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
@@ -1837,6 +1846,9 @@ class TaggedTraitCreatePhenotypeTaggerTest(TaggedTraitCreateTestsMixin, Phenotyp
         study2 = StudyFactory.create()
         trait2 = SourceTraitFactory.create(source_dataset__source_study_version__study=study2)
         response = self.client.post(self.get_url(), {'trait': trait2.pk, 'tag': self.tag.pk, })
+        self.assertFormError(
+            response, 'form', 'trait',
+            'Select a valid choice. That choice is not one of the available choices.')
         # They have taggable studies and they're in the phenotype_taggers group, so view is still accessible.
         self.assertEqual(response.status_code, 200)
         messages = list(response.wsgi_request._messages)
@@ -2167,6 +2179,7 @@ class TaggedTraitCreateByTagTestsMixin(object):
     def test_invalid_form_message(self):
         """Posting invalid data results in a message about the invalidity."""
         response = self.client.post(self.get_url(self.tag.pk), {'trait': '', })
+        self.assertFormError(response, 'form', 'trait', 'This field is required.')
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
         self.assertTrue('Oops!' in str(messages[0]))
@@ -2174,6 +2187,7 @@ class TaggedTraitCreateByTagTestsMixin(object):
     def test_post_blank_trait(self):
         """Posting bad data to the form doesn't tag the trait and shows a form error."""
         response = self.client.post(self.get_url(self.tag.pk), {'trait': '', })
+        self.assertFormError(response, 'form', 'trait', 'This field is required.')
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
         self.assertTrue('Oops!' in str(messages[0]))
@@ -2192,6 +2206,9 @@ class TaggedTraitCreateByTagTestsMixin(object):
         """Tagging a trait fails when the trait has already been tagged with this tag."""
         tagged_trait = factories.TaggedTraitFactory.create(tag=self.tag, trait=self.trait)
         response = self.client.post(self.get_url(self.tag.pk), {'trait': self.trait.pk, })
+        expected_error = forms.EXISTING_TAGGED_TRAIT_ERROR_STRING.format(
+            tag_name=self.tag.title, phv=self.trait.full_accession, trait_name=self.trait.i_trait_name)
+        self.assertFormError(response, 'form', 'trait', expected_error)
         self.assertEqual(response.status_code, 200)
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
@@ -2201,6 +2218,9 @@ class TaggedTraitCreateByTagTestsMixin(object):
         """Tagging a trait fails when the trait has already been tagged with this tag but archived."""
         tagged_trait = factories.TaggedTraitFactory.create(tag=self.tag, trait=self.trait, archived=True)
         response = self.client.post(self.get_url(self.tag.pk), {'trait': self.trait.pk, })
+        expected_error = forms.ARCHIVED_EXISTING_TAGGED_TRAIT_ERROR_STRING.format(
+            tag_name=self.tag.title, phv=self.trait.full_accession, trait_name=self.trait.i_trait_name)
+        self.assertFormError(response, 'form', 'trait', expected_error)
         self.assertEqual(response.status_code, 200)
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
@@ -2213,6 +2233,9 @@ class TaggedTraitCreateByTagTestsMixin(object):
         sv.save()
         response = self.client.post(self.get_url(self.tag.pk), {'trait': self.trait.pk, })
         self.assertEqual(response.status_code, 200)
+        self.assertFormError(
+            response, 'form', 'trait',
+            'Select a valid choice. That choice is not one of the available choices.')
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
         self.assertTrue('Oops!' in str(messages[0]))
@@ -2231,6 +2254,9 @@ class TaggedTraitCreateByTagPhenotypeTaggerTest(TaggedTraitCreateByTagTestsMixin
         study2 = StudyFactory.create()
         trait2 = SourceTraitFactory.create(source_dataset__source_study_version__study=study2)
         response = self.client.post(self.get_url(self.tag.pk), {'trait': trait2.pk, })
+        self.assertFormError(
+            response, 'form', 'trait',
+            'Select a valid choice. That choice is not one of the available choices.')
         # They have taggable studies and they're in the phenotype_taggers group, so view is still accessible.
         self.assertEqual(response.status_code, 200)
         messages = list(response.wsgi_request._messages)
@@ -2353,6 +2379,7 @@ class ManyTaggedTraitsCreateTestsMixin(object):
     def test_invalid_form_message(self):
         """Posting invalid data results in a message about the invalidity."""
         response = self.client.post(self.get_url(), {'traits': '', 'tag': self.tag.pk})
+        self.assertFormError(response, 'form', 'traits', '"" is not a valid value for a primary key.')
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
         self.assertTrue('Oops!' in str(messages[0]))
@@ -2360,11 +2387,10 @@ class ManyTaggedTraitsCreateTestsMixin(object):
     def test_post_blank_all_traits(self):
         """Posting bad data to the form doesn't tag the trait and shows a form error."""
         response = self.client.post(self.get_url(), {'traits': [], 'tag': self.tag.pk})
+        self.assertFormError(response, 'form', 'traits', 'This field is required.')
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
         self.assertTrue('Oops!' in str(messages[0]))
-        form = response.context['form']
-        self.assertTrue(form.has_error('traits'))
         self.assertNotIn(self.tag, self.traits[0].all_tags.all())
 
     def test_adds_user(self):
@@ -2380,6 +2406,11 @@ class ManyTaggedTraitsCreateTestsMixin(object):
         response = self.client.post(self.get_url(),
                                     {'traits': [t.pk for t in self.traits[0:5]], 'tag': self.tag.pk, })
         self.assertEqual(response.status_code, 200)
+        expected_error = forms.EXISTING_TAGGED_TRAIT_ERROR_STRING.format(
+            tag_name=already_tagged.tag.title,
+            phv=already_tagged.trait.full_accession,
+            trait_name=already_tagged.trait.i_trait_name)
+        self.assertFormError(response, 'form', 'traits', expected_error)
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
         self.assertTrue('Oops!' in str(messages[0]))
@@ -2390,6 +2421,11 @@ class ManyTaggedTraitsCreateTestsMixin(object):
         response = self.client.post(self.get_url(),
                                     {'traits': [t.pk for t in self.traits[0:5]], 'tag': self.tag.pk, })
         self.assertEqual(response.status_code, 200)
+        expected_error = forms.ARCHIVED_EXISTING_TAGGED_TRAIT_ERROR_STRING.format(
+            tag_name=already_tagged.tag.title,
+            phv=already_tagged.trait.full_accession,
+            trait_name=already_tagged.trait.i_trait_name)
+        self.assertFormError(response, 'form', 'traits', expected_error)
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
         self.assertTrue('Oops!' in str(messages[0]))
@@ -2399,8 +2435,11 @@ class ManyTaggedTraitsCreateTestsMixin(object):
         sv = self.traits[0].source_dataset.source_study_version
         sv.i_is_deprecated = True
         sv.save()
-        response = self.client.post(self.get_url(), {'trait': [self.traits[0].pk], })
+        response = self.client.post(self.get_url(), {'traits': [self.traits[0].pk], })
         self.assertEqual(response.status_code, 200)
+        self.assertFormError(
+            response, 'form', 'traits',
+            'Select a valid choice. {} is not one of the available choices.'.format(self.traits[0].pk))
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
         self.assertTrue('Oops!' in str(messages[0]))
@@ -2409,8 +2448,11 @@ class ManyTaggedTraitsCreateTestsMixin(object):
         """Can't tag one deprecated source trait."""
         deprecated_trait = SourceTraitFactory.create(source_dataset__source_study_version__i_is_deprecated=True)
         self.user.profile.taggable_studies.add(deprecated_trait.source_dataset.source_study_version.study)
-        response = self.client.post(self.get_url(), {'trait': [self.traits[0].pk, deprecated_trait.pk], })
+        response = self.client.post(self.get_url(), {'traits': [self.traits[0].pk, deprecated_trait.pk], })
         self.assertEqual(response.status_code, 200)
+        self.assertFormError(
+            response, 'form', 'traits',
+            'Select a valid choice. {} is not one of the available choices.'.format(deprecated_trait.pk))
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
         self.assertTrue('Oops!' in str(messages[0]))
@@ -2420,7 +2462,10 @@ class ManyTaggedTraitsCreateTestsMixin(object):
         sv = self.traits[0].source_dataset.source_study_version
         sv.i_is_deprecated = True
         sv.save()
-        response = self.client.post(self.get_url(), {'trait': self.traits[0].pk, 'tag': self.tag.pk, })
+        response = self.client.post(self.get_url(), {'traits': self.traits[0].pk, 'tag': self.tag.pk, })
+        self.assertFormError(
+            response, 'form', 'traits',
+            'Select a valid choice. {} is not one of the available choices.'.format(self.traits[0].pk))
         self.assertEqual(response.status_code, 200)
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
@@ -2456,14 +2501,17 @@ class ManyTaggedTraitsCreatePhenotypeTaggerTest(ManyTaggedTraitsCreateTestsMixin
             self.assertIn(trait, self.tag.all_traits.all())
             self.assertIn(self.tag, trait.all_tags.all())
 
-    def test_fails_with_other_study_traits(self):
+    def test_fails_with_other_study_trait(self):
         """Tagging a trait fails when the trait is not in the user's taggable_studies'."""
         study2 = StudyFactory.create()
-        traits2 = SourceTraitFactory.create_batch(5, source_dataset__source_study_version__study=study2)
+        other_trait = SourceTraitFactory.create(source_dataset__source_study_version__study=study2)
         response = self.client.post(self.get_url(),
-                                    {'traits': [str(x.pk) for x in traits2], 'tag': self.tag.pk, })
+                                    {'traits': [other_trait.pk], 'tag': self.tag.pk, })
         # They have taggable studies and they're in the phenotype_taggers group, so view is still accessible.
         self.assertEqual(response.status_code, 200)
+        self.assertFormError(
+            response, 'form', 'traits',
+            'Select a valid choice. {} is not one of the available choices.'.format(other_trait.pk))
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
         self.assertTrue('Oops!' in str(messages[0]))
@@ -2604,13 +2652,15 @@ class ManyTaggedTraitsCreateByTagTestsMixin(object):
     def test_invalid_form_message(self):
         """Posting invalid data results in a message about the invalidity."""
         response = self.client.post(self.get_url(self.tag.pk), {'traits': '', })
+        self.assertFormError(response, 'form', 'traits', '"" is not a valid value for a primary key.')
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
         self.assertTrue('Oops!' in str(messages[0]))
 
     def test_post_blank_trait(self):
         """Posting bad data to the form doesn't tag the trait and shows a form error."""
-        response = self.client.post(self.get_url(self.tag.pk), {'traits': '', })
+        response = self.client.post(self.get_url(self.tag.pk), {'traits': [], })
+        self.assertFormError(response, 'form', 'traits', 'This field is required.')
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
         self.assertTrue('Oops!' in str(messages[0]))
@@ -2631,17 +2681,11 @@ class ManyTaggedTraitsCreateByTagTestsMixin(object):
         response = self.client.post(self.get_url(self.tag.pk),
                                     {'traits': [t.pk for t in self.traits[0:5]], })
         self.assertEqual(response.status_code, 200)
-        messages = list(response.wsgi_request._messages)
-        self.assertEqual(len(messages), 1)
-        self.assertTrue('Oops!' in str(messages[0]))
-
-    def test_fails_when_two_traits_are_already_tagged(self):
-        """Tagging traits fails when two selected traits are already tagged with the tag."""
-        already_tagged = factories.TaggedTraitFactory.create(tag=self.tag, trait=self.traits[0])
-        already_tagged2 = factories.TaggedTraitFactory.create(tag=self.tag, trait=self.traits[1])
-        response = self.client.post(self.get_url(self.tag.pk),
-                                    {'traits': [t.pk for t in self.traits[0:5]], })
-        self.assertEqual(response.status_code, 200)
+        expected_error = forms.EXISTING_TAGGED_TRAIT_ERROR_STRING.format(
+            tag_name=already_tagged.tag.title,
+            phv=already_tagged.trait.full_accession,
+            trait_name=already_tagged.trait.i_trait_name)
+        self.assertFormError(response, 'form', 'traits', expected_error)
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
         self.assertTrue('Oops!' in str(messages[0]))
@@ -2652,17 +2696,11 @@ class ManyTaggedTraitsCreateByTagTestsMixin(object):
         response = self.client.post(self.get_url(self.tag.pk),
                                     {'traits': [t.pk for t in self.traits[0:5]], })
         self.assertEqual(response.status_code, 200)
-        messages = list(response.wsgi_request._messages)
-        self.assertEqual(len(messages), 1)
-        self.assertTrue('Oops!' in str(messages[0]))
-
-    def test_fails_when_two_traits_are_already_tagged_but_archived(self):
-        """Tagging traits fails when two selected traits are already tagged with the tag but archived."""
-        already_tagged = factories.TaggedTraitFactory.create(tag=self.tag, trait=self.traits[0], archived=True)
-        already_tagged2 = factories.TaggedTraitFactory.create(tag=self.tag, trait=self.traits[1], archived=True)
-        response = self.client.post(self.get_url(self.tag.pk),
-                                    {'traits': [t.pk for t in self.traits[0:5]], })
-        self.assertEqual(response.status_code, 200)
+        expected_error = forms.ARCHIVED_EXISTING_TAGGED_TRAIT_ERROR_STRING.format(
+            tag_name=already_tagged.tag.title,
+            phv=already_tagged.trait.full_accession,
+            trait_name=already_tagged.trait.i_trait_name)
+        self.assertFormError(response, 'form', 'traits', expected_error)
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
         self.assertTrue('Oops!' in str(messages[0]))
@@ -2672,8 +2710,11 @@ class ManyTaggedTraitsCreateByTagTestsMixin(object):
         sv = self.traits[0].source_dataset.source_study_version
         sv.i_is_deprecated = True
         sv.save()
-        response = self.client.post(self.get_url(self.tag.pk), {'trait': [self.traits[0].pk], })
+        response = self.client.post(self.get_url(self.tag.pk), {'traits': [self.traits[0].pk], })
         self.assertEqual(response.status_code, 200)
+        self.assertFormError(
+            response, 'form', 'traits',
+            'Select a valid choice. {} is not one of the available choices.'.format(self.traits[0].pk))
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
         self.assertTrue('Oops!' in str(messages[0]))
@@ -2682,19 +2723,11 @@ class ManyTaggedTraitsCreateByTagTestsMixin(object):
         """Can't tag one deprecated source trait."""
         deprecated_trait = SourceTraitFactory.create(source_dataset__source_study_version__i_is_deprecated=True)
         self.user.profile.taggable_studies.add(deprecated_trait.source_dataset.source_study_version.study)
-        response = self.client.post(self.get_url(self.tag.pk), {'trait': [self.traits[0].pk, deprecated_trait.pk], })
+        response = self.client.post(self.get_url(self.tag.pk), {'traits': [self.traits[0].pk, deprecated_trait.pk], })
         self.assertEqual(response.status_code, 200)
-        messages = list(response.wsgi_request._messages)
-        self.assertEqual(len(messages), 1)
-        self.assertTrue('Oops!' in str(messages[0]))
-
-    def test_fails_when_two_traits_are_deprecated(self):
-        """Can't tag two deprecated source traits."""
-        sv = self.traits[0].source_dataset.source_study_version
-        sv.i_is_deprecated = True
-        sv.save()
-        response = self.client.post(self.get_url(self.tag.pk), {'trait': self.traits[0].pk, })
-        self.assertEqual(response.status_code, 200)
+        self.assertFormError(
+            response, 'form', 'traits',
+            'Select a valid choice. {} is not one of the available choices.'.format(deprecated_trait.pk))
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
         self.assertTrue('Oops!' in str(messages[0]))
@@ -2733,11 +2766,14 @@ class ManyTaggedTraitsCreateByTagPhenotypeTaggerTest(ManyTaggedTraitsCreateByTag
     def test_fails_with_other_study_traits(self):
         """Tagging a trait fails when the trait is not in the user's taggable_studies'."""
         study2 = StudyFactory.create()
-        traits2 = SourceTraitFactory.create_batch(5, source_dataset__source_study_version__study=study2)
+        other_trait = SourceTraitFactory.create(source_dataset__source_study_version__study=study2)
         response = self.client.post(self.get_url(self.tag.pk),
-                                    {'traits': [str(x.pk) for x in traits2], 'tag': self.tag.pk, })
+                                    {'traits': [other_trait.pk], 'tag': self.tag.pk, })
         # They have taggable studies and they're in the phenotype_taggers group, so view is still accessible.
         self.assertEqual(response.status_code, 200)
+        self.assertFormError(
+            response, 'form', 'traits',
+            'Select a valid choice. {} is not one of the available choices.'.format(other_trait.pk))
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
         self.assertTrue('Oops!' in str(messages[0]))
@@ -3583,11 +3619,14 @@ class DCCReviewByTagAndStudyDCCTestsMixin(object):
         # Correctly redirects to the next view (remembering that it is a redirect view).
         self.assertRedirects(response, reverse('tags:tagged-traits:dcc-review:next'), target_status_code=302)
 
-    def test_post_bad_data(self):
+    def test_error_missing_comment(self):
         """Posting bad data to the form shows a form error and doesn't unset session variables."""
         form_data = {forms.DCCReviewByTagAndStudyForm.SUBMIT_FOLLOWUP: 'Require study followup', 'comment': ''}
         response = self.client.post(self.get_url(), form_data)
         self.assertEqual(response.status_code, 200)
+        self.assertFormError(
+            response, 'form', 'comment',
+            'Comment cannot be blank for tagged variables that require followup.')
         # Does not create a DCCReview for this TaggedTrait.
         self.assertFalse(hasattr(self.tagged_trait, 'dcc_review'))
         # The pk session variable is not unset.
@@ -3931,11 +3970,14 @@ class DCCReviewCreateDCCTestsMixin(object):
         self.assertEqual(len(messages), 1)
         self.assertIn('Successfully reviewed', str(messages[0]))
 
-    def test_post_bad_data(self):
+    def test_form_error_with_missing_comment(self):
         """Posting bad data to the form shows a form error."""
         form_data = {forms.DCCReviewForm.SUBMIT_FOLLOWUP: 'Require study followup', 'comment': ''}
         response = self.client.post(self.get_url(self.tagged_trait.pk), form_data)
         self.assertEqual(response.status_code, 200)
+        self.assertFormError(
+            response, 'form', 'comment',
+            'Comment cannot be blank for tagged variables that require followup.')
         # Does not create a DCCReview for this TaggedTrait.
         self.assertFalse(hasattr(self.tagged_trait, 'dcc_review'))
         # No messages.
@@ -4150,12 +4192,15 @@ class DCCReviewUpdateDCCTestsMixin(object):
         self.assertEqual(len(messages), 1)
         self.assertIn('Successfully updated', str(messages[0]))
 
-    def test_post_bad_data(self):
+    def test_form_error_with_missing_comment(self):
         """Posting bad data to the form shows a form error."""
         existing_review = self.tagged_trait.dcc_review
         form_data = {forms.DCCReviewForm.SUBMIT_FOLLOWUP: 'Require study followup', 'comment': ''}
         response = self.client.post(self.get_url(self.tagged_trait.pk), form_data)
         self.assertEqual(response.status_code, 200)
+        self.assertFormError(
+            response, 'form', 'comment',
+            'Comment cannot be blank for tagged variables that require followup.')
         # Does not update the DCCReview for this TaggedTrait.
         self.tagged_trait.dcc_review.refresh_from_db()
         self.assertEqual(self.tagged_trait.dcc_review, existing_review)
@@ -5349,6 +5394,7 @@ class StudyResponseCreateDisagreePhenotypeTaggerTest(PhenotypeTaggerLoginTestCas
         """Posting an invalid form does not create a study response."""
         response = self.client.post(self.get_url(self.tagged_trait.pk), {'comment': ''})
         self.assertEqual(response.status_code, 200)
+        self.assertFormError(response, 'form', 'comment', 'This field is required.')
         self.tagged_trait.refresh_from_db()
         self.assertFalse(hasattr(self.tagged_trait.dcc_review, 'study_response'))
         form = response.context['form']
@@ -6625,6 +6671,7 @@ class DCCDecisionByTagAndStudyDCCTestsMixin(object):
         self.assertEqual(response.status_code, 200)
         # Does not create a DCCDecision for this TaggedTrait.
         self.assertFalse(hasattr(self.tagged_trait.dcc_review, 'dcc_decision'))
+        self.assertFormError(response, 'form', 'comment', 'Comment cannot be blank.')
         # The pk session variable is not unset.
         session = self.client.session
         self.assertIn('tagged_trait_decision_by_tag_and_study_info', session)
@@ -7154,6 +7201,7 @@ class DCCDecisionCreateDCCTestsMixin(object):
         form_data = {forms.DCCDecisionForm.SUBMIT_REMOVE: 'Remove', 'comment': ''}
         response = self.client.post(self.get_url(self.tagged_trait.pk), form_data)
         self.assertEqual(response.status_code, 200)
+        self.assertFormError(response, 'form', 'comment', 'Comment cannot be blank.')
         # Does not create a DCCDecision for this TaggedTrait.
         self.assertFalse(hasattr(self.tagged_trait.dcc_review, 'dcc_decision'))
         # No messages.
@@ -7165,6 +7213,7 @@ class DCCDecisionCreateDCCTestsMixin(object):
         form_data = {forms.DCCDecisionForm.SUBMIT_CONFIRM: 'Confirm', 'comment': ''}
         response = self.client.post(self.get_url(self.tagged_trait.pk), form_data)
         self.assertEqual(response.status_code, 200)
+        self.assertFormError(response, 'form', 'comment', 'Comment cannot be blank.')
         # Does not create a DCCDecision for this TaggedTrait.
         self.assertFalse(hasattr(self.tagged_trait.dcc_review, 'dcc_decision'))
         # No messages.
@@ -7594,6 +7643,7 @@ class DCCDecisionUpdateDCCTestsMixin(object):
         response = self.client.post(self.get_url(self.tagged_trait.pk), form_data)
         self.assertEqual(response.status_code, 200)
         self.dcc_decision.refresh_from_db()
+        self.assertFormError(response, 'form', 'comment', 'Comment cannot be blank.')
         # Does not modify a DCCDecision for this TaggedTrait.
         self.assertNotEqual(self.dcc_decision.comment, form_data['comment'])
         self.assertNotEqual(self.dcc_decision.decision, models.DCCDecision.DECISION_REMOVE)
@@ -7607,6 +7657,7 @@ class DCCDecisionUpdateDCCTestsMixin(object):
         response = self.client.post(self.get_url(self.tagged_trait.pk), form_data)
         self.assertEqual(response.status_code, 200)
         self.dcc_decision.refresh_from_db()
+        self.assertFormError(response, 'form', 'comment', 'Comment cannot be blank.')
         # Does not modify a DCCDecision for this TaggedTrait.
         self.assertNotEqual(self.dcc_decision.comment, form_data['comment'])
         # No messages.
