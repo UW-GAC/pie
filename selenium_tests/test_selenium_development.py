@@ -10,6 +10,8 @@ from django.contrib.staticfiles.testing import StaticLiveServerTestCase
 from django.urls import reverse
 
 from core.build_test_db import build_test_db
+import tags.factories
+import tags.models
 import trait_browser.models
 import trait_browser.factories
 import trait_browser.views
@@ -403,3 +405,67 @@ class TablePageTestCase(UserAutoLoginSeleniumTestCase):
             source_dataset__source_study_version__study=study).all().count()
         self.get_reverse('trait_browser:source:studies:pk:traits:list', study.pk)
         self.check_table_view(expected_rows=trait_count)
+
+
+class TagViewsTestCase(UserAutoLoginSeleniumTestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.login_superuser()
+        self.study_version = trait_browser.factories.SourceStudyVersionFactory.create()
+        self.tag = tags.factories.TagFactory.create()
+        self.tagged_traits = tags.factories.TaggedTraitFactory.create_batch(
+            2, trait__source_dataset__source_study_version=self.study_version, tag=self.tag)
+
+    def test_dcc_review_loop_skip(self):
+        """Skip button works as expected for DCC Review loop."""
+        self.get_reverse('tags:tag:study:begin-dcc-review', self.tag.pk, self.study_version.study.pk)
+        message = self.selenium.find_element_by_class_name('alert')
+        self.assertIn('2 tagged variables left', message.text)  # Expected alert
+        title = self.selenium.find_element_by_tag_name('h2')
+        self.assertIn(self.tagged_traits[0].__str__(), title.text)  # Expected title text
+        skip_button = self.selenium.find_element_by_id('submit-id-skip')
+        time.sleep(1)
+        skip_button.click()
+        time.sleep(2)
+        message = self.selenium.find_element_by_class_name('alert')
+        self.assertIn('1 tagged variable left', message.text)  # Alert changes
+        title = self.selenium.find_element_by_tag_name('h2')
+        self.assertIn(self.tagged_traits[1].__str__(), title.text)  # Title changes
+        skip_button = self.selenium.find_element_by_id('submit-id-skip')
+        time.sleep(1)
+        skip_button.click()
+        time.sleep(2)
+        # And you're returned to the tag+study combo page.
+        tag_study_table_url = reverse('tags:tag:study:list', args=[self.tag.pk, self.study_version.study.pk])
+        self.assertIn(tag_study_table_url, self.selenium.current_url)
+        self.assertEqual(tags.models.DCCReview.objects.count(), 0)  # No DCC Reviews were created.
+
+    def test_dcc_decision_loop_skip(self):
+        """Skip button works as expected for DCC Decision loop."""
+        for tt in self.tagged_traits:
+            dcc_review = tags.factories.DCCReviewFactory.create(
+                tagged_trait=tt, status=tags.models.DCCReview.STATUS_FOLLOWUP)
+            tags.factories.StudyResponseFactory.create(
+                dcc_review=dcc_review, status=tags.models.StudyResponse.STATUS_DISAGREE)
+        self.get_reverse('tags:tag:study:begin-dcc-decision', self.tag.pk, self.study_version.study.pk)
+        message = self.selenium.find_element_by_class_name('alert')
+        self.assertIn('2 tagged variables left', message.text)  # Expected alert
+        title = self.selenium.find_element_by_tag_name('h2')
+        self.assertIn(self.tagged_traits[0].__str__(), title.text)  # Expected title text
+        skip_button = self.selenium.find_element_by_id('submit-id-skip')
+        time.sleep(1)
+        skip_button.click()
+        time.sleep(2)
+        message = self.selenium.find_element_by_class_name('alert')
+        self.assertIn('1 tagged variable left', message.text)  # Alert changes
+        title = self.selenium.find_element_by_tag_name('h2')
+        self.assertIn(self.tagged_traits[1].__str__(), title.text)  # Title changes
+        skip_button = self.selenium.find_element_by_id('submit-id-skip')
+        time.sleep(1)
+        skip_button.click()
+        time.sleep(2)
+        # And you're returned to the tag+study combo page.
+        tag_study_table_url = reverse('tags:tag:study:list', args=[self.tag.pk, self.study_version.study.pk])
+        self.assertIn(tag_study_table_url, self.selenium.current_url)
+        self.assertEqual(tags.models.DCCDecision.objects.count(), 0)  # No DCC Decisions were created.
