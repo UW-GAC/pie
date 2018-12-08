@@ -15,7 +15,7 @@ USER_FACTORY_PASSWORD = 'qwerty'
 
 
 def build_test_db(n_global_studies=3, n_subcohort_range=(1, 2), n_dataset_range=(1, 2), n_trait_range=(3, 4),
-                  n_enc_value_range=(2, 3)):
+                  n_enc_value_range=(2, 3), n_tags=0, n_taggedtrait_range=(1, 10)):
     """Make a complete set of test data in the db, using the factory functions from above.
 
     n_subcohort_range -- tuple; (min, max) value to pick for n_subcohorts
@@ -38,6 +38,10 @@ def build_test_db(n_global_studies=3, n_subcohort_range=(1, 2), n_dataset_range=
         raise ValueError('Values for n_dataset_range are too close together. max n_dataset_range must be greater than or equal to min n_dataset_range.')
     if (n_trait_range[1] - n_trait_range[0] < 1):
         raise ValueError('Values for n_trait_range are too close together. max n_trait_range must be greater than or equal to min n_trait_range.')
+    if n_tags < 0:
+        raise ValueError('n_tags must be a positive number.')
+    if (n_taggedtrait_range[1] - n_taggedtrait_range[0] < 1):
+        raise ValueError('Values for n_taggedtrait_range are too close together. max n_taggedtrait_range must be greater than or equal to min n_taggedtrait_range.')
     global_studies = trait_browser.factories.GlobalStudyFactory.create_batch(n_global_studies)
     # There will be global studies with 1, 2, or 3 linked studies.
     for (i, gs) in enumerate(trait_browser.models.GlobalStudy.objects.all()):
@@ -269,6 +273,10 @@ def build_test_db(n_global_studies=3, n_subcohort_range=(1, 2), n_dataset_range=
     harmonization_recipe.units.add(unit1)
     harmonization_recipe.units.add(unit2)
 
-    # Add fake tag and tagged trait objects.
-    dcc_tags = tags.factories.TagFactory.create_batch(10)
-    tagged_trait = tags.factories.TaggedTraitFactory.create(tag=dcc_tags[0], trait=recipe_traits[0])
+    # Add fake tags and tagged trait objects.
+    if n_tags > 0:
+        dcc_tags = tags.factories.TagFactory.create_batch(n_tags)
+        for tag in dcc_tags:
+            traits_to_tag = trait_browser.models.SourceTrait.objects.order_by('?')[:randrange(n_taggedtrait_range[0], n_taggedtrait_range[1])]
+            for trait in traits_to_tag:
+                tagged_trait = tags.factories.TaggedTraitFactory.create(tag=tag, trait=trait)
