@@ -15,7 +15,7 @@ USER_FACTORY_PASSWORD = 'qwerty'
 
 
 def build_test_db(n_global_studies=3, n_subcohort_range=(1, 2), n_dataset_range=(1, 2), n_trait_range=(3, 4),
-                  n_enc_value_range=(2, 3), n_tags=0, n_taggedtrait_range=(1, 10)):
+                  n_enc_value_range=(2, 3), n_tags=1, n_taggedtrait_range=(1, 10)):
     """Make a complete set of test data in the db, using the factory functions from above.
 
     n_subcohort_range -- tuple; (min, max) value to pick for n_subcohorts

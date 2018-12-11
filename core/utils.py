@@ -263,6 +263,7 @@ class LoginRequiredTestCase(TestCase):
         url_list = get_app_urls(app_name)
         pattern = '<pk.{0,}?>'
         for url in url_list:
+            # print('Checking URL {} ...'.format(url))
             matches = re.findall(pattern, url)
             i = 0
             done = False
@@ -286,4 +287,3 @@ class LoginRequiredTestCase(TestCase):
                 i += 1
             self.assertRedirects(response, reverse('login') + '?next=' + final_url,
                                  msg_prefix='URL {} is not login required'.format(final_url))
-            # print('URL {} passes login_required test...'.format(url))
