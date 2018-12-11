@@ -78,32 +78,46 @@ class SuperUserFactoryTest(TestCase):
 class BuildTestDbTest(TestCase):
 
     def test_build_db_global_studies_error(self):
-        """Test that calling build_test_db() with too small a value for n_global_studies raises ValueError."""
+        """Raises ValueError for too small a value of n_global_studies."""
         with self.assertRaises(ValueError):
             build_test_db(
                 n_global_studies=1, n_subcohort_range=(2, 3), n_dataset_range=(3, 9),
                 n_trait_range=(2, 16), n_enc_value_range=(2, 9))
 
     def test_build_db_trait_range_error(self):
-        """Test that calling build_test_db() with invalid values for n_trait_range raises ValueError."""
+        """Raises ValueError for invalid values of n_trait_range."""
         with self.assertRaises(ValueError):
             build_test_db(
                 n_global_studies=3, n_subcohort_range=(2, 3), n_dataset_range=(3, 9),
                 n_trait_range=(23, 16), n_enc_value_range=(2, 9))
 
     def test_build_db_trait_range_error2(self):
-        """Test that calling build_test_db() with invalid values for n_trait_range raises ValueError."""
+        """Raises ValueError for invalid values of n_trait_range."""
         with self.assertRaises(ValueError):
             build_test_db(
                 n_global_studies=3, n_subcohort_range=(2, 3), n_dataset_range=(3, 9),
                 n_trait_range=(1, 16), n_enc_value_range=(2, 9))
 
     def test_build_db_dataset_range_error(self):
-        """Test that calling build_test_db() with invalid values for n_dataset_range raises ValueError."""
+        """Raises ValueError for invalid values of n_dataset_range."""
         with self.assertRaises(ValueError):
             build_test_db(
                 n_global_studies=3, n_subcohort_range=(2, 3), n_dataset_range=(9, 3),
                 n_trait_range=(22, 16), n_enc_value_range=(2, 9))
+
+    def test_build_db_n_tags_errors(self):
+        """Raises ValueError for negative n_tags value."""
+        with self.assertRaises(ValueError):
+            build_test_db(
+                n_global_studies=3, n_subcohort_range=(2, 3), n_dataset_range=(3, 9),
+                n_trait_range=(3, 16), n_enc_value_range=(2, 9), n_tags=-2)
+
+    def test_build_db_n_taggedtrait_range(self):
+        """Raises ValueError for invalid values of n_taggedtrait_range."""
+        with self.assertRaises(ValueError):
+            build_test_db(
+                n_global_studies=3, n_subcohort_range=(2, 3), n_dataset_range=(3, 9),
+                n_trait_range=(3, 16), n_enc_value_range=(2, 9), n_tags=2, n_taggedtrait_range=(9, 3))
 
     def test_build_db1(self):
         """Test that building a db of fake data works. Run the same test several times with different values."""

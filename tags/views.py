@@ -251,10 +251,10 @@ class TaggedTraitByTagAndStudyList(LoginRequiredMixin, SingleTableMixin, ListVie
     def get_table_class(self):
         """Determine whether to use tagged trait table with delete buttons or not."""
         if self.request.user.is_staff:
-            return tables.TaggedTraitTableForDCCStaff
+            return tables.TaggedTraitTableForStaffByStudy
         elif (self.request.user.groups.filter(name='phenotype_taggers').exists() and
               self.study in self.request.user.profile.taggable_studies.all()):
-            return tables.TaggedTraitTableForStudyTaggers
+            return tables.TaggedTraitTableForPhenotypeTaggersFromStudy
         else:
             return tables.TaggedTraitTable
 
@@ -852,10 +852,10 @@ class DCCReviewUpdate(LoginRequiredMixin, PermissionRequiredMixin, FormValidMess
         return self.tagged_trait.get_absolute_url()
 
 
-class DCCReviewNeedFollowupCounts(LoginRequiredMixin, TemplateView):
+class TaggedTraitsNeedStudyResponseSummary(LoginRequiredMixin, TemplateView):
     """View to show counts of DCCReviews that need followup by study and tag for phenotype taggers."""
 
-    template_name = 'tags/taggedtrait_needfollowup_counts.html'
+    template_name = 'tags/taggedtrait_need_studyresponse_summary.html'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -908,23 +908,23 @@ class DCCReviewNeedFollowupCounts(LoginRequiredMixin, TemplateView):
         return HttpResponseForbidden()
 
 
-class DCCReviewNeedFollowupList(LoginRequiredMixin, SpecificTaggableStudyRequiredMixin, SingleTableMixin, ListView):
+class TaggedTraitsNeedStudyResponseByTagAndStudyList(LoginRequiredMixin, SpecificTaggableStudyRequiredMixin,
+                                                     SingleTableMixin, ListView):
     """List view of DCCReviews that need study followup."""
 
     redirect_unauthenticated_users = True
     raise_exception = True
     allow_staff = True
-    template_name = 'tags/dccreview_list.html'
+    template_name = 'tags/taggedtrait_need_studyresponse_bytagandstudy_list.html'
     model = models.TaggedTrait
-    context_table_name = 'tagged_trait_table'
     context_table_name = 'tagged_trait_table'
     table_pagination = {'per_page': TABLE_PER_PAGE * 2}
 
     def get_table_class(self):
         if self.study in self.request.user.profile.taggable_studies.all():
-            return tables.DCCReviewTableWithStudyResponseButtons
+            return tables.TaggedTraitDCCReviewStudyResponseButtonTable
         else:
-            return tables.DCCReviewTable
+            return tables.TaggedTraitDCCReviewTable
 
     def set_study(self):
         self.study = get_object_or_404(Study, pk=self.kwargs['pk_study'])
