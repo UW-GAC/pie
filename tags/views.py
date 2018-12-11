@@ -908,7 +908,8 @@ class TaggedTraitsNeedStudyResponseSummary(LoginRequiredMixin, TemplateView):
         return HttpResponseForbidden()
 
 
-class TaggedTraitsNeedStudyResponseByTagAndStudyList(LoginRequiredMixin, SpecificTaggableStudyRequiredMixin, SingleTableMixin, ListView):
+class TaggedTraitsNeedStudyResponseByTagAndStudyList(LoginRequiredMixin, SpecificTaggableStudyRequiredMixin,
+                                                     SingleTableMixin, ListView):
     """List view of DCCReviews that need study followup."""
 
     redirect_unauthenticated_users = True

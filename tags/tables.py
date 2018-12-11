@@ -225,14 +225,16 @@ class TaggedTraitDCCActionButtonMixin(tables.Table):
             html = REVIEW_BUTTON_HTML.format(url=reverse('tags:tagged-traits:pk:dcc-review:new', args=[record.pk]),
                                              btn_text="Add DCC review", btn_class='btn-primary')
         if hasattr(record, 'dcc_review') and (not hasattr(record.dcc_review, 'study_response')):
-            html = REVIEW_BUTTON_HTML.format(url=reverse('tags:tagged-traits:pk:dcc-review:update', args=[record.pk]),
+            html = REVIEW_BUTTON_HTML.format(url=reverse('tags:tagged-traits:pk:dcc-review:update',
+                                                         args=[record.pk]),
                                              btn_text="Update DCC review", btn_class='btn-warning')
         if hasattr(record, 'dcc_review') and hasattr(record.dcc_review, 'dcc_decision'):
-            html = REVIEW_BUTTON_HTML.format(url=reverse('tags:tagged-traits:pk:dcc-decision:update', args=[record.pk]),
+            html = REVIEW_BUTTON_HTML.format(url=reverse('tags:tagged-traits:pk:dcc-decision:update',
+                                                         args=[record.pk]),
                                              btn_text="Update final decision", btn_class='btn-warning')
         if hasattr(record, 'dcc_review') and hasattr(record.dcc_review, 'study_response') and \
             (record.dcc_review.study_response.status == models.StudyResponse.STATUS_DISAGREE) and \
-            (not hasattr(record.dcc_review, 'dcc_decision')):
+                (not hasattr(record.dcc_review, 'dcc_decision')):
             html = REVIEW_BUTTON_HTML.format(url=reverse('tags:tagged-traits:pk:dcc-decision:new', args=[record.pk]),
                                              btn_text="Make final decision", btn_class='btn-primary')
         return mark_safe(html)
@@ -249,7 +251,8 @@ class TaggedTraitDCCDecisionButtonMixin(tables.Table):
     def render_decision_buttons(self, record):
         # Have an update button if a decision already exists.
         if hasattr(record.dcc_review, 'dcc_decision'):
-            html = REVIEW_BUTTON_HTML.format(url=reverse('tags:tagged-traits:pk:dcc-decision:update', args=[record.pk]),
+            html = REVIEW_BUTTON_HTML.format(url=reverse('tags:tagged-traits:pk:dcc-decision:update',
+                                                         args=[record.pk]),
                                              btn_text='Update final decision', btn_class='btn-warning')
         else:
             html = REVIEW_BUTTON_HTML.format(url=reverse('tags:tagged-traits:pk:dcc-decision:new', args=[record.pk]),
@@ -258,7 +261,7 @@ class TaggedTraitDCCDecisionButtonMixin(tables.Table):
 
 
 class TaggedTraitTableForPhenotypeTaggersFromStudy(TaggedTraitDetailColumnMixin, TaggedTraitQualityReviewColumnMixin,
-                                      TaggedTraitTable):
+                                                   TaggedTraitTable):
     """Table to display tagged traits to phenotype taggers from the study being shown.
 
     Used for TaggedTraitByTagAndStudyList. Includes a column with links to detail pages, and a column
@@ -270,18 +273,18 @@ class TaggedTraitTableForPhenotypeTaggersFromStudy(TaggedTraitDetailColumnMixin,
 
 
 class TaggedTraitTableForStaffByStudy(TaggedTraitDetailColumnMixin, TaggedTraitDCCActionButtonMixin,
-                                  TaggedTraitDCCReviewStatusColumnMixin, TaggedTraitStudyResponseStatusColumnMixin,
-                                  TaggedTraitDCCDecisionColumnMixin,
-                                  TaggedTraitArchivedColumnMixin, TaggedTraitTable):
-    """Table for displaying TaggedTraits to DCC staff users.
+                                      TaggedTraitDCCReviewStatusColumnMixin, TaggedTraitStudyResponseStatusColumnMixin,
+                                      TaggedTraitDCCDecisionColumnMixin,
+                                      TaggedTraitArchivedColumnMixin, TaggedTraitTable):
+        """Table for displaying TaggedTraits to DCC staff users.
 
-    Used for TaggedTraitByTagAndStudyList. Includes columns for DCC review, study response, and archived
-    status. Includes column with DCC Review create/update button and links to detail pages.
-    """
+        Used for TaggedTraitByTagAndStudyList. Includes columns for DCC review, study response, and archived
+        status. Includes column with DCC Review create/update button and links to detail pages.
+        """
 
-    class Meta(TaggedTraitTable.Meta):
-        fields = ('tag', 'trait', 'description', 'dataset', 'details', 'dcc_action_button', 'dcc_review_status',
-                  'study_response_status', 'dcc_decision', 'archived', )
+        class Meta(TaggedTraitTable.Meta):
+            fields = ('tag', 'trait', 'description', 'dataset', 'details', 'dcc_action_button', 'dcc_review_status',
+                      'study_response_status', 'dcc_decision', 'archived', )
 
 
 class TaggedTraitDCCReviewTable(tables.Table):

@@ -340,7 +340,7 @@ class SourceTraitSearchTestCase(UserAutoLoginSeleniumTestCase):
     #     # TODO: proper handling when there are 0 expected rows. Currently, the row count
     #     # is 1 when it should be 0 because "no results" is in a row of the table.
     #     # This will likely need to change anyway because of changes to searching later on.
-    # 
+    #
     # def test_source_trait_search_single_study_good_text(self):
     #     """Test the SourceTrait search page with a trait name that is in a given study, within the given study."""
     #     study = trait_browser.models.Study.objects.all()[0]
@@ -351,7 +351,7 @@ class SourceTraitSearchTestCase(UserAutoLoginSeleniumTestCase):
     #     # This will find many more results than you expect, because the list of words
     #     # that Faker uses is fairly small. The result is that a given fake trait name
     #     # will likely end up in the trait descriptions of many other traits.
-    # 
+    #
     # def test_source_trait_search_single_study_good_description_text(self):
     #     """Search page finds a trait based on description, within a given study."""
     #     # This search string is more specific, so should only find one result
@@ -360,7 +360,7 @@ class SourceTraitSearchTestCase(UserAutoLoginSeleniumTestCase):
     #         source_dataset__source_study_version__study=study)[0]
     #     good_text = study_trait.i_description
     #     self.run_search(description=good_text, study_list=[study])
-    # 
+    #
     # def test_source_trait_search_specific_text_wrong_study(self):
     #     """Test the SourceTrait search page by searching for a long search phrase in the wrong study."""
     #     # This search string is more specific, so should only find one result
