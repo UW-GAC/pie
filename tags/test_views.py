@@ -57,6 +57,36 @@ class TagDetailTestsMixin(object):
         self.assertNotIn(
             archived_tagged_trait.trait.source_dataset.source_study_version.study.i_study_name, study_names)
 
+    def test_no_deprecated_traits(self):
+        """Counts exclude traits tagged from deprecated study versions."""
+        study = StudyFactory.create()
+        current_study_version = SourceStudyVersionFactory.create(study=study, i_version=5)
+        old_study_version = SourceStudyVersionFactory.create(study=study, i_version=4, i_is_deprecated=True)
+        current_trait = SourceTraitFactory.create(source_dataset__source_study_version=current_study_version)
+        old_trait = SourceTraitFactory.create(source_dataset__source_study_version=old_study_version)
+        current_tagged_trait = factories.TaggedTraitFactory.create(trait=current_trait, tag=self.tag)
+        old_tagged_trait = factories.TaggedTraitFactory.create(trait=old_trait, tag=self.tag)
+        response = self.client.get(self.get_url(self.tag.pk))
+        context = response.context
+        self.assertEqual(context['study_counts'][0]['study_pk'], study.pk)
+        self.assertEqual(context['study_counts'][0]['tt_count'], 1)
+
+    def test_no_deprecated_traits_with_same_version_number(self):
+        """Counts exclude traits tagged from deprecated study versions even with same version number."""
+        # This directly addresses the unusual CARDIA situation where there are two study versions with the
+        # same version number, one of which is deprecated.
+        study = StudyFactory.create()
+        current_study_version = SourceStudyVersionFactory.create(study=study, i_version=5)
+        old_study_version = SourceStudyVersionFactory.create(study=study, i_version=5, i_is_deprecated=True)
+        current_trait = SourceTraitFactory.create(source_dataset__source_study_version=current_study_version)
+        old_trait = SourceTraitFactory.create(source_dataset__source_study_version=old_study_version)
+        current_tagged_trait = factories.TaggedTraitFactory.create(trait=current_trait, tag=self.tag)
+        old_tagged_trait = factories.TaggedTraitFactory.create(trait=old_trait, tag=self.tag)
+        response = self.client.get(self.get_url(self.tag.pk))
+        context = response.context
+        self.assertEqual(context['study_counts'][0]['study_pk'], study.pk)
+        self.assertEqual(context['study_counts'][0]['tt_count'], 1)
+
 
 class TagDetailTest(TagDetailTestsMixin, UserLoginTestCase):
 
@@ -200,6 +230,44 @@ class TagListTest(UserLoginTestCase):
         context = response.context
         self.assertTrue('tag_table' in context)
         self.assertIsInstance(context['tag_table'], tables.TagTable)
+
+    def test_no_deprecated_traits(self):
+        """Counts exclude traits tagged from deprecated study versions."""
+        tag = self.tags[0]
+        models.Tag.objects.exclude(pk=tag.pk).delete()
+        study = StudyFactory.create()
+        current_study_version = SourceStudyVersionFactory.create(study=study, i_version=5)
+        old_study_version = SourceStudyVersionFactory.create(study=study, i_version=4, i_is_deprecated=True)
+        current_trait = SourceTraitFactory.create(source_dataset__source_study_version=current_study_version)
+        old_trait = SourceTraitFactory.create(source_dataset__source_study_version=old_study_version)
+        current_tagged_trait = factories.TaggedTraitFactory.create(trait=current_trait, tag=tag)
+        old_tagged_trait = factories.TaggedTraitFactory.create(trait=old_trait, tag=tag)
+        response = self.client.get(self.get_url())
+        context = response.context
+        tag_table = context['tag_table']
+        row = tag_table.rows[0]
+        count = row.get_cell('number_tagged_traits')
+        self.assertEqual(count, 1)
+
+    def test_no_deprecated_traits_with_same_version_number(self):
+        """Counts exclude traits tagged from deprecated study versions even with same version number."""
+        # This directly addresses the unusual CARDIA situation where there are two study versions with the
+        # same version number, one of which is deprecated.
+        tag = self.tags[0]
+        models.Tag.objects.exclude(pk=tag.pk).delete()
+        study = StudyFactory.create()
+        current_study_version = SourceStudyVersionFactory.create(study=study, i_version=5)
+        old_study_version = SourceStudyVersionFactory.create(study=study, i_version=5, i_is_deprecated=True)
+        current_trait = SourceTraitFactory.create(source_dataset__source_study_version=current_study_version)
+        old_trait = SourceTraitFactory.create(source_dataset__source_study_version=old_study_version)
+        current_tagged_trait = factories.TaggedTraitFactory.create(trait=current_trait, tag=tag)
+        old_tagged_trait = factories.TaggedTraitFactory.create(trait=old_trait, tag=tag)
+        response = self.client.get(self.get_url())
+        context = response.context
+        tag_table = context['tag_table']
+        row = tag_table.rows[0]
+        count = row.get_cell('number_tagged_traits')
+        self.assertEqual(count, 1)
 
 
 class TaggedTraitDetailTestsMixin(object):
@@ -1872,6 +1940,38 @@ class TaggedTraitTagCountsByStudyTest(UserLoginTestCase):
         counts = response.context['taggedtrait_tag_counts_by_study']
         self.assertEqual(counts[0][1][0]['tt_count'], 1)
 
+    def test_no_deprecated_traits(self):
+        """Counts exclude traits tagged from deprecated study versions."""
+        tag = factories.TagFactory.create()
+        study = StudyFactory.create()
+        current_study_version = SourceStudyVersionFactory.create(study=study, i_version=5)
+        old_study_version = SourceStudyVersionFactory.create(study=study, i_version=4, i_is_deprecated=True)
+        current_trait = SourceTraitFactory.create(source_dataset__source_study_version=current_study_version)
+        old_trait = SourceTraitFactory.create(source_dataset__source_study_version=old_study_version)
+        current_tagged_trait = factories.TaggedTraitFactory.create(trait=current_trait, tag=tag)
+        old_tagged_trait = factories.TaggedTraitFactory.create(trait=old_trait, tag=tag)
+        response = self.client.get(self.get_url())
+        context = response.context
+        counts = response.context['taggedtrait_tag_counts_by_study']
+        self.assertEqual(counts[0][1][0]['tt_count'], 1)
+
+    def test_no_deprecated_traits_with_same_version_number(self):
+        """Counts exclude traits tagged from deprecated study versions even with same version number."""
+        # This directly addresses the unusual CARDIA situation where there are two study versions with the
+        # same version number, one of which is deprecated.
+        tag = factories.TagFactory.create()
+        study = StudyFactory.create()
+        current_study_version = SourceStudyVersionFactory.create(study=study, i_version=5)
+        old_study_version = SourceStudyVersionFactory.create(study=study, i_version=5, i_is_deprecated=True)
+        current_trait = SourceTraitFactory.create(source_dataset__source_study_version=current_study_version)
+        old_trait = SourceTraitFactory.create(source_dataset__source_study_version=old_study_version)
+        current_tagged_trait = factories.TaggedTraitFactory.create(trait=current_trait, tag=tag)
+        old_tagged_trait = factories.TaggedTraitFactory.create(trait=old_trait, tag=tag)
+        response = self.client.get(self.get_url())
+        context = response.context
+        counts = response.context['taggedtrait_tag_counts_by_study']
+        self.assertEqual(counts[0][1][0]['tt_count'], 1)
+
 
 class TaggedTraitStudyCountsByTagTest(UserLoginTestCase):
 
@@ -1924,6 +2024,38 @@ class TaggedTraitStudyCountsByTagTest(UserLoginTestCase):
         non_archived_tagged_trait = factories.TaggedTraitFactory.create(
             tag=self.tag, trait__source_dataset__source_study_version__study=study, archived=False)
         response = self.client.get(self.get_url())
+        counts = response.context['taggedtrait_study_counts_by_tag']
+        self.assertEqual(counts[0][1][0]['tt_count'], 1)
+
+    def test_no_deprecated_traits(self):
+        """Counts exclude traits tagged from deprecated study versions."""
+        tag = factories.TagFactory.create()
+        study = StudyFactory.create()
+        current_study_version = SourceStudyVersionFactory.create(study=study, i_version=5)
+        old_study_version = SourceStudyVersionFactory.create(study=study, i_version=4, i_is_deprecated=True)
+        current_trait = SourceTraitFactory.create(source_dataset__source_study_version=current_study_version)
+        old_trait = SourceTraitFactory.create(source_dataset__source_study_version=old_study_version)
+        current_tagged_trait = factories.TaggedTraitFactory.create(trait=current_trait, tag=tag)
+        old_tagged_trait = factories.TaggedTraitFactory.create(trait=old_trait, tag=tag)
+        response = self.client.get(self.get_url())
+        context = response.context
+        counts = response.context['taggedtrait_study_counts_by_tag']
+        self.assertEqual(counts[0][1][0]['tt_count'], 1)
+
+    def test_no_deprecated_traits_with_same_version_number(self):
+        """Counts exclude traits tagged from deprecated study versions even with same version number."""
+        # This directly addresses the unusual CARDIA situation where there are two study versions with the
+        # same version number, one of which is deprecated.
+        tag = factories.TagFactory.create()
+        study = StudyFactory.create()
+        current_study_version = SourceStudyVersionFactory.create(study=study, i_version=5)
+        old_study_version = SourceStudyVersionFactory.create(study=study, i_version=5, i_is_deprecated=True)
+        current_trait = SourceTraitFactory.create(source_dataset__source_study_version=current_study_version)
+        old_trait = SourceTraitFactory.create(source_dataset__source_study_version=old_study_version)
+        current_tagged_trait = factories.TaggedTraitFactory.create(trait=current_trait, tag=tag)
+        old_tagged_trait = factories.TaggedTraitFactory.create(trait=old_trait, tag=tag)
+        response = self.client.get(self.get_url())
+        context = response.context
         counts = response.context['taggedtrait_study_counts_by_tag']
         self.assertEqual(counts[0][1][0]['tt_count'], 1)
 
@@ -1983,6 +2115,38 @@ class TaggedTraitByTagAndStudyListTestsMixin(object):
         response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
         context = response.context
         self.assertNotIn(other_tagged_trait, context['tagged_trait_table'].data)
+
+    def test_no_deprecated_traits(self):
+        """Counts exclude traits tagged from deprecated study versions."""
+        tag = factories.TagFactory.create()
+        study = StudyFactory.create()
+        current_study_version = SourceStudyVersionFactory.create(study=study, i_version=5)
+        old_study_version = SourceStudyVersionFactory.create(study=study, i_version=4, i_is_deprecated=True)
+        current_trait = SourceTraitFactory.create(source_dataset__source_study_version=current_study_version)
+        old_trait = SourceTraitFactory.create(source_dataset__source_study_version=old_study_version)
+        current_tagged_trait = factories.TaggedTraitFactory.create(trait=current_trait, tag=tag)
+        old_tagged_trait = factories.TaggedTraitFactory.create(trait=old_trait, tag=tag)
+        response = self.client.get(self.get_url())
+        context = response.context
+        counts = response.context['taggedtrait_study_counts_by_tag']
+        self.assertEqual(counts[0][1][0]['tt_count'], 1)
+
+    def test_no_deprecated_traits_with_same_version_number(self):
+        """Counts exclude traits tagged from deprecated study versions even with same version number."""
+        # This directly addresses the unusual CARDIA situation where there are two study versions with the
+        # same version number, one of which is deprecated.
+        tag = factories.TagFactory.create()
+        study = StudyFactory.create()
+        current_study_version = SourceStudyVersionFactory.create(study=study, i_version=5)
+        old_study_version = SourceStudyVersionFactory.create(study=study, i_version=5, i_is_deprecated=True)
+        current_trait = SourceTraitFactory.create(source_dataset__source_study_version=current_study_version)
+        old_trait = SourceTraitFactory.create(source_dataset__source_study_version=old_study_version)
+        current_tagged_trait = factories.TaggedTraitFactory.create(trait=current_trait, tag=tag)
+        old_tagged_trait = factories.TaggedTraitFactory.create(trait=old_trait, tag=tag)
+        response = self.client.get(self.get_url())
+        context = response.context
+        counts = response.context['taggedtrait_study_counts_by_tag']
+        self.assertEqual(counts[0][1][0]['tt_count'], 1)
 
 
 class TaggedTraitByTagAndStudyListTest(TaggedTraitByTagAndStudyListTestsMixin, UserLoginTestCase):
