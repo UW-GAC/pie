@@ -2126,10 +2126,9 @@ class TaggedTraitByTagAndStudyListTestsMixin(object):
         old_trait = SourceTraitFactory.create(source_dataset__source_study_version=old_study_version)
         current_tagged_trait = factories.TaggedTraitFactory.create(trait=current_trait, tag=tag)
         old_tagged_trait = factories.TaggedTraitFactory.create(trait=old_trait, tag=tag)
-        response = self.client.get(self.get_url())
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
         context = response.context
-        counts = response.context['taggedtrait_study_counts_by_tag']
-        self.assertEqual(counts[0][1][0]['tt_count'], 1)
+        self.assertNotIn(old_tagged_trait, context['tagged_trait_table'].data)
 
     def test_no_deprecated_traits_with_same_version_number(self):
         """Counts exclude traits tagged from deprecated study versions even with same version number."""
@@ -2143,10 +2142,9 @@ class TaggedTraitByTagAndStudyListTestsMixin(object):
         old_trait = SourceTraitFactory.create(source_dataset__source_study_version=old_study_version)
         current_tagged_trait = factories.TaggedTraitFactory.create(trait=current_trait, tag=tag)
         old_tagged_trait = factories.TaggedTraitFactory.create(trait=old_trait, tag=tag)
-        response = self.client.get(self.get_url())
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
         context = response.context
-        counts = response.context['taggedtrait_study_counts_by_tag']
-        self.assertEqual(counts[0][1][0]['tt_count'], 1)
+        self.assertNotIn(old_tagged_trait, context['tagged_trait_table'].data)
 
 
 class TaggedTraitByTagAndStudyListTest(TaggedTraitByTagAndStudyListTestsMixin, UserLoginTestCase):

@@ -239,7 +239,10 @@ class TaggedTraitByTagAndStudyList(LoginRequiredMixin, SingleTableMixin, ListVie
 
     def get_table_data(self):
         if self.request.user.is_staff:
-            return self.study.get_all_tagged_traits().filter(tag=self.tag).select_related(
+            return self.study.get_all_tagged_traits().filter(
+                tag=self.tag,
+                trait__source_dataset__source_study_version__i_is_deprecated=False
+            ).select_related(
                 'tag',
                 'trait',
                 'trait__source_dataset',
