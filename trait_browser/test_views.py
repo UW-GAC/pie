@@ -2415,6 +2415,38 @@ class StudyTaggedTraitListTest(UserLoginTestCase):
         self.assertEqual(tag_count_row['tt_count'], TaggedTrait.objects.non_archived().count())
         self.assertEqual(tag_count_row['tt_count'], TaggedTrait.objects.all().count() - 1)
 
+    def test_no_deprecated_traits(self):
+        """Counts exclude traits tagged from deprecated study versions."""
+        TaggedTrait.objects.all().delete()
+        tag = TagFactory.create()
+        current_study_version = factories.SourceStudyVersionFactory.create(study=self.study, i_version=5)
+        old_study_version = factories.SourceStudyVersionFactory.create(
+            study=self.study, i_version=4, i_is_deprecated=True)
+        current_trait = factories.SourceTraitFactory.create(source_dataset__source_study_version=current_study_version)
+        old_trait = factories.SourceTraitFactory.create(source_dataset__source_study_version=old_study_version)
+        current_tagged_trait = TaggedTraitFactory.create(trait=current_trait, tag=tag)
+        old_tagged_trait = TaggedTraitFactory.create(trait=old_trait, tag=tag)
+        response = self.client.get(self.get_url(self.study.pk))
+        context = response.context
+        tag_count_row = context['tag_counts'][0]
+        self.assertEqual(tag_count_row['tt_count'], 1)
+
+    def test_no_deprecated_traits_with_same_version_number(self):
+        """Counts exclude traits tagged from deprecated study versions even with same version number."""
+        TaggedTrait.objects.all().delete()
+        tag = TagFactory.create()
+        current_study_version = factories.SourceStudyVersionFactory.create(study=self.study, i_version=5)
+        old_study_version = factories.SourceStudyVersionFactory.create(
+            study=self.study, i_version=current_study_version.i_version, i_is_deprecated=True)
+        current_trait = factories.SourceTraitFactory.create(source_dataset__source_study_version=current_study_version)
+        old_trait = factories.SourceTraitFactory.create(source_dataset__source_study_version=old_study_version)
+        current_tagged_trait = TaggedTraitFactory.create(trait=current_trait, tag=tag)
+        old_tagged_trait = TaggedTraitFactory.create(trait=old_trait, tag=tag)
+        response = self.client.get(self.get_url(self.study.pk))
+        context = response.context
+        tag_count_row = context['tag_counts'][0]
+        self.assertEqual(tag_count_row['tt_count'], 1)
+
 
 class PhenotypeTaggerSourceTraitTaggingTest(PhenotypeTaggerLoginTestCase):
 
