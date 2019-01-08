@@ -3,6 +3,8 @@
 from django.test import TestCase
 from django.urls import reverse
 
+from trait_browser.factories import StudyFactory, SourceStudyVersionFactory, SourceTraitFactory
+
 from . import factories
 from . import models
 from . import tables
@@ -26,6 +28,34 @@ class TagTableTest(TestCase):
         tag = self.tags[0]
         archived_tagged_trait = factories.TaggedTraitFactory.create(tag=tag, archived=True)
         non_archived_tagged_trait = factories.TaggedTraitFactory.create(tag=tag, archived=False)
+        table = self.table_class(self.tags)
+        row = table.rows[0]
+        self.assertEqual(row.get_cell('number_tagged_traits'), 1)
+
+    def test_tagged_count_excludes_deprecated_tagged_trait(self):
+        """Number in column for tagged trait count does not include deprecated tagged trait."""
+        tag = self.tags[0]
+        study = StudyFactory.create()
+        current_study_version = SourceStudyVersionFactory.create(study=study, i_version=5)
+        old_study_version = SourceStudyVersionFactory.create(study=study, i_version=4, i_is_deprecated=True)
+        current_trait = SourceTraitFactory.create(source_dataset__source_study_version=current_study_version)
+        old_trait = SourceTraitFactory.create(source_dataset__source_study_version=old_study_version)
+        current_tagged_trait = factories.TaggedTraitFactory.create(trait=current_trait, tag=tag)
+        old_tagged_trait = factories.TaggedTraitFactory.create(trait=old_trait, tag=tag)
+        table = self.table_class(self.tags)
+        row = table.rows[0]
+        self.assertEqual(row.get_cell('number_tagged_traits'), 1)
+
+    def test_tagged_count_excludes_deprecated_tagged_trait_with_same_version_number(self):
+        """Tagged trait count excludes tagged traits from deprecated study version, even with same version number."""
+        tag = self.tags[0]
+        study = StudyFactory.create()
+        current_study_version = SourceStudyVersionFactory.create(study=study, i_version=5)
+        old_study_version = SourceStudyVersionFactory.create(study=study, i_version=5, i_is_deprecated=True)
+        current_trait = SourceTraitFactory.create(source_dataset__source_study_version=current_study_version)
+        old_trait = SourceTraitFactory.create(source_dataset__source_study_version=old_study_version)
+        current_tagged_trait = factories.TaggedTraitFactory.create(trait=current_trait, tag=tag)
+        old_tagged_trait = factories.TaggedTraitFactory.create(trait=old_trait, tag=tag)
         table = self.table_class(self.tags)
         row = table.rows[0]
         self.assertEqual(row.get_cell('number_tagged_traits'), 1)

@@ -69,7 +69,10 @@ class TagDetail(LoginRequiredMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super(TagDetail, self).get_context_data(**kwargs)
-        study_counts = models.TaggedTrait.objects.non_archived().filter(tag=self.object).values(
+        study_counts = models.TaggedTrait.objects.non_archived().filter(
+            tag=self.object,
+            trait__source_dataset__source_study_version__i_is_deprecated=False
+        ).values(
             study_name=F('trait__source_dataset__source_study_version__study__i_study_name'),
             study_pk=F('trait__source_dataset__source_study_version__study__pk')
         ).annotate(
@@ -183,7 +186,9 @@ class TaggedTraitTagCountsByStudy(LoginRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super(TaggedTraitTagCountsByStudy, self).get_context_data(**kwargs)
-        annotated_studies = models.TaggedTrait.objects.non_archived().values(
+        annotated_studies = models.TaggedTrait.objects.non_archived().filter(
+            trait__source_dataset__source_study_version__i_is_deprecated=False
+        ).values(
             study_name=F('trait__source_dataset__source_study_version__study__i_study_name'),
             study_pk=F('trait__source_dataset__source_study_version__study__pk'),
             tag_name=F('tag__title'),
@@ -204,7 +209,9 @@ class TaggedTraitStudyCountsByTag(LoginRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super(TaggedTraitStudyCountsByTag, self).get_context_data(**kwargs)
-        annotated_tags = models.TaggedTrait.objects.non_archived().values(
+        annotated_tags = models.TaggedTrait.objects.non_archived().filter(
+            trait__source_dataset__source_study_version__i_is_deprecated=False
+        ).values(
             study_name=F('trait__source_dataset__source_study_version__study__i_study_name'),
             study_pk=F('trait__source_dataset__source_study_version__study__pk'),
             tag_name=F('tag__title'),
@@ -232,7 +239,10 @@ class TaggedTraitByTagAndStudyList(LoginRequiredMixin, SingleTableMixin, ListVie
 
     def get_table_data(self):
         if self.request.user.is_staff:
-            return self.study.get_all_tagged_traits().filter(tag=self.tag).select_related(
+            return self.study.get_all_tagged_traits().filter(
+                tag=self.tag,
+                trait__source_dataset__source_study_version__i_is_deprecated=False
+            ).select_related(
                 'tag',
                 'trait',
                 'trait__source_dataset',

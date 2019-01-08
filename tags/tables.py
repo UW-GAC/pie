@@ -47,7 +47,7 @@ class TagTable(tables.Table):
 
     title = tables.LinkColumn('tags:tag:detail', args=[tables.utils.A('pk')], verbose_name='Tag')
     number_tagged_traits = tables.Column(
-        accessor='non_archived_traits.count', verbose_name='Number of tagged study variables', orderable=False)
+        empty_values=(), verbose_name='Number of tagged study variables', orderable=False)
     # TODO: Add column for the number of studies tagged.
 
     class Meta:
@@ -56,6 +56,12 @@ class TagTable(tables.Table):
         attrs = {'class': 'table table-striped table-bordered table-hover'}
         template = 'django_tables2/bootstrap-responsive.html'
         order_by = ('title', )
+
+    def render_number_tagged_traits(self, record):
+        """Render column with the count of non-archived non-deprecated tagged traits for each tag."""
+        tagged_traits = record.non_archived_traits.filter(
+            source_dataset__source_study_version__i_is_deprecated=False)
+        return tagged_traits.count()
 
 
 class TaggedTraitTable(tables.Table):
