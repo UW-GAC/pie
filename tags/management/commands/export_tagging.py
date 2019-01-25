@@ -61,15 +61,17 @@ class Command(BaseCommand):
     def _get_formatted_path_and_make_directory(self, input_path):
         """Creates an output directory and returns formatted paths and filenames."""
         current_date = datetime.datetime.now().strftime('%Y-%m-%d_%H%M')
-        output_dir = input_path + '{}_TOPMed_variable_tagging_data/'.format(current_date)
-        os.makedirs(os.path.dirname(output_dir), exist_ok=True)
+        output_dir = input_path + '/{}_TOPMed_variable_tagging_data/'.format(current_date)
+        os.makedirs(os.path.dirname(output_dir))
         output_prefix = output_dir + current_date
+        prefix = 'TOPMed_DCC'
         files = {
             'output_directory': output_dir,
-            'tagged_traits_file': current_date + '_tagged_variables.txt',
-            'tagged_traits_data_dictionary_file': current_date + '_tagged_variables_data_dictionary.txt',
-            'tags_dump_file': current_date + '_TOPMed_DCC_tags.json',
-            'tags_dump_data_dictionary_file': current_date + '_TOPMed_DCC_tags_data_dictionary.json',
+            'tagged_traits_file': '_'.join([current_date, prefix, 'tagged_variables.txt']),
+            'tagged_traits_data_dictionary_file': '_'.join([current_date, prefix,
+                                                            'tagged_variables_data_dictionary.txt']),
+            'tags_dump_file': '_'.join([current_date, prefix, 'tags.json']),
+            'tags_dump_data_dictionary_file': '_'.join([current_date, prefix, 'tags_data_dictionary.txt']),
             'readme_file': 'README.md'
         }
         return files
@@ -79,22 +81,22 @@ class Command(BaseCommand):
         dump_file = open(dump_fn, 'w')
         management.call_command('dumpdata', '--indent=4', 'tags.tag', stdout=dump_file)
         dump_file.close()
-        print('Saved tag dump to', dump_fn)
+        return dump_fn
 
     def _make_tags_dump_data_dictionary_file(self, files):
         dump_DD_fn = files['output_directory'] + files['tags_dump_data_dictionary_file']
         dump_DD_file = open(dump_DD_fn, 'w')
-        dump_DD_file.write('element_name \telement_description\n')
-        dump_DD_file.write(' \n'.join([' \t'.join(el) for el in TAGS_JSON_FIELDS]))
+        dump_DD_file.write('element_name\telement_description\n')
+        dump_DD_file.write('\n'.join(['\t'.join(el) for el in TAGS_JSON_FIELDS]))
         dump_DD_file.close()
-        print('Saved tag dump data dictionary to', dump_DD_fn)
+        return dump_DD_fn
 
-    def _get_tagged_trait_data(self, study_pk=None, non_archived=True, current=True):
-        if not non_archived:
+    def _get_tagged_trait_data(self, study_pk=None, include_archived=False, include_deprecated=False):
+        if include_archived:
             q = TaggedTrait.objects.all()
         else:
             q = TaggedTrait.objects.non_archived()
-        if current:
+        if not include_deprecated:
             q = q.exclude(trait__source_dataset__source_study_version__i_is_deprecated=True)
         if study_pk is not None:
                 filter_study = Study.objects.get(pk=study_pk)
@@ -108,25 +110,24 @@ class Command(BaseCommand):
 
     def _make_tagged_trait_file(self, files, tagged_traits):
         formatted_taggedtrait_output = []
-        formatted_taggedtrait_output.append(' \t'.join(TAGGED_TRAIT_COLUMN_NAMES))
+        formatted_taggedtrait_output.append('\t'.join(TAGGED_TRAIT_COLUMN_NAMES))
         tagged_traits = ['\t'.join([str(el) for el in row]) for row in tagged_traits]
         formatted_taggedtrait_output.extend(tagged_traits)
         mapping_fn = files['output_directory'] + files['tagged_traits_file']
         mapping_file = open(mapping_fn, 'w')
-        mapping_file.write(' \n'.join(formatted_taggedtrait_output))
+        mapping_file.write('\n'.join(formatted_taggedtrait_output))
         mapping_file.close()
-        print('Saved tag-variable mapping data to', mapping_fn)
+        return mapping_fn
 
     def _make_tagged_trait_data_dictionary_file(self, files):
         mapping_DD_fn = files['output_directory'] + files['tagged_traits_data_dictionary_file']
         mapping_DD_file = open(mapping_DD_fn, 'w')
-        mapping_DD_file.write('column_name \tcolumn_description\n')
-        mapping_DD_file.write(' \n'.join([' \t'.join(el[:2]) for el in TAGGED_TRAIT_COLUMNS]))
+        mapping_DD_file.write('column_name\tcolumn_description\n')
+        mapping_DD_file.write('\n'.join(['\t'.join(el[:2]) for el in TAGGED_TRAIT_COLUMNS]))
         mapping_DD_file.close()
-        print('Saved tag-variable mapping data dictionary to', mapping_DD_fn)
+        return mapping_DD_fn
 
     def _make_readme_file(self, files, release_notes=None):
-        print(os.getcwd())
         if release_notes is not None:
             with open(release_notes, 'r') as rnf:
                 release_notes_text = rnf.read()
@@ -146,16 +147,19 @@ class Command(BaseCommand):
             )
         )
         readme_file.close()
-        print('Saved README file to', readme_fn)
+        return readme_fn
 
     def _compress_directory(self, files):
-        # tar and gzip the directory
+        """Create a .tar.gz compressed version of the output directory."""
         tar_fn_root = os.path.split(files['output_directory'])[0]
-        split_output_dir = os.path.split(os.path.split(files['output_directory'])[0])
-        tar_command = ['tar', '-zcvf', '{}.tar.gz'.format(tar_fn_root),
-                       '--directory={}'.format(split_output_dir[0]), split_output_dir[1]]
+        tar_gz_fn = tar_fn_root + '.tar.gz'
+        split_output_dir = os.path.split(tar_fn_root)
+        input_path = split_output_dir[0]
+        output_package_dir = split_output_dir[1]
+        tar_command = ['tar', '-zcvf', tar_gz_fn, '--directory={}'.format(input_path), output_package_dir]
         print(' '.join(tar_command))
         check_call(tar_command)
+        return tar_gz_fn
 
     def add_arguments(self, parser):
         parser.add_argument('output_path', action='store', type=str, default=None,
