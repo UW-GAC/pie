@@ -1,5 +1,6 @@
 """Test the export_tagging management command."""
 
+import datetime
 from faker import Faker
 import json
 import os
@@ -18,21 +19,32 @@ fake = Faker()
 cmd = Command()
 
 
+class GetDateStampTest(TestCase):
+
+    def test_returns_valid_date(self):
+        """The datetime stamp can be converted back into a datetime object, and back again."""
+        stamp = cmd._get_date_stamp()
+        converted = datetime.datetime.strptime(stamp, '%Y-%m-%d_%H%M')
+        self.assertEqual(stamp, converted.strftime('%Y-%m-%d_%H%M'))
+
+
 class GetFormattedPathAndMakeDirectoryTest(TestCase):
 
     def test_creates_directory(self):
         """The expected directory is created."""
         tmpdir = TemporaryDirectory()
-        files = cmd._get_formatted_path_and_make_directory(tmpdir.name)
-        self.assertTrue(os.path.exists(files['output_directory']))
-        self.assertTrue(os.path.isdir(files['output_directory']))
+        date = cmd._get_date_stamp()
+        output_dir = cmd._make_output_directory(tmpdir.name, date)
+        self.assertTrue(os.path.exists(output_dir))
+        self.assertTrue(os.path.isdir(output_dir))
 
     def test_fails_in_same_minute(self):
         """Minute-precise timestamp in name prevents creating a directory within the same minute."""
         tmpdir = TemporaryDirectory()
-        files = cmd._get_formatted_path_and_make_directory(tmpdir.name)
+        date = cmd._get_date_stamp()
+        output_dir = cmd._make_output_directory(tmpdir.name, date)
         with self.assertRaises(OSError):
-            files2 = cmd._get_formatted_path_and_make_directory(tmpdir.name)
+            output_dir2 = cmd._make_output_directory(tmpdir.name, date)
 
 
 class DumpTagsJsonTest(TestCase):
@@ -40,16 +52,18 @@ class DumpTagsJsonTest(TestCase):
     def test_creates_json_file(self):
         """The expected file is created."""
         tmpdir = TemporaryDirectory()
-        files = cmd._get_formatted_path_and_make_directory(tmpdir.name)
-        json_file = cmd._dump_tags_json(files)
+        date = cmd._get_date_stamp()
+        output_dir = cmd._make_output_directory(tmpdir.name, date)
+        json_file = cmd._dump_tags_json(output_dir, date)
         self.assertTrue(os.path.exists(json_file))
 
     def test_file_contains_tag(self):
         """The json dump file contains one expected tag."""
         tag = factories.TagFactory.create()
         tmpdir = TemporaryDirectory()
-        files = cmd._get_formatted_path_and_make_directory(tmpdir.name)
-        json_file = cmd._dump_tags_json(files)
+        date = cmd._get_date_stamp()
+        output_dir = cmd._make_output_directory(tmpdir.name, date)
+        json_file = cmd._dump_tags_json(output_dir, date)
         with open(json_file) as f:
             tags = json.loads(f.read())
         self.assertEqual(tags[0]['pk'], tag.pk)
@@ -61,20 +75,23 @@ class MakeTagsDumpDataDictionaryFileTest(TestCase):
     def test_creates_file(self):
         """The expected file is created."""
         tmpdir = TemporaryDirectory()
-        files = cmd._get_formatted_path_and_make_directory(tmpdir.name)
-        json_dd_file = cmd._make_tags_dump_data_dictionary_file(files)
+        date = cmd._get_date_stamp()
+        output_dir = cmd._make_output_directory(tmpdir.name, date)
+        json_file = os.path.join(output_dir, 'test_tags_dump.json')
+        json_dd_file = cmd._make_tags_dump_data_dictionary_file(json_file)
         self.assertTrue(os.path.exists(json_dd_file))
 
     def test_dump_data_dictionary_contains_all_json_field_names(self):
         """The data dictionary for the json tags dump contains all field names."""
         tag = factories.TagFactory.create()
         tmpdir = TemporaryDirectory()
-        files = cmd._get_formatted_path_and_make_directory(tmpdir.name)
-        json_file = cmd._dump_tags_json(files)
+        date = cmd._get_date_stamp()
+        output_dir = cmd._make_output_directory(tmpdir.name, date)
+        json_file = cmd._dump_tags_json(output_dir, date)
+        json_dd_file = cmd._make_tags_dump_data_dictionary_file(json_file)
+        # Find all of the keys that should be defined in the data dictionary.
         with open(json_file) as f:
             tags = json.loads(f.read())
-        json_dd_file = cmd._make_tags_dump_data_dictionary_file(files)
-        # Find all of the keys that should be defined in the data dictionary.
         all_keys = []
         for key in tags[0]:
             all_keys.append(key)
@@ -181,18 +198,20 @@ class MakeTaggedTraitFileTest(TestCase):
     def test_creates_file(self):
         """The expected file is created."""
         tmpdir = TemporaryDirectory()
-        files = cmd._get_formatted_path_and_make_directory(tmpdir.name)
-        data = cmd._get_tagged_trait_data()
-        tagged_traits_file = cmd._make_tagged_trait_file(files, data)
+        date = cmd._get_date_stamp()
+        output_dir = cmd._make_output_directory(tmpdir.name, date)
+        data = []
+        tagged_traits_file = cmd._make_tagged_trait_file(output_dir, date, data)
         self.assertTrue(os.path.exists(tagged_traits_file))
 
     def test_file_length_with_tagged_traits(self):
         """The output file contains the right number of lines."""
         tmpdir = TemporaryDirectory()
-        files = cmd._get_formatted_path_and_make_directory(tmpdir.name)
+        date = cmd._get_date_stamp()
+        output_dir = cmd._make_output_directory(tmpdir.name, date)
         tagged_traits = factories.TaggedTraitFactory.create_batch(20)
         data = cmd._get_tagged_trait_data()
-        tagged_traits_file = cmd._make_tagged_trait_file(files, data)
+        tagged_traits_file = cmd._make_tagged_trait_file(output_dir, date, data)
         with open(tagged_traits_file, 'r') as f:
             content = f.readlines()
         self.assertEqual(len(content), models.TaggedTrait.objects.count() + 1)
@@ -200,9 +219,10 @@ class MakeTaggedTraitFileTest(TestCase):
     def test_file_length_with_no_tagged_traits(self):
         """The output file contains no data lines when there are no tagged traits."""
         tmpdir = TemporaryDirectory()
-        files = cmd._get_formatted_path_and_make_directory(tmpdir.name)
+        date = cmd._get_date_stamp()
+        output_dir = cmd._make_output_directory(tmpdir.name, date)
         data = cmd._get_tagged_trait_data()
-        tagged_traits_file = cmd._make_tagged_trait_file(files, data)
+        tagged_traits_file = cmd._make_tagged_trait_file(output_dir, date, data)
         with open(tagged_traits_file, 'r') as f:
             content = f.readlines()
         self.assertEqual(len(content), 1)
@@ -213,18 +233,22 @@ class MakeTaggedTraitDataDictionaryFileTest(TestCase):
     def test_creates_file(self):
         """The expected file is created."""
         tmpdir = TemporaryDirectory()
-        files = cmd._get_formatted_path_and_make_directory(tmpdir.name)
-        tt_dd_file = cmd._make_tagged_trait_data_dictionary_file(files)
+        date = cmd._get_date_stamp()
+        output_dir = cmd._make_output_directory(tmpdir.name, date)
+        data = cmd._get_tagged_trait_data()
+        tagged_traits_file = cmd._make_tagged_trait_file(output_dir, date, data)
+        tt_dd_file = cmd._make_tagged_trait_data_dictionary_file(tagged_traits_file)
         self.assertTrue(os.path.exists(tt_dd_file))
 
     def test_tagged_trait_data_dictionary_fields_match_columns_of_tagged_trait_file(self):
         """The data dictionary for the tagged traits file contains all column names."""
         tagged_traits = factories.TaggedTraitFactory.create_batch(2)
         tmpdir = TemporaryDirectory()
-        files = cmd._get_formatted_path_and_make_directory(tmpdir.name)
+        date = cmd._get_date_stamp()
+        output_dir = cmd._make_output_directory(tmpdir.name, date)
         data = cmd._get_tagged_trait_data()
-        tagged_traits_file = cmd._make_tagged_trait_file(files, data)
-        tt_dd_file = cmd._make_tagged_trait_data_dictionary_file(files)
+        tagged_traits_file = cmd._make_tagged_trait_file(output_dir, date, data)
+        tt_dd_file = cmd._make_tagged_trait_data_dictionary_file(tagged_traits_file)
         with open(tt_dd_file, 'r') as f:
             dd_lines = [line.strip().split('\t') for line in f.readlines()]
         dd_fields = [line[0] for line in dd_lines]
@@ -242,8 +266,13 @@ class MakeReadmeFileTest(TestCase):
     def test_creates_file(self):
         """The expected readme file is created."""
         tmpdir = TemporaryDirectory()
-        files = cmd._get_formatted_path_and_make_directory(tmpdir.name)
-        readme_file = cmd._make_readme_file(files)
+        date = cmd._get_date_stamp()
+        output_dir = cmd._make_output_directory(tmpdir.name, date)
+        readme_file = cmd._make_readme_file(output_dir=output_dir,
+                                            dump_fn='tags_file.json',
+                                            dump_dd_fn='tags_file_dd.txt',
+                                            tagged_trait_fn='tagged_traits_file.txt',
+                                            tagged_trait_dd_fn='tagged_traits_file_dd.txt')
         self.assertTrue(os.path.exists(readme_file))
 
     def test_readme_contains_release_notes(self):
@@ -257,8 +286,14 @@ class MakeReadmeFileTest(TestCase):
         tmpfile.close()
         # Now make the readme file and read it in.
         tmpdir = TemporaryDirectory()
-        files = cmd._get_formatted_path_and_make_directory(tmpdir.name)
-        readme_file = cmd._make_readme_file(files, release_notes=tmpfile.name)
+        date = cmd._get_date_stamp()
+        output_dir = cmd._make_output_directory(tmpdir.name, date)
+        readme_file = cmd._make_readme_file(output_dir=output_dir,
+                                            dump_fn='tags_file.json',
+                                            dump_dd_fn='tags_file_dd.txt',
+                                            tagged_trait_fn='tagged_traits_file.txt',
+                                            tagged_trait_dd_fn='tagged_traits_file_dd.txt',
+                                            release_notes=tmpfile.name)
         with open(readme_file, 'r') as f:
             readme_contents = f.read()
         self.assertIn(release_notes_text.decode('utf-8'), readme_contents)
@@ -267,14 +302,23 @@ class MakeReadmeFileTest(TestCase):
     def test_readme_contains_file_names(self):
         """The names of the expected files are found in the readme file."""
         tmpdir = TemporaryDirectory()
-        files = cmd._get_formatted_path_and_make_directory(tmpdir.name)
-        readme_file = cmd._make_readme_file(files)
+        date = cmd._get_date_stamp()
+        output_dir = cmd._make_output_directory(tmpdir.name, date)
+        dump_fn = 'tags_file.json'
+        dump_dd_fn = 'tags_file_dd.txt'
+        tagged_trait_fn = 'tagged_traits_file.txt'
+        tagged_trait_dd_fn = 'tagged_traits_file_dd.txt'
+        readme_file = cmd._make_readme_file(output_dir=output_dir,
+                                            dump_fn=dump_fn,
+                                            dump_dd_fn=dump_dd_fn,
+                                            tagged_trait_fn=tagged_trait_fn,
+                                            tagged_trait_dd_fn=tagged_trait_dd_fn)
         with open(readme_file, 'r') as f:
             readme_contents = f.read()
-        self.assertIn(files['tags_dump_file'], readme_contents)
-        self.assertIn(files['tags_dump_data_dictionary_file'], readme_contents)
-        self.assertIn(files['tagged_traits_file'], readme_contents)
-        self.assertIn(files['tagged_traits_data_dictionary_file'], readme_contents)
+        self.assertIn(dump_fn, readme_contents)
+        self.assertIn(dump_dd_fn, readme_contents)
+        self.assertIn(tagged_trait_fn, readme_contents)
+        self.assertIn(tagged_trait_dd_fn, readme_contents)
 
 
 class CompressDirectoryTest(TestCase):
@@ -282,8 +326,9 @@ class CompressDirectoryTest(TestCase):
     def test_creates_file(self):
         """The expected .tar.gz file is created."""
         tmpdir = TemporaryDirectory()
-        files = cmd._get_formatted_path_and_make_directory(tmpdir.name)
-        expected_tar_gz_file = cmd._compress_directory(files)
+        date = cmd._get_date_stamp()
+        output_dir = cmd._make_output_directory(tmpdir.name, date)
+        expected_tar_gz_file = cmd._compress_directory(tmpdir.name, output_dir)
         self.assertTrue(os.path.exists(expected_tar_gz_file))
 
 
