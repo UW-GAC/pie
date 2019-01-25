@@ -70,8 +70,8 @@ class Command(BaseCommand):
             input_path: str; input value of the path where an output results directory should be created
             date: str; the formatted datetime stamp from _get_date_stamp
         """
-        output_dir = os.path.join(os.path.abspath(input_path), '{}_TOPMed_variable_tagging_data/'.format(date))
-        os.makedirs(os.path.dirname(output_dir))
+        output_dir = os.path.join(os.path.abspath(input_path), '{}_TOPMed_variable_tagging_data'.format(date))
+        os.makedirs(output_dir)
         return output_dir
 
     def _dump_tags_json(self, output_dir, date):
@@ -194,8 +194,8 @@ class Command(BaseCommand):
             input_path: str; input value of the path where an output results directory should be created
             output_dir: str; path of the directory where output files should be saved
         """
-        tar_gz_fn = output_dir.rstrip('/') + '.tar.gz'
-        output_package_dir = os.path.split(os.path.split(output_dir)[0])[1]
+        tar_gz_fn = output_dir + '.tar.gz'
+        output_package_dir = os.path.basename(output_dir)
         tar_command = ['tar', '-zcvf', tar_gz_fn, '--directory={}'.format(input_path), output_package_dir]
         print(' '.join(tar_command))
         check_call(tar_command)
