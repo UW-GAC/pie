@@ -28,7 +28,7 @@ class GetDateStampTest(TestCase):
         self.assertEqual(stamp, converted.strftime('%Y-%m-%d_%H%M'))
 
 
-class GetFormattedPathAndMakeDirectoryTest(TestCase):
+class MakeOutputDirectoryTest(TestCase):
 
     def test_creates_directory(self):
         """The expected directory is created."""
