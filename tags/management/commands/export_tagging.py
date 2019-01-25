@@ -2,8 +2,10 @@
 
 
 import datetime
+import logging
 import os
-from subprocess import check_call
+from sys import stdout
+from subprocess import check_output, STDOUT
 
 from django.core.management.base import BaseCommand
 from django.core import management
@@ -11,6 +13,13 @@ from django.core import management
 from tags.models import TaggedTrait
 from trait_browser.models import Study
 
+
+# Set up a logger to handle messages based on verbosity setting.
+logger = logging.getLogger(__name__)
+console_handler = logging.StreamHandler(stdout)
+detail_formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+console_handler.setFormatter(detail_formatter)
+logger.addHandler(console_handler)
 
 TAGS_JSON_FIELDS = (
     ('model', 'indicates this is part of the "tags.tag" model, an artifact of the data export process'),
@@ -72,6 +81,7 @@ class Command(BaseCommand):
         """
         output_dir = os.path.join(os.path.abspath(input_path), '{}_TOPMed_variable_tagging_data'.format(date))
         os.makedirs(output_dir)
+        logger.debug('Created output directory {}'.format(output_dir))
         return output_dir
 
     def _dump_tags_json(self, output_dir, date):
@@ -85,6 +95,7 @@ class Command(BaseCommand):
         dump_file = open(dump_fn, 'w')
         management.call_command('dumpdata', '--indent=4', 'tags.tag', stdout=dump_file)
         dump_file.close()
+        logger.debug('Created json-formatted tags dump file {}'.format(dump_fn))
         return dump_fn
 
     def _make_tags_dump_data_dictionary_file(self, dump_fn):
@@ -98,6 +109,7 @@ class Command(BaseCommand):
         dump_dd_file.write('element_name\telement_description\n')
         dump_dd_file.write('\n'.join(['\t'.join(el) for el in TAGS_JSON_FIELDS]))
         dump_dd_file.close()
+        logger.debug('Created data dictionary for tags dump file {}'.format(dump_dd_fn))
         return dump_dd_fn
 
     def _get_tagged_trait_data(self, study_pk=None, include_archived=False, include_deprecated=False):
@@ -110,13 +122,17 @@ class Command(BaseCommand):
         """
         if include_archived:
             q = TaggedTrait.objects.all()
+            logger.debug('Including archived tagged traits...')
         else:
             q = TaggedTrait.objects.non_archived()
         if not include_deprecated:
             q = q.exclude(trait__source_dataset__source_study_version__i_is_deprecated=True)
+        else:
+            logger.debug('Including tagged traits from deprecated study versions...')
         if study_pk is not None:
                 filter_study = Study.objects.get(pk=study_pk)
                 q = q.filter(trait__source_dataset__source_study_version__study=filter_study)
+                logger.debug('Filtering to a single study: {}...'.format(filter_study))
         return q.select_related(
             'trait',
             'trait__source_dataset',
@@ -139,6 +155,7 @@ class Command(BaseCommand):
         tagged_trait_file = open(tagged_trait_fn, 'w')
         tagged_trait_file.write('\n'.join(formatted_taggedtrait_output))
         tagged_trait_file.close()
+        logger.debug('Created tab-delimited tagged traits data file {}'.format(tagged_trait_fn))
         return tagged_trait_fn
 
     def _make_tagged_trait_data_dictionary_file(self, tagged_trait_fn):
@@ -152,6 +169,7 @@ class Command(BaseCommand):
         mapping_dd_file.write('column_name\tcolumn_description\n')
         mapping_dd_file.write('\n'.join(['\t'.join(el[:2]) for el in TAGGED_TRAIT_COLUMNS]))
         mapping_dd_file.close()
+        logger.debug('Created data dictionary for tagged traits data file {}'.format(mapping_dd_fn))
         return mapping_dd_fn
 
     def _make_readme_file(self, output_dir, dump_fn, dump_dd_fn, tagged_trait_fn, tagged_trait_dd_fn,
@@ -185,6 +203,7 @@ class Command(BaseCommand):
             )
         )
         readme_file.close()
+        logger.debug('Created README file')
         return readme_fn
 
     def _compress_directory(self, input_path, output_dir):
@@ -197,8 +216,10 @@ class Command(BaseCommand):
         tar_gz_fn = output_dir + '.tar.gz'
         output_package_dir = os.path.basename(output_dir)
         tar_command = ['tar', '-zcvf', tar_gz_fn, '--directory={}'.format(input_path), output_package_dir]
-        print(' '.join(tar_command))
-        check_call(tar_command)
+        logger.debug('Running tar command:\n' + ' '.join(tar_command))
+        tar_output = check_output(tar_command, stderr=STDOUT)
+        logger.debug(tar_output.decode('utf-8'))
+        logger.debug('Created compressed data package {}'.format(tar_gz_fn))
         return tar_gz_fn
 
     def add_arguments(self, parser):
@@ -218,6 +239,16 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         """Create a package (compressed and uncompressed) of the tagging data."""
+        # Set the logger level based on verbosity setting.
+        verbosity = options.get('verbosity')
+        if verbosity == 0:
+            logger.setLevel(logging.ERROR)
+        elif verbosity == 1:
+            logger.setLevel(logging.WARNING)
+        elif verbosity == 2:
+            logger.setLevel(logging.INFO)
+        elif verbosity == 3:
+            logger.setLevel(logging.DEBUG)
         # Make output directory
         dir_option = options.get('output_path')
         date = self._get_date_stamp()
