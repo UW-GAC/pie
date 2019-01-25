@@ -60,16 +60,27 @@ PREFIX = 'TOPMed_DCC'
 class Command(BaseCommand):
 
     def _get_date_stamp(self):
-        """."""
+        """Return a formatted datetime stamp for use in file names."""
         return datetime.datetime.now().strftime('%Y-%m-%d_%H%M')
 
     def _make_output_directory(self, input_path, date):
-        """."""
+        """Create the directory that will contain output files.
+
+        Arguments:
+            input_path: str; input value of the path where an output results directory should be created
+            date: str; the formatted datetime stamp from _get_date_stamp
+        """
         output_dir = os.path.join(os.path.abspath(input_path), '{}_TOPMed_variable_tagging_data/'.format(date))
         os.makedirs(os.path.dirname(output_dir))
         return output_dir
 
     def _dump_tags_json(self, output_dir, date):
+        """Create a data dump file of the tags in json format.
+
+        Arguments:
+            output_dir: str; path of the directory where output files should be saved
+            date: str; the formatted datetime stamp from _get_date_stamp
+        """
         dump_fn = os.path.join(output_dir, '_'.join([date, PREFIX, 'tags.json']))
         dump_file = open(dump_fn, 'w')
         management.call_command('dumpdata', '--indent=4', 'tags.tag', stdout=dump_file)
@@ -77,6 +88,11 @@ class Command(BaseCommand):
         return dump_fn
 
     def _make_tags_dump_data_dictionary_file(self, dump_fn):
+        """Create a data dictionary file defining the fields in the tags dump json file.
+
+        Arguments:
+            dump_fn: str; the full path of the json formatted tags dump file the DD corresponds to
+        """
         dump_dd_fn = dump_fn.replace('.json', '_data_dictionary.txt')
         dump_dd_file = open(dump_dd_fn, 'w')
         dump_dd_file.write('element_name\telement_description\n')
@@ -85,6 +101,13 @@ class Command(BaseCommand):
         return dump_dd_fn
 
     def _get_tagged_trait_data(self, study_pk=None, include_archived=False, include_deprecated=False):
+        """Return a nested list of tagged traits according to the given filtersself.
+
+        Arguments:
+            study_pk: int; primary key of a study to filter the tagged traits to
+            include_archived: bool; whether or not to include archived tagged traits
+            include_deprecated: bool; whether or not to include tagged traits from deprecated study versions
+        """
         if include_archived:
             q = TaggedTrait.objects.all()
         else:
@@ -102,6 +125,12 @@ class Command(BaseCommand):
         ).values_list(*TAGGED_TRAIT_VALUES_TO_RETRIEVE)
 
     def _make_tagged_trait_file(self, output_dir, date, tagged_traits):
+        """Create a tab-delimited output file containing tagged trait data.
+
+        Arguments:
+            output_dir: str; path of the directory where output files should be saved
+            date: str; the formatted datetime stamp from _get_date_stamp
+        """
         formatted_taggedtrait_output = []
         formatted_taggedtrait_output.append('\t'.join(TAGGED_TRAIT_COLUMN_NAMES))
         tagged_traits = ['\t'.join([str(el) for el in row]) for row in tagged_traits]
@@ -113,6 +142,11 @@ class Command(BaseCommand):
         return tagged_trait_fn
 
     def _make_tagged_trait_data_dictionary_file(self, tagged_trait_fn):
+        """Create a data dictionary file defining the fields in the tagged traits file.
+
+        Arguments:
+            tagged_trait_fn: str; the full path of the tab-delimited tagged traits file the DD corresponds to
+        """
         mapping_dd_fn = tagged_trait_fn.replace('.txt', '_data_dictionary.txt')
         mapping_dd_file = open(mapping_dd_fn, 'w')
         mapping_dd_file.write('column_name\tcolumn_description\n')
@@ -122,6 +156,16 @@ class Command(BaseCommand):
 
     def _make_readme_file(self, output_dir, dump_fn, dump_dd_fn, tagged_trait_fn, tagged_trait_dd_fn,
                           release_notes=None):
+        """Create a README file based on the template found in README_TEMPLATE.
+
+        Arguments:
+            output_dir: str; path of the directory where output files should be saved
+            dump_fn: str; full path of the tags dump json format file
+            dump_dd_fn: str; full path of the DD for the tags dump json file
+            tagged_trait_fn: str; full path of the tab-delimited tagged traits file
+            tagged_trait_dd_fn: str; full path of the DD for the tagged traits file
+            release_notes: str; full path of a file containing notes to include in the release notes section
+        """
         if release_notes is not None:
             with open(release_notes, 'r') as rnf:
                 release_notes_text = rnf.read()
@@ -144,7 +188,12 @@ class Command(BaseCommand):
         return readme_fn
 
     def _compress_directory(self, input_path, output_dir):
-        """Create a .tar.gz compressed version of the output directory."""
+        """Create a .tar.gz compressed version of the output directory.
+
+        Arguments:
+            input_path: str; input value of the path where an output results directory should be created
+            output_dir: str; path of the directory where output files should be saved
+        """
         tar_gz_fn = output_dir.rstrip('/') + '.tar.gz'
         output_package_dir = os.path.split(os.path.split(output_dir)[0])[1]
         tar_command = ['tar', '-zcvf', tar_gz_fn, '--directory={}'.format(input_path), output_package_dir]
@@ -168,7 +217,7 @@ class Command(BaseCommand):
                             )
 
     def handle(self, *args, **options):
-        """Take command line arguments and increment either major or minor version."""
+        """Create a package (compressed and uncompressed) of the tagging data."""
         # Make output directory
         dir_option = options.get('output_path')
         date = self._get_date_stamp()
