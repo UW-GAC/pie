@@ -73,7 +73,7 @@ class Command(BaseCommand):
     help = 'Import/update data from the source db (topmed_pheno) into the Django models.'
     requires_migrations_checks = True
 
-    def _get_source_db(self, which_db, cnf_path=settings.CNF_PATH):
+    def _get_source_db(self, which_db, cnf_path=settings.CNF_PATH, admin=False):
         """Get a connection to the source phenotype db.
 
         Arguments:
@@ -84,14 +84,16 @@ class Command(BaseCommand):
         Returns:
             a mysql.connector open db connection
         """
-        if which_db is None:
-            raise ValueError(
-                'which_db as passed to _get_source_db MUST be set to a valid value ({} is not valid)'.format(which_db))
-        cnf_group = ['client', 'mysql_topmed_pheno_{}'.format(which_db)]
+        db_group = 'mysql_topmed_pheno_{}'.format(which_db)
+        if admin:
+            if which_db == 'production':
+                raise ValueError('You do not have permission to open an admin connection to production topmed_pheno')
+            elif which_db == 'devel':
+                db_group += '_admin'
+        cnf_group = ['client', db_group]
         source_db = mysql.connector.connect(
             option_files=cnf_path, option_groups=cnf_group, charset='latin1', use_unicode=False, time_zone='+00:00')
         logger.debug('Connected to source db {}'.format(source_db))
-        # TODO add a try/except block here in case the db connection fails.
         return source_db
 
     def _lock_source_db(self, source_db):
@@ -1303,9 +1305,9 @@ class Command(BaseCommand):
     # Methods to actually do the management command.
     def add_arguments(self, parser):
         """Add custom command line arguments to this management command."""
-        parser.add_argument('--which_db', action='store', type=str,
-                            choices=['devel', 'production'], default=None, required=True,
-                            help='Which source database to connect to for retrieving source data.')
+        parser.add_argument('--devel_db', action='store_true',
+                            help="""Import from the devel db.
+                            Without this option, will default to importing from production.""")
         parser.add_argument(
             '--no_backup', action='store_true',
             help="""Do not backup the Django db before running update and import functions. This should only be used
@@ -1350,6 +1352,13 @@ class Command(BaseCommand):
             logger.info('Django db backup completed.')
         else:
             logger.info('No backup of Django db, due to no_backup option.')
+        # Get the appropriate db connection (devel or production).
+        if options.get('devel_db'):
+            source_db = self._get_source_db(which_db='devel')
+        else:
+            # Connect to the production db by default.
+            source_db = self._get_source_db(which_db='production')
+        
         # Get a read-only connection to the db, which will be used in helper functions.
         ro_source_db = self._get_source_db(which_db=options.get('which_db'))
         # Get a full-privileges db connection, so that you can lock the tables

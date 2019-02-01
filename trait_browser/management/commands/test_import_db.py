@@ -468,7 +468,7 @@ class GetSourceDbTest(TestCase):
         cls.expected_devel_db = r'topmed_pheno_devel_.+'
         cls.expected_production_db = 'topmed_pheno'
 
-    def test_get_source_db_returns_correct_devel_db(self):
+    def test_returns_correct_devel_db(self):
         """Connects to a db that matches the expected db name pattern."""
         db = CMD._get_source_db(which_db='devel')
         cursor = db.cursor()
@@ -477,7 +477,7 @@ class GetSourceDbTest(TestCase):
         db.close()
         self.assertRegex(db_name, self.expected_devel_db)
 
-    def test_get_source_db_returns_correct_production_db(self):
+    def test_returns_correct_production_db(self):
         """Connectes to a db that matched the expected production db name."""
         db = CMD._get_source_db(which_db='production')
         cursor = db.cursor()
@@ -486,7 +486,7 @@ class GetSourceDbTest(TestCase):
         db.close()
         self.assertEqual(db_name, self.expected_production_db)
 
-    def test_source_db_timezone_is_utc(self):
+    def test_timezone_is_utc(self):
         """The timezone of the source_db MySQL connection is UTC."""
         db = CMD._get_source_db(which_db='devel')
         cursor = db.cursor()
@@ -494,7 +494,7 @@ class GetSourceDbTest(TestCase):
         timezone_offset = cursor.fetchone()[0]
         self.assertEqual(timedelta(0), timezone_offset)
 
-    def test_source_db_devel_expected_privileges_and_user(self):
+    def test_devel_expected_privileges_and_user(self):
         """Connects with expected privileges and user on the devel db."""
         db = CMD._get_source_db(which_db='devel')
         cursor = db.cursor()
@@ -508,7 +508,7 @@ class GetSourceDbTest(TestCase):
                                                                           user=self.expected_user))
         db.close()
 
-    def test_source_db_production_expected_privileges_and_user(self):
+    def test_production_expected_privileges_and_user(self):
         """Connects with expected privileges and user on the devel db."""
         db = CMD._get_source_db(which_db='production')
         cursor = db.cursor()
@@ -520,6 +520,28 @@ class GetSourceDbTest(TestCase):
                          r"GRANT {priv} ON `{db}`\.\* TO '{user}'".format(priv=self.expected_privileges,
                                                                           db=self.expected_production_db,
                                                                           user=self.expected_user))
+        db.close()
+
+    def test_production_admin_error(self):
+        """Raises error when trying to connect to production as admin."""
+        with self.assertRaises(ValueError):
+            db = CMD._get_source_db(which_db='production', admin=True)
+            db.close()
+
+    def test_devel_expected_privileges_and_user_admin(self):
+        """Connects with expected privileges and user on the devel db with admin argument."""
+        expected_admin_user = r'admin_topmed_pheno_devel_.+'
+        expected_admin_privileges = r'ALL PRIVILEGES'
+        db = CMD._get_source_db(which_db='devel', admin=True)
+        cursor = db.cursor()
+        cursor.execute('SHOW GRANTS')
+        grants = cursor.fetchall()
+        grants = [el[0].decode('utf-8') for el in grants]
+        non_usage = [el for el in grants if 'USAGE' not in el][0]
+        self.assertRegex(non_usage,
+                         r"GRANT {priv} ON `{db}`\.\* TO '{user}'".format(priv=expected_admin_privileges,
+                                                                          db=self.expected_devel_db,
+                                                                          user=expected_admin_user))
         db.close()
 
 
