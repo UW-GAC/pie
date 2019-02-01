@@ -457,21 +457,34 @@ class DbFixersTest(TestCase):
         self.assertDictEqual(fixed_row, row)
 
 
-class GetDbTest(TestCase):
-    """Tests of the _get_db() utility function."""
+class GetSourceDbTest(TestCase):
+    """Tests of the _get_source_db() utility function."""
 
-    def test_get_source_db_returns_connection_devel(self):
-        """Ensure that _get_source_db returns a connector.connection object from the devel db."""
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.expected_privileges = 'SELECT, LOCK TABLES'
+        cls.expected_user = 'pie'
+        cls.expected_devel_db = r'topmed_pheno_devel_.+'
+        cls.expected_production_db = 'topmed_pheno'
+
+    def test_get_source_db_returns_correct_devel_db(self):
+        """Connects to a db that matches the expected db name pattern."""
         db = CMD._get_source_db(which_db='devel')
-        self.assertIsInstance(db, mysql.connector.MySQLConnection)
+        cursor = db.cursor()
+        cursor.execute('SELECT DATABASE()')
+        db_name = cursor.fetchone()[0].decode('utf-8')
         db.close()
+        self.assertRegex(db_name, self.expected_devel_db)
 
-    def test_get_source_db_returns_connection_production(self):
-        """Ensure that _get_source_db returns a connector.connection object from the production db."""
-        # TODO: make sure this works after Robert finished setting up the new topmed db on hippocras.
+    def test_get_source_db_returns_correct_production_db(self):
+        """Connectes to a db that matched the expected production db name."""
         db = CMD._get_source_db(which_db='production')
-        self.assertIsInstance(db, mysql.connector.MySQLConnection)
+        cursor = db.cursor()
+        cursor.execute('SELECT DATABASE()')
+        db_name = cursor.fetchone()[0].decode('utf-8')
         db.close()
+        self.assertEqual(db_name, self.expected_production_db)
 
     def test_source_db_timezone_is_utc(self):
         """The timezone of the source_db MySQL connection is UTC."""
@@ -480,6 +493,34 @@ class GetDbTest(TestCase):
         cursor.execute("SELECT TIMEDIFF(NOW(), CONVERT_TZ(NOW(), @@session.time_zone, '+00:00'))")
         timezone_offset = cursor.fetchone()[0]
         self.assertEqual(timedelta(0), timezone_offset)
+
+    def test_source_db_devel_expected_privileges_and_user(self):
+        """Connects with expected privileges and user on the devel db."""
+        db = CMD._get_source_db(which_db='devel')
+        cursor = db.cursor()
+        cursor.execute('SHOW GRANTS')
+        grants = cursor.fetchall()
+        grants = [el[0].decode('utf-8') for el in grants]
+        non_usage = [el for el in grants if 'USAGE' not in el][0]
+        self.assertRegex(non_usage,
+                         r"GRANT {priv} ON `{db}`\.\* TO '{user}'".format(priv=self.expected_privileges,
+                                                                          db=self.expected_devel_db,
+                                                                          user=self.expected_user))
+        db.close()
+
+    def test_source_db_production_expected_privileges_and_user(self):
+        """Connects with expected privileges and user on the devel db."""
+        db = CMD._get_source_db(which_db='production')
+        cursor = db.cursor()
+        cursor.execute('SHOW GRANTS')
+        grants = cursor.fetchall()
+        grants = [el[0].decode('utf-8') for el in grants]
+        non_usage = [el for el in grants if 'USAGE' not in el][0]
+        self.assertRegex(non_usage,
+                         r"GRANT {priv} ON `{db}`\.\* TO '{user}'".format(priv=self.expected_privileges,
+                                                                          db=self.expected_production_db,
+                                                                          user=self.expected_user))
+        db.close()
 
 
 class DbLockingTest(TestCase):
