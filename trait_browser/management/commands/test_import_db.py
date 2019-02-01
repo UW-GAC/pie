@@ -460,9 +460,9 @@ class DbFixersTest(TestCase):
 class GetDbTest(TestCase):
     """Tests of the _get_db() utility function."""
 
-    def test_get_source_db_returns_connection_test(self):
-        """Ensure that _get_source_db returns a connector.connection object from the test db."""
-        db = CMD._get_source_db(which_db='test')
+    def test_get_source_db_returns_connection_devel(self):
+        """Ensure that _get_source_db returns a connector.connection object from the devel db."""
+        db = CMD._get_source_db(which_db='devel')
         self.assertIsInstance(db, mysql.connector.MySQLConnection)
         db.close()
 
@@ -470,12 +470,6 @@ class GetDbTest(TestCase):
         """Ensure that _get_source_db returns a connector.connection object from the production db."""
         # TODO: make sure this works after Robert finished setting up the new topmed db on hippocras.
         db = CMD._get_source_db(which_db='production')
-        self.assertIsInstance(db, mysql.connector.MySQLConnection)
-        db.close()
-
-    def test_get_source_db_returns_connection_devel(self):
-        """Ensure that _get_source_db returns a connector.connection object from the devel db."""
-        db = CMD._get_source_db(which_db='devel')
         self.assertIsInstance(db, mysql.connector.MySQLConnection)
         db.close()
 

@@ -73,15 +73,13 @@ class Command(BaseCommand):
     help = 'Import/update data from the source db (topmed_pheno) into the Django models.'
     requires_migrations_checks = True
 
-    def _get_source_db(self, which_db, cnf_path=settings.CNF_PATH, permissions='readonly', just_locking=False):
+    def _get_source_db(self, which_db, cnf_path=settings.CNF_PATH):
         """Get a connection to the source phenotype db.
 
         Arguments:
-            which_db -- string; name of the type of db to connect to (production,
-                devel, or test)
+            which_db -- string; name of the type of db to connect to (production or devel)
             cnf_path -- string; path to the mySQL config file with db connection
                 settings
-            permissions -- string; 'readonly' or 'full'
 
         Returns:
             a mysql.connector open db connection
@@ -89,10 +87,7 @@ class Command(BaseCommand):
         if which_db is None:
             raise ValueError(
                 'which_db as passed to _get_source_db MUST be set to a valid value ({} is not valid)'.format(which_db))
-        if which_db == 'production' and (permissions == 'full') and not just_locking:
-            raise ValueError('Requested full permissions for {} source database. Not allowed!!!')
-        # Default is to connect as readonly; only test functions connect as full user.
-        cnf_group = ['client', 'mysql_topmed_pheno_{}_{}'.format(permissions, which_db)]
+        cnf_group = ['client', 'mysql_topmed_pheno_{}'.format(which_db)]
         source_db = mysql.connector.connect(
             option_files=cnf_path, option_groups=cnf_group, charset='latin1', use_unicode=False, time_zone='+00:00')
         logger.debug('Connected to source db {}'.format(source_db))
