@@ -471,28 +471,23 @@ class GetSourceDbTest(TestCase):
     def test_returns_correct_devel_db(self):
         """Connects to a db that matches the expected db name pattern."""
         db = CMD._get_source_db(which_db='devel')
-        cursor = db.cursor()
-        cursor.execute('SELECT DATABASE()')
-        db_name = cursor.fetchone()[0].decode('utf-8')
+        db_name = db.database.decode('utf-8')
         db.close()
         self.assertRegex(db_name, self.expected_devel_db)
 
     def test_returns_correct_production_db(self):
         """Connectes to a db that matched the expected production db name."""
         db = CMD._get_source_db(which_db='production')
-        cursor = db.cursor()
-        cursor.execute('SELECT DATABASE()')
-        db_name = cursor.fetchone()[0].decode('utf-8')
+        db_name = db.database.decode('utf-8')
         db.close()
         self.assertEqual(db_name, self.expected_production_db)
 
     def test_timezone_is_utc(self):
         """The timezone of the source_db MySQL connection is UTC."""
         db = CMD._get_source_db(which_db='devel')
-        cursor = db.cursor()
-        cursor.execute("SELECT TIMEDIFF(NOW(), CONVERT_TZ(NOW(), @@session.time_zone, '+00:00'))")
-        timezone_offset = cursor.fetchone()[0]
-        self.assertEqual(timedelta(0), timezone_offset)
+        db_timezone = db.time_zone.decode('utf-8')
+        db.close()
+        self.assertEqual('+00:00', db_timezone)
 
     def test_devel_expected_privileges_and_user(self):
         """Connects with expected privileges and user on the devel db."""
