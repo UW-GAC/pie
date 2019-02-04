@@ -101,15 +101,18 @@ class Command(BaseCommand):
         cursor = source_db.cursor(buffered=True, dictionary=False)
         cursor.execute('SHOW TABLES;')
         tables = [el[0].decode('utf-8') for el in cursor.fetchall()]
-        tables.remove('schema_changes')
+        # Locking views actually has the effect of locking the tables they are based upon.
         tables = [el for el in tables if not el.startswith('view_')]
         lock_query = 'LOCK TABLES {}'.format(', '.join(['{} READ'.format(el) for el in tables]))
+        logger.debug('Locking source_db tables...')
+        logger.debug(lock_query)
         cursor.execute(lock_query)
         cursor.close()
 
     def _unlock_source_db(self, source_db):
         """Undo a read-lock placed on tables in the source db."""
         cursor = source_db.cursor(buffered=True, dictionary=False)
+        logger.debug('Unlocking source_db tables..')
         cursor.execute('UNLOCK TABLES')
         cursor.close()
 

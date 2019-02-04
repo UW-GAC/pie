@@ -21,6 +21,7 @@ from shutil import rmtree
 from subprocess import call
 from tempfile import mkdtemp
 from time import sleep
+from unittest import skip
 
 from django.conf import settings
 from django.core import management
@@ -540,21 +541,115 @@ class GetSourceDbTest(TestCase):
         db.close()
 
 
-class DbLockingTest(TestCase):
+class LockSourceDbTest(TestCase):
     """Tests of the functions to lock the source db."""
 
-    def test_lock_source_db_does_not_fail(self):
-        source_db = CMD._get_source_db(which_db='devel', permissions='full')
-        CMD._lock_source_db(source_db)
+    def test_locks_all_tables_devel(self):
+        """Locks all non-view tables in devel db."""
+        db = CMD._get_source_db(which_db='devel')
+        db_name = db.database.decode('utf-8')
+        CMD._lock_source_db(db)
+        cursor = db.cursor(dictionary=True)
+        cursor.execute('SHOW OPEN TABLES WHERE in_use > 0')
+        locked_tables = [row['Table'].decode('utf-8') for row in cursor]
+        cursor.execute('SHOW TABLES')
+        all_tables = [row['Tables_in_' + db_name].decode('utf-8') for row in cursor]
+        all_tables = [el for el in all_tables if not el.startswith('view_')]
+        all_tables.sort()
+        locked_tables.sort()
+        self.assertListEqual(all_tables, locked_tables)
+        db.close()  # Testing confirms that closing the db connection removes the locks.
 
-    def test_unlock_source_db_does_not_fail(self):
-        source_db = CMD._get_source_db(which_db='devel', permissions='full')
-        CMD._lock_source_db(source_db)
-        CMD._unlock_source_db(source_db)
+    def test_closing_db_leaves_no_locked_tables(self):
+        """Leaves the tables unlocked in devel db after the db is closed."""
+        db = CMD._get_source_db(which_db='devel')
+        db_name = db.database.decode('utf-8')
+        CMD._lock_source_db(db)
+        cursor = db.cursor(dictionary=True)
+        cursor.execute('SHOW OPEN TABLES WHERE in_use > 0')
+        locked_tables = [row['Table'].decode('utf-8') for row in cursor]
+        cursor.execute('SHOW TABLES')
+        all_tables = [row['Tables_in_' + db_name].decode('utf-8') for row in cursor]
+        all_tables = [el for el in all_tables if not el.startswith('view_')]
+        all_tables.sort()
+        locked_tables.sort()
+        self.assertListEqual(all_tables, locked_tables)
+        db.close()  # Testing confirms that closing the db connection removes the locks.
+        db = CMD._get_source_db(which_db='devel')
+        cursor = db.cursor(dictionary=True)
+        cursor.execute('SHOW OPEN TABLES WHERE in_use = 0')
+        unlocked_tables = [row['Table'].decode('utf-8') for row in cursor]
+        unlocked_tables = [el for el in unlocked_tables if not el.startswith('view_')]
+        unlocked_tables.sort()
+        self.assertListEqual(all_tables, unlocked_tables)
 
-    # TODO: write tests that ensure the lock works
-    # Could use this decorator from pytest-timeout package
-    # @pytest.mark.timeout(180)
+    # This test may be used on an ad hoc basis, but not included in regular testing.
+    # Comment out the decorator to run the test.
+    @skip("Skip this test because it locks the production topmed_pheno db and will be disruptive to others.")
+    def test_locks_all_tables_production(self):
+        """Locks all non-view tables in production db."""
+        db = CMD._get_source_db(which_db='production')
+        db_name = db.database.decode('utf-8')
+        CMD._lock_source_db(db)
+        cursor = db.cursor(dictionary=True)
+        cursor.execute('SHOW OPEN TABLES WHERE in_use > 0')
+        locked_tables = [row['Table'].decode('utf-8') for row in cursor]
+        cursor.execute('SHOW TABLES')
+        all_tables = [row['Tables_in_' + db_name].decode('utf-8') for row in cursor]
+        all_tables = [el for el in all_tables if not el.startswith('view_')]
+        all_tables.sort()
+        locked_tables.sort()
+        self.assertListEqual(all_tables, locked_tables)
+        db.close()
+
+
+class UnlockSourceDbTest(TestCase):
+    """Tests of the functions to unlock the source db."""
+
+    def test_unlocks_all_tables_devel(self):
+        """Unlocks all tables in devel db."""
+        db = CMD._get_source_db(which_db='devel')
+        db_name = db.database.decode('utf-8')
+        CMD._lock_source_db(db)
+        CMD._unlock_source_db(db)
+        cursor = db.cursor(dictionary=True)
+        cursor.execute('SHOW TABLES')
+        all_tables = [row['Tables_in_' + db_name].decode('utf-8') for row in cursor]
+        all_tables = [el for el in all_tables if not el.startswith('view_')]
+        all_tables.sort()
+        locked_tables = [row['Table'].decode('utf-8') for row in cursor]
+        locked_tables.sort()
+        self.assertEqual(len(locked_tables), 0)
+        cursor.execute('SHOW OPEN TABLES WHERE in_use = 0')
+        unlocked_tables = [row['Table'].decode('utf-8') for row in cursor]
+        unlocked_tables = [el for el in unlocked_tables if not el.startswith('view_')]
+        unlocked_tables.sort()
+        self.assertListEqual(all_tables, unlocked_tables)
+        db.close()
+
+    # This test may be used on an ad hoc basis, but not included in regular testing.
+    # Comment out the decorator to run the test.
+    @skip("Skip this test because it locks the production topmed_pheno db and will be disruptive to others.")
+    def test_unlocks_all_tables_production(self):
+        """Unlocks all tables in production db."""
+        db = CMD._get_source_db(which_db='production')
+        db_name = db.database.decode('utf-8')
+        CMD._lock_source_db(db)
+        CMD._unlock_source_db(db)
+        cursor = db.cursor(dictionary=True)
+        cursor.execute('SHOW TABLES')
+        all_tables = [row['Tables_in_' + db_name].decode('utf-8') for row in cursor]
+        all_tables = [el for el in all_tables if not el.startswith('view_')]
+        all_tables.sort()
+        locked_tables = [row['Table'].decode('utf-8') for row in cursor]
+        locked_tables.sort()
+        self.assertEqual(len(locked_tables), 0)
+        cursor.execute('SHOW OPEN TABLES WHERE in_use = 0')
+        unlocked_tables = [row['Table'].decode('utf-8') for row in cursor]
+        unlocked_tables = [el for el in unlocked_tables if not el.startswith('view_')]
+        unlocked_tables.sort()
+        self.assertListEqual(all_tables, unlocked_tables)
+        db.close()
 
 
 class M2MHelperTest(TestCase):
