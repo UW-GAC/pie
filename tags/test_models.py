@@ -710,6 +710,31 @@ class TaggedTraitQuerySetTest(TestCase):
             self.assertNotIn(nonarchivedtt, retrieved_queryset)
         self.assertEqual(n_archived, retrieved_queryset.count())
 
+    # current()
+    def test_current_queryset_count(self):
+        """current() queryset method returns correct number of tagged traits."""
+        n_current = 12
+        n_deprecated = 16
+        deprecated_taggedtraits = self.model_factory.create_batch(
+            n_deprecated, trait__source_dataset__source_study_version__i_is_deprecated=True)
+        current_taggedtraits = self.model_factory.create_batch(n_current)
+        retrieved_queryset = self.model.objects.current()
+        self.assertEqual(n_current, retrieved_queryset.count())
+
+    def test_current_queryset_excludes_deprecated(self):
+        """current() queryset method does not return deprecated tagged traits."""
+        n_current = 3
+        n_deprecated = 4
+        deprecated_taggedtraits = self.model_factory.create_batch(
+            n_deprecated, trait__source_dataset__source_study_version__i_is_deprecated=True)
+        current_taggedtraits = self.model_factory.create_batch(n_current)
+        retrieved_queryset = self.model.objects.current()
+        for deprecated_tt in deprecated_taggedtraits:
+            self.assertNotIn(deprecated_tt, retrieved_queryset)
+        for current_tt in current_taggedtraits:
+            self.assertIn(current_tt, retrieved_queryset)
+        self.assertEqual(n_current, retrieved_queryset.count())
+
 
 class TaggedTraitDeleteTest(TestCase):
     """Tests of the overridden delete method for the TaggedTrait model."""
