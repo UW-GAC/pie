@@ -470,9 +470,8 @@ class StudyTaggedTraitList(StudyDetail):
 
     def get_context_data(self, *args, **kwargs):
         context = super(StudyTaggedTraitList, self).get_context_data(*args, **kwargs)
-        tag_counts = TaggedTrait.objects.non_archived().filter(
-            trait__source_dataset__source_study_version__study=self.object,
-            trait__source_dataset__source_study_version__i_is_deprecated=False
+        tag_counts = TaggedTrait.objects.non_archived().current().filter(
+            trait__source_dataset__source_study_version__study=self.object
         ).values(
             tag_name=F('tag__title'),
             tag_pk=F('tag__pk')
