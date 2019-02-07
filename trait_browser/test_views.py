@@ -64,7 +64,7 @@ class StudyDetailTest(UserLoginTestCase):
             10, trait__source_dataset__source_study_version__study=self.study)
         response = self.client.get(self.get_url(self.study.pk))
         context = response.context
-        self.assertContains(response, self.get_url(self.study.pk))
+        self.assertContains(response, reverse('trait_browser:source:studies:pk:traits:tagged', args=[self.study.pk]))
 
     def test_no_tagged_trait_button_present_for_deprecated_tagged_trait(self):
         """The button to show tagged traits is not present with only deprecated tagged traits for the study."""
