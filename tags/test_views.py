@@ -2126,8 +2126,9 @@ class TaggedTraitByTagAndStudyListTestsMixin(object):
         old_trait = SourceTraitFactory.create(source_dataset__source_study_version=old_study_version)
         current_tagged_trait = factories.TaggedTraitFactory.create(trait=current_trait, tag=tag)
         old_tagged_trait = factories.TaggedTraitFactory.create(trait=old_trait, tag=tag)
-        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        response = self.client.get(self.get_url(tag.pk, study.pk))
         context = response.context
+        self.assertIn(current_tagged_trait, context['tagged_trait_table'].data)
         self.assertNotIn(old_tagged_trait, context['tagged_trait_table'].data)
 
     def test_no_deprecated_traits_with_same_version_number(self):
@@ -2142,8 +2143,9 @@ class TaggedTraitByTagAndStudyListTestsMixin(object):
         old_trait = SourceTraitFactory.create(source_dataset__source_study_version=old_study_version)
         current_tagged_trait = factories.TaggedTraitFactory.create(trait=current_trait, tag=tag)
         old_tagged_trait = factories.TaggedTraitFactory.create(trait=old_trait, tag=tag)
-        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        response = self.client.get(self.get_url(tag.pk, study.pk))
         context = response.context
+        self.assertIn(current_tagged_trait, context['tagged_trait_table'].data)
         self.assertNotIn(old_tagged_trait, context['tagged_trait_table'].data)
 
 
@@ -3597,6 +3599,28 @@ class DCCReviewByTagAndStudySelectDCCTestsMixin(object):
         # The success url redirects again to a new page, so include the target_status_code argument.
         self.assertRedirects(response, reverse('tags:tagged-traits:dcc-review:next'), target_status_code=302)
 
+    def test_no_deprecated_traits_in_session_variable(self):
+        """Sets session variable, without including deprecated tagged traits."""
+        deprecated_tagged_trait = factories.TaggedTraitFactory.create(
+            tag=self.tag, trait__source_dataset__source_study_version__study=self.study,
+            trait__source_dataset__source_study_version__i_is_deprecated=True)
+        response = self.client.post(self.get_url(), {'tag': self.tag.pk, 'study': self.study.pk})
+        # Check session variables.
+        session = self.client.session
+        self.assertIn('tagged_trait_review_by_tag_and_study_info', session)
+        session_info = session['tagged_trait_review_by_tag_and_study_info']
+        self.assertIn('study_pk', session_info)
+        self.assertEqual(session_info['study_pk'], self.study.pk)
+        self.assertIn('tag_pk', session_info)
+        self.assertEqual(session_info['tag_pk'], self.tag.pk)
+        self.assertIn('tagged_trait_pks', session_info)
+        for tt in self.tagged_traits:
+            self.assertIn(tt.pk, session_info['tagged_trait_pks'],
+                          msg='TaggedTrait {} not in session tagged_trait_pks'.format(tt.pk))
+        self.assertNotIn(deprecated_tagged_trait.pk, session_info['tagged_trait_pks'])
+        # The success url redirects again to a new page, so include the target_status_code argument.
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-review:next'), target_status_code=302)
+
 
 class DCCReviewByTagAndStudySelectDCCAnalystTest(DCCReviewByTagAndStudySelectDCCTestsMixin, DCCAnalystLoginTestCase):
 
@@ -3803,6 +3827,28 @@ class DCCReviewByTagAndStudySelectFromURLDCCTestsMixin(object):
             self.assertIn(tt.pk, session_info['tagged_trait_pks'],
                           msg='TaggedTrait {} not in session tagged_trait_pks'.format(tt.pk))
         self.assertNotIn(archived_tagged_trait.pk, session_info['tagged_trait_pks'])
+        # The success url redirects again to a new page, so include the target_status_code argument.
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-review:next'), target_status_code=302)
+
+    def test_no_deprecated_traits_in_session_variable(self):
+        """Sets session variable, without including deprecated tagged traits."""
+        deprecated_tagged_trait = factories.TaggedTraitFactory.create(
+            tag=self.tag, trait__source_dataset__source_study_version__study=self.study,
+            trait__source_dataset__source_study_version__i_is_deprecated=True)
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        # Check session variables.
+        session = self.client.session
+        self.assertIn('tagged_trait_review_by_tag_and_study_info', session)
+        session_info = session['tagged_trait_review_by_tag_and_study_info']
+        self.assertIn('study_pk', session_info)
+        self.assertEqual(session_info['study_pk'], self.study.pk)
+        self.assertIn('tag_pk', session_info)
+        self.assertEqual(session_info['tag_pk'], self.tag.pk)
+        self.assertIn('tagged_trait_pks', session_info)
+        for tt in self.tagged_traits:
+            self.assertIn(tt.pk, session_info['tagged_trait_pks'],
+                          msg='TaggedTrait {} not in session tagged_trait_pks'.format(tt.pk))
+        self.assertNotIn(deprecated_tagged_trait.pk, session_info['tagged_trait_pks'])
         # The success url redirects again to a new page, so include the target_status_code argument.
         self.assertRedirects(response, reverse('tags:tagged-traits:dcc-review:next'), target_status_code=302)
 
@@ -4042,6 +4088,34 @@ class DCCReviewByTagAndStudyNextDCCTestsMixin(object):
         self.assertEqual(response.status_code, 200)
         self.assertNotContains(response, """<a href="{}">""".format(self.get_url()))
 
+    def test_skips_deprecated_tagged_traits(self):
+        """Skips a tagged trait that has been deprecated after starting the loop."""
+        tag = factories.TagFactory.create()
+        study = StudyFactory.create()
+        tagged_traits = factories.TaggedTraitFactory.create_batch(
+            2,
+            tag=tag,
+            trait__source_dataset__source_study_version__study=study
+        )
+        session = self.client.session
+        session['tagged_trait_review_by_tag_and_study_info'] = {
+            'tag_pk': tag.pk,
+            'study_pk': study.pk,
+            'tagged_trait_pks': [x.pk for x in tagged_traits],
+        }
+        session.save()
+        # Now deprecate one and try loading the view.
+        study_version = tagged_traits[0].trait.source_dataset.source_study_version
+        study_version.i_is_deprecated = True
+        study_version.save()
+        response = self.client.get(self.get_url())
+        self.assertIn('tagged_trait_review_by_tag_and_study_info', self.client.session)
+        session_info = self.client.session['tagged_trait_review_by_tag_and_study_info']
+        self.assertIn('tagged_trait_pks', session_info)
+        self.assertEqual(session_info['tagged_trait_pks'], [tagged_traits[1].pk])
+        self.assertNotIn('pk', session_info)
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-review:next'), target_status_code=302)
+
 
 class DCCReviewByTagAndStudyNextDCCAnalystTest(DCCReviewByTagAndStudyNextDCCTestsMixin, DCCAnalystLoginTestCase):
 
@@ -4271,6 +4345,28 @@ class DCCReviewByTagAndStudyDCCTestsMixin(object):
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
         self.assertIn('been archived', str(messages[0]))
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-review:next'), target_status_code=302)
+
+    def test_deprecated_trait(self):
+        """Shows warning message and does not save review if SourceTrait is deprecated."""
+        study_version = self.tagged_trait.trait.source_dataset.source_study_version
+        study_version.i_is_deprecated = True
+        study_version.save()
+        # Now try to review it through the web interface.
+        form_data = {forms.DCCReviewByTagAndStudyForm.SUBMIT_CONFIRM: 'Confirm', 'comment': ''}
+        response = self.client.post(self.get_url(), form_data)
+        # Check session variables.
+        self.assertIn('tagged_trait_review_by_tag_and_study_info', self.client.session)
+        session_info = self.client.session['tagged_trait_review_by_tag_and_study_info']
+        self.assertNotIn('pk', session_info)
+        self.assertIn('tagged_trait_pks', session_info)
+        self.assertNotIn(self.tagged_trait.pk, session_info['tagged_trait_pks'])
+        self.tagged_trait.refresh_from_db()
+        self.assertFalse(hasattr(self.tagged_trait, 'dcc_review'))
+        # Check for success message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('newer version', str(messages[0]))
         self.assertRedirects(response, reverse('tags:tagged-traits:dcc-review:next'), target_status_code=302)
 
     def test_already_reviewed_tagged_trait_with_form_error(self):
@@ -4641,6 +4737,33 @@ class DCCReviewCreateDCCTestsMixin(object):
         self.assertEqual(len(messages), 1)
         self.assertIn('been archived', str(messages[0]))
 
+    def test_get_deprecated_tagged_trait(self):
+        """Get redirects with an error message if the trait is deprecated."""
+        study_version = self.tagged_trait.trait.source_dataset.source_study_version
+        study_version.i_is_deprecated = True
+        study_version.save()
+        url = self.get_url(self.tagged_trait.pk)
+        response = self.client.get(url)
+        self.tagged_trait.refresh_from_db()
+        self.assertRedirects(response, self.tagged_trait.get_absolute_url())
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('newer version', str(messages[0]))
+
+    def test_post_deprecated_tagged_trait(self):
+        """Post redirects with an error message if the trait is deprecated."""
+        study_version = self.tagged_trait.trait.source_dataset.source_study_version
+        study_version.i_is_deprecated = True
+        study_version.save()
+        url = self.get_url(self.tagged_trait.pk)
+        form_data = {forms.DCCReviewForm.SUBMIT_CONFIRM: 'Confirm', 'comment': ''}
+        response = self.client.post(url, form_data)
+        self.assertFalse(hasattr(self.tagged_trait, 'dcc_review'))
+        self.assertRedirects(response, self.tagged_trait.get_absolute_url())
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('newer version', str(messages[0]))
+
     def test_shows_other_tags(self):
         """Other tags linked to the same trait are included in the page."""
         another_tagged_trait = factories.TaggedTraitFactory.create(trait=self.tagged_trait.trait)
@@ -4832,6 +4955,33 @@ class DCCReviewUpdateDCCTestsMixin(object):
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
         self.assertIn('archived', str(messages[0]))
+
+    def test_get_deprecated_tagged_trait(self):
+        """Get redirects to detail page if the tagged trait is deprecated."""
+        study_version = self.tagged_trait.trait.source_dataset.source_study_version
+        study_version.i_is_deprecated = True
+        study_version.save()
+        url = self.get_url(self.tagged_trait.pk)
+        response = self.client.get(url)
+        self.assertRedirects(response, self.tagged_trait.get_absolute_url())
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('newer version', str(messages[0]))
+
+    def test_post_deprecated_tagged_trait(self):
+        """Post redirects to detail page if the tagged trait is deprecated."""
+        study_version = self.tagged_trait.trait.source_dataset.source_study_version
+        study_version.i_is_deprecated = True
+        study_version.save()
+        url = self.get_url(self.tagged_trait.pk)
+        form_data = {forms.DCCReviewForm.SUBMIT_FOLLOWUP: 'Require study followup', 'comment': 'new test comment'}
+        response = self.client.post(url, form_data)
+        self.tagged_trait.refresh_from_db()
+        self.assertTrue(self.tagged_trait.dcc_review.comment != 'new test comment')
+        self.assertRedirects(response, self.tagged_trait.get_absolute_url())
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('newer version', str(messages[0]))
 
     def test_cant_update_dcc_review_if_study_has_responded(self):
         """Post redirects with a message if the study has responded."""
@@ -5344,6 +5494,23 @@ class TaggedTraitsNeedStudyResponseSummaryPhenotypeTaggerTest(PhenotypeTaggerLog
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, """<a href="{}">""".format(self.get_url()))
 
+    def test_no_deprecated_traits(self):
+        """Count does not include TaggedTraits whose SourceTrait has been deprecated."""
+        tag = factories.TagFactory.create()
+        study_version = SourceStudyVersionFactory.create(study=self.study)
+        factories.StudyResponseFactory.create(
+            dcc_review__tagged_trait__tag=tag,
+            dcc_review__status=models.DCCReview.STATUS_FOLLOWUP,
+            dcc_review__tagged_trait__trait__source_dataset__source_study_version=study_version
+        )
+        study_version.i_is_deprecated = True
+        study_version.save()
+        response = self.client.get(self.get_url())
+        context = response.context
+        self.assertIn('grouped_study_tag_counts', context)
+        counts = context['grouped_study_tag_counts']
+        self.assertEqual(len(counts), 0)
+
 
 class TaggedTraitsNeedStudyResponseSummaryDCCAnalystTest(DCCAnalystLoginTestCase):
 
@@ -5526,6 +5693,26 @@ class TaggedTraitsNeedStudyResponseByTagAndStudyListTestsMixin(object):
         response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
         context = response.context
         self.assertNotIn(other_tagged_trait, context['tagged_trait_table'].data)
+
+    def test_excludes_deprecated_tagged_trait(self):
+        """Table excludes deprecated TaggedTrait."""
+        study_version = SourceStudyVersionFactory.create(study=self.study)
+        deprecated_tagged_trait = factories.TaggedTraitFactory.create(
+            tag=self.tag,
+            trait__source_dataset__source_study_version=study_version
+        )
+        dcc_review = factories.DCCReviewFactory.create(
+            tagged_trait=deprecated_tagged_trait, status=models.DCCReview.STATUS_FOLLOWUP)
+        study_version.i_is_deprecated = True
+        study_version.save()
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        context = response.context
+        table = context['tagged_trait_table']
+        self.assertNotIn(deprecated_tagged_trait, table.data)
+        for dcc_review in self.dcc_reviews:
+            self.assertIn(dcc_review.tagged_trait, table.data,
+                          msg='tagged_trait_table does not contain {}'.format(dcc_review.tagged_trait))
+        self.assertEqual(len(table.data), len(self.dcc_reviews))
 
 
 class TaggedTraitsNeedStudyResponseByTagAndStudyListPhenotypeTaggerTest(
@@ -5876,6 +6063,34 @@ class StudyResponseCreateAgreePhenotypeTaggerTest(PhenotypeTaggerLoginTestCase):
         self.tagged_trait.refresh_from_db()
         self.assertTrue(self.tagged_trait.archived)
 
+    def test_get_deprecated_trait(self):
+        """Redirects with warning message if the trait has been deprecated."""
+        study_version = self.tagged_trait.trait.source_dataset.source_study_version
+        study_version.i_is_deprecated = True
+        study_version.save()
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        self.assertRedirects(response, reverse('tags:tag:study:quality-review',
+                                               args=[self.tag.pk, self.study.pk]))
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertTrue('Oops!' in str(messages[0]))
+        self.assertTrue('newer version' in str(messages[0]))
+
+    def test_post_deprecated_trait(self):
+        """Redirects with warning message if the trait has been deprecated."""
+        study_version = self.tagged_trait.trait.source_dataset.source_study_version
+        study_version.i_is_deprecated = True
+        study_version.save()
+        response = self.client.post(self.get_url(self.tagged_trait.pk), {})
+        self.tagged_trait.refresh_from_db()
+        self.assertFalse(hasattr(self.tagged_trait.dcc_review, 'study_response'))
+        self.assertRedirects(response, reverse('tags:tag:study:quality-review',
+                                               args=[self.tag.pk, self.study.pk]))
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertTrue('Oops!' in str(messages[0]))
+        self.assertTrue('newer version' in str(messages[0]))
+
 
 class StudyResponseCreateAgreeDCCAnalystTest(DCCAnalystLoginTestCase):
 
@@ -6135,6 +6350,34 @@ class StudyResponseCreateDisagreePhenotypeTaggerTest(PhenotypeTaggerLoginTestCas
         content = str(response.content)
         self.assertNotIn(another_tagged_trait.tag.title, content)
         self.assertIn(self.tagged_trait.tag.title, content)
+
+    def test_get_deprecated_trait(self):
+        """Redirects a get request with warning message if the trait has been deprecated."""
+        study_version = self.tagged_trait.trait.source_dataset.source_study_version
+        study_version.i_is_deprecated = True
+        study_version.save()
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        self.assertRedirects(response, reverse('tags:tag:study:quality-review',
+                                               args=[self.tag.pk, self.study.pk]))
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertTrue('Oops!' in str(messages[0]))
+        self.assertTrue('newer version' in str(messages[0]))
+
+    def test_post_deprecated_trait(self):
+        """Redirects a post request with warning message if the trait has been deprecated."""
+        study_version = self.tagged_trait.trait.source_dataset.source_study_version
+        study_version.i_is_deprecated = True
+        study_version.save()
+        response = self.client.post(self.get_url(self.tagged_trait.pk), {'comment': 'foo'})
+        self.tagged_trait.refresh_from_db()
+        self.assertFalse(hasattr(self.tagged_trait.dcc_review, 'study_response'))
+        self.assertRedirects(response, reverse('tags:tag:study:quality-review',
+                                               args=[self.tag.pk, self.study.pk]))
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertTrue('Oops!' in str(messages[0]))
+        self.assertTrue('newer version' in str(messages[0]))
 
 
 class StudyResponseCreateDisagreeDCCAnalystTest(DCCAnalystLoginTestCase):
@@ -6397,6 +6640,18 @@ class TaggedTraitsNeedDCCDecisionSummaryTestMixin(object):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, self.get_url())
 
+    def test_counts_for_needfollowup_disagree_tagged_trait_deprecated(self):
+        """No counts for a deprecated tagged trait that needs a decision."""
+        study_response = factories.StudyResponseFactory.create(status=models.StudyResponse.STATUS_DISAGREE)
+        study_version = study_response.dcc_review.tagged_trait.trait.source_dataset.source_study_version
+        study_version.i_is_deprecated = True
+        study_version.save()
+        response = self.client.get(self.get_url())
+        context = response.context
+        self.assertIn('grouped_study_tag_counts', context)
+        counts = context['grouped_study_tag_counts']
+        self.assertEqual(len(counts), 0)
+
 
 class TaggedTraitsNeedDCCDecisionSummaryDCCAnalystTest(TaggedTraitsNeedDCCDecisionSummaryTestMixin,
                                                        DCCAnalystLoginTestCase):
@@ -6542,6 +6797,23 @@ class TaggedTraitsNeedDCCDecisionByTagAndStudyListMixin(object):
         context = response.context
         table = context['tagged_trait_table']
         self.assertNotIn(agree_tagged_trait, table.data)
+        for study_response in self.study_responses:
+            self.assertIn(study_response.dcc_review.tagged_trait, table.data,
+                          msg='tagged_trait_table does not contain {}'.format(study_response.dcc_review.tagged_trait))
+        self.assertEqual(len(table.data), len(self.study_responses))
+
+    def test_view_table_does_not_contain_deprecated_tagged_traits(self):
+        """Table does not contain deprecated TaggedTraits."""
+        deprecated_response = factories.StudyResponseFactory.create(
+            dcc_review__tagged_trait__trait__source_dataset__source_study_version__study=self.study,
+            dcc_review__tagged_trait__trait__source_dataset__source_study_version__i_is_deprecated=True,
+            dcc_review__tagged_trait__tag=self.tag,
+            status=models.StudyResponse.STATUS_DISAGREE)
+        deprecated_tagged_trait = deprecated_response.dcc_review.tagged_trait
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        context = response.context
+        table = context['tagged_trait_table']
+        self.assertNotIn(deprecated_tagged_trait, table.data)
         for study_response in self.study_responses:
             self.assertIn(study_response.dcc_review.tagged_trait, table.data,
                           msg='tagged_trait_table does not contain {}'.format(study_response.dcc_review.tagged_trait))
@@ -6818,6 +7090,30 @@ class DCCDecisionByTagAndStudySelectFromURLDCCTestsMixin(object):
         # The success url redirects again to a new page, so include the target_status_code argument.
         self.assertRedirects(response, reverse('tags:tagged-traits:dcc-decision:next'), target_status_code=302)
 
+    def test_deprecated_taggedtraits_in_session_variable(self):
+        """Does not include deprecated tagged traits in session variables."""
+        deprecated_tagged_trait = self.tagged_traits[0]
+        study_version = deprecated_tagged_trait.trait.source_dataset.source_study_version
+        study_version.i_is_deprecated = True
+        study_version.save()
+        deprecated_tagged_trait.refresh_from_db()
+        response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
+        # Check session variables.
+        session = self.client.session
+        self.assertIn('tagged_trait_decision_by_tag_and_study_info', session)
+        session_info = session['tagged_trait_decision_by_tag_and_study_info']
+        self.assertIn('study_pk', session_info)
+        self.assertEqual(session_info['study_pk'], self.study.pk)
+        self.assertIn('tag_pk', session_info)
+        self.assertEqual(session_info['tag_pk'], self.tag.pk)
+        self.assertIn('tagged_trait_pks', session_info)
+        for tt in self.tagged_traits[1:]:
+            self.assertIn(tt.pk, session_info['tagged_trait_pks'],
+                          msg='TaggedTrait {} not in session tagged_trait_pks'.format(tt.pk))
+        self.assertNotIn(deprecated_tagged_trait.pk, session_info['tagged_trait_pks'])
+        # The success url redirects again to a new page, so include the target_status_code argument.
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-decision:next'), target_status_code=302)
+
 
 class DCCDecisionByTagAndStudySelectFromURLDCCAnalystTest(DCCDecisionByTagAndStudySelectFromURLDCCTestsMixin,
                                                           DCCAnalystLoginTestCase):
@@ -7067,6 +7363,28 @@ class DCCDecisionByTagAndStudyNextDCCTestsMixin(object):
         session_info = self.client.session['tagged_trait_decision_by_tag_and_study_info']
         self.assertIn('tagged_trait_pks', session_info)
         self.assertNotIn(first_tagged_trait.pk, session_info['tagged_trait_pks'])
+        self.assertEqual(self.tagged_traits[1].pk, session_info['tagged_trait_pks'][0])
+        self.assertNotIn('pk', session_info)
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-decision:next'), target_status_code=302)
+
+    def test_skips_deprecated_tagged_trait(self):
+        """Skips a tagged trait that has been deprecated after starting the loop."""
+        deprecated_tagged_trait = self.tagged_traits[0]
+        session = self.client.session
+        session['tagged_trait_decision_by_tag_and_study_info'] = {
+            'tag_pk': self.tag.pk,
+            'study_pk': self.study.pk,
+            'tagged_trait_pks': [x.pk for x in self.tagged_traits],
+        }
+        session.save()
+        study_version = deprecated_tagged_trait.trait.source_dataset.source_study_version
+        study_version.i_is_deprecated = True
+        study_version.save()
+        response = self.client.get(self.get_url())
+        self.assertIn('tagged_trait_decision_by_tag_and_study_info', self.client.session)
+        session_info = self.client.session['tagged_trait_decision_by_tag_and_study_info']
+        self.assertIn('tagged_trait_pks', session_info)
+        self.assertNotIn(deprecated_tagged_trait.pk, session_info['tagged_trait_pks'])
         self.assertEqual(self.tagged_traits[1].pk, session_info['tagged_trait_pks'][0])
         self.assertNotIn('pk', session_info)
         self.assertRedirects(response, reverse('tags:tagged-traits:dcc-decision:next'), target_status_code=302)
@@ -7668,6 +7986,50 @@ class DCCDecisionByTagAndStudyDCCTestsMixin(object):
         self.assertFalse(self.tagged_trait.archived)
         self.assertRedirects(response, reverse('tags:tagged-traits:dcc-decision:next'), target_status_code=302)
 
+    def test_message_and_redirect_for_deprecated_tagged_trait(self):
+        """Shows warning message and does not save decision if TaggedTrait's study version is deprecated."""
+        study_version = self.tagged_trait.trait.source_dataset.source_study_version
+        study_version.i_is_deprecated = True
+        study_version.save()
+        # Now try to decide on it through the web interface.
+        form_data = {forms.DCCDecisionByTagAndStudyForm.SUBMIT_CONFIRM: 'Confirm', 'comment': 'Looks good.'}
+        response = self.client.post(self.get_url(), form_data)
+        self.tagged_trait.refresh_from_db()
+        self.assertFalse(hasattr(self.tagged_trait.dcc_review, 'dcc_decision'))
+        # Check session variables.
+        self.assertIn('tagged_trait_decision_by_tag_and_study_info', self.client.session)
+        session_info = self.client.session['tagged_trait_decision_by_tag_and_study_info']
+        self.assertNotIn('pk', session_info)
+        self.assertIn('tagged_trait_pks', session_info)
+        self.assertNotIn(self.tagged_trait.pk, session_info['tagged_trait_pks'])
+        # Check for success message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('newer version', str(messages[0]))
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-decision:next'), target_status_code=302)
+
+    def test_message_and_redirect_for_deprecated_tagged_trait_with_form_error(self):
+        """Shows warning message and does not save decision if TaggedTrait's study version is deprecated, with form error.""" # noqa
+        study_version = self.tagged_trait.trait.source_dataset.source_study_version
+        study_version.i_is_deprecated = True
+        study_version.save()
+        # Now try to decide on it through the web interface.
+        form_data = {forms.DCCDecisionByTagAndStudyForm.SUBMIT_REMOVE: 'Remove', 'comment': ''}
+        response = self.client.post(self.get_url(), form_data)
+        self.tagged_trait.refresh_from_db()
+        self.assertFalse(hasattr(self.tagged_trait.dcc_review, 'dcc_decision'))
+        # Check session variables.
+        self.assertIn('tagged_trait_decision_by_tag_and_study_info', self.client.session)
+        session_info = self.client.session['tagged_trait_decision_by_tag_and_study_info']
+        self.assertNotIn('pk', session_info)
+        self.assertIn('tagged_trait_pks', session_info)
+        self.assertNotIn(self.tagged_trait.pk, session_info['tagged_trait_pks'])
+        # Check for success message.
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('newer version', str(messages[0]))
+        self.assertRedirects(response, reverse('tags:tagged-traits:dcc-decision:next'), target_status_code=302)
+
 
 class DCCDecisionByTagAndStudyDCCAnalystTest(DCCDecisionByTagAndStudyDCCTestsMixin, DCCAnalystLoginTestCase):
 
@@ -8063,6 +8425,35 @@ class DCCDecisionCreateDCCTestsMixin(object):
         dcc_decision = models.DCCDecision.objects.latest('created')
         self.tagged_trait.refresh_from_db()
         self.assertFalse(self.tagged_trait.archived)
+
+    def test_get_message_and_redirect_response_deprecated_tagged_trait(self):
+        """Get request gives a warning message and redirects if the tagged trait is deprecated."""
+        study_version = self.tagged_trait.trait.source_dataset.source_study_version
+        study_version.i_is_deprecated = True
+        study_version.save()
+        url = self.get_url(self.tagged_trait.pk)
+        response = self.client.get(url)
+        self.assertRedirects(response, self.need_decision_url)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Oops!', str(messages[0]))
+        self.assertIn('newer version', str(messages[0]))
+
+    def test_post_message_and_redirect_response_deprecated_tagged_trait(self):
+        """Post request gives a warning message and redirects if the tagged trait is deprecated."""
+        study_version = self.tagged_trait.trait.source_dataset.source_study_version
+        study_version.i_is_deprecated = True
+        study_version.save()
+        url = self.get_url(self.tagged_trait.pk)
+        form_data = {forms.DCCDecisionForm.SUBMIT_CONFIRM: 'Confirm', 'comment': 'looks good'}
+        response = self.client.post(url, form_data)
+        self.tagged_trait.refresh_from_db()
+        self.assertFalse(hasattr(self.tagged_trait.dcc_review, 'dcc_decision'))
+        self.assertRedirects(response, self.need_decision_url)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Oops!', str(messages[0]))
+        self.assertIn('newer version', str(messages[0]))
 
 
 class DCCDecisionCreateDCCAnalystTest(DCCDecisionCreateDCCTestsMixin, DCCAnalystLoginTestCase):
@@ -8548,6 +8939,33 @@ class DCCDecisionUpdateDCCTestsMixin(object):
         self.tagged_trait.refresh_from_db()
         self.assertEqual(form_data['comment'], dcc_decision.comment)
         self.assertFalse(self.tagged_trait.archived)
+
+    def test_get_deprecated_tagged_trait(self):
+        """A get request redirects with a warning for a deprecated trait."""
+        study_version = self.dcc_decision.dcc_review.tagged_trait.trait.source_dataset.source_study_version
+        study_version.i_is_deprecated = True
+        study_version.save()
+        response = self.client.get(self.get_url(self.tagged_trait.pk))
+        self.dcc_decision.refresh_from_db()
+        self.assertRedirects(response, self.need_decision_url)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('newer version', str(messages[0]))
+
+    def test_post_deprecated_tagged_trait(self):
+        """Posting valid data to the form does not update a DCCDecision for a deprecated trait."""
+        study_version = self.dcc_decision.dcc_review.tagged_trait.trait.source_dataset.source_study_version
+        study_version.i_is_deprecated = True
+        study_version.save()
+        original_comment = self.dcc_decision.comment
+        form_data = {forms.DCCDecisionForm.SUBMIT_CONFIRM: 'Confirm', 'comment': 'looks good'}
+        response = self.client.post(self.get_url(self.tagged_trait.pk), form_data)
+        self.dcc_decision.refresh_from_db()
+        self.assertRedirects(response, self.need_decision_url)
+        self.assertEqual(original_comment, self.dcc_decision.comment)
+        messages = list(response.wsgi_request._messages)
+        self.assertEqual(len(messages), 1)
+        self.assertIn('newer version', str(messages[0]))
 
 
 class DCCDecisionUpdateDCCAnalystTest(DCCDecisionUpdateDCCTestsMixin, DCCAnalystLoginTestCase):
