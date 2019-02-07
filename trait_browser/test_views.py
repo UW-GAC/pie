@@ -66,6 +66,18 @@ class StudyDetailTest(UserLoginTestCase):
         context = response.context
         self.assertContains(response, self.get_url(self.study.pk))
 
+    def test_no_tagged_trait_button_present_for_deprecated_tagged_trait(self):
+        """The button to show tagged traits is not present with only deprecated tagged traits for the study."""
+        tagged_traits = TaggedTraitFactory.create_batch(
+            10,
+            trait__source_dataset__source_study_version__study=self.study,
+            trait__source_dataset__source_study_version__i_is_deprecated=True
+        )
+        response = self.client.get(self.get_url(self.study.pk))
+        context = response.context
+        expected_url = reverse('trait_browser:source:studies:pk:traits:tagged', args=[self.study.pk])
+        self.assertNotContains(response, expected_url)
+
 
 class StudyListTest(UserLoginTestCase):
     """Unit tests for the StudyList view."""
