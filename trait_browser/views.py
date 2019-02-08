@@ -177,7 +177,7 @@ class StudyNameOrPHSAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySe
         unreviewed_non_archived = self.forwarded.get('unreviewed_non_archived_tagged_traits_only', False)
         # tag_pk is a string, so "is not None" is not needed.
         if tag_pk:
-            tagged_traits = TaggedTrait.objects.all()
+            tagged_traits = TaggedTrait.objects.current()
             if unreviewed_non_archived:
                 tagged_traits = tagged_traits.unreviewed().non_archived()
             studies_with_tag = tagged_traits.filter(

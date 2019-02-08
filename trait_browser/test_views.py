@@ -600,6 +600,18 @@ class StudyNameOrPHSAutocompleteTest(UserLoginTestCase):
         pks = get_autocomplete_view_ids(response)
         self.assertEqual(sorted([study.pk for study in self.studies]), sorted(pks))
 
+    def test_does_not_return_study_with_deprecated_tagged_trait_for_given_tag_with_only(self):
+        """With tag and only arg forwarded, does not return study with deprecated tagged traits."""
+        tag = TagFactory.create()
+        study = self.studies[0]
+        tagged_trait = TaggedTraitFactory.create(
+            tag=tag, trait__source_dataset__source_study_version__study=study,
+            trait__source_dataset__source_study_version__i_is_deprecated=True)
+        get_data = {'q': '', 'forward': ['{"tag":"' + str(tag.pk) + '",' + self.only_arg + '}']}
+        response = self.client.get(self.get_url(), get_data)
+        pks = get_autocomplete_view_ids(response)
+        self.assertNotIn(study.pk, pks)
+
 
 class StudySourceTableViewsTest(UserLoginTestCase):
     """Unit tests for the SourceTrait by Study views."""
@@ -2142,6 +2154,16 @@ class SourceTraitDetailPhenotypeTaggerTest(PhenotypeTaggerLoginTestCase):
             self.assertFalse(b)
         self.assertNotContains(response, reverse('tags:tagged-traits:pk:delete', kwargs={'pk': self.tag.pk}))
 
+    def test_no_tagged_trait_remove_button_if_deprecated(self):
+        study_version = self.trait.source_dataset.source_study_version
+        study_version.i_is_deprecated = True
+        study_version.save()
+        response = self.client.get(self.get_url(self.trait.pk))
+        context = response.context
+        for (a, b) in context['tagged_traits_with_xs']:
+            self.assertFalse(b)
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:delete', kwargs={'pk': self.tag.pk}))
+
     def test_has_tagging_button(self):
         """A phenotype tagger does see a button to add tags on this detail page."""
         response = self.client.get(self.get_url(self.trait.pk))
@@ -2237,6 +2259,16 @@ class SourceTraitDetailDCCAnalystTest(DCCAnalystLoginTestCase):
                 self.assertTrue(b)
         self.assertNotContains(response, reverse('tags:tagged-traits:pk:delete', kwargs={'pk': tagged_traits[0].pk}))
         self.assertContains(response, reverse('tags:tagged-traits:pk:delete', kwargs={'pk': tagged_traits[1].pk}))
+
+    def test_no_tagged_trait_remove_button_if_deprecated(self):
+        study_version = self.trait.source_dataset.source_study_version
+        study_version.i_is_deprecated = True
+        study_version.save()
+        response = self.client.get(self.get_url(self.trait.pk))
+        context = response.context
+        for (a, b) in context['tagged_traits_with_xs']:
+            self.assertFalse(b)
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:delete', kwargs={'pk': self.tag.pk}))
 
     def test_has_tagging_button(self):
         """A DCC analyst does see a button to add tags on this detail page."""
