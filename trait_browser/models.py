@@ -603,6 +603,19 @@ class SourceTrait(Trait):
             return None
         return current_trait
 
+    def get_previous_version(self):
+        """Returns the version of this SourceTrait from the previous study version."""
+        previous_study_version = self.source_dataset.source_study_version.get_previous_version()
+        if previous_study_version is not None:
+            try:
+                previous_trait = SourceTrait.objects.get(
+                    source_dataset__source_study_version=previous_study_version,
+                    i_dbgap_variable_accession=self.i_dbgap_variable_accession
+                )
+            except SourceTrait.DoesNotExist:
+                return None
+            return previous_trait
+
 
 class HarmonizedTrait(Trait):
     """Model for traits harmonized by the DCC.

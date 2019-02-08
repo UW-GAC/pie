@@ -924,6 +924,83 @@ class SourceTraitTest(TestCase):
         )
         self.assertEqual(deprecated_trait.get_latest_version(), current_trait_1)
 
+    def test_get_previous_version_no_other_study_version(self):
+        """Returns None if there is no other study version."""
+        source_trait = factories.SourceTraitFactory.create()
+        self.assertIsNone(source_trait.get_previous_version())
+
+    def test_get_previous_version_no_previous_study_version(self):
+        """Returns None if there is no previous study version."""
+        study = factories.StudyFactory.create()
+        now = datetime.now(tz=pytz.UTC)
+        study_version = factories.SourceStudyVersionFactory.create(
+            study=study, i_version=1, i_date_added=now - timedelta(hours=1))
+        newer_study_version = factories.SourceStudyVersionFactory.create(
+            study=study, i_version=2, i_date_added=now)
+        source_trait = factories.SourceTraitFactory.create(
+            source_dataset__source_study_version=study_version, i_dbgap_variable_accession=100)
+        newer_source_trait = factories.SourceTraitFactory.create(
+            source_dataset__source_study_version=newer_study_version, i_dbgap_variable_accession=100)
+        self.assertIsNone(source_trait.get_previous_version())
+
+    def test_get_previous_version_previous_version_has_trait(self):
+        study = factories.StudyFactory.create()
+        now = datetime.now(tz=pytz.UTC)
+        previous_study_version = factories.SourceStudyVersionFactory.create(
+            study=study, i_version=1, i_date_added=now - timedelta(hours=1))
+        study_version = factories.SourceStudyVersionFactory.create(
+            study=study, i_version=2, i_date_added=now)
+        previous_source_trait = factories.SourceTraitFactory.create(
+            source_dataset__source_study_version=previous_study_version, i_dbgap_variable_accession=100)
+        source_trait = factories.SourceTraitFactory.create(
+            source_dataset__source_study_version=study_version, i_dbgap_variable_accession=100)
+        self.assertEqual(source_trait.get_previous_version(), previous_source_trait)
+
+    def test_get_previous_version_previous_version_no_trait(self):
+        """Returns None if the source trait doesn't exist in the previous version."""
+        study = factories.StudyFactory.create()
+        now = datetime.now(tz=pytz.UTC)
+        previous_study_version = factories.SourceStudyVersionFactory.create(
+            study=study, i_version=1, i_date_added=now - timedelta(hours=1))
+        study_version = factories.SourceStudyVersionFactory.create(
+            study=study, i_version=2, i_date_added=now)
+        source_trait = factories.SourceTraitFactory.create(
+            source_dataset__source_study_version=study_version, i_dbgap_variable_accession=100)
+        self.assertIsNone(source_trait.get_previous_version())
+
+    def test_get_previous_version_two_previous_versions_have_trait(self):
+        """Returns the correct source trait if it exists in multiple previous versions."""
+        study = factories.StudyFactory.create()
+        now = datetime.now(tz=pytz.UTC)
+        previous_study_version_1 = factories.SourceStudyVersionFactory.create(
+            study=study, i_version=1, i_date_added=now - timedelta(hours=2))
+        previous_study_version_2 = factories.SourceStudyVersionFactory.create(
+            study=study, i_version=2, i_date_added=now - timedelta(hours=1))
+        study_version = factories.SourceStudyVersionFactory.create(
+            study=study, i_version=3, i_date_added=now)
+        previous_source_trait_1 = factories.SourceTraitFactory.create(
+            source_dataset__source_study_version=previous_study_version_1, i_dbgap_variable_accession=100)
+        previous_source_trait_2 = factories.SourceTraitFactory.create(
+            source_dataset__source_study_version=previous_study_version_2, i_dbgap_variable_accession=100)
+        source_trait = factories.SourceTraitFactory.create(
+            source_dataset__source_study_version=study_version, i_dbgap_variable_accession=100)
+        self.assertEqual(source_trait.get_previous_version(), previous_source_trait_2)
+
+    def test_get_previous_version_two_previous_versions_no_trait(self):
+        """Returns None if the source trait doesn't exist in the previous study version, even if it exists in an earlier version.""" # noqa
+        study = factories.StudyFactory.create()
+        now = datetime.now(tz=pytz.UTC)
+        previous_study_version_1 = factories.SourceStudyVersionFactory.create(
+            study=study, i_version=1, i_date_added=now - timedelta(hours=2))
+        previous_study_version_2 = factories.SourceStudyVersionFactory.create(
+            study=study, i_version=2, i_date_added=now - timedelta(hours=1))
+        study_version = factories.SourceStudyVersionFactory.create(
+            study=study, i_version=3, i_date_added=now)
+        previous_source_trait_1 = factories.SourceTraitFactory.create(
+            source_dataset__source_study_version=previous_study_version_1, i_dbgap_variable_accession=100)
+        source_trait = factories.SourceTraitFactory.create(
+            source_dataset__source_study_version=study_version, i_dbgap_variable_accession=100)
+        self.assertIsNone(source_trait.get_previous_version())
 
 
 class HarmonizedTraitTest(TestCase):
