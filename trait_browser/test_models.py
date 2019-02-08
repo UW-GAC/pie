@@ -181,6 +181,83 @@ class SourceStudyVersionTest(TestCase):
         self.assertRegex(source_study_version.full_accession, 'phs\d{6}\.v\d{1,3}\.p\d{1,3}')
         self.assertEqual(source_study_version.dbgap_link[:68], models.SourceStudyVersion.STUDY_VERSION_URL[:68])
 
+    def test_get_previous_version_no_other_versions(self):
+        """Returns None when no other versions exist."""
+        source_study_version = factories.SourceStudyVersionFactory.create()
+        self.assertIsNone(source_study_version.get_previous_version())
+
+    def test_get_previous_version_no_previous_version(self):
+        """Returns None when another version exists, but it is not a previous version."""
+        study = factories.StudyFactory.create()
+        source_study_version_1 = factories.SourceStudyVersionFactory.create(study=study, i_version=1)
+        source_study_version_2 = factories.SourceStudyVersionFactory.create(study=study, i_version=2)
+        self.assertIsNone(source_study_version_1.get_previous_version())
+
+    def test_get_previous_version_same_version_number(self):
+        """Returns the correct previous version with the same version number."""
+        study = factories.StudyFactory.create()
+        now = datetime.now(tz=pytz.UTC)
+        source_study_version_1 = factories.SourceStudyVersionFactory.create(
+            study=study, i_version=1, i_date_added=now - timedelta(hours=1))
+        source_study_version_2 = factories.SourceStudyVersionFactory.create(
+            study=study, i_version=1, i_date_added=now)
+        self.assertEqual(source_study_version_2.get_previous_version(), source_study_version_1)
+        self.assertIsNone(source_study_version_1.get_previous_version())
+
+    def test_get_previous_version_ignores_other_studies(self):
+        """"Does not return versions from other studies."""
+        now = datetime.now(tz=pytz.UTC)
+        other_source_study_version = factories.SourceStudyVersionFactory.create(
+            i_version=1, i_date_added=now - timedelta(hours=1))
+        source_study_version = factories.SourceStudyVersionFactory.create(i_version=1, i_date_added=now)
+        self.assertIsNone(source_study_version.get_previous_version())
+
+    def test_get_previous_version_one_previous(self):
+        """Returns the correct version when one other version exists."""
+        study = factories.StudyFactory.create()
+        now = datetime.now(tz=pytz.UTC)
+        source_study_version_1 = factories.SourceStudyVersionFactory.create(
+            study=study, i_version=1, i_date_added=now - timedelta(hours=1))
+        source_study_version_2 = factories.SourceStudyVersionFactory.create(
+            study=study, i_version=2, i_date_added=now)
+        self.assertEqual(source_study_version_2.get_previous_version(), source_study_version_1)
+
+    def test_get_previous_version_two_previous(self):
+        """Returns the correct version when two previous other versions exist."""
+        study = factories.StudyFactory.create()
+        now = datetime.now(tz=pytz.UTC)
+        source_study_version_1 = factories.SourceStudyVersionFactory.create(
+            study=study, i_version=1, i_date_added=now - timedelta(hours=2))
+        source_study_version_2 = factories.SourceStudyVersionFactory.create(
+            study=study, i_version=2, i_date_added=now - timedelta(hours=1))
+        source_study_version_3 = factories.SourceStudyVersionFactory.create(
+            study=study, i_version=3, i_date_added=now)
+        self.assertEqual(source_study_version_3.get_previous_version(), source_study_version_2)
+
+    def test_get_previous_verion_breaks_ties_with_date_added(self):
+        """Returns a version with a higher date_added if two previous versions have the same version."""
+        study = factories.StudyFactory.create()
+        now = datetime.now(tz=pytz.UTC)
+        source_study_version_1 = factories.SourceStudyVersionFactory.create(
+            study=study, i_version=1, i_date_added=now - timedelta(hours=2))
+        source_study_version_2 = factories.SourceStudyVersionFactory.create(
+            study=study, i_version=1, i_date_added=now - timedelta(hours=1))
+        source_study_version_3 = factories.SourceStudyVersionFactory.create(
+            study=study, i_version=2, i_date_added=now)
+        self.assertEqual(source_study_version_3.get_previous_version(), source_study_version_2)
+
+    def test_get_previous_version_filters_by_version_before_date_added(self):
+        """Returns a version with a higher version number before a higher date_added."""
+        study = factories.StudyFactory.create()
+        now = datetime.now(tz=pytz.UTC)
+        source_study_version_1 = factories.SourceStudyVersionFactory.create(
+            study=study, i_version=1, i_date_added=now - timedelta(hours=1))
+        source_study_version_2 = factories.SourceStudyVersionFactory.create(
+            study=study, i_version=2, i_date_added=now - timedelta(hours=2))
+        source_study_version_3 = factories.SourceStudyVersionFactory.create(
+            study=study, i_version=3, i_date_added=now)
+        self.assertEqual(source_study_version_3.get_previous_version(), source_study_version_2)
+
 
 class SourceDatasetTest(TestCase):
 
@@ -846,6 +923,7 @@ class SourceTraitTest(TestCase):
             i_dbgap_variable_version=deprecated_trait.i_dbgap_variable_version
         )
         self.assertEqual(deprecated_trait.get_latest_version(), current_trait_1)
+
 
 
 class HarmonizedTraitTest(TestCase):
