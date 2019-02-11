@@ -9,7 +9,7 @@ from django.test import TestCase
 from core.exceptions import DeleteNotAllowedError
 from core.factories import UserFactory
 # from core.utils import UserLoginTestCase
-from trait_browser.factories import SourceTraitFactory, StudyFactory
+from trait_browser.factories import SourceStudyVersionFactory, SourceTraitFactory, StudyFactory
 from trait_browser.models import SourceTrait
 
 from . import factories
@@ -573,6 +573,107 @@ class TaggedTraitTest(TestCase):
         # ...and is still linked to the tagged trait.
         tagged_trait.refresh_from_db()
         self.assertEqual(tagged_trait.previous_tagged_trait, previous_tagged_trait)
+
+    def test_get_latest_version_is_most_recent(self):
+        """Returns itself if this is the latest version of the TaggedTrait."""
+        tagged_trait = factories.TaggedTraitFactory.create()
+        self.assertEqual(tagged_trait.get_latest_version(), tagged_trait)
+
+    def test_get_latest_version_one_updated_version(self):
+        """Returns the correct object if there is one updated version of the tagged trait."""
+        study = StudyFactory.create()
+        tag = factories.TagFactory.create()
+        deprecated_study_version = SourceStudyVersionFactory.create(
+            study=study, i_is_deprecated=True, i_version=1)
+        study_version = SourceStudyVersionFactory.create(
+            study=study, i_version=2)
+        deprecated_trait = SourceTraitFactory.create(
+            source_dataset__source_study_version=deprecated_study_version, i_dbgap_variable_accession=1)
+        trait = SourceTraitFactory.create(
+            source_dataset__source_study_version=study_version, i_dbgap_variable_accession=1)
+        deprecated_tagged_trait = factories.TaggedTraitFactory.create(trait=deprecated_trait, tag=tag)
+        tagged_trait = factories.TaggedTraitFactory.create(trait=trait, tag=tag)
+        self.assertEqual(deprecated_tagged_trait.get_latest_version(), tagged_trait)
+
+    def test_get_latest_version_two_updated_versions(self):
+        """Returns the correct object if there are two updated versions of the tagged trait."""
+        study = StudyFactory.create()
+        tag = factories.TagFactory.create()
+        deprecated_study_version_1 = SourceStudyVersionFactory.create(
+            study=study, i_is_deprecated=True, i_version=1)
+        deprecated_study_version_2 = SourceStudyVersionFactory.create(
+            study=study, i_is_deprecated=True, i_version=2)
+        study_version = SourceStudyVersionFactory.create(
+            study=study, i_version=3)
+        deprecated_trait_1 = SourceTraitFactory.create(
+            source_dataset__source_study_version=deprecated_study_version_1, i_dbgap_variable_accession=1)
+        deprecated_trait_2 = SourceTraitFactory.create(
+            source_dataset__source_study_version=deprecated_study_version_2, i_dbgap_variable_accession=1)
+        trait = SourceTraitFactory.create(
+            source_dataset__source_study_version=study_version, i_dbgap_variable_accession=1)
+        deprecated_tagged_trait_1 = factories.TaggedTraitFactory.create(trait=deprecated_trait_1, tag=tag)
+        deprecated_tagged_trait_2 = factories.TaggedTraitFactory.create(trait=deprecated_trait_2, tag=tag)
+        tagged_trait = factories.TaggedTraitFactory.create(trait=trait, tag=tag)
+        self.assertEqual(deprecated_tagged_trait_1.get_latest_version(), tagged_trait)
+
+    def test_get_latest_version_different_tag(self):
+        """Returns None if there is no new version with the same tag."""
+        study = StudyFactory.create()
+        deprecated_study_version = SourceStudyVersionFactory.create(
+            study=study, i_is_deprecated=True, i_version=1)
+        study_version = SourceStudyVersionFactory.create(
+            study=study, i_version=2)
+        deprecated_trait = SourceTraitFactory.create(
+            source_dataset__source_study_version=deprecated_study_version, i_dbgap_variable_accession=1)
+        trait = SourceTraitFactory.create(
+            source_dataset__source_study_version=study_version, i_dbgap_variable_accession=1)
+        deprecated_tagged_trait = factories.TaggedTraitFactory.create(trait=deprecated_trait)
+        tagged_trait = factories.TaggedTraitFactory.create(trait=trait)
+        self.assertIsNone(deprecated_tagged_trait.get_latest_version())
+
+    def test_get_latest_version_different_trait(self):
+        """Does not return anything if there is no new version with the same trait accession."""
+        study = StudyFactory.create()
+        tag = factories.TagFactory.create()
+        deprecated_study_version = SourceStudyVersionFactory.create(
+            study=study, i_is_deprecated=True, i_version=1)
+        study_version = SourceStudyVersionFactory.create(
+            study=study, i_version=2)
+        deprecated_trait = SourceTraitFactory.create(
+            source_dataset__source_study_version=deprecated_study_version)
+        trait = SourceTraitFactory.create(
+            source_dataset__source_study_version=study_version)
+        deprecated_tagged_trait = factories.TaggedTraitFactory.create(trait=deprecated_trait, tag=tag)
+        tagged_trait = factories.TaggedTraitFactory.create(trait=trait, tag=tag)
+        self.assertIsNone(deprecated_tagged_trait.get_latest_version())
+
+    def test_get_latest_version_trait_removed_in_newer_version(self):
+        """Returns None if the trait doesn't exist in the newest version."""
+        study = StudyFactory.create()
+        tag = factories.TagFactory.create()
+        deprecated_study_version = SourceStudyVersionFactory.create(
+            study=study, i_is_deprecated=True, i_version=1)
+        study_version = SourceStudyVersionFactory.create(
+            study=study, i_version=2)
+        deprecated_trait = SourceTraitFactory.create(
+            source_dataset__source_study_version=deprecated_study_version, i_dbgap_variable_accession=1)
+        deprecated_tagged_trait = factories.TaggedTraitFactory.create(trait=deprecated_trait, tag=tag)
+        self.assertIsNone(deprecated_tagged_trait.get_latest_version())
+
+    def test_get_latest_version_tagged_trait_removed_in_newer_version(self):
+        """Returns None if the trait, but not the TaggedTrait, exists in a newer version."""
+        study = StudyFactory.create()
+        tag = factories.TagFactory.create()
+        deprecated_study_version = SourceStudyVersionFactory.create(
+            study=study, i_is_deprecated=True, i_version=1)
+        study_version = SourceStudyVersionFactory.create(
+            study=study, i_version=2)
+        deprecated_trait = SourceTraitFactory.create(
+            source_dataset__source_study_version=deprecated_study_version, i_dbgap_variable_accession=1)
+        trait = SourceTraitFactory.create(
+            source_dataset__source_study_version=study_version, i_dbgap_variable_accession=1)
+        deprecated_tagged_trait = factories.TaggedTraitFactory.create(trait=deprecated_trait, tag=tag)
+        self.assertIsNone(deprecated_tagged_trait.get_latest_version())
 
 
 class TaggedTraitQuerySetTest(TestCase):

@@ -117,6 +117,17 @@ class TaggedTrait(TimeStampedModel):
         """Delete objects that cannot be deleted with overriden delete method."""
         super().delete(*args, **kwargs)
 
+    def get_latest_version(self):
+        """Retreive the latest version of this TaggedTrait."""
+        latest_trait = self.trait.get_latest_version()
+        if latest_trait is not None:
+            try:
+                latest_tagged_trait = TaggedTrait.objects.current().get(trait=latest_trait, tag=self.tag)
+                return latest_tagged_trait
+            except TaggedTrait.DoesNotExist:
+                return None
+        return None
+
 
 class DCCReview(TimeStampedModel):
     """Model to allow DCC staff to review a TaggedTrait."""
