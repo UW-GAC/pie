@@ -555,6 +555,25 @@ class TaggedTraitTest(TestCase):
         with self.assertRaises(ProtectedError):
             tagged_trait.creator.delete()
 
+    def test_previous_tagged_trait(self):
+        """Setting the previous_tagged_trait model field works as expected."""
+        previous_tagged_trait = factories.TaggedTraitFactory.create()
+        tagged_trait = factories.TaggedTraitFactory.create(previous_tagged_trait=previous_tagged_trait)
+        self.assertEqual(tagged_trait.previous_tagged_trait, previous_tagged_trait)
+        self.assertEqual(previous_tagged_trait.updated_tagged_trait, tagged_trait)
+
+    def test_previous_tagged_trait_delete(self):
+        """Cannot delete a TaggedTrait that is used as a previous_tagged_trait in another object."""
+        previous_tagged_trait = factories.TaggedTraitFactory.create()
+        tagged_trait = factories.TaggedTraitFactory.create(previous_tagged_trait=previous_tagged_trait)
+        with self.assertRaises(ProtectedError):
+            previous_tagged_trait.delete()
+        # Make sure it was not deleted...
+        previous_tagged_trait.refresh_from_db()
+        # ...and is still linked to the tagged trait.
+        tagged_trait.refresh_from_db()
+        self.assertEqual(tagged_trait.previous_tagged_trait, previous_tagged_trait)
+
 
 class TaggedTraitQuerySetTest(TestCase):
     model = models.TaggedTrait

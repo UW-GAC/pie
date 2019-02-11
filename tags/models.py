@@ -64,6 +64,8 @@ class TaggedTrait(TimeStampedModel):
 
     trait = models.ForeignKey('trait_browser.SourceTrait', on_delete=models.CASCADE, related_name="all_taggedtraits")
     tag = models.ForeignKey(Tag, on_delete=models.CASCADE, related_name="all_taggedtraits")
+    previous_tagged_trait = models.OneToOneField('self', null=True, blank=True, on_delete=models.PROTECT,
+                                                 related_name='updated_tagged_trait')
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, blank=True, on_delete=models.PROTECT)
     archived = models.BooleanField(default=False)
 
