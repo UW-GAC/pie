@@ -60,7 +60,7 @@
 
 
 from django.apps import apps
-from django.core.exceptions import ObjectDoesNotExist
+from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db import models
 from django.urls import reverse
 from django.utils.text import Truncator
@@ -615,6 +615,28 @@ class SourceTrait(Trait):
             except SourceTrait.DoesNotExist:
                 return None
             return previous_trait
+
+    def apply_previous_tags(self, creator):
+        """Apply tags for the previous version of this SourceTrait to this version."""
+        TaggedTrait = apps.get_model('tags', 'TaggedTrait')
+        DCCReview = apps.get_model('tags', 'DCCReview')
+        previous_trait = self.get_previous_version()
+        if previous_trait is not None:
+            for old_tagged_trait in previous_trait.all_taggedtraits.non_archived():
+                try:
+                    # Check if it already exists.
+                    self.all_taggedtraits.non_archived().get(tag=old_tagged_trait.tag)
+                except TaggedTrait.DoesNotExist:
+                    # Create a new TaggedTrait.
+                    new_tagged_trait = TaggedTrait(
+                        tag=old_tagged_trait.tag, trait=self, creator=creator, previous_tagged_trait=old_tagged_trait)
+                    new_tagged_trait.full_clean()
+                    new_tagged_trait.save()
+                    # Create a DCCReview with confirmed status.
+                    dcc_review = DCCReview(
+                        tagged_trait=new_tagged_trait, status=DCCReview.STATUS_CONFIRMED, creator=creator)
+                    dcc_review.full_clean()
+                    dcc_review.save()
 
 
 class HarmonizedTrait(Trait):
