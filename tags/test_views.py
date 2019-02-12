@@ -407,6 +407,8 @@ class TaggedTraitDetailTestsMixin(object):
         self.assertIn('show_delete_button', context)
         self.assertIn('show_archived', context)
         self.assertIn('quality_review_panel_color', context)
+        self.assertIn('show_deprecated_message', context)
+        self.assertFalse(context['show_deprecated_message'])
 
     def test_no_other_tags(self):
         """Other tags linked to the same trait are not included in the page."""
@@ -433,6 +435,65 @@ class TaggedTraitDetailTestsMixin(object):
             tagged_trait = self.tagged_traits[tt_type]
             response = self.client.get(self.get_url(tagged_trait.pk))
             self.assertNotContains(response, reverse('tags:tagged-traits:pk:delete', kwargs={'pk': tagged_trait.pk}))
+
+    def test_context_deprecated_tagged_trait_no_new_version(self):
+        study = StudyFactory.create()
+        self.user.profile.taggable_studies.add(study)
+        self.user.refresh_from_db()
+        deprecated_tagged_trait = factories.TaggedTraitFactory.create(
+            trait__source_dataset__source_study_version__study=study,
+            trait__source_dataset__source_study_version__i_is_deprecated=True)
+        response = self.client.get(self.get_url(deprecated_tagged_trait.pk))
+        context = response.context
+        self.assertIn('show_deprecated_message', context)
+        self.assertTrue(context['show_deprecated_message'])
+        self.assertIn('deprecation_message', context)
+        self.assertIn('removed from the most recent', context['deprecation_message'])
+
+    def test_context_deprecated_tagged_trait_with_new_version(self):
+        study = StudyFactory.create()
+        self.user.profile.taggable_studies.add(study)
+        self.user.refresh_from_db()
+        tag = factories.TagFactory.create()
+        deprecated_study_version = SourceStudyVersionFactory.create(study=study, i_is_deprecated=True, i_version=1)
+        study_version = SourceStudyVersionFactory.create(study=study, i_version=2)
+        deprecated_tagged_trait = factories.TaggedTraitFactory.create(
+            trait__source_dataset__source_study_version=deprecated_study_version,
+            trait__i_dbgap_variable_accession=1,
+            tag=tag)
+        tagged_trait = factories.TaggedTraitFactory.create(
+            trait__source_dataset__source_study_version=study_version, trait__i_dbgap_variable_accession=1, tag=tag)
+        response = self.client.get(self.get_url(deprecated_tagged_trait.pk))
+        context = response.context
+        self.assertIn('show_deprecated_message', context)
+        self.assertTrue(context['show_deprecated_message'])
+        self.assertIn('deprecation_message', context)
+        self.assertIn('newer version', context['deprecation_message'])
+
+    def test_context_deprecated_tagged_trait_with_two_new_versions(self):
+        study = StudyFactory.create()
+        self.user.profile.taggable_studies.add(study)
+        self.user.refresh_from_db()
+        tag = factories.TagFactory.create()
+        deprecated_study_version_1 = SourceStudyVersionFactory.create(study=study, i_is_deprecated=True, i_version=1)
+        deprecated_study_version_2 = SourceStudyVersionFactory.create(study=study, i_is_deprecated=True, i_version=2)
+        study_version = SourceStudyVersionFactory.create(study=study, i_version=3)
+        deprecated_tagged_trait_1 = factories.TaggedTraitFactory.create(
+            trait__source_dataset__source_study_version=deprecated_study_version_1,
+            trait__i_dbgap_variable_accession=1,
+            tag=tag)
+        deprecated_tagged_trait_2 = factories.TaggedTraitFactory.create(
+            trait__source_dataset__source_study_version=deprecated_study_version_2,
+            trait__i_dbgap_variable_accession=1,
+            tag=tag)
+        tagged_trait = factories.TaggedTraitFactory.create(
+            trait__source_dataset__source_study_version=study_version, trait__i_dbgap_variable_accession=1, tag=tag)
+        response = self.client.get(self.get_url(deprecated_tagged_trait_2.pk))
+        context = response.context
+        self.assertIn('show_deprecated_message', context)
+        self.assertTrue(context['show_deprecated_message'])
+        self.assertIn('deprecation_message', context)
+        self.assertIn('newer version', context['deprecation_message'])
 
 
 class TaggedTraitDetailPhenotypeTaggerTest(TaggedTraitDetailTestsMixin, PhenotypeTaggerLoginTestCase):

@@ -14,6 +14,14 @@
   tagged variable details
 {% endblock subtitle %}
 
+{% block before_panel %}
+  {% if show_deprecated_message %}
+    <div class="alert alert-danger" role="alert">
+    {{ deprecation_message }}
+  </div>
+  {% endif %}
+{% endblock before_panel %}
+
 {% block detail_fields %}
   <dt>Tagged by</dt><dd>{{ tagged_trait.creator }}</dd>
 {% endblock detail_fields %}
