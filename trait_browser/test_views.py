@@ -1,6 +1,8 @@
 """Test the functions and classes for views.py."""
 
 from copy import copy
+from datetime import datetime, timedelta
+import pytz
 
 from django.contrib.auth.models import Group
 from django.urls import reverse
@@ -2388,6 +2390,115 @@ class StudySourceTraitListTest(UserLoginTestCase):
         context = response.context
         table = context['source_trait_table']
         self.assertEqual(len(table.rows), 0)
+
+
+class StudyNewSourceTraitListTest(UserLoginTestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.study = factories.StudyFactory.create()
+        now = datetime.now(tz=pytz.UTC)
+        self.previous_study_version = factories.SourceStudyVersionFactory.create(
+            study=self.study, i_version=2, i_date_added=now - timedelta(hours=2), i_is_deprecated=True)
+        self.updated_study_version = factories.SourceStudyVersionFactory.create(
+            study=self.study, i_version=3, i_date_added=now - timedelta(hours=1))
+        # Convert these lists to prevent queryset evaluation later on, after other traits have been created.
+        self.previous_source_traits = list(factories.SourceTraitFactory.create_batch(
+            5, source_dataset__source_study_version=self.previous_study_version))
+        for x in self.previous_source_traits:
+            factories.SourceTraitFactory.create(
+                source_dataset__source_study_version=self.updated_study_version,
+                i_dbgap_variable_accession=x.i_dbgap_variable_accession)
+        self.updated_source_traits = list(models.SourceTrait.objects.filter(
+            source_dataset__source_study_version=self.updated_study_version))
+
+    def get_url(self, *args):
+        return reverse('trait_browser:source:studies:pk:traits:new', args=args)
+
+    def test_context_data(self):
+        """View has appropriate data in the context."""
+        new_trait = factories.SourceTraitFactory.create(
+            source_dataset__source_study_version=self.updated_study_version)
+        response = self.client.get(self.get_url(self.study.pk))
+        context = response.context
+        self.assertIn('study', context)
+        self.assertIn('trait_count', context)
+        self.assertIn('dataset_count', context)
+        self.assertEqual(context['study'], self.study)
+        self.assertEqual(context['trait_count'], '{:,}'.format(len(self.updated_source_traits) + 1))
+        self.assertEqual(context['dataset_count'], '{:,}'.format(len(self.updated_source_traits) + 1))
+
+    def test_no_deprecated_traits_in_table(self):
+        """No deprecated traits are shown in the table."""
+        response = self.client.get(self.get_url(self.study.pk))
+        context = response.context
+        table = context['source_trait_table']
+        for trait in self.previous_source_traits:
+            self.assertNotIn(trait, table.data)
+
+    def test_no_updated_traits(self):
+        """Table does not include new traits that also exist in previous version."""
+        response = self.client.get(self.get_url(self.study.pk))
+        context = response.context
+        table = context['source_trait_table']
+        for trait in self.updated_source_traits:
+            self.assertNotIn(trait, table.data)
+
+    def test_no_removed_traits(self):
+        """Table does not include traits that only exist in previous version."""
+        removed_trait = factories.SourceTraitFactory.create(
+            source_dataset__source_study_version=self.previous_study_version)
+        response = self.client.get(self.get_url(self.study.pk))
+        context = response.context
+        table = context['source_trait_table']
+        self.assertNotIn(removed_trait, table.data)
+
+    def test_includes_one_new_trait(self):
+        """Table includes one new trait in this version."""
+        new_trait = factories.SourceTraitFactory.create(
+            source_dataset__source_study_version=self.updated_study_version)
+        response = self.client.get(self.get_url(self.study.pk))
+        context = response.context
+        table = context['source_trait_table']
+        self.assertIn(new_trait, table.data)
+
+    def test_includes_two_new_traits(self):
+        """Table includes two new traits in this version."""
+        new_traits = factories.SourceTraitFactory.create_batch(
+            2, source_dataset__source_study_version=self.updated_study_version)
+        response = self.client.get(self.get_url(self.study.pk))
+        context = response.context
+        table = context['source_trait_table']
+        for new_trait in new_traits:
+            self.assertIn(new_trait, table.data)
+
+    def test_no_previous_study_version(self):
+        """Works if there is no previous version of the study."""
+        self.previous_study_version.delete()
+        response = self.client.get(self.get_url(self.study.pk))
+        context = response.context
+        table = context['source_trait_table']
+        for trait in self.updated_source_traits:
+            self.assertIn(trait, table.data)
+
+    def test_does_not_compare_with_two_versions_ago(self):
+        """Does not include traits that were new in an older previous version but not the most recent version of the study."""  # noqa
+        newer_study_version = factories.SourceStudyVersionFactory.create(
+            study=self.study, i_version=1, i_date_added=datetime.now(tz=pytz.UTC),
+            i_is_deprecated=True)
+        for x in self.previous_source_traits:
+            factories.SourceTraitFactory.create(
+                source_dataset__source_study_version=newer_study_version,
+                i_dbgap_variable_accession=x.i_dbgap_variable_accession)
+        intermediate_trait = factories.SourceTraitFactory.create(
+            source_dataset__source_study_version=self.updated_study_version)
+        newer_existing_trait = factories.SourceTraitFactory.create(
+            source_dataset__source_study_version=newer_study_version,
+            i_dbgap_variable_accession=intermediate_trait.i_dbgap_variable_accession)
+        response = self.client.get(self.get_url(self.study.pk))
+        context = response.context
+        table = context['source_trait_table']
+        self.assertNotIn(newer_existing_trait, table.data)
 
 
 class StudyTaggedTraitListTest(UserLoginTestCase):

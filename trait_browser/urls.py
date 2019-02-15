@@ -65,6 +65,7 @@ source_study_dataset_patterns = ([
 
 source_study_trait_patterns = ([
     url(r'^$', views.StudySourceTraitList.as_view(), name='list'),
+    url(r'^new/$', views.StudySourceTraitNewList.as_view(), name='new'),
     url(r'^search/$', views.StudySourceTraitSearch.as_view(), name='search'),
     url(r'^tagged/$', views.StudyTaggedTraitList.as_view(), name='tagged'),
 ], 'traits', )
