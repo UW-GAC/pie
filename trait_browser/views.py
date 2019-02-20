@@ -473,21 +473,11 @@ class StudySourceTraitNewList(SingleTableMixin, StudyDetail):
     table_pagination = {'per_page': TABLE_PER_PAGE}
 
     def get_table_data(self):
-        previous_study_version = self.object.get_latest_version().get_previous_version()
-        qs = models.SourceTrait.objects.current().filter(
-            source_dataset__source_study_version__study=self.object
-        )
-        if previous_study_version is not None:
-            # We can probably write this with a join to be more efficient.
-            previous_variable_accessions = models.SourceTrait.objects.filter(
-                source_dataset__source_study_version=previous_study_version
-            ).values_list('i_dbgap_variable_accession', flat=True)
-            qs = qs.exclude(i_dbgap_variable_accession__in=previous_variable_accessions)
-        return qs.select_related(
-            'source_dataset',
-            'source_dataset__source_study_version',
-            'source_dataset__source_study_version__study'
-        )
+        return self.object.get_latest_version().get_new_sourcetraits().select_related(
+                'source_dataset',
+                'source_dataset__source_study_version',
+                'source_dataset__source_study_version__study'
+            )
 
 
 class StudyTaggedTraitList(StudyDetail):
