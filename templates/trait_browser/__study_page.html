@@ -35,6 +35,13 @@
           </a>
         </p>
       {% endif %}
+      {% if show_new_trait_button %}
+      <p>
+        <a class="btn btn-primary" href="{% url 'trait_browser:source:studies:pk:traits:new' study.pk %}" role="button">
+          <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span> Variables added in this version
+        </a>
+      </p>
+      {% endif %}
     </div>
     <div class="col-sm-6">
       <p>

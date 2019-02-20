@@ -31,9 +31,9 @@ class StudyDetailTest(UserLoginTestCase):
     def setUp(self):
         super(StudyDetailTest, self).setUp()
         self.study = factories.StudyFactory.create()
+        self.study_version = factories.SourceStudyVersionFactory.create(study=self.study, i_is_deprecated=False)
         self.source_traits = factories.SourceTraitFactory.create_batch(
-            10, source_dataset__source_study_version__i_is_deprecated=False,
-            source_dataset__source_study_version__study=self.study)
+            10, source_dataset__source_study_version=self.study_version)
 
     def get_url(self, *args):
         return reverse('trait_browser:source:studies:pk:detail', args=args)
@@ -79,6 +79,37 @@ class StudyDetailTest(UserLoginTestCase):
         context = response.context
         expected_url = reverse('trait_browser:source:studies:pk:traits:tagged', args=[self.study.pk])
         self.assertNotContains(response, expected_url)
+
+    def test_no_new_trait_button_with_no_new_variables(self):
+        """The button to show new traits is not present if there are no new traits."""
+        self.study_version.i_is_deprecated = True
+        self.study_version.save()
+        new_version = factories.SourceStudyVersionFactory.create(
+            study=self.study, i_version=self.study_version.i_version+1, i_date_added=datetime.now(tz=pytz.UTC))
+        for x in self.source_traits:
+            factories.SourceTraitFactory.create(
+                source_dataset__source_study_version=new_version,
+                i_dbgap_variable_accession=x.i_dbgap_variable_accession)
+        response = self.client.get(self.get_url(self.study.pk))
+        context = response.context
+        self.assertIn('show_new_trait_button', context)
+        self.assertFalse(context['show_new_trait_button'])
+        self.assertNotContains(response, reverse('trait_browser:source:studies:pk:traits:new', args=[self.study.pk]))
+
+    def test_new_trait_button_with_new_variables(self):
+        """The button to show new traits is present if there are new traits."""
+        new_study_version = factories.SourceStudyVersionFactory.create(
+            study=self.study,
+            i_version=self.study_version.i_version + 1,
+            i_date_added=datetime.now(tz=pytz.UTC))
+        # Create a new trait in this version
+        new_traits = factories.SourceTraitFactory.create_batch(
+            2, source_dataset__source_study_version=new_study_version)
+        response = self.client.get(self.get_url(self.study.pk))
+        context = response.context
+        self.assertIn('show_new_trait_button', context)
+        self.assertTrue(context['show_new_trait_button'])
+        self.assertContains(response, reverse('trait_browser:source:studies:pk:traits:new', args=[self.study.pk]))
 
 
 class StudyListTest(UserLoginTestCase):

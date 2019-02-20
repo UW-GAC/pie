@@ -99,6 +99,8 @@ class StudyDetail(LoginRequiredMixin, DetailView):
         dataset_count = models.SourceDataset.objects.current().filter(source_study_version__study=self.object).count()
         context['trait_count'] = '{:,}'.format(trait_count)
         context['dataset_count'] = '{:,}'.format(dataset_count)
+        qs = self.object.get_latest_version().get_new_sourcetraits()
+        context['show_new_trait_button'] = qs.count() > 0
         return context
 
 
