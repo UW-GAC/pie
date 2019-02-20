@@ -259,6 +259,113 @@ class SourceStudyVersionTest(TestCase):
         self.assertEqual(source_study_version_3.get_previous_version(), source_study_version_2)
 
 
+class SourceStudyVersionGetNewSourcetraitsTest(TestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.study = factories.StudyFactory.create()
+        now = datetime.now(tz=pytz.UTC)
+        self.study_version_1 = factories.SourceStudyVersionFactory.create(
+            study=self.study, i_version=1, i_date_added=now - timedelta(hours=2), i_is_deprecated=True)
+        self.study_version_2 = factories.SourceStudyVersionFactory.create(
+            study=self.study, i_version=2, i_date_added=now - timedelta(hours=1), i_is_deprecated=True)
+        self.study_version_3 = factories.SourceStudyVersionFactory.create(
+            study=self.study, i_version=3, i_date_added=now)
+        # Convert these lists to prevent queryset evaluation later on, after other traits have been created.
+        # Create traits for the first version.
+        self.source_traits_v1 = list(factories.SourceTraitFactory.create_batch(
+            5, source_dataset__source_study_version=self.study_version_1))
+        # Create traits with the same accessions for the second and third versions.
+        for x in self.source_traits_v1:
+            factories.SourceTraitFactory.create(
+                source_dataset__source_study_version=self.study_version_2,
+                i_dbgap_variable_accession=x.i_dbgap_variable_accession)
+            factories.SourceTraitFactory.create(
+                source_dataset__source_study_version=self.study_version_3,
+                i_dbgap_variable_accession=x.i_dbgap_variable_accession)
+        self.source_traits_v2 = list(models.SourceTrait.objects.filter(
+            source_dataset__source_study_version=self.study_version_2))
+        self.source_traits_v3 = list(models.SourceTrait.objects.filter(
+            source_dataset__source_study_version=self.study_version_3))
+
+    def test_no_deprecated_traits_in_table(self):
+        """No deprecated traits are shown in the table."""
+        result = self.study_version_3.get_new_sourcetraits()
+        for trait in self.source_traits_v1:
+            self.assertNotIn(trait, result)
+        for trait in self.source_traits_v2:
+            self.assertNotIn(trait, result)
+
+    def test_no_updated_traits(self):
+        """Table does not include new traits that also exist in previous version."""
+        result = self.study_version_3.get_new_sourcetraits()
+        for trait in self.source_traits_v3:
+            self.assertNotIn(trait, result)
+
+    def test_no_removed_traits(self):
+        """Table does not include traits that only exist in previous version."""
+        removed_trait_1 = factories.SourceTraitFactory.create(
+            source_dataset__source_study_version=self.study_version_1)
+        removed_trait_2 = factories.SourceTraitFactory.create(
+            source_dataset__source_study_version=self.study_version_2,
+            i_dbgap_variable_accession=removed_trait_1.i_dbgap_variable_accession)
+        result = self.study_version_3.get_new_sourcetraits()
+        self.assertNotIn(removed_trait_1, result)
+        self.assertNotIn(removed_trait_2, result)
+        self.assertEqual(len(result), 0)
+
+    def test_includes_one_new_trait(self):
+        """Table includes one new trait in this version."""
+        new_trait = factories.SourceTraitFactory.create(
+            source_dataset__source_study_version=self.study_version_3)
+        result = self.study_version_3.get_new_sourcetraits()
+        self.assertIn(new_trait, result)
+
+    def test_includes_two_new_traits(self):
+        """Table includes two new traits in this version."""
+        new_traits = factories.SourceTraitFactory.create_batch(
+            2, source_dataset__source_study_version=self.study_version_3)
+        result = self.study_version_3.get_new_sourcetraits()
+        for new_trait in new_traits:
+            self.assertIn(new_trait, result)
+
+    def test_no_previous_study_version(self):
+        """Works if there is no previous version of the study."""
+        self.study_version_1.delete()
+        self.study_version_2.delete()
+        result = self.study_version_3.get_new_sourcetraits()
+        for trait in self.source_traits_v3:
+            self.assertIn(trait, result)
+
+    def test_does_not_compare_with_two_versions_ago(self):
+        """Does not include traits that were new in an older previous version but not the most recent version of the study."""  # noqa
+        new_trait_v2 = factories.SourceTraitFactory.create(
+            source_dataset__source_study_version=self.study_version_2)
+        new_trait_v3 = factories.SourceTraitFactory.create(
+            source_dataset__source_study_version=self.study_version_3,
+            i_dbgap_variable_accession=new_trait_v2.i_dbgap_variable_accession)
+        result = self.study_version_3.get_new_sourcetraits()
+        self.assertNotIn(new_trait_v3, result)
+
+    def test_intermediate_version_no_new_current_traits(self):
+        """Does not show a new trait in a more recent study version."""
+        new_trait_v3 = factories.SourceTraitFactory.create(
+            source_dataset__source_study_version=self.study_version_3)
+        result = self.study_version_2.get_new_sourcetraits()
+        self.assertNotIn(new_trait_v3, result)
+
+    def test_intermediate_version_one_newer_traits(self):
+        """Shows a new trait in an intermediate version."""
+        new_trait_v2 = factories.SourceTraitFactory.create(
+            source_dataset__source_study_version=self.study_version_2)
+        new_trait_v3 = factories.SourceTraitFactory.create(
+            source_dataset__source_study_version=self.study_version_3,
+            i_dbgap_variable_accession=new_trait_v2.i_dbgap_variable_accession)
+        result = self.study_version_2.get_new_sourcetraits()
+        self.assertIn(new_trait_v2, result)
+        self.assertNotIn(new_trait_v3, result)
+
+
 class SourceDatasetTest(TestCase):
 
     def test_model_saving(self):

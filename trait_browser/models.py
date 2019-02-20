@@ -289,6 +289,21 @@ class SourceStudyVersion(SourceDBTimeStampedModel):
             '-i_date_added'
         ).first()
 
+    def get_new_sourcetraits(self):
+        """Return a queryset of SourceTraits that are new in this version compared to past versions."""
+        previous_study_version = self.get_previous_version()
+        SourceTrait = apps.get_model('trait_browser', 'SourceTrait')
+        qs = SourceTrait.objects.filter(
+            source_dataset__source_study_version=self
+        )
+        if previous_study_version is not None:
+            # We can probably write this with a join to be more efficient.
+            previous_variable_accessions = SourceTrait.objects.filter(
+                source_dataset__source_study_version=previous_study_version
+            ).values_list('i_dbgap_variable_accession', flat=True)
+            qs = qs.exclude(i_dbgap_variable_accession__in=previous_variable_accessions)
+        return qs
+
 
 class Subcohort(SourceDBTimeStampedModel):
     """Model for subcohort from topmed_pheno."""
