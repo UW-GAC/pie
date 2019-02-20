@@ -2392,7 +2392,7 @@ class StudySourceTraitListTest(UserLoginTestCase):
         self.assertEqual(len(table.rows), 0)
 
 
-class StudyNewSourceTraitListTest(UserLoginTestCase):
+class StudySourceTraitNewListTest(UserLoginTestCase):
 
     def setUp(self):
         super().setUp()
