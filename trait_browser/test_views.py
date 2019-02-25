@@ -2526,8 +2526,9 @@ class StudySourceTraitNewListTest(UserLoginTestCase):
         response = self.client.get(self.get_url(self.study.pk))
         context = response.context
         table = context['source_trait_table']
+        self.assertEqual(len(table.data), 0)
         for trait in self.source_traits_v3:
-            self.assertIn(trait, table.data)
+            self.assertNotIn(trait, table.data)
 
     def test_does_not_compare_with_two_versions_ago(self):
         """Does not include traits that were new in an older previous version but not the most recent version of the study."""  # noqa

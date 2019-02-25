@@ -334,8 +334,7 @@ class SourceStudyVersionGetNewSourcetraitsTest(TestCase):
         self.study_version_1.delete()
         self.study_version_2.delete()
         result = self.study_version_3.get_new_sourcetraits()
-        for trait in self.source_traits_v3:
-            self.assertIn(trait, result)
+        self.assertEqual(result.count(), 0)
 
     def test_does_not_compare_with_two_versions_ago(self):
         """Does not include traits that were new in an older previous version but not the most recent version of the study."""  # noqa
