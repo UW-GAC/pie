@@ -306,6 +306,14 @@ class SourceStudyVersion(SourceDBTimeStampedModel):
         else:
             return SourceTrait.objects.none()
 
+    def apply_previous_tags(self, user):
+        previous_study_version = self.get_previous_version()
+        if previous_study_version is not None:
+            SourceTrait = apps.get_model('trait_browser', 'SourceTrait')
+            traits_to_tag = SourceTrait.objects.filter(source_dataset__source_study_version=self)
+            for trait in traits_to_tag:
+                trait.apply_previous_tags(user)
+
 
 class Subcohort(SourceDBTimeStampedModel):
     """Model for subcohort from topmed_pheno."""
