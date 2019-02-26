@@ -1,13 +1,13 @@
 """Tests of models for the tags app."""
 
 from datetime import datetime, timedelta
-import pytz
 
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db.models.query import QuerySet
 from django.db.models.deletion import ProtectedError
 from django.db.utils import IntegrityError
 from django.test import TestCase
+from django.utils import timezone
 
 from core.exceptions import DeleteNotAllowedError
 from core.factories import UserFactory
@@ -490,7 +490,7 @@ class SourceTraitApplyPreviousTagsTest(SuperuserLoginTestCase):
     def setUp(self):
         super().setUp()
         self.study = StudyFactory.create()
-        now = datetime.now(tz=pytz.UTC)
+        now = timezone.now()
         self.deprecated_study_version = SourceStudyVersionFactory.create(
             study=self.study, i_is_deprecated=True, i_date_added=now - timedelta(hours=2))
         self.updated_study_version = SourceStudyVersionFactory.create(
@@ -562,7 +562,7 @@ class SourceTraitApplyPreviousTagsTest(SuperuserLoginTestCase):
         deprecated_tagged_trait = factories.TaggedTraitFactory.create(tag=tag, trait=self.deprecated_source_trait)
         newer_study_version = SourceStudyVersionFactory.create(
             study=self.study, i_version=self.updated_study_version.i_version + 1,
-            i_date_added=datetime.now(tz=pytz.UTC) - timedelta(minutes=30))
+            i_date_added=timezone.now() - timedelta(minutes=30))
         newer_source_trait = SourceTraitFactory.create(
             source_dataset__source_study_version=newer_study_version,
             i_dbgap_variable_accession=self.deprecated_source_trait.i_dbgap_variable_accession

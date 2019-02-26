@@ -1,11 +1,11 @@
 """Test functions and classes from models.py."""
 
 from datetime import datetime, timedelta
-import pytz
 
 from django.db.models.query import QuerySet
 from django.core.exceptions import ValidationError
 from django.test import TestCase
+from django.utils import timezone
 
 from faker import Factory
 
@@ -128,15 +128,15 @@ class StudyTest(TestCase):
     def test_get_latest_version_breaks_ties_with_i_version(self):
         """get_latest_version chooses highest version for two non-deprecated versions."""
         study = factories.StudyFactory.create()
-        now = datetime.now(tz=pytz.UTC)
+        now = timezone.now()
         study_version_1 = factories.SourceStudyVersionFactory.create(
             study=study,
-            i_date_added=datetime.now(tz=pytz.UTC)
+            i_date_added=timezone.now()
         )
         study_version_2 = factories.SourceStudyVersionFactory.create(
             study=study,
             i_version=study_version_1.i_version + 1,
-            i_date_added=datetime.now(tz=pytz.UTC) - timedelta(hours=1)
+            i_date_added=timezone.now() - timedelta(hours=1)
         )
         self.assertEqual(study.get_latest_version(), study_version_2)
 
@@ -146,12 +146,12 @@ class StudyTest(TestCase):
         study_version_1 = factories.SourceStudyVersionFactory.create(
             study=study,
             i_version=1,
-            i_date_added=datetime.now(tz=pytz.UTC)
+            i_date_added=timezone.now()
         )
         study_version_2 = factories.SourceStudyVersionFactory.create(
             study=study,
             i_version=1,
-            i_date_added=datetime.now(tz=pytz.UTC) - timedelta(hours=1)
+            i_date_added=timezone.now() - timedelta(hours=1)
         )
         self.assertEqual(study.get_latest_version(), study_version_1)
 
@@ -196,7 +196,7 @@ class SourceStudyVersionTest(TestCase):
     def test_get_previous_version_same_version_number(self):
         """Returns the correct previous version with the same version number."""
         study = factories.StudyFactory.create()
-        now = datetime.now(tz=pytz.UTC)
+        now = timezone.now()
         source_study_version_1 = factories.SourceStudyVersionFactory.create(
             study=study, i_version=1, i_date_added=now - timedelta(hours=1))
         source_study_version_2 = factories.SourceStudyVersionFactory.create(
@@ -206,7 +206,7 @@ class SourceStudyVersionTest(TestCase):
 
     def test_get_previous_version_ignores_other_studies(self):
         """"Does not return versions from other studies."""
-        now = datetime.now(tz=pytz.UTC)
+        now = timezone.now()
         other_source_study_version = factories.SourceStudyVersionFactory.create(
             i_version=1, i_date_added=now - timedelta(hours=1))
         source_study_version = factories.SourceStudyVersionFactory.create(i_version=1, i_date_added=now)
@@ -215,7 +215,7 @@ class SourceStudyVersionTest(TestCase):
     def test_get_previous_version_one_previous(self):
         """Returns the correct version when one other version exists."""
         study = factories.StudyFactory.create()
-        now = datetime.now(tz=pytz.UTC)
+        now = timezone.now()
         source_study_version_1 = factories.SourceStudyVersionFactory.create(
             study=study, i_version=1, i_date_added=now - timedelta(hours=1))
         source_study_version_2 = factories.SourceStudyVersionFactory.create(
@@ -225,7 +225,7 @@ class SourceStudyVersionTest(TestCase):
     def test_get_previous_version_two_previous(self):
         """Returns the correct version when two previous other versions exist."""
         study = factories.StudyFactory.create()
-        now = datetime.now(tz=pytz.UTC)
+        now = timezone.now()
         source_study_version_1 = factories.SourceStudyVersionFactory.create(
             study=study, i_version=1, i_date_added=now - timedelta(hours=2))
         source_study_version_2 = factories.SourceStudyVersionFactory.create(
@@ -237,7 +237,7 @@ class SourceStudyVersionTest(TestCase):
     def test_get_previous_verion_breaks_ties_with_date_added(self):
         """Returns a version with a higher date_added if two previous versions have the same version."""
         study = factories.StudyFactory.create()
-        now = datetime.now(tz=pytz.UTC)
+        now = timezone.now()
         source_study_version_1 = factories.SourceStudyVersionFactory.create(
             study=study, i_version=1, i_date_added=now - timedelta(hours=2))
         source_study_version_2 = factories.SourceStudyVersionFactory.create(
@@ -249,7 +249,7 @@ class SourceStudyVersionTest(TestCase):
     def test_get_previous_version_filters_by_version_before_date_added(self):
         """Returns a version with a higher version number before a higher date_added."""
         study = factories.StudyFactory.create()
-        now = datetime.now(tz=pytz.UTC)
+        now = timezone.now()
         source_study_version_1 = factories.SourceStudyVersionFactory.create(
             study=study, i_version=1, i_date_added=now - timedelta(hours=1))
         source_study_version_2 = factories.SourceStudyVersionFactory.create(
@@ -264,7 +264,7 @@ class SourceStudyVersionGetNewSourcetraitsTest(TestCase):
     def setUp(self):
         super().setUp()
         self.study = factories.StudyFactory.create()
-        now = datetime.now(tz=pytz.UTC)
+        now = timezone.now()
         self.study_version_1 = factories.SourceStudyVersionFactory.create(
             study=self.study, i_version=1, i_date_added=now - timedelta(hours=2), i_is_deprecated=True)
         self.study_version_2 = factories.SourceStudyVersionFactory.create(
@@ -552,11 +552,11 @@ class SourceDatasetTest(TestCase):
         study = factories.StudyFactory.create()
         deprecated_study_version = factories.SourceStudyVersionFactory.create(study=study, i_is_deprecated=True)
         deprecated_dataset = factories.SourceDatasetFactory.create(source_study_version=deprecated_study_version)
-        now = datetime.now(tz=pytz.UTC)
+        now = timezone.now()
         current_study_version_1 = factories.SourceStudyVersionFactory.create(
             study=study,
             i_version=deprecated_study_version.i_version + 1,
-            i_date_added=datetime.now(tz=pytz.UTC)
+            i_date_added=timezone.now()
         )
         current_dataset_1 = factories.SourceDatasetFactory.create(
             source_study_version=current_study_version_1,
@@ -566,7 +566,7 @@ class SourceDatasetTest(TestCase):
         current_study_version_2 = factories.SourceStudyVersionFactory.create(
             study=study,
             i_version=deprecated_study_version.i_version + 2,
-            i_date_added=datetime.now(tz=pytz.UTC) - timedelta(hours=1)
+            i_date_added=timezone.now() - timedelta(hours=1)
         )
         current_dataset_2 = factories.SourceDatasetFactory.create(
             source_study_version=current_study_version_2,
@@ -583,7 +583,7 @@ class SourceDatasetTest(TestCase):
         current_study_version_1 = factories.SourceStudyVersionFactory.create(
             study=study,
             i_version=deprecated_study_version.i_version + 1,
-            i_date_added=datetime.now(tz=pytz.UTC)
+            i_date_added=timezone.now()
         )
         current_dataset_1 = factories.SourceDatasetFactory.create(
             source_study_version=current_study_version_1,
@@ -593,7 +593,7 @@ class SourceDatasetTest(TestCase):
         current_study_version_2 = factories.SourceStudyVersionFactory.create(
             study=study,
             i_version=deprecated_study_version.i_version + 1,
-            i_date_added=datetime.now(tz=pytz.UTC) - timedelta(hours=1)
+            i_date_added=timezone.now() - timedelta(hours=1)
         )
         current_dataset_2 = factories.SourceDatasetFactory.create(
             source_study_version=current_study_version_2,
@@ -979,11 +979,11 @@ class SourceTraitTest(TestCase):
         deprecated_study_version = factories.SourceStudyVersionFactory.create(study=study, i_is_deprecated=True)
         deprecated_trait = factories.SourceTraitFactory.create(
             source_dataset__source_study_version=deprecated_study_version)
-        now = datetime.now(tz=pytz.UTC)
+        now = timezone.now()
         current_study_version_1 = factories.SourceStudyVersionFactory.create(
             study=study,
             i_version=deprecated_study_version.i_version + 1,
-            i_date_added=datetime.now(tz=pytz.UTC)
+            i_date_added=timezone.now()
         )
         current_trait_1 = factories.SourceTraitFactory.create(
             source_dataset__source_study_version=current_study_version_1,
@@ -993,7 +993,7 @@ class SourceTraitTest(TestCase):
         current_study_version_2 = factories.SourceStudyVersionFactory.create(
             study=study,
             i_version=deprecated_study_version.i_version + 2,
-            i_date_added=datetime.now(tz=pytz.UTC) - timedelta(hours=1)
+            i_date_added=timezone.now() - timedelta(hours=1)
         )
         current_trait_2 = factories.SourceTraitFactory.create(
             source_dataset__source_study_version=current_study_version_2,
@@ -1011,7 +1011,7 @@ class SourceTraitTest(TestCase):
         current_study_version_1 = factories.SourceStudyVersionFactory.create(
             study=study,
             i_version=deprecated_study_version.i_version + 1,
-            i_date_added=datetime.now(tz=pytz.UTC)
+            i_date_added=timezone.now()
         )
         current_trait_1 = factories.SourceTraitFactory.create(
             source_dataset__source_study_version=current_study_version_1,
@@ -1021,7 +1021,7 @@ class SourceTraitTest(TestCase):
         current_study_version_2 = factories.SourceStudyVersionFactory.create(
             study=study,
             i_version=deprecated_study_version.i_version + 1,
-            i_date_added=datetime.now(tz=pytz.UTC) - timedelta(hours=1)
+            i_date_added=timezone.now() - timedelta(hours=1)
         )
         current_trait_2 = factories.SourceTraitFactory.create(
             source_dataset__source_study_version=current_study_version_2,
@@ -1038,7 +1038,7 @@ class SourceTraitTest(TestCase):
     def test_get_previous_version_no_previous_study_version(self):
         """Returns None if there is no previous study version."""
         study = factories.StudyFactory.create()
-        now = datetime.now(tz=pytz.UTC)
+        now = timezone.now()
         study_version = factories.SourceStudyVersionFactory.create(
             study=study, i_version=1, i_date_added=now - timedelta(hours=1))
         newer_study_version = factories.SourceStudyVersionFactory.create(
@@ -1051,7 +1051,7 @@ class SourceTraitTest(TestCase):
 
     def test_get_previous_version_previous_version_has_trait(self):
         study = factories.StudyFactory.create()
-        now = datetime.now(tz=pytz.UTC)
+        now = timezone.now()
         previous_study_version = factories.SourceStudyVersionFactory.create(
             study=study, i_version=1, i_date_added=now - timedelta(hours=1))
         study_version = factories.SourceStudyVersionFactory.create(
@@ -1065,7 +1065,7 @@ class SourceTraitTest(TestCase):
     def test_get_previous_version_previous_version_no_trait(self):
         """Returns None if the source trait doesn't exist in the previous version."""
         study = factories.StudyFactory.create()
-        now = datetime.now(tz=pytz.UTC)
+        now = timezone.now()
         previous_study_version = factories.SourceStudyVersionFactory.create(
             study=study, i_version=1, i_date_added=now - timedelta(hours=1))
         study_version = factories.SourceStudyVersionFactory.create(
@@ -1077,7 +1077,7 @@ class SourceTraitTest(TestCase):
     def test_get_previous_version_two_previous_versions_have_trait(self):
         """Returns the correct source trait if it exists in multiple previous versions."""
         study = factories.StudyFactory.create()
-        now = datetime.now(tz=pytz.UTC)
+        now = timezone.now()
         previous_study_version_1 = factories.SourceStudyVersionFactory.create(
             study=study, i_version=1, i_date_added=now - timedelta(hours=2))
         previous_study_version_2 = factories.SourceStudyVersionFactory.create(
@@ -1095,7 +1095,7 @@ class SourceTraitTest(TestCase):
     def test_get_previous_version_two_previous_versions_no_trait(self):
         """Returns None if the source trait doesn't exist in the previous study version, even if it exists in an earlier version.""" # noqa
         study = factories.StudyFactory.create()
-        now = datetime.now(tz=pytz.UTC)
+        now = timezone.now()
         previous_study_version_1 = factories.SourceStudyVersionFactory.create(
             study=study, i_version=1, i_date_added=now - timedelta(hours=2))
         previous_study_version_2 = factories.SourceStudyVersionFactory.create(

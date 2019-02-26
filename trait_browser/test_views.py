@@ -2,10 +2,10 @@
 
 from copy import copy
 from datetime import datetime, timedelta
-import pytz
 
 from django.contrib.auth.models import Group
 from django.urls import reverse
+from django.utils import timezone
 
 from core.utils import (DCCAnalystLoginTestCase, get_autocomplete_view_ids, LoginRequiredTestCase,
                         PhenotypeTaggerLoginTestCase, UserLoginTestCase)
@@ -85,7 +85,7 @@ class StudyDetailTest(UserLoginTestCase):
         self.study_version.i_is_deprecated = True
         self.study_version.save()
         new_version = factories.SourceStudyVersionFactory.create(
-            study=self.study, i_version=self.study_version.i_version+1, i_date_added=datetime.now(tz=pytz.UTC))
+            study=self.study, i_version=self.study_version.i_version+1, i_date_added=timezone.now())
         for x in self.source_traits:
             factories.SourceTraitFactory.create(
                 source_dataset__source_study_version=new_version,
@@ -101,7 +101,7 @@ class StudyDetailTest(UserLoginTestCase):
         new_study_version = factories.SourceStudyVersionFactory.create(
             study=self.study,
             i_version=self.study_version.i_version + 1,
-            i_date_added=datetime.now(tz=pytz.UTC))
+            i_date_added=timezone.now())
         # Create a new trait in this version
         new_traits = factories.SourceTraitFactory.create_batch(
             2, source_dataset__source_study_version=new_study_version)
@@ -2428,7 +2428,7 @@ class StudySourceTraitNewListTest(UserLoginTestCase):
     def setUp(self):
         super().setUp()
         self.study = factories.StudyFactory.create()
-        now = datetime.now(tz=pytz.UTC)
+        now = timezone.now()
         self.study_version_1 = factories.SourceStudyVersionFactory.create(
             study=self.study, i_version=1, i_date_added=now - timedelta(hours=2), i_is_deprecated=True)
         self.study_version_2 = factories.SourceStudyVersionFactory.create(
