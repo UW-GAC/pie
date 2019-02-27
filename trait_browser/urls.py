@@ -60,6 +60,7 @@ source_study_dataset_autocomplete_patterns = ([
 source_study_dataset_patterns = ([
     url(r'^autocomplete/', include(source_study_dataset_autocomplete_patterns)),
     url(r'^$', views.StudySourceDatasetList.as_view(), name='list'),
+    url(r'^new/$', views.StudySourceDatasetNewList.as_view(), name='new'),
     url(r'^search/$', views.StudySourceDatasetSearch.as_view(), name='search'),
 ], 'datasets', )
 

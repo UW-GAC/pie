@@ -32,8 +32,11 @@ class StudyDetailTest(UserLoginTestCase):
         super(StudyDetailTest, self).setUp()
         self.study = factories.StudyFactory.create()
         self.study_version = factories.SourceStudyVersionFactory.create(study=self.study, i_is_deprecated=False)
-        self.source_traits = factories.SourceTraitFactory.create_batch(
-            10, source_dataset__source_study_version=self.study_version)
+        self.datasets = factories.SourceDatasetFactory.create_batch(2, source_study_version=self.study_version)
+        for dataset in self.datasets:
+            factories.SourceTraitFactory.create_batch(5, source_dataset=dataset)
+        self.source_traits = list(models.SourceTrait.objects.filter(
+            source_dataset__source_study_version=self.study_version))
 
     def get_url(self, *args):
         return reverse('trait_browser:source:studies:pk:detail', args=args)
@@ -110,6 +113,34 @@ class StudyDetailTest(UserLoginTestCase):
         self.assertIn('show_new_trait_button', context)
         self.assertTrue(context['show_new_trait_button'])
         self.assertContains(response, reverse('trait_browser:source:studies:pk:traits:new', args=[self.study.pk]))
+
+    def test_no_new_dataset_button_with_no_new_datasets(self):
+        """The button to show new datasets is not present if there are no new datasets."""
+        self.study_version.i_is_deprecated = True
+        self.study_version.save()
+        new_version = factories.SourceStudyVersionFactory.create(
+            study=self.study, i_version=self.study_version.i_version + 1, i_date_added=timezone.now())
+        for dataset in self.datasets:
+            factories.SourceDatasetFactory.create(
+                source_study_version=new_version, i_accession=dataset.i_accession)
+        response = self.client.get(self.get_url(self.study.pk))
+        context = response.context
+        self.assertIn('show_new_dataset_button', context)
+        self.assertFalse(context['show_new_dataset_button'])
+        self.assertNotContains(response, reverse('trait_browser:source:studies:pk:datasets:new', args=[self.study.pk]))
+
+    def test_new_dataset_button_with_new_datasets(self):
+        """The button to show new datasets is present if there are new datasets."""
+        self.study_version.i_is_deprecated = True
+        self.study_version.save()
+        new_version = factories.SourceStudyVersionFactory.create(
+            study=self.study, i_version=self.study_version.i_version + 1, i_date_added=timezone.now())
+        new_dataset = factories.SourceDatasetFactory.create(source_study_version=new_version)
+        response = self.client.get(self.get_url(self.study.pk))
+        context = response.context
+        self.assertIn('show_new_dataset_button', context)
+        self.assertTrue(context['show_new_dataset_button'])
+        self.assertContains(response, reverse('trait_browser:source:studies:pk:datasets:new', args=[self.study.pk]))
 
 
 class StudyListTest(UserLoginTestCase):
@@ -857,6 +888,120 @@ class StudySourceDatasetListTest(UserLoginTestCase):
         context = response.context
         table = context['source_dataset_table']
         self.assertEqual(len(table.rows), 0)
+
+
+class StudySourceDatasetNewListTest(UserLoginTestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.study = factories.StudyFactory.create()
+        now = timezone.now()
+        self.study_version_1 = factories.SourceStudyVersionFactory.create(
+            study=self.study, i_version=1, i_date_added=now - timedelta(hours=2), i_is_deprecated=True)
+        self.study_version_2 = factories.SourceStudyVersionFactory.create(
+            study=self.study, i_version=2, i_date_added=now - timedelta(hours=1), i_is_deprecated=True)
+        self.study_version_3 = factories.SourceStudyVersionFactory.create(
+            study=self.study, i_version=3, i_date_added=now)
+        # Convert these lists to prevent queryset evaluation later on, after other datasets have been created.
+        # Create datasets for the first version.
+        self.datasets_v1 = list(factories.SourceDatasetFactory.create_batch(
+            5, source_study_version=self.study_version_1))
+        # Create datasets with the same accessions for the second and third versions.
+        for x in self.datasets_v1:
+            d2 = factories.SourceDatasetFactory.create(
+                source_study_version=self.study_version_2, i_accession=x.i_accession)
+            factories.SourceTraitFactory.create_batch(2, source_dataset=d2)
+            d3 = factories.SourceDatasetFactory.create(
+                source_study_version=self.study_version_3, i_accession=x.i_accession)
+            factories.SourceTraitFactory.create_batch(2, source_dataset=d3)
+        self.datasets_v2 = list(models.SourceDataset.objects.filter(source_study_version=self.study_version_2))
+        self.datasets_v3 = list(models.SourceDataset.objects.filter(source_study_version=self.study_version_3))
+
+    def get_url(self, *args):
+        return reverse('trait_browser:source:studies:pk:datasets:new', args=args)
+
+    def test_context_data(self):
+        """View has appropriate data in the context."""
+        new_dataset = factories.SourceDatasetFactory.create(
+            source_study_version=self.study_version_3)
+        response = self.client.get(self.get_url(self.study.pk))
+        context = response.context
+        self.assertIn('study', context)
+        self.assertIn('trait_count', context)
+        self.assertIn('dataset_count', context)
+        self.assertEqual(context['study'], self.study)
+        self.assertEqual(context['trait_count'], '{:,}'.format(models.SourceTrait.objects.filter(
+            source_dataset__source_study_version=self.study_version_3).count()))
+        self.assertEqual(context['dataset_count'], '{:,}'.format(len(self.datasets_v3) + 1))
+
+    def test_no_deprecated_datasets_in_table(self):
+        """No deprecated datasets are shown in the table."""
+        response = self.client.get(self.get_url(self.study.pk))
+        context = response.context
+        table = context['source_dataset_table']
+        for dataset in self.datasets_v1:
+            self.assertNotIn(dataset, table.data)
+        for dataset in self.datasets_v2:
+            self.assertNotIn(dataset, table.data)
+
+    def test_no_updated_datasets(self):
+        """Table does not include new datasets that also exist in previous version."""
+        response = self.client.get(self.get_url(self.study.pk))
+        context = response.context
+        table = context['source_dataset_table']
+        for dataset in self.datasets_v3:
+            self.assertNotIn(dataset, table.data)
+
+    def test_no_removed_datasets(self):
+        """Table does not include datasets that only exist in previous version."""
+        removed_dataset_1 = factories.SourceDatasetFactory.create(source_study_version=self.study_version_1)
+        removed_dataset_2 = factories.SourceDatasetFactory.create(
+            source_study_version=self.study_version_2, i_accession=removed_dataset_1.i_accession)
+        response = self.client.get(self.get_url(self.study.pk))
+        context = response.context
+        table = context['source_dataset_table']
+        self.assertNotIn(removed_dataset_1, table.data)
+        self.assertNotIn(removed_dataset_2, table.data)
+        self.assertEqual(len(table.data), 0)
+
+    def test_includes_one_new_dataset(self):
+        """Table includes one new dataset in this version."""
+        new_dataset = factories.SourceDatasetFactory.create(source_study_version=self.study_version_3)
+        response = self.client.get(self.get_url(self.study.pk))
+        context = response.context
+        table = context['source_dataset_table']
+        self.assertIn(new_dataset, table.data)
+
+    def test_includes_two_new_datasets(self):
+        """Table includes two new datasets in this version."""
+        new_datasets = factories.SourceDatasetFactory.create_batch(2, source_study_version=self.study_version_3)
+        response = self.client.get(self.get_url(self.study.pk))
+        context = response.context
+        table = context['source_dataset_table']
+        for new_dataset in new_datasets:
+            self.assertIn(new_dataset, table.data)
+
+    def test_no_previous_study_version(self):
+        """Works if there is no previous version of the study."""
+        self.study_version_1.delete()
+        self.study_version_2.delete()
+        response = self.client.get(self.get_url(self.study.pk))
+        context = response.context
+        table = context['source_dataset_table']
+        self.assertEqual(len(table.data), 0)
+        for dataset in self.datasets_v3:
+            self.assertNotIn(dataset, table.data)
+
+    def test_does_not_compare_with_two_versions_ago(self):
+        """Does not include datasets that were new in an older previous version but not the most recent version of the study."""  # noqa
+        new_dataset_2 = factories.SourceDatasetFactory.create(source_study_version=self.study_version_2)
+        new_dataset_3 = factories.SourceDatasetFactory.create(
+            source_study_version=self.study_version_3,
+            i_accession=new_dataset_2.i_accession)
+        response = self.client.get(self.get_url(self.study.pk))
+        context = response.context
+        table = context['source_dataset_table']
+        self.assertNotIn(new_dataset_3, table.data)
 
 
 class SourceDatasetSearchTest(UserLoginTestCase):

@@ -99,8 +99,10 @@ class StudyDetail(LoginRequiredMixin, DetailView):
         dataset_count = models.SourceDataset.objects.current().filter(source_study_version__study=self.object).count()
         context['trait_count'] = '{:,}'.format(trait_count)
         context['dataset_count'] = '{:,}'.format(dataset_count)
-        qs = self.object.get_latest_version().get_new_sourcetraits()
-        context['show_new_trait_button'] = qs.count() > 0
+        new_datasets = self.object.get_latest_version().get_new_sourcedatasets()
+        context['show_new_dataset_button'] = new_datasets.count() > 0
+        new_traits = self.object.get_latest_version().get_new_sourcetraits()
+        context['show_new_trait_button'] = new_traits.count() > 0
         return context
 
 
@@ -247,6 +249,17 @@ class StudySourceDatasetList(SingleTableMixin, StudyDetail):
     def get_table_data(self):
         return models.SourceDataset.objects.current().filter(
             source_study_version__study=self.object)
+
+
+class StudySourceDatasetNewList(SingleTableMixin, StudyDetail):
+    """Show a list of new datasets in the newest study version."""
+    template_name = 'trait_browser/study_sourcedataset_new_list.html'
+    context_table_name = 'source_dataset_table'
+    table_class = tables.SourceDatasetTable
+    table_pagination = {'per_page': TABLE_PER_PAGE}
+
+    def get_table_data(self):
+        return self.object.get_latest_version().get_new_sourcedatasets()
 
 
 class SourceDatasetSearch(LoginRequiredMixin, SearchFormMixin, SingleTableMixin, MessageMixin, TemplateView):
