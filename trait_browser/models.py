@@ -306,6 +306,21 @@ class SourceStudyVersion(SourceDBTimeStampedModel):
         else:
             return SourceTrait.objects.none()
 
+    def get_new_sourcedatasets(self):
+        """Return a queryset of SourceDatasets that are new in this version compared to past versions."""
+        previous_study_version = self.get_previous_version()
+        SourceDataset = apps.get_model('trait_browser', 'SourceDataset')
+        if previous_study_version is not None:
+            qs = SourceDataset.objects.filter(source_study_version=self)
+            # We can probably write this with a join to be more efficient.
+            previous_dataset_accessions = SourceDataset.objects.filter(
+                source_study_version=previous_study_version
+            ).values_list('i_accession', flat=True)
+            qs = qs.exclude(i_accession__in=previous_dataset_accessions)
+            return qs
+        else:
+            return SourceDataset.objects.none()
+
     def apply_previous_tags(self, user):
         previous_study_version = self.get_previous_version()
         if previous_study_version is not None:

@@ -259,6 +259,99 @@ class SourceStudyVersionTest(TestCase):
         self.assertEqual(source_study_version_3.get_previous_version(), source_study_version_2)
 
 
+class SourceStudyVersionGetNewSourceDatasetsTest(TestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.study = factories.StudyFactory.create()
+        now = timezone.now()
+        self.study_version_1 = factories.SourceStudyVersionFactory.create(
+            study=self.study, i_version=1, i_date_added=now - timedelta(hours=2), i_is_deprecated=True)
+        self.study_version_2 = factories.SourceStudyVersionFactory.create(
+            study=self.study, i_version=2, i_date_added=now - timedelta(hours=1), i_is_deprecated=True)
+        self.study_version_3 = factories.SourceStudyVersionFactory.create(
+            study=self.study, i_version=3, i_date_added=now)
+        # Convert these lists to prevent queryset evaluation later on, after other traits have been created.
+        # Create traits for the first version.
+        self.datasets_v1 = list(factories.SourceDatasetFactory.create_batch(
+            5, source_study_version=self.study_version_1))
+        # Create traits with the same accessions for the second and third versions.
+        for x in self.datasets_v1:
+            factories.SourceDatasetFactory.create(source_study_version=self.study_version_2, i_accession=x.i_accession)
+            factories.SourceDatasetFactory.create(source_study_version=self.study_version_3, i_accession=x.i_accession)
+        self.datasets_v2 = list(models.SourceDataset.objects.filter(source_study_version=self.study_version_2))
+        self.datasets_v3 = list(models.SourceDataset.objects.filter(source_study_version=self.study_version_3))
+
+    def test_no_deprecated_datasets(self):
+        """Does not include deprecated datasets."""
+        result = self.study_version_3.get_new_sourcedatasets()
+        for dataset in self.datasets_v1:
+            self.assertNotIn(dataset, result)
+        for dataset in self.datasets_v2:
+            self.assertNotIn(dataset, result)
+
+    def test_no_updated_datasets(self):
+        """Does not include new datasets that also exist in previous version."""
+        result = self.study_version_3.get_new_sourcedatasets()
+        for dataset in self.datasets_v3:
+            self.assertNotIn(dataset, result)
+
+    def test_no_removed_datasets(self):
+        """Includes datasets that only exist in previous version."""
+        removed_dataset_1 = factories.SourceDatasetFactory.create(source_study_version=self.study_version_1)
+        removed_dataset_2 = factories.SourceDatasetFactory.create(
+            source_study_version=self.study_version_2, i_accession=removed_dataset_1.i_accession)
+        result = self.study_version_3.get_new_sourcedatasets()
+        self.assertNotIn(removed_dataset_1, result)
+        self.assertNotIn(removed_dataset_2, result)
+        self.assertEqual(len(result), 0)
+
+    def test_includes_one_new_dataset(self):
+        """Includes one new dataset in this version."""
+        new_dataset = factories.SourceDatasetFactory.create(source_study_version=self.study_version_3)
+        result = self.study_version_3.get_new_sourcedatasets()
+        self.assertIn(new_dataset, result)
+
+    def test_includes_two_new_datasets(self):
+        """Includes two new traits in this version."""
+        new_datasets = factories.SourceDatasetFactory.create_batch(2, source_study_version=self.study_version_3)
+        result = self.study_version_3.get_new_sourcedatasets()
+        for new_dataset in new_datasets:
+            self.assertIn(new_dataset, result)
+
+    def test_no_previous_study_version(self):
+        """Works if there is no previous version of the study."""
+        self.study_version_1.delete()
+        self.study_version_2.delete()
+        result = self.study_version_3.get_new_sourcedatasets()
+        self.assertEqual(result.count(), 0)
+
+    def test_does_not_compare_with_two_versions_ago(self):
+        """Does not include datasets that were new in an older previous version but not the most recent version of the study."""  # noqa
+        new_dataset_v2 = factories.SourceDatasetFactory.create(source_study_version=self.study_version_2)
+        new_dataset_v3 = factories.SourceDatasetFactory.create(
+            source_study_version=self.study_version_3,
+            i_accession=new_dataset_v2.i_accession)
+        result = self.study_version_3.get_new_sourcedatasets()
+        self.assertNotIn(new_dataset_v3, result)
+
+    def test_intermediate_version_no_new_current_datasets(self):
+        """Does not show a new dataset in a more recent study version."""
+        new_dataset_v3 = factories.SourceDatasetFactory.create(source_study_version=self.study_version_3)
+        result = self.study_version_2.get_new_sourcedatasets()
+        self.assertNotIn(new_dataset_v3, result)
+
+    def test_intermediate_version_one_newer_dataset(self):
+        """Shows a new dataset in an intermediate version."""
+        new_dataset_v2 = factories.SourceDatasetFactory.create(source_study_version=self.study_version_2)
+        new_dataset_v3 = factories.SourceDatasetFactory.create(
+            source_study_version=self.study_version_3,
+            i_accession=new_dataset_v2.i_accession)
+        result = self.study_version_2.get_new_sourcedatasets()
+        self.assertIn(new_dataset_v2, result)
+        self.assertNotIn(new_dataset_v3, result)
+
+
 class SourceStudyVersionGetNewSourcetraitsTest(TestCase):
 
     def setUp(self):
