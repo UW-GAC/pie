@@ -352,7 +352,7 @@ class SourceStudyVersionGetNewSourceDatasetsTest(TestCase):
         self.assertNotIn(new_dataset_v3, result)
 
 
-class SourceStudyVersionGetNewSourcetraitsTest(TestCase):
+class SourceStudyVersionGetNewSourceTraitsTest(TestCase):
 
     def setUp(self):
         super().setUp()
@@ -381,8 +381,8 @@ class SourceStudyVersionGetNewSourcetraitsTest(TestCase):
         self.source_traits_v3 = list(models.SourceTrait.objects.filter(
             source_dataset__source_study_version=self.study_version_3))
 
-    def test_no_deprecated_traits_in_table(self):
-        """No deprecated traits are shown in the table."""
+    def test_no_deprecated_traits(self):
+        """No deprecated traits are returned."""
         result = self.study_version_3.get_new_sourcetraits()
         for trait in self.source_traits_v1:
             self.assertNotIn(trait, result)
@@ -390,13 +390,13 @@ class SourceStudyVersionGetNewSourcetraitsTest(TestCase):
             self.assertNotIn(trait, result)
 
     def test_no_updated_traits(self):
-        """Table does not include new traits that also exist in previous version."""
+        """Does not include new traits that also exist in previous version."""
         result = self.study_version_3.get_new_sourcetraits()
         for trait in self.source_traits_v3:
             self.assertNotIn(trait, result)
 
     def test_no_removed_traits(self):
-        """Table does not include traits that only exist in previous version."""
+        """Does not include traits that only exist in previous version."""
         removed_trait_1 = factories.SourceTraitFactory.create(
             source_dataset__source_study_version=self.study_version_1)
         removed_trait_2 = factories.SourceTraitFactory.create(
@@ -408,14 +408,14 @@ class SourceStudyVersionGetNewSourcetraitsTest(TestCase):
         self.assertEqual(len(result), 0)
 
     def test_includes_one_new_trait(self):
-        """Table includes one new trait in this version."""
+        """Includes one new trait in this version."""
         new_trait = factories.SourceTraitFactory.create(
             source_dataset__source_study_version=self.study_version_3)
         result = self.study_version_3.get_new_sourcetraits()
         self.assertIn(new_trait, result)
 
     def test_includes_two_new_traits(self):
-        """Table includes two new traits in this version."""
+        """Includes two new traits in this version."""
         new_traits = factories.SourceTraitFactory.create_batch(
             2, source_dataset__source_study_version=self.study_version_3)
         result = self.study_version_3.get_new_sourcetraits()
