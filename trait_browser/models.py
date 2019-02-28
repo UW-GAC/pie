@@ -278,16 +278,19 @@ class SourceStudyVersion(SourceDBTimeStampedModel):
         """Automatically set dbgap_link from dbGaP identifier information."""
         return self.STUDY_VERSION_URL.format(self.full_accession)
 
-    def get_previous_version(self):
-        """Return the previous version of this study."""
-        # self.study.sourcestudyversion_set.filter(version_lt=self.version).latest('-i_date_added')
+    def get_previous_versions(self):
+        """Return an ordered queryset of previous versions."""
         return self.study.sourcestudyversion_set.filter(
             i_version__lte=self.i_version,
             i_date_added__lt=self.i_date_added
         ).order_by(
             '-i_version',
             '-i_date_added'
-        ).first()
+        )
+
+    def get_previous_version(self):
+        """Return the previous version of this study."""
+        return self.get_previous_versions().first()
 
     def get_new_sourcetraits(self):
         """Return a queryset of SourceTraits that are new in this version compared to past versions."""

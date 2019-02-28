@@ -181,6 +181,98 @@ class SourceStudyVersionTest(TestCase):
         self.assertRegex(source_study_version.full_accession, 'phs\d{6}\.v\d{1,3}\.p\d{1,3}')
         self.assertEqual(source_study_version.dbgap_link[:68], models.SourceStudyVersion.STUDY_VERSION_URL[:68])
 
+    def test_get_previous_versions_no_other_versions(self):
+        """Returns an empty queryset when no other versions exist."""
+        source_study_version = factories.SourceStudyVersionFactory.create()
+        self.assertEqual(source_study_version.get_previous_versions().count(), 0)
+
+    def test_get_previous_versions_no_previous_versions(self):
+        """Returns an empty queryset when another version exists, but it is not a previous version."""
+        study = factories.StudyFactory.create()
+        source_study_version_1 = factories.SourceStudyVersionFactory.create(study=study, i_version=1)
+        source_study_version_2 = factories.SourceStudyVersionFactory.create(study=study, i_version=2)
+        self.assertEqual(source_study_version_1.get_previous_versions().count(), 0)
+
+    def test_get_previous_versions_same_version_number(self):
+        """Returns previous versions in the correct order if they have the same version number."""
+        study = factories.StudyFactory.create()
+        now = timezone.now()
+        source_study_version_1 = factories.SourceStudyVersionFactory.create(
+            study=study, i_version=1, i_date_added=now - timedelta(hours=1))
+        source_study_version_2 = factories.SourceStudyVersionFactory.create(
+            study=study, i_version=1, i_date_added=now - timedelta(minutes=30))
+        source_study_version_3 = factories.SourceStudyVersionFactory.create(
+            study=study, i_version=1, i_date_added=now)
+        result = source_study_version_3.get_previous_versions()
+        self.assertEqual(result.count(), 2)
+        self.assertEqual(result[0], source_study_version_2)
+        self.assertEqual(result[1], source_study_version_1)
+
+    def test_get_previous_versions_ignores_other_studies(self):
+        """"Does not return versions from other studies."""
+        now = timezone.now()
+        other_source_study_version = factories.SourceStudyVersionFactory.create(
+            i_version=1, i_date_added=now - timedelta(hours=1))
+        source_study_version = factories.SourceStudyVersionFactory.create(i_version=1, i_date_added=now)
+        self.assertEqual(source_study_version.get_previous_versions().count(), 0)
+
+    def test_get_previous_versions_one_previous(self):
+        """Returns the correct queryset when one other version exists."""
+        study = factories.StudyFactory.create()
+        now = timezone.now()
+        source_study_version_1 = factories.SourceStudyVersionFactory.create(
+            study=study, i_version=1, i_date_added=now - timedelta(hours=1))
+        source_study_version_2 = factories.SourceStudyVersionFactory.create(
+            study=study, i_version=2, i_date_added=now)
+        result = source_study_version_2.get_previous_versions()
+        self.assertEqual(result.count(), 1)
+        self.assertEqual(result[0], source_study_version_1)
+
+    def test_get_previous_versions_two_previous(self):
+        """Returns the versions in the correct order when two previous other versions exist."""
+        study = factories.StudyFactory.create()
+        now = timezone.now()
+        source_study_version_1 = factories.SourceStudyVersionFactory.create(
+            study=study, i_version=1, i_date_added=now - timedelta(hours=2))
+        source_study_version_2 = factories.SourceStudyVersionFactory.create(
+            study=study, i_version=2, i_date_added=now - timedelta(hours=1))
+        source_study_version_3 = factories.SourceStudyVersionFactory.create(
+            study=study, i_version=3, i_date_added=now)
+        result = source_study_version_3.get_previous_versions()
+        self.assertEqual(result.count(), 2)
+        self.assertEqual(result[0], source_study_version_2)
+        self.assertEqual(result[1], source_study_version_1)
+
+    def test_get_previous_versions_breaks_ties_with_date_added(self):
+        """Returns versions in the correct order if two previous versions have the same version."""
+        study = factories.StudyFactory.create()
+        now = timezone.now()
+        source_study_version_1 = factories.SourceStudyVersionFactory.create(
+            study=study, i_version=1, i_date_added=now - timedelta(hours=2))
+        source_study_version_2 = factories.SourceStudyVersionFactory.create(
+            study=study, i_version=1, i_date_added=now - timedelta(hours=1))
+        source_study_version_3 = factories.SourceStudyVersionFactory.create(
+            study=study, i_version=2, i_date_added=now)
+        result = source_study_version_3.get_previous_versions()
+        self.assertEqual(result.count(), 2)
+        self.assertEqual(result[0], source_study_version_2)
+        self.assertEqual(result[1], source_study_version_1)
+
+    def test_get_previous_versions_filters_by_version_before_date_added(self):
+        """Returns versions ordered by a higher version number before a higher date_added."""
+        study = factories.StudyFactory.create()
+        now = timezone.now()
+        source_study_version_1 = factories.SourceStudyVersionFactory.create(
+            study=study, i_version=1, i_date_added=now - timedelta(hours=1))
+        source_study_version_2 = factories.SourceStudyVersionFactory.create(
+            study=study, i_version=2, i_date_added=now - timedelta(hours=2))
+        source_study_version_3 = factories.SourceStudyVersionFactory.create(
+            study=study, i_version=3, i_date_added=now)
+        result = source_study_version_3.get_previous_versions()
+        self.assertEqual(result.count(), 2)
+        self.assertEqual(result[0], source_study_version_2)
+        self.assertEqual(result[1], source_study_version_1)
+
     def test_get_previous_version_no_other_versions(self):
         """Returns None when no other versions exist."""
         source_study_version = factories.SourceStudyVersionFactory.create()
