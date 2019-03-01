@@ -576,7 +576,6 @@ class SourceStudyVersionApplyPreviousTagsTest(SuperuserLoginTestCase):
             source_dataset__source_study_version=self.deprecated_study_version,
             i_dbgap_variable_accession=updated_trait.i_dbgap_variable_accession)
         self.assertEqual(deprecated_trait.all_tags.count(), 0)
-        print(models.TaggedTrait.objects.all())
 
     def test_ignores_older_version(self):
         """Ignores tags in older versions of this study."""
