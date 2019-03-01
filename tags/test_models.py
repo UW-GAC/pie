@@ -1,6 +1,6 @@
 """Tests of models for the tags app."""
 
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db.models.query import QuerySet

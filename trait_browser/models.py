@@ -60,7 +60,7 @@
 
 
 from django.apps import apps
-from django.core.exceptions import ObjectDoesNotExist, ValidationError
+from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from django.urls import reverse
 from django.utils.text import Truncator

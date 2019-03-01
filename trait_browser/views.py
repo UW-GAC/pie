@@ -253,6 +253,7 @@ class StudySourceDatasetList(SingleTableMixin, StudyDetail):
 
 class StudySourceDatasetNewList(SingleTableMixin, StudyDetail):
     """Show a list of new datasets in the newest study version."""
+
     template_name = 'trait_browser/study_sourcedataset_new_list.html'
     context_table_name = 'source_dataset_table'
     table_class = tables.SourceDatasetTable
@@ -489,10 +490,10 @@ class StudySourceTraitNewList(SingleTableMixin, StudyDetail):
 
     def get_table_data(self):
         return self.object.get_latest_version().get_new_sourcetraits().select_related(
-                'source_dataset',
-                'source_dataset__source_study_version',
-                'source_dataset__source_study_version__study'
-            )
+            'source_dataset',
+            'source_dataset__source_study_version',
+            'source_dataset__source_study_version__study'
+        )
 
 
 class StudyTaggedTraitList(StudyDetail):

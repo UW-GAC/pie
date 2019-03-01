@@ -209,7 +209,7 @@ class SourceStudyVersionTest(TestCase):
         self.assertEqual(result[1], source_study_version_1)
 
     def test_get_previous_versions_ignores_other_studies(self):
-        """"Does not return versions from other studies."""
+        """Does not return versions from other studies."""
         now = timezone.now()
         other_source_study_version = factories.SourceStudyVersionFactory.create(
             i_version=1, i_date_added=now - timedelta(hours=1))
@@ -297,7 +297,7 @@ class SourceStudyVersionTest(TestCase):
         self.assertIsNone(source_study_version_1.get_previous_version())
 
     def test_get_previous_version_ignores_other_studies(self):
-        """"Does not return versions from other studies."""
+        """Does not return versions from other studies."""
         now = timezone.now()
         other_source_study_version = factories.SourceStudyVersionFactory.create(
             i_version=1, i_date_added=now - timedelta(hours=1))

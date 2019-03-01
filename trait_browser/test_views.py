@@ -1,7 +1,7 @@
 """Test the functions and classes for views.py."""
 
 from copy import copy
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 from django.contrib.auth.models import Group
 from django.urls import reverse
@@ -88,7 +88,7 @@ class StudyDetailTest(UserLoginTestCase):
         self.study_version.i_is_deprecated = True
         self.study_version.save()
         new_version = factories.SourceStudyVersionFactory.create(
-            study=self.study, i_version=self.study_version.i_version+1, i_date_added=timezone.now())
+            study=self.study, i_version=self.study_version.i_version + 1, i_date_added=timezone.now())
         for x in self.source_traits:
             factories.SourceTraitFactory.create(
                 source_dataset__source_study_version=new_version,
