@@ -62,6 +62,7 @@
 from django.apps import apps
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
+from django.db.models import Count, F, Sum
 from django.urls import reverse
 from django.utils.text import Truncator
 from core.models import TimeStampedModel
@@ -328,7 +329,25 @@ class SourceStudyVersion(SourceDBTimeStampedModel):
         previous_study_version = self.get_previous_version()
         if previous_study_version is not None:
             SourceTrait = apps.get_model('trait_browser', 'SourceTrait')
-            traits_to_tag = SourceTrait.objects.filter(source_dataset__source_study_version=self)
+            TaggedTrait = apps.get_model('tags', 'TaggedTrait')
+            # Get the set of variable accession numbers in the previous version that have tags applied them.
+            previous_accessions_with_tags = TaggedTrait.objects.non_archived().filter(
+                trait__source_dataset__source_study_version=previous_study_version
+            ).values(
+                trait_pk=F('trait__pk'),
+                trait_accession=F('trait__i_dbgap_variable_accession')
+            ).annotate(
+                tt_count=Count('pk')
+            ).filter(
+                tt_count__gt=0
+            ).values_list(
+                'trait_accession',
+                flat=True
+            ).distinct()
+            traits_to_tag = SourceTrait.objects.filter(
+                source_dataset__source_study_version=self,
+                i_dbgap_variable_accession__in=previous_accessions_with_tags
+            )
             for trait in traits_to_tag:
                 trait.apply_previous_tags(user)
 
