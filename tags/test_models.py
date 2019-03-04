@@ -607,6 +607,20 @@ class SourceStudyVersionApplyPreviousTagsTest(SuperuserLoginTestCase):
             i_dbgap_variable_accession=deprecated_trait.i_dbgap_variable_accession)
         self.assertEqual(updated_trait.all_tags.count(), 0)
 
+    def test_works_if_study_version_is_deprecated(self):
+        """Successfully applies tags even if the study version is deprecated."""
+        tag = factories.TagFactory.create()
+        deprecated_trait = self.deprecated_source_traits[0]
+        factories.TaggedTraitFactory.create(tag=tag, trait=deprecated_trait)
+        self.updated_study_version.i_is_deprecated = True
+        self.updated_study_version.save()
+        self.updated_study_version.apply_previous_tags(self.user)
+        updated_trait = SourceTrait.objects.get(
+            source_dataset__source_study_version=self.updated_study_version,
+            i_dbgap_variable_accession=deprecated_trait.i_dbgap_variable_accession)
+        self.assertEqual(updated_trait.all_tags.count(), 1)
+        self.assertEqual(updated_trait.all_tags.first(), tag)
+
 
 class SourceTraitApplyPreviousTagsTest(SuperuserLoginTestCase):
 
