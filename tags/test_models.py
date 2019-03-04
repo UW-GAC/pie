@@ -581,7 +581,8 @@ class SourceStudyVersionApplyPreviousTagsTest(SuperuserLoginTestCase):
         """Ignores tags in older versions of this study."""
         deprecated_trait = self.deprecated_source_traits[0]
         new_study_version = SourceStudyVersionFactory.create(
-            study=self.study, i_is_deprecated=False, i_date_added=timezone.now())
+            study=self.study, i_is_deprecated=False, i_date_added=timezone.now(),
+            i_version=self.updated_study_version.i_version + 1)
         new_trait = SourceTraitFactory.create(
             source_dataset__source_study_version=new_study_version,
             i_dbgap_variable_accession=deprecated_trait.i_dbgap_variable_accession)
