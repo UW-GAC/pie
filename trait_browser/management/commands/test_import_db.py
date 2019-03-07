@@ -51,7 +51,10 @@ def get_devel_db(permissions='readonly'):
     Returns:
         connection to the MySQL devel db
     """
-    return CMD._get_source_db(which_db='devel', permissions=permissions)
+    if permissions == 'readonly':
+        return CMD._get_source_db(which_db='devel')
+    elif permissions == 'full':
+        return CMD._get_source_db(which_db='devel', admin=True)
 
 
 def clean_devel_db():
@@ -88,7 +91,7 @@ def load_test_source_db_data(filename):
     filepath = join(TEST_DATA_DIR, filename)
     # if verbose: print('Loading test data from ' + filepath + ' ...')
     mysql_load = ['mysql', '--defaults-file={}'.format(join(settings.SITE_ROOT, settings.CNF_PATH)),
-                  '--defaults-group-suffix=_topmed_pheno_full_devel', '<', filepath]
+                  '--defaults-group-suffix=_topmed_pheno_devel_admin', '<', filepath]
     return_code = call(' '.join(mysql_load), shell=True, cwd=settings.SITE_ROOT)
     if return_code == 1:
         raise ValueError('MySQL failed to load test data.')
