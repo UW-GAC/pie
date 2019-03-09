@@ -1361,24 +1361,18 @@ class Command(BaseCommand):
         else:
             # Connect to the production db by default.
             source_db = self._get_source_db(which_db='production')
-        
-        # Get a read-only connection to the db, which will be used in helper functions.
-        ro_source_db = self._get_source_db(which_db=options.get('which_db'))
-        # Get a full-privileges db connection, so that you can lock the tables
-        # to prevent anyone from writing new data to the db during the update/import.
-        full_source_db = self._get_source_db(which_db=options.get('which_db'), permissions='full', just_locking=True)
-        self._lock_source_db(full_source_db)
+        # Lock the source db to prevent others writing new partial data.
+        self._lock_source_db(source_db)
         logger.info('Locked source db against writes from others.')
         # First update, then import new data.
         if not options.get('import_only'):
-            self._update_source_tables(source_db=ro_source_db)
-            self._update_harmonized_tables(source_db=ro_source_db)
+            self._update_source_tables(source_db=source_db)
+            self._update_harmonized_tables(source_db=source_db)
         if not options.get('update_only'):
-            self._import_source_tables(source_db=ro_source_db)
-            self._import_harmonized_tables(source_db=ro_source_db)
-        # Unlock the full permissions db connection.
-        self._unlock_source_db(full_source_db)
+            self._import_source_tables(source_db=source_db)
+            self._import_harmonized_tables(source_db=source_db)
+        # Unlock the db connection.
+        self._unlock_source_db(source_db)
         logger.info('Unlocked source db.')
         # Close all db connections.
-        ro_source_db.close()
-        full_source_db.close()
+        source_db.close()
