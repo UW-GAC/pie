@@ -40,11 +40,11 @@ TEST = len(argv) >= 2 and search(r'manage.py$', argv[0]) and argv[1] == 'test'
 
 # Special query for getting harmonization unit links from the component trait tables.
 HUNIT_QUERY = ' '.join(['SELECT DISTINCT unit_trait_map.harmonized_trait_id, unit_trait_map.harmonization_unit_id FROM (',  # noqa: E501
-                        'SELECT harmonized_trait_id, harmonization_unit_id FROM component_source_trait AS comp_source',
+                        'SELECT harmonized_trait_id, harmonization_unit_id FROM component_source_trait',
                         'UNION',
-                        'SELECT harmonized_trait_id, harmonization_unit_id FROM component_harmonized_trait_set AS comp_harm',  # noqa: E501
+                        'SELECT harmonized_trait_id, harmonization_unit_id FROM component_harmonized_trait_set',  # noqa: E501
                         'UNION',
-                        'SELECT harmonized_trait_id, harmonization_unit_id FROM component_batch_trait AS comp_batch',
+                        'SELECT harmonized_trait_id, harmonization_unit_id FROM component_batch_trait',
                         ') AS unit_trait_map'
                         ])
 

@@ -1215,9 +1215,21 @@ class SpecialQueryTest(BaseTestDataTestCase):
         """HUNIT_QUERY returns good results."""
         self.cursor.execute(HUNIT_QUERY)
         results = self.cursor.fetchall()
-        self.assertTrue(len(results) == 16)  # Change if changing test data.
         self.assertIn('harmonized_trait_id', results[0].keys())
         self.assertIn('harmonization_unit_id', results[0].keys())
+        self.assertTrue(len(results) == 11)  # Change if changing test data.
+
+    def test_HUNIT_QUERY_while_locked(self):
+        """HUNIT_QUERY can still be run when db is locked."""
+        # Replicates this error from making new_harmonization_unit_harmonized_trait_links in _import_harmonized_tables:
+        # mysql.connector.errors.DatabaseError: 1100 (HY000): Table 'comp_source' was not locked with LOCK TABLES
+        CMD._lock_source_db(self.source_db)
+        self.cursor.execute(HUNIT_QUERY)
+        results = self.cursor.fetchall()
+        self.assertIn('harmonized_trait_id', results[0].keys())
+        self.assertIn('harmonization_unit_id', results[0].keys())
+        self.assertTrue(len(results) == 11)  # Change if changing test data.
+        CMD._unlock_source_db(self.source_db)
 
 
 class UpdateModelsTest(ClearSearchIndexMixin, BaseTestDataTestCase):
