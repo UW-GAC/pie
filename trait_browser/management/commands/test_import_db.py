@@ -40,6 +40,9 @@ CMD = Command()
 ORIGINAL_BACKUP_DIR = settings.DBBACKUP_STORAGE_OPTIONS['location']
 TEST_DATA_DIR = 'trait_browser/source_db_test_data'
 DBGAP_RE = compile(r'(?P<dbgap_id>phs\d{6}\.v\d+?\.pht\d{6}\.v\d+?)')
+LOCKED_TABLES_QUERY = 'SHOW OPEN TABLES WHERE in_use > 0'
+UNLOCKED_TABLES_QUERY = 'SHOW OPEN TABLES WHERE in_use = 0'
+ALL_TABLES_QUERY = 'SHOW TABLES'
 
 
 def get_devel_db(permissions='readonly'):
@@ -67,9 +70,8 @@ def clean_devel_db():
     source_db = get_devel_db(permissions='full')
     cursor = source_db.cursor(buffered=True, dictionary=False)
     # if verbose: print('Emptying current data from devel source db ...')
-    cursor.execute('SHOW TABLES;')
+    cursor.execute(ALL_TABLES_QUERY)
     tables = [el[0].decode('utf-8') for el in cursor.fetchall()]
-    tables.remove('schema_changes')
     tables = [el for el in tables if not el.startswith('view_')]
     # Turn off foreign key checks.
     cursor.execute('SET FOREIGN_KEY_CHECKS = 0;')
@@ -95,8 +97,6 @@ def load_test_source_db_data(filename):
     return_code = call(' '.join(mysql_load), shell=True, cwd=settings.SITE_ROOT)
     if return_code == 1:
         raise ValueError('MySQL failed to load test data.')
-    # else:
-    #     if verbose: print('Test data loaded ...')
 
 
 def change_data_in_table(table_name, update_field, new_value, where_field, where_value):
@@ -224,11 +224,12 @@ class TestFunctionsTest(TestCase):
 
     def test_clean_devel_db(self):
         """Test that clean_devel_db() leaves the devel db with 0 rows in each table."""
+        clean_devel_db()
         load_test_source_db_data('base.sql')
         clean_devel_db()
         source_db = get_devel_db(permissions='full')
         cursor = source_db.cursor(buffered=True, dictionary=False)
-        cursor.execute('SHOW TABLES;')
+        cursor.execute(ALL_TABLES_QUERY)
         tables = [el[0].decode('utf-8') for el in cursor.fetchall()]
         tables.remove('schema_changes')
         tables = [el for el in tables if not el.startswith('view_')]
@@ -546,8 +547,6 @@ class GetSourceDbTest(TestCase):
 
 class LockSourceDbTest(TestCase):
     """Tests of the functions to lock the source db."""
-    LOCKED_TABLE_QUERY = 'SHOW OPEN TABLES WHERE in_use > 0'
-    UNLOCKED_TABLE_QUERY = 'SHOW OPEN TABLES WHERE in_use = 0'
 
     def test_locks_all_tables_devel(self):
         """Locks all non-view tables in devel db."""
@@ -555,9 +554,9 @@ class LockSourceDbTest(TestCase):
         db_name = db.database.decode('utf-8')
         CMD._lock_source_db(db)
         cursor = db.cursor(dictionary=True)
-        cursor.execute(self.LOCKED_TABLE_QUERY)
+        cursor.execute(LOCKED_TABLES_QUERY)
         locked_tables = [row['Table'].decode('utf-8') for row in cursor]
-        cursor.execute('SHOW TABLES')
+        cursor.execute(ALL_TABLES_QUERY)
         all_tables = [row['Tables_in_' + db_name].decode('utf-8') for row in cursor]
         all_tables = [el for el in all_tables if not el.startswith('view_')]
         all_tables.sort()
@@ -570,43 +569,21 @@ class LockSourceDbTest(TestCase):
         db = CMD._get_source_db(which_db='devel')
         db_name = db.database.decode('utf-8')
         cursor = db.cursor(dictionary=True)
-        cursor.execute('SHOW TABLES')
-        # for row in cursor:
-        #     print(row)
-        # print('_'*50)
+        cursor.execute(ALL_TABLES_QUERY)
         all_tables = [row['Tables_in_' + db_name].decode('utf-8') for row in cursor]
-        print('\nAll tables:')
-        print('\n'.join(all_tables))
         all_tables = [el for el in all_tables if not el.startswith('view_')]
         all_tables.sort()
-        # cursor.execute(self.UNLOCKED_TABLE_QUERY)
-        # for row in cursor:
-        #     print(row)
-        # print('_'*50)
         CMD._lock_source_db(db)
-        cursor.execute(self.LOCKED_TABLE_QUERY)
-        # for row in cursor:
-        #     print(row)
-        # print('_'*50)
+        cursor.execute(LOCKED_TABLES_QUERY)
         locked_tables = [row['Table'].decode('utf-8') for row in cursor]
-        print('\nLocked tables:')
-        print('\n'.join(locked_tables))
         locked_tables.sort()
         self.assertListEqual(all_tables, locked_tables)
         cursor.close()
         db.close()  # Testing confirms that closing the db connection removes the locks.
         db = CMD._get_source_db(which_db='devel')
         cursor = db.cursor(dictionary=True)
-        # for row in cursor:
-        #     print(row)
-        # print('_'*50)
-        cursor.execute(self.UNLOCKED_TABLE_QUERY)
-        # for row in cursor:
-        #     print(row)
-        # print('_'*50)
+        cursor.execute(UNLOCKED_TABLES_QUERY)
         unlocked_tables = [row['Table'].decode('utf-8') for row in cursor]
-        print('\nUnlocked tables:')
-        print('\n'.join(unlocked_tables))
         unlocked_tables = [el for el in unlocked_tables if not el.startswith('view_')]
         unlocked_tables.sort()
         self.assertListEqual(all_tables, unlocked_tables)
@@ -620,9 +597,9 @@ class LockSourceDbTest(TestCase):
         db_name = db.database.decode('utf-8')
         CMD._lock_source_db(db)
         cursor = db.cursor(dictionary=True)
-        cursor.execute(self.LOCKED_TABLE_QUERY)
+        cursor.execute(LOCKED_TABLES_QUERY)
         locked_tables = [row['Table'].decode('utf-8') for row in cursor]
-        cursor.execute('SHOW TABLES')
+        cursor.execute(ALL_TABLES_QUERY)
         all_tables = [row['Tables_in_' + db_name].decode('utf-8') for row in cursor]
         all_tables = [el for el in all_tables if not el.startswith('view_')]
         all_tables.sort()
@@ -641,14 +618,15 @@ class UnlockSourceDbTest(TestCase):
         CMD._lock_source_db(db)
         CMD._unlock_source_db(db)
         cursor = db.cursor(dictionary=True)
-        cursor.execute('SHOW TABLES')
+        cursor.execute(ALL_TABLES_QUERY)
         all_tables = [row['Tables_in_' + db_name].decode('utf-8') for row in cursor]
         all_tables = [el for el in all_tables if not el.startswith('view_')]
         all_tables.sort()
+        cursor.execute(LOCKED_TABLES_QUERY)
         locked_tables = [row['Table'].decode('utf-8') for row in cursor]
         locked_tables.sort()
         self.assertEqual(len(locked_tables), 0)
-        cursor.execute('SHOW OPEN TABLES WHERE in_use = 0')
+        cursor.execute(UNLOCKED_TABLES_QUERY)
         unlocked_tables = [row['Table'].decode('utf-8') for row in cursor]
         unlocked_tables = [el for el in unlocked_tables if not el.startswith('view_')]
         unlocked_tables.sort()
@@ -665,14 +643,15 @@ class UnlockSourceDbTest(TestCase):
         CMD._lock_source_db(db)
         CMD._unlock_source_db(db)
         cursor = db.cursor(dictionary=True)
-        cursor.execute('SHOW TABLES')
+        cursor.execute(ALL_TABLES_QUERY)
         all_tables = [row['Tables_in_' + db_name].decode('utf-8') for row in cursor]
         all_tables = [el for el in all_tables if not el.startswith('view_')]
         all_tables.sort()
+        cursor.execute(LOCKED_TABLES_QUERY)
         locked_tables = [row['Table'].decode('utf-8') for row in cursor]
         locked_tables.sort()
         self.assertEqual(len(locked_tables), 0)
-        cursor.execute('SHOW OPEN TABLES WHERE in_use = 0')
+        cursor.execute(UNLOCKED_TABLES_QUERY)
         unlocked_tables = [row['Table'].decode('utf-8') for row in cursor]
         unlocked_tables = [el for el in unlocked_tables if not el.startswith('view_')]
         unlocked_tables.sort()
