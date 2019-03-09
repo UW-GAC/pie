@@ -262,49 +262,55 @@ class TestFunctionsTest(TestCase):
         self.assertEqual(row[update_field], new_val)
         clean_devel_db()
 
-    # Turns out this is just a bad test, because it will fail monumentally if you use a different
-    # version of mysqldump than was used to make the first test data.
-    # def test_load_test_source_db_data(self):
-    #     """Loading a test data set works as expected."""
-    #     # clean the db, load the test data, do a mysqldump to a file, then read in
-    #     # the two dump files, make some adjustments, and then compare the file contents.
-    #     clean_devel_db()
-    #     file_name = 'base.sql'
-    #     test_file = join(TEST_DATA_DIR, file_name)
-    #     load_test_source_db_data(file_name)
-    #     # Parse the name of the devel db out of the mysql conf file.
-    #     cnf_path = join(settings.SITE_ROOT, settings.CNF_PATH)
-    #     with open(cnf_path) as f:
-    #         cnf = f.readlines()
-    #     statement_lines = [i for (i, line) in enumerate(cnf) if line.startswith('[')]
-    #     devel_line = [i for (i, line) in enumerate(cnf) if line.startswith('[mysql_topmed_pheno_full_devel]')][0]
-    #     next_statement_line = [i for i in statement_lines if i > devel_line][0]
-    #     devel_lines = [x for x in range(len(cnf)) if (x >= devel_line) and (x < next_statement_line)]
-    #     devel_db_line = [x for x in cnf[min(devel_lines):max(devel_lines)] if x.startswith('database = ')][0]
-    #     devel_db_name = devel_db_line.replace('database = ', '').strip('\n')
-    #     # Make the mysqldump command.
-    #     tmp_file = 'tmp.sql'
-    #     tmp_file_path = join(settings.SITE_ROOT, TEST_DATA_DIR, tmp_file)
-    #     # Now do a mysqldump to the same file.
-    #     mysqldump = ['mysqldump', '--defaults-file={}'.format(cnf_path),
-    #                  '--defaults-group-suffix=_topmed_pheno_full_devel', '--opt',
-    #                  devel_db_name, '>', tmp_file]
-    #     return_code = call(' '.join(mysqldump), shell=True, cwd=join(settings.SITE_ROOT, TEST_DATA_DIR))
-    #     if return_code != 0:
-    #         raise ValueError('Something went wrong with the mysqldump command.')
-    #     # Get the file contents to compare.
-    #     with open(test_file, 'r') as f:
-    #         test_file_contents = f.readlines()
-    #     with open(tmp_file_path, 'r') as f:
-    #         tmp_file_contents = f.readlines()
-    #     # Delete lines that are expected to differ between the dump files.
-    #     bad_words = ['DEFINER', 'Distrib', 'Host', 'Dump completed on', 'SET FOREIGN_KEY_CHECKS =']
-    #     for word in bad_words:
-    #         test_file_contents = [l for l in test_file_contents if word not in l]
-    #         tmp_file_contents = [l for l in tmp_file_contents if word not in l]
-    #     # Compare the files and delete the tmp file.
-    #     self.assertEqual(tmp_file_contents, test_file_contents)
-    #     remove(tmp_file_path)
+    def test_load_test_source_db_data(self):
+        """Loading the base test data results in non-empty tables where expected."""
+        clean_devel_db()
+        file_name = 'base.sql'
+        load_test_source_db_data(file_name)
+        non_empty_tables = [
+            'allowed_update_reason',
+            'component_age_trait',
+            'component_batch_trait',
+            'component_harmonized_trait_set',
+            'component_source_trait',
+            'global_study',
+            'harmonization_unit',
+            'harmonized_function',
+            'harmonized_trait',
+            'harmonized_trait_encoded_values',
+            'harmonized_trait_set',
+            'harmonized_trait_set_version',
+            'harmonized_trait_set_version_update_reason',
+            'schema_changes',
+            'source_dataset',
+            'source_dataset_data_files',
+            'source_dataset_dictionary_files',
+            'source_study_version',
+            'source_trait',
+            'source_trait_encoded_values',
+            'source_trait_inconsistent_metadata',
+            'study',
+            'subcohort',
+            'subject',
+        ]
+        empty_tables = [
+            'source_trait_data',
+            'harmonized_trait_data',
+        ]
+        source_db = get_devel_db()
+        cursor = source_db.cursor(buffered=True, dictionary=True)
+        for table in non_empty_tables:
+            cursor.execute('SELECT COUNT(*) FROM {}'.format(table))
+            count = cursor.fetchone()
+            self.assertTrue(count['COUNT(*)'] > 0,
+                            msg='Table {} is unexpectedly empty.'.format(table))
+        for table in empty_tables:
+            cursor.execute('SELECT COUNT(*) FROM {}'.format(table))
+            count = cursor.fetchone()
+            self.assertEqual(count['COUNT(*)'], 0,
+                             msg='Table {} should be empty, but contains data rows.'.format(table))
+        cursor.close()
+        source_db.close()
 
 
 class DbFixersTest(TestCase):
