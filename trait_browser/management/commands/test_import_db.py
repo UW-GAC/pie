@@ -1176,6 +1176,8 @@ class BackupTest(BaseTestDataTestCase):
 
     def test_backup_is_created(self):
         """Backup dump file is created in the expected directory."""
+        self.cursor.close()
+        self.source_db.close()
         set_backup_dir()
         # No initial fake data in the test db is needed here. Backing up an empty db works fine.
         # Import data from the source db.
@@ -1192,7 +1194,7 @@ class BackupTest(BaseTestDataTestCase):
         cleanup_backup_dir()
 
     def test_backup_can_be_restored(self):
-        """A saved backup can be used to restore the db to it's previous state."""
+        """A saved backup can be used to restore the db to its previous state."""
         # TODO: Couldn't get the dbrestore command to work, so leaving this for later.
         return None
         set_backup_dir()
