@@ -1299,7 +1299,7 @@ class UpdateModelsTest(ClearSearchIndexMixin, BaseTestDataTestCase):
         old_mod_time = model_instance.modified
         source_db_table_name = 'source_study_version'
         field_to_update = 'is_deprecated'
-        new_value = not getattr(model_instance, 'i_' + field_to_update)
+        new_value = int(not getattr(model_instance, 'i_' + field_to_update))
         source_db_pk_name = model_instance._meta.pk.name.replace('i_', '')
 
         sleep(1)
@@ -1933,7 +1933,7 @@ class ImportNoUpdateTest(BaseTestDataTestCase):
         old_mod_time = model_instance.modified
         source_db_table_name = 'source_study_version'
         field_to_update = 'is_deprecated'
-        new_value = not getattr(model_instance, 'i_' + field_to_update)
+        new_value = int(not getattr(model_instance, 'i_' + field_to_update))
         source_db_pk_name = model_instance._meta.pk.name.replace('i_', '')
 
         sleep(1)
@@ -2654,7 +2654,7 @@ class IntegrationTest(ClearSearchIndexMixin, BaseTestDataReloadingTestCase):
         change_data_in_table('study', 'study_name', new_value, study._meta.pk.name.replace('i_', ''), study.pk)
         # Update the source study version table.
         source_study_version = models.SourceStudyVersion.objects.all()[0]
-        new_is_deprecated = not source_study_version.i_is_deprecated
+        new_is_deprecated = int(not source_study_version.i_is_deprecated)
         change_data_in_table(
             'source_study_version', 'is_deprecated', new_is_deprecated,
             source_study_version._meta.pk.name.replace('i_', ''), source_study_version.pk)
@@ -2880,7 +2880,7 @@ class IntegrationTest(ClearSearchIndexMixin, BaseTestDataReloadingTestCase):
         change_data_in_table('study', 'study_name', new_value, study._meta.pk.name.replace('i_', ''), study.pk)
         # Update the source study version table.
         source_study_version = models.SourceStudyVersion.objects.all()[0]
-        new_is_deprecated = not source_study_version.i_is_deprecated
+        new_is_deprecated = int(not source_study_version.i_is_deprecated)
         change_data_in_table(
             'source_study_version', 'is_deprecated', new_is_deprecated,
             source_study_version._meta.pk.name.replace('i_', ''), source_study_version.pk)
