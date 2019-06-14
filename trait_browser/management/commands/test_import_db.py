@@ -1202,33 +1202,6 @@ class BackupTest(TransactionTestCase):
         self.assertTrue(1000000000 > file_size > 100)
         cleanup_backup_dir()
 
-    def test_backup_can_be_restored(self):
-        """A saved backup can be used to restore the db to its previous state."""
-        print(settings.DBBACKUP_STORAGE_OPTIONS['location'])
-        set_backup_dir()
-        print(settings.DBBACKUP_STORAGE_OPTIONS['location'])
-        # Import data from the source db.
-        management.call_command('import_db', '--devel_db')
-        # Delete things from the db.
-        old_study_pks = models.GlobalStudy.objects.all().values_list('pk')
-        old_study_names = models.GlobalStudy.objects.all().values_list('i_name')
-        print(old_study_pks)
-        print(old_study_names)
-        models.GlobalStudy.objects.all().delete()
-        print(models.GlobalStudy.objects.all())
-        # Restore from the backup file.
-        management.call_command('listbackups', out=stdout)
-        print(listdir(settings.DBBACKUP_STORAGE_OPTIONS['location']))
-        backup_file = glob(settings.DBBACKUP_STORAGE_OPTIONS['location'] + '/*.gz')[0]
-        print(backup_file)
-        management.call_command('dbrestore', '-I=' + backup_file, '--noinput', out=stdout)
-        # Is the contents of the new backup the same as the old?
-        new_study_pks = models.GlobalStudy.objects.all().values_list('pk')
-        new_study_names = models.GlobalStudy.objects.all().values_list('i_name')
-        self.assertListEqual(new_study_pks, old_study_pks)
-        self.assertListEqual(new_study_names, old_study_names)
-        cleanup_backup_dir()
-
 
 class SpecialQueryTest(BaseTestDataTestCase):
     """Test the special queries saved as constant variables in import_db."""
