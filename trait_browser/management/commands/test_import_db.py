@@ -19,13 +19,14 @@ from os import listdir, stat
 from re import compile
 from shutil import rmtree
 from subprocess import call
+from sys import stdout
 from tempfile import mkdtemp
 from time import sleep
 from unittest import skip
 
 from django.conf import settings
 from django.core import management
-from django.test import TestCase
+from django.test import TestCase, TransactionTestCase
 from django.utils import timezone
 
 import watson.search as watson
@@ -1172,18 +1173,24 @@ class HelperTest(BaseTestDataTestCase):
         self.assertEqual(new_value, getattr(model_instance, 'i_' + field_to_update))
         self.assertTrue(model_instance.modified > old_mod_time)
 
-
-class BackupTest(BaseTestDataTestCase):
+class BackupTest(TransactionTestCase):
     """Tests to make sure backing up the Django db in handle() is working right."""
+
+    @classmethod
+    def setUpClass(cls):
+        """Load the base test data, once for all tests."""
+        # Run the TestCase setUpClass method.
+        super().setUpClass()
+        # Clean out the devel db and load the first test dataset.
+        # By default, all tests will use dataset 1.
+        clean_devel_db()
+        load_test_source_db_data('base.sql')
 
     def test_backup_is_created(self):
         """Backup dump file is created in the expected directory."""
-        self.cursor.close()
-        self.source_db.close()
         set_backup_dir()
-        # No initial fake data in the test db is needed here. Backing up an empty db works fine.
         # Import data from the source db.
-        management.call_command('import_db', '--devel_db')
+        management.call_command('import_db', '--devel_db', stdout=stdout)
         # Does the backup dir exist?
         self.assertTrue(exists(settings.DBBACKUP_STORAGE_OPTIONS['location']))
         # Is there a single compressed dump file in there?
