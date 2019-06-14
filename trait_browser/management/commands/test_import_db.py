@@ -10,10 +10,7 @@ Usage:
 This test module runs several unit tests and one integration test.
 """
 
-from datetime import datetime, timedelta
-import mysql.connector
-# Use the mysql-connector-python-rf package from pypi.
-# (Advice via this SO post http://stackoverflow.com/q/34168651/2548371)
+from datetime import datetime
 from os.path import exists, join
 from os import listdir, stat
 from re import compile
@@ -1172,6 +1169,7 @@ class HelperTest(BaseTestDataTestCase):
         model_instance.refresh_from_db()
         self.assertEqual(new_value, getattr(model_instance, 'i_' + field_to_update))
         self.assertTrue(model_instance.modified > old_mod_time)
+
 
 class BackupTest(TransactionTestCase):
     """Tests to make sure backing up the Django db in handle() is working right."""
