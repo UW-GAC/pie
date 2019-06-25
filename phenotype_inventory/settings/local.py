@@ -42,10 +42,6 @@ DATABASES = {
 }
 
 
-# SNUFFLES DATABASE CONNECTION SETTINGS
-CNF_PATH = os.path.join(os.path.expanduser('~'), '.mysql-topmed.cnf')
-
-
 # SECRET_KEY SETTINGS
 # Requires DJANGO_SECRET_KEY environmental variable to be set
 SECRET_KEY = get_env_variable('DJANGO_SECRET_KEY')  # noqa: F405

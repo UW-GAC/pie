@@ -203,3 +203,5 @@ AUTH_USER_MODEL = 'authtools.User'
 # PROJECT SETTINGS
 GAC_WEBSERVERS = ('modu', 'gcc-pc-004', )
 DEVELOPMENT = not (gethostname() in GAC_WEBSERVERS)
+# TOPMED_PHENO DATABASE CONNECTION SETTINGS
+CNF_PATH = os.path.join('phenotype_inventory', 'settings', '.mysql-topmed-uwit-pie.cnf')

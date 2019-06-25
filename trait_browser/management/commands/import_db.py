@@ -40,11 +40,11 @@ TEST = len(argv) >= 2 and search(r'manage.py$', argv[0]) and argv[1] == 'test'
 
 # Special query for getting harmonization unit links from the component trait tables.
 HUNIT_QUERY = ' '.join(['SELECT DISTINCT unit_trait_map.harmonized_trait_id, unit_trait_map.harmonization_unit_id FROM (',  # noqa: E501
-                        'SELECT harmonized_trait_id, harmonization_unit_id FROM component_source_trait AS comp_source',
+                        'SELECT harmonized_trait_id, harmonization_unit_id FROM component_source_trait',
                         'UNION',
-                        'SELECT harmonized_trait_id, harmonization_unit_id FROM component_harmonized_trait_set AS comp_harm',  # noqa: E501
+                        'SELECT harmonized_trait_id, harmonization_unit_id FROM component_harmonized_trait_set',  # noqa: E501
                         'UNION',
-                        'SELECT harmonized_trait_id, harmonization_unit_id FROM component_batch_trait AS comp_batch',
+                        'SELECT harmonized_trait_id, harmonization_unit_id FROM component_batch_trait',
                         ') AS unit_trait_map'
                         ])
 
@@ -73,30 +73,27 @@ class Command(BaseCommand):
     help = 'Import/update data from the source db (topmed_pheno) into the Django models.'
     requires_migrations_checks = True
 
-    def _get_source_db(self, which_db, cnf_path=settings.CNF_PATH, permissions='readonly', just_locking=False):
+    def _get_source_db(self, which_db, cnf_path=settings.CNF_PATH, admin=False):
         """Get a connection to the source phenotype db.
 
         Arguments:
-            which_db -- string; name of the type of db to connect to (production,
-                devel, or test)
+            which_db -- string; name of the type of db to connect to (production or devel)
             cnf_path -- string; path to the mySQL config file with db connection
                 settings
-            permissions -- string; 'readonly' or 'full'
 
         Returns:
             a mysql.connector open db connection
         """
-        if which_db is None:
-            raise ValueError(
-                'which_db as passed to _get_source_db MUST be set to a valid value ({} is not valid)'.format(which_db))
-        if which_db == 'production' and (permissions == 'full') and not just_locking:
-            raise ValueError('Requested full permissions for {} source database. Not allowed!!!')
-        # Default is to connect as readonly; only test functions connect as full user.
-        cnf_group = ['client', 'mysql_topmed_pheno_{}_{}'.format(permissions, which_db)]
+        db_group = 'mysql_topmed_pheno_{}'.format(which_db)
+        if admin:
+            if which_db == 'production':
+                raise ValueError('You do not have permission to open an admin connection to production topmed_pheno')
+            elif which_db == 'devel':
+                db_group += '_admin'
+        cnf_group = ['client', db_group]
         source_db = mysql.connector.connect(
             option_files=cnf_path, option_groups=cnf_group, charset='latin1', use_unicode=False, time_zone='+00:00')
         logger.debug('Connected to source db {}'.format(source_db))
-        # TODO add a try/except block here in case the db connection fails.
         return source_db
 
     def _lock_source_db(self, source_db):
@@ -104,15 +101,18 @@ class Command(BaseCommand):
         cursor = source_db.cursor(buffered=True, dictionary=False)
         cursor.execute('SHOW TABLES;')
         tables = [el[0].decode('utf-8') for el in cursor.fetchall()]
-        tables.remove('schema_changes')
+        # Locking views actually has the effect of locking the tables they are based upon.
         tables = [el for el in tables if not el.startswith('view_')]
         lock_query = 'LOCK TABLES {}'.format(', '.join(['{} READ'.format(el) for el in tables]))
+        logger.debug('Locking source_db tables...')
+        logger.debug(lock_query)
         cursor.execute(lock_query)
         cursor.close()
 
     def _unlock_source_db(self, source_db):
         """Undo a read-lock placed on tables in the source db."""
         cursor = source_db.cursor(buffered=True, dictionary=False)
+        logger.debug('Unlocking source_db tables..')
         cursor.execute('UNLOCK TABLES')
         cursor.close()
 
@@ -1308,9 +1308,9 @@ class Command(BaseCommand):
     # Methods to actually do the management command.
     def add_arguments(self, parser):
         """Add custom command line arguments to this management command."""
-        parser.add_argument('--which_db', action='store', type=str,
-                            choices=['devel', 'production'], default=None, required=True,
-                            help='Which source database to connect to for retrieving source data.')
+        parser.add_argument('--devel_db', action='store_true',
+                            help="""Import from the devel db.
+                            Without this option, will default to importing from production.""")
         parser.add_argument(
             '--no_backup', action='store_true',
             help="""Do not backup the Django db before running update and import functions. This should only be used
@@ -1355,23 +1355,24 @@ class Command(BaseCommand):
             logger.info('Django db backup completed.')
         else:
             logger.info('No backup of Django db, due to no_backup option.')
-        # Get a read-only connection to the db, which will be used in helper functions.
-        ro_source_db = self._get_source_db(which_db=options.get('which_db'))
-        # Get a full-privileges db connection, so that you can lock the tables
-        # to prevent anyone from writing new data to the db during the update/import.
-        full_source_db = self._get_source_db(which_db=options.get('which_db'), permissions='full', just_locking=True)
-        self._lock_source_db(full_source_db)
+        # Get the appropriate db connection (devel or production).
+        if options.get('devel_db'):
+            source_db = self._get_source_db(which_db='devel')
+        else:
+            # Connect to the production db by default.
+            source_db = self._get_source_db(which_db='production')
+        # Lock the source db to prevent others writing new partial data.
+        self._lock_source_db(source_db)
         logger.info('Locked source db against writes from others.')
         # First update, then import new data.
         if not options.get('import_only'):
-            self._update_source_tables(source_db=ro_source_db)
-            self._update_harmonized_tables(source_db=ro_source_db)
+            self._update_source_tables(source_db=source_db)
+            self._update_harmonized_tables(source_db=source_db)
         if not options.get('update_only'):
-            self._import_source_tables(source_db=ro_source_db)
-            self._import_harmonized_tables(source_db=ro_source_db)
-        # Unlock the full permissions db connection.
-        self._unlock_source_db(full_source_db)
+            self._import_source_tables(source_db=source_db)
+            self._import_harmonized_tables(source_db=source_db)
+        # Unlock the db connection.
+        self._unlock_source_db(source_db)
         logger.info('Unlocked source db.')
         # Close all db connections.
-        ro_source_db.close()
-        full_source_db.close()
+        source_db.close()

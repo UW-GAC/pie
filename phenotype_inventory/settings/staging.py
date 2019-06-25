@@ -73,7 +73,6 @@ def get_secret(setting, secrets=secrets):
 
 
 SECRET_KEY = get_secret('DJANGO_SECRET_KEY')
-CNF_PATH = get_secret('CNF_PATH')
 
 
 # DEBUG SETTINGS
