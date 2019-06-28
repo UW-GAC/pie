@@ -263,7 +263,7 @@ class SourceStudyVersion(SourceDBTimeStampedModel):
 
     def __str__(self):
         """Pretty printing."""
-        return 'study {} version {}, id='.format(self.study, self.i_version, self.i_id)
+        return 'study {} version {}, id={}'.format(self.study, self.i_version, self.i_id)
 
     def save(self, *args, **kwargs):
         """Custom save method to auto-set full_accession and dbgap_link."""
