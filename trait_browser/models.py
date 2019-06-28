@@ -326,6 +326,7 @@ class SourceStudyVersion(SourceDBTimeStampedModel):
             return SourceDataset.objects.none()
 
     def apply_previous_tags(self, user):
+        """Apply tags from traits in the previous version of this Study to traits from this version."""
         previous_study_version = self.get_previous_version()
         if previous_study_version is not None:
             SourceTrait = apps.get_model('trait_browser', 'SourceTrait')
