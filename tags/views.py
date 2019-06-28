@@ -1493,10 +1493,11 @@ class DCCDecisionByTagAndStudy(LoginRequiredMixin, PermissionRequiredMixin, Sess
             # Add an informational message.
             self.messages.warning('Skipped {} because it already has a decision made.'.format(self.tagged_trait))
             return HttpResponseRedirect(reverse('tags:tagged-traits:dcc-decision:next'))
+        # Go to the next tagged trait if this one's study version has been deprecated.
         elif self.tagged_trait.trait.source_dataset.source_study_version.i_is_deprecated:
             self._update_session_variables()
             # Add an informational message.
-            msg = 'Skipped {} because there is a newer version of this study version available.'
+            msg = 'Skipped {} because there is a newer version of this study available.'
             self.messages.warning(msg.format(self.tagged_trait))
             return HttpResponseRedirect(reverse('tags:tagged-traits:dcc-decision:next'))
         return super(DCCDecisionByTagAndStudy, self).post(request, *args, **kwargs)
@@ -1542,7 +1543,7 @@ class DCCDecisionCreate(LoginRequiredMixin, PermissionRequiredMixin, FormValidMe
         return 'Switched to updating decision for {}, because it already has a decision.'.format(self.tagged_trait)
 
     def _get_deprecated_warning_message(self):
-        msg = 'Oops! Cannot create decision for {}, because there is a newer version of this study variable is available.' # noqa
+        msg = 'Oops! Cannot create decision for {}, because there is a newer version of this study available.'
         return msg.format(self.tagged_trait)
 
     def _get_warning_response(self, *args, **kwargs):
@@ -1564,7 +1565,7 @@ class DCCDecisionCreate(LoginRequiredMixin, PermissionRequiredMixin, FormValidMe
         elif not hasattr(self.tagged_trait.dcc_review, 'study_response'):
             self.messages.warning(self._get_missing_study_response_warning_message())
             return HttpResponseRedirect(self.get_success_url())
-        # Redirect if the tagged trait is has study response agree.
+        # Redirect if the tagged trait has study response agree.
         elif self.tagged_trait.dcc_review.study_response.status == models.StudyResponse.STATUS_AGREE:
             self.messages.warning(self._get_response_agree_warning_message())
             return HttpResponseRedirect(self.get_success_url())
@@ -1573,6 +1574,7 @@ class DCCDecisionCreate(LoginRequiredMixin, PermissionRequiredMixin, FormValidMe
             self.messages.warning(self._get_already_decided_warning_message())
             return HttpResponseRedirect(reverse('tags:tagged-traits:pk:dcc-decision:update',
                                                 args=[self.tagged_trait.pk]))
+        # Redirect if the tagged trait's study version is deprecated.
         elif self.tagged_trait.trait.source_dataset.source_study_version.i_is_deprecated:
             self.messages.warning(self._get_deprecated_warning_message())
             return HttpResponseRedirect(self.get_success_url())
@@ -1625,7 +1627,7 @@ class DCCDecisionUpdate(LoginRequiredMixin, PermissionRequiredMixin, FormValidMe
         return 'Oops! Cannot update decision for {}, because it has an agree study response.'.format(self.tagged_trait)
 
     def _get_deprecated_warning_message(self):
-        msg = 'Oops! Cannot update decision for {}, because there is a newer version of this study variable is available.' # noqa
+        msg = 'Oops! Cannot update decision for {}, because there is a newer version of this study available.'
         return msg.format(self.tagged_trait)
 
     def _get_warning_response(self):
@@ -1649,6 +1651,7 @@ class DCCDecisionUpdate(LoginRequiredMixin, PermissionRequiredMixin, FormValidMe
                 self.tagged_trait.dcc_review.study_response.status == models.StudyResponse.STATUS_AGREE):
             self.messages.warning(self._get_response_agree_warning_message())
             return HttpResponseRedirect(self.get_success_url())
+        # Redirect if the tagged trait's study has been deprecated.
         elif self.tagged_trait.trait.source_dataset.source_study_version.i_is_deprecated:
             self.messages.warning(self._get_deprecated_warning_message())
             return HttpResponseRedirect(self.get_success_url())

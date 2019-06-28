@@ -182,7 +182,7 @@ class StudyGetAllTaggedTraitsTest(TestCase):
         self.assertEqual(list(another_study.get_all_tagged_traits()), more_tagged_traits)
 
     def test_get_all_tagged_traits_deprecated(self):
-        """Does not return a tagged trait does not include deprecated tagged traits."""
+        """Does include a deprecated tagged trait."""
         deprecated_trait = factories.TaggedTraitFactory.create(
             trait__source_dataset__source_study_version__study=self.study,
             trait__source_dataset__source_study_version__i_is_deprecated=True
@@ -217,7 +217,7 @@ class StudyGetAllTaggedTraitsTest(TestCase):
         self.assertEqual(self.study.get_all_traits_tagged_count(), SourceTrait.objects.count())
 
     def test_get_all_traits_tagged_count_deprecated(self):
-        """Does not return a tagged trait does not include deprecated tagged traits."""
+        """Does not include a deprecated tagged trait."""
         deprecated_trait = factories.TaggedTraitFactory.create(
             trait__source_dataset__source_study_version__study=self.study,
             trait__source_dataset__source_study_version__i_is_deprecated=True
@@ -248,7 +248,7 @@ class StudyGetAllTaggedTraitsTest(TestCase):
         self.assertEqual(another_study.get_all_tags_count(), len(more_tagged_traits))
 
     def test_get_all_tags_count_deprecated(self):
-        """Does not return a tagged trait does not include deprecated tagged traits."""
+        """Does include a deprecated tagged trait."""
         deprecated_trait = factories.TaggedTraitFactory.create(
             trait__source_dataset__source_study_version__study=self.study,
             trait__source_dataset__source_study_version__i_is_deprecated=True

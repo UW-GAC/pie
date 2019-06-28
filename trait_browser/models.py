@@ -679,7 +679,7 @@ class SourceTrait(Trait):
             return previous_trait
 
     def apply_previous_tags(self, creator):
-        """Apply tags for the previous version of this SourceTrait to this version."""
+        """Apply tags from the previous version of this SourceTrait to this version."""
         TaggedTrait = apps.get_model('tags', 'TaggedTrait')
         DCCReview = apps.get_model('tags', 'DCCReview')
         previous_trait = self.get_previous_version()
