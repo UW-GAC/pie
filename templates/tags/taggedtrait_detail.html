@@ -15,6 +15,16 @@
 {% endblock subtitle %}
 
 {% block before_panel %}
+  {% if is_deprecated %}
+    <div class="alert alert-danger" role="alert">
+    {% if show_removed_text %}
+      This tagged study variable has been removed from the most recent study version
+    {% elif new_version_link %}
+      There is a <a class="alert-link" href="{}">newer version</a> of this tagged study variable available
+    {% endif %}
+    </div>
+  {% endif %}
+
   {% if show_deprecated_message %}
     <div class="alert alert-danger" role="alert">
     {{ deprecation_message }}

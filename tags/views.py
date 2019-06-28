@@ -174,16 +174,15 @@ class TaggedTraitDetail(LoginRequiredMixin, PermissionRequiredMixin, SpecificTag
         context['show_archived'] = not is_non_archived
         context['quality_review_panel_color'] = color
         is_deprecated = self.object.trait.source_dataset.source_study_version.i_is_deprecated
-        context['show_deprecated_message'] = is_deprecated
+        context['show_removed_text'] = False
+        context['new_version_link'] = None
+        context['is_deprecated'] = is_deprecated
         if is_deprecated:
             current_version = self.object.get_latest_version()
             if current_version is None:
-                msg = "The tagged study variable was removed from the most recent study version."
-                context['deprecation_message'] = msg
+                context['show_removed_text'] = True
             else:
-                msg = """There is a  <a class="alert-link" href="{}">newer version</a>
-                         of the tagged study variable available.""".format(current_version.get_absolute_url())
-                context['deprecation_message'] = mark_safe(msg)
+                context['new_version_link'] = current_version.get_absolute_url()
         return context
 
     def set_study(self):
