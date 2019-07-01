@@ -437,7 +437,7 @@ class TaggedTraitDetailTestsMixin(object):
             response = self.client.get(self.get_url(tagged_trait.pk))
             self.assertNotContains(response, reverse('tags:tagged-traits:pk:delete', kwargs={'pk': tagged_trait.pk}))
 
-    def test_context_deprecated_tagged_trait_no_new_version(self):
+    def test_deprecated_tagged_trait_no_new_version(self):
         """Context variables are set properly for deprecated tagged trait with no new version."""
         study = StudyFactory.create()
         self.user.profile.taggable_studies.add(study)
@@ -450,8 +450,10 @@ class TaggedTraitDetailTestsMixin(object):
         self.assertTrue(context['is_deprecated'])
         self.assertTrue(context['show_removed_text'])
         self.assertIsNone(context['new_version_link'])
+        self.assertContains(response, '<div class="alert alert-danger" role="alert" id="removed_deprecated_trait">')
+        self.assertNotContains(response, '<div class="alert alert-danger" role="alert" id="updated_deprecated_trait">')
 
-    def test_context_deprecated_tagged_trait_with_new_version(self):
+    def test_deprecated_tagged_trait_with_new_version(self):
         """Correct context variables for deprecated tagged trait with new version."""
         study = StudyFactory.create()
         self.user.profile.taggable_studies.add(study)
@@ -470,8 +472,11 @@ class TaggedTraitDetailTestsMixin(object):
         self.assertTrue(context['is_deprecated'])
         self.assertFalse(context['show_removed_text'])
         self.assertEqual(context['new_version_link'], tagged_trait.get_absolute_url())
+        self.assertContains(response, context['new_version_link'])
+        self.assertNotContains(response, '<div class="alert alert-danger" role="alert" id="removed_deprecated_trait">')
+        self.assertContains(response, '<div class="alert alert-danger" role="alert" id="updated_deprecated_trait">')
 
-    def test_context_deprecated_tagged_trait_with_two_new_versions(self):
+    def test_deprecated_tagged_trait_with_two_new_versions(self):
         """Correct context variables for deprecated tagged trait with two new versions."""
         study = StudyFactory.create()
         self.user.profile.taggable_studies.add(study)
@@ -495,6 +500,9 @@ class TaggedTraitDetailTestsMixin(object):
         self.assertTrue(context['is_deprecated'])
         self.assertFalse(context['show_removed_text'])
         self.assertEqual(context['new_version_link'], tagged_trait.get_absolute_url())
+        self.assertContains(response, context['new_version_link'])
+        self.assertNotContains(response, '<div class="alert alert-danger" role="alert" id="removed_deprecated_trait">')
+        self.assertContains(response, '<div class="alert alert-danger" role="alert" id="updated_deprecated_trait">')
 
 
 class TaggedTraitDetailPhenotypeTaggerTest(TaggedTraitDetailTestsMixin, PhenotypeTaggerLoginTestCase):
