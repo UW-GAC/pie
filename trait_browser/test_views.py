@@ -2201,39 +2201,128 @@ class SourceTraitDetailTest(UserLoginTestCase):
                          list(self.trait.all_taggedtraits.non_archived()))
         self.assertIn('user_is_study_tagger', context)
         self.assertFalse(context['user_is_study_tagger'])
-        self.assertIn('show_deprecated_message', context)
-        self.assertFalse(context['show_deprecated_message'])
-        self.assertNotIn('deprecation_message', context)
+        self.assertIn('is_deprecated', context)
+        self.assertIn('show_removed_text', context)
+        self.assertIn('new_version_link', context)
 
     def test_context_deprecated_trait_with_no_newer_version(self):
         """View has appropriate deprecation message with no newer version."""
-        sv = self.trait.source_dataset.source_study_version
-        sv.i_is_deprecated = True
-        sv.save()
-        response = self.client.get(self.get_url(self.trait.pk))
-        context = response.context
-        self.assertIn('show_deprecated_message', context)
-        self.assertTrue(context['show_deprecated_message'])
-        self.assertIn('deprecation_message', context)
-        self.assertIn("was removed from the most recent study version", context['deprecation_message'])
-
-    def test_context_deprecated_trait_with_newer_version(self):
-        """View has appropriate deprecation message with a newer version."""
-        sv = self.trait.source_dataset.source_study_version
-        sv.i_is_deprecated = True
-        sv.save()
-        current_dataset = factories.SourceTraitFactory.create(
-            source_dataset__source_study_version__study=sv.study,
-            i_dbgap_variable_accession=self.trait.i_dbgap_variable_accession,
-            i_dbgap_variable_version=self.trait.i_dbgap_variable_version
+        source_study_version1 = self.trait.source_dataset.source_study_version
+        source_study_version1.i_is_deprecated = True
+        source_study_version1.save()
+        source_study_version2 = factories.SourceStudyVersionFactory.create(
+            study=source_study_version1.study,
+            i_is_deprecated=False,
+            i_version=source_study_version1.i_version + 1
         )
         response = self.client.get(self.get_url(self.trait.pk))
         context = response.context
-        self.assertIn('show_deprecated_message', context)
-        self.assertTrue(context['show_deprecated_message'])
-        self.assertIn('deprecation_message', context)
-        self.assertIn("There is a newer version", context['deprecation_message'])
-        self.assertIn(current_dataset.get_absolute_url(), context['deprecation_message'])
+        self.assertTrue(context['is_deprecated'])
+        self.assertTrue(context['show_removed_text'])
+        self.assertIsNone(context['new_version_link'])
+        self.assertContains(response, '<div class="alert alert-danger" role="alert" id="removed_deprecated_trait">')
+        self.assertNotContains(response, '<div class="alert alert-danger" role="alert" id="updated_deprecated_trait">')
+
+    def test_context_deprecated_trait_with_new_version(self):
+        """View has appropriate deprecation message with a newer version."""
+        study = factories.StudyFactory.create()
+        source_study_version1 = factories.SourceStudyVersionFactory.create(
+            study=study, i_is_deprecated=True, i_version=1)
+        source_study_version2 = factories.SourceStudyVersionFactory.create(
+            study=study, i_is_deprecated=False, i_version=2)
+        source_dataset1 = factories.SourceDatasetFactory.create(source_study_version=source_study_version1)
+        source_dataset2 = factories.SourceDatasetFactory.create(
+            source_study_version=source_study_version2,
+            i_accession=source_dataset1.i_accession,
+            i_version=source_dataset1.i_version,
+            i_is_subject_file=source_dataset1.i_is_subject_file,
+            i_study_subject_column=source_dataset1.i_study_subject_column,
+            i_dbgap_description=source_dataset1.i_dbgap_description
+        )
+        trait1 = factories.SourceTraitFactory.create(source_dataset=source_dataset1)
+        trait2 = factories.SourceTraitFactory.create(
+            source_dataset=source_dataset2,
+            i_detected_type=trait1.i_detected_type,
+            i_dbgap_type=trait1.i_dbgap_type,
+            i_dbgap_variable_accession=trait1.i_dbgap_variable_accession,
+            i_dbgap_variable_version=trait1.i_dbgap_variable_version,
+            i_dbgap_comment=trait1.i_dbgap_comment,
+            i_dbgap_unit=trait1.i_dbgap_unit,
+            i_n_records=trait1.i_n_records,
+            i_n_missing=trait1.i_n_missing,
+            i_is_unique_key=trait1.i_is_unique_key,
+            i_are_values_truncated=trait1.i_are_values_truncated
+        )
+        response = self.client.get(self.get_url(trait1.pk))
+        context = response.context
+        self.assertTrue(context['is_deprecated'])
+        self.assertFalse(context['show_removed_text'])
+        self.assertEqual(context['new_version_link'], trait2.get_absolute_url())
+        self.assertContains(response, context['new_version_link'])
+        self.assertNotContains(response, '<div class="alert alert-danger" role="alert" id="removed_deprecated_trait">')
+        self.assertContains(response, '<div class="alert alert-danger" role="alert" id="updated_deprecated_trait">')
+
+    def test_context_deprecated_trait_with_two_new_versions(self):
+        """View has appropriate deprecation message with a newer version."""
+        study = factories.StudyFactory.create()
+        source_study_version1 = factories.SourceStudyVersionFactory.create(
+            study=study, i_is_deprecated=True, i_version=1)
+        source_study_version2 = factories.SourceStudyVersionFactory.create(
+            study=study, i_is_deprecated=True, i_version=2)
+        source_study_version3 = factories.SourceStudyVersionFactory.create(
+            study=study, i_is_deprecated=False, i_version=3)
+        source_dataset1 = factories.SourceDatasetFactory.create(source_study_version=source_study_version1)
+        source_dataset2 = factories.SourceDatasetFactory.create(
+            source_study_version=source_study_version2,
+            i_accession=source_dataset1.i_accession,
+            i_version=source_dataset1.i_version,
+            i_is_subject_file=source_dataset1.i_is_subject_file,
+            i_study_subject_column=source_dataset1.i_study_subject_column,
+            i_dbgap_description=source_dataset1.i_dbgap_description
+        )
+        source_dataset3 = factories.SourceDatasetFactory.create(
+            source_study_version=source_study_version3,
+            i_accession=source_dataset1.i_accession,
+            i_version=source_dataset1.i_version,
+            i_is_subject_file=source_dataset1.i_is_subject_file,
+            i_study_subject_column=source_dataset1.i_study_subject_column,
+            i_dbgap_description=source_dataset1.i_dbgap_description
+        )
+        trait1 = factories.SourceTraitFactory.create(source_dataset=source_dataset1)
+        trait2 = factories.SourceTraitFactory.create(
+            source_dataset=source_dataset2,
+            i_detected_type=trait1.i_detected_type,
+            i_dbgap_type=trait1.i_dbgap_type,
+            i_dbgap_variable_accession=trait1.i_dbgap_variable_accession,
+            i_dbgap_variable_version=trait1.i_dbgap_variable_version,
+            i_dbgap_comment=trait1.i_dbgap_comment,
+            i_dbgap_unit=trait1.i_dbgap_unit,
+            i_n_records=trait1.i_n_records,
+            i_n_missing=trait1.i_n_missing,
+            i_is_unique_key=trait1.i_is_unique_key,
+            i_are_values_truncated=trait1.i_are_values_truncated
+        )
+        trait3 = factories.SourceTraitFactory.create(
+            source_dataset=source_dataset3,
+            i_detected_type=trait1.i_detected_type,
+            i_dbgap_type=trait1.i_dbgap_type,
+            i_dbgap_variable_accession=trait1.i_dbgap_variable_accession,
+            i_dbgap_variable_version=trait1.i_dbgap_variable_version,
+            i_dbgap_comment=trait1.i_dbgap_comment,
+            i_dbgap_unit=trait1.i_dbgap_unit,
+            i_n_records=trait1.i_n_records,
+            i_n_missing=trait1.i_n_missing,
+            i_is_unique_key=trait1.i_is_unique_key,
+            i_are_values_truncated=trait1.i_are_values_truncated
+        )
+        response = self.client.get(self.get_url(trait1.pk))
+        context = response.context
+        self.assertTrue(context['is_deprecated'])
+        self.assertFalse(context['show_removed_text'])
+        self.assertEqual(context['new_version_link'], trait3.get_absolute_url())
+        self.assertContains(response, context['new_version_link'])
+        self.assertNotContains(response, '<div class="alert alert-danger" role="alert" id="removed_deprecated_trait">')
+        self.assertContains(response, '<div class="alert alert-danger" role="alert" id="updated_deprecated_trait">')
 
     def test_no_tagged_trait_remove_button(self):
         """The tag removal button shows up."""
