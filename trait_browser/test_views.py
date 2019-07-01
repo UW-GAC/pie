@@ -749,39 +749,87 @@ class SourceDatasetDetailTest(UserLoginTestCase):
         self.assertIn('trait_table', context)
         self.assertIsInstance(context['trait_table'], tables.SourceTraitDatasetTable)
         self.assertIn('trait_count', context)
-        self.assertIn('show_deprecated_message', context)
-        self.assertFalse(context['show_deprecated_message'])
-        self.assertNotIn('deprecation_message', context)
+        self.assertIn('is_deprecated', context)
+        self.assertIn('show_removed_text', context)
+        self.assertIn('new_version_link', context)
 
     def test_context_deprecated_dataset_with_no_newer_version(self):
         """View has appropriate deprecation message with no newer version."""
-        sv = self.dataset.source_study_version
-        sv.i_is_deprecated = True
-        sv.save()
-        response = self.client.get(self.get_url(self.dataset.pk))
-        context = response.context
-        self.assertIn('show_deprecated_message', context)
-        self.assertTrue(context['show_deprecated_message'])
-        self.assertIn('deprecation_message', context)
-        self.assertIn("was removed from the most recent study version", context['deprecation_message'])
-
-    def test_context_deprecated_dataset_with_newer_version(self):
-        """View has appropriate deprecation message with a newer version."""
-        sv = self.dataset.source_study_version
-        sv.i_is_deprecated = True
-        sv.save()
-        current_dataset = factories.SourceDatasetFactory.create(
-            source_study_version__study=sv.study,
-            i_accession=self.dataset.i_accession,
-            i_version=self.dataset.i_version
+        source_study_version1 = self.dataset.source_study_version
+        source_study_version1.i_is_deprecated = True
+        source_study_version1.save()
+        source_study_version2 = factories.SourceStudyVersionFactory.create(
+            study=source_study_version1.study,
+            i_is_deprecated=False,
+            i_version=source_study_version1.i_version + 1
         )
         response = self.client.get(self.get_url(self.dataset.pk))
         context = response.context
-        self.assertIn('show_deprecated_message', context)
-        self.assertTrue(context['show_deprecated_message'])
-        self.assertIn('deprecation_message', context)
-        self.assertIn("There is a newer version", context['deprecation_message'])
-        self.assertIn(current_dataset.get_absolute_url(), context['deprecation_message'])
+        self.assertTrue(context['is_deprecated'])
+        self.assertTrue(context['show_removed_text'])
+        self.assertIsNone(context['new_version_link'])
+        self.assertContains(response, '<div class="alert alert-danger" role="alert" id="removed_deprecated_dataset">')
+        self.assertNotContains(response, '<div class="alert alert-danger" role="alert" id="updated_deprecated_dataset">')
+
+    def test_context_deprecated_dataset_with_newer_version(self):
+        """View has appropriate deprecation message with a newer version."""
+        study = factories.StudyFactory.create()
+        source_study_version1 = factories.SourceStudyVersionFactory.create(
+            study=study, i_is_deprecated=True, i_version=1)
+        source_study_version2 = factories.SourceStudyVersionFactory.create(
+            study=study, i_is_deprecated=False, i_version=2)
+        source_dataset1 = factories.SourceDatasetFactory.create(source_study_version=source_study_version1)
+        source_dataset2 = factories.SourceDatasetFactory.create(
+            source_study_version=source_study_version2,
+            i_accession=source_dataset1.i_accession,
+            i_version=source_dataset1.i_version,
+            i_is_subject_file=source_dataset1.i_is_subject_file,
+            i_study_subject_column=source_dataset1.i_study_subject_column,
+            i_dbgap_description=source_dataset1.i_dbgap_description
+        )
+        response = self.client.get(self.get_url(source_dataset1.pk))
+        context = response.context
+        self.assertTrue(context['is_deprecated'])
+        self.assertFalse(context['show_removed_text'])
+        self.assertEqual(context['new_version_link'], source_dataset2.get_absolute_url())
+        self.assertContains(response, context['new_version_link'])
+        self.assertNotContains(response, '<div class="alert alert-danger" role="alert" id="removed_deprecated_dataset">')
+        self.assertContains(response, '<div class="alert alert-danger" role="alert" id="updated_deprecated_dataset">')
+
+    def test_context_deprecated_dataset_with_two_new_versions(self):
+        """View has appropriate deprecation message with a newer version."""
+        study = factories.StudyFactory.create()
+        source_study_version1 = factories.SourceStudyVersionFactory.create(
+            study=study, i_is_deprecated=True, i_version=1)
+        source_study_version2 = factories.SourceStudyVersionFactory.create(
+            study=study, i_is_deprecated=True, i_version=2)
+        source_study_version3 = factories.SourceStudyVersionFactory.create(
+            study=study, i_is_deprecated=False, i_version=3)
+        source_dataset1 = factories.SourceDatasetFactory.create(source_study_version=source_study_version1)
+        source_dataset2 = factories.SourceDatasetFactory.create(
+            source_study_version=source_study_version2,
+            i_accession=source_dataset1.i_accession,
+            i_version=source_dataset1.i_version,
+            i_is_subject_file=source_dataset1.i_is_subject_file,
+            i_study_subject_column=source_dataset1.i_study_subject_column,
+            i_dbgap_description=source_dataset1.i_dbgap_description
+        )
+        source_dataset3 = factories.SourceDatasetFactory.create(
+            source_study_version=source_study_version3,
+            i_accession=source_dataset1.i_accession,
+            i_version=source_dataset1.i_version,
+            i_is_subject_file=source_dataset1.i_is_subject_file,
+            i_study_subject_column=source_dataset1.i_study_subject_column,
+            i_dbgap_description=source_dataset1.i_dbgap_description
+        )
+        response = self.client.get(self.get_url(source_dataset1.pk))
+        context = response.context
+        self.assertTrue(context['is_deprecated'])
+        self.assertFalse(context['show_removed_text'])
+        self.assertEqual(context['new_version_link'], source_dataset3.get_absolute_url())
+        self.assertContains(response, context['new_version_link'])
+        self.assertNotContains(response, '<div class="alert alert-danger" role="alert" id="removed_deprecated_dataset">')
+        self.assertContains(response, '<div class="alert alert-danger" role="alert" id="updated_deprecated_dataset">')
 
 
 class SourceDatasetListTest(UserLoginTestCase):

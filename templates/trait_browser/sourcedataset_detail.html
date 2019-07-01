@@ -15,10 +15,16 @@
 {% endblock subtitle %}
 
 {% block before_panel %}
-  {% if show_deprecated_message %}
-  <div class="alert alert-danger" role="alert">
-    {{ deprecation_message }}
-  </div>
+  {% if is_deprecated %}
+    {% if show_removed_text %}
+      <div class="alert alert-danger" role="alert" id="removed_deprecated_dataset">
+        This study dataset has been removed from the most recent study version
+      </div>
+    {% elif new_version_link %}
+      <div class="alert alert-danger" role="alert" id="updated_deprecated_dataset">
+        There is a <a class="alert-link" href="{{ new_version_link }}">newer version</a> of this study dataset available
+      </div>
+    {% endif %}
   {% endif %}
 {% endblock before_panel %}
 

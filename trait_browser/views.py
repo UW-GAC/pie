@@ -208,19 +208,15 @@ class SourceDatasetDetail(LoginRequiredMixin, SingleTableMixin, DetailView):
         trait = self.object.sourcetrait_set.first()
         is_deprecated = self.object.source_study_version.i_is_deprecated
         context['trait_count'] = '{:,}'.format(self.object.sourcetrait_set.count())
-        context['show_deprecated_message'] = is_deprecated
+        context['show_removed_text'] = False
+        context['new_version_link'] = None
+        context['is_deprecated'] = is_deprecated
         if is_deprecated:
             current_version = self.object.get_latest_version()
-            if current_version is not None:
-                msg = """There is a newer version of this study dataset available:
-                         <a class="alert-link" href="{}">{}</a>.""".format(
-                    current_version.get_absolute_url(),
-                    current_version.dataset_name
-                )
-                context['deprecation_message'] = mark_safe(msg)
+            if current_version is None:
+                context['show_removed_text'] = True
             else:
-                msg = """This dataset was removed from the most recent study version."""
-                context['deprecation_message'] = msg
+                context['new_version_link'] = current_version.get_absolute_url()
         return context
 
 
