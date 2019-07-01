@@ -9,7 +9,7 @@ from django.urls import reverse
 from core.factories import UserFactory
 from core.utils import (LoginRequiredTestCase, PhenotypeTaggerLoginTestCase, UserLoginTestCase,
                         DCCAnalystLoginTestCase, DCCDeveloperLoginTestCase, get_autocomplete_view_ids)
-from trait_browser.factories import SourceStudyVersionFactory, SourceTraitFactory, StudyFactory
+from trait_browser.factories import SourceDatasetFactory, SourceStudyVersionFactory, SourceTraitFactory, StudyFactory
 from trait_browser.models import SourceTrait
 
 from . import factories
@@ -442,9 +442,10 @@ class TaggedTraitDetailTestsMixin(object):
         study = StudyFactory.create()
         self.user.profile.taggable_studies.add(study)
         self.user.refresh_from_db()
-        deprecated_tagged_trait = factories.TaggedTraitFactory.create(
-            trait__source_dataset__source_study_version__study=study,
-            trait__source_dataset__source_study_version__i_is_deprecated=True)
+        source_study_version1 = SourceStudyVersionFactory.create(study=study, i_is_deprecated=True, i_version=1)
+        source_study_version2 = SourceStudyVersionFactory.create(study=study, i_is_deprecated=False, i_version=2)
+        trait1 = SourceTraitFactory.create(source_dataset__source_study_version=source_study_version1)
+        deprecated_tagged_trait = factories.TaggedTraitFactory.create(trait=trait1)
         response = self.client.get(self.get_url(deprecated_tagged_trait.pk))
         context = response.context
         self.assertTrue(context['is_deprecated'])
@@ -459,19 +460,38 @@ class TaggedTraitDetailTestsMixin(object):
         self.user.profile.taggable_studies.add(study)
         self.user.refresh_from_db()
         tag = factories.TagFactory.create()
-        deprecated_study_version = SourceStudyVersionFactory.create(study=study, i_is_deprecated=True, i_version=1)
-        study_version = SourceStudyVersionFactory.create(study=study, i_version=2)
-        deprecated_tagged_trait = factories.TaggedTraitFactory.create(
-            trait__source_dataset__source_study_version=deprecated_study_version,
-            trait__i_dbgap_variable_accession=1,
-            tag=tag)
-        tagged_trait = factories.TaggedTraitFactory.create(
-            trait__source_dataset__source_study_version=study_version, trait__i_dbgap_variable_accession=1, tag=tag)
-        response = self.client.get(self.get_url(deprecated_tagged_trait.pk))
+        source_study_version1 = SourceStudyVersionFactory.create(study=study, i_is_deprecated=True, i_version=1)
+        source_study_version2 = SourceStudyVersionFactory.create(study=study, i_is_deprecated=False, i_version=2)
+        source_dataset1 = SourceDatasetFactory.create(source_study_version=source_study_version1)
+        source_dataset2 = SourceDatasetFactory.create(
+            source_study_version=source_study_version2,
+            i_accession=source_dataset1.i_accession,
+            i_version=source_dataset1.i_version,
+            i_is_subject_file=source_dataset1.i_is_subject_file,
+            i_study_subject_column=source_dataset1.i_study_subject_column,
+            i_dbgap_description=source_dataset1.i_dbgap_description
+        )
+        trait1 = SourceTraitFactory.create(source_dataset=source_dataset1)
+        trait2 = SourceTraitFactory.create(
+            source_dataset=source_dataset2,
+            i_detected_type=trait1.i_detected_type,
+            i_dbgap_type=trait1.i_dbgap_type,
+            i_dbgap_variable_accession=trait1.i_dbgap_variable_accession,
+            i_dbgap_variable_version=trait1.i_dbgap_variable_version,
+            i_dbgap_comment=trait1.i_dbgap_comment,
+            i_dbgap_unit=trait1.i_dbgap_unit,
+            i_n_records=trait1.i_n_records,
+            i_n_missing=trait1.i_n_missing,
+            i_is_unique_key=trait1.i_is_unique_key,
+            i_are_values_truncated=trait1.i_are_values_truncated
+        )
+        tagged_trait1 = factories.TaggedTraitFactory.create(trait=trait1, tag=tag)
+        tagged_trait2 = factories.TaggedTraitFactory.create(trait=trait2, tag=tag, previous_tagged_trait=tagged_trait1)
+        response = self.client.get(self.get_url(tagged_trait1.pk))
         context = response.context
         self.assertTrue(context['is_deprecated'])
         self.assertFalse(context['show_removed_text'])
-        self.assertEqual(context['new_version_link'], tagged_trait.get_absolute_url())
+        self.assertEqual(context['new_version_link'], tagged_trait2.get_absolute_url())
         self.assertContains(response, context['new_version_link'])
         self.assertNotContains(response, '<div class="alert alert-danger" role="alert" id="removed_deprecated_trait">')
         self.assertContains(response, '<div class="alert alert-danger" role="alert" id="updated_deprecated_trait">')
@@ -482,24 +502,61 @@ class TaggedTraitDetailTestsMixin(object):
         self.user.profile.taggable_studies.add(study)
         self.user.refresh_from_db()
         tag = factories.TagFactory.create()
-        deprecated_study_version_1 = SourceStudyVersionFactory.create(study=study, i_is_deprecated=True, i_version=1)
-        deprecated_study_version_2 = SourceStudyVersionFactory.create(study=study, i_is_deprecated=True, i_version=2)
-        study_version = SourceStudyVersionFactory.create(study=study, i_version=3)
-        deprecated_tagged_trait_1 = factories.TaggedTraitFactory.create(
-            trait__source_dataset__source_study_version=deprecated_study_version_1,
-            trait__i_dbgap_variable_accession=1,
-            tag=tag)
-        deprecated_tagged_trait_2 = factories.TaggedTraitFactory.create(
-            trait__source_dataset__source_study_version=deprecated_study_version_2,
-            trait__i_dbgap_variable_accession=1,
-            tag=tag)
-        tagged_trait = factories.TaggedTraitFactory.create(
-            trait__source_dataset__source_study_version=study_version, trait__i_dbgap_variable_accession=1, tag=tag)
-        response = self.client.get(self.get_url(deprecated_tagged_trait_2.pk))
+        source_study_version1 = SourceStudyVersionFactory.create(study=study, i_is_deprecated=True, i_version=1)
+        source_study_version2 = SourceStudyVersionFactory.create(study=study, i_is_deprecated=True, i_version=2)
+        source_study_version3 = SourceStudyVersionFactory.create(study=study, i_is_deprecated=False, i_version=3)
+        source_dataset1 = SourceDatasetFactory.create(source_study_version=source_study_version1)
+        source_dataset2 = SourceDatasetFactory.create(
+            source_study_version=source_study_version2,
+            i_accession=source_dataset1.i_accession,
+            i_version=source_dataset1.i_version,
+            i_is_subject_file=source_dataset1.i_is_subject_file,
+            i_study_subject_column=source_dataset1.i_study_subject_column,
+            i_dbgap_description=source_dataset1.i_dbgap_description
+        )
+        source_dataset3 = SourceDatasetFactory.create(
+            source_study_version=source_study_version3,
+            i_accession=source_dataset1.i_accession,
+            i_version=source_dataset1.i_version,
+            i_is_subject_file=source_dataset1.i_is_subject_file,
+            i_study_subject_column=source_dataset1.i_study_subject_column,
+            i_dbgap_description=source_dataset1.i_dbgap_description
+        )
+        trait1 = SourceTraitFactory.create(source_dataset=source_dataset1)
+        trait2 = SourceTraitFactory.create(
+            source_dataset=source_dataset2,
+            i_detected_type=trait1.i_detected_type,
+            i_dbgap_type=trait1.i_dbgap_type,
+            i_dbgap_variable_accession=trait1.i_dbgap_variable_accession,
+            i_dbgap_variable_version=trait1.i_dbgap_variable_version,
+            i_dbgap_comment=trait1.i_dbgap_comment,
+            i_dbgap_unit=trait1.i_dbgap_unit,
+            i_n_records=trait1.i_n_records,
+            i_n_missing=trait1.i_n_missing,
+            i_is_unique_key=trait1.i_is_unique_key,
+            i_are_values_truncated=trait1.i_are_values_truncated
+        )
+        trait3 = SourceTraitFactory.create(
+            source_dataset=source_dataset3,
+            i_detected_type=trait1.i_detected_type,
+            i_dbgap_type=trait1.i_dbgap_type,
+            i_dbgap_variable_accession=trait1.i_dbgap_variable_accession,
+            i_dbgap_variable_version=trait1.i_dbgap_variable_version,
+            i_dbgap_comment=trait1.i_dbgap_comment,
+            i_dbgap_unit=trait1.i_dbgap_unit,
+            i_n_records=trait1.i_n_records,
+            i_n_missing=trait1.i_n_missing,
+            i_is_unique_key=trait1.i_is_unique_key,
+            i_are_values_truncated=trait1.i_are_values_truncated
+        )
+        tagged_trait1 = factories.TaggedTraitFactory.create(trait=trait1, tag=tag)
+        tagged_trait2 = factories.TaggedTraitFactory.create(trait=trait2, tag=tag, previous_tagged_trait=tagged_trait1)
+        tagged_trait3 = factories.TaggedTraitFactory.create(trait=trait3, tag=tag, previous_tagged_trait=tagged_trait2)
+        response = self.client.get(self.get_url(tagged_trait1.pk))
         context = response.context
         self.assertTrue(context['is_deprecated'])
         self.assertFalse(context['show_removed_text'])
-        self.assertEqual(context['new_version_link'], tagged_trait.get_absolute_url())
+        self.assertEqual(context['new_version_link'], tagged_trait3.get_absolute_url())
         self.assertContains(response, context['new_version_link'])
         self.assertNotContains(response, '<div class="alert alert-danger" role="alert" id="removed_deprecated_trait">')
         self.assertContains(response, '<div class="alert alert-danger" role="alert" id="updated_deprecated_trait">')
