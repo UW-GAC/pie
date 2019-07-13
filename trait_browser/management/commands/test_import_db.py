@@ -10,7 +10,11 @@ Usage:
 This test module runs several unit tests and one integration test.
 """
 
-from datetime import datetime
+from copy import copy
+from datetime import datetime, timedelta
+import mysql.connector
+# Use the mysql-connector-python-rf package from pypi.
+# (Advice via this SO post http://stackoverflow.com/q/34168651/2548371)
 from os.path import exists, join
 from os import listdir, stat
 from re import compile
@@ -28,6 +32,9 @@ from django.utils import timezone
 
 import watson.search as watson
 
+from core.factories import UserFactory
+from tags.factories import TagFactory, TaggedTraitFactory
+from tags.models import Tag, TaggedTrait
 from trait_browser.management.commands.import_db import Command, HUNIT_QUERY, STRING_TYPES
 from trait_browser.management.commands.db_factory import fake_row_dict
 from trait_browser import factories
@@ -822,6 +829,132 @@ class SetDatasetNamesTest(BaseTestDataTestCase):
         self.assertTrue(all([DBGAP_RE.search(name) for name in source_dataset_files]))
         # None of the file names have any directory path in them.
         self.assertFalse(any(['/' in name for name in source_dataset_files]))
+
+
+class ApplyTagsToNewSourceStudyVersionsTest(BaseTestDataTestCase):
+    """."""
+
+    @classmethod
+    def setUpClass(cls):
+        """Load the base test data and run the import_db management command."""
+        # Run the BaseTestDataTestCase setUpClass method.
+        super().setUpClass()
+        cls.user = UserFactory.create()
+        # Import the base test data.
+        management.call_command('import_db', '--no_backup', '--which_db=devel',
+                                '--taggedtrait_creator={}'.format(cls.user.email))
+
+    def test_update_one_taggedtrait_with_one_new_sourcestudyversion(self):
+        """_apply_tags_to_new_sourcestudyversions updates a single tagged trait with a new version."""
+        # Make a taggedtrait from existing base test data.
+        trait1 = models.SourceTrait.objects.current().order_by('?').first()
+        ssv1 = trait1.source_dataset.source_study_version
+        dataset1 = trait1.source_dataset
+        tag = TagFactory.create()
+        # tag = TagFactory.create()
+        taggedtrait1 = TaggedTraitFactory.create(creator=self.user, trait=trait1, tag=tag)
+        self.assertEqual(TaggedTrait.objects.count(), 1)
+        # Make a new version of an existing ssv, dataset, and source trait.
+        ssv2 = copy(ssv1)
+        ssv2.i_version = ssv1.i_version + 1
+        ssv2.pk = max(models.SourceStudyVersion.objects.values_list('pk', flat=True)) + 1
+        ssv2.i_date_added = ssv1.i_date_added + timedelta(days=7)
+        ssv2.i_date_changed = ssv2.i_date_changed + timedelta(days=7)
+        ssv2.created = ssv2.created  + timedelta(days=7)
+        ssv2.modified = ssv2.modified + timedelta(days=7)
+        ssv2.save()
+        dataset2 = copy(dataset1)
+        dataset2.pk = max(models.SourceDataset.objects.values_list('pk', flat=True)) + 1
+        dataset2.source_study_version = ssv2
+        dataset2.i_date_added = dataset1.i_date_added + timedelta(days=7)
+        dataset2.i_date_changed = dataset1.i_date_changed + timedelta(days=7)
+        dataset2.created = dataset1.created  + timedelta(days=7)
+        dataset2.modified = dataset1.modified + timedelta(days=7)
+        dataset2.save()
+        trait2 = copy(trait1)
+        trait2.pk = max(models.SourceTrait.objects.values_list('pk', flat=True)) + 1
+        trait2.source_dataset = dataset2
+        trait2.i_date_added = trait1.i_date_added + timedelta(days=7)
+        trait2.i_date_changed = trait1.i_date_changed + timedelta(days=7)
+        trait2.created = trait1.created  + timedelta(days=7)
+        trait2.modified = trait1.modified + timedelta(days=7)
+        trait2.save()
+        # Run _apply_tags_to_new_sourcestudyversions
+        user2 = UserFactory.create()
+        CMD._apply_tags_to_new_sourcestudyversions(sourcestudyversion_pks=[ssv2.pk], creator=user2)
+        self.assertEqual(TaggedTrait.objects.count(), 2)
+        # Look for the new taggedtrait version
+        taggedtrait2 = TaggedTrait.objects.get(trait=trait2)
+        self.assertEqual(taggedtrait2.previous_tagged_trait, taggedtrait1)
+        self.assertEqual(taggedtrait2.creator, user2)
+
+    def test_update_two_taggedtraits_with_one_new_sourcestudyversion(self):
+        """_apply_tags_to_new_sourcestudyversions updates two tagged traits with a new version in the same study."""
+        # Make a taggedtrait from existing base test data.
+        trait1 = models.SourceTrait.objects.current().order_by('?').first()
+        ssv1 = trait1.source_dataset.source_study_version
+        another_trait1 = models.SourceTrait.objects.filter(
+            source_dataset__source_study_version=ssv1).order_by('?').first()
+        dataset1 = trait1.source_dataset
+        another_dataset1 = another_trait1.source_dataset
+        tag = TagFactory.create()
+        another_tag = TagFactory.create()
+        # tag = TagFactory.create()
+        taggedtrait1 = TaggedTraitFactory.create(creator=self.user, trait=trait1, tag=tag)
+        another_taggedtrait1 = TaggedTraitFactory.create(creator=self.user, trait=another_trait1, tag=another_tag)
+        self.assertEqual(TaggedTrait.objects.count(), 2)
+        # Make a new version of an existing ssv, dataset, and source trait.
+        ssv2 = copy(ssv1)
+        ssv2.i_version = ssv1.i_version + 1
+        ssv2.pk = max(models.SourceStudyVersion.objects.values_list('pk', flat=True)) + 1
+        ssv2.i_date_added = ssv1.i_date_added + timedelta(days=7)
+        ssv2.i_date_changed = ssv2.i_date_changed + timedelta(days=7)
+        ssv2.created = ssv2.created  + timedelta(days=7)
+        ssv2.modified = ssv2.modified + timedelta(days=7)
+        ssv2.save()
+        dataset2 = copy(dataset1)
+        dataset2.pk = max(models.SourceDataset.objects.values_list('pk', flat=True)) + 1
+        dataset2.source_study_version = ssv2
+        dataset2.i_date_added = dataset1.i_date_added + timedelta(days=7)
+        dataset2.i_date_changed = dataset1.i_date_changed + timedelta(days=7)
+        dataset2.created = dataset1.created  + timedelta(days=7)
+        dataset2.modified = dataset1.modified + timedelta(days=7)
+        dataset2.save()
+        another_dataset2 = copy(another_dataset1)
+        another_dataset2.pk = max(models.SourceDataset.objects.values_list('pk', flat=True)) + 1
+        another_dataset2.source_study_version = ssv2
+        another_dataset2.i_date_added = another_dataset1.i_date_added + timedelta(days=7)
+        another_dataset2.i_date_changed = another_dataset1.i_date_changed + timedelta(days=7)
+        another_dataset2.created = another_dataset1.created  + timedelta(days=7)
+        another_dataset2.modified = another_dataset1.modified + timedelta(days=7)
+        another_dataset2.save()
+        trait2 = copy(trait1)
+        trait2.pk = max(models.SourceTrait.objects.values_list('pk', flat=True)) + 1
+        trait2.source_dataset = dataset2
+        trait2.i_date_added = trait1.i_date_added + timedelta(days=7)
+        trait2.i_date_changed = trait1.i_date_changed + timedelta(days=7)
+        trait2.created = trait1.created  + timedelta(days=7)
+        trait2.modified = trait1.modified + timedelta(days=7)
+        trait2.save()
+        another_trait2 = copy(another_trait1)
+        another_trait2.pk = max(models.SourceTrait.objects.values_list('pk', flat=True)) + 1
+        another_trait2.source_dataset = dataset2
+        another_trait2.i_date_added = another_trait1.i_date_added + timedelta(days=7)
+        another_trait2.i_date_changed = another_trait1.i_date_changed + timedelta(days=7)
+        another_trait2.created = another_trait1.created  + timedelta(days=7)
+        another_trait2.modified = another_trait1.modified + timedelta(days=7)
+        another_trait2.save()
+        # Run _apply_tags_to_new_sourcestudyversions
+        user2 = UserFactory.create()
+        CMD._apply_tags_to_new_sourcestudyversions(sourcestudyversion_pks=[ssv2.pk], creator=user2)
+        self.assertEqual(TaggedTrait.objects.count(), 4)
+        # Look for the new taggedtrait version
+        taggedtrait2 = TaggedTrait.objects.get(trait=trait2)
+        self.assertEqual(taggedtrait2.previous_tagged_trait, taggedtrait1)
+        self.assertEqual(taggedtrait2.creator, user2)
+        another_taggedtrait2 = TaggedTrait.objects.get(trait=another_trait2)
+        self.assertEqual(another_taggedtrait2.previous_tagged_trait, another_taggedtrait1)
+        self.assertEqual(another_taggedtrait2.creator, user2)
 
 
 class MakeArgsTest(BaseTestDataTestCase):
