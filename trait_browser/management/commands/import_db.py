@@ -24,6 +24,8 @@ from django.core.management.base import BaseCommand
 from django.core import management
 from django.utils import timezone
 from django.conf import settings
+from django.contrib.auth import get_user_model
+User = get_user_model()
 
 from trait_browser import models
 
@@ -936,8 +938,18 @@ class Command(BaseCommand):
                 dataset_name, dataset_id, filename))
         cursor.close()
 
+    # Method to apply old tags to new source traits.
+    def _apply_tags_to_new_sourcestudyversions(self, sourcestudyversion_pks, creator):
+        """Apply tags from old souce trait versions to the newly imported source traits."""
+        # Get the new ssvs, sorted from oldest to newest by version and date_added.
+        sourcestudyversions = models.SourceStudyVersion.objects.filter(pk__in=sourcestudyversion_pks).order_by(
+            'study', 'i_version', 'i_date_added'
+        )
+        for ssv in sourcestudyversions:
+            ssv.apply_previous_tags(creator)
+
     # Methods to run all of the updating or importing on all of the models.
-    def _import_source_tables(self, source_db):
+    def _import_source_tables(self, source_db, taggedtrait_creator):
         """Import all source trait-related data from the source db into the Django models.
 
         Connect to the specified source db and run helper methods to import new data
@@ -948,6 +960,7 @@ class Command(BaseCommand):
 
         Arguments:
             source_db (MySQLConnection): a mysql.connector open db connection
+            taggedtrait_creator (str): email of the creator for new tagged traits
 
         Returns:
             None
@@ -992,6 +1005,12 @@ class Command(BaseCommand):
             source_db=source_db, source_table='source_trait_encoded_values', source_pk='id',
             model=models.SourceTraitEncodedValue, make_args=self._make_source_trait_encoded_value_args)
         logger.info("Added {} source trait encoded values".format(len(new_source_trait_encoded_value_pks)))
+
+        creator = User.objects.get(email=taggedtrait_creator)
+        self._apply_tags_to_new_sourcestudyversions(
+            sourcestudyversion_pks=new_source_study_version_pks,
+            creator=creator
+        )
 
     def _import_harmonized_tables(self, source_db):
         """Import all harmonized trait-related data from the source db into the Django models.
@@ -1322,6 +1341,9 @@ class Command(BaseCommand):
         only_group.add_argument(
             '--import_only', action='store_true',
             help='Only import new db records, and do not update records that are already imported.')
+        parser.add_argument('--taggedtrait_creator', action='store', type=str, default=None, required=True,
+                            help="""Email address for the user account that will be set as the creator of any
+                                    tagged traits that are created from apply_previous_tags().""")
 
     def handle(self, *args, **options):
         """Handle the main functions of this management command.
@@ -1369,7 +1391,7 @@ class Command(BaseCommand):
             self._update_source_tables(source_db=source_db)
             self._update_harmonized_tables(source_db=source_db)
         if not options.get('update_only'):
-            self._import_source_tables(source_db=source_db)
+            self._import_source_tables(source_db=source_db, taggedtrait_creator=options.get('taggedtrait_creator'))
             self._import_harmonized_tables(source_db=source_db)
         # Unlock the db connection.
         self._unlock_source_db(source_db)
