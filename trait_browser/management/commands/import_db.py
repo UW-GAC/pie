@@ -945,6 +945,9 @@ class Command(BaseCommand):
         sourcestudyversions = models.SourceStudyVersion.objects.filter(pk__in=sourcestudyversion_pks).order_by(
             'study', 'i_version', 'i_date_added'
         )
+        logger.debug("Source study versions to apply updates to, in sorted order:")
+        print_ssvs = ['\t'.join([str(el) for el in ssv]) for ssv in sourcestudyversions.values_list('study__i_study_name', 'i_version', 'i_date_added')]
+        logger.debug('\n'.join(print_ssvs))
         for ssv in sourcestudyversions:
             ssv.apply_previous_tags(creator)
 
@@ -1011,6 +1014,7 @@ class Command(BaseCommand):
             sourcestudyversion_pks=new_source_study_version_pks,
             creator=creator
         )
+        logger.info("Applied tags to updated source traits.")
 
     def _import_harmonized_tables(self, source_db):
         """Import all harmonized trait-related data from the source db into the Django models.
