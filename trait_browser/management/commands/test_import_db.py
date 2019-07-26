@@ -709,6 +709,9 @@ class ImportHelperTest(TestCase):
     def test_import_harmonized_tables(self):
         pass
 
+    def test_import_source_tables_applies_updated_tags(self):
+        pass
+
 
 class UpdateHelperTest(TestCase):
     """Tests of the _update_[source|harmonized]_tables helper methods."""
@@ -3500,3 +3503,8 @@ class IntegrationTest(ClearSearchIndexMixin, BaseTestDataReloadingTestCase):
         # Check all of the M2M relationships again.
         self.check_imported_m2m_relations_match(
             m2m_tables, group_by_fields, concat_fields, parent_models, m2m_att_names)
+
+    def test_updated_sourcetraits_are_tagged(self):
+        """."""
+        # Load test data with updated study version.
+        pass
