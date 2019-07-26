@@ -58,7 +58,7 @@ class StudyTest(TestCase):
     def test_custom_save(self):
         """The custom save method works."""
         study = factories.StudyFactory.create()
-        self.assertRegex(study.phs, 'phs\d{6}')
+        self.assertRegex(study.phs, r'phs\d{6}')
 
     def test_get_search_url(self):
         """Tests that the get_search_url method returns an appropriately constructed url."""
@@ -178,7 +178,7 @@ class SourceStudyVersionTest(TestCase):
     def test_custom_save(self):
         """The custom save method works."""
         source_study_version = factories.SourceStudyVersionFactory.create()
-        self.assertRegex(source_study_version.full_accession, 'phs\d{6}\.v\d{1,3}\.p\d{1,3}')
+        self.assertRegex(source_study_version.full_accession, r'phs\d{6}\.v\d{1,3}\.p\d{1,3}')
         self.assertEqual(source_study_version.dbgap_link[:68], models.SourceStudyVersion.STUDY_VERSION_URL[:68])
 
     def test_get_previous_versions_no_other_versions(self):
@@ -584,7 +584,7 @@ class SourceDatasetTest(TestCase):
     def test_custom_save(self):
         """The custom save method works."""
         source_dataset = factories.SourceDatasetFactory.create()
-        self.assertRegex(source_dataset.full_accession, 'pht\d{6}\.v\d{1,5}.p\d{1,5}')
+        self.assertRegex(source_dataset.full_accession, r'pht\d{6}\.v\d{1,5}.p\d{1,5}')
         self.assertEqual(source_dataset.dbgap_link[:70], models.SourceDataset.DATASET_URL[:70])
 
     def test_current_queryset_method(self):
@@ -945,7 +945,7 @@ class SourceTraitTest(TestCase):
     def test_custom_save(self):
         """The custom save method works."""
         source_trait = factories.SourceTraitFactory.create()
-        self.assertRegex(source_trait.full_accession, 'phv\d{8}.v\d{1,3}.p\d{1,3}')
+        self.assertRegex(source_trait.full_accession, r'phv\d{8}.v\d{1,3}.p\d{1,3}')
         self.assertEqual(source_trait.dbgap_link[:71], models.SourceTrait.VARIABLE_URL[:71])
 
     def test_get_absolute_url(self):

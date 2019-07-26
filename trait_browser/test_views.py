@@ -769,7 +769,8 @@ class SourceDatasetDetailTest(UserLoginTestCase):
         self.assertTrue(context['show_removed_text'])
         self.assertIsNone(context['new_version_link'])
         self.assertContains(response, '<div class="alert alert-danger" role="alert" id="removed_deprecated_dataset">')
-        self.assertNotContains(response, '<div class="alert alert-danger" role="alert" id="updated_deprecated_dataset">')
+        self.assertNotContains(
+            response, '<div class="alert alert-danger" role="alert" id="updated_deprecated_dataset">')
 
     def test_context_deprecated_dataset_with_newer_version(self):
         """View has appropriate deprecation message with a newer version."""
@@ -793,7 +794,8 @@ class SourceDatasetDetailTest(UserLoginTestCase):
         self.assertFalse(context['show_removed_text'])
         self.assertEqual(context['new_version_link'], source_dataset2.get_absolute_url())
         self.assertContains(response, context['new_version_link'])
-        self.assertNotContains(response, '<div class="alert alert-danger" role="alert" id="removed_deprecated_dataset">')
+        self.assertNotContains(
+            response, '<div class="alert alert-danger" role="alert" id="removed_deprecated_dataset">')
         self.assertContains(response, '<div class="alert alert-danger" role="alert" id="updated_deprecated_dataset">')
 
     def test_context_deprecated_dataset_with_two_new_versions(self):
@@ -828,7 +830,8 @@ class SourceDatasetDetailTest(UserLoginTestCase):
         self.assertFalse(context['show_removed_text'])
         self.assertEqual(context['new_version_link'], source_dataset3.get_absolute_url())
         self.assertContains(response, context['new_version_link'])
-        self.assertNotContains(response, '<div class="alert alert-danger" role="alert" id="removed_deprecated_dataset">')
+        self.assertNotContains(
+            response, '<div class="alert alert-danger" role="alert" id="removed_deprecated_dataset">')
         self.assertContains(response, '<div class="alert alert-danger" role="alert" id="updated_deprecated_dataset">')
 
 

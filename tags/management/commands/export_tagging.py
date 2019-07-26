@@ -28,7 +28,7 @@ TAGS_JSON_FIELDS = (
     ('created', 'timestamp for creation time of the tag'),
     ('modified', 'timestamp for last modified time of the tag'),
     ('title', 'formatted title of the tag; the general phenotype concept'),
-    ('lower_title', 'a conversion of the "title" field to all lowercase, in order to enforce a unique constraint on case-insensitive tag title'),
+    ('lower_title', 'a conversion of the "title" field to all lowercase, in order to enforce a unique constraint on case-insensitive tag title'),  # noqa
     ('description', 'a brief description of the phenotype concept represented by the tag'),
     ('instructions', 'detailed instructions describing which kinds of variables should have the tag applied or not'),
     ('creator', 'id number for the user who created the tag'),
@@ -45,7 +45,7 @@ TAGGED_TRAIT_COLUMNS = (
     ('variable_full_accession', 'trait__full_accession',
      'full dbGaP accession for the variable, including phv, variable version number, and participant set number'),
     ('dataset_full_accession', 'trait__source_dataset__full_accession',
-     'full dbGaP accession for the dataset (table) the variable is from, including pht, dataset version number, and participant set number'),
+     'full dbGaP accession for the dataset (table) the variable is from, including pht, dataset version number, and participant set number'),  # noqa
     ('study_full_accession', 'trait__source_dataset__source_study_version__full_accession',
      'full dbGaP accession for the study, including phs, study version number, and participant set number'),
     ('study_name', 'trait__source_dataset__source_study_version__study__i_study_name',
@@ -130,9 +130,9 @@ class Command(BaseCommand):
         else:
             logger.debug('Including tagged traits from deprecated study versions...')
         if study_pk is not None:
-                filter_study = Study.objects.get(pk=study_pk)
-                q = q.filter(trait__source_dataset__source_study_version__study=filter_study)
-                logger.debug('Filtering to a single study: {}...'.format(filter_study))
+            filter_study = Study.objects.get(pk=study_pk)
+            q = q.filter(trait__source_dataset__source_study_version__study=filter_study)
+            logger.debug('Filtering to a single study: {}...'.format(filter_study))
         return q.select_related(
             'trait',
             'trait__source_dataset',

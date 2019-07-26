@@ -25,10 +25,11 @@ from django.core import management
 from django.utils import timezone
 from django.conf import settings
 from django.contrib.auth import get_user_model
-User = get_user_model()
 
 from trait_browser import models
 
+
+User = get_user_model()
 
 # Set up a logger to handle messages based on verbosity setting.
 logger = logging.getLogger(__name__)
@@ -946,7 +947,8 @@ class Command(BaseCommand):
             'study', 'i_version', 'i_date_added'
         )
         logger.debug("Source study versions to apply updates to, in sorted order:")
-        print_ssvs = ['\t'.join([str(el) for el in ssv]) for ssv in sourcestudyversions.values_list('study__i_study_name', 'i_version', 'i_date_added')]
+        print_ssvs = ['\t'.join([str(el) for el in ssv]) for ssv in sourcestudyversions.values_list(
+            'study__i_study_name', 'i_version', 'i_date_added')]
         logger.debug('\n'.join(print_ssvs))
         for ssv in sourcestudyversions:
             ssv.apply_previous_tags(creator)

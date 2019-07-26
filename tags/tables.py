@@ -282,15 +282,15 @@ class TaggedTraitTableForStaffByStudy(TaggedTraitDetailColumnMixin, TaggedTraitD
                                       TaggedTraitDCCReviewStatusColumnMixin, TaggedTraitStudyResponseStatusColumnMixin,
                                       TaggedTraitDCCDecisionColumnMixin,
                                       TaggedTraitArchivedColumnMixin, TaggedTraitTable):
-        """Table for displaying TaggedTraits to DCC staff users.
+    """Table for displaying TaggedTraits to DCC staff users.
 
-        Used for TaggedTraitByTagAndStudyList. Includes columns for DCC review, study response, and archived
-        status. Includes column with DCC Review create/update button and links to detail pages.
-        """
+    Used for TaggedTraitByTagAndStudyList. Includes columns for DCC review, study response, and archived
+    status. Includes column with DCC Review create/update button and links to detail pages.
+    """
 
-        class Meta(TaggedTraitTable.Meta):
-            fields = ('tag', 'trait', 'description', 'dataset', 'details', 'dcc_action_button', 'dcc_review_status',
-                      'study_response_status', 'dcc_decision', 'archived', )
+    class Meta(TaggedTraitTable.Meta):
+        fields = ('tag', 'trait', 'description', 'dataset', 'details', 'dcc_action_button', 'dcc_review_status',
+                  'study_response_status', 'dcc_decision', 'archived', )
 
 
 class TaggedTraitDCCReviewTable(tables.Table):

@@ -34,7 +34,7 @@ import watson.search as watson
 
 from core.factories import UserFactory
 from tags.factories import TagFactory, TaggedTraitFactory
-from tags.models import Tag, TaggedTrait
+from tags.models import TaggedTrait
 from trait_browser.management.commands.import_db import Command, HUNIT_QUERY, STRING_TYPES
 from trait_browser.management.commands.db_factory import fake_row_dict
 from trait_browser import factories
@@ -443,8 +443,8 @@ class DbFixersTest(TestCase):
         fixed_row = CMD._fix_timezone(row)
         for k in row:
             if isinstance(row[k], datetime):
-                self.assertTrue(fixed_row[k].tzinfo is not None and
-                                fixed_row[k].tzinfo.utcoffset(fixed_row[k]) is not None)
+                self.assertTrue(
+                    fixed_row[k].tzinfo is not None and fixed_row[k].tzinfo.utcoffset(fixed_row[k]) is not None)
 
     def test_fix_timezone_only_datetimes_altered(self):
         """Non-datetime objects in the dict are not altered by _fix_timezone."""
@@ -848,7 +848,7 @@ class ApplyTagsToNewSourceStudyVersionsTest(BaseTestDataTestCase):
                                 '--taggedtrait_creator={}'.format(cls.user.email))
 
     def test_update_one_taggedtrait_with_one_new_sourcestudyversion(self):
-        """_apply_tags_to_new_sourcestudyversions updates a single tagged trait with a new version."""
+        """Updates a single tagged trait with a new version."""
         # Make a taggedtrait from existing base test data.
         trait1 = models.SourceTrait.objects.current().order_by('?').first()
         ssv1 = trait1.source_dataset.source_study_version
@@ -863,7 +863,7 @@ class ApplyTagsToNewSourceStudyVersionsTest(BaseTestDataTestCase):
         ssv2.pk = max(models.SourceStudyVersion.objects.values_list('pk', flat=True)) + 1
         ssv2.i_date_added = ssv1.i_date_added + timedelta(days=7)
         ssv2.i_date_changed = ssv1.i_date_changed + timedelta(days=7)
-        ssv2.created = ssv1.created  + timedelta(days=7)
+        ssv2.created = ssv1.created + timedelta(days=7)
         ssv2.modified = ssv1.modified + timedelta(days=7)
         ssv2.save()
         dataset2 = copy(dataset1)
@@ -871,7 +871,7 @@ class ApplyTagsToNewSourceStudyVersionsTest(BaseTestDataTestCase):
         dataset2.source_study_version = ssv2
         dataset2.i_date_added = dataset1.i_date_added + timedelta(days=7)
         dataset2.i_date_changed = dataset1.i_date_changed + timedelta(days=7)
-        dataset2.created = dataset1.created  + timedelta(days=7)
+        dataset2.created = dataset1.created + timedelta(days=7)
         dataset2.modified = dataset1.modified + timedelta(days=7)
         dataset2.save()
         trait2 = copy(trait1)
@@ -879,7 +879,7 @@ class ApplyTagsToNewSourceStudyVersionsTest(BaseTestDataTestCase):
         trait2.source_dataset = dataset2
         trait2.i_date_added = trait1.i_date_added + timedelta(days=7)
         trait2.i_date_changed = trait1.i_date_changed + timedelta(days=7)
-        trait2.created = trait1.created  + timedelta(days=7)
+        trait2.created = trait1.created + timedelta(days=7)
         trait2.modified = trait1.modified + timedelta(days=7)
         trait2.save()
         # Run _apply_tags_to_new_sourcestudyversions
@@ -892,14 +892,14 @@ class ApplyTagsToNewSourceStudyVersionsTest(BaseTestDataTestCase):
         self.assertEqual(taggedtrait2.creator, user2)
 
     def test_update_two_taggedtraits_with_one_new_sourcestudyversion(self):
-        """_apply_tags_to_new_sourcestudyversions updates two tagged traits with a new version in the same study."""
+        """Updates two tagged traits with a new version in the same study."""
         # Make a taggedtrait from existing base test data.
         trait1 = models.SourceTrait.objects.current().order_by('?').first()
         ssv1 = trait1.source_dataset.source_study_version
         another_trait1 = models.SourceTrait.objects.filter(
             source_dataset__source_study_version=ssv1).exclude(
             pk=trait1.pk
-            ).order_by('?').first()
+        ).order_by('?').first()
         dataset1 = trait1.source_dataset
         another_dataset1 = another_trait1.source_dataset
         tag = TagFactory.create()
@@ -914,7 +914,7 @@ class ApplyTagsToNewSourceStudyVersionsTest(BaseTestDataTestCase):
         ssv2.pk = max(models.SourceStudyVersion.objects.values_list('pk', flat=True)) + 1
         ssv2.i_date_added = ssv1.i_date_added + timedelta(days=7)
         ssv2.i_date_changed = ssv1.i_date_changed + timedelta(days=7)
-        ssv2.created = ssv1.created  + timedelta(days=7)
+        ssv2.created = ssv1.created + timedelta(days=7)
         ssv2.modified = ssv1.modified + timedelta(days=7)
         ssv2.save()
         dataset2 = copy(dataset1)
@@ -922,7 +922,7 @@ class ApplyTagsToNewSourceStudyVersionsTest(BaseTestDataTestCase):
         dataset2.source_study_version = ssv2
         dataset2.i_date_added = dataset1.i_date_added + timedelta(days=7)
         dataset2.i_date_changed = dataset1.i_date_changed + timedelta(days=7)
-        dataset2.created = dataset1.created  + timedelta(days=7)
+        dataset2.created = dataset1.created + timedelta(days=7)
         dataset2.modified = dataset1.modified + timedelta(days=7)
         dataset2.save()
         another_dataset2 = copy(another_dataset1)
@@ -930,7 +930,7 @@ class ApplyTagsToNewSourceStudyVersionsTest(BaseTestDataTestCase):
         another_dataset2.source_study_version = ssv2
         another_dataset2.i_date_added = another_dataset1.i_date_added + timedelta(days=7)
         another_dataset2.i_date_changed = another_dataset1.i_date_changed + timedelta(days=7)
-        another_dataset2.created = another_dataset1.created  + timedelta(days=7)
+        another_dataset2.created = another_dataset1.created + timedelta(days=7)
         another_dataset2.modified = another_dataset1.modified + timedelta(days=7)
         another_dataset2.save()
         trait2 = copy(trait1)
@@ -938,7 +938,7 @@ class ApplyTagsToNewSourceStudyVersionsTest(BaseTestDataTestCase):
         trait2.source_dataset = dataset2
         trait2.i_date_added = trait1.i_date_added + timedelta(days=7)
         trait2.i_date_changed = trait1.i_date_changed + timedelta(days=7)
-        trait2.created = trait1.created  + timedelta(days=7)
+        trait2.created = trait1.created + timedelta(days=7)
         trait2.modified = trait1.modified + timedelta(days=7)
         trait2.save()
         another_trait2 = copy(another_trait1)
@@ -946,7 +946,7 @@ class ApplyTagsToNewSourceStudyVersionsTest(BaseTestDataTestCase):
         another_trait2.source_dataset = dataset2
         another_trait2.i_date_added = another_trait1.i_date_added + timedelta(days=7)
         another_trait2.i_date_changed = another_trait1.i_date_changed + timedelta(days=7)
-        another_trait2.created = another_trait1.created  + timedelta(days=7)
+        another_trait2.created = another_trait1.created + timedelta(days=7)
         another_trait2.modified = another_trait1.modified + timedelta(days=7)
         another_trait2.save()
         # Run _apply_tags_to_new_sourcestudyversions
@@ -962,7 +962,7 @@ class ApplyTagsToNewSourceStudyVersionsTest(BaseTestDataTestCase):
         self.assertEqual(another_taggedtrait2.creator, user2)
 
     def test_update_two_taggedtraits_with_two_new_sourcestudyversions(self):
-        """_apply_tags_to_new_sourcestudyversions updates two tagged traits from two new versions of same study."""
+        """Updates two tagged traits from two new versions of same study."""
         # Make a taggedtrait from existing base test data.
         trait1 = models.SourceTrait.objects.current().order_by('?').first()
         ssv1 = trait1.source_dataset.source_study_version
@@ -977,7 +977,7 @@ class ApplyTagsToNewSourceStudyVersionsTest(BaseTestDataTestCase):
         ssv2.pk = max(models.SourceStudyVersion.objects.values_list('pk', flat=True)) + 1
         ssv2.i_date_added = ssv1.i_date_added + timedelta(days=7)
         ssv2.i_date_changed = ssv1.i_date_changed + timedelta(days=7)
-        ssv2.created = ssv1.created  + timedelta(days=7)
+        ssv2.created = ssv1.created + timedelta(days=7)
         ssv2.modified = ssv1.modified + timedelta(days=7)
         ssv2.save()
         ssv3 = copy(ssv2)
@@ -985,7 +985,7 @@ class ApplyTagsToNewSourceStudyVersionsTest(BaseTestDataTestCase):
         ssv3.pk = max(models.SourceStudyVersion.objects.values_list('pk', flat=True)) + 1
         ssv3.i_date_added = ssv2.i_date_added + timedelta(days=7)
         ssv3.i_date_changed = ssv2.i_date_changed + timedelta(days=7)
-        ssv3.created = ssv2.created  + timedelta(days=7)
+        ssv3.created = ssv2.created + timedelta(days=7)
         ssv3.modified = ssv2.modified + timedelta(days=7)
         ssv3.save()
         # Make two new datasets from the two new study versions.
@@ -994,7 +994,7 @@ class ApplyTagsToNewSourceStudyVersionsTest(BaseTestDataTestCase):
         dataset2.source_study_version = ssv2
         dataset2.i_date_added = dataset1.i_date_added + timedelta(days=7)
         dataset2.i_date_changed = dataset1.i_date_changed + timedelta(days=7)
-        dataset2.created = dataset1.created  + timedelta(days=7)
+        dataset2.created = dataset1.created + timedelta(days=7)
         dataset2.modified = dataset1.modified + timedelta(days=7)
         dataset2.save()
         dataset3 = copy(dataset2)
@@ -1002,7 +1002,7 @@ class ApplyTagsToNewSourceStudyVersionsTest(BaseTestDataTestCase):
         dataset3.source_study_version = ssv3
         dataset3.i_date_added = dataset2.i_date_added + timedelta(days=7)
         dataset3.i_date_changed = dataset2.i_date_changed + timedelta(days=7)
-        dataset3.created = dataset2.created  + timedelta(days=7)
+        dataset3.created = dataset2.created + timedelta(days=7)
         dataset3.modified = dataset2.modified + timedelta(days=7)
         dataset3.save()
         # Make two new traits from the two new datasets.
@@ -1011,7 +1011,7 @@ class ApplyTagsToNewSourceStudyVersionsTest(BaseTestDataTestCase):
         trait2.source_dataset = dataset2
         trait2.i_date_added = trait1.i_date_added + timedelta(days=7)
         trait2.i_date_changed = trait1.i_date_changed + timedelta(days=7)
-        trait2.created = trait1.created  + timedelta(days=7)
+        trait2.created = trait1.created + timedelta(days=7)
         trait2.modified = trait1.modified + timedelta(days=7)
         trait2.save()
         trait3 = copy(trait2)
@@ -1019,7 +1019,7 @@ class ApplyTagsToNewSourceStudyVersionsTest(BaseTestDataTestCase):
         trait3.source_dataset = dataset3
         trait3.i_date_added = trait2.i_date_added + timedelta(days=7)
         trait3.i_date_changed = trait2.i_date_changed + timedelta(days=7)
-        trait3.created = trait2.created  + timedelta(days=7)
+        trait3.created = trait2.created + timedelta(days=7)
         trait3.modified = trait2.modified + timedelta(days=7)
         trait3.save()
         # Run _apply_tags_to_new_sourcestudyversions
@@ -1035,7 +1035,7 @@ class ApplyTagsToNewSourceStudyVersionsTest(BaseTestDataTestCase):
         self.assertEqual(taggedtrait3.creator, user2)
 
     def test_update_two_taggedtraits_with_two_new_sourcestudyversions_reversed(self):
-        """_apply_tags_to_new_sourcestudyversions updates two tagged traits from two new versions of same study in reverse order."""
+        """Updates two tagged traits from two new versions of same study in reverse order."""
         # Make a taggedtrait from existing base test data.
         trait1 = models.SourceTrait.objects.current().order_by('?').first()
         ssv1 = trait1.source_dataset.source_study_version
@@ -1050,7 +1050,7 @@ class ApplyTagsToNewSourceStudyVersionsTest(BaseTestDataTestCase):
         ssv2.pk = max(models.SourceStudyVersion.objects.values_list('pk', flat=True)) + 1
         ssv2.i_date_added = ssv1.i_date_added + timedelta(days=7)
         ssv2.i_date_changed = ssv1.i_date_changed + timedelta(days=7)
-        ssv2.created = ssv1.created  + timedelta(days=7)
+        ssv2.created = ssv1.created + timedelta(days=7)
         ssv2.modified = ssv1.modified + timedelta(days=7)
         ssv2.save()
         ssv3 = copy(ssv2)
@@ -1058,7 +1058,7 @@ class ApplyTagsToNewSourceStudyVersionsTest(BaseTestDataTestCase):
         ssv3.pk = max(models.SourceStudyVersion.objects.values_list('pk', flat=True)) + 1
         ssv3.i_date_added = ssv2.i_date_added + timedelta(days=7)
         ssv3.i_date_changed = ssv2.i_date_changed + timedelta(days=7)
-        ssv3.created = ssv2.created  + timedelta(days=7)
+        ssv3.created = ssv2.created + timedelta(days=7)
         ssv3.modified = ssv2.modified + timedelta(days=7)
         ssv3.save()
         # Make two new datasets from the two new study versions.
@@ -1067,7 +1067,7 @@ class ApplyTagsToNewSourceStudyVersionsTest(BaseTestDataTestCase):
         dataset2.source_study_version = ssv2
         dataset2.i_date_added = dataset1.i_date_added + timedelta(days=7)
         dataset2.i_date_changed = dataset1.i_date_changed + timedelta(days=7)
-        dataset2.created = dataset1.created  + timedelta(days=7)
+        dataset2.created = dataset1.created + timedelta(days=7)
         dataset2.modified = dataset1.modified + timedelta(days=7)
         dataset2.save()
         dataset3 = copy(dataset2)
@@ -1075,7 +1075,7 @@ class ApplyTagsToNewSourceStudyVersionsTest(BaseTestDataTestCase):
         dataset3.source_study_version = ssv3
         dataset3.i_date_added = dataset2.i_date_added + timedelta(days=7)
         dataset3.i_date_changed = dataset2.i_date_changed + timedelta(days=7)
-        dataset3.created = dataset2.created  + timedelta(days=7)
+        dataset3.created = dataset2.created + timedelta(days=7)
         dataset3.modified = dataset2.modified + timedelta(days=7)
         dataset3.save()
         # Make two new traits from the two new datasets.
@@ -1084,7 +1084,7 @@ class ApplyTagsToNewSourceStudyVersionsTest(BaseTestDataTestCase):
         trait2.source_dataset = dataset2
         trait2.i_date_added = trait1.i_date_added + timedelta(days=7)
         trait2.i_date_changed = trait1.i_date_changed + timedelta(days=7)
-        trait2.created = trait1.created  + timedelta(days=7)
+        trait2.created = trait1.created + timedelta(days=7)
         trait2.modified = trait1.modified + timedelta(days=7)
         trait2.save()
         trait3 = copy(trait2)
@@ -1092,7 +1092,7 @@ class ApplyTagsToNewSourceStudyVersionsTest(BaseTestDataTestCase):
         trait3.source_dataset = dataset3
         trait3.i_date_added = trait2.i_date_added + timedelta(days=7)
         trait3.i_date_changed = trait2.i_date_changed + timedelta(days=7)
-        trait3.created = trait2.created  + timedelta(days=7)
+        trait3.created = trait2.created + timedelta(days=7)
         trait3.modified = trait2.modified + timedelta(days=7)
         trait3.save()
         # Run _apply_tags_to_new_sourcestudyversions
@@ -1119,7 +1119,7 @@ class ApplyTagsToNewSourceStudyVersionsTest(BaseTestDataTestCase):
         # Make a taggedtrait from existing base test data for a second study.
         study2_trait1 = models.SourceTrait.objects.current().exclude(
             source_dataset__source_study_version__study=study1_trait1.source_dataset.source_study_version.study
-            ).order_by('?').first()
+        ).order_by('?').first()
         study2_ssv1 = study2_trait1.source_dataset.source_study_version
         study2_dataset1 = study2_trait1.source_dataset
         study2_taggedtrait1 = TaggedTraitFactory.create(creator=self.user, trait=study2_trait1, tag=tag)
@@ -1130,7 +1130,7 @@ class ApplyTagsToNewSourceStudyVersionsTest(BaseTestDataTestCase):
         study1_ssv2.pk = max(models.SourceStudyVersion.objects.values_list('pk', flat=True)) + 1
         study1_ssv2.i_date_added = study1_ssv1.i_date_added + timedelta(days=7)
         study1_ssv2.i_date_changed = study1_ssv1.i_date_changed + timedelta(days=7)
-        study1_ssv2.created = study1_ssv1.created  + timedelta(days=7)
+        study1_ssv2.created = study1_ssv1.created + timedelta(days=7)
         study1_ssv2.modified = study1_ssv1.modified + timedelta(days=7)
         study1_ssv2.save()
         study2_ssv2 = copy(study2_ssv1)
@@ -1138,7 +1138,7 @@ class ApplyTagsToNewSourceStudyVersionsTest(BaseTestDataTestCase):
         study2_ssv2.pk = max(models.SourceStudyVersion.objects.values_list('pk', flat=True)) + 1
         study2_ssv2.i_date_added = study2_ssv1.i_date_added + timedelta(days=7)
         study2_ssv2.i_date_changed = study2_ssv1.i_date_changed + timedelta(days=7)
-        study2_ssv2.created = study2_ssv1.created  + timedelta(days=7)
+        study2_ssv2.created = study2_ssv1.created + timedelta(days=7)
         study2_ssv2.modified = study2_ssv1.modified + timedelta(days=7)
         study2_ssv2.save()
         # Make two new datasets from the two new study versions.
@@ -1147,7 +1147,7 @@ class ApplyTagsToNewSourceStudyVersionsTest(BaseTestDataTestCase):
         study1_dataset2.source_study_version = study1_ssv2
         study1_dataset2.i_date_added = study1_dataset1.i_date_added + timedelta(days=7)
         study1_dataset2.i_date_changed = study1_dataset1.i_date_changed + timedelta(days=7)
-        study1_dataset2.created = study1_dataset1.created  + timedelta(days=7)
+        study1_dataset2.created = study1_dataset1.created + timedelta(days=7)
         study1_dataset2.modified = study1_dataset1.modified + timedelta(days=7)
         study1_dataset2.save()
         study2_dataset2 = copy(study2_dataset1)
@@ -1155,7 +1155,7 @@ class ApplyTagsToNewSourceStudyVersionsTest(BaseTestDataTestCase):
         study2_dataset2.source_study_version = study2_ssv2
         study2_dataset2.i_date_added = study2_dataset1.i_date_added + timedelta(days=7)
         study2_dataset2.i_date_changed = study2_dataset1.i_date_changed + timedelta(days=7)
-        study2_dataset2.created = study2_dataset1.created  + timedelta(days=7)
+        study2_dataset2.created = study2_dataset1.created + timedelta(days=7)
         study2_dataset2.modified = study2_dataset1.modified + timedelta(days=7)
         study2_dataset2.save()
         # Make two new traits from the two new datasets.
@@ -1164,7 +1164,7 @@ class ApplyTagsToNewSourceStudyVersionsTest(BaseTestDataTestCase):
         study1_trait2.source_dataset = study1_dataset2
         study1_trait2.i_date_added = study1_trait1.i_date_added + timedelta(days=7)
         study1_trait2.i_date_changed = study1_trait1.i_date_changed + timedelta(days=7)
-        study1_trait2.created = study1_trait1.created  + timedelta(days=7)
+        study1_trait2.created = study1_trait1.created + timedelta(days=7)
         study1_trait2.modified = study1_trait1.modified + timedelta(days=7)
         study1_trait2.save()
         study2_trait2 = copy(study2_trait1)
@@ -1172,12 +1172,13 @@ class ApplyTagsToNewSourceStudyVersionsTest(BaseTestDataTestCase):
         study2_trait2.source_dataset = study2_dataset2
         study2_trait2.i_date_added = study2_trait1.i_date_added + timedelta(days=7)
         study2_trait2.i_date_changed = study2_trait1.i_date_changed + timedelta(days=7)
-        study2_trait2.created = study2_trait1.created  + timedelta(days=7)
+        study2_trait2.created = study2_trait1.created + timedelta(days=7)
         study2_trait2.modified = study2_trait1.modified + timedelta(days=7)
         study2_trait2.save()
         # Run _apply_tags_to_new_sourcestudyversions
         user2 = UserFactory.create()
-        CMD._apply_tags_to_new_sourcestudyversions(sourcestudyversion_pks=[study1_ssv2.pk, study2_ssv2.pk], creator=user2)
+        CMD._apply_tags_to_new_sourcestudyversions(
+            sourcestudyversion_pks=[study1_ssv2.pk, study2_ssv2.pk], creator=user2)
         self.assertEqual(TaggedTrait.objects.count(), 4)
         # Look for the new taggedtrait versions.
         study1_taggedtrait2 = TaggedTrait.objects.get(trait=study1_trait2)
@@ -1188,7 +1189,7 @@ class ApplyTagsToNewSourceStudyVersionsTest(BaseTestDataTestCase):
         self.assertEqual(study2_taggedtrait2.creator, user2)
 
     def test_no_updates_with_trait_missing_in_new_version(self):
-        """_apply_tags_to_new_sourcestudyversions does not create any new tagged traits when the trait is not updated."""
+        """Does not create any new tagged traits when the trait is not updated."""
         # Make a taggedtrait from existing base test data.
         trait1 = models.SourceTrait.objects.current().order_by('?').first()
         ssv1 = trait1.source_dataset.source_study_version
@@ -1203,7 +1204,7 @@ class ApplyTagsToNewSourceStudyVersionsTest(BaseTestDataTestCase):
         ssv2.pk = max(models.SourceStudyVersion.objects.values_list('pk', flat=True)) + 1
         ssv2.i_date_added = ssv1.i_date_added + timedelta(days=7)
         ssv2.i_date_changed = ssv1.i_date_changed + timedelta(days=7)
-        ssv2.created = ssv1.created  + timedelta(days=7)
+        ssv2.created = ssv1.created + timedelta(days=7)
         ssv2.modified = ssv1.modified + timedelta(days=7)
         ssv2.save()
         dataset2 = copy(dataset1)
@@ -1211,7 +1212,7 @@ class ApplyTagsToNewSourceStudyVersionsTest(BaseTestDataTestCase):
         dataset2.source_study_version = ssv2
         dataset2.i_date_added = dataset1.i_date_added + timedelta(days=7)
         dataset2.i_date_changed = dataset1.i_date_changed + timedelta(days=7)
-        dataset2.created = dataset1.created  + timedelta(days=7)
+        dataset2.created = dataset1.created + timedelta(days=7)
         dataset2.modified = dataset1.modified + timedelta(days=7)
         dataset2.save()
         # Do not create a new version of the trait in this new study version.

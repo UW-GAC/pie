@@ -62,7 +62,7 @@
 from django.apps import apps
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
-from django.db.models import Count, F, Sum
+from django.db.models import Count, F
 from django.urls import reverse
 from django.utils.text import Truncator
 from core.models import TimeStampedModel

@@ -760,9 +760,9 @@ class DCCReviewCreate(LoginRequiredMixin, PermissionRequiredMixin, FormValidMess
         return 'Oops! Cannot create review for {}, because it has been archived.'.format(self.tagged_trait)
 
     def _get_deprecated_warning_message(self):
-            msg = ('Oops! Cannot create review for {} '
-                   'because there is a newer version of the tagged study variable available.')
-            return self.messages.warning(msg.format(self.tagged_trait))
+        msg = ('Oops! Cannot create review for {} '
+               'because there is a newer version of the tagged study variable available.')
+        return self.messages.warning(msg.format(self.tagged_trait))
 
     def _get_warning_response(self, *args, **kwargs):
         """Get the appropriate response for deleted, archived, or already-reviewed tagged traits."""
@@ -827,9 +827,9 @@ class DCCReviewUpdate(LoginRequiredMixin, PermissionRequiredMixin, FormValidMess
         return 'Oops! Cannot update review for {}, because it has been archived.'.format(self.tagged_trait)
 
     def _get_deprecated_warning_message(self):
-            msg = ('Oops! Cannot create review for {} '
-                   'because there is a newer version of the tagged study variable available.')
-            return self.messages.warning(msg.format(self.tagged_trait))
+        msg = ('Oops! Cannot create review for {} '
+               'because there is a newer version of the tagged study variable available.')
+        return self.messages.warning(msg.format(self.tagged_trait))
 
     def _get_warning_response(self):
         """Get the appropriate response for archived tagged trait, missing DCCReview, or existing StudyResponse."""
