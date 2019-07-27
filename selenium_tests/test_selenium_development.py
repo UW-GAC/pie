@@ -384,7 +384,8 @@ class TablePageTestCase(UserAutoLoginSeleniumTestCase):
         self.get_reverse('trait_browser:source:traits:list')
         self.check_table_view(expected_rows=total_source_traits)
         # Check the detail page for the first listed SourceTrait.
-        detail_link = self.selenium.find_element_by_class_name('i_trait_name')
+        trait_name = trait_browser.models.SourceTrait.objects.first().i_trait_name
+        detail_link = self.selenium.find_element_by_link_text(trait_name)
         detail_link.click()
         self.go_back()
 
