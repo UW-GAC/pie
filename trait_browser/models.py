@@ -62,7 +62,7 @@
 from django.apps import apps
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
-from django.db.models import Count, F
+from django.db.models import Count, F, Q
 from django.urls import reverse
 from django.utils.text import Truncator
 from core.models import TimeStampedModel
@@ -81,6 +81,7 @@ PANEL_HTML = '\n'.join(
      '<h5 class="panel-title">{panel_title}</h5>', '</div>', '<div class="panel-body">{panel_body}', '</div>',
      '</div>')
 )
+INCOMPLETE_REVIEW_ERROR = 'Cannot apply previous tags from TaggedTraits with incomplete review{}.'
 
 
 class SourceDBTimeStampedModel(TimeStampedModel):
@@ -331,10 +332,26 @@ class SourceStudyVersion(SourceDBTimeStampedModel):
         if previous_study_version is not None:
             SourceTrait = apps.get_model('trait_browser', 'SourceTrait')
             TaggedTrait = apps.get_model('tags', 'TaggedTrait')
-            # Get the set of variable accession numbers in the previous version that have tags applied them.
-            previous_accessions_with_tags = TaggedTrait.objects.non_archived().filter(
+            DCCReview = apps.get_model('tags', 'DCCReview')
+            StudyResponse = apps.get_model('tags', 'StudyResponse')
+            # Get the set of TaggedTraits from the previous study version.
+            previous_tagged_traits = TaggedTrait.objects.non_archived().filter(
                 trait__source_dataset__source_study_version=previous_study_version
-            ).values(
+            )
+            # Raise an error if any of the previous taggedtraits have incomplete reviews.
+            unreviewed_q = Q(dcc_review__isnull=True)
+            no_response_q = Q(dcc_review__status=DCCReview.STATUS_FOLLOWUP) &\
+                Q(dcc_review__study_response__isnull=True)
+            no_decision_q = Q(dcc_review__status=DCCReview.STATUS_FOLLOWUP) &\
+                Q(dcc_review__study_response__status=StudyResponse.STATUS_DISAGREE) &\
+                Q(dcc_review__dcc_decision__isnull=True)
+            incomplete_review_tagged_traits = previous_tagged_traits.filter(
+                unreviewed_q | no_response_q | no_decision_q
+            )
+            if incomplete_review_tagged_traits.count() > 0:
+                raise ValueError(INCOMPLETE_REVIEW_ERROR.format(''))
+            # Get the set of variable accession numbers in the previous version that have tags applied them.
+            previous_accessions_with_tags = previous_tagged_traits.values(
                 trait_pk=F('trait__pk'),
                 trait_accession=F('trait__i_dbgap_variable_accession')
             ).annotate(
@@ -683,9 +700,24 @@ class SourceTrait(Trait):
         """Apply tags from the previous version of this SourceTrait to this version."""
         TaggedTrait = apps.get_model('tags', 'TaggedTrait')
         DCCReview = apps.get_model('tags', 'DCCReview')
+        StudyResponse = apps.get_model('tags', 'StudyResponse')
         previous_trait = self.get_previous_version()
         if previous_trait is not None:
             for old_tagged_trait in previous_trait.all_taggedtraits.non_archived():
+                # Raise an error if the review of the previous trait is incomplete.
+                # Check for unreviewed
+                if not hasattr(old_tagged_trait, 'dcc_review'):
+                    raise ValueError(INCOMPLETE_REVIEW_ERROR.format(' (unreviewed)'))
+                # Check for missing StudyResponse and DCCDecision
+                elif old_tagged_trait.dcc_review.status == DCCReview.STATUS_FOLLOWUP \
+                    and not hasattr(old_tagged_trait.dcc_review, 'study_response') \
+                    and not hasattr(old_tagged_trait.dcc_review, 'dcc_decision'):
+                    raise ValueError(INCOMPLETE_REVIEW_ERROR.format(' (no response or decision after followup review)'))
+                # Check for missing DCCDecision after disagree StudyResponse
+                elif old_tagged_trait.dcc_review.status == DCCReview.STATUS_FOLLOWUP \
+                    and not old_tagged_trait.dcc_review.study_response.status == StudyResponse.STATUS_DISAGREE \
+                    and not hasattr(old_tagged_trait.dcc_review, 'dcc_decision'):
+                    raise ValueError(INCOMPLETE_REVIEW_ERROR.format(' (no decision after disagree study response)'))
                 try:
                     # Check if it already exists.
                     self.all_taggedtraits.non_archived().get(tag=old_tagged_trait.tag)

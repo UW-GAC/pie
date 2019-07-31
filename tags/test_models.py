@@ -525,7 +525,9 @@ class SourceStudyVersionApplyPreviousTagsTest(SuperuserLoginTestCase):
         """Successfully applies one tag to one trait using the previous version of this study."""
         tag = factories.TagFactory.create()
         deprecated_trait = self.deprecated_source_traits[0]
-        factories.TaggedTraitFactory.create(tag=tag, trait=deprecated_trait)
+        deprecated_tagged_trait = factories.TaggedTraitFactory.create(tag=tag, trait=deprecated_trait)
+        models.DCCReview.objects.create(
+            tagged_trait=deprecated_tagged_trait, creator=self.user, status=models.DCCReview.STATUS_CONFIRMED)
         self.updated_study_version.apply_previous_tags(self.user)
         updated_trait = SourceTrait.objects.get(
             source_dataset__source_study_version=self.updated_study_version,
@@ -537,6 +539,9 @@ class SourceStudyVersionApplyPreviousTagsTest(SuperuserLoginTestCase):
         """Successfully applies two tags to one trait using the previous version of this study."""
         deprecated_trait = self.deprecated_source_traits[0]
         deprecated_tagged_traits = factories.TaggedTraitFactory.create_batch(2, trait=deprecated_trait)
+        for tt in deprecated_tagged_traits:
+            models.DCCReview.objects.create(
+                tagged_trait=tt, creator=self.user, status=models.DCCReview.STATUS_CONFIRMED)
         tag_pks = sorted([x.tag.pk for x in deprecated_tagged_traits])
         self.updated_study_version.apply_previous_tags(self.user)
         updated_trait = SourceTrait.objects.get(
@@ -549,8 +554,13 @@ class SourceStudyVersionApplyPreviousTagsTest(SuperuserLoginTestCase):
         """Successfully applies tags to multiple traits using the previous version of this study."""
         deprecated_trait_1 = self.deprecated_source_traits[0]
         deprecated_tagged_traits_1 = factories.TaggedTraitFactory.create_batch(2, trait=deprecated_trait_1)
+        for tt in deprecated_tagged_traits_1:
+            models.DCCReview.objects.create(
+                tagged_trait=tt, creator=self.user, status=models.DCCReview.STATUS_CONFIRMED)
         deprecated_trait_2 = self.deprecated_source_traits[3]
         deprecated_tagged_trait_2 = factories.TaggedTraitFactory.create(trait=deprecated_trait_2)
+        models.DCCReview.objects.create(
+            tagged_trait=deprecated_tagged_trait_2, creator=self.user, status=models.DCCReview.STATUS_CONFIRMED)
         self.updated_study_version.apply_previous_tags(self.user)
         tag_pks_1 = sorted([x.tag.pk for x in deprecated_tagged_traits_1])
         # Check the first trait with tags.
@@ -570,7 +580,9 @@ class SourceStudyVersionApplyPreviousTagsTest(SuperuserLoginTestCase):
         """Ignores tags in a newer version of this study."""
         tag = factories.TagFactory.create()
         updated_trait = self.updated_source_traits[0]
-        factories.TaggedTraitFactory.create(tag=tag, trait=updated_trait)
+        updated_tagged_trait = factories.TaggedTraitFactory.create(tag=tag, trait=updated_trait)
+        models.DCCReview.objects.create(
+            tagged_trait=updated_tagged_trait, creator=self.user, status=models.DCCReview.STATUS_CONFIRMED)
         self.deprecated_study_version.apply_previous_tags(self.user)
         deprecated_trait = SourceTrait.objects.get(
             source_dataset__source_study_version=self.deprecated_study_version,
@@ -586,7 +598,9 @@ class SourceStudyVersionApplyPreviousTagsTest(SuperuserLoginTestCase):
         new_trait = SourceTraitFactory.create(
             source_dataset__source_study_version=new_study_version,
             i_dbgap_variable_accession=deprecated_trait.i_dbgap_variable_accession)
-        factories.TaggedTraitFactory.create(trait=deprecated_trait)
+        deprecated_tagged_trait = factories.TaggedTraitFactory.create(trait=deprecated_trait)
+        models.DCCReview.objects.create(
+            tagged_trait=deprecated_tagged_trait, creator=self.user, status=models.DCCReview.STATUS_CONFIRMED)
         new_study_version.apply_previous_tags(self.user)
         new_trait.refresh_from_db()
         self.assertEqual(new_trait.all_tags.count(), 0)
@@ -598,10 +612,14 @@ class SourceStudyVersionApplyPreviousTagsTest(SuperuserLoginTestCase):
         new_trait.refresh_from_db()
         self.assertEqual(new_trait.all_tags.count(), 0)
 
-    def test_ignores_archived_tagged_traits(self):
-        """Ignores archived tagged traits in a previous version."""
+    def test_does_not_apply_tag_from_archived_tagged_trait(self):
+        """Does not apply tags from an archived tagged trait."""
         deprecated_trait = self.deprecated_source_traits[0]
-        factories.TaggedTraitFactory.create(trait=deprecated_trait, archived=True)
+        deprecated_tagged_trait = factories.TaggedTraitFactory.create(trait=deprecated_trait, archived=True)
+        deprecated_tagged_trait_review = models.DCCReview.objects.create(
+            tagged_trait=deprecated_tagged_trait, creator=self.user, status=models.DCCReview.STATUS_FOLLOWUP)
+        factories.StudyResponseFactory.create(
+            dcc_review=deprecated_tagged_trait_review, creator=self.user, status=models.StudyResponse.STATUS_AGREE)
         self.updated_study_version.apply_previous_tags(self.user)
         updated_trait = SourceTrait.objects.get(
             source_dataset__source_study_version=self.updated_study_version,
@@ -612,7 +630,9 @@ class SourceStudyVersionApplyPreviousTagsTest(SuperuserLoginTestCase):
         """Successfully applies tags even if the study version is deprecated."""
         tag = factories.TagFactory.create()
         deprecated_trait = self.deprecated_source_traits[0]
-        factories.TaggedTraitFactory.create(tag=tag, trait=deprecated_trait)
+        deprecated_tagged_trait = factories.TaggedTraitFactory.create(tag=tag, trait=deprecated_trait)
+        models.DCCReview.objects.create(
+            tagged_trait=deprecated_tagged_trait, creator=self.user, status=models.DCCReview.STATUS_CONFIRMED)
         self.updated_study_version.i_is_deprecated = True
         self.updated_study_version.save()
         self.updated_study_version.apply_previous_tags(self.user)
@@ -651,6 +671,8 @@ class SourceTraitApplyPreviousTagsTest(SuperuserLoginTestCase):
         """Successfully applies one previous tag."""
         tag = factories.TagFactory.create()
         deprecated_tagged_trait = factories.TaggedTraitFactory.create(tag=tag, trait=self.deprecated_source_trait)
+        models.DCCReview.objects.create(
+            tagged_trait=deprecated_tagged_trait, creator=self.user, status=models.DCCReview.STATUS_CONFIRMED)
         self.updated_source_trait.apply_previous_tags(self.user)
         self.updated_source_trait.refresh_from_db()
         self.assertEqual(self.updated_source_trait.all_taggedtraits.count(), 1)
@@ -669,7 +691,11 @@ class SourceTraitApplyPreviousTagsTest(SuperuserLoginTestCase):
         tag_1 = factories.TagFactory.create()
         tag_2 = factories.TagFactory.create()
         deprecated_tagged_trait_1 = factories.TaggedTraitFactory.create(tag=tag_1, trait=self.deprecated_source_trait)
+        models.DCCReview.objects.create(
+            tagged_trait=deprecated_tagged_trait_1, creator=self.user, status=models.DCCReview.STATUS_CONFIRMED)
         deprecated_tagged_trait_2 = factories.TaggedTraitFactory.create(tag=tag_2, trait=self.deprecated_source_trait)
+        models.DCCReview.objects.create(
+            tagged_trait=deprecated_tagged_trait_2, creator=self.user, status=models.DCCReview.STATUS_CONFIRMED)
         self.updated_source_trait.apply_previous_tags(self.user)
         self.updated_source_trait.refresh_from_db()
         self.assertEqual(self.updated_source_trait.all_taggedtraits.count(), 2)
@@ -698,6 +724,8 @@ class SourceTraitApplyPreviousTagsTest(SuperuserLoginTestCase):
         """Does not apply a tag on a trait from two versions ago."""
         tag = factories.TagFactory.create()
         deprecated_tagged_trait = factories.TaggedTraitFactory.create(tag=tag, trait=self.deprecated_source_trait)
+        models.DCCReview.objects.create(
+            tagged_trait=deprecated_tagged_trait, creator=self.user, status=models.DCCReview.STATUS_CONFIRMED)
         newer_study_version = SourceStudyVersionFactory.create(
             study=self.study, i_version=self.updated_study_version.i_version + 1,
             i_date_added=timezone.now() - timedelta(minutes=30))
@@ -710,8 +738,10 @@ class SourceTraitApplyPreviousTagsTest(SuperuserLoginTestCase):
         self.assertEqual(newer_source_trait.all_taggedtraits.count(), 0)
 
     def test_ignores_newer_version(self):
-        """Ignores a newer version when applying tags."""
+        """Does not apply tags from a newer trait version to the older trait version."""
         updated_tagged_trait = factories.TaggedTraitFactory.create(trait=self.updated_source_trait)
+        models.DCCReview.objects.create(
+            tagged_trait=updated_tagged_trait, creator=self.user, status=models.DCCReview.STATUS_CONFIRMED)
         self.deprecated_source_trait.apply_previous_tags(self.user)
         self.deprecated_source_trait.refresh_from_db()
         self.assertEqual(self.deprecated_source_trait.all_taggedtraits.count(), 0)
@@ -720,6 +750,8 @@ class SourceTraitApplyPreviousTagsTest(SuperuserLoginTestCase):
         """Returns gracefully if the tagged traits already exist."""
         tag = factories.TagFactory.create()
         deprecated_tagged_trait = factories.TaggedTraitFactory.create(tag=tag, trait=self.deprecated_source_trait)
+        models.DCCReview.objects.create(
+            tagged_trait=deprecated_tagged_trait, creator=self.user, status=models.DCCReview.STATUS_CONFIRMED)
         self.updated_source_trait.apply_previous_tags(self.user)
         self.updated_source_trait.refresh_from_db()
         self.assertEqual(self.updated_source_trait.all_taggedtraits.count(), 1)
@@ -742,9 +774,20 @@ class SourceTraitApplyPreviousTagsTest(SuperuserLoginTestCase):
         tag_1 = factories.TagFactory.create()
         tag_2 = factories.TagFactory.create()
         deprecated_tagged_trait_1 = factories.TaggedTraitFactory.create(tag=tag_1, trait=self.deprecated_source_trait)
+        models.DCCReview.objects.create(
+            tagged_trait=deprecated_tagged_trait_1, creator=self.user, status=models.DCCReview.STATUS_CONFIRMED)
         deprecated_tagged_trait_2 = factories.TaggedTraitFactory.create(tag=tag_2, trait=self.deprecated_source_trait)
+        models.DCCReview.objects.create(
+            tagged_trait=deprecated_tagged_trait_2, creator=self.user, status=models.DCCReview.STATUS_CONFIRMED)
         # Create one tag for the updated trait.
-        factories.TaggedTraitFactory.create(tag=tag_1, trait=self.updated_source_trait, creator=other_user)
+        updated_tagged_trait_1 = factories.TaggedTraitFactory.create(
+            tag=tag_1, trait=self.updated_source_trait, creator=other_user)
+        # Give the manually created updated tagged trait a need_followup DCCReview and a confirmed DCCDecision
+        # so that it has a DCCReview but also is distinguishable from auto-created DCCReviews from apply_previous_tags
+        updated_tagged_trait_1_review = models.DCCReview.objects.create(
+            tagged_trait=updated_tagged_trait_1, creator=self.user, status=models.DCCReview.STATUS_FOLLOWUP)
+        models.DCCDecision.objects.create(
+            dcc_review=updated_tagged_trait_1_review, creator=self.user, decision=models.DCCDecision.DECISION_CONFIRM)
         self.updated_source_trait.apply_previous_tags(self.user)
         self.updated_source_trait.refresh_from_db()
         self.assertEqual(self.updated_source_trait.all_taggedtraits.count(), 2)
@@ -756,7 +799,6 @@ class SourceTraitApplyPreviousTagsTest(SuperuserLoginTestCase):
         self.assertFalse(updated_tagged_trait_1.archived)
         self.assertEqual(updated_tagged_trait_1.creator, other_user)
         self.assertIsNone(updated_tagged_trait_1.previous_tagged_trait)
-        self.assertFalse(hasattr(updated_tagged_trait_1, 'dcc_review'))
         # Check the second trait.
         updated_tagged_trait_2 = self.updated_source_trait.all_taggedtraits.get(tag=tag_2)
         self.assertEqual(updated_tagged_trait_2.trait, self.updated_source_trait)
@@ -767,11 +809,15 @@ class SourceTraitApplyPreviousTagsTest(SuperuserLoginTestCase):
         self.assertEqual(updated_tagged_trait_2.dcc_review.status, models.DCCReview.STATUS_CONFIRMED)
         self.assertEqual(updated_tagged_trait_2.dcc_review.creator, self.user)
 
-    def test_skips_archived_tag(self):
+    def test_does_not_apply_tag_from_archived_tagged_trait(self):
         """Does not apply an archived tag."""
         tag = factories.TagFactory.create()
         deprecated_tagged_trait = factories.TaggedTraitFactory.create(
             tag=tag, trait=self.deprecated_source_trait, archived=True)
+        deprecated_tagged_trait_dcc_review = models.DCCReview.objects.create(
+            tagged_trait=deprecated_tagged_trait, creator=self.user, status=models.DCCReview.STATUS_FOLLOWUP)
+        models.StudyResponse.objects.create(
+            dcc_review=deprecated_tagged_trait_dcc_review, status=models.StudyResponse.STATUS_AGREE, creator=self.user)
         self.updated_source_trait.apply_previous_tags(self.user)
         self.updated_source_trait.refresh_from_db()
         self.assertEqual(self.updated_source_trait.all_taggedtraits.count(), 0)
@@ -781,8 +827,14 @@ class SourceTraitApplyPreviousTagsTest(SuperuserLoginTestCase):
         tag_1 = factories.TagFactory.create()
         tag_2 = factories.TagFactory.create()
         deprecated_tagged_trait = factories.TaggedTraitFactory.create(tag=tag_1, trait=self.deprecated_source_trait)
+        models.DCCReview.objects.create(
+            tagged_trait=deprecated_tagged_trait, creator=self.user, status=models.DCCReview.STATUS_CONFIRMED)
         archived_tagged_trait = factories.TaggedTraitFactory.create(
             tag=tag_2, trait=self.deprecated_source_trait, archived=True)
+        archived_tagged_trait_dcc_review = models.DCCReview.objects.create(
+            tagged_trait=archived_tagged_trait, creator=self.user, status=models.DCCReview.STATUS_FOLLOWUP)
+        models.StudyResponse.objects.create(
+            dcc_review=archived_tagged_trait_dcc_review, status=models.StudyResponse.STATUS_AGREE, creator=self.user)
         self.updated_source_trait.apply_previous_tags(self.user)
         self.updated_source_trait.refresh_from_db()
         self.assertEqual(self.updated_source_trait.all_taggedtraits.count(), 1)
@@ -809,6 +861,8 @@ class SourceTraitApplyPreviousTagsTest(SuperuserLoginTestCase):
         tag_1 = factories.TagFactory.create()
         tag_2 = factories.TagFactory.create()
         deprecated_tagged_trait = factories.TaggedTraitFactory.create(tag=tag_2, trait=self.deprecated_source_trait)
+        models.DCCReview.objects.create(
+            tagged_trait=deprecated_tagged_trait, creator=self.user, status=models.DCCReview.STATUS_CONFIRMED)
         existing_tagged_trait_1 = factories.TaggedTraitFactory.create(
             tag=tag_1, trait=self.updated_source_trait, creator=other_user)
         self.updated_source_trait.apply_previous_tags(self.user)
@@ -832,6 +886,10 @@ class SourceTraitApplyPreviousTagsTest(SuperuserLoginTestCase):
         self.assertTrue(hasattr(tagged_trait_2, 'dcc_review'))
         self.assertEqual(tagged_trait_2.dcc_review.status, models.DCCReview.STATUS_CONFIRMED)
         self.assertEqual(tagged_trait_2.dcc_review.creator, self.user)
+
+    # def test_error_if_previous_taggedtrait_unreviewed(self):
+    #     """An error is raised if the previous version of the taggedtrait is unreviewed."""
+    # 
 
 
 class TaggedTraitTest(TestCase):
