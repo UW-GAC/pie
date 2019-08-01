@@ -642,6 +642,157 @@ class SourceStudyVersionApplyPreviousTagsTest(SuperuserLoginTestCase):
         self.assertEqual(updated_trait.all_tags.count(), 1)
         self.assertEqual(updated_trait.all_tags.first(), tag)
 
+    def test_error_if_previous_taggedtrait_unreviewed(self):
+        """Raises error if a single previous version taggedtrait is unreviewed."""
+        # One tagged trait from previous study version is confirmed.
+        deprecated_trait = self.deprecated_source_traits[0]
+        deprecated_tagged_trait = factories.TaggedTraitFactory.create(trait=deprecated_trait)
+        models.DCCReview.objects.create(
+            tagged_trait=deprecated_tagged_trait, creator=self.user, status=models.DCCReview.STATUS_CONFIRMED)
+        # One tagged trait from previous study version has no DCCReview (unreviewed).
+        unreviewed_deprecated_tagged_trait = factories.TaggedTraitFactory.create(
+            trait=self.deprecated_source_traits[1])
+        with self.assertRaises(ValueError):
+            self.updated_study_version.apply_previous_tags(self.user)
+
+    def test_error_if_previous_taggedtrait_missing_studyresponse_and_dccdecision(self):
+        """Raises error if previous version of the needfollowup taggedtrait has no StudyResponse or DCCDecision."""
+        # One tagged trait from previous study version is confirmed.
+        deprecated_trait = self.deprecated_source_traits[0]
+        deprecated_tagged_trait = factories.TaggedTraitFactory.create(trait=deprecated_trait)
+        models.DCCReview.objects.create(
+            tagged_trait=deprecated_tagged_trait, creator=self.user, status=models.DCCReview.STATUS_CONFIRMED)
+        # One needfollowup tagged trait from previous study version has no studyresponse or dccdecision.
+        no_response_deprecated_tagged_trait = factories.TaggedTraitFactory.create(
+            trait=self.deprecated_source_traits[1])
+        no_response_deprecated_dcc_review = models.DCCReview.objects.create(
+            tagged_trait=no_response_deprecated_tagged_trait, creator=self.user,
+            status=models.DCCReview.STATUS_FOLLOWUP
+        )
+        with self.assertRaises(ValueError):
+            self.updated_study_version.apply_previous_tags(self.user)
+
+    def test_error_if_needfollowup_disagree_previous_taggedtrait_missing_dccdecision(self):
+        """Raises error if previous version of needfollowup disagree taggedtrait has no DCCDecision."""
+        # One tagged trait from previous study version is confirmed.
+        deprecated_trait = self.deprecated_source_traits[0]
+        deprecated_tagged_trait = factories.TaggedTraitFactory.create(trait=deprecated_trait)
+        models.DCCReview.objects.create(
+            tagged_trait=deprecated_tagged_trait, creator=self.user, status=models.DCCReview.STATUS_CONFIRMED)
+        # One needfollowup tagged trait from previous study version has disagree studyresponse but no dccdecision.
+        deprecated_tagged_trait = factories.TaggedTraitFactory.create(trait=self.deprecated_source_traits[1])
+        deprecated_dcc_review = models.DCCReview.objects.create(
+            tagged_trait=deprecated_tagged_trait, creator=self.user, status=models.DCCReview.STATUS_FOLLOWUP
+        )
+        deprecated_study_response = models.StudyResponse.objects.create(
+            dcc_review=deprecated_dcc_review, creator=self.user, status=models.StudyResponse.STATUS_DISAGREE
+        )
+        with self.assertRaises(ValueError):
+            self.updated_study_version.apply_previous_tags(self.user)
+
+    def test_previous_taggedtrait_needfollowup_agree_archived(self):
+        """A previous version needfollowup, agree, archived tagged trait is not applied to new version."""
+        # One tagged trait from previous study version has review needfollowup, response agree, archived.
+        deprecated_trait = self.deprecated_source_traits[0]
+        needfollowup_agree_deprecated_tagged_trait = factories.TaggedTraitFactory.create(
+            trait=deprecated_trait)
+        needfollowup_agree_deprecated_dcc_review = models.DCCReview.objects.create(
+            tagged_trait=needfollowup_agree_deprecated_tagged_trait, creator=self.user,
+            status=models.DCCReview.STATUS_FOLLOWUP
+        )
+        needfollowup_agree_deprecated_study_response = models.StudyResponse.objects.create(
+            dcc_review=needfollowup_agree_deprecated_dcc_review, creator=self.user,
+            status=models.StudyResponse.STATUS_AGREE
+        )
+        needfollowup_agree_deprecated_tagged_trait.archive()
+        self.updated_study_version.apply_previous_tags(self.user)
+        updated_trait = deprecated_trait.get_latest_version()
+        self.assertEqual(updated_trait.all_tags.count(), 0)
+
+    def test_previous_taggedtrait_needfollowup_disagree_confirmed(self):
+        """A previous version needfollowup, disagree, decision confirmed tagged trait is applied to new version."""
+        # One tagged trait from previous study version has review needfollowup, response disagree, decision confirmed.
+        deprecated_trait = self.deprecated_source_traits[0]
+        needfollowup_agree_deprecated_tagged_trait = factories.TaggedTraitFactory.create(
+            trait=deprecated_trait)
+        needfollowup_agree_deprecated_dcc_review = models.DCCReview.objects.create(
+            tagged_trait=needfollowup_agree_deprecated_tagged_trait, creator=self.user,
+            status=models.DCCReview.STATUS_FOLLOWUP
+        )
+        needfollowup_agree_deprecated_study_response = models.StudyResponse.objects.create(
+            dcc_review=needfollowup_agree_deprecated_dcc_review, creator=self.user,
+            status=models.StudyResponse.STATUS_DISAGREE
+        )
+        needfollowup_agree_deprecated_dcc_decision = models.DCCDecision.objects.create(
+            dcc_review=needfollowup_agree_deprecated_dcc_review, creator=self.user,
+            decision=models.DCCDecision.DECISION_CONFIRM
+        )
+        self.updated_study_version.apply_previous_tags(self.user)
+        updated_trait = deprecated_trait.get_latest_version()
+        self.assertEqual(updated_trait.all_tags.count(), 1)
+        self.assertEqual(updated_trait.all_tags.first(), needfollowup_agree_deprecated_tagged_trait.tag)
+
+    def test_previous_taggedtrait_needfollowup_disagree_removed(self):
+        """A previous needfollowup, disagree, decision remove, archived tagged trait is not applied to new version."""
+        # One tagged trait from previous study version has review needfollowup, response disagree, decision remove.
+        deprecated_trait = self.deprecated_source_traits[0]
+        needfollowup_agree_deprecated_tagged_trait = factories.TaggedTraitFactory.create(
+            trait=deprecated_trait)
+        needfollowup_agree_deprecated_dcc_review = models.DCCReview.objects.create(
+            tagged_trait=needfollowup_agree_deprecated_tagged_trait, creator=self.user,
+            status=models.DCCReview.STATUS_FOLLOWUP
+        )
+        needfollowup_agree_deprecated_study_response = models.StudyResponse.objects.create(
+            dcc_review=needfollowup_agree_deprecated_dcc_review, creator=self.user,
+            status=models.StudyResponse.STATUS_DISAGREE
+        )
+        needfollowup_agree_deprecated_dcc_decision = models.DCCDecision.objects.create(
+            dcc_review=needfollowup_agree_deprecated_dcc_review, creator=self.user,
+            decision=models.DCCDecision.DECISION_REMOVE
+        )
+        needfollowup_agree_deprecated_tagged_trait.archive()
+        self.updated_study_version.apply_previous_tags(self.user)
+        updated_trait = deprecated_trait.get_latest_version()
+        self.assertEqual(updated_trait.all_tags.count(), 0)
+
+    def test_previous_taggedtrait_needfollowup_noresponse_confirmed(self):
+        """A previous version needfollowup, no response, decision confirmed tagged trait is applied to new version."""
+        # One tagged trait from previous study version has review needfollowup, response disagree, decision confirmed.
+        deprecated_trait = self.deprecated_source_traits[0]
+        needfollowup_agree_deprecated_tagged_trait = factories.TaggedTraitFactory.create(
+            trait=deprecated_trait)
+        needfollowup_agree_deprecated_dcc_review = models.DCCReview.objects.create(
+            tagged_trait=needfollowup_agree_deprecated_tagged_trait, creator=self.user,
+            status=models.DCCReview.STATUS_FOLLOWUP
+        )
+        needfollowup_agree_deprecated_dcc_decision = models.DCCDecision.objects.create(
+            dcc_review=needfollowup_agree_deprecated_dcc_review, creator=self.user,
+            decision=models.DCCDecision.DECISION_CONFIRM
+        )
+        self.updated_study_version.apply_previous_tags(self.user)
+        updated_trait = deprecated_trait.get_latest_version()
+        self.assertEqual(updated_trait.all_tags.count(), 1)
+        self.assertEqual(updated_trait.all_tags.first(), needfollowup_agree_deprecated_tagged_trait.tag)
+
+    def test_previous_taggedtrait_needfollowup_noresponse_removed(self):
+        """A previous needfollowup, noresponse, decision remove, archived taggedtrait is not applied to new version."""
+        # One tagged trait from previous study version has review needfollowup, response disagree, decision remove.
+        deprecated_trait = self.deprecated_source_traits[0]
+        needfollowup_agree_deprecated_tagged_trait = factories.TaggedTraitFactory.create(
+            trait=deprecated_trait)
+        needfollowup_agree_deprecated_dcc_review = models.DCCReview.objects.create(
+            tagged_trait=needfollowup_agree_deprecated_tagged_trait, creator=self.user,
+            status=models.DCCReview.STATUS_FOLLOWUP
+        )
+        needfollowup_agree_deprecated_dcc_decision = models.DCCDecision.objects.create(
+            dcc_review=needfollowup_agree_deprecated_dcc_review, creator=self.user,
+            decision=models.DCCDecision.DECISION_REMOVE
+        )
+        needfollowup_agree_deprecated_tagged_trait.archive()
+        self.updated_study_version.apply_previous_tags(self.user)
+        updated_trait = deprecated_trait.get_latest_version()
+        self.assertEqual(updated_trait.all_tags.count(), 0)
+
 
 class SourceTraitApplyPreviousTagsTest(SuperuserLoginTestCase):
 
@@ -887,9 +1038,125 @@ class SourceTraitApplyPreviousTagsTest(SuperuserLoginTestCase):
         self.assertEqual(tagged_trait_2.dcc_review.status, models.DCCReview.STATUS_CONFIRMED)
         self.assertEqual(tagged_trait_2.dcc_review.creator, self.user)
 
-    # def test_error_if_previous_taggedtrait_unreviewed(self):
-    #     """An error is raised if the previous version of the taggedtrait is unreviewed."""
-    # 
+    def test_error_if_previous_taggedtrait_unreviewed(self):
+        """Raises error if previous version of the taggedtrait is unreviewed."""
+        deprecated_tagged_trait = factories.TaggedTraitFactory.create(trait=self.deprecated_source_trait)
+        # Tagged trait from deprecated study version has no DCCReview (unreviewed).
+        with self.assertRaises(ValueError):
+            self.updated_source_trait.apply_previous_tags(self.user)
+
+    def test_error_if_previous_taggedtrait_missing_studyresponse_and_dccdecision(self):
+        """Raises error if previous version of the needfollowup taggedtrait has no StudyResponse or DCCDecision."""
+        deprecated_tagged_trait = factories.TaggedTraitFactory.create(trait=self.deprecated_source_trait)
+        deprecated_dcc_review = models.DCCReview.objects.create(
+            tagged_trait=deprecated_tagged_trait, creator=self.user, status=models.DCCReview.STATUS_FOLLOWUP
+        )
+        with self.assertRaises(ValueError):
+            self.updated_source_trait.apply_previous_tags(self.user)
+
+    def test_error_if_needfollowup_disagree_previous_taggedtrait_missing_dccdecision(self):
+        """Raises error if previous version of needfollowup disagree taggedtrait has no DCCDecision."""
+        deprecated_tagged_trait = factories.TaggedTraitFactory.create(trait=self.deprecated_source_trait)
+        deprecated_dcc_review = models.DCCReview.objects.create(
+            tagged_trait=deprecated_tagged_trait, creator=self.user, status=models.DCCReview.STATUS_FOLLOWUP
+        )
+        deprecated_study_response = models.StudyResponse.objects.create(
+            dcc_review=deprecated_dcc_review, creator=self.user, status=models.StudyResponse.STATUS_DISAGREE
+        )
+        with self.assertRaises(ValueError):
+            self.updated_source_trait.apply_previous_tags(self.user)
+
+    def test_does_not_apply_tag_from_needfollowup_agree_archived_previous_taggedtrait(self):
+        """Raises error if previous version of needfollowup agree archived taggedtrait."""
+        deprecated_tagged_trait = factories.TaggedTraitFactory.create(trait=self.deprecated_source_trait)
+        deprecated_dcc_review = models.DCCReview.objects.create(
+            tagged_trait=deprecated_tagged_trait, creator=self.user, status=models.DCCReview.STATUS_FOLLOWUP
+        )
+        deprecated_study_response = models.StudyResponse.objects.create(
+            dcc_review=deprecated_dcc_review, creator=self.user, status=models.StudyResponse.STATUS_AGREE
+        )
+        deprecated_tagged_trait.archive()
+        self.updated_source_trait.apply_previous_tags(self.user)
+        self.updated_source_trait.refresh_from_db()
+        self.assertEqual(self.updated_source_trait.all_taggedtraits.count(), 0)
+
+    def test_does_apply_tag_from_needfollowup_disagree_confirmed_previous_taggedtrait(self):
+        """Raises error if previous version of needfollowup disagree confirmed taggedtrait."""
+        deprecated_tagged_trait = factories.TaggedTraitFactory.create(trait=self.deprecated_source_trait)
+        deprecated_dcc_review = models.DCCReview.objects.create(
+            tagged_trait=deprecated_tagged_trait, creator=self.user, status=models.DCCReview.STATUS_FOLLOWUP
+        )
+        deprecated_study_response = models.StudyResponse.objects.create(
+            dcc_review=deprecated_dcc_review, creator=self.user, status=models.StudyResponse.STATUS_AGREE
+        )
+        deprecated_dcc_decision = models.DCCDecision.objects.create(
+            dcc_review=deprecated_dcc_review, creator=self.user, decision=models.DCCDecision.DECISION_CONFIRM
+        )
+        self.updated_source_trait.apply_previous_tags(self.user)
+        self.updated_source_trait.refresh_from_db()
+        updated_tagged_trait = self.updated_source_trait.all_taggedtraits.first()
+        self.assertEqual(self.updated_source_trait.all_taggedtraits.count(), 1)
+        self.assertEqual(updated_tagged_trait.tag, deprecated_tagged_trait.tag)
+        self.assertEqual(updated_tagged_trait.trait, self.updated_source_trait)
+        self.assertFalse(updated_tagged_trait.archived)
+        self.assertEqual(updated_tagged_trait.creator, self.user)
+        self.assertEqual(updated_tagged_trait.previous_tagged_trait, deprecated_tagged_trait)
+        self.assertTrue(hasattr(updated_tagged_trait, 'dcc_review'))
+        self.assertEqual(updated_tagged_trait.dcc_review.status, models.DCCReview.STATUS_CONFIRMED)
+        self.assertEqual(updated_tagged_trait.dcc_review.creator, self.user)
+
+    def test_does_not_apply_tag_from_needfollowup_disagree_remove_archived_previous_taggedtrait(self):
+        """Raises error if previous version of needfollowup disagree decision remove archived taggedtrait."""
+        deprecated_tagged_trait = factories.TaggedTraitFactory.create(trait=self.deprecated_source_trait)
+        deprecated_dcc_review = models.DCCReview.objects.create(
+            tagged_trait=deprecated_tagged_trait, creator=self.user, status=models.DCCReview.STATUS_FOLLOWUP
+        )
+        deprecated_study_response = models.StudyResponse.objects.create(
+            dcc_review=deprecated_dcc_review, creator=self.user, status=models.StudyResponse.STATUS_DISAGREE
+        )
+        deprecated_dcc_decision = models.DCCDecision.objects.create(
+            dcc_review=deprecated_dcc_review, creator=self.user, decision=models.DCCDecision.DECISION_REMOVE
+        )
+        deprecated_tagged_trait.archive()
+        self.updated_source_trait.apply_previous_tags(self.user)
+        self.updated_source_trait.refresh_from_db()
+        self.assertEqual(self.updated_source_trait.all_taggedtraits.count(), 0)
+
+    def test_does_apply_tag_from_needfollowup_noresponse_confirmed_previous_taggedtrait(self):
+        """Raises error if previous version of needfollowup noresponse confirmed taggedtrait."""
+        deprecated_tagged_trait = factories.TaggedTraitFactory.create(trait=self.deprecated_source_trait)
+        deprecated_dcc_review = models.DCCReview.objects.create(
+            tagged_trait=deprecated_tagged_trait, creator=self.user, status=models.DCCReview.STATUS_FOLLOWUP
+        )
+        deprecated_dcc_decision = models.DCCDecision.objects.create(
+            dcc_review=deprecated_dcc_review, creator=self.user, decision=models.DCCDecision.DECISION_CONFIRM
+        )
+        self.updated_source_trait.apply_previous_tags(self.user)
+        self.updated_source_trait.refresh_from_db()
+        updated_tagged_trait = self.updated_source_trait.all_taggedtraits.first()
+        self.assertEqual(self.updated_source_trait.all_taggedtraits.count(), 1)
+        self.assertEqual(updated_tagged_trait.tag, deprecated_tagged_trait.tag)
+        self.assertEqual(updated_tagged_trait.trait, self.updated_source_trait)
+        self.assertFalse(updated_tagged_trait.archived)
+        self.assertEqual(updated_tagged_trait.creator, self.user)
+        self.assertEqual(updated_tagged_trait.previous_tagged_trait, deprecated_tagged_trait)
+        self.assertTrue(hasattr(updated_tagged_trait, 'dcc_review'))
+        self.assertEqual(updated_tagged_trait.dcc_review.status, models.DCCReview.STATUS_CONFIRMED)
+        self.assertEqual(updated_tagged_trait.dcc_review.creator, self.user)
+
+    def test_does_not_apply_tag_from_needfollowup_noresponse_remove_archived_previous_taggedtrait(self):
+        """Raises error if previous version of needfollowup noresponse decision remove archived taggedtrait."""
+        deprecated_tagged_trait = factories.TaggedTraitFactory.create(trait=self.deprecated_source_trait)
+        deprecated_dcc_review = models.DCCReview.objects.create(
+            tagged_trait=deprecated_tagged_trait, creator=self.user, status=models.DCCReview.STATUS_FOLLOWUP
+        )
+        deprecated_dcc_decision = models.DCCDecision.objects.create(
+            dcc_review=deprecated_dcc_review, creator=self.user, decision=models.DCCDecision.DECISION_REMOVE
+        )
+        deprecated_tagged_trait.archive()
+        self.updated_source_trait.apply_previous_tags(self.user)
+        self.updated_source_trait.refresh_from_db()
+        self.assertEqual(self.updated_source_trait.all_taggedtraits.count(), 0)
 
 
 class TaggedTraitTest(TestCase):

@@ -341,7 +341,8 @@ class SourceStudyVersion(SourceDBTimeStampedModel):
             # Raise an error if any of the previous taggedtraits have incomplete reviews.
             unreviewed_q = Q(dcc_review__isnull=True)
             no_response_q = Q(dcc_review__status=DCCReview.STATUS_FOLLOWUP) &\
-                Q(dcc_review__study_response__isnull=True)
+                Q(dcc_review__study_response__isnull=True) &\
+                Q(dcc_review__dcc_decision__isnull=True)
             no_decision_q = Q(dcc_review__status=DCCReview.STATUS_FOLLOWUP) &\
                 Q(dcc_review__study_response__status=StudyResponse.STATUS_DISAGREE) &\
                 Q(dcc_review__dcc_decision__isnull=True)
@@ -708,16 +709,18 @@ class SourceTrait(Trait):
                 # Check for unreviewed
                 if not hasattr(old_tagged_trait, 'dcc_review'):
                     raise ValueError(INCOMPLETE_REVIEW_ERROR.format(' (unreviewed)'))
-                # Check for missing StudyResponse and DCCDecision
-                elif old_tagged_trait.dcc_review.status == DCCReview.STATUS_FOLLOWUP \
-                    and not hasattr(old_tagged_trait.dcc_review, 'study_response') \
-                    and not hasattr(old_tagged_trait.dcc_review, 'dcc_decision'):
-                    raise ValueError(INCOMPLETE_REVIEW_ERROR.format(' (no response or decision after followup review)'))
-                # Check for missing DCCDecision after disagree StudyResponse
-                elif old_tagged_trait.dcc_review.status == DCCReview.STATUS_FOLLOWUP \
-                    and not old_tagged_trait.dcc_review.study_response.status == StudyResponse.STATUS_DISAGREE \
-                    and not hasattr(old_tagged_trait.dcc_review, 'dcc_decision'):
-                    raise ValueError(INCOMPLETE_REVIEW_ERROR.format(' (no decision after disagree study response)'))
+                elif old_tagged_trait.dcc_review.status == DCCReview.STATUS_FOLLOWUP:
+                    if hasattr(old_tagged_trait.dcc_review, 'study_response'):
+                        # Check for missing DCCDecision after disagree StudyResponse.
+                        if old_tagged_trait.dcc_review.study_response.status == StudyResponse.STATUS_DISAGREE \
+                            and not hasattr(old_tagged_trait.dcc_review, 'dcc_decision'):
+                            raise ValueError(INCOMPLETE_REVIEW_ERROR.format(
+                                ' (no decision after disagree study response)'))
+                    else:
+                        # Check for missing StudyResponse and DCCDecision
+                        if not hasattr(old_tagged_trait.dcc_review, 'dcc_decision'):
+                            raise ValueError(INCOMPLETE_REVIEW_ERROR.format(
+                                ' (no response or decision after followup review)'))
                 try:
                     # Check if it already exists.
                     self.all_taggedtraits.non_archived().get(tag=old_tagged_trait.tag)
