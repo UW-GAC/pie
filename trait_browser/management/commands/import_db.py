@@ -26,6 +26,7 @@ from django.utils import timezone
 from django.conf import settings
 from django.contrib.auth import get_user_model
 
+from tags.models import TaggedTrait
 from trait_browser import models
 
 
@@ -1011,12 +1012,24 @@ class Command(BaseCommand):
             model=models.SourceTraitEncodedValue, make_args=self._make_source_trait_encoded_value_args)
         logger.info("Added {} source trait encoded values".format(len(new_source_trait_encoded_value_pks)))
 
-        creator = User.objects.get(email=taggedtrait_creator)
-        self._apply_tags_to_new_sourcestudyversions(
-            sourcestudyversion_pks=new_source_study_version_pks,
-            creator=creator
-        )
-        logger.info("Applied tags to updated source traits.")
+        # Skip applying updated tags if there are any incomplete reviews.
+        if (TaggedTrait.objects.unreviewed().count() > 0) or (TaggedTrait.objects.need_study_response().count() > 0) \
+            or (TaggedTrait.objects.need_decision().count() > 0):
+            logger.warning(
+                "\n".join(
+                    "Found tagged traits with incomplete reviews.",
+                    "Skipping applying tags to updated source traits.",
+                    "Should you want to apply updated tags later, here are the newly added sourcestudyversion pks:",
+                    ", ".join([str(el) for el in new_source_study_version_pks])
+                )
+            )
+        else:
+            creator = User.objects.get(email=taggedtrait_creator)
+            self._apply_tags_to_new_sourcestudyversions(
+                sourcestudyversion_pks=new_source_study_version_pks,
+                creator=creator
+            )
+            logger.info("Applied tags to updated source traits.")
 
     def _import_harmonized_tables(self, source_db):
         """Import all harmonized trait-related data from the source db into the Django models.
