@@ -44,6 +44,7 @@ class TagDetailTestsMixin(object):
         self.assertIn('tag', context)
         self.assertEqual(context['tag'], self.tag)
         self.assertIn('study_counts', context)
+        self.assertIn('traits_tagged_count', context)
 
     def test_no_archived_taggedtraits(self):
         """A non-archived tagged trait is in the study counts, but not an archived one."""
@@ -70,6 +71,7 @@ class TagDetailTestsMixin(object):
         context = response.context
         self.assertEqual(context['study_counts'][0]['study_pk'], study.pk)
         self.assertEqual(context['study_counts'][0]['tt_count'], 1)
+        self.assertEqual(context['traits_tagged_count'], 1)
 
     def test_no_deprecated_traits_with_same_version_number(self):
         """Counts exclude traits tagged from deprecated study versions even with same version number."""
@@ -86,6 +88,7 @@ class TagDetailTestsMixin(object):
         context = response.context
         self.assertEqual(context['study_counts'][0]['study_pk'], study.pk)
         self.assertEqual(context['study_counts'][0]['tt_count'], 1)
+        self.assertEqual(context['traits_tagged_count'], 1)
 
 
 class TagDetailTest(TagDetailTestsMixin, UserLoginTestCase):

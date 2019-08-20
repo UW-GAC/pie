@@ -58,6 +58,22 @@ class Tag(TimeStampedModel):
         return apps.get_model('trait_browser', 'SourceTrait').objects.filter(
             pk__in=non_archived_tagged_traits.values_list('trait__pk', flat=True))
 
+    @property
+    def current_archived_traits(self):
+        """Return queryset of non-deprecated archived traits tagged with this tag."""
+        archived_tagged_traits = apps.get_model('tags', 'TaggedTrait').objects.archived().filter(
+            tag=self, trait__source_dataset__source_study_version__i_is_deprecated=False)
+        return apps.get_model('trait_browser', 'SourceTrait').objects.filter(
+            pk__in=archived_tagged_traits.values_list('trait__pk', flat=True))
+
+    @property
+    def current_non_archived_traits(self):
+        """Return queryset of non-deprecated non-archived traits tagged with this tag."""
+        non_archived_tagged_traits = apps.get_model('tags', 'TaggedTrait').objects.non_archived().filter(
+            tag=self, trait__source_dataset__source_study_version__i_is_deprecated=False)
+        return apps.get_model('trait_browser', 'SourceTrait').objects.filter(
+            pk__in=non_archived_tagged_traits.values_list('trait__pk', flat=True))
+
 
 class TaggedTrait(TimeStampedModel):
     """Intermediate model for connecting Tags and SourceTraits."""

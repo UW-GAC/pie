@@ -101,19 +101,42 @@ class TagTest(TestCase):
         tagged_trait.save()
         self.assertIn(trait, tag.all_traits.all())
 
-    def test_archived_traits_and_non_archived_traits(self):
-        """Archived traits and non archived traits linked to the tag are where they should be."""
+    def test_archived_non_archived_deprecated_and_current_traits(self):
+        """Archived, non-archived, deprecated, and current traits linked to the tag are where they should be."""
         tag = factories.TagFactory.create()
         archived = factories.TaggedTraitFactory.create(archived=True, tag=tag)
         non_archived = factories.TaggedTraitFactory.create(archived=False, tag=tag)
+        deprecated_archived = factories.TaggedTraitFactory.create(
+            archived=True, tag=tag, trait__source_dataset__source_study_version__i_is_deprecated=True)
+        deprecated_non_archived = factories.TaggedTraitFactory.create(
+            archived=False, tag=tag, trait__source_dataset__source_study_version__i_is_deprecated=True)
+        # Everything is in all_traits
         self.assertIn(archived.trait, tag.all_traits.all())
         self.assertIn(non_archived.trait, tag.all_traits.all())
+        self.assertIn(deprecated_archived.trait, tag.all_traits.all())
+        self.assertIn(deprecated_non_archived.trait, tag.all_traits.all())
+        # Checks for archived_traits
         self.assertIn(archived.trait, tag.archived_traits)
+        self.assertNotIn(non_archived.trait, tag.archived_traits)
+        self.assertIn(deprecated_archived.trait, tag.archived_traits)
+        self.assertNotIn(deprecated_non_archived.trait, tag.archived_traits)
+        # Checks for non-archived traits
         self.assertIn(non_archived.trait, tag.non_archived_traits)
         self.assertNotIn(archived.trait, tag.non_archived_traits)
-        self.assertNotIn(non_archived.trait, tag.archived_traits)
+        self.assertIn(deprecated_non_archived.trait, tag.non_archived_traits)
+        self.assertNotIn(deprecated_archived.trait, tag.non_archived_traits)
+        # Checks for current archived traits
+        self.assertIn(archived.trait, tag.current_archived_traits)
+        self.assertNotIn(non_archived.trait, tag.current_archived_traits)
+        self.assertNotIn(deprecated_archived.trait, tag.current_archived_traits)
+        self.assertNotIn(deprecated_non_archived.trait, tag.current_archived_traits)
+        # Checks for current non-archived traits
+        self.assertIn(non_archived.trait, tag.current_non_archived_traits)
+        self.assertNotIn(archived.trait, tag.current_non_archived_traits)
+        self.assertNotIn(deprecated_non_archived.trait, tag.current_non_archived_traits)
+        self.assertNotIn(deprecated_archived.trait, tag.current_non_archived_traits)
 
-    def test_archived_traits_and_non_archived_traits_are_querysets(self):
+    def test_archived_non_archived_deprecated_and_current_traits_are_querysets(self):
         """The properties archived_traits and non_archived_traits are QuerySets."""
         # These need to be querysets to behave similarly to tag.traits and trait.tag_set.
         tag = factories.TagFactory.create()
@@ -121,28 +144,44 @@ class TagTest(TestCase):
         non_archived = factories.TaggedTraitFactory.create(archived=False, tag=tag)
         self.assertIsInstance(tag.archived_traits, QuerySet)
         self.assertIsInstance(tag.non_archived_traits, QuerySet)
+        self.assertIsInstance(tag.current_archived_traits, QuerySet)
+        self.assertIsInstance(tag.current_non_archived_traits, QuerySet)
 
     def test_multiple_archived_traits(self):
         """Archived tagged traits show up in the archived_trait property with multiple tagged traits of each type."""
         tag = factories.TagFactory.create()
         archived = factories.TaggedTraitFactory.create_batch(5, archived=True, tag=tag)
         non_archived = factories.TaggedTraitFactory.create_batch(6, archived=False, tag=tag)
+        deprecated_archived = factories.TaggedTraitFactory.create_batch(
+            7, archived=True, tag=tag, trait__source_dataset__source_study_version__i_is_deprecated=True)
+        deprecated_non_archived = factories.TaggedTraitFactory.create_batch(
+            8, archived=False, tag=tag, trait__source_dataset__source_study_version__i_is_deprecated=True)
         for tagged_trait in archived:
             self.assertIn(tagged_trait.trait, tag.all_traits.all())
             self.assertIn(tagged_trait.trait, tag.archived_traits)
             self.assertNotIn(tagged_trait.trait, tag.non_archived_traits)
-        self.assertEqual(len(archived), tag.archived_traits.count())
+            self.assertIn(tagged_trait.trait, tag.current_archived_traits)
+            self.assertNotIn(tagged_trait.trait, tag.current_non_archived_traits)
+        self.assertEqual(len(archived) + len(deprecated_archived), tag.archived_traits.count())
+        self.assertEqual(len(archived), tag.current_archived_traits.count())
 
     def test_multiple_non_archived_traits(self):
         """Non-archived tagged traits show up in the non_archived_trait property with multiple of each type."""
         tag = factories.TagFactory.create()
         archived = factories.TaggedTraitFactory.create_batch(5, archived=True, tag=tag)
         non_archived = factories.TaggedTraitFactory.create_batch(6, archived=False, tag=tag)
+        deprecated_archived = factories.TaggedTraitFactory.create_batch(
+            7, archived=True, tag=tag, trait__source_dataset__source_study_version__i_is_deprecated=True)
+        deprecated_non_archived = factories.TaggedTraitFactory.create_batch(
+            8, archived=False, tag=tag, trait__source_dataset__source_study_version__i_is_deprecated=True)
         for tagged_trait in non_archived:
             self.assertIn(tagged_trait.trait, tag.all_traits.all())
             self.assertIn(tagged_trait.trait, tag.non_archived_traits)
             self.assertNotIn(tagged_trait.trait, tag.archived_traits)
-        self.assertEqual(len(non_archived), tag.non_archived_traits.count())
+            self.assertIn(tagged_trait.trait, tag.current_non_archived_traits)
+            self.assertNotIn(tagged_trait.trait, tag.current_archived_traits)
+        self.assertEqual(len(non_archived) + len(deprecated_non_archived), tag.non_archived_traits.count())
+        self.assertEqual(len(non_archived), tag.current_non_archived_traits.count())
 
     def test_traits(self):
         """Test the method to get all of the tag's linked traits."""

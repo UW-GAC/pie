@@ -79,6 +79,7 @@ class TagDetail(LoginRequiredMixin, DetailView):
         ).values(
             'study_name', 'study_pk', 'tt_count').order_by('study_name')
         context['study_counts'] = study_counts
+        context['traits_tagged_count'] = self.object.current_non_archived_traits.count()
         return context
 
 
