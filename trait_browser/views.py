@@ -413,6 +413,7 @@ class SourceTraitDetail(LoginRequiredMixin, DetailView):
         context['user_is_study_tagger'] = self.object.source_dataset.source_study_version.study in user_studies
         context['show_tag_button'] = (context['user_is_study_tagger'] or self.request.user.is_staff) and \
             not is_deprecated
+        # Get the taggedtraits, not the tags, so you can offer the option of deleting the taggedtraits.
         tagged_traits = self.object.all_taggedtraits.non_archived().order_by('tag__lower_title')
         # If tagging is allowed, check on whether to show the delete button for each tag.
         if context['show_tag_button']:

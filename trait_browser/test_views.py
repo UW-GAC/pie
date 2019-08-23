@@ -2385,6 +2385,16 @@ class SourceTraitDetailTest(UserLoginTestCase):
         for tt in tagged_traits:
             self.assertNotContains(response, reverse('tags:tagged-traits:pk:delete', kwargs={'pk': tt.pk}))
 
+    def test_has_no_archived_tagged_traits(self):
+        """An archived tagged trait is not included in the context."""
+        tagged_traits = TaggedTraitFactory.create_batch(2, trait=self.trait)
+        archived_tagged_trait = TaggedTraitFactory.create(trait=self.trait, archived=True)
+        response = self.client.get(self.get_url(self.trait.pk))
+        context = response.context
+        self.assertEqual([el[0] for el in context['tagged_traits_with_xs']],
+                         list(self.trait.all_taggedtraits.non_archived()))
+        self.assertNotIn(archived_tagged_trait, [el[0] for el in context['tagged_traits_with_xs']])
+
     def test_no_tagging_button(self):
         """Regular user does not see a button to add tags on this detail page."""
         response = self.client.get(self.get_url(self.trait.pk))
@@ -2423,6 +2433,16 @@ class SourceTraitDetailPhenotypeTaggerTest(PhenotypeTaggerLoginTestCase):
         context = response.context
         self.assertEqual([el[0] for el in context['tagged_traits_with_xs']],
                          list(self.trait.all_taggedtraits.non_archived()))
+
+    def test_has_no_archived_tagged_traits(self):
+        """An archived tagged trait is not included in the context."""
+        tagged_traits = TaggedTraitFactory.create_batch(2, trait=self.trait)
+        archived_tagged_trait = TaggedTraitFactory.create(trait=self.trait, archived=True)
+        response = self.client.get(self.get_url(self.trait.pk))
+        context = response.context
+        self.assertEqual([el[0] for el in context['tagged_traits_with_xs']],
+                         list(self.trait.all_taggedtraits.non_archived()))
+        self.assertNotIn(archived_tagged_trait, [el[0] for el in context['tagged_traits_with_xs']])
 
     def test_has_tagged_trait_remove_buttons(self):
         """The tag removal buttons shows up."""
@@ -2537,6 +2557,16 @@ class SourceTraitDetailDCCAnalystTest(DCCAnalystLoginTestCase):
         context = response.context
         self.assertEqual([el[0] for el in context['tagged_traits_with_xs']],
                          list(self.trait.all_taggedtraits.non_archived()))
+
+    def test_has_no_archived_tagged_traits(self):
+        """An archived tagged trait is not included in the context."""
+        tagged_traits = TaggedTraitFactory.create_batch(2, trait=self.trait)
+        archived_tagged_trait = TaggedTraitFactory.create(trait=self.trait, archived=True)
+        response = self.client.get(self.get_url(self.trait.pk))
+        context = response.context
+        self.assertEqual([el[0] for el in context['tagged_traits_with_xs']],
+                         list(self.trait.all_taggedtraits.non_archived()))
+        self.assertNotIn(archived_tagged_trait, [el[0] for el in context['tagged_traits_with_xs']])
 
     def test_has_tagged_trait_remove_buttons(self):
         """The tag removal buttons shows up."""

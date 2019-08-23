@@ -6187,7 +6187,7 @@ class StudyResponseCreateAgreePhenotypeTaggerTest(PhenotypeTaggerLoginTestCase):
         response = self.client.post(self.get_url(self.tagged_trait.pk), {})
         self.assertEqual(self.tagged_trait.dcc_review.study_response.creator, self.user)
 
-    def test_archives_tagged_trait(self):
+    def test_archives_tagged_trait_after_response(self):
         """When a StudyResponse is successfully created, the tagged trait is archived."""
         response = self.client.post(self.get_url(self.tagged_trait.pk), {})
         self.tagged_trait.refresh_from_db()
@@ -6562,6 +6562,19 @@ class TaggedTraitsNeedDCCDecisionSummaryTestMixin(object):
         dcc_review = factories.DCCReviewFactory.create(status=models.DCCReview.STATUS_CONFIRMED)
         response = self.client.get(self.get_url())
         context = response.context
+        self.assertIn('grouped_study_tag_counts', context)
+        counts = context['grouped_study_tag_counts']
+        self.assertEqual(len(counts), 0)
+
+    def test_counts_exclude_deprecated_tagged_trait(self):
+        study_response = factories.StudyResponseFactory.create(
+            status=models.StudyResponse.STATUS_DISAGREE,
+            dcc_review__tagged_trait__trait__source_dataset__source_study_version__i_is_deprecated=True
+        )
+        response = self.client.get(self.get_url())
+        context = response.context
+        self.assertIn('grouped_study_tag_counts', context)
+        counts = context['grouped_study_tag_counts']
         self.assertIn('grouped_study_tag_counts', context)
         counts = context['grouped_study_tag_counts']
         self.assertEqual(len(counts), 0)
