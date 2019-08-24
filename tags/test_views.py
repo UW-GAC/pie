@@ -6993,24 +6993,37 @@ class TaggedTraitsNeedDCCDecisionByTagAndStudyListMixin(object):
         self.assertNotIn(other_tagged_trait, context['tagged_trait_table'].data)
 
     def test_decision_links_present_for_nodecision_tagged_traits(self):
-        """Decision buttons are shown for tagged trait without decision."""
+        """Decision buttons are shown for tagged traits without decision."""
         response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
-        pass
-        # TODO: add tests once decision create views are added.
+        content = str(response.content)
+        for study_response in self.study_responses:
+            self.assertIn(
+                reverse('tags:tagged-traits:pk:dcc-decision:new', args=[study_response.dcc_review.tagged_trait.pk]),
+                content,
+                msg='View is missing DCCDecisionCreate link for {}'.format(study_response.dcc_review.tagged_trait)
+            )
 
     def test_update_link_present_for_decision_confirm_tagged_traits(self):
         """Update button is shown for tagged trait with confirm."""
         dcc_decision = factories.DCCDecisionFactory.create(
             dcc_review=self.study_responses[0].dcc_review, decision=models.DCCDecision.DECISION_CONFIRM)
         response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
-        pass
+        content = str(response.content)
+        self.assertIn(
+            reverse('tags:tagged-traits:pk:dcc-decision:update', args=[dcc_decision.dcc_review.tagged_trait.pk]),
+            content
+        )
 
     def test_update_link_present_for_decision_remove_tagged_traits(self):
         """Update button is shown for tagged trait with remove."""
         dcc_decision = factories.DCCDecisionFactory.create(
             dcc_review=self.study_responses[0].dcc_review, decision=models.DCCDecision.DECISION_REMOVE)
         response = self.client.get(self.get_url(self.tag.pk, self.study.pk))
-        pass
+        content = str(response.content)
+        self.assertIn(
+            reverse('tags:tagged-traits:pk:dcc-decision:update', args=[dcc_decision.dcc_review.tagged_trait.pk]),
+            content
+        )
 
 
 class TaggedTraitsNeedDCCDecisionByTagAndStudyListDCCAnalystTest(TaggedTraitsNeedDCCDecisionByTagAndStudyListMixin,
