@@ -1606,8 +1606,11 @@ class BackupTest(TransactionTestCase):
         # By default, all tests will use dataset 1.
         clean_devel_db()
         load_test_source_db_data('base.sql')
-        cls.user = UserFactory.create()
+        # Can't create a test user here because of TransactionTestCase.
 
+    def setUp(self):
+        super().setUp()
+        self.user = UserFactory.create()
 
     def test_backup_is_created(self):
         """Backup dump file is created in the expected directory."""
