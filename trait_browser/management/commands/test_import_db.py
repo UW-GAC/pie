@@ -808,6 +808,46 @@ class GetCurrentListsTest(TestCase):
 
 
 # Tests that require test data.
+class SourceDbTestDataTest(OpenCloseDBMixin, TestCase):
+
+    def test_load_all_source_db_test_data(self):
+        """Load all test data sets and check study and version counts for each."""
+        clean_devel_db()
+        study_count_query = 'SELECT COUNT(*) AS study_count FROM study'
+        study_version_count_query = 'SELECT COUNT(*) AS ssv_count FROM source_study_version'
+        load_test_source_db_data('base.sql')
+        self.cursor.execute(study_count_query)
+        study_count = self.cursor.fetchone()['study_count']
+        self.cursor.execute(study_version_count_query)
+        ssv_count = self.cursor.fetchone()['ssv_count']
+        self.assertEqual(study_count, 2)
+        self.assertEqual(ssv_count, 3)
+        self.cursor.close()
+        self.source_db.close()
+
+        self.source_db = get_devel_db()
+        self.cursor = self.source_db.cursor(buffered=True, dictionary=True)
+        load_test_source_db_data('new_study.sql')
+        self.cursor.execute(study_count_query)
+        study_count = self.cursor.fetchone()['study_count']
+        self.cursor.execute(study_version_count_query)
+        ssv_count = self.cursor.fetchone()['ssv_count']
+        self.assertEqual(study_count, 3)
+        self.assertEqual(ssv_count, 4)
+        self.cursor.close()
+        self.source_db.close()
+
+        self.source_db = get_devel_db()
+        self.cursor = self.source_db.cursor(buffered=True, dictionary=True)
+        load_test_source_db_data('new_study_version.sql')
+        self.cursor.execute(study_count_query)
+        study_count = self.cursor.fetchone()['study_count']
+        self.cursor.execute(study_version_count_query)
+        ssv_count = self.cursor.fetchone()['ssv_count']
+        self.assertEqual(study_count, 3)
+        self.assertEqual(ssv_count, 5)
+
+
 class SetDatasetNamesTest(BaseTestDataTestCase):
     """Tests of the _set_dataset_names method."""
 
