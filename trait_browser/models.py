@@ -713,7 +713,7 @@ class SourceTrait(Trait):
                     if hasattr(old_tagged_trait.dcc_review, 'study_response'):
                         # Check for missing DCCDecision after disagree StudyResponse.
                         if old_tagged_trait.dcc_review.study_response.status == StudyResponse.STATUS_DISAGREE \
-                            and not hasattr(old_tagged_trait.dcc_review, 'dcc_decision'):
+                                and not hasattr(old_tagged_trait.dcc_review, 'dcc_decision'):
                             raise ValueError(INCOMPLETE_REVIEW_ERROR.format(
                                 ' (no decision after disagree study response)'))
                     else:

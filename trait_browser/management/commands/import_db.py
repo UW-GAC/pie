@@ -1014,7 +1014,7 @@ class Command(BaseCommand):
 
         # Skip applying updated tags if there are any incomplete reviews.
         if (TaggedTrait.objects.unreviewed().count() > 0) or (TaggedTrait.objects.need_study_response().count() > 0) \
-            or (TaggedTrait.objects.need_decision().count() > 0):
+                or (TaggedTrait.objects.need_decision().count() > 0):
             logger.warning(
                 "\n".join(
                     "Found tagged traits with incomplete reviews.",

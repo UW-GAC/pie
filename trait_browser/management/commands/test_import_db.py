@@ -12,15 +12,11 @@ This test module runs several unit tests and one integration test.
 
 from copy import copy
 from datetime import datetime, timedelta
-import mysql.connector
-# Use the mysql-connector-python-rf package from pypi.
-# (Advice via this SO post http://stackoverflow.com/q/34168651/2548371)
 from os.path import exists, join
 from os import listdir, stat
 from re import compile
 from shutil import rmtree
 from subprocess import call
-from sys import stdout
 from tempfile import mkdtemp
 from time import sleep
 from unittest import skip
@@ -3734,9 +3730,11 @@ class IntegrationTest(ClearSearchIndexMixin, BaseTestDataReloadingTestCase):
 
         # Create the tagged traits in v1.
         old_taggedtrait_both = TaggedTraitFactory.create(trait=old_trait_both)
-        DCCReview.objects.create(tagged_trait=old_taggedtrait_both, creator=self.user, status=DCCReview.STATUS_CONFIRMED)
+        DCCReview.objects.create(
+            tagged_trait=old_taggedtrait_both, creator=self.user, status=DCCReview.STATUS_CONFIRMED)
         old_taggedtrait_v1_only = TaggedTraitFactory.create(trait=old_trait_v1_only)
-        DCCReview.objects.create(tagged_trait=old_taggedtrait_v1_only, creator=self.user, status=DCCReview.STATUS_CONFIRMED)
+        DCCReview.objects.create(
+            tagged_trait=old_taggedtrait_v1_only, creator=self.user, status=DCCReview.STATUS_CONFIRMED)
 
         # Load test data with updated study version.
         load_test_source_db_data('new_study_version.sql')
@@ -3749,7 +3747,9 @@ class IntegrationTest(ClearSearchIndexMixin, BaseTestDataReloadingTestCase):
             'study_version=2',
             'dbgap_trait_accession={}'.format(old_trait_v1_only.i_dbgap_variable_accession)
         )
-        new_trait_v1_only_query = 'SELECT source_trait_id FROM view_source_trait_all WHERE ' + ' AND '.join(new_trait_v1_only_conditions)
+        new_trait_v1_only_query = 'SELECT source_trait_id FROM view_source_trait_all WHERE ' + ' AND '.join(
+            new_trait_v1_only_conditions
+        )
         cursor.execute(new_trait_v1_only_query)
         new_trait_v1_only_source_trait_id = cursor.fetchall()[0][0]
         delete_query = 'DELETE FROM source_trait WHERE source_trait_id={}'.format(new_trait_v1_only_source_trait_id)
