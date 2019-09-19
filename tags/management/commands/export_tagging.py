@@ -113,7 +113,7 @@ class Command(BaseCommand):
         return dump_dd_fn
 
     def _get_tagged_trait_data(self, study_pk=None, include_archived=False, include_deprecated=False):
-        """Return a nested list of tagged traits according to the given filtersself.
+        """Return a nested list of tagged traits according to the given filters.
 
         Arguments:
             study_pk: int; primary key of a study to filter the tagged traits to
