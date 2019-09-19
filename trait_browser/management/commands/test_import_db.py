@@ -27,6 +27,7 @@ from unittest import skip
 
 from django.conf import settings
 from django.core import management
+from django.core.exceptions import ObjectDoesNotExist
 from django.test import TestCase, TransactionTestCase
 from django.utils import timezone
 
@@ -3709,6 +3710,114 @@ class IntegrationTest(ClearSearchIndexMixin, BaseTestDataReloadingTestCase):
             m2m_tables, group_by_fields, concat_fields, parent_models, m2m_att_names)
 
     def test_updated_sourcetraits_are_tagged(self):
-        """."""
+        """Taggedtraits from v1 of a study are applied to v2 during import."""
+        # Run import of base test data.
+        management.call_command('import_db', '--devel_db', '--no_backup',
+                                '--taggedtrait_creator={}'.format(self.user.email))
+        self.cursor.close()
+        self.source_db.close()
+
+        # Choose some source traits to remove from one version to test different situations.
+        study_phs = 956
+        ssv1 = models.SourceStudyVersion.objects.get(study__pk=study_phs, i_version=1)
+        amish_v1_traits = models.SourceTrait.objects.filter(
+            source_dataset__source_study_version__study__pk=study_phs,
+            source_dataset__source_study_version__i_version=1
+        ).exclude(i_trait_name__in=('CONSENT', 'SOURCE_SUBJECT_ID', 'SUBJECT_SOURCE'))
+        old_trait_v2_only = amish_v1_traits.first()
+        old_trait_v1_only = amish_v1_traits.last()
+        old_trait_both = amish_v1_traits.all()[2]
+        old_trait_to_not_tag = amish_v1_traits.all()[3]
+
+        # Remove a trait from v1.
+        old_trait_v2_only.delete()
+
+        # Create the tagged traits in v1.
+        old_taggedtrait_both = TaggedTraitFactory.create(trait=old_trait_both)
+        DCCReview.objects.create(tagged_trait=old_taggedtrait_both, creator=self.user, status=DCCReview.STATUS_CONFIRMED)
+        old_taggedtrait_v1_only = TaggedTraitFactory.create(trait=old_trait_v1_only)
+        DCCReview.objects.create(tagged_trait=old_taggedtrait_v1_only, creator=self.user, status=DCCReview.STATUS_CONFIRMED)
+
         # Load test data with updated study version.
-        pass
+        load_test_source_db_data('new_study_version.sql')
+
+        # Remove a trait from the devel db via SQL query.
+        source_db = get_devel_db(permissions='full')
+        cursor = source_db.cursor(buffered=True)
+        new_trait_v1_only_conditions = (
+            'study_accession={}'.format(study_phs),
+            'study_version=2',
+            'dbgap_trait_accession={}'.format(old_trait_v1_only.i_dbgap_variable_accession)
+        )
+        new_trait_v1_only_query = 'SELECT source_trait_id FROM view_source_trait_all WHERE ' + ' AND '.join(new_trait_v1_only_conditions)
+        cursor.execute(new_trait_v1_only_query)
+        new_trait_v1_only_source_trait_id = cursor.fetchall()[0][0]
+        delete_query = 'DELETE FROM source_trait WHERE source_trait_id={}'.format(new_trait_v1_only_source_trait_id)
+        cursor.execute(delete_query)
+        source_db.commit()
+
+        cursor.close()
+        source_db.close()
+
+        # Run import of updated study version
+        management.call_command('import_db', '--devel_db', '--no_backup',
+                                '--taggedtrait_creator={}'.format(self.user.email))
+
+        ssv2 = models.SourceStudyVersion.objects.get(study__pk=956, i_version=2)
+
+        # Tags match for the taggedtrait in both v1 and v2.
+        new_trait_both = models.SourceTrait.objects.get(
+            source_dataset__source_study_version__study__pk=956,
+            source_dataset__source_study_version__i_version=2,
+            i_dbgap_variable_accession=old_trait_both.i_dbgap_variable_accession
+        )
+        self.assertQuerysetEqual(new_trait_both.non_archived_tags.all().values_list('lower_title', flat=True),
+                                 old_trait_both.non_archived_tags.all().values_list('lower_title', flat=True),
+                                 transform=lambda x: x)
+
+        # There isn't a v2 trait for the v1 only trait.
+        with self.assertRaises(ObjectDoesNotExist):
+            new_trait_v1_only = models.SourceTrait.objects.get(
+                source_dataset__source_study_version__study__pk=956,
+                source_dataset__source_study_version__i_version=2,
+                i_dbgap_variable_accession=old_trait_v1_only.i_dbgap_variable_accession
+            )
+
+        # There aren't any tags in v2 for the trait that didn't exist in v1.
+        new_trait_v2_only = models.SourceTrait.objects.get(
+            source_dataset__source_study_version__study__pk=956,
+            source_dataset__source_study_version__i_version=2,
+            i_dbgap_variable_accession=old_trait_v2_only.i_dbgap_variable_accession
+        )
+        self.assertEqual(new_trait_v2_only.all_taggedtraits.all().count(), 0)
+
+        # There isn't a tagged trait for the v1 trait that was not tagged.
+        new_trait_not_tagged = models.SourceTrait.objects.get(
+            source_dataset__source_study_version__study__pk=956,
+            source_dataset__source_study_version__i_version=2,
+            i_dbgap_variable_accession=old_trait_v2_only.i_dbgap_variable_accession
+        )
+        self.assertEqual(new_trait_not_tagged.all_taggedtraits.all().count(), 0)
+
+        # The count of tagged traits in v2 is 1. The count of tagged traits in v1 is 2.
+        ssv1_taggedtraits = TaggedTrait.objects.filter(trait__source_dataset__source_study_version=ssv1).all()
+        self.assertEqual(ssv1_taggedtraits.count(), 2)
+        ssv2_taggedtraits = TaggedTrait.objects.filter(trait__source_dataset__source_study_version=ssv2).all()
+        self.assertEqual(ssv2_taggedtraits.count(), 1)
+
+        # Keep this code for later use.
+        # # Compare lists of phvs between the two study versions to figure out what to tag.
+        # v1_phvs = models.SourceTrait.objects.filter(
+        #     source_dataset__source_study_version=ssv1
+        # ).values_list('i_dbgap_variable_accession', flat=True)
+        # v2_phvs = models.SourceTrait.objects.filter(
+        #     source_dataset__source_study_version=ssv2
+        # ).values_list('i_dbgap_variable_accession', flat=True)
+        # v1_phvs = set(v1_phvs)
+        # v2_phvs = set(v2_phvs)
+        # in_both = v1_phvs & v2_phvs
+        # only_v1 = v1_phvs - v2_phvs
+        # only_v2 = v2_phvs - v1_phvs
+        # print(in_both)
+        # print(only_v1)
+        # print(only_v2)
