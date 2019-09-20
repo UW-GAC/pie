@@ -697,29 +697,6 @@ class M2MHelperTest(TestCase):
         pass
 
 
-class ImportHelperTest(TestCase):
-    """Tests of the _import_[source|harmonized]_tables helper methods."""
-
-    def test_import_source_tables(self):
-        pass
-
-    def test_import_harmonized_tables(self):
-        pass
-
-    def test_import_source_tables_applies_updated_tags(self):
-        pass
-
-
-class UpdateHelperTest(TestCase):
-    """Tests of the _update_[source|harmonized]_tables helper methods."""
-
-    def test_update_source_tables(self):
-        pass
-
-    def test_update_harmonized_tables(self):
-        pass
-
-
 class GetCurrentListsTest(TestCase):
     """Tests of _get_current_pks with each possible model."""
 
