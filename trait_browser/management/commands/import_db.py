@@ -1015,14 +1015,13 @@ class Command(BaseCommand):
         # Skip applying updated tags if there are any incomplete reviews.
         if (TaggedTrait.objects.unreviewed().count() > 0) or (TaggedTrait.objects.need_study_response().count() > 0) \
                 or (TaggedTrait.objects.need_decision().count() > 0):
-            logger.warning(
-                "\n".join(
-                    "Found tagged traits with incomplete reviews.",
-                    "Skipping applying tags to updated source traits.",
-                    "Should you want to apply updated tags later, here are the newly added sourcestudyversion pks:",
-                    ", ".join([str(el) for el in new_source_study_version_pks])
-                )
+            unreviewed_warning = (
+                "Found tagged traits with incomplete reviews.",
+                "Skipping applying tags to updated source traits.",
+                "Should you want to apply updated tags later, here are the newly added sourcestudyversion pks:",
+                ", ".join([str(el) for el in new_source_study_version_pks])
             )
+            logger.warning("\n".join(unreviewed_warning))
         else:
             creator = User.objects.get(email=taggedtrait_creator)
             self._apply_tags_to_new_sourcestudyversions(
