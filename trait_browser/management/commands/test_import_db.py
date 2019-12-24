@@ -31,7 +31,7 @@ import watson.search as watson
 
 from core.factories import UserFactory
 from tags.factories import TagFactory, TaggedTraitFactory
-from tags.models import DCCReview, TaggedTrait
+from tags.models import DCCDecision, DCCReview, StudyResponse, TaggedTrait
 from trait_browser.management.commands.import_db import Command, HUNIT_QUERY, STRING_TYPES
 from trait_browser.management.commands.db_factory import fake_row_dict
 from trait_browser import factories
@@ -3689,100 +3689,11 @@ class IntegrationTest(ClearSearchIndexMixin, BaseTestDataReloadingTestCase):
                                 '--taggedtrait_creator={}'.format(self.user.email))
         self.cursor.close()
         self.source_db.close()
-
         # Choose some source traits to remove from one version to test different situations.
         study_phs = 956
         ssv1 = models.SourceStudyVersion.objects.get(study__pk=study_phs, i_version=1)
-        amish_v1_traits = models.SourceTrait.objects.filter(
-            source_dataset__source_study_version__study__pk=study_phs,
-            source_dataset__source_study_version__i_version=1
-        ).exclude(i_trait_name__in=('CONSENT', 'SOURCE_SUBJECT_ID', 'SUBJECT_SOURCE'))
-        old_trait_v2_only = amish_v1_traits.first()
-        old_trait_v1_only = amish_v1_traits.last()
-        old_trait_both = amish_v1_traits.all()[2]
-        old_trait_to_not_tag = amish_v1_traits.all()[3]
-
-        # Remove a trait from v1.
-        old_trait_v2_only.delete()
-
-        # Create the tagged traits in v1.
-        old_taggedtrait_both = TaggedTraitFactory.create(trait=old_trait_both)
-        DCCReview.objects.create(
-            tagged_trait=old_taggedtrait_both, creator=self.user, status=DCCReview.STATUS_CONFIRMED)
-        old_taggedtrait_v1_only = TaggedTraitFactory.create(trait=old_trait_v1_only)
-        DCCReview.objects.create(
-            tagged_trait=old_taggedtrait_v1_only, creator=self.user, status=DCCReview.STATUS_CONFIRMED)
-
-        # Load test data with updated study version.
-        load_test_source_db_data('new_study_version.sql')
-
-        # Remove a trait from the devel db via SQL query.
-        source_db = get_devel_db(permissions='full')
-        cursor = source_db.cursor(buffered=True)
-        new_trait_v1_only_conditions = (
-            'study_accession={}'.format(study_phs),
-            'study_version=2',
-            'dbgap_trait_accession={}'.format(old_trait_v1_only.i_dbgap_variable_accession)
-        )
-        new_trait_v1_only_query = 'SELECT source_trait_id FROM view_source_trait_all WHERE ' + ' AND '.join(
-            new_trait_v1_only_conditions
-        )
-        cursor.execute(new_trait_v1_only_query)
-        new_trait_v1_only_source_trait_id = cursor.fetchall()[0][0]
-        delete_query = 'DELETE FROM source_trait WHERE source_trait_id={}'.format(new_trait_v1_only_source_trait_id)
-        cursor.execute(delete_query)
-        source_db.commit()
-
-        cursor.close()
-        source_db.close()
-
-        # Run import of updated study version
-        management.call_command('import_db', '--devel_db', '--no_backup',
-                                '--taggedtrait_creator={}'.format(self.user.email))
-
-        ssv2 = models.SourceStudyVersion.objects.get(study__pk=956, i_version=2)
-
-        # Tags match for the taggedtrait in both v1 and v2.
-        new_trait_both = models.SourceTrait.objects.get(
-            source_dataset__source_study_version__study__pk=956,
-            source_dataset__source_study_version__i_version=2,
-            i_dbgap_variable_accession=old_trait_both.i_dbgap_variable_accession
-        )
-        self.assertQuerysetEqual(new_trait_both.non_archived_tags.all().values_list('lower_title', flat=True),
-                                 old_trait_both.non_archived_tags.all().values_list('lower_title', flat=True),
-                                 transform=lambda x: x)
-
-        # There isn't a v2 trait for the v1 only trait.
-        with self.assertRaises(ObjectDoesNotExist):
-            new_trait_v1_only = models.SourceTrait.objects.get(
-                source_dataset__source_study_version__study__pk=956,
-                source_dataset__source_study_version__i_version=2,
-                i_dbgap_variable_accession=old_trait_v1_only.i_dbgap_variable_accession
-            )
-
-        # There aren't any tags in v2 for the trait that didn't exist in v1.
-        new_trait_v2_only = models.SourceTrait.objects.get(
-            source_dataset__source_study_version__study__pk=956,
-            source_dataset__source_study_version__i_version=2,
-            i_dbgap_variable_accession=old_trait_v2_only.i_dbgap_variable_accession
-        )
-        self.assertEqual(new_trait_v2_only.all_taggedtraits.all().count(), 0)
-
-        # There isn't a tagged trait for the v1 trait that was not tagged.
-        new_trait_not_tagged = models.SourceTrait.objects.get(
-            source_dataset__source_study_version__study__pk=956,
-            source_dataset__source_study_version__i_version=2,
-            i_dbgap_variable_accession=old_trait_v2_only.i_dbgap_variable_accession
-        )
-        self.assertEqual(new_trait_not_tagged.all_taggedtraits.all().count(), 0)
-
-        # The count of tagged traits in v2 is 1. The count of tagged traits in v1 is 2.
-        ssv1_taggedtraits = TaggedTrait.objects.filter(trait__source_dataset__source_study_version=ssv1).all()
-        self.assertEqual(ssv1_taggedtraits.count(), 2)
-        ssv2_taggedtraits = TaggedTrait.objects.filter(trait__source_dataset__source_study_version=ssv2).all()
-        self.assertEqual(ssv2_taggedtraits.count(), 1)
-
-        # Keep this code for later use.
+        # I used this code to figure out which traits could be found in v1 and v2.
+        # Leave it here commented out in case this needs to be done again later.
         # # Compare lists of phvs between the two study versions to figure out what to tag.
         # v1_phvs = models.SourceTrait.objects.filter(
         #     source_dataset__source_study_version=ssv1
@@ -3798,45 +3709,78 @@ class IntegrationTest(ClearSearchIndexMixin, BaseTestDataReloadingTestCase):
         # print(in_both)
         # print(only_v1)
         # print(only_v2)
-
-    def test_tags_not_applied_if_unreviewed_taggedtraits_exist(self):
-        """Tags are not applied to updated traits if any unreviewed taggedtraits exist."""
-        # Run import of base test data.
-        management.call_command('import_db', '--devel_db', '--no_backup',
-                                '--taggedtrait_creator={}'.format(self.user.email))
-        self.cursor.close()
-        self.source_db.close()
-
-        # Choose some source traits to remove from one version to test different situations.
-        study_phs = 956
-        ssv1 = models.SourceStudyVersion.objects.get(study__pk=study_phs, i_version=1)
+        # There are 51 variables in v1 of Amish, so don't go above 50 for the index.
         amish_v1_traits = models.SourceTrait.objects.filter(
             source_dataset__source_study_version__study__pk=study_phs,
             source_dataset__source_study_version__i_version=1
         ).exclude(i_trait_name__in=('CONSENT', 'SOURCE_SUBJECT_ID', 'SUBJECT_SOURCE'))
-        old_trait_v2_only = amish_v1_traits.first()
-        old_trait_v1_only = amish_v1_traits.last()
-        old_trait_both = amish_v1_traits.all()[2]
-        old_trait_to_not_tag = amish_v1_traits.all()[3]
-        old_trait_to_leave_unreviewed = amish_v1_traits.all()[4]
-
+        old_trait_v2_only = amish_v1_traits.all()[1]
+        old_trait_v1_only = amish_v1_traits.all()[2]
+        old_trait_both = amish_v1_traits.all()[3]
+        old_trait_to_not_tag = amish_v1_traits.all()[4]
         # Remove a trait from v1.
         old_trait_v2_only.delete()
-
         # Create the tagged traits in v1.
+        # Both of these are status confirmed in dccreview step.
         old_taggedtrait_both = TaggedTraitFactory.create(trait=old_trait_both)
         DCCReview.objects.create(
             tagged_trait=old_taggedtrait_both, creator=self.user, status=DCCReview.STATUS_CONFIRMED)
         old_taggedtrait_v1_only = TaggedTraitFactory.create(trait=old_trait_v1_only)
         DCCReview.objects.create(
             tagged_trait=old_taggedtrait_v1_only, creator=self.user, status=DCCReview.STATUS_CONFIRMED)
-        # Create one unreviewed taggedtrait.
-        old_unreviewed_taggedtrait = TaggedTraitFactory.create(trait=old_trait_to_leave_unreviewed)
-        old_taggedtraits_count = TaggedTrait.objects.count()
-
+        # Create taggedtraits with all valid status combinations to make sure that it doesn't prevent application
+        # of updated tags (tests the check for incomplete review status).
+        followup_agree_taggedtrait = TaggedTraitFactory.create(
+            trait=amish_v1_traits.all()[5], archived=True)
+        DCCReview.objects.create(
+            tagged_trait=followup_agree_taggedtrait,
+            creator=self.user, status=DCCReview.STATUS_FOLLOWUP, comment='')
+        StudyResponse.objects.create(
+            dcc_review=followup_agree_taggedtrait.dcc_review,
+            creator=self.user, comment='', status=StudyResponse.STATUS_AGREE
+        )
+        followup_disagree_confirm_taggedtrait = TaggedTraitFactory.create(trait=amish_v1_traits.all()[6])
+        DCCReview.objects.create(
+            tagged_trait=followup_disagree_confirm_taggedtrait,
+            creator=self.user, status=DCCReview.STATUS_FOLLOWUP, comment='')
+        StudyResponse.objects.create(
+            dcc_review=followup_disagree_confirm_taggedtrait.dcc_review,
+            creator=self.user, comment='', status=StudyResponse.STATUS_DISAGREE
+        )
+        DCCDecision.objects.create(
+            dcc_review=followup_disagree_confirm_taggedtrait.dcc_review,
+            creator=self.user, comment='', decision=DCCDecision.DECISION_CONFIRM
+        )
+        followup_disagree_remove_taggedtrait = TaggedTraitFactory.create(trait=amish_v1_traits.all()[6], archived=True)
+        DCCReview.objects.create(
+            tagged_trait=followup_disagree_remove_taggedtrait,
+            creator=self.user, status=DCCReview.STATUS_FOLLOWUP, comment='')
+        StudyResponse.objects.create(
+            dcc_review=followup_disagree_remove_taggedtrait.dcc_review,
+            creator=self.user, comment='', status=StudyResponse.STATUS_DISAGREE
+        )
+        DCCDecision.objects.create(
+            dcc_review=followup_disagree_remove_taggedtrait.dcc_review,
+            creator=self.user, comment='', decision=DCCDecision.DECISION_REMOVE
+        )
+        followup_noresponse_confirm_taggedtrait = TaggedTraitFactory.create(trait=amish_v1_traits.all()[6])
+        DCCReview.objects.create(
+            tagged_trait=followup_noresponse_confirm_taggedtrait,
+            creator=self.user, status=DCCReview.STATUS_FOLLOWUP, comment='')
+        DCCDecision.objects.create(
+            dcc_review=followup_noresponse_confirm_taggedtrait.dcc_review,
+            creator=self.user, comment='', decision=DCCDecision.DECISION_CONFIRM
+        )
+        followup_noresponse_remove_taggedtrait = TaggedTraitFactory.create(trait=amish_v1_traits.all()[6], archived=True)
+        DCCReview.objects.create(
+            tagged_trait=followup_noresponse_remove_taggedtrait,
+            creator=self.user, status=DCCReview.STATUS_FOLLOWUP, comment='')
+        DCCDecision.objects.create(
+            dcc_review=followup_noresponse_remove_taggedtrait.dcc_review,
+            creator=self.user, comment='', decision=DCCDecision.DECISION_REMOVE
+        )
         # Load test data with updated study version.
         load_test_source_db_data('new_study_version.sql')
-
         # Remove a trait from the devel db via SQL query.
         source_db = get_devel_db(permissions='full')
         cursor = source_db.cursor(buffered=True)
@@ -3853,16 +3797,242 @@ class IntegrationTest(ClearSearchIndexMixin, BaseTestDataReloadingTestCase):
         delete_query = 'DELETE FROM source_trait WHERE source_trait_id={}'.format(new_trait_v1_only_source_trait_id)
         cursor.execute(delete_query)
         source_db.commit()
-
         cursor.close()
         source_db.close()
+        # Run import of updated study version
+        management.call_command('import_db', '--devel_db', '--no_backup',
+                                '--taggedtrait_creator={}'.format(self.user.email))
+        ssv2 = models.SourceStudyVersion.objects.get(study__pk=956, i_version=2)
+        # Tags match for the taggedtrait in both v1 and v2.
+        new_trait_both = models.SourceTrait.objects.get(
+            source_dataset__source_study_version__study__pk=956,
+            source_dataset__source_study_version__i_version=2,
+            i_dbgap_variable_accession=old_trait_both.i_dbgap_variable_accession
+        )
+        self.assertQuerysetEqual(new_trait_both.non_archived_tags.all().values_list('lower_title', flat=True),
+                                 old_trait_both.non_archived_tags.all().values_list('lower_title', flat=True),
+                                 transform=lambda x: x)
+        # There isn't a v2 trait for the v1 only trait.
+        with self.assertRaises(ObjectDoesNotExist):
+            new_trait_v1_only = models.SourceTrait.objects.get(
+                source_dataset__source_study_version__study__pk=956,
+                source_dataset__source_study_version__i_version=2,
+                i_dbgap_variable_accession=old_trait_v1_only.i_dbgap_variable_accession
+            )
+        # There aren't any tags in v2 for the trait that didn't exist in v1.
+        new_trait_v2_only = models.SourceTrait.objects.get(
+            source_dataset__source_study_version__study__pk=956,
+            source_dataset__source_study_version__i_version=2,
+            i_dbgap_variable_accession=old_trait_v2_only.i_dbgap_variable_accession
+        )
+        self.assertEqual(new_trait_v2_only.all_taggedtraits.all().count(), 0)
+        # There isn't a tagged trait for the v1 trait that was not tagged.
+        new_trait_not_tagged = models.SourceTrait.objects.get(
+            source_dataset__source_study_version__study__pk=956,
+            source_dataset__source_study_version__i_version=2,
+            i_dbgap_variable_accession=old_trait_v2_only.i_dbgap_variable_accession
+        )
+        self.assertEqual(new_trait_not_tagged.all_taggedtraits.all().count(), 0)
+        # The count of tagged traits in v2 is 1. The count of tagged traits in v1 is 2.
+        ssv1_taggedtraits = TaggedTrait.objects.filter(trait__source_dataset__source_study_version=ssv1).all()
+        self.assertEqual(ssv1_taggedtraits.count(), 7)
+        ssv2_taggedtraits = TaggedTrait.objects.filter(trait__source_dataset__source_study_version=ssv2).all()
+        self.assertEqual(ssv2_taggedtraits.count(), 3)
 
+    # There are three status combinations that should prevent the application of tags during import:
+    # 1. dcc_review, dcc_review__study_response, and dcc_review__dcc_decision do not exist
+    # 2. dcc_review followup, study_response disagree, and dcc_decision does not exist
+    # 3. dcc_review followup, and study_response and dcc_decision do not exist
+    # The next three test methods will test that each of these three cases stop
+    # the tag application process during import.
+    def test_tags_not_applied_if_unreviewed_taggedtraits_exist(self):
+        """Tags are not applied to updated traits if any taggedtraits with incomplete review process exist."""
+        # Run import of base test data.
+        management.call_command('import_db', '--devel_db', '--no_backup',
+                                '--taggedtrait_creator={}'.format(self.user.email))
+        self.cursor.close()
+        self.source_db.close()
+        # Choose some source traits to remove from one version to test different situations.
+        study_phs = 956
+        ssv1 = models.SourceStudyVersion.objects.get(study__pk=study_phs, i_version=1)
+        amish_v1_traits = models.SourceTrait.objects.filter(
+            source_dataset__source_study_version__study__pk=study_phs,
+            source_dataset__source_study_version__i_version=1
+        ).exclude(i_trait_name__in=('CONSENT', 'SOURCE_SUBJECT_ID', 'SUBJECT_SOURCE'))
+        old_trait_v2_only = amish_v1_traits.first()
+        old_trait_v1_only = amish_v1_traits.last()
+        old_trait_both = amish_v1_traits.all()[2]
+        old_trait_to_not_tag = amish_v1_traits.all()[3]
+        old_trait_to_leave_unreviewed = amish_v1_traits.all()[4]
+        # Remove a trait from v1.
+        old_trait_v2_only.delete()
+        # Create the tagged traits in v1.
+        old_taggedtrait_both = TaggedTraitFactory.create(trait=old_trait_both)
+        DCCReview.objects.create(
+            tagged_trait=old_taggedtrait_both, creator=self.user, status=DCCReview.STATUS_CONFIRMED)
+        old_taggedtrait_v1_only = TaggedTraitFactory.create(trait=old_trait_v1_only)
+        DCCReview.objects.create(
+            tagged_trait=old_taggedtrait_v1_only, creator=self.user, status=DCCReview.STATUS_CONFIRMED)
+        # Create one unreviewed taggedtrait.
+        old_unreviewed_taggedtrait = TaggedTraitFactory.create(trait=old_trait_to_leave_unreviewed)
+        old_taggedtraits_count = TaggedTrait.objects.count()
+        # Load test data with updated study version.
+        load_test_source_db_data('new_study_version.sql')
+        # Remove a trait from the devel db via SQL query.
+        source_db = get_devel_db(permissions='full')
+        cursor = source_db.cursor(buffered=True)
+        new_trait_v1_only_conditions = (
+            'study_accession={}'.format(study_phs),
+            'study_version=2',
+            'dbgap_trait_accession={}'.format(old_trait_v1_only.i_dbgap_variable_accession)
+        )
+        new_trait_v1_only_query = 'SELECT source_trait_id FROM view_source_trait_all WHERE ' + ' AND '.join(
+            new_trait_v1_only_conditions
+        )
+        cursor.execute(new_trait_v1_only_query)
+        new_trait_v1_only_source_trait_id = cursor.fetchall()[0][0]
+        delete_query = 'DELETE FROM source_trait WHERE source_trait_id={}'.format(new_trait_v1_only_source_trait_id)
+        cursor.execute(delete_query)
+        source_db.commit()
+        cursor.close()
+        source_db.close()
         # Run import of updated study version
         management.call_command('import_db', '--devel_db', '--no_backup',
                                 '--taggedtrait_creator={}'.format(self.user.email))
 
         ssv2 = models.SourceStudyVersion.objects.get(study__pk=956, i_version=2)
+        # There are no new taggedtraits.
+        later_taggedtraits_count = TaggedTrait.objects.count()
+        self.assertEqual(old_taggedtraits_count, later_taggedtraits_count)
+        ssv1_taggedtraits = TaggedTrait.objects.filter(trait__source_dataset__source_study_version=ssv1).all()
+        self.assertEqual(ssv1_taggedtraits.count(), 3)
+        ssv2_taggedtraits = TaggedTrait.objects.filter(trait__source_dataset__source_study_version=ssv2).all()
+        self.assertEqual(ssv2_taggedtraits.count(), 0)
 
+    def test_tags_not_applied_if_disagreeundecided_taggedtraits_exist(self):
+        """Tags are not applied to updated traits if dccdecision is missing after disagree studyresponse."""
+        # Run import of base test data.
+        management.call_command('import_db', '--devel_db', '--no_backup',
+                                '--taggedtrait_creator={}'.format(self.user.email))
+        self.cursor.close()
+        self.source_db.close()
+        # Choose some source traits to remove from one version to test different situations.
+        study_phs = 956
+        ssv1 = models.SourceStudyVersion.objects.get(study__pk=study_phs, i_version=1)
+        amish_v1_traits = models.SourceTrait.objects.filter(
+            source_dataset__source_study_version__study__pk=study_phs,
+            source_dataset__source_study_version__i_version=1
+        ).exclude(i_trait_name__in=('CONSENT', 'SOURCE_SUBJECT_ID', 'SUBJECT_SOURCE'))
+        old_trait_v2_only = amish_v1_traits.first()
+        old_trait_v1_only = amish_v1_traits.last()
+        old_trait_both = amish_v1_traits.all()[2]
+        old_trait_to_not_tag = amish_v1_traits.all()[3]
+        old_trait_to_leave_undecided = amish_v1_traits.all()[4]
+        # Remove a trait from v1.
+        old_trait_v2_only.delete()
+        # Create the tagged traits in v1.
+        old_taggedtrait_both = TaggedTraitFactory.create(trait=old_trait_both)
+        DCCReview.objects.create(
+            tagged_trait=old_taggedtrait_both, creator=self.user, status=DCCReview.STATUS_CONFIRMED)
+        old_taggedtrait_v1_only = TaggedTraitFactory.create(trait=old_trait_v1_only)
+        DCCReview.objects.create(
+            tagged_trait=old_taggedtrait_v1_only, creator=self.user, status=DCCReview.STATUS_CONFIRMED)
+        # Create one undecided taggedtrait.
+        old_undecided_taggedtrait = TaggedTraitFactory.create(trait=old_trait_to_leave_undecided)
+        DCCReview.objects.create(
+            tagged_trait=old_undecided_taggedtrait, creator=self.user, status=DCCReview.STATUS_FOLLOWUP)
+        StudyResponse.objects.create(
+            dcc_review=old_undecided_taggedtrait.dcc_review, creator=self.user, status=StudyResponse.STATUS_DISAGREE)
+        old_taggedtraits_count = TaggedTrait.objects.count()
+        # Load test data with updated study version.
+        load_test_source_db_data('new_study_version.sql')
+        # Remove a trait from the devel db via SQL query.
+        source_db = get_devel_db(permissions='full')
+        cursor = source_db.cursor(buffered=True)
+        new_trait_v1_only_conditions = (
+            'study_accession={}'.format(study_phs),
+            'study_version=2',
+            'dbgap_trait_accession={}'.format(old_trait_v1_only.i_dbgap_variable_accession)
+        )
+        new_trait_v1_only_query = 'SELECT source_trait_id FROM view_source_trait_all WHERE ' + ' AND '.join(
+            new_trait_v1_only_conditions
+        )
+        cursor.execute(new_trait_v1_only_query)
+        new_trait_v1_only_source_trait_id = cursor.fetchall()[0][0]
+        delete_query = 'DELETE FROM source_trait WHERE source_trait_id={}'.format(new_trait_v1_only_source_trait_id)
+        cursor.execute(delete_query)
+        source_db.commit()
+        cursor.close()
+        source_db.close()
+        # Run import of updated study version
+        management.call_command('import_db', '--devel_db', '--no_backup',
+                                '--taggedtrait_creator={}'.format(self.user.email))
+        ssv2 = models.SourceStudyVersion.objects.get(study__pk=956, i_version=2)
+        # There are no new taggedtraits.
+        later_taggedtraits_count = TaggedTrait.objects.count()
+        self.assertEqual(old_taggedtraits_count, later_taggedtraits_count)
+        ssv1_taggedtraits = TaggedTrait.objects.filter(trait__source_dataset__source_study_version=ssv1).all()
+        self.assertEqual(ssv1_taggedtraits.count(), 3)
+        ssv2_taggedtraits = TaggedTrait.objects.filter(trait__source_dataset__source_study_version=ssv2).all()
+        self.assertEqual(ssv2_taggedtraits.count(), 0)
+
+    def test_tags_not_applied_if_noresponseundecided_taggedtraits_exist(self):
+        """Tags are not applied to updated traits if dccdecision and studyresponse are both missing."""
+        # Run import of base test data.
+        management.call_command('import_db', '--devel_db', '--no_backup',
+                                '--taggedtrait_creator={}'.format(self.user.email))
+        self.cursor.close()
+        self.source_db.close()
+        # Choose some source traits to remove from one version to test different situations.
+        study_phs = 956
+        ssv1 = models.SourceStudyVersion.objects.get(study__pk=study_phs, i_version=1)
+        amish_v1_traits = models.SourceTrait.objects.filter(
+            source_dataset__source_study_version__study__pk=study_phs,
+            source_dataset__source_study_version__i_version=1
+        ).exclude(i_trait_name__in=('CONSENT', 'SOURCE_SUBJECT_ID', 'SUBJECT_SOURCE'))
+        old_trait_v2_only = amish_v1_traits.first()
+        old_trait_v1_only = amish_v1_traits.last()
+        old_trait_both = amish_v1_traits.all()[2]
+        old_trait_to_not_tag = amish_v1_traits.all()[3]
+        old_trait_to_leave_undecided = amish_v1_traits.all()[4]
+        # Remove a trait from v1.
+        old_trait_v2_only.delete()
+        # Create the tagged traits in v1.
+        old_taggedtrait_both = TaggedTraitFactory.create(trait=old_trait_both)
+        DCCReview.objects.create(
+            tagged_trait=old_taggedtrait_both, creator=self.user, status=DCCReview.STATUS_CONFIRMED)
+        old_taggedtrait_v1_only = TaggedTraitFactory.create(trait=old_trait_v1_only)
+        DCCReview.objects.create(
+            tagged_trait=old_taggedtrait_v1_only, creator=self.user, status=DCCReview.STATUS_CONFIRMED)
+        # Create one undecided taggedtrait.
+        old_undecided_taggedtrait = TaggedTraitFactory.create(trait=old_trait_to_leave_undecided)
+        DCCReview.objects.create(
+            tagged_trait=old_undecided_taggedtrait, creator=self.user, status=DCCReview.STATUS_FOLLOWUP)
+        old_taggedtraits_count = TaggedTrait.objects.count()
+        # Load test data with updated study version.
+        load_test_source_db_data('new_study_version.sql')
+        # Remove a trait from the devel db via SQL query.
+        source_db = get_devel_db(permissions='full')
+        cursor = source_db.cursor(buffered=True)
+        new_trait_v1_only_conditions = (
+            'study_accession={}'.format(study_phs),
+            'study_version=2',
+            'dbgap_trait_accession={}'.format(old_trait_v1_only.i_dbgap_variable_accession)
+        )
+        new_trait_v1_only_query = 'SELECT source_trait_id FROM view_source_trait_all WHERE ' + ' AND '.join(
+            new_trait_v1_only_conditions
+        )
+        cursor.execute(new_trait_v1_only_query)
+        new_trait_v1_only_source_trait_id = cursor.fetchall()[0][0]
+        delete_query = 'DELETE FROM source_trait WHERE source_trait_id={}'.format(new_trait_v1_only_source_trait_id)
+        cursor.execute(delete_query)
+        source_db.commit()
+        cursor.close()
+        source_db.close()
+        # Run import of updated study version
+        management.call_command('import_db', '--devel_db', '--no_backup',
+                                '--taggedtrait_creator={}'.format(self.user.email))
+        ssv2 = models.SourceStudyVersion.objects.get(study__pk=956, i_version=2)
         # There are no new taggedtraits.
         later_taggedtraits_count = TaggedTrait.objects.count()
         self.assertEqual(old_taggedtraits_count, later_taggedtraits_count)

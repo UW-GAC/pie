@@ -26,7 +26,7 @@ from django.utils import timezone
 from django.conf import settings
 from django.contrib.auth import get_user_model
 
-from tags.models import TaggedTrait
+from tags.models import DCCDecision, DCCReview, StudyResponse, TaggedTrait
 from trait_browser import models
 
 
@@ -1013,8 +1013,19 @@ class Command(BaseCommand):
         logger.info("Added {} source trait encoded values".format(len(new_source_trait_encoded_value_pks)))
 
         # Skip applying updated tags if there are any incomplete reviews.
-        if (TaggedTrait.objects.unreviewed().count() > 0) or (TaggedTrait.objects.need_study_response().count() > 0) \
-                or (TaggedTrait.objects.need_decision().count() > 0):
+        unreviewed_count = TaggedTrait.objects.unreviewed().count()
+        no_response_or_decision_count = TaggedTrait.objects.filter(
+            dcc_review__status=DCCReview.STATUS_FOLLOWUP,
+            dcc_review__study_response__isnull=True,
+            dcc_review__dcc_decision__isnull=True
+        ).count()
+        no_decision_after_disagree_count = TaggedTrait.objects.filter(
+            dcc_review__status=DCCReview.STATUS_FOLLOWUP,
+            dcc_review__study_response__isnull=False,
+            dcc_review__study_response__status=StudyResponse.STATUS_DISAGREE,
+            dcc_review__dcc_decision__isnull=True
+        ).count()
+        if (unreviewed_count + no_response_or_decision_count + no_decision_after_disagree_count) > 0:
             unreviewed_warning = (
                 "Found tagged traits with incomplete reviews.",
                 "Skipping applying tags to updated source traits.",
