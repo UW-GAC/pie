@@ -431,7 +431,7 @@ class SourceDataset(SourceDBTimeStampedModel):
 
     def set_dbgap_link(self):
         """Automatically set dbgap_link from dbGaP identifier information."""
-        return self.DATASET_URL.format(self.source_study_version.full_accession, self.full_accession)
+        return self.DATASET_URL.format(self.source_study_version.full_accession, self.i_accession)
 
     def get_name_link_html(self, max_popover_words=80):
         """Get html for the dataset name linked to the dataset's detail page, with description as popover."""
