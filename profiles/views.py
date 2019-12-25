@@ -44,7 +44,7 @@ class Profile(LoginRequiredMixin, TemplateView):
         # Get tagged traits and their study names for phenotype_taggers and staff.
         if is_phenotype_tagger or is_staff:
             context['show_my_tagged'] = True
-            user_taggedtraits = TaggedTrait.objects.non_archived().filter(creator=self.request.user)
+            user_taggedtraits = TaggedTrait.objects.current().non_archived().filter(creator=self.request.user)
             user_taggedtraits = user_taggedtraits.values(
                 study_name=F('trait__source_dataset__source_study_version__study__i_study_name'),
                 study_pk=F('trait__source_dataset__source_study_version__study__pk'),
@@ -71,7 +71,7 @@ class Profile(LoginRequiredMixin, TemplateView):
             context['show_study_tagged'] = True
             taggable_studies = self.request.user.profile.taggable_studies.all()
             if len(taggable_studies) > 0:
-                study_taggedtrait_counts = TaggedTrait.objects.non_archived().filter(
+                study_taggedtrait_counts = TaggedTrait.objects.current().non_archived().filter(
                     trait__source_dataset__source_study_version__study__in=taggable_studies)
                 study_taggedtrait_counts = study_taggedtrait_counts.values(
                     study_name=F('trait__source_dataset__source_study_version__study__i_study_name'),

@@ -60,11 +60,13 @@ source_study_dataset_autocomplete_patterns = ([
 source_study_dataset_patterns = ([
     url(r'^autocomplete/', include(source_study_dataset_autocomplete_patterns)),
     url(r'^$', views.StudySourceDatasetList.as_view(), name='list'),
+    url(r'^new/$', views.StudySourceDatasetNewList.as_view(), name='new'),
     url(r'^search/$', views.StudySourceDatasetSearch.as_view(), name='search'),
 ], 'datasets', )
 
 source_study_trait_patterns = ([
     url(r'^$', views.StudySourceTraitList.as_view(), name='list'),
+    url(r'^new/$', views.StudySourceTraitNewList.as_view(), name='new'),
     url(r'^search/$', views.StudySourceTraitSearch.as_view(), name='search'),
     url(r'^tagged/$', views.StudyTaggedTraitList.as_view(), name='tagged'),
 ], 'traits', )

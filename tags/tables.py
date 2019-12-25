@@ -59,9 +59,7 @@ class TagTable(tables.Table):
 
     def render_number_tagged_traits(self, record):
         """Render column with the count of non-archived non-deprecated tagged traits for each tag."""
-        tagged_traits = record.non_archived_traits.filter(
-            source_dataset__source_study_version__i_is_deprecated=False)
-        return tagged_traits.count()
+        return record.current_non_archived_traits.count()
 
 
 class TaggedTraitTable(tables.Table):
@@ -282,15 +280,15 @@ class TaggedTraitTableForStaffByStudy(TaggedTraitDetailColumnMixin, TaggedTraitD
                                       TaggedTraitDCCReviewStatusColumnMixin, TaggedTraitStudyResponseStatusColumnMixin,
                                       TaggedTraitDCCDecisionColumnMixin,
                                       TaggedTraitArchivedColumnMixin, TaggedTraitTable):
-        """Table for displaying TaggedTraits to DCC staff users.
+    """Table for displaying TaggedTraits to DCC staff users.
 
-        Used for TaggedTraitByTagAndStudyList. Includes columns for DCC review, study response, and archived
-        status. Includes column with DCC Review create/update button and links to detail pages.
-        """
+    Used for TaggedTraitByTagAndStudyList. Includes columns for DCC review, study response, and archived
+    status. Includes column with DCC Review create/update button and links to detail pages.
+    """
 
-        class Meta(TaggedTraitTable.Meta):
-            fields = ('tag', 'trait', 'description', 'dataset', 'details', 'dcc_action_button', 'dcc_review_status',
-                      'study_response_status', 'dcc_decision', 'archived', )
+    class Meta(TaggedTraitTable.Meta):
+        fields = ('tag', 'trait', 'description', 'dataset', 'details', 'dcc_action_button', 'dcc_review_status',
+                  'study_response_status', 'dcc_decision', 'archived', )
 
 
 class TaggedTraitDCCReviewTable(tables.Table):

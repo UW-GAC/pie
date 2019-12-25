@@ -28,6 +28,13 @@
           <span class="glyphicon glyphicon-th-large" aria-hidden="true"></span> Study variables
         </a>
       </p>
+      {% if show_new_trait_button %}
+        <p>
+          <a class="btn btn-primary" href="{% url 'trait_browser:source:studies:pk:traits:new' study.pk %}" role="button">
+            <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span> Variables added in this version
+          </a>
+        </p>
+      {% endif %}
       {% if study.get_non_archived_traits_tagged_count > 0 %}
         <p>
           <a class="btn btn-primary" href="{% url 'trait_browser:source:studies:pk:traits:tagged' study.pk %}" role="button">
@@ -47,6 +54,13 @@
           <span class="glyphicon glyphicon-th-list" aria-hidden="true"></span> Study datasets
         </a>
       </p>
+      {% if show_new_dataset_button %}
+        <p>
+          <a class="btn btn-primary" href="{% url 'trait_browser:source:studies:pk:datasets:new' study.pk %}" role="button">
+            <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span> Datasets added in this version
+          </a>
+        </p>
+      {% endif %}
     </div>
   </div>
   {% include 'trait_browser/_dbgap_link_panel.html' with study_string=study.get_latest_version.full_accession study_link=study.get_latest_version_link %}

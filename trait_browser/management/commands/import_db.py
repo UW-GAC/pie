@@ -24,9 +24,13 @@ from django.core.management.base import BaseCommand
 from django.core import management
 from django.utils import timezone
 from django.conf import settings
+from django.contrib.auth import get_user_model
 
+from tags.models import DCCDecision, DCCReview, StudyResponse, TaggedTrait
 from trait_browser import models
 
+
+User = get_user_model()
 
 # Set up a logger to handle messages based on verbosity setting.
 logger = logging.getLogger(__name__)
@@ -936,8 +940,22 @@ class Command(BaseCommand):
                 dataset_name, dataset_id, filename))
         cursor.close()
 
+    # Method to apply old tags to new source traits.
+    def _apply_tags_to_new_sourcestudyversions(self, sourcestudyversion_pks, creator):
+        """Apply tags from old souce trait versions to the newly imported source traits."""
+        # Get the new ssvs, sorted from oldest to newest by version and date_added.
+        sourcestudyversions = models.SourceStudyVersion.objects.filter(pk__in=sourcestudyversion_pks).order_by(
+            'study', 'i_version', 'i_date_added'
+        )
+        logger.debug("Source study versions to apply updates to, in sorted order:")
+        print_ssvs = ['\t'.join([str(el) for el in ssv]) for ssv in sourcestudyversions.values_list(
+            'study__i_study_name', 'i_version', 'i_date_added')]
+        logger.debug('\n'.join(print_ssvs))
+        for ssv in sourcestudyversions:
+            ssv.apply_previous_tags(creator)
+
     # Methods to run all of the updating or importing on all of the models.
-    def _import_source_tables(self, source_db):
+    def _import_source_tables(self, source_db, taggedtrait_creator):
         """Import all source trait-related data from the source db into the Django models.
 
         Connect to the specified source db and run helper methods to import new data
@@ -948,6 +966,7 @@ class Command(BaseCommand):
 
         Arguments:
             source_db (MySQLConnection): a mysql.connector open db connection
+            taggedtrait_creator (str): email of the creator for new tagged traits
 
         Returns:
             None
@@ -992,6 +1011,35 @@ class Command(BaseCommand):
             source_db=source_db, source_table='source_trait_encoded_values', source_pk='id',
             model=models.SourceTraitEncodedValue, make_args=self._make_source_trait_encoded_value_args)
         logger.info("Added {} source trait encoded values".format(len(new_source_trait_encoded_value_pks)))
+
+        # Skip applying updated tags if there are any incomplete reviews.
+        unreviewed_count = TaggedTrait.objects.unreviewed().count()
+        no_response_or_decision_count = TaggedTrait.objects.filter(
+            dcc_review__status=DCCReview.STATUS_FOLLOWUP,
+            dcc_review__study_response__isnull=True,
+            dcc_review__dcc_decision__isnull=True
+        ).count()
+        no_decision_after_disagree_count = TaggedTrait.objects.filter(
+            dcc_review__status=DCCReview.STATUS_FOLLOWUP,
+            dcc_review__study_response__isnull=False,
+            dcc_review__study_response__status=StudyResponse.STATUS_DISAGREE,
+            dcc_review__dcc_decision__isnull=True
+        ).count()
+        if (unreviewed_count + no_response_or_decision_count + no_decision_after_disagree_count) > 0:
+            unreviewed_warning = (
+                "Found tagged traits with incomplete reviews.",
+                "Skipping applying tags to updated source traits.",
+                "Should you want to apply updated tags later, here are the newly added sourcestudyversion pks:",
+                ", ".join([str(el) for el in new_source_study_version_pks])
+            )
+            logger.warning("\n".join(unreviewed_warning))
+        else:
+            creator = User.objects.get(email=taggedtrait_creator)
+            self._apply_tags_to_new_sourcestudyversions(
+                sourcestudyversion_pks=new_source_study_version_pks,
+                creator=creator
+            )
+            logger.info("Applied tags to updated source traits.")
 
     def _import_harmonized_tables(self, source_db):
         """Import all harmonized trait-related data from the source db into the Django models.
@@ -1045,7 +1093,8 @@ class Command(BaseCommand):
             parent_source_pk='harmonization_unit_id', child_model=models.SourceTrait,
             child_source_pk='component_trait_id', child_related_name='component_source_traits',
             import_parent_pks=new_harmonization_unit_pks)
-        logger.info("Added {} component source traits".format(len(new_component_source_trait_links_to_unit)))
+        logger.info("Added {} component source trait links to harmonization units".format(
+            len(new_component_source_trait_links_to_unit)))
 
         new_component_harmonized_trait_links_to_unit = self._import_new_m2m_field(
             source_db=source_db, source_table='component_harmonized_trait_set', parent_model=models.HarmonizationUnit,
@@ -1053,7 +1102,7 @@ class Command(BaseCommand):
             child_source_pk='component_trait_set_version_id',
             child_related_name='component_harmonized_trait_set_versions',
             import_parent_pks=new_harmonization_unit_pks)
-        logger.info("Added {} component harmonized trait set versions".format(
+        logger.info("Added {} component harmonized trait set version links to harmonization units".format(
             len(new_component_harmonized_trait_links_to_unit)))
 
         new_component_batch_trait_links_to_unit = self._import_new_m2m_field(
@@ -1061,21 +1110,24 @@ class Command(BaseCommand):
             parent_source_pk='harmonization_unit_id', child_model=models.SourceTrait,
             child_source_pk='component_trait_id', child_related_name='component_batch_traits',
             import_parent_pks=new_harmonization_unit_pks)
-        logger.info("Added {} component batch traits".format(len(new_component_batch_trait_links_to_unit)))
+        logger.info("Added {} component batch trait links to harmonization units".format(
+            len(new_component_batch_trait_links_to_unit)))
 
         new_component_age_trait_links_to_unit = self._import_new_m2m_field(
             source_db=source_db, source_table='component_age_trait', parent_model=models.HarmonizationUnit,
             parent_source_pk='harmonization_unit_id', child_model=models.SourceTrait,
             child_source_pk='component_trait_id', child_related_name='component_age_traits',
             import_parent_pks=new_harmonization_unit_pks)
-        logger.info("Added {} component age traits".format(len(new_component_age_trait_links_to_unit)))
+        logger.info("Added {} component age trait links to harmonization units".format(
+            len(new_component_age_trait_links_to_unit)))
 
         new_component_source_trait_links_to_trait = self._import_new_m2m_field(
             source_db=source_db, source_table='component_source_trait', parent_model=models.HarmonizedTrait,
             parent_source_pk='harmonized_trait_id', child_model=models.SourceTrait,
             child_source_pk='component_trait_id', child_related_name='component_source_traits',
             import_parent_pks=new_harmonized_trait_pks)
-        logger.info("Added {} component source traits".format(len(new_component_source_trait_links_to_trait)))
+        logger.info("Added {} component source trait links to harmonized traits".format(
+            len(new_component_source_trait_links_to_trait)))
 
         new_component_harmonized_trait_links_to_trait = self._import_new_m2m_field(
             source_db=source_db, source_table='component_harmonized_trait_set', parent_model=models.HarmonizedTrait,
@@ -1083,7 +1135,7 @@ class Command(BaseCommand):
             child_source_pk='component_trait_set_version_id',
             child_related_name='component_harmonized_trait_set_versions',
             import_parent_pks=new_harmonized_trait_pks)
-        logger.info("Added {} component harmonized trait sets".format(
+        logger.info("Added {} component harmonized trait set version links to harmonized traits".format(
             len(new_component_harmonized_trait_links_to_trait)))
 
         new_component_batch_trait_links_to_trait = self._import_new_m2m_field(
@@ -1091,14 +1143,15 @@ class Command(BaseCommand):
             parent_source_pk='harmonized_trait_id', child_model=models.SourceTrait,
             child_source_pk='component_trait_id', child_related_name='component_batch_traits',
             import_parent_pks=new_harmonized_trait_pks)
-        logger.info("Added {} component batch traits".format(len(new_component_batch_trait_links_to_trait)))
+        logger.info("Added {} component batch trait links to harmonized traits".format(
+            len(new_component_batch_trait_links_to_trait)))
 
         new_harmonization_unit_harmonized_trait_links = self._import_new_m2m_field(
             source_db=source_db, query=HUNIT_QUERY, parent_model=models.HarmonizedTrait,
             parent_source_pk='harmonized_trait_id', child_model=models.HarmonizationUnit,
             child_source_pk='harmonization_unit_id', child_related_name='harmonization_units',
             import_parent_pks=new_harmonized_trait_pks)
-        logger.info("Added {} harmonized_traits to harmonization units".format(
+        logger.info("Added {} harmonization unit links to harmonized traits".format(
             len(new_harmonization_unit_harmonized_trait_links)))
 
         new_allowed_update_reason_links = self._import_new_m2m_field(
@@ -1107,7 +1160,7 @@ class Command(BaseCommand):
             parent_source_pk='harmonized_trait_set_version_id', child_model=models.AllowedUpdateReason,
             child_source_pk='reason_id',
             child_related_name='update_reasons', import_parent_pks=new_harmonized_trait_set_version_pks)
-        logger.info("Added {} harmonized trait set version allowed update reason links".format(
+        logger.info("Added {} update reason links to harmonized trait set versions".format(
             len(new_allowed_update_reason_links)))
 
     def _update_source_tables(self, source_db):
@@ -1187,9 +1240,9 @@ class Command(BaseCommand):
             source_db=source_db, source_table='component_source_trait', parent_model=models.HarmonizationUnit,
             parent_source_pk='harmonization_unit_id', child_model=models.SourceTrait,
             child_source_pk='component_trait_id', child_related_name='component_source_traits', expected=False)
-        logger.info("Update: added {} component source traits".format(
+        logger.info("Update: added {} component source trait links to harmonization unit".format(
             len(updated_component_source_trait_links_to_unit['added'])))
-        logger.info("Update: removed {} component source traits".format(
+        logger.info("Update: removed {} component source trait links from harmonization unit".format(
             len(updated_component_source_trait_links_to_unit['removed'])))
 
         updated_component_harmonized_trait_links_to_unit = self._update_m2m_field(
@@ -1198,36 +1251,36 @@ class Command(BaseCommand):
             child_source_pk='component_trait_set_version_id',
             child_related_name='component_harmonized_trait_set_versions',
             expected=False)
-        logger.info("Update: added {} component harmonized trait sets".format(
+        logger.info("Update: added {} component harmonized trait set versions to harmonization units".format(
             len(updated_component_harmonized_trait_links_to_unit['added'])))
-        logger.info("Update: removed {} component harmonized trait sets".format(
+        logger.info("Update: removed {} component harmonized trait set versions from harmonization units".format(
             len(updated_component_harmonized_trait_links_to_unit['removed'])))
 
         updated_component_batch_trait_links_to_unit = self._update_m2m_field(
             source_db=source_db, source_table='component_batch_trait', parent_model=models.HarmonizationUnit,
             parent_source_pk='harmonization_unit_id', child_model=models.SourceTrait,
             child_source_pk='component_trait_id', child_related_name='component_batch_traits', expected=False)
-        logger.info("Update: added {} component batch traits".format(
+        logger.info("Update: added {} component batch trait links to harmonization units".format(
             len(updated_component_batch_trait_links_to_unit['added'])))
-        logger.info("Update: removed {} component batch traits".format(
+        logger.info("Update: removed {} component batch trait links from harmonization units".format(
             len(updated_component_batch_trait_links_to_unit['removed'])))
 
         updated_component_age_trait_links_to_unit = self._update_m2m_field(
             source_db=source_db, source_table='component_age_trait', parent_model=models.HarmonizationUnit,
             parent_source_pk='harmonization_unit_id', child_model=models.SourceTrait,
             child_source_pk='component_trait_id', child_related_name='component_age_traits', expected=False)
-        logger.info("Update: added {} component age traits".format(
+        logger.info("Update: added {} component age trait links to harmonization units".format(
             len(updated_component_age_trait_links_to_unit['added'])))
-        logger.info("Update: removed {} component age traits".format(
+        logger.info("Update: removed {} component age trait links from harmonization units".format(
             len(updated_component_age_trait_links_to_unit['removed'])))
 
         updated_component_source_trait_links_to_trait = self._update_m2m_field(
             source_db=source_db, source_table='component_source_trait', parent_model=models.HarmonizedTrait,
             parent_source_pk='harmonized_trait_id', child_model=models.SourceTrait,
             child_source_pk='component_trait_id', child_related_name='component_source_traits', expected=False)
-        logger.info("Update: added {} component source traits".format(
+        logger.info("Update: added {} component source trait links to harmonized traits".format(
             len(updated_component_source_trait_links_to_trait['added'])))
-        logger.info("Update: removed {} component source traits".format(
+        logger.info("Update: removed {} component source trait links from harmonized traits".format(
             len(updated_component_source_trait_links_to_trait['removed'])))
 
         updated_component_harmonized_trait_links_to_trait = self._update_m2m_field(
@@ -1236,27 +1289,27 @@ class Command(BaseCommand):
             child_source_pk='component_trait_set_version_id',
             child_related_name='component_harmonized_trait_set_versions',
             expected=False)
-        logger.info("Update: added {} component harmonized trait set versions".format(
+        logger.info("Update: added {} component harmonized trait set version links to harmonized traits".format(
             len(updated_component_harmonized_trait_links_to_trait['added'])))
-        logger.info("Update: removed {} component harmonized trait set versions".format(
+        logger.info("Update: removed {} component harmonized trait set version links from harmonized traits".format(
             len(updated_component_harmonized_trait_links_to_trait['removed'])))
 
         updated_component_batch_trait_links_to_trait = self._update_m2m_field(
             source_db=source_db, source_table='component_batch_trait', parent_model=models.HarmonizedTrait,
             parent_source_pk='harmonized_trait_id', child_model=models.SourceTrait,
             child_source_pk='component_trait_id', child_related_name='component_batch_traits', expected=False)
-        logger.info("Update: added {} component batch traits".format(
+        logger.info("Update: added {} component batch trait links to harmonized traits".format(
             len(updated_component_batch_trait_links_to_trait['added'])))
-        logger.info("Update: removed {} component batch traits".format(
+        logger.info("Update: removed {} component batch trait links from harmonized traits".format(
             len(updated_component_batch_trait_links_to_trait['removed'])))
 
         updated_harmonization_unit_harmonized_trait_links = self._update_m2m_field(
             source_db=source_db, query=HUNIT_QUERY, parent_model=models.HarmonizedTrait,
             parent_source_pk='harmonized_trait_id', child_model=models.HarmonizationUnit,
             child_source_pk='harmonization_unit_id', child_related_name='harmonization_units', expected=False)
-        logger.info("Update: added {} harmonized_traits to harmonization units".format(
+        logger.info("Update: added {} harmonization unit links to harmonized traits".format(
             len(updated_harmonization_unit_harmonized_trait_links['added'])))
-        logger.info("Update: removed {} harmonized_traits to harmonization units".format(
+        logger.info("Update: removed {} harmonization unit links from harmonized traits".format(
             len(updated_harmonization_unit_harmonized_trait_links['removed'])))
 
         updated_harmonized_trait_set_version_update_reason_links = self._update_m2m_field(
@@ -1265,9 +1318,9 @@ class Command(BaseCommand):
             child_model=models.AllowedUpdateReason, child_source_pk='reason_id', child_related_name='update_reasons',
             expected=False
         )
-        logger.info("Update: added {} update_reasons to harmonized trait set versions".format(
+        logger.info("Update: added {} update reason links to harmonized trait set versions".format(
             len(updated_harmonized_trait_set_version_update_reason_links['added'])))
-        logger.info("Update: removed {} update_reasons from harmonized trait set versions".format(
+        logger.info("Update: removed {} update reason links from harmonized trait set versions".format(
             len(updated_harmonized_trait_set_version_update_reason_links['removed'])))
 
         htrait_set_update_count = self._update_existing_data(
@@ -1322,6 +1375,9 @@ class Command(BaseCommand):
         only_group.add_argument(
             '--import_only', action='store_true',
             help='Only import new db records, and do not update records that are already imported.')
+        parser.add_argument('--taggedtrait_creator', action='store', type=str, default=None, required=True,
+                            help="""Email address for the user account that will be set as the creator of any
+                                    tagged traits that are created from apply_previous_tags().""")
 
     def handle(self, *args, **options):
         """Handle the main functions of this management command.
@@ -1369,7 +1425,7 @@ class Command(BaseCommand):
             self._update_source_tables(source_db=source_db)
             self._update_harmonized_tables(source_db=source_db)
         if not options.get('update_only'):
-            self._import_source_tables(source_db=source_db)
+            self._import_source_tables(source_db=source_db, taggedtrait_creator=options.get('taggedtrait_creator'))
             self._import_harmonized_tables(source_db=source_db)
         # Unlock the db connection.
         self._unlock_source_db(source_db)

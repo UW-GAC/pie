@@ -1,9 +1,11 @@
 """Test the functions and classes for views.py."""
 
 from copy import copy
+from datetime import timedelta
 
 from django.contrib.auth.models import Group
 from django.urls import reverse
+from django.utils import timezone
 
 from core.utils import (DCCAnalystLoginTestCase, get_autocomplete_view_ids, LoginRequiredTestCase,
                         PhenotypeTaggerLoginTestCase, UserLoginTestCase)
@@ -29,9 +31,12 @@ class StudyDetailTest(UserLoginTestCase):
     def setUp(self):
         super(StudyDetailTest, self).setUp()
         self.study = factories.StudyFactory.create()
-        self.source_traits = factories.SourceTraitFactory.create_batch(
-            10, source_dataset__source_study_version__i_is_deprecated=False,
-            source_dataset__source_study_version__study=self.study)
+        self.study_version = factories.SourceStudyVersionFactory.create(study=self.study, i_is_deprecated=False)
+        self.datasets = factories.SourceDatasetFactory.create_batch(2, source_study_version=self.study_version)
+        for dataset in self.datasets:
+            factories.SourceTraitFactory.create_batch(5, source_dataset=dataset)
+        self.source_traits = list(models.SourceTrait.objects.filter(
+            source_dataset__source_study_version=self.study_version))
 
     def get_url(self, *args):
         return reverse('trait_browser:source:studies:pk:detail', args=args)
@@ -64,7 +69,78 @@ class StudyDetailTest(UserLoginTestCase):
             10, trait__source_dataset__source_study_version__study=self.study)
         response = self.client.get(self.get_url(self.study.pk))
         context = response.context
-        self.assertContains(response, self.get_url(self.study.pk))
+        self.assertContains(response, reverse('trait_browser:source:studies:pk:traits:tagged', args=[self.study.pk]))
+
+    def test_no_tagged_trait_button_present_for_deprecated_tagged_trait(self):
+        """The button to show tagged traits is not present with only deprecated tagged traits for the study."""
+        tagged_traits = TaggedTraitFactory.create_batch(
+            10,
+            trait__source_dataset__source_study_version__study=self.study,
+            trait__source_dataset__source_study_version__i_is_deprecated=True
+        )
+        response = self.client.get(self.get_url(self.study.pk))
+        context = response.context
+        expected_url = reverse('trait_browser:source:studies:pk:traits:tagged', args=[self.study.pk])
+        self.assertNotContains(response, expected_url)
+
+    def test_no_new_trait_button_with_no_new_variables(self):
+        """The button to show new traits is not present if there are no new traits."""
+        self.study_version.i_is_deprecated = True
+        self.study_version.save()
+        new_version = factories.SourceStudyVersionFactory.create(
+            study=self.study, i_version=self.study_version.i_version + 1, i_date_added=timezone.now())
+        for x in self.source_traits:
+            factories.SourceTraitFactory.create(
+                source_dataset__source_study_version=new_version,
+                i_dbgap_variable_accession=x.i_dbgap_variable_accession)
+        response = self.client.get(self.get_url(self.study.pk))
+        context = response.context
+        self.assertIn('show_new_trait_button', context)
+        self.assertFalse(context['show_new_trait_button'])
+        self.assertNotContains(response, reverse('trait_browser:source:studies:pk:traits:new', args=[self.study.pk]))
+
+    def test_new_trait_button_with_new_variables(self):
+        """The button to show new traits is present if there are new traits."""
+        new_study_version = factories.SourceStudyVersionFactory.create(
+            study=self.study,
+            i_version=self.study_version.i_version + 1,
+            i_date_added=timezone.now())
+        # Create a new trait in this version
+        new_traits = factories.SourceTraitFactory.create_batch(
+            2, source_dataset__source_study_version=new_study_version)
+        response = self.client.get(self.get_url(self.study.pk))
+        context = response.context
+        self.assertIn('show_new_trait_button', context)
+        self.assertTrue(context['show_new_trait_button'])
+        self.assertContains(response, reverse('trait_browser:source:studies:pk:traits:new', args=[self.study.pk]))
+
+    def test_no_new_dataset_button_with_no_new_datasets(self):
+        """The button to show new datasets is not present if there are no new datasets."""
+        self.study_version.i_is_deprecated = True
+        self.study_version.save()
+        new_version = factories.SourceStudyVersionFactory.create(
+            study=self.study, i_version=self.study_version.i_version + 1, i_date_added=timezone.now())
+        for dataset in self.datasets:
+            factories.SourceDatasetFactory.create(
+                source_study_version=new_version, i_accession=dataset.i_accession)
+        response = self.client.get(self.get_url(self.study.pk))
+        context = response.context
+        self.assertIn('show_new_dataset_button', context)
+        self.assertFalse(context['show_new_dataset_button'])
+        self.assertNotContains(response, reverse('trait_browser:source:studies:pk:datasets:new', args=[self.study.pk]))
+
+    def test_new_dataset_button_with_new_datasets(self):
+        """The button to show new datasets is present if there are new datasets."""
+        self.study_version.i_is_deprecated = True
+        self.study_version.save()
+        new_version = factories.SourceStudyVersionFactory.create(
+            study=self.study, i_version=self.study_version.i_version + 1, i_date_added=timezone.now())
+        new_dataset = factories.SourceDatasetFactory.create(source_study_version=new_version)
+        response = self.client.get(self.get_url(self.study.pk))
+        context = response.context
+        self.assertIn('show_new_dataset_button', context)
+        self.assertTrue(context['show_new_dataset_button'])
+        self.assertContains(response, reverse('trait_browser:source:studies:pk:datasets:new', args=[self.study.pk]))
 
 
 class StudyListTest(UserLoginTestCase):
@@ -588,6 +664,18 @@ class StudyNameOrPHSAutocompleteTest(UserLoginTestCase):
         pks = get_autocomplete_view_ids(response)
         self.assertEqual(sorted([study.pk for study in self.studies]), sorted(pks))
 
+    def test_does_not_return_study_with_deprecated_tagged_trait_for_given_tag_with_only(self):
+        """With tag and only arg forwarded, does not return study with deprecated tagged traits."""
+        tag = TagFactory.create()
+        study = self.studies[0]
+        tagged_trait = TaggedTraitFactory.create(
+            tag=tag, trait__source_dataset__source_study_version__study=study,
+            trait__source_dataset__source_study_version__i_is_deprecated=True)
+        get_data = {'q': '', 'forward': ['{"tag":"' + str(tag.pk) + '",' + self.only_arg + '}']}
+        response = self.client.get(self.get_url(), get_data)
+        pks = get_autocomplete_view_ids(response)
+        self.assertNotIn(study.pk, pks)
+
 
 class StudySourceTableViewsTest(UserLoginTestCase):
     """Unit tests for the SourceTrait by Study views."""
@@ -661,39 +749,90 @@ class SourceDatasetDetailTest(UserLoginTestCase):
         self.assertIn('trait_table', context)
         self.assertIsInstance(context['trait_table'], tables.SourceTraitDatasetTable)
         self.assertIn('trait_count', context)
-        self.assertIn('show_deprecated_message', context)
-        self.assertFalse(context['show_deprecated_message'])
-        self.assertNotIn('deprecation_message', context)
+        self.assertIn('is_deprecated', context)
+        self.assertIn('show_removed_text', context)
+        self.assertIn('new_version_link', context)
 
     def test_context_deprecated_dataset_with_no_newer_version(self):
         """View has appropriate deprecation message with no newer version."""
-        sv = self.dataset.source_study_version
-        sv.i_is_deprecated = True
-        sv.save()
-        response = self.client.get(self.get_url(self.dataset.pk))
-        context = response.context
-        self.assertIn('show_deprecated_message', context)
-        self.assertTrue(context['show_deprecated_message'])
-        self.assertIn('deprecation_message', context)
-        self.assertIn("was removed from the most recent study version", context['deprecation_message'])
-
-    def test_context_deprecated_dataset_with_newer_version(self):
-        """View has appropriate deprecation message with a newer version."""
-        sv = self.dataset.source_study_version
-        sv.i_is_deprecated = True
-        sv.save()
-        current_dataset = factories.SourceDatasetFactory.create(
-            source_study_version__study=sv.study,
-            i_accession=self.dataset.i_accession,
-            i_version=self.dataset.i_version
+        source_study_version1 = self.dataset.source_study_version
+        source_study_version1.i_is_deprecated = True
+        source_study_version1.save()
+        source_study_version2 = factories.SourceStudyVersionFactory.create(
+            study=source_study_version1.study,
+            i_is_deprecated=False,
+            i_version=source_study_version1.i_version + 1
         )
         response = self.client.get(self.get_url(self.dataset.pk))
         context = response.context
-        self.assertIn('show_deprecated_message', context)
-        self.assertTrue(context['show_deprecated_message'])
-        self.assertIn('deprecation_message', context)
-        self.assertIn("There is a newer version", context['deprecation_message'])
-        self.assertIn(current_dataset.get_absolute_url(), context['deprecation_message'])
+        self.assertTrue(context['is_deprecated'])
+        self.assertTrue(context['show_removed_text'])
+        self.assertIsNone(context['new_version_link'])
+        self.assertContains(response, '<div class="alert alert-danger" role="alert" id="removed_deprecated_dataset">')
+        self.assertNotContains(
+            response, '<div class="alert alert-danger" role="alert" id="updated_deprecated_dataset">')
+
+    def test_context_deprecated_dataset_with_newer_version(self):
+        """View has appropriate deprecation message with a newer version."""
+        study = factories.StudyFactory.create()
+        source_study_version1 = factories.SourceStudyVersionFactory.create(
+            study=study, i_is_deprecated=True, i_version=1)
+        source_study_version2 = factories.SourceStudyVersionFactory.create(
+            study=study, i_is_deprecated=False, i_version=2)
+        source_dataset1 = factories.SourceDatasetFactory.create(source_study_version=source_study_version1)
+        source_dataset2 = factories.SourceDatasetFactory.create(
+            source_study_version=source_study_version2,
+            i_accession=source_dataset1.i_accession,
+            i_version=source_dataset1.i_version,
+            i_is_subject_file=source_dataset1.i_is_subject_file,
+            i_study_subject_column=source_dataset1.i_study_subject_column,
+            i_dbgap_description=source_dataset1.i_dbgap_description
+        )
+        response = self.client.get(self.get_url(source_dataset1.pk))
+        context = response.context
+        self.assertTrue(context['is_deprecated'])
+        self.assertFalse(context['show_removed_text'])
+        self.assertEqual(context['new_version_link'], source_dataset2.get_absolute_url())
+        self.assertContains(response, context['new_version_link'])
+        self.assertNotContains(
+            response, '<div class="alert alert-danger" role="alert" id="removed_deprecated_dataset">')
+        self.assertContains(response, '<div class="alert alert-danger" role="alert" id="updated_deprecated_dataset">')
+
+    def test_context_deprecated_dataset_with_two_new_versions(self):
+        """View has appropriate deprecation message with a newer version."""
+        study = factories.StudyFactory.create()
+        source_study_version1 = factories.SourceStudyVersionFactory.create(
+            study=study, i_is_deprecated=True, i_version=1)
+        source_study_version2 = factories.SourceStudyVersionFactory.create(
+            study=study, i_is_deprecated=True, i_version=2)
+        source_study_version3 = factories.SourceStudyVersionFactory.create(
+            study=study, i_is_deprecated=False, i_version=3)
+        source_dataset1 = factories.SourceDatasetFactory.create(source_study_version=source_study_version1)
+        source_dataset2 = factories.SourceDatasetFactory.create(
+            source_study_version=source_study_version2,
+            i_accession=source_dataset1.i_accession,
+            i_version=source_dataset1.i_version,
+            i_is_subject_file=source_dataset1.i_is_subject_file,
+            i_study_subject_column=source_dataset1.i_study_subject_column,
+            i_dbgap_description=source_dataset1.i_dbgap_description
+        )
+        source_dataset3 = factories.SourceDatasetFactory.create(
+            source_study_version=source_study_version3,
+            i_accession=source_dataset1.i_accession,
+            i_version=source_dataset1.i_version,
+            i_is_subject_file=source_dataset1.i_is_subject_file,
+            i_study_subject_column=source_dataset1.i_study_subject_column,
+            i_dbgap_description=source_dataset1.i_dbgap_description
+        )
+        response = self.client.get(self.get_url(source_dataset1.pk))
+        context = response.context
+        self.assertTrue(context['is_deprecated'])
+        self.assertFalse(context['show_removed_text'])
+        self.assertEqual(context['new_version_link'], source_dataset3.get_absolute_url())
+        self.assertContains(response, context['new_version_link'])
+        self.assertNotContains(
+            response, '<div class="alert alert-danger" role="alert" id="removed_deprecated_dataset">')
+        self.assertContains(response, '<div class="alert alert-danger" role="alert" id="updated_deprecated_dataset">')
 
 
 class SourceDatasetListTest(UserLoginTestCase):
@@ -800,6 +939,120 @@ class StudySourceDatasetListTest(UserLoginTestCase):
         context = response.context
         table = context['source_dataset_table']
         self.assertEqual(len(table.rows), 0)
+
+
+class StudySourceDatasetNewListTest(UserLoginTestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.study = factories.StudyFactory.create()
+        now = timezone.now()
+        self.study_version_1 = factories.SourceStudyVersionFactory.create(
+            study=self.study, i_version=1, i_date_added=now - timedelta(hours=2), i_is_deprecated=True)
+        self.study_version_2 = factories.SourceStudyVersionFactory.create(
+            study=self.study, i_version=2, i_date_added=now - timedelta(hours=1), i_is_deprecated=True)
+        self.study_version_3 = factories.SourceStudyVersionFactory.create(
+            study=self.study, i_version=3, i_date_added=now)
+        # Convert these lists to prevent queryset evaluation later on, after other datasets have been created.
+        # Create datasets for the first version.
+        self.datasets_v1 = list(factories.SourceDatasetFactory.create_batch(
+            5, source_study_version=self.study_version_1))
+        # Create datasets with the same accessions for the second and third versions.
+        for x in self.datasets_v1:
+            d2 = factories.SourceDatasetFactory.create(
+                source_study_version=self.study_version_2, i_accession=x.i_accession)
+            factories.SourceTraitFactory.create_batch(2, source_dataset=d2)
+            d3 = factories.SourceDatasetFactory.create(
+                source_study_version=self.study_version_3, i_accession=x.i_accession)
+            factories.SourceTraitFactory.create_batch(2, source_dataset=d3)
+        self.datasets_v2 = list(models.SourceDataset.objects.filter(source_study_version=self.study_version_2))
+        self.datasets_v3 = list(models.SourceDataset.objects.filter(source_study_version=self.study_version_3))
+
+    def get_url(self, *args):
+        return reverse('trait_browser:source:studies:pk:datasets:new', args=args)
+
+    def test_context_data(self):
+        """View has appropriate data in the context."""
+        new_dataset = factories.SourceDatasetFactory.create(
+            source_study_version=self.study_version_3)
+        response = self.client.get(self.get_url(self.study.pk))
+        context = response.context
+        self.assertIn('study', context)
+        self.assertIn('trait_count', context)
+        self.assertIn('dataset_count', context)
+        self.assertEqual(context['study'], self.study)
+        self.assertEqual(context['trait_count'], '{:,}'.format(models.SourceTrait.objects.filter(
+            source_dataset__source_study_version=self.study_version_3).count()))
+        self.assertEqual(context['dataset_count'], '{:,}'.format(len(self.datasets_v3) + 1))
+
+    def test_no_deprecated_datasets_in_table(self):
+        """No deprecated datasets are shown in the table."""
+        response = self.client.get(self.get_url(self.study.pk))
+        context = response.context
+        table = context['source_dataset_table']
+        for dataset in self.datasets_v1:
+            self.assertNotIn(dataset, table.data)
+        for dataset in self.datasets_v2:
+            self.assertNotIn(dataset, table.data)
+
+    def test_no_updated_datasets(self):
+        """Table does not include new datasets that also exist in previous version."""
+        response = self.client.get(self.get_url(self.study.pk))
+        context = response.context
+        table = context['source_dataset_table']
+        for dataset in self.datasets_v3:
+            self.assertNotIn(dataset, table.data)
+
+    def test_no_removed_datasets(self):
+        """Table does not include datasets that only exist in previous version."""
+        removed_dataset_1 = factories.SourceDatasetFactory.create(source_study_version=self.study_version_1)
+        removed_dataset_2 = factories.SourceDatasetFactory.create(
+            source_study_version=self.study_version_2, i_accession=removed_dataset_1.i_accession)
+        response = self.client.get(self.get_url(self.study.pk))
+        context = response.context
+        table = context['source_dataset_table']
+        self.assertNotIn(removed_dataset_1, table.data)
+        self.assertNotIn(removed_dataset_2, table.data)
+        self.assertEqual(len(table.data), 0)
+
+    def test_includes_one_new_dataset(self):
+        """Table includes one new dataset in this version."""
+        new_dataset = factories.SourceDatasetFactory.create(source_study_version=self.study_version_3)
+        response = self.client.get(self.get_url(self.study.pk))
+        context = response.context
+        table = context['source_dataset_table']
+        self.assertIn(new_dataset, table.data)
+
+    def test_includes_two_new_datasets(self):
+        """Table includes two new datasets in this version."""
+        new_datasets = factories.SourceDatasetFactory.create_batch(2, source_study_version=self.study_version_3)
+        response = self.client.get(self.get_url(self.study.pk))
+        context = response.context
+        table = context['source_dataset_table']
+        for new_dataset in new_datasets:
+            self.assertIn(new_dataset, table.data)
+
+    def test_no_previous_study_version(self):
+        """Works if there is no previous version of the study."""
+        self.study_version_1.delete()
+        self.study_version_2.delete()
+        response = self.client.get(self.get_url(self.study.pk))
+        context = response.context
+        table = context['source_dataset_table']
+        self.assertEqual(len(table.data), 0)
+        for dataset in self.datasets_v3:
+            self.assertNotIn(dataset, table.data)
+
+    def test_does_not_compare_with_two_versions_ago(self):
+        """Does not include datasets that were new in an older previous version but not the most recent version of the study."""  # noqa
+        new_dataset_2 = factories.SourceDatasetFactory.create(source_study_version=self.study_version_2)
+        new_dataset_3 = factories.SourceDatasetFactory.create(
+            source_study_version=self.study_version_3,
+            i_accession=new_dataset_2.i_accession)
+        response = self.client.get(self.get_url(self.study.pk))
+        context = response.context
+        table = context['source_dataset_table']
+        self.assertNotIn(new_dataset_3, table.data)
 
 
 class SourceDatasetSearchTest(UserLoginTestCase):
@@ -1999,39 +2252,128 @@ class SourceTraitDetailTest(UserLoginTestCase):
                          list(self.trait.all_taggedtraits.non_archived()))
         self.assertIn('user_is_study_tagger', context)
         self.assertFalse(context['user_is_study_tagger'])
-        self.assertIn('show_deprecated_message', context)
-        self.assertFalse(context['show_deprecated_message'])
-        self.assertNotIn('deprecation_message', context)
+        self.assertIn('is_deprecated', context)
+        self.assertIn('show_removed_text', context)
+        self.assertIn('new_version_link', context)
 
     def test_context_deprecated_trait_with_no_newer_version(self):
         """View has appropriate deprecation message with no newer version."""
-        sv = self.trait.source_dataset.source_study_version
-        sv.i_is_deprecated = True
-        sv.save()
-        response = self.client.get(self.get_url(self.trait.pk))
-        context = response.context
-        self.assertIn('show_deprecated_message', context)
-        self.assertTrue(context['show_deprecated_message'])
-        self.assertIn('deprecation_message', context)
-        self.assertIn("was removed from the most recent study version", context['deprecation_message'])
-
-    def test_context_deprecated_trait_with_newer_version(self):
-        """View has appropriate deprecation message with a newer version."""
-        sv = self.trait.source_dataset.source_study_version
-        sv.i_is_deprecated = True
-        sv.save()
-        current_dataset = factories.SourceTraitFactory.create(
-            source_dataset__source_study_version__study=sv.study,
-            i_dbgap_variable_accession=self.trait.i_dbgap_variable_accession,
-            i_dbgap_variable_version=self.trait.i_dbgap_variable_version
+        source_study_version1 = self.trait.source_dataset.source_study_version
+        source_study_version1.i_is_deprecated = True
+        source_study_version1.save()
+        source_study_version2 = factories.SourceStudyVersionFactory.create(
+            study=source_study_version1.study,
+            i_is_deprecated=False,
+            i_version=source_study_version1.i_version + 1
         )
         response = self.client.get(self.get_url(self.trait.pk))
         context = response.context
-        self.assertIn('show_deprecated_message', context)
-        self.assertTrue(context['show_deprecated_message'])
-        self.assertIn('deprecation_message', context)
-        self.assertIn("There is a newer version", context['deprecation_message'])
-        self.assertIn(current_dataset.get_absolute_url(), context['deprecation_message'])
+        self.assertTrue(context['is_deprecated'])
+        self.assertTrue(context['show_removed_text'])
+        self.assertIsNone(context['new_version_link'])
+        self.assertContains(response, '<div class="alert alert-danger" role="alert" id="removed_deprecated_trait">')
+        self.assertNotContains(response, '<div class="alert alert-danger" role="alert" id="updated_deprecated_trait">')
+
+    def test_context_deprecated_trait_with_new_version(self):
+        """View has appropriate deprecation message with a newer version."""
+        study = factories.StudyFactory.create()
+        source_study_version1 = factories.SourceStudyVersionFactory.create(
+            study=study, i_is_deprecated=True, i_version=1)
+        source_study_version2 = factories.SourceStudyVersionFactory.create(
+            study=study, i_is_deprecated=False, i_version=2)
+        source_dataset1 = factories.SourceDatasetFactory.create(source_study_version=source_study_version1)
+        source_dataset2 = factories.SourceDatasetFactory.create(
+            source_study_version=source_study_version2,
+            i_accession=source_dataset1.i_accession,
+            i_version=source_dataset1.i_version,
+            i_is_subject_file=source_dataset1.i_is_subject_file,
+            i_study_subject_column=source_dataset1.i_study_subject_column,
+            i_dbgap_description=source_dataset1.i_dbgap_description
+        )
+        trait1 = factories.SourceTraitFactory.create(source_dataset=source_dataset1)
+        trait2 = factories.SourceTraitFactory.create(
+            source_dataset=source_dataset2,
+            i_detected_type=trait1.i_detected_type,
+            i_dbgap_type=trait1.i_dbgap_type,
+            i_dbgap_variable_accession=trait1.i_dbgap_variable_accession,
+            i_dbgap_variable_version=trait1.i_dbgap_variable_version,
+            i_dbgap_comment=trait1.i_dbgap_comment,
+            i_dbgap_unit=trait1.i_dbgap_unit,
+            i_n_records=trait1.i_n_records,
+            i_n_missing=trait1.i_n_missing,
+            i_is_unique_key=trait1.i_is_unique_key,
+            i_are_values_truncated=trait1.i_are_values_truncated
+        )
+        response = self.client.get(self.get_url(trait1.pk))
+        context = response.context
+        self.assertTrue(context['is_deprecated'])
+        self.assertFalse(context['show_removed_text'])
+        self.assertEqual(context['new_version_link'], trait2.get_absolute_url())
+        self.assertContains(response, context['new_version_link'])
+        self.assertNotContains(response, '<div class="alert alert-danger" role="alert" id="removed_deprecated_trait">')
+        self.assertContains(response, '<div class="alert alert-danger" role="alert" id="updated_deprecated_trait">')
+
+    def test_context_deprecated_trait_with_two_new_versions(self):
+        """View has appropriate deprecation message with a newer version."""
+        study = factories.StudyFactory.create()
+        source_study_version1 = factories.SourceStudyVersionFactory.create(
+            study=study, i_is_deprecated=True, i_version=1)
+        source_study_version2 = factories.SourceStudyVersionFactory.create(
+            study=study, i_is_deprecated=True, i_version=2)
+        source_study_version3 = factories.SourceStudyVersionFactory.create(
+            study=study, i_is_deprecated=False, i_version=3)
+        source_dataset1 = factories.SourceDatasetFactory.create(source_study_version=source_study_version1)
+        source_dataset2 = factories.SourceDatasetFactory.create(
+            source_study_version=source_study_version2,
+            i_accession=source_dataset1.i_accession,
+            i_version=source_dataset1.i_version,
+            i_is_subject_file=source_dataset1.i_is_subject_file,
+            i_study_subject_column=source_dataset1.i_study_subject_column,
+            i_dbgap_description=source_dataset1.i_dbgap_description
+        )
+        source_dataset3 = factories.SourceDatasetFactory.create(
+            source_study_version=source_study_version3,
+            i_accession=source_dataset1.i_accession,
+            i_version=source_dataset1.i_version,
+            i_is_subject_file=source_dataset1.i_is_subject_file,
+            i_study_subject_column=source_dataset1.i_study_subject_column,
+            i_dbgap_description=source_dataset1.i_dbgap_description
+        )
+        trait1 = factories.SourceTraitFactory.create(source_dataset=source_dataset1)
+        trait2 = factories.SourceTraitFactory.create(
+            source_dataset=source_dataset2,
+            i_detected_type=trait1.i_detected_type,
+            i_dbgap_type=trait1.i_dbgap_type,
+            i_dbgap_variable_accession=trait1.i_dbgap_variable_accession,
+            i_dbgap_variable_version=trait1.i_dbgap_variable_version,
+            i_dbgap_comment=trait1.i_dbgap_comment,
+            i_dbgap_unit=trait1.i_dbgap_unit,
+            i_n_records=trait1.i_n_records,
+            i_n_missing=trait1.i_n_missing,
+            i_is_unique_key=trait1.i_is_unique_key,
+            i_are_values_truncated=trait1.i_are_values_truncated
+        )
+        trait3 = factories.SourceTraitFactory.create(
+            source_dataset=source_dataset3,
+            i_detected_type=trait1.i_detected_type,
+            i_dbgap_type=trait1.i_dbgap_type,
+            i_dbgap_variable_accession=trait1.i_dbgap_variable_accession,
+            i_dbgap_variable_version=trait1.i_dbgap_variable_version,
+            i_dbgap_comment=trait1.i_dbgap_comment,
+            i_dbgap_unit=trait1.i_dbgap_unit,
+            i_n_records=trait1.i_n_records,
+            i_n_missing=trait1.i_n_missing,
+            i_is_unique_key=trait1.i_is_unique_key,
+            i_are_values_truncated=trait1.i_are_values_truncated
+        )
+        response = self.client.get(self.get_url(trait1.pk))
+        context = response.context
+        self.assertTrue(context['is_deprecated'])
+        self.assertFalse(context['show_removed_text'])
+        self.assertEqual(context['new_version_link'], trait3.get_absolute_url())
+        self.assertContains(response, context['new_version_link'])
+        self.assertNotContains(response, '<div class="alert alert-danger" role="alert" id="removed_deprecated_trait">')
+        self.assertContains(response, '<div class="alert alert-danger" role="alert" id="updated_deprecated_trait">')
 
     def test_no_tagged_trait_remove_button(self):
         """The tag removal button shows up."""
@@ -2042,6 +2384,16 @@ class SourceTraitDetailTest(UserLoginTestCase):
             self.assertFalse(b)
         for tt in tagged_traits:
             self.assertNotContains(response, reverse('tags:tagged-traits:pk:delete', kwargs={'pk': tt.pk}))
+
+    def test_has_no_archived_tagged_traits(self):
+        """An archived tagged trait is not included in the context."""
+        tagged_traits = TaggedTraitFactory.create_batch(2, trait=self.trait)
+        archived_tagged_trait = TaggedTraitFactory.create(trait=self.trait, archived=True)
+        response = self.client.get(self.get_url(self.trait.pk))
+        context = response.context
+        self.assertEqual([el[0] for el in context['tagged_traits_with_xs']],
+                         list(self.trait.all_taggedtraits.non_archived()))
+        self.assertNotIn(archived_tagged_trait, [el[0] for el in context['tagged_traits_with_xs']])
 
     def test_no_tagging_button(self):
         """Regular user does not see a button to add tags on this detail page."""
@@ -2081,6 +2433,16 @@ class SourceTraitDetailPhenotypeTaggerTest(PhenotypeTaggerLoginTestCase):
         context = response.context
         self.assertEqual([el[0] for el in context['tagged_traits_with_xs']],
                          list(self.trait.all_taggedtraits.non_archived()))
+
+    def test_has_no_archived_tagged_traits(self):
+        """An archived tagged trait is not included in the context."""
+        tagged_traits = TaggedTraitFactory.create_batch(2, trait=self.trait)
+        archived_tagged_trait = TaggedTraitFactory.create(trait=self.trait, archived=True)
+        response = self.client.get(self.get_url(self.trait.pk))
+        context = response.context
+        self.assertEqual([el[0] for el in context['tagged_traits_with_xs']],
+                         list(self.trait.all_taggedtraits.non_archived()))
+        self.assertNotIn(archived_tagged_trait, [el[0] for el in context['tagged_traits_with_xs']])
 
     def test_has_tagged_trait_remove_buttons(self):
         """The tag removal buttons shows up."""
@@ -2125,6 +2487,16 @@ class SourceTraitDetailPhenotypeTaggerTest(PhenotypeTaggerLoginTestCase):
         other_trait = factories.SourceTraitFactory.create()
         tagged_trait = TaggedTrait.objects.create(tag=self.tag, trait=other_trait, creator=self.user)
         response = self.client.get(self.get_url(other_trait.pk))
+        context = response.context
+        for (a, b) in context['tagged_traits_with_xs']:
+            self.assertFalse(b)
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:delete', kwargs={'pk': self.tag.pk}))
+
+    def test_no_tagged_trait_remove_button_if_deprecated(self):
+        study_version = self.trait.source_dataset.source_study_version
+        study_version.i_is_deprecated = True
+        study_version.save()
+        response = self.client.get(self.get_url(self.trait.pk))
         context = response.context
         for (a, b) in context['tagged_traits_with_xs']:
             self.assertFalse(b)
@@ -2186,6 +2558,16 @@ class SourceTraitDetailDCCAnalystTest(DCCAnalystLoginTestCase):
         self.assertEqual([el[0] for el in context['tagged_traits_with_xs']],
                          list(self.trait.all_taggedtraits.non_archived()))
 
+    def test_has_no_archived_tagged_traits(self):
+        """An archived tagged trait is not included in the context."""
+        tagged_traits = TaggedTraitFactory.create_batch(2, trait=self.trait)
+        archived_tagged_trait = TaggedTraitFactory.create(trait=self.trait, archived=True)
+        response = self.client.get(self.get_url(self.trait.pk))
+        context = response.context
+        self.assertEqual([el[0] for el in context['tagged_traits_with_xs']],
+                         list(self.trait.all_taggedtraits.non_archived()))
+        self.assertNotIn(archived_tagged_trait, [el[0] for el in context['tagged_traits_with_xs']])
+
     def test_has_tagged_trait_remove_buttons(self):
         """The tag removal buttons shows up."""
         tagged_traits = TaggedTraitFactory.create_batch(2, trait=self.trait)
@@ -2225,6 +2607,16 @@ class SourceTraitDetailDCCAnalystTest(DCCAnalystLoginTestCase):
                 self.assertTrue(b)
         self.assertNotContains(response, reverse('tags:tagged-traits:pk:delete', kwargs={'pk': tagged_traits[0].pk}))
         self.assertContains(response, reverse('tags:tagged-traits:pk:delete', kwargs={'pk': tagged_traits[1].pk}))
+
+    def test_no_tagged_trait_remove_button_if_deprecated(self):
+        study_version = self.trait.source_dataset.source_study_version
+        study_version.i_is_deprecated = True
+        study_version.save()
+        response = self.client.get(self.get_url(self.trait.pk))
+        context = response.context
+        for (a, b) in context['tagged_traits_with_xs']:
+            self.assertFalse(b)
+        self.assertNotContains(response, reverse('tags:tagged-traits:pk:delete', kwargs={'pk': self.tag.pk}))
 
     def test_has_tagging_button(self):
         """A DCC analyst does see a button to add tags on this detail page."""
@@ -2344,6 +2736,126 @@ class StudySourceTraitListTest(UserLoginTestCase):
         context = response.context
         table = context['source_trait_table']
         self.assertEqual(len(table.rows), 0)
+
+
+class StudySourceTraitNewListTest(UserLoginTestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.study = factories.StudyFactory.create()
+        now = timezone.now()
+        self.study_version_1 = factories.SourceStudyVersionFactory.create(
+            study=self.study, i_version=1, i_date_added=now - timedelta(hours=2), i_is_deprecated=True)
+        self.study_version_2 = factories.SourceStudyVersionFactory.create(
+            study=self.study, i_version=2, i_date_added=now - timedelta(hours=1), i_is_deprecated=True)
+        self.study_version_3 = factories.SourceStudyVersionFactory.create(
+            study=self.study, i_version=3, i_date_added=now)
+        # Convert these lists to prevent queryset evaluation later on, after other traits have been created.
+        # Create traits for the first version.
+        self.source_traits_v1 = list(factories.SourceTraitFactory.create_batch(
+            5, source_dataset__source_study_version=self.study_version_1))
+        # Create traits with the same accessions for the second and third versions.
+        for x in self.source_traits_v1:
+            factories.SourceTraitFactory.create(
+                source_dataset__source_study_version=self.study_version_2,
+                i_dbgap_variable_accession=x.i_dbgap_variable_accession)
+            factories.SourceTraitFactory.create(
+                source_dataset__source_study_version=self.study_version_3,
+                i_dbgap_variable_accession=x.i_dbgap_variable_accession)
+        self.source_traits_v2 = list(models.SourceTrait.objects.filter(
+            source_dataset__source_study_version=self.study_version_2))
+        self.source_traits_v3 = list(models.SourceTrait.objects.filter(
+            source_dataset__source_study_version=self.study_version_3))
+
+    def get_url(self, *args):
+        return reverse('trait_browser:source:studies:pk:traits:new', args=args)
+
+    def test_context_data(self):
+        """View has appropriate data in the context."""
+        new_trait = factories.SourceTraitFactory.create(
+            source_dataset__source_study_version=self.study_version_3)
+        response = self.client.get(self.get_url(self.study.pk))
+        context = response.context
+        self.assertIn('study', context)
+        self.assertIn('trait_count', context)
+        self.assertIn('dataset_count', context)
+        self.assertEqual(context['study'], self.study)
+        self.assertEqual(context['trait_count'], '{:,}'.format(len(self.source_traits_v3) + 1))
+        self.assertEqual(context['dataset_count'], '{:,}'.format(len(self.source_traits_v3) + 1))
+
+    def test_no_deprecated_traits_in_table(self):
+        """No deprecated traits are shown in the table."""
+        response = self.client.get(self.get_url(self.study.pk))
+        context = response.context
+        table = context['source_trait_table']
+        for trait in self.source_traits_v1:
+            self.assertNotIn(trait, table.data)
+        for trait in self.source_traits_v2:
+            self.assertNotIn(trait, table.data)
+
+    def test_no_updated_traits(self):
+        """Table does not include new traits that also exist in previous version."""
+        response = self.client.get(self.get_url(self.study.pk))
+        context = response.context
+        table = context['source_trait_table']
+        for trait in self.source_traits_v3:
+            self.assertNotIn(trait, table.data)
+
+    def test_no_removed_traits(self):
+        """Table does not include traits that only exist in previous version."""
+        removed_trait_1 = factories.SourceTraitFactory.create(
+            source_dataset__source_study_version=self.study_version_1)
+        removed_trait_2 = factories.SourceTraitFactory.create(
+            source_dataset__source_study_version=self.study_version_2,
+            i_dbgap_variable_accession=removed_trait_1.i_dbgap_variable_accession)
+        response = self.client.get(self.get_url(self.study.pk))
+        context = response.context
+        table = context['source_trait_table']
+        self.assertNotIn(removed_trait_1, table.data)
+        self.assertNotIn(removed_trait_2, table.data)
+        self.assertEqual(len(table.data), 0)
+
+    def test_includes_one_new_trait(self):
+        """Table includes one new trait in this version."""
+        new_trait = factories.SourceTraitFactory.create(
+            source_dataset__source_study_version=self.study_version_3)
+        response = self.client.get(self.get_url(self.study.pk))
+        context = response.context
+        table = context['source_trait_table']
+        self.assertIn(new_trait, table.data)
+
+    def test_includes_two_new_traits(self):
+        """Table includes two new traits in this version."""
+        new_traits = factories.SourceTraitFactory.create_batch(
+            2, source_dataset__source_study_version=self.study_version_3)
+        response = self.client.get(self.get_url(self.study.pk))
+        context = response.context
+        table = context['source_trait_table']
+        for new_trait in new_traits:
+            self.assertIn(new_trait, table.data)
+
+    def test_no_previous_study_version(self):
+        """Works if there is no previous version of the study."""
+        self.study_version_1.delete()
+        self.study_version_2.delete()
+        response = self.client.get(self.get_url(self.study.pk))
+        context = response.context
+        table = context['source_trait_table']
+        self.assertEqual(len(table.data), 0)
+        for trait in self.source_traits_v3:
+            self.assertNotIn(trait, table.data)
+
+    def test_does_not_compare_with_two_versions_ago(self):
+        """Does not include traits that were new in an older previous version but not the most recent version of the study."""  # noqa
+        new_trait_2 = factories.SourceTraitFactory.create(
+            source_dataset__source_study_version=self.study_version_2)
+        new_trait_3 = factories.SourceTraitFactory.create(
+            source_dataset__source_study_version=self.study_version_3,
+            i_dbgap_variable_accession=new_trait_2.i_dbgap_variable_accession)
+        response = self.client.get(self.get_url(self.study.pk))
+        context = response.context
+        table = context['source_trait_table']
+        self.assertNotIn(new_trait_3, table.data)
 
 
 class StudyTaggedTraitListTest(UserLoginTestCase):

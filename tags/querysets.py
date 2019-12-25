@@ -82,6 +82,9 @@ class TaggedTraitQuerySet(models.query.QuerySet):
         """Filter to only archived tagged traits."""
         return self.filter(archived=True)
 
+    def current(self):
+        return self.filter(trait__source_dataset__source_study_version__i_is_deprecated=False)
+
 
 class DCCReviewQuerySet(models.query.QuerySet):
     """Class to hold custom query set filtering and delete methods for the DCCReview model."""

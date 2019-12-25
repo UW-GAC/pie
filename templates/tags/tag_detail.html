@@ -26,7 +26,7 @@
 {% block detail_fields %}
   <dt>Description</dt><dd>{{ tag.description }}</dd>
   <dt>Instructions</dt><dd>{{ tag.instructions }}</dd>
-  <dt>Variables tagged</dt><dd>{{ tag.non_archived_traits.count }}</dd>
+  <dt>Variables tagged</dt><dd>{{ traits_tagged_count }}</dd>
 {% endblock detail_fields %}
 
 {% block after_panel %}

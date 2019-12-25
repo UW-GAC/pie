@@ -181,11 +181,11 @@ class GetTaggedTraitDataTest(TestCase):
         non_deprecated_tagged_traits = factories.TaggedTraitFactory.create_batch(
             2, trait__source_dataset__source_study_version=current_version)
         result = cmd._get_tagged_trait_data(include_deprecated=True)
-        self.assertEqual(
-            list(result.values_list(*TAGGED_TRAIT_VALUES_TO_RETRIEVE)),
-            list(models.TaggedTrait.objects.filter(
-                pk__in=[tt.pk for tt in non_deprecated_tagged_traits + deprecated_tagged_traits]
-            ).values_list(*TAGGED_TRAIT_VALUES_TO_RETRIEVE)))
+        retrieved_results = result.values_list(*TAGGED_TRAIT_VALUES_TO_RETRIEVE)
+        expected_results = models.TaggedTrait.objects.filter(
+            pk__in=[tt.pk for tt in non_deprecated_tagged_traits + deprecated_tagged_traits]
+        ).values_list(*TAGGED_TRAIT_VALUES_TO_RETRIEVE)
+        self.assertEqual(list(retrieved_results), list(expected_results))
 
     def test_with_no_tagged_traits(self):
         """Result is empty when there are no tagged traits."""
