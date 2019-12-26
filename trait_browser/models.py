@@ -62,6 +62,7 @@
 from django.apps import apps
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
+from django.db.models import Count, F, Q
 from django.urls import reverse
 from django.utils.text import Truncator
 from core.models import TimeStampedModel
@@ -80,6 +81,7 @@ PANEL_HTML = '\n'.join(
      '<h5 class="panel-title">{panel_title}</h5>', '</div>', '<div class="panel-body">{panel_body}', '</div>',
      '</div>')
 )
+INCOMPLETE_REVIEW_ERROR = 'Cannot apply previous tags from TaggedTraits with incomplete review{}.'
 
 
 class SourceDBTimeStampedModel(TimeStampedModel):
@@ -167,51 +169,61 @@ class Study(SourceDBTimeStampedModel):
         return URL_HTML.format(url=url_text, name=self.i_study_name)
 
     def get_all_tags_count(self):
-        """Return a count of the number of tags for which traits are tagged in this study."""
+        """Return a count of the number of tags for which traits are currently tagged in this study."""
         return apps.get_model('tags', 'Tag').objects.filter(
-            all_traits__source_dataset__source_study_version__study=self).distinct().count()
+            all_traits__source_dataset__source_study_version__study=self,
+            all_traits__source_dataset__source_study_version__i_is_deprecated=False
+        ).distinct().count()
 
     def get_archived_tags_count(self):
-        """Return a count of the number of tags for which traits are tagged, but archived, in this study."""
+        """Return a count of the number of tags for which current traits are tagged, but archived, in this study."""
         return apps.get_model('tags', 'TaggedTrait').objects.archived().filter(
-            trait__source_dataset__source_study_version__study=self).aggregate(
+            trait__source_dataset__source_study_version__study=self
+        ).current().aggregate(
             models.Count('tag', distinct=True))['tag__count']
 
     def get_non_archived_tags_count(self):
-        """Return a count of the number of tags for which traits are tagged and NOT archived in this study."""
-        return apps.get_model('tags', 'TaggedTrait').objects.non_archived().filter(
-            trait__source_dataset__source_study_version__study=self).aggregate(
-            models.Count('tag', distinct=True))['tag__count']
+        """Return a count of the number of tags for which current traits are tagged and NOT archived in this study."""
+        return apps.get_model('tags', 'TaggedTrait').objects.current().non_archived().filter(
+            trait__source_dataset__source_study_version__study=self
+        ).aggregate(
+            models.Count('tag', distinct=True)
+        )['tag__count']
 
     def get_all_tagged_traits(self):
-        """Return a queryset of all of the TaggedTraits from this study."""
+        """Return a queryset of all of the current TaggedTraits from this study."""
         return apps.get_model('tags', 'TaggedTrait').objects.filter(
-            trait__source_dataset__source_study_version__study=self)
+            trait__source_dataset__source_study_version__study=self,
+        ).current()
 
     def get_archived_tagged_traits(self):
-        """Return a queryset of the archived TaggedTraits from this study."""
+        """Return a queryset of the current archived TaggedTraits from this study."""
         return apps.get_model('tags', 'TaggedTrait').objects.archived().filter(
-            trait__source_dataset__source_study_version__study=self)
+            trait__source_dataset__source_study_version__study=self
+        ).current()
 
     def get_non_archived_tagged_traits(self):
-        """Return a queryset of the non-archived TaggedTraits from this study."""
-        return apps.get_model('tags', 'TaggedTrait').objects.non_archived().filter(
+        """Return a queryset of the current non-archived TaggedTraits from this study."""
+        return apps.get_model('tags', 'TaggedTrait').objects.current().non_archived().filter(
             trait__source_dataset__source_study_version__study=self)
 
     def get_all_traits_tagged_count(self):
-        """Return the count of all traits that have been tagged in this study."""
+        """Return the count of all current traits that have been tagged in this study."""
         return SourceTrait.objects.filter(
-            source_dataset__source_study_version__study=self).exclude(all_tags=None).count()
+            source_dataset__source_study_version__study=self
+        ).current().exclude(all_tags=None).count()
 
     def get_archived_traits_tagged_count(self):
-        """Return the count of traits that have been tagged (and the tag archived) in this study."""
+        """Return the count of current traits that have been tagged (and the tag archived) in this study."""
         return apps.get_model('tags', 'TaggedTrait').objects.archived().filter(
-            trait__source_dataset__source_study_version__study=self).aggregate(
-            models.Count('trait', distinct=True))['trait__count']
+            trait__source_dataset__source_study_version__study=self
+        ).current().aggregate(
+            models.Count('trait', distinct=True)
+        )['trait__count']
 
     def get_non_archived_traits_tagged_count(self):
-        """Return the count of traits that have been tagged (and the tag not archived) in this study."""
-        return apps.get_model('tags', 'TaggedTrait').objects.non_archived().filter(
+        """Return the count of current traits that have been tagged (and the tag not archived) in this study."""
+        return apps.get_model('tags', 'TaggedTrait').objects.current().non_archived().filter(
             trait__source_dataset__source_study_version__study=self).aggregate(
             models.Count('trait', distinct=True))['trait__count']
 
@@ -252,7 +264,7 @@ class SourceStudyVersion(SourceDBTimeStampedModel):
 
     def __str__(self):
         """Pretty printing."""
-        return 'study {} version {}, id='.format(self.study, self.i_version, self.i_id)
+        return 'study {} version {}, id={}'.format(self.study, self.i_version, self.i_id)
 
     def save(self, *args, **kwargs):
         """Custom save method to auto-set full_accession and dbgap_link."""
@@ -267,6 +279,96 @@ class SourceStudyVersion(SourceDBTimeStampedModel):
     def set_dbgap_link(self):
         """Automatically set dbgap_link from dbGaP identifier information."""
         return self.STUDY_VERSION_URL.format(self.full_accession)
+
+    def get_previous_versions(self):
+        """Return an ordered queryset of previous versions."""
+        return self.study.sourcestudyversion_set.filter(
+            i_version__lte=self.i_version,
+            i_date_added__lt=self.i_date_added
+        ).order_by(
+            '-i_version',
+            '-i_date_added'
+        )
+
+    def get_previous_version(self):
+        """Return the previous version of this study."""
+        return self.get_previous_versions().first()
+
+    def get_new_sourcetraits(self):
+        """Return a queryset of SourceTraits that are new in this version compared to past versions."""
+        previous_study_version = self.get_previous_version()
+        SourceTrait = apps.get_model('trait_browser', 'SourceTrait')
+        if previous_study_version is not None:
+            qs = SourceTrait.objects.filter(
+                source_dataset__source_study_version=self
+            )
+            # We can probably write this with a join to be more efficient.
+            previous_variable_accessions = SourceTrait.objects.filter(
+                source_dataset__source_study_version=previous_study_version
+            ).values_list('i_dbgap_variable_accession', flat=True)
+            qs = qs.exclude(i_dbgap_variable_accession__in=previous_variable_accessions)
+            return qs
+        else:
+            return SourceTrait.objects.none()
+
+    def get_new_sourcedatasets(self):
+        """Return a queryset of SourceDatasets that are new in this version compared to past versions."""
+        previous_study_version = self.get_previous_version()
+        SourceDataset = apps.get_model('trait_browser', 'SourceDataset')
+        if previous_study_version is not None:
+            qs = SourceDataset.objects.filter(source_study_version=self)
+            # We can probably write this with a join to be more efficient.
+            previous_dataset_accessions = SourceDataset.objects.filter(
+                source_study_version=previous_study_version
+            ).values_list('i_accession', flat=True)
+            qs = qs.exclude(i_accession__in=previous_dataset_accessions)
+            return qs
+        else:
+            return SourceDataset.objects.none()
+
+    def apply_previous_tags(self, user):
+        """Apply tags from traits in the previous version of this Study to traits from this version."""
+        previous_study_version = self.get_previous_version()
+        if previous_study_version is not None:
+            SourceTrait = apps.get_model('trait_browser', 'SourceTrait')
+            TaggedTrait = apps.get_model('tags', 'TaggedTrait')
+            DCCReview = apps.get_model('tags', 'DCCReview')
+            StudyResponse = apps.get_model('tags', 'StudyResponse')
+            # Get the set of TaggedTraits from the previous study version.
+            previous_tagged_traits = TaggedTrait.objects.non_archived().filter(
+                trait__source_dataset__source_study_version=previous_study_version
+            )
+            # Raise an error if any of the previous taggedtraits have incomplete reviews.
+            unreviewed_q = Q(dcc_review__isnull=True)
+            no_response_q = Q(dcc_review__status=DCCReview.STATUS_FOLLOWUP) &\
+                Q(dcc_review__study_response__isnull=True) &\
+                Q(dcc_review__dcc_decision__isnull=True)
+            no_decision_q = Q(dcc_review__status=DCCReview.STATUS_FOLLOWUP) &\
+                Q(dcc_review__study_response__status=StudyResponse.STATUS_DISAGREE) &\
+                Q(dcc_review__dcc_decision__isnull=True)
+            incomplete_review_tagged_traits = previous_tagged_traits.filter(
+                unreviewed_q | no_response_q | no_decision_q
+            )
+            if incomplete_review_tagged_traits.count() > 0:
+                raise ValueError(INCOMPLETE_REVIEW_ERROR.format(''))
+            # Get the set of variable accession numbers in the previous version that have tags applied them.
+            previous_accessions_with_tags = previous_tagged_traits.values(
+                trait_pk=F('trait__pk'),
+                trait_accession=F('trait__i_dbgap_variable_accession')
+            ).annotate(
+                tt_count=Count('pk')
+            ).filter(
+                tt_count__gt=0
+            ).values_list(
+                'trait_accession',
+                flat=True
+            ).distinct()
+            traits_to_tag = SourceTrait.objects.filter(
+                source_dataset__source_study_version=self,
+                i_dbgap_variable_accession__in=previous_accessions_with_tags
+            )
+            for trait in traits_to_tag:
+                trait.apply_previous_tags(user)
 
 
 class Subcohort(SourceDBTimeStampedModel):
@@ -329,7 +431,7 @@ class SourceDataset(SourceDBTimeStampedModel):
 
     def set_dbgap_link(self):
         """Automatically set dbgap_link from dbGaP identifier information."""
-        return self.DATASET_URL.format(self.source_study_version.full_accession, self.full_accession)
+        return self.DATASET_URL.format(self.source_study_version.full_accession, self.i_accession)
 
     def get_name_link_html(self, max_popover_words=80):
         """Get html for the dataset name linked to the dataset's detail page, with description as popover."""
@@ -581,6 +683,58 @@ class SourceTrait(Trait):
         except ObjectDoesNotExist:
             return None
         return current_trait
+
+    def get_previous_version(self):
+        """Returns the version of this SourceTrait from the previous study version."""
+        previous_study_version = self.source_dataset.source_study_version.get_previous_version()
+        if previous_study_version is not None:
+            try:
+                previous_trait = SourceTrait.objects.get(
+                    source_dataset__source_study_version=previous_study_version,
+                    i_dbgap_variable_accession=self.i_dbgap_variable_accession
+                )
+            except SourceTrait.DoesNotExist:
+                return None
+            return previous_trait
+
+    def apply_previous_tags(self, creator):
+        """Apply tags from the previous version of this SourceTrait to this version."""
+        TaggedTrait = apps.get_model('tags', 'TaggedTrait')
+        DCCReview = apps.get_model('tags', 'DCCReview')
+        StudyResponse = apps.get_model('tags', 'StudyResponse')
+        previous_trait = self.get_previous_version()
+        if previous_trait is not None:
+            for old_tagged_trait in previous_trait.all_taggedtraits.non_archived():
+                # Raise an error if the review of the previous trait is incomplete.
+                # Check for unreviewed
+                if not hasattr(old_tagged_trait, 'dcc_review'):
+                    raise ValueError(INCOMPLETE_REVIEW_ERROR.format(' (unreviewed)'))
+                elif old_tagged_trait.dcc_review.status == DCCReview.STATUS_FOLLOWUP:
+                    if hasattr(old_tagged_trait.dcc_review, 'study_response'):
+                        # Check for missing DCCDecision after disagree StudyResponse.
+                        if old_tagged_trait.dcc_review.study_response.status == StudyResponse.STATUS_DISAGREE \
+                                and not hasattr(old_tagged_trait.dcc_review, 'dcc_decision'):
+                            raise ValueError(INCOMPLETE_REVIEW_ERROR.format(
+                                ' (no decision after disagree study response)'))
+                    else:
+                        # Check for missing StudyResponse and DCCDecision
+                        if not hasattr(old_tagged_trait.dcc_review, 'dcc_decision'):
+                            raise ValueError(INCOMPLETE_REVIEW_ERROR.format(
+                                ' (no response or decision after followup review)'))
+                try:
+                    # Check if it already exists.
+                    self.all_taggedtraits.non_archived().get(tag=old_tagged_trait.tag)
+                except TaggedTrait.DoesNotExist:
+                    # Create a new TaggedTrait.
+                    new_tagged_trait = TaggedTrait(
+                        tag=old_tagged_trait.tag, trait=self, creator=creator, previous_tagged_trait=old_tagged_trait)
+                    new_tagged_trait.full_clean()
+                    new_tagged_trait.save()
+                    # Create a DCCReview with confirmed status.
+                    dcc_review = DCCReview(
+                        tagged_trait=new_tagged_trait, status=DCCReview.STATUS_CONFIRMED, creator=creator)
+                    dcc_review.full_clean()
+                    dcc_review.save()
 
 
 class HarmonizedTrait(Trait):

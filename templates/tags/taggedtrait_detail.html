@@ -14,6 +14,20 @@
   tagged variable details
 {% endblock subtitle %}
 
+{% block before_panel %}
+  {% if is_deprecated %}
+    {% if show_removed_text %}
+      <div class="alert alert-danger" role="alert" id="removed_deprecated_trait">
+        This tagged study variable has been removed from the most recent study version
+      </div>
+    {% elif new_version_link %}
+      <div class="alert alert-danger" role="alert" id="updated_deprecated_trait">
+        There is a <a class="alert-link" href="{{ new_version_link }}">newer version</a> of this tagged study variable available
+      </div>
+    {% endif %}
+  {% endif %}
+{% endblock before_panel %}
+
 {% block detail_fields %}
   <dt>Tagged by</dt><dd>{{ tagged_trait.creator }}</dd>
 {% endblock detail_fields %}

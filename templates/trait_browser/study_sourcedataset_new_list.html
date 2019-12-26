@@ -1,0 +1,18 @@
+{% extends 'trait_browser/__study_page.html' %}
+{% load render_table from django_tables2 %}
+
+{% block head_title %}
+  {{ block.super }} new datasets
+{% endblock head_title %}
+
+{% block subtitle %}
+  new datasets
+{% endblock subtitle %}
+
+{% block after_panel %}
+  {{ block.super }}
+  <div class="panel panel-default">
+    <div class="panel-heading"><h4 class="panel-title">New datasets in this version</h4></div>
+    {% render_table source_dataset_table %}
+  </div>
+{% endblock after_panel %}

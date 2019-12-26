@@ -69,7 +69,9 @@ class TagDetail(LoginRequiredMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super(TagDetail, self).get_context_data(**kwargs)
-        study_counts = models.TaggedTrait.objects.non_archived().filter(tag=self.object).values(
+        study_counts = models.TaggedTrait.objects.non_archived().current().filter(
+            tag=self.object
+        ).values(
             study_name=F('trait__source_dataset__source_study_version__study__i_study_name'),
             study_pk=F('trait__source_dataset__source_study_version__study__pk')
         ).annotate(
@@ -77,14 +79,24 @@ class TagDetail(LoginRequiredMixin, DetailView):
         ).values(
             'study_name', 'study_pk', 'tt_count').order_by('study_name')
         context['study_counts'] = study_counts
+        context['traits_tagged_count'] = self.object.current_non_archived_traits.count()
         return context
 
 
 class TagAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySetView):
-    """View for autocompleting tag model choice fields by title in a form. Case-insensitive."""
+    """View for autocompleting tag model choice fields by title in a form. Case-insensitive.
+
+    Forwarded arguments:
+        unreviewed_only: bool; if true, filters tags to those with unreviewed tagged traits
+    """
 
     def get_queryset(self):
         retrieved = models.Tag.objects.all()
+        # Filter to tags with unreviewed tagged traits.
+        unreviewed_only = self.forwarded.get('unreviewed_only', None)
+        tag_pks = models.TaggedTrait.objects.unreviewed().values_list('tag__pk', flat=True).distinct()
+        if unreviewed_only:
+            retrieved = retrieved.filter(pk__in=tag_pks)
         if self.q:
             retrieved = retrieved.filter(lower_title__iregex=r'^{}'.format(self.q))
         return retrieved
@@ -162,6 +174,16 @@ class TaggedTraitDetail(LoginRequiredMixin, PermissionRequiredMixin, SpecificTag
         context['show_delete_button'] = user_has_study_access and (not dccreview_exists) and is_non_archived
         context['show_archived'] = not is_non_archived
         context['quality_review_panel_color'] = color
+        is_deprecated = self.object.trait.source_dataset.source_study_version.i_is_deprecated
+        context['show_removed_text'] = False
+        context['new_version_link'] = None
+        context['is_deprecated'] = is_deprecated
+        if is_deprecated:
+            current_version = self.object.get_latest_version()
+            if current_version is None:
+                context['show_removed_text'] = True
+            else:
+                context['new_version_link'] = current_version.get_absolute_url()
         return context
 
     def set_study(self):
@@ -174,7 +196,7 @@ class TaggedTraitTagCountsByStudy(LoginRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super(TaggedTraitTagCountsByStudy, self).get_context_data(**kwargs)
-        annotated_studies = models.TaggedTrait.objects.non_archived().values(
+        annotated_studies = models.TaggedTrait.objects.non_archived().current().values(
             study_name=F('trait__source_dataset__source_study_version__study__i_study_name'),
             study_pk=F('trait__source_dataset__source_study_version__study__pk'),
             tag_name=F('tag__title'),
@@ -195,7 +217,7 @@ class TaggedTraitStudyCountsByTag(LoginRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super(TaggedTraitStudyCountsByTag, self).get_context_data(**kwargs)
-        annotated_tags = models.TaggedTrait.objects.non_archived().values(
+        annotated_tags = models.TaggedTrait.objects.non_archived().current().values(
             study_name=F('trait__source_dataset__source_study_version__study__i_study_name'),
             study_pk=F('trait__source_dataset__source_study_version__study__pk'),
             tag_name=F('tag__title'),
@@ -223,29 +245,26 @@ class TaggedTraitByTagAndStudyList(LoginRequiredMixin, SingleTableMixin, ListVie
 
     def get_table_data(self):
         if self.request.user.is_staff:
-            return self.study.get_all_tagged_traits().filter(tag=self.tag).select_related(
-                'tag',
-                'trait',
-                'trait__source_dataset',
-                'trait__source_dataset__source_study_version',
-                'dcc_review'
-            )
+            tagged_traits = self.study.get_all_tagged_traits()
         else:
-            return self.study.get_non_archived_tagged_traits().filter(tag=self.tag).select_related(
-                'tag',
-                'trait',
-                'trait__source_dataset',
-                'trait__source_dataset__source_study_version',
-                'dcc_review'
-            )
+            tagged_traits = self.study.get_non_archived_tagged_traits()
+        return tagged_traits.current().filter(
+            tag=self.tag
+        ).select_related(
+            'tag',
+            'trait',
+            'trait__source_dataset',
+            'trait__source_dataset__source_study_version',
+            'dcc_review'
+        )
 
     def get_table_class(self):
         """Determine whether to use tagged trait table with delete buttons or not."""
         if self.request.user.is_staff:
-            return tables.TaggedTraitTableForDCCStaff
+            return tables.TaggedTraitTableForStaffByStudy
         elif (self.request.user.groups.filter(name='phenotype_taggers').exists() and
               self.study in self.request.user.profile.taggable_studies.all()):
-            return tables.TaggedTraitTableForStudyTaggers
+            return tables.TaggedTraitTableForPhenotypeTaggersFromStudy
         else:
             return tables.TaggedTraitTable
 
@@ -509,7 +528,7 @@ class DCCReviewByTagAndStudySelect(LoginRequiredMixin, PermissionRequiredMixin, 
         # Set session variables for use in the next view.
         study = form.cleaned_data.get('study')
         tag = form.cleaned_data.get('tag')
-        qs = models.TaggedTrait.objects.non_archived().unreviewed().filter(
+        qs = models.TaggedTrait.objects.current().non_archived().unreviewed().filter(
             tag=tag,
             trait__source_dataset__source_study_version__study=study
         )
@@ -536,7 +555,7 @@ class DCCReviewByTagAndStudySelectFromURL(LoginRequiredMixin, PermissionRequired
     def get(self, request, *args, **kwargs):
         tag = get_object_or_404(models.Tag, pk=self.kwargs['pk'])
         study = get_object_or_404(Study, pk=self.kwargs['pk_study'])
-        qs = models.TaggedTrait.objects.non_archived().unreviewed().filter(
+        qs = models.TaggedTrait.objects.current().non_archived().unreviewed().filter(
             tag=tag,
             trait__source_dataset__source_study_version__study=study
         )
@@ -604,8 +623,12 @@ class DCCReviewByTagAndStudyNext(LoginRequiredMixin, PermissionRequiredMixin, Se
             except ObjectDoesNotExist:
                 self._skip_next_tagged_trait()
                 return reverse('tags:tagged-traits:dcc-review:next')
+            # Check to see if the trait is from a deprecated study version since starting the loop.
+            if tt.trait.source_dataset.source_study_version.i_is_deprecated:
+                self._skip_next_tagged_trait()
+                return reverse('tags:tagged-traits:dcc-review:next')
             # Check to see if the tagged trait has been archived since starting the loop.
-            if tt.archived:
+            elif tt.archived:
                 self._skip_next_tagged_trait()
                 return reverse('tags:tagged-traits:dcc-review:next')
             # Check to see if the tagged trait has been reviewed since starting the loop.
@@ -691,7 +714,13 @@ class DCCReviewByTagAndStudy(LoginRequiredMixin, PermissionRequiredMixin, Sessio
             self._update_session_variables()
             return HttpResponseRedirect(reverse('tags:tagged-traits:dcc-review:next'))
         # Check if this tagged trait has already been archived.
-        if self.tagged_trait.archived:
+        if self.tagged_trait.trait.source_dataset.source_study_version.i_is_deprecated:
+            self._update_session_variables()
+            # Add an informational message.
+            msg = 'Skipped {} because there is a newer version of the tagged study variable available.'
+            self.messages.warning(msg.format(self.tagged_trait))
+            return HttpResponseRedirect(reverse('tags:tagged-traits:dcc-review:next'))
+        elif self.tagged_trait.archived:
             self._update_session_variables()
             # Add an informational message.
             self.messages.warning('Skipped {} because it has been archived.'.format(self.tagged_trait))
@@ -731,11 +760,20 @@ class DCCReviewCreate(LoginRequiredMixin, PermissionRequiredMixin, FormValidMess
     def _get_archived_warning_message(self):
         return 'Oops! Cannot create review for {}, because it has been archived.'.format(self.tagged_trait)
 
+    def _get_deprecated_warning_message(self):
+        msg = ('Oops! Cannot create review for {} '
+               'because there is a newer version of the tagged study variable available.')
+        return self.messages.warning(msg.format(self.tagged_trait))
+
     def _get_warning_response(self, *args, **kwargs):
         """Get the appropriate response for deleted, archived, or already-reviewed tagged traits."""
         self.tagged_trait = get_object_or_404(models.TaggedTrait, pk=kwargs['pk'])
+        # Redirect if the trait is deprecated.
+        if self.tagged_trait.trait.source_dataset.source_study_version.i_is_deprecated:
+            self.messages.warning(self._get_deprecated_warning_message())
+            return HttpResponseRedirect(self.get_success_url())
         # Redirect if the tagged trait has already been archived.
-        if self.tagged_trait.archived:
+        elif self.tagged_trait.archived:
             self.messages.warning(self._get_archived_warning_message())
             return HttpResponseRedirect(self.get_success_url())
         # Switch to updating the existing review if the tagged trait has already been reviewed.
@@ -789,8 +827,16 @@ class DCCReviewUpdate(LoginRequiredMixin, PermissionRequiredMixin, FormValidMess
     def _get_archived_warning_message(self):
         return 'Oops! Cannot update review for {}, because it has been archived.'.format(self.tagged_trait)
 
+    def _get_deprecated_warning_message(self):
+        msg = ('Oops! Cannot create review for {} '
+               'because there is a newer version of the tagged study variable available.')
+        return self.messages.warning(msg.format(self.tagged_trait))
+
     def _get_warning_response(self):
         """Get the appropriate response for archived tagged trait, missing DCCReview, or existing StudyResponse."""
+        if self.tagged_trait.trait.source_dataset.source_study_version.i_is_deprecated:
+            self.messages.warning(self._get_deprecated_warning_message())
+            return HttpResponseRedirect(self.get_success_url())
         if self.tagged_trait.archived:
             self.messages.warning(self._get_archived_warning_message())
             return HttpResponseRedirect(self.get_success_url())
@@ -843,10 +889,10 @@ class DCCReviewUpdate(LoginRequiredMixin, PermissionRequiredMixin, FormValidMess
         return self.tagged_trait.get_absolute_url()
 
 
-class DCCReviewNeedFollowupCounts(LoginRequiredMixin, TemplateView):
+class TaggedTraitsNeedStudyResponseSummary(LoginRequiredMixin, TemplateView):
     """View to show counts of DCCReviews that need followup by study and tag for phenotype taggers."""
 
-    template_name = 'tags/taggedtrait_needfollowup_counts.html'
+    template_name = 'tags/taggedtrait_need_studyresponse_summary.html'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -856,7 +902,7 @@ class DCCReviewNeedFollowupCounts(LoginRequiredMixin, TemplateView):
         # https://code.djangoproject.com/ticket/10060
         # The problem occurs when a join produces duplicated rows. In the queries below, none of the
         # joins should result in any duplicated TaggedTraits, so multiple annotations should be ok.
-        study_tag_counts = models.TaggedTrait.objects.need_followup().exclude(
+        study_tag_counts = models.TaggedTrait.objects.current().need_followup().exclude(
             # Exclude tagged traits missing a study response but with a dcc decision.
             Q(dcc_review__study_response__isnull=True) & Q(dcc_review__dcc_decision__isnull=False)
         ).filter(
@@ -899,23 +945,23 @@ class DCCReviewNeedFollowupCounts(LoginRequiredMixin, TemplateView):
         return HttpResponseForbidden()
 
 
-class DCCReviewNeedFollowupList(LoginRequiredMixin, SpecificTaggableStudyRequiredMixin, SingleTableMixin, ListView):
+class TaggedTraitsNeedStudyResponseByTagAndStudyList(LoginRequiredMixin, SpecificTaggableStudyRequiredMixin,
+                                                     SingleTableMixin, ListView):
     """List view of DCCReviews that need study followup."""
 
     redirect_unauthenticated_users = True
     raise_exception = True
     allow_staff = True
-    template_name = 'tags/dccreview_list.html'
+    template_name = 'tags/taggedtrait_need_studyresponse_bytagandstudy_list.html'
     model = models.TaggedTrait
-    context_table_name = 'tagged_trait_table'
     context_table_name = 'tagged_trait_table'
     table_pagination = {'per_page': TABLE_PER_PAGE * 2}
 
     def get_table_class(self):
         if self.study in self.request.user.profile.taggable_studies.all():
-            return tables.DCCReviewTableWithStudyResponseButtons
+            return tables.TaggedTraitDCCReviewStudyResponseButtonTable
         else:
-            return tables.DCCReviewTable
+            return tables.TaggedTraitDCCReviewTable
 
     def set_study(self):
         self.study = get_object_or_404(Study, pk=self.kwargs['pk_study'])
@@ -932,7 +978,7 @@ class DCCReviewNeedFollowupList(LoginRequiredMixin, SpecificTaggableStudyRequire
         return context
 
     def get_table_data(self):
-        data = self.study.get_all_tagged_traits().need_followup().exclude(
+        data = self.study.get_all_tagged_traits().current().need_followup().exclude(
             # Exclude tagged traits missing a study response but with a dcc decision.
             Q(dcc_review__study_response__isnull=True) & Q(dcc_review__dcc_decision__isnull=False)
         ).filter(
@@ -964,6 +1010,10 @@ class StudyResponseCheckMixin(SpecificTaggableStudyRequiredMixin, MessageMixin):
             dcc_review = self.tagged_trait.dcc_review
         except AttributeError:
             self.messages.warning('Oops! {} has not been reviewed by the DCC.'.format(self.tagged_trait))
+            return HttpResponseRedirect(self.get_failure_url())
+        if self.tagged_trait.trait.source_dataset.source_study_version.i_is_deprecated:
+            msg = 'Oops! There is a newer version of this study variable available'
+            self.messages.warning(msg.format(self.tagged_trait))
             return HttpResponseRedirect(self.get_failure_url())
         if self.tagged_trait.archived:
             self.messages.warning('Oops! {} has been removed by the DCC.'.format(self.tagged_trait))
@@ -1088,7 +1138,10 @@ class TaggedTraitsNeedDCCDecisionSummary(LoginRequiredMixin, GroupRequiredMixin,
         context = super().get_context_data(**kwargs)
         # This view only considers tagged traits with study responses of "disagree".
         # Tagged traits without study responses are not included.
-        disagree_responses = models.StudyResponse.objects.filter(status=models.StudyResponse.STATUS_DISAGREE).values(
+        disagree_responses = models.StudyResponse.objects.filter(
+            status=models.StudyResponse.STATUS_DISAGREE,
+            dcc_review__tagged_trait__trait__source_dataset__source_study_version__i_is_deprecated=False
+        ).values(
             study_name=F('dcc_review__tagged_trait__trait__source_dataset__source_study_version__study__i_study_name'),
             study_pk=F('dcc_review__tagged_trait__trait__source_dataset__source_study_version__study__i_accession'),
             tag_name=F('dcc_review__tagged_trait__tag__title'),
@@ -1127,7 +1180,7 @@ class TaggedTraitsNeedDCCDecisionByTagAndStudyList(LoginRequiredMixin, GroupRequ
         return super().get(request, *args, **kwargs)
 
     def get_table_data(self):
-        data = models.TaggedTrait.objects.need_decision().filter(
+        data = models.TaggedTrait.objects.current().need_decision().filter(
             dcc_review__tagged_trait__tag=self.tag,
             dcc_review__tagged_trait__trait__source_dataset__source_study_version__study=self.study).select_related(
                 'dcc_review', 'dcc_review__study_response', 'dcc_review__dcc_decision', 'tag', 'trait',
@@ -1232,7 +1285,8 @@ class DCCDecisionByTagAndStudySelectFromURL(LoginRequiredMixin, PermissionRequir
             dcc_review__tagged_trait__archived=False,
             dcc_review__dcc_decision__isnull=True,
             dcc_review__tagged_trait__tag=tag,
-            dcc_review__tagged_trait__trait__source_dataset__source_study_version__study=study
+            dcc_review__tagged_trait__trait__source_dataset__source_study_version__study=study,
+            dcc_review__tagged_trait__trait__source_dataset__source_study_version__i_is_deprecated=False
         )
         session_data = {
             'study_pk': study.pk,
@@ -1319,6 +1373,10 @@ class DCCDecisionByTagAndStudyNext(LoginRequiredMixin, PermissionRequiredMixin, 
                 return reverse('tags:tagged-traits:dcc-decision:next')
             # Skip the tagged trait if it already has a decision.
             elif hasattr(tt.dcc_review, 'dcc_decision'):
+                self._skip_next_tagged_trait()
+                return reverse('tags:tagged-traits:dcc-decision:next')
+            # Skip the tagged trait if its study version has been deprecated.
+            elif tt.trait.source_dataset.source_study_version.i_is_deprecated:
                 self._skip_next_tagged_trait()
                 return reverse('tags:tagged-traits:dcc-decision:next')
             # If you make it past all of the checks, set the chosen pk as a session variable to decide on next.
@@ -1435,6 +1493,13 @@ class DCCDecisionByTagAndStudy(LoginRequiredMixin, PermissionRequiredMixin, Sess
             # Add an informational message.
             self.messages.warning('Skipped {} because it already has a decision made.'.format(self.tagged_trait))
             return HttpResponseRedirect(reverse('tags:tagged-traits:dcc-decision:next'))
+        # Go to the next tagged trait if this one's study version has been deprecated.
+        elif self.tagged_trait.trait.source_dataset.source_study_version.i_is_deprecated:
+            self._update_session_variables()
+            # Add an informational message.
+            msg = 'Skipped {} because there is a newer version of this study available.'
+            self.messages.warning(msg.format(self.tagged_trait))
+            return HttpResponseRedirect(reverse('tags:tagged-traits:dcc-decision:next'))
         return super(DCCDecisionByTagAndStudy, self).post(request, *args, **kwargs)
 
     def form_valid(self, form):
@@ -1477,6 +1542,10 @@ class DCCDecisionCreate(LoginRequiredMixin, PermissionRequiredMixin, FormValidMe
     def _get_already_decided_warning_message(self):
         return 'Switched to updating decision for {}, because it already has a decision.'.format(self.tagged_trait)
 
+    def _get_deprecated_warning_message(self):
+        msg = 'Oops! Cannot create decision for {}, because there is a newer version of this study available.'
+        return msg.format(self.tagged_trait)
+
     def _get_warning_response(self, *args, **kwargs):
         """Get the appropriate response for deleted, archived, or already-decisioned tagged traits."""
         self.tagged_trait = get_object_or_404(models.TaggedTrait, pk=kwargs['pk'])
@@ -1496,7 +1565,7 @@ class DCCDecisionCreate(LoginRequiredMixin, PermissionRequiredMixin, FormValidMe
         elif not hasattr(self.tagged_trait.dcc_review, 'study_response'):
             self.messages.warning(self._get_missing_study_response_warning_message())
             return HttpResponseRedirect(self.get_success_url())
-        # Redirect if the tagged trait is has study response agree.
+        # Redirect if the tagged trait has study response agree.
         elif self.tagged_trait.dcc_review.study_response.status == models.StudyResponse.STATUS_AGREE:
             self.messages.warning(self._get_response_agree_warning_message())
             return HttpResponseRedirect(self.get_success_url())
@@ -1505,6 +1574,10 @@ class DCCDecisionCreate(LoginRequiredMixin, PermissionRequiredMixin, FormValidMe
             self.messages.warning(self._get_already_decided_warning_message())
             return HttpResponseRedirect(reverse('tags:tagged-traits:pk:dcc-decision:update',
                                                 args=[self.tagged_trait.pk]))
+        # Redirect if the tagged trait's study version is deprecated.
+        elif self.tagged_trait.trait.source_dataset.source_study_version.i_is_deprecated:
+            self.messages.warning(self._get_deprecated_warning_message())
+            return HttpResponseRedirect(self.get_success_url())
 
     def get(self, request, *args, **kwargs):
         check_response = self._get_warning_response(*args, **kwargs)
@@ -1553,6 +1626,10 @@ class DCCDecisionUpdate(LoginRequiredMixin, PermissionRequiredMixin, FormValidMe
     def _get_response_agree_warning_message(self):
         return 'Oops! Cannot update decision for {}, because it has an agree study response.'.format(self.tagged_trait)
 
+    def _get_deprecated_warning_message(self):
+        msg = 'Oops! Cannot update decision for {}, because there is a newer version of this study available.'
+        return msg.format(self.tagged_trait)
+
     def _get_warning_response(self):
         """Get the appropriate response unexpected error cases."""
         # Switch to creating a new decision if the tagged trait does not have a decision.
@@ -1573,6 +1650,10 @@ class DCCDecisionUpdate(LoginRequiredMixin, PermissionRequiredMixin, FormValidMe
         elif hasattr(self.tagged_trait.dcc_review, 'study_response') and (
                 self.tagged_trait.dcc_review.study_response.status == models.StudyResponse.STATUS_AGREE):
             self.messages.warning(self._get_response_agree_warning_message())
+            return HttpResponseRedirect(self.get_success_url())
+        # Redirect if the tagged trait's study has been deprecated.
+        elif self.tagged_trait.trait.source_dataset.source_study_version.i_is_deprecated:
+            self.messages.warning(self._get_deprecated_warning_message())
             return HttpResponseRedirect(self.get_success_url())
         # Omit checks for missing study response. The only important part is that the dcc
         # decision exists to be updated.

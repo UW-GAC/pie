@@ -99,6 +99,10 @@ class StudyDetail(LoginRequiredMixin, DetailView):
         dataset_count = models.SourceDataset.objects.current().filter(source_study_version__study=self.object).count()
         context['trait_count'] = '{:,}'.format(trait_count)
         context['dataset_count'] = '{:,}'.format(dataset_count)
+        new_datasets = self.object.get_latest_version().get_new_sourcedatasets()
+        context['show_new_dataset_button'] = new_datasets.count() > 0
+        new_traits = self.object.get_latest_version().get_new_sourcetraits()
+        context['show_new_trait_button'] = new_traits.count() > 0
         return context
 
 
@@ -177,7 +181,7 @@ class StudyNameOrPHSAutocomplete(LoginRequiredMixin, autocomplete.Select2QuerySe
         unreviewed_non_archived = self.forwarded.get('unreviewed_non_archived_tagged_traits_only', False)
         # tag_pk is a string, so "is not None" is not needed.
         if tag_pk:
-            tagged_traits = TaggedTrait.objects.all()
+            tagged_traits = TaggedTrait.objects.current()
             if unreviewed_non_archived:
                 tagged_traits = tagged_traits.unreviewed().non_archived()
             studies_with_tag = tagged_traits.filter(
@@ -204,19 +208,15 @@ class SourceDatasetDetail(LoginRequiredMixin, SingleTableMixin, DetailView):
         trait = self.object.sourcetrait_set.first()
         is_deprecated = self.object.source_study_version.i_is_deprecated
         context['trait_count'] = '{:,}'.format(self.object.sourcetrait_set.count())
-        context['show_deprecated_message'] = is_deprecated
+        context['show_removed_text'] = False
+        context['new_version_link'] = None
+        context['is_deprecated'] = is_deprecated
         if is_deprecated:
             current_version = self.object.get_latest_version()
-            if current_version is not None:
-                msg = """There is a newer version of this study dataset available:
-                         <a class="alert-link" href="{}">{}</a>.""".format(
-                    current_version.get_absolute_url(),
-                    current_version.dataset_name
-                )
-                context['deprecation_message'] = mark_safe(msg)
+            if current_version is None:
+                context['show_removed_text'] = True
             else:
-                msg = """This dataset was removed from the most recent study version."""
-                context['deprecation_message'] = msg
+                context['new_version_link'] = current_version.get_absolute_url()
         return context
 
 
@@ -245,6 +245,18 @@ class StudySourceDatasetList(SingleTableMixin, StudyDetail):
     def get_table_data(self):
         return models.SourceDataset.objects.current().filter(
             source_study_version__study=self.object)
+
+
+class StudySourceDatasetNewList(SingleTableMixin, StudyDetail):
+    """Show a list of new datasets in the newest study version."""
+
+    template_name = 'trait_browser/study_sourcedataset_new_list.html'
+    context_table_name = 'source_dataset_table'
+    table_class = tables.SourceDatasetTable
+    table_pagination = {'per_page': TABLE_PER_PAGE}
+
+    def get_table_data(self):
+        return self.object.get_latest_version().get_new_sourcedatasets()
 
 
 class SourceDatasetSearch(LoginRequiredMixin, SearchFormMixin, SingleTableMixin, MessageMixin, TemplateView):
@@ -401,6 +413,7 @@ class SourceTraitDetail(LoginRequiredMixin, DetailView):
         context['user_is_study_tagger'] = self.object.source_dataset.source_study_version.study in user_studies
         context['show_tag_button'] = (context['user_is_study_tagger'] or self.request.user.is_staff) and \
             not is_deprecated
+        # Get the taggedtraits, not the tags, so you can offer the option of deleting the taggedtraits.
         tagged_traits = self.object.all_taggedtraits.non_archived().order_by('tag__lower_title')
         # If tagging is allowed, check on whether to show the delete button for each tag.
         if context['show_tag_button']:
@@ -415,19 +428,15 @@ class SourceTraitDetail(LoginRequiredMixin, DetailView):
         else:
             show_delete_buttons = [False] * len(tagged_traits)
         context['tagged_traits_with_xs'] = list(zip(tagged_traits, show_delete_buttons))
-        context['show_deprecated_message'] = is_deprecated
+        context['show_removed_text'] = False
+        context['new_version_link'] = None
+        context['is_deprecated'] = is_deprecated
         if is_deprecated:
             current_version = self.object.get_latest_version()
-            if current_version is not None:
-                msg = """There is a newer version of this study variable available:
-                         <a class="alert-link" href="{}">{}</a>.""".format(
-                    current_version.get_absolute_url(),
-                    current_version.i_trait_name
-                )
-                context['deprecation_message'] = mark_safe(msg)
+            if current_version is None:
+                context['show_removed_text'] = True
             else:
-                msg = """This variable was removed from the most recent study version."""
-                context['deprecation_message'] = msg
+                context['new_version_link'] = current_version.get_absolute_url()
         return context
 
 
@@ -464,13 +473,29 @@ class StudySourceTraitList(SingleTableMixin, StudyDetail):
         )
 
 
+class StudySourceTraitNewList(SingleTableMixin, StudyDetail):
+    """List new source traits in the most recent study version."""
+
+    template_name = 'trait_browser/study_sourcetrait_new_list.html'
+    context_table_name = 'source_trait_table'
+    table_class = tables.SourceTraitStudyTable
+    table_pagination = {'per_page': TABLE_PER_PAGE}
+
+    def get_table_data(self):
+        return self.object.get_latest_version().get_new_sourcetraits().select_related(
+            'source_dataset',
+            'source_dataset__source_study_version',
+            'source_dataset__source_study_version__study'
+        )
+
+
 class StudyTaggedTraitList(StudyDetail):
 
     template_name = 'trait_browser/study_taggedtrait_list.html'
 
     def get_context_data(self, *args, **kwargs):
         context = super(StudyTaggedTraitList, self).get_context_data(*args, **kwargs)
-        tag_counts = TaggedTrait.objects.non_archived().filter(
+        tag_counts = TaggedTrait.objects.non_archived().current().filter(
             trait__source_dataset__source_study_version__study=self.object
         ).values(
             tag_name=F('tag__title'),

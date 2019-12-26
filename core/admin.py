@@ -22,9 +22,13 @@ User = get_user_model()
 
 
 class UserCreationForm(UserCreationForm):
-    """A UserCreationForm with optional password inputs."""
+    """A UserCreationForm with optional password inputs.
+
+    From the authtools example at https://django-authtools.readthedocs.io/en/latest/how-to/invitation-email.html
+    """
 
     def __init__(self, *args, **kwargs):
+        """Neither or both password validation in the form."""
         super(UserCreationForm, self).__init__(*args, **kwargs)
         self.fields['password1'].required = False
         self.fields['password2'].required = False

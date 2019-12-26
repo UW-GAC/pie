@@ -1,3 +1,4 @@
+
 """Test the version management command."""
 
 import json
@@ -13,3 +14,4 @@ cmd = Command()
 
 
 # Fill in some tests later.
+# flake8: noqa

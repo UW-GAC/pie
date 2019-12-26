@@ -208,6 +208,28 @@ class DCCAnalystLoginTestCaseProfileTest(DCCAnalystLoginTestCase):
         response = self.client.get(self.get_url())
         self.assertNotContains(response, tagged_trait_delete_url)
 
+    def test_no_deprecated_tagged_traits(self):
+        """The list of 'my tagged traits' does not include deprecated tagged traits."""
+        study = StudyFactory.create()
+        tagged_traits = TaggedTraitFactory.create_batch(
+            2, creator=self.user,
+            trait__source_dataset__source_study_version__study=study)
+        other_tagged_trait = TaggedTraitFactory.create(
+            creator=self.user,
+            trait__source_dataset__source_study_version__study=study,
+            trait__source_dataset__source_study_version__i_is_deprecated=True
+        )
+        response = self.client.get(self.get_url())
+        context = response.context
+        study_data = context['user_taggedtraits'][0][0]
+        study_tag_data = context['user_taggedtraits'][0][1]
+        all_tagged_trait_pks = [[[el['taggedtrait_pk'] for el in taggedtraits] for tag, taggedtraits in tag_taggedtraits] for study, tag_taggedtraits in context['user_taggedtraits']]  # noqa
+        all_tagged_trait_pks = [x for y in all_tagged_trait_pks for x in y]  # Unnest once.
+        all_tagged_trait_pks = [x for y in all_tagged_trait_pks for x in y]  # Unnest twice.
+        self.assertNotIn(other_tagged_trait.pk, all_tagged_trait_pks)
+        expected_pks = [x.pk for x in tagged_traits]
+        self.assertEqual(sorted(all_tagged_trait_pks), expected_pks)
+
 
 class RecipeSubmitterLoginTestCaseProfileTest(RecipeSubmitterLoginTestCase):
 
@@ -323,7 +345,7 @@ class PhenotypeTaggerLoginTestCaseProfileTest(PhenotypeTaggerLoginTestCase):
         all_tagged_trait_pks = [[[el['taggedtrait_pk'] for el in taggedtraits] for tag, taggedtraits in tag_taggedtraits] for study, tag_taggedtraits in context['user_taggedtraits']]  # noqa
         all_tagged_trait_pks = [x for y in all_tagged_trait_pks for x in y]  # Unnest once.
         all_tagged_trait_pks = [x for y in all_tagged_trait_pks for x in y]  # Unnest twice.
-        expected_pks = list(TaggedTrait.objects.non_archived().filter(creator=self.user).values_list('pk', flat=True))
+        expected_pks = [x.pk for x in tagged_traits]
         self.assertEqual(sorted(all_tagged_trait_pks), expected_pks)
 
     def test_my_tagged_variables_correct_count_with_archived_tagged_trait(self):
@@ -473,6 +495,47 @@ class PhenotypeTaggerLoginTestCaseProfileTest(PhenotypeTaggerLoginTestCase):
         tagged_trait_delete_url = reverse('tags:tagged-traits:pk:delete', args=[dcc_review.tagged_trait.pk])
         response = self.client.get(self.get_url())
         self.assertNotContains(response, tagged_trait_delete_url)
+
+    def test_study_tagged_variables_correct_count_with_deprecated_trait(self):
+        """The counts of 'tagged variables from my studies' does not include a deprecated tagged trait."""
+        study = StudyFactory.create()
+        tagged_trait = TaggedTraitFactory.create(
+            creator=self.user, trait__source_dataset__source_study_version__study=self.study)
+        other_tagged_trait = TaggedTraitFactory.create(
+            creator=self.user,
+            trait__source_dataset__source_study_version__study=self.study,
+            trait__source_dataset__source_study_version__i_is_deprecated=True
+        )
+        response = self.client.get(self.get_url())
+        context = response.context
+        study_data = context['study_taggedtrait_counts']
+        self.assertEqual(self.user.profile.taggable_studies.count(), len(study_data))
+        study1_tag_pks = [el['tag_pk'] for el in study_data[0][1]]
+        self.assertIn(tagged_trait.tag.pk, study1_tag_pks)
+        self.assertNotIn(other_tagged_trait.tag.pk, study1_tag_pks)
+        self.assertEqual(study_data[0][1][0]['tt_count'], 1)
+
+    def test_study_tagged_variables_excludes_deprecated_tagged_traits(self):
+        """The list of 'my tagged traits' does not include deprecated tagged traits."""
+        study = StudyFactory.create()
+        tagged_traits = TaggedTraitFactory.create_batch(
+            2, creator=self.user,
+            trait__source_dataset__source_study_version__study=study)
+        other_tagged_trait = TaggedTraitFactory.create(
+            creator=self.user,
+            trait__source_dataset__source_study_version__study=study,
+            trait__source_dataset__source_study_version__i_is_deprecated=True
+        )
+        response = self.client.get(self.get_url())
+        context = response.context
+        study_data = context['user_taggedtraits'][0][0]
+        study_tag_data = context['user_taggedtraits'][0][1]
+        all_tagged_trait_pks = [[[el['taggedtrait_pk'] for el in taggedtraits] for tag, taggedtraits in tag_taggedtraits] for study, tag_taggedtraits in context['user_taggedtraits']]  # noqa
+        all_tagged_trait_pks = [x for y in all_tagged_trait_pks for x in y]  # Unnest once.
+        all_tagged_trait_pks = [x for y in all_tagged_trait_pks for x in y]  # Unnest twice.
+        self.assertNotIn(other_tagged_trait.pk, all_tagged_trait_pks)
+        expected_pks = [x.pk for x in tagged_traits]
+        self.assertEqual(sorted(all_tagged_trait_pks), expected_pks)
 
 
 class ProfilesLoginRequiredTestCase(LoginRequiredTestCase):

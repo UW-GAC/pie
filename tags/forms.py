@@ -553,7 +553,8 @@ class DCCReviewTagAndStudySelectForm(forms.Form):
 
     tag = forms.ModelChoiceField(
         queryset=models.Tag.objects.all(),
-        widget=autocomplete.ModelSelect2(url='tags:autocomplete'),
+        widget=autocomplete.ModelSelect2(url='tags:autocomplete',
+                                         forward=('unreviewed_only', forward.Const(True, 'unreviewed_only'))),
         help_text="""First select a phenotype tag. Start typing the tag name to filter the list."""
     )
     study = forms.ModelChoiceField(
@@ -579,6 +580,15 @@ class DCCReviewTagAndStudySelectForm(forms.Form):
             Submit('submit', 'Submit'),
         )
     )
+
+    def __init__(self, *args, **kwargs):
+        """Set dynamic form properties."""
+        # Call super here to set up all of the fields.
+        super().__init__(*args, **kwargs)
+        # Filter to the set of tags with unreviewed tagged traits.
+        tags_to_review_pks = models.TaggedTrait.objects.unreviewed().values_list('tag__pk', flat=True).distinct()
+        tags_to_review = models.Tag.objects.filter(pk__in=tags_to_review_pks)
+        self.fields['tag'].queryset = tags_to_review
 
     class Media:
         js = ('js/taggedtrait_review_select_form.js', )
