@@ -1,6 +1,6 @@
 # TOPMed DCC Phenotype Inventory Explorer (PIE)
 
-The TOPMed data coordinating center (DCC) uses the web app PIE as a central location for viewing and searching TOPMed phenotype data. It is primarily of use for our work on phenotype harmonization. PIE can be found at topmedphenotypes.org, with most of the app available only behind a login.
+The TOPMed data coordinating center (DCC) uses the web app PIE as a central location for viewing and searching TOPMed phenotype data. It is primarily of use for our work on phenotype harmonization. PIE can be found at [topmedphenotypes.org](https://www.topmedphenotypes.org), with most of the app available only behind a login.
 
 ## Features
 The main features of PIE are described below.
