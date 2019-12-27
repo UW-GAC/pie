@@ -6,12 +6,15 @@ The TOPMed data coordinating center (DCC) uses the web app PIE as a central loca
 The main features of PIE are described below.
 
 1. Browse
+
 Browse the TOPMed phenotype data that is available so far. Browse study variables from released dbGaP accessions by study, by dataset, or by variable. Browse DCC-harmonized variables and the component variables used in harmonization.
 
 2. Search
+
 Search the dbGaP study phenotypes by dataset or by variable. Various advanced search options and filters are available. Go directly to a variable, dataset, or study using its dbGaP accession number (phv, pht, or phs).
 
 3. Tag
+
 Tag the dbGaP study variables with controlled vocabularly phenotype concept tags. Review the resulting tagged variables for quality and consistency. 
 
 ## Technology overview
