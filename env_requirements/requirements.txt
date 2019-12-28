@@ -20,7 +20,7 @@ django-extensions==2.2.1
 django-maintenance-mode==0.13.3
 django-tables2==2.1.0
 django-watson==1.5.2
-django==1.11.22
+django==1.11.23
 docutils==0.14
 entrypoints==0.3          # via flake8
 factory-boy==2.12.0
@@ -53,8 +53,7 @@ sphinx==1.8.5
 sphinxcontrib-websupport==1.1.2  # via sphinx
 sqlparse==0.2.4           # via django-debug-toolbar
 text-unidecode==1.2       # via faker
-typing==3.6.4             # via django-extensions, flake8, sphinx
 urllib3==1.24.3           # via requests, selenium
 
 # The following packages are considered to be unsafe in a requirements file:
-# setuptools==42.0.2        # via sphinx
+# setuptools
