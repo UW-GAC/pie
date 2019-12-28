@@ -14,3 +14,5 @@ selenium_tests/*.jar
 phenotype_inventory/settings/maintenance_mode_state.txt
 phenotype_inventory/settings/ssl_certs
 trait_browser/source_db_test_data
+doctrees/
+.buildinfo
