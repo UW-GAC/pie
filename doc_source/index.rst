@@ -10,6 +10,7 @@ Welcome to PIE's documentation!
    :maxdepth: 2
    :caption: Contents:
 
+   quick_start
 
 
 Indices and tables
