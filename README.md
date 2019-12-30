@@ -30,9 +30,9 @@ PIE is built using Python 3.4. It will probably work with later versions of Pyth
 ### Django version
 PIE is currently using Django 1.11. Modifications are required to get it to run with later versions of Django.
 
-## Documenation
+## Documentation
 
-Coming soon...
+Available at https://uw-gac.github.io/pie/
 
 ## Resources
 - [Main TOPMed website](https://www.nhlbiwgs.org)
