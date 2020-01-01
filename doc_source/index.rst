@@ -11,6 +11,14 @@ Welcome to PIE's documentation!
    :caption: Contents:
 
    quick_start
+   project_organization
+   project_settings
+   project_dependencies
+   management_commands
+   admin
+   tests
+   design_strategies
+   getting_study_phenotypes
 
 
 Indices and tables
