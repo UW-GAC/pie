@@ -16,6 +16,7 @@
 # import sys
 # sys.path.insert(0, os.path.abspath('.'))
 
+import json
 import os
 import re
 import sys
@@ -23,13 +24,14 @@ import sys
 
 os.environ["DJANGO_SETTINGS_MODULE"] = "phenotype_inventory.settings.local"
 
-# Import project
+# Import project code from repo path
 sys.path.insert(0, os.path.abspath("../"))
-
-
 
 default_role = "py:obj"
 
+with open('../phenotype_inventory/version.json', 'r') as f:
+    version_json = json.loads(f.read())
+pie_version = '{}.{}'.format(version_json['major'], version_json['minor'])
 
 # -- Project information -----------------------------------------------------
 
@@ -40,8 +42,7 @@ author = 'Leslie S. Emery, Adrienne Stilp'
 # The short X.Y version
 version = ''
 # The full version, including alpha/beta/rc tags
-release = '2.13'
-# release = pie_version
+release = pie_version
 
 
 # -- General configuration ---------------------------------------------------
