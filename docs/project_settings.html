@@ -1,0 +1,142 @@
+
+
+<!doctype html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Django project configuration &#8212; PIE 2.13 documentation</title>
+    <link rel="stylesheet" href="_static/bizstyle.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <script type="text/javascript" src="_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Project dependencies" href="project_dependencies.html" />
+    <link rel="prev" title="Project organization" href="project_organization.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <!--[if lt IE 9]>
+    <script type="text/javascript" src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="project_dependencies.html" title="Project dependencies"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="project_organization.html" title="Project organization"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">PIE 2.13 documentation</a> &#187;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Django project configuration</a><ul>
+<li><a class="reference internal" href="#django-settings-files">Django settings files</a></li>
+<li><a class="reference internal" href="#django-secrets">Django secrets</a></li>
+<li><a class="reference internal" href="#database-backend">Database backend</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="project_organization.html"
+                        title="previous chapter">Project organization</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="project_dependencies.html"
+                        title="next chapter">Project dependencies</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/project_settings.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="django-project-configuration">
+<h1>Django project configuration<a class="headerlink" href="#django-project-configuration" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="django-settings-files">
+<h2>Django settings files<a class="headerlink" href="#django-settings-files" title="Permalink to this headline">¶</a></h2>
+<p>PIE uses a group of settings modules rather than a single Django settings file. Settings modules are located at <code class="docutils literal notranslate"><span class="pre">phenotype_inventory/settings</span></code>. An explanation for each settings module is below:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">base.py</span></code>: Common settings shared across all configurations. Includes directory, site name, language, time zone, static file, template, message, middleware, installed apps, sitewide URL, and app-specific settings. Inherited by each of the more specific settings files.</li>
+<li><code class="docutils literal notranslate"><span class="pre">local.py</span></code>: Settings specific to local development environments. Uses environment variables (stored in the <code class="docutils literal notranslate"><span class="pre">virtualenv</span></code> <code class="xref py py-obj docutils literal notranslate"><span class="pre">activate</span></code> script) to set Django secrets.</li>
+<li><code class="docutils literal notranslate"><span class="pre">local_sqlite.py</span></code>: Setting for a local development environment using SQLite as the backend. Creates a SQLite database file named <code class="docutils literal notranslate"><span class="pre">phenotype_inventory.sqlite3</span></code>. Uses environment variables (stored in the <code class="docutils literal notranslate"><span class="pre">virtualenv</span></code> <code class="docutils literal notranslate"><span class="pre">activate</span></code> script) to set Django secrets.</li>
+<li><code class="docutils literal notranslate"><span class="pre">production.py</span></code>: Settings specific the DCC’s production environment for PIE. These settings are responsible for deployment of the site at topmephenotypes.org. Django secrets are manually set on the production server. Designed to work with a WSGI Apache deployment.</li>
+<li><code class="docutils literal notranslate"><span class="pre">staging.py</span></code>: Settings specific the DCC’s staging environment for PIE. These settings are responsible for deployment of the site on an internal-use staging server. Django secrets are manually set on the staging server. Designed to work with a WSGI Apache deployment.</li>
+</ul>
+</div>
+<div class="section" id="django-secrets">
+<h2>Django secrets<a class="headerlink" href="#django-secrets" title="Permalink to this headline">¶</a></h2>
+<p>Many of the Django configuration settings should be kept “secret”. For the local development environments, these secrets are stored as shell environmental variables. In Apache deployment environments they are manually set on the server. Secrets include the following:</p>
+<ul class="simple">
+<li>Database login settings</li>
+<li>Secret key for hashing</li>
+<li>Email login settings</li>
+</ul>
+</div>
+<div class="section" id="database-backend">
+<h2>Database backend<a class="headerlink" href="#database-backend" title="Permalink to this headline">¶</a></h2>
+<p>The DCC uses a MariaDB database server as the backend for PIE. PIE should be largely compatible with any of the Django-allowed database backend options, but this has not been tested. For local development purposes, you may use a SQLite database - a file-based database format which doesn’t require setting up a database server. SQLite should not be used in production environments.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="project_dependencies.html" title="Project dependencies"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="project_organization.html" title="Project organization"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">PIE 2.13 documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2019, Leslie S. Emery, Adrienne Stilp.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.5.
+    </div>
+  </body>
+</html>

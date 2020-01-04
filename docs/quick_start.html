@@ -1,0 +1,293 @@
+
+
+<!doctype html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>PIE quick start guide &#8212; PIE 2.13 documentation</title>
+    <link rel="stylesheet" href="_static/bizstyle.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <script type="text/javascript" src="_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Project organization" href="project_organization.html" />
+    <link rel="prev" title="Welcome to PIE’s documentation!" href="index.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <!--[if lt IE 9]>
+    <script type="text/javascript" src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="project_organization.html" title="Project organization"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to PIE’s documentation!"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">PIE 2.13 documentation</a> &#187;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">PIE quick start guide</a><ul>
+<li><a class="reference internal" href="#clone-the-git-repository">1. Clone the git repository</a></li>
+<li><a class="reference internal" href="#set-up-a-python-virtual-environment-using-virtualenv">2. Set up a Python virtual environment using <code class="docutils literal notranslate"><span class="pre">virtualenv</span></code></a></li>
+<li><a class="reference internal" href="#activate-the-virtual-environment-and-install-required-packages">3. Activate the virtual environment and install required packages</a></li>
+<li><a class="reference internal" href="#choose-settings-and-database">4. Choose settings and database</a><ul>
+<li><a class="reference internal" href="#use-local-sqlite-settings">Use local SQLite settings</a></li>
+<li><a class="reference internal" href="#or-use-a-sql-database-server">Or use a SQL database server</a></li>
+<li><a class="reference internal" href="#getting-a-secret-key-value">Getting a secret key value</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#reactivate-virtualenv-with-new-settings">5. Reactivate <code class="docutils literal notranslate"><span class="pre">virtualenv</span></code> with new settings</a></li>
+<li><a class="reference internal" href="#set-up-the-database-tables">6. Set up the database tables</a></li>
+<li><a class="reference internal" href="#make-sure-your-database-connection-works">7. Make sure your database connection works</a></li>
+<li><a class="reference internal" href="#running-tests">8. Running tests</a><ul>
+<li><a class="reference internal" href="#test-import-db-will-fail-without-test-data-obtained-from-the-dcc"><code class="docutils literal notranslate"><span class="pre">test_import_db</span></code> will fail without test data obtained from the DCC</a></li>
+<li><a class="reference internal" href="#running-a-minimal-set-of-tests-to-see-that-the-code-works-as-expected">Running a minimal set of tests to see that the code works as expected</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#create-a-superuser-account-for-login">9. Create a superuser account for login</a></li>
+<li><a class="reference internal" href="#make-some-fake-data-to-fill-your-development-site-with">10. Make some fake data to fill your development site with</a></li>
+<li><a class="reference internal" href="#run-a-development-server">11. Run a development server</a></li>
+<li><a class="reference internal" href="#deactivate-the-virtual-environment-when-you-re-done-working-on-pie">12. Deactivate the virtual environment when you’re done working on PIE</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="index.html"
+                        title="previous chapter">Welcome to PIE’s documentation!</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="project_organization.html"
+                        title="next chapter">Project organization</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/quick_start.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="pie-quick-start-guide">
+<h1>PIE quick start guide<a class="headerlink" href="#pie-quick-start-guide" title="Permalink to this headline">¶</a></h1>
+<p>Follow these steps to set up a local development version of PIE:</p>
+<div class="section" id="clone-the-git-repository">
+<h2>1. Clone the git repository<a class="headerlink" href="#clone-the-git-repository" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">clone</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">UW</span><span class="o">-</span><span class="n">GAC</span><span class="o">/</span><span class="n">pie</span><span class="o">.</span><span class="n">git</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="set-up-a-python-virtual-environment-using-virtualenv">
+<h2>2. Set up a Python virtual environment using <code class="docutils literal notranslate"><span class="pre">virtualenv</span></code><a class="headerlink" href="#set-up-a-python-virtual-environment-using-virtualenv" title="Permalink to this headline">¶</a></h2>
+<p>Before running the following commands, make sure you have <code class="docutils literal notranslate"><span class="pre">pip</span></code> and <code class="docutils literal notranslate"><span class="pre">virtualenv</span></code> installed for the version of Python 3 you plan to use.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">virtualenv</span> <span class="o">~/</span><span class="n">virtualenv</span><span class="o">/</span><span class="n">pie</span>
+</pre></div>
+</div>
+<p>In this example the virtual environment is set up at <code class="docutils literal notranslate"><span class="pre">~/virtualenv</span></code> but you can install it in any location you’d like.</p>
+</div>
+<div class="section" id="activate-the-virtual-environment-and-install-required-packages">
+<h2>3. Activate the virtual environment and install required packages<a class="headerlink" href="#activate-the-virtual-environment-and-install-required-packages" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Change directory into the PIE git repository.</span>
+<span class="n">cd</span> <span class="n">pie</span>
+<span class="n">source</span> <span class="o">~/</span><span class="n">virtualenv</span><span class="o">/</span><span class="n">pie</span><span class="o">/</span><span class="nb">bin</span><span class="o">/</span><span class="n">activate</span>
+<span class="n">pip</span> <span class="n">install</span> <span class="o">-</span><span class="n">r</span> <span class="n">env_requirements</span><span class="o">/</span><span class="n">requirements</span><span class="o">.</span><span class="n">txt</span>
+</pre></div>
+</div>
+<p>One of PIE’s requirements has a feature that plots the structure of the backend database. This feature requires that you have the package <code class="docutils literal notranslate"><span class="pre">graphviz</span></code> installed. If you don’t need this schema plotting feature, you can ignore the error message about not being able to install <code class="docutils literal notranslate"><span class="pre">pygraphviz</span></code> due to missing <code class="docutils literal notranslate"><span class="pre">graphviz</span></code>.</p>
+</div>
+<div class="section" id="choose-settings-and-database">
+<h2>4. Choose settings and database<a class="headerlink" href="#choose-settings-and-database" title="Permalink to this headline">¶</a></h2>
+<p>You will need to set up a database for PIE to use to store the app’s data. You may choose to use SQLite (the quickest and easiest way, but less similar to production settings). Or you may choose to use a SQL database server, e.g., MySQL, MariaDB, or PostgreSQL. The DCC uses MariaDB. Either way you will need to modify the virtual environment’s activate file with the local settings you are going to use.</p>
+<p>Open up the file for editing in a simple command line editor.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">nano</span> <span class="o">~/</span><span class="n">virtualenv</span><span class="o">/</span><span class="n">pie</span><span class="o">/</span><span class="nb">bin</span><span class="o">/</span><span class="n">activate</span>
+</pre></div>
+</div>
+<div class="section" id="use-local-sqlite-settings">
+<h3>Use local SQLite settings<a class="headerlink" href="#use-local-sqlite-settings" title="Permalink to this headline">¶</a></h3>
+<p>You will need to make sure you have SQLite installed on your system first. Add the following lines to the end of the <code class="docutils literal notranslate"><span class="pre">activate</span></code> file, with values in angle brackets (&lt;&gt;) filled in with the appropriate values.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">export</span> <span class="n">PYTHONPATH</span><span class="o">=</span><span class="s1">&#39;&lt;path_to_pie_repo&gt;/pie/phenotype_inventory&#39;</span>
+<span class="n">export</span> <span class="n">DJANGO_SETTINGS_MODULE</span><span class="o">=</span><span class="s1">&#39;phenotype_inventory.settings.local_sqlite&#39;</span>
+<span class="n">export</span> <span class="n">DJANGO_SECRET_KEY</span><span class="o">=</span><span class="s2">&quot;&lt;add a secret key here&gt;&quot;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="or-use-a-sql-database-server">
+<h3>Or use a SQL database server<a class="headerlink" href="#or-use-a-sql-database-server" title="Permalink to this headline">¶</a></h3>
+<p>You will need to make sure that the database server is set up and you can log in to the SQL shell with the database settings you are going to save in your activate file. Add the following lines to the end of the <code class="docutils literal notranslate"><span class="pre">activate</span></code> file, with values in angle brackets (&lt;&gt;) filled in with the appropriate values.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">export</span> <span class="n">PYTHONPATH</span><span class="o">=</span><span class="s1">&#39;&lt;path_to_pie_repo&gt;/pie/phenotype_inventory&#39;</span>
+<span class="n">export</span> <span class="n">DJANGO_SETTINGS_MODULE</span><span class="o">=</span><span class="s1">&#39;phenotype_inventory.settings.local&#39;</span>
+<span class="n">export</span> <span class="n">DJANGO_SECRET_KEY</span><span class="o">=</span><span class="s2">&quot;&lt;add a secret key here&gt;&quot;</span>
+<span class="n">export</span> <span class="n">DB_NAME</span><span class="o">=</span><span class="s1">&#39;&lt;name_of_development_DB&gt;&#39;</span>
+<span class="n">export</span> <span class="n">DB_HOST</span><span class="o">=</span><span class="s1">&#39;&lt;hostname_of_development_DB&#39;</span>
+<span class="n">export</span> <span class="n">DB_PORT</span><span class="o">=</span><span class="s1">&#39;&lt;port_of_development_DB&gt;&#39;</span>
+<span class="n">export</span> <span class="n">DB_USER</span><span class="o">=</span><span class="s1">&#39;&lt;username_for_development_DB&gt;&#39;</span>
+<span class="n">export</span> <span class="n">DB_PASS</span><span class="o">=</span><span class="s1">&#39;&lt;password_for_development_DB&gt;&#39;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="getting-a-secret-key-value">
+<h3>Getting a secret key value<a class="headerlink" href="#getting-a-secret-key-value" title="Permalink to this headline">¶</a></h3>
+<p>The Django secret key is used for hashing secure data (e.g., passwords, sessions). It should always be kept <strong>secret</strong> and should never be committed to a code repository. You will need to create a secret key to insert into the settings in your <code class="docutils literal notranslate"><span class="pre">virtualenv</span></code> activate file. To create a secret key value, you can use <a class="reference external" href="https://miniwebtool.com/django-secret-key-generator/">this free web tool</a>. Or if you have access to an installed Django application using the <code class="docutils literal notranslate"><span class="pre">django-extensions</span></code> app, you can use the <code class="docutils literal notranslate"><span class="pre">generate_secret_key</span></code> management command like so:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">./</span><span class="n">manage</span><span class="o">.</span><span class="n">py</span> <span class="n">generate_secret_key</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="reactivate-virtualenv-with-new-settings">
+<h2>5. Reactivate <code class="docutils literal notranslate"><span class="pre">virtualenv</span></code> with new settings<a class="headerlink" href="#reactivate-virtualenv-with-new-settings" title="Permalink to this headline">¶</a></h2>
+<p>Now that you’ve added your Django settings to the <code class="docutils literal notranslate"><span class="pre">virtualenv</span></code> <code class="docutils literal notranslate"><span class="pre">activate</span></code> script, you’ll need to deactivate and reactivate the environment.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">deactivate</span>
+<span class="n">source</span> <span class="o">~/</span><span class="n">virtualenv</span><span class="o">/</span><span class="nb">bin</span><span class="o">/</span><span class="n">activate</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="set-up-the-database-tables">
+<h2>6. Set up the database tables<a class="headerlink" href="#set-up-the-database-tables" title="Permalink to this headline">¶</a></h2>
+<p>In order to create the database tables used to store data for the Django site, you will need to run Django migrations, which are a set of Django scripts used to set up the database schema.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Look at the available migrations and which have been run or not so far.</span>
+<span class="o">./</span><span class="n">manage</span><span class="o">.</span><span class="n">py</span> <span class="n">showmigrations</span>
+<span class="c1"># Run all of the migrations needed.</span>
+<span class="o">./</span><span class="n">manage</span><span class="o">.</span><span class="n">py</span> <span class="n">migrate</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="make-sure-your-database-connection-works">
+<h2>7. Make sure your database connection works<a class="headerlink" href="#make-sure-your-database-connection-works" title="Permalink to this headline">¶</a></h2>
+<p>Log into the database shell to make sure that Django is able to communicate with the database you have specified.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">./</span><span class="n">manage</span><span class="o">.</span><span class="n">py</span> <span class="n">dbshell</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="running-tests">
+<h2>8. Running tests<a class="headerlink" href="#running-tests" title="Permalink to this headline">¶</a></h2>
+<p>To test that the PIE code works as expected, you can run tests on your development setup.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Run all the tests. This will take a very long time to run hundreds of tests.</span>
+<span class="o">./</span><span class="n">manage</span><span class="o">.</span><span class="n">py</span> <span class="n">test</span>
+</pre></div>
+</div>
+<div class="section" id="test-import-db-will-fail-without-test-data-obtained-from-the-dcc">
+<h3><code class="docutils literal notranslate"><span class="pre">test_import_db</span></code> will fail without test data obtained from the DCC<a class="headerlink" href="#test-import-db-will-fail-without-test-data-obtained-from-the-dcc" title="Permalink to this headline">¶</a></h3>
+<p>You can obtain test data for use by the test_import_db test module by contacting the DCC. The test source data is a set of MariaDB database dump files mimicking the structure of the TOPMed DCC’s phenotype harmonization database. Because the harmonization database is not available outside of the DCC, it is unlikely that this test data will be useful to those outside of the DCC.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># test_import_db tests will fail</span>
+<span class="n">Creating</span> <span class="n">test</span> <span class="n">database</span> <span class="k">for</span> <span class="n">alias</span> <span class="s1">&#39;default&#39;</span><span class="o">...</span>
+<span class="o">&lt;</span><span class="n">Many</span> <span class="n">test</span> <span class="n">errors</span> <span class="n">will</span> <span class="n">show</span> <span class="n">up</span> <span class="n">here</span><span class="o">&gt;</span>
+<span class="n">Ran</span> <span class="mi">53</span> <span class="n">tests</span> <span class="ow">in</span> <span class="mf">0.283</span><span class="n">s</span>
+
+<span class="n">FAILED</span> <span class="p">(</span><span class="n">errors</span><span class="o">=</span><span class="mi">37</span><span class="p">,</span> <span class="n">skipped</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">Destroying</span> <span class="n">test</span> <span class="n">database</span> <span class="k">for</span> <span class="n">alias</span> <span class="s1">&#39;default&#39;</span><span class="o">...</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="running-a-minimal-set-of-tests-to-see-that-the-code-works-as-expected">
+<h3>Running a minimal set of tests to see that the code works as expected<a class="headerlink" href="#running-a-minimal-set-of-tests-to-see-that-the-code-works-as-expected" title="Permalink to this headline">¶</a></h3>
+<p>Instead of running all of the tests as shown above, you can run a select set of tests that demonstrate that most of the functionality of PIE works as expected.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">./</span><span class="n">manage</span><span class="o">.</span><span class="n">py</span> <span class="n">test</span> <span class="n">tags</span>
+<span class="o">./</span><span class="n">manage</span><span class="o">.</span><span class="n">py</span> <span class="n">test</span> <span class="n">profiles</span>
+<span class="o">./</span><span class="n">manage</span><span class="o">.</span><span class="n">py</span> <span class="n">test</span> <span class="n">recipes</span>
+<span class="o">./</span><span class="n">manage</span><span class="o">.</span><span class="n">py</span> <span class="n">test</span> <span class="n">core</span>
+<span class="o">./</span><span class="n">manage</span><span class="o">.</span><span class="n">py</span> <span class="n">test</span> <span class="n">trait_browser</span><span class="o">.</span><span class="n">test_views</span>
+<span class="o">./</span><span class="n">manage</span><span class="o">.</span><span class="n">py</span> <span class="n">test</span> <span class="n">trait_browser</span><span class="o">.</span><span class="n">test_forms</span>
+<span class="o">./</span><span class="n">manage</span><span class="o">.</span><span class="n">py</span> <span class="n">test</span> <span class="n">trait_browser</span><span class="o">.</span><span class="n">test_models</span>
+<span class="o">./</span><span class="n">manage</span><span class="o">.</span><span class="n">py</span> <span class="n">test</span> <span class="n">trait_browser</span><span class="o">.</span><span class="n">test_searches</span>
+<span class="o">./</span><span class="n">manage</span><span class="o">.</span><span class="n">py</span> <span class="n">test</span> <span class="n">trait_browser</span><span class="o">.</span><span class="n">test_tables</span>
+<span class="o">./</span><span class="n">manage</span><span class="o">.</span><span class="n">py</span> <span class="n">test</span> <span class="n">trait_browser</span><span class="o">.</span><span class="n">test_factories</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="create-a-superuser-account-for-login">
+<h2>9. Create a superuser account for login<a class="headerlink" href="#create-a-superuser-account-for-login" title="Permalink to this headline">¶</a></h2>
+<p>You will need a superuser account to administer your development Django site.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">./</span><span class="n">manage</span><span class="o">.</span><span class="n">py</span> <span class="n">createsuperuser</span>
+</pre></div>
+</div>
+<p>You will be prompted to enter an email address and password for this Django administrator account.</p>
+</div>
+<div class="section" id="make-some-fake-data-to-fill-your-development-site-with">
+<h2>10. Make some fake data to fill your development site with<a class="headerlink" href="#make-some-fake-data-to-fill-your-development-site-with" title="Permalink to this headline">¶</a></h2>
+<p>PIE has a function that will create fake data to fill your development site with. Run that function now from within the Django shell so that your development site isn’t empty.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">./</span><span class="n">manage</span><span class="o">.</span><span class="n">py</span> <span class="n">shell</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span> <span class="nn">core.build_test_db</span> <span class="k">import</span> <span class="n">build_test_db</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">build_test_db</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="run-a-development-server">
+<h2>11. Run a development server<a class="headerlink" href="#run-a-development-server" title="Permalink to this headline">¶</a></h2>
+<p>Run the Django builtin web server (which is intended only for development purposes). This will serve a copy of the PIE app that is only available to you locally.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">./</span><span class="n">manage</span><span class="o">.</span><span class="n">py</span> <span class="n">runserver</span>
+</pre></div>
+</div>
+<p>Now you should be able to view your development version of PIE by navigating to <a class="reference external" href="http://127.0.0.1:8000">http://127.0.0.1:8000</a> in your favorite browser.</p>
+</div>
+<div class="section" id="deactivate-the-virtual-environment-when-you-re-done-working-on-pie">
+<h2>12. Deactivate the virtual environment when you’re done working on PIE<a class="headerlink" href="#deactivate-the-virtual-environment-when-you-re-done-working-on-pie" title="Permalink to this headline">¶</a></h2>
+<p>In order to return your shell environment to normal function, make sure to deactivate the PIE <code class="docutils literal notranslate"><span class="pre">virtualenv</span></code> when you’re done.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">deactivate</span>
+</pre></div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="project_organization.html" title="Project organization"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to PIE’s documentation!"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">PIE 2.13 documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2019, Leslie S. Emery, Adrienne Stilp.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.5.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,329 @@
+
+
+<!doctype html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Tests &#8212; PIE 2.13 documentation</title>
+    <link rel="stylesheet" href="_static/bizstyle.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <script type="text/javascript" src="_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Admin interface" href="admin.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <!--[if lt IE 9]>
+    <script type="text/javascript" src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="admin.html" title="Admin interface"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">PIE 2.13 documentation</a> &#187;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Tests</a><ul>
+<li><a class="reference internal" href="#organization-of-tests">Organization of tests</a></li>
+<li><a class="reference internal" href="#inventory-of-current-tests">Inventory of current tests</a></li>
+<li><a class="reference internal" href="#running-all-of-the-tests">Running all of the tests</a><ul>
+<li><a class="reference internal" href="#database-for-testing-purposes">Database for testing purposes</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#running-selected-tests">Running selected tests</a></li>
+<li><a class="reference internal" href="#prioritizing-which-tests-to-run">Prioritizing which tests to run</a></li>
+<li><a class="reference internal" href="#assessing-test-coverage">Assessing test coverage</a></li>
+<li><a class="reference internal" href="#tests-of-import-db">Tests of <code class="docutils literal notranslate"><span class="pre">import_db</span></code></a><ul>
+<li><a class="reference internal" href="#source-db-test-data-files">Source DB test data files</a></li>
+<li><a class="reference internal" href="#running-test-import-db">Running <code class="docutils literal notranslate"><span class="pre">test_import_db</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#tests-that-are-skipped-by-default">Tests that are skipped by default</a></li>
+<li><a class="reference internal" href="#selenium-tests">Selenium tests</a><ul>
+<li><a class="reference internal" href="#chromedriver-setup">Chromedriver setup</a></li>
+<li><a class="reference internal" href="#browser-and-os-compatibility">Browser and OS compatibility</a></li>
+<li><a class="reference internal" href="#selenium-server-jar-file">Selenium server <code class="docutils literal notranslate"><span class="pre">.jar</span></code> file</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="admin.html"
+                        title="previous chapter">Admin interface</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/tests.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="tests">
+<h1>Tests<a class="headerlink" href="#tests" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="organization-of-tests">
+<h2>Organization of tests<a class="headerlink" href="#organization-of-tests" title="Permalink to this headline">¶</a></h2>
+<p>For every module in PIE that has testable code, there exists a corresponding test module. For example, within the <code class="docutils literal notranslate"><span class="pre">tags</span></code> app, there is a test module <code class="docutils literal notranslate"><span class="pre">test_models.py</span></code> corresponding to the module <code class="docutils literal notranslate"><span class="pre">models.py</span></code>. The partial directory listing below shows the modules with testable code and their corresponding test modules.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>tags
+├── admin.py
+├── test_admin.py
+├── factories.py
+├── test_factories.py
+├── forms.py
+├── test_forms.py
+├── management
+│   └── commands
+│       ├── export_tagging.py
+│       └── test_export_tagging.py
+├── models.py
+├── test_models.py
+├── tables.py
+├── test_tables.py
+├── test_views.py
+└── views.py
+</pre></div>
+</div>
+<p>Tests use the <a class="reference external" href="https://docs.djangoproject.com/en/1.11/topics/testing/">Django testing framework</a>, which is built on Python’s <a class="reference external" href="https://docs.python.org/3.5/library/unittest.html">unittest</a>. There is generally one <code class="docutils literal notranslate"><span class="pre">TestCase</span></code> class for each PIE function or class to be tested, though tests for more complicated structures may be split into multiple <code class="docutils literal notranslate"><span class="pre">TestCase</span></code> classes. While a single <code class="docutils literal notranslate"><span class="pre">assert</span></code> statement per test method is desirable, in some cases there are multiple <code class="docutils literal notranslate"><span class="pre">assert</span></code> statements per test - usually to prevent too much repetition of code used to make fake data objects for testing.</p>
+</div>
+<div class="section" id="inventory-of-current-tests">
+<h2>Inventory of current tests<a class="headerlink" href="#inventory-of-current-tests" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>├── core
+│   ├── management
+│   │   └── commands
+│   │       └── test_increment_version.py
+│   ├── templatetags
+│   │   └── test_core_tags.py
+│   ├── test_factories.py
+│   └── test_migrations.py
+├── phenotype_inventory
+│   ├── settings
+│   │   └── test_settings.py
+│   ├── test_admin.py
+│   └── test_email_sending.py
+├── profiles
+│   ├── test_models.py
+│   └── test_views.py
+├── recipes
+│   ├── test_factories.py
+│   ├── test_forms.py
+│   ├── test_models.py
+│   └── test_views.py
+├── selenium_tests
+│   └── test_selenium_development.py
+├── tags
+│   ├── management
+│   │   └── commands
+│   │       └── test_export_tagging.py
+│   ├── test_admin.py
+│   ├── test_factories.py
+│   ├── test_forms.py
+│   ├── test_models.py
+│   ├── test_tables.py
+│   └── test_views.py
+└── trait_browser
+├── management
+│   └── commands
+│       ├── test_fill_fields.py
+│       └── test_import_db.py
+├── test_factories.py
+├── test_forms.py
+├── test_models.py
+├── test_searches.py
+├── test_tables.py
+└── test_views.py
+</pre></div>
+</div>
+</div>
+<div class="section" id="running-all-of-the-tests">
+<h2>Running all of the tests<a class="headerlink" href="#running-all-of-the-tests" title="Permalink to this headline">¶</a></h2>
+<p>To run all of the tests in the entire project (currently more than 2,000 test methods), you can use Django’s builtin test runner.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Run all the tests. This will take a very long time.</span>
+<span class="o">./</span><span class="n">manage</span><span class="o">.</span><span class="n">py</span> <span class="n">test</span>
+</pre></div>
+</div>
+<div class="section" id="database-for-testing-purposes">
+<h3>Database for testing purposes<a class="headerlink" href="#database-for-testing-purposes" title="Permalink to this headline">¶</a></h3>
+<p>When Django runs tests, it needs to able to access data and manipulate the database without endangering the data in the “real” project database that is currently in use (this could be a local development database, or the production database for the deployed site). In order to run tests without affecting the data in the real project database, Django creates a special “test database” that is used for tests. The first time you run a test in your current working environment, Django will create the test database. Every time a test method is run, the test database schema will be rebuilt. The test database schema will be emptied at the end of each test method.</p>
+<blockquote>
+<div>The test database has the same settings as the real database, but the database name is prepended with “<a href="#id1"><span class="problematic" id="id2">test_</span></a>”. For example, if you are working in a local production environment and using a database named <code class="docutils literal notranslate"><span class="pre">pie</span></code>, the test database will be named <code class="docutils literal notranslate"><span class="pre">test_pie</span></code>. So for testing purposes you will need to set up access to a database named <code class="docutils literal notranslate"><span class="pre">DATABASES['default']['NAME']</span></code> (from the settings file) and a testing database named <code class="docutils literal notranslate"><span class="pre">'test_'</span> <span class="pre">+</span> <span class="pre">DATABASES['default']['NAME']</span></code>.</div></blockquote>
+</div>
+</div>
+<div class="section" id="running-selected-tests">
+<h2>Running selected tests<a class="headerlink" href="#running-selected-tests" title="Permalink to this headline">¶</a></h2>
+<p>You can select individual test modules, classes, or methods to run by specifying their path in Python module/function format. See the following examples.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Run all tests from the tags/test_models.py module</span>
+<span class="o">./</span><span class="n">manage</span><span class="o">.</span><span class="n">py</span> <span class="n">test</span> <span class="n">tags</span><span class="o">.</span><span class="n">test_models</span>
+
+<span class="c1"># Run all tests from the class TagTest</span>
+<span class="o">./</span><span class="n">manage</span><span class="o">.</span><span class="n">py</span> <span class="n">test</span> <span class="n">tags</span><span class="o">.</span><span class="n">test_models</span><span class="o">.</span><span class="n">TagTest</span>
+
+<span class="c1"># Run a specific test method</span>
+<span class="o">./</span><span class="n">manage</span><span class="o">.</span><span class="n">py</span> <span class="n">test</span> <span class="n">tags</span><span class="o">.</span><span class="n">test_models</span><span class="o">.</span><span class="n">TagTest</span><span class="o">.</span><span class="n">test_unique_lower_title</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="prioritizing-which-tests-to-run">
+<h2>Prioritizing which tests to run<a class="headerlink" href="#prioritizing-which-tests-to-run" title="Permalink to this headline">¶</a></h2>
+<p>Because running all of the tests can take a very long time, the following commands are often used to selectively run the most relevant tests. The <code class="docutils literal notranslate"><span class="pre">--verbosity=2</span></code> option is used to print the name and status of each individual test method as it is run.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Run tests for all of the custom-written apps, but don&#39;t run trait_browser&#39;s test_import_db</span>
+<span class="c1"># Should take &lt;30 min to run</span>
+<span class="o">./</span><span class="n">manage</span><span class="o">.</span><span class="n">py</span> <span class="n">test</span> <span class="n">tags</span> <span class="o">--</span><span class="n">verbosity</span><span class="o">=</span><span class="mi">2</span>
+<span class="o">./</span><span class="n">manage</span><span class="o">.</span><span class="n">py</span> <span class="n">test</span> <span class="n">profiles</span> <span class="o">--</span><span class="n">verbosity</span><span class="o">=</span><span class="mi">2</span>
+<span class="o">./</span><span class="n">manage</span><span class="o">.</span><span class="n">py</span> <span class="n">test</span> <span class="n">recipes</span> <span class="o">--</span><span class="n">verbosity</span><span class="o">=</span><span class="mi">2</span>
+<span class="o">./</span><span class="n">manage</span><span class="o">.</span><span class="n">py</span> <span class="n">test</span> <span class="n">core</span> <span class="o">--</span><span class="n">verbosity</span><span class="o">=</span><span class="mi">2</span>
+<span class="o">./</span><span class="n">manage</span><span class="o">.</span><span class="n">py</span> <span class="n">test</span> <span class="n">trait_browser</span><span class="o">.</span><span class="n">test_views</span> <span class="o">--</span><span class="n">verbosity</span><span class="o">=</span><span class="mi">2</span>
+<span class="o">./</span><span class="n">manage</span><span class="o">.</span><span class="n">py</span> <span class="n">test</span> <span class="n">trait_browser</span><span class="o">.</span><span class="n">test_forms</span> <span class="o">--</span><span class="n">verbosity</span><span class="o">=</span><span class="mi">2</span>
+<span class="o">./</span><span class="n">manage</span><span class="o">.</span><span class="n">py</span> <span class="n">test</span> <span class="n">trait_browser</span><span class="o">.</span><span class="n">test_models</span> <span class="o">--</span><span class="n">verbosity</span><span class="o">=</span><span class="mi">2</span>
+<span class="o">./</span><span class="n">manage</span><span class="o">.</span><span class="n">py</span> <span class="n">test</span> <span class="n">trait_browser</span><span class="o">.</span><span class="n">test_searches</span> <span class="o">--</span><span class="n">verbosity</span><span class="o">=</span><span class="mi">2</span>
+<span class="o">./</span><span class="n">manage</span><span class="o">.</span><span class="n">py</span> <span class="n">test</span> <span class="n">trait_browser</span><span class="o">.</span><span class="n">test_tables</span> <span class="o">--</span><span class="n">verbosity</span><span class="o">=</span><span class="mi">2</span>
+<span class="o">./</span><span class="n">manage</span><span class="o">.</span><span class="n">py</span> <span class="n">test</span> <span class="n">trait_browser</span><span class="o">.</span><span class="n">test_factories</span> <span class="o">--</span><span class="n">verbosity</span><span class="o">=</span><span class="mi">2</span>
+
+<span class="c1"># Test just the views from every custom app</span>
+<span class="o">./</span><span class="n">manage</span><span class="o">.</span><span class="n">py</span> <span class="n">test</span> <span class="n">profiles</span><span class="o">.</span><span class="n">test_views</span> <span class="o">--</span><span class="n">verbosity</span><span class="o">=</span><span class="mi">2</span>
+<span class="o">./</span><span class="n">manage</span><span class="o">.</span><span class="n">py</span> <span class="n">test</span> <span class="n">recipes</span><span class="o">.</span><span class="n">test_views</span> <span class="o">--</span><span class="n">verbosity</span><span class="o">=</span><span class="mi">2</span>
+<span class="o">./</span><span class="n">manage</span><span class="o">.</span><span class="n">py</span> <span class="n">test</span> <span class="n">tags</span><span class="o">.</span><span class="n">test_views</span> <span class="o">--</span><span class="n">verbosity</span><span class="o">=</span><span class="mi">2</span>
+<span class="o">./</span><span class="n">manage</span><span class="o">.</span><span class="n">py</span> <span class="n">test</span> <span class="n">trait_browser</span><span class="o">.</span><span class="n">test_views</span> <span class="o">--</span><span class="n">verbosity</span><span class="o">=</span><span class="mi">2</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="assessing-test-coverage">
+<h2>Assessing test coverage<a class="headerlink" href="#assessing-test-coverage" title="Permalink to this headline">¶</a></h2>
+<p>To see how much of the project code is tested (the “test coverage”), you can use the Python <code class="docutils literal notranslate"><span class="pre">coverage</span></code> package when running all of the tests.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Run test coverage</span>
+<span class="n">coverage</span> <span class="n">run</span> <span class="o">--</span><span class="n">source</span><span class="o">=</span><span class="s1">&#39;.&#39;</span> <span class="n">manage</span><span class="o">.</span><span class="n">py</span> <span class="n">test</span>
+<span class="n">coverage</span> <span class="n">report</span> <span class="c1"># text output</span>
+<span class="n">coverage</span> <span class="n">html</span> <span class="c1"># html output</span>
+
+<span class="c1"># On a mac, open the index.html file in the default browser</span>
+<span class="nb">open</span> <span class="n">htmlcov</span><span class="o">/</span><span class="n">index</span><span class="o">.</span><span class="n">html</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="tests-of-import-db">
+<h2>Tests of <code class="docutils literal notranslate"><span class="pre">import_db</span></code><a class="headerlink" href="#tests-of-import-db" title="Permalink to this headline">¶</a></h2>
+<p>The management command <code class="docutils literal notranslate"><span class="pre">import_db</span></code> tests the ability of the PIE project code to import data from a database mimicking the structure of the TOPMed DCC’s phenotype harmonization database. Those outside of the DCC are unlikely to want to use the <code class="docutils literal notranslate"><span class="pre">import_db</span></code> command, or to run its tests from <code class="docutils literal notranslate"><span class="pre">test_import_db</span></code>.</p>
+<div class="section" id="source-db-test-data-files">
+<h3>Source DB test data files<a class="headerlink" href="#source-db-test-data-files" title="Permalink to this headline">¶</a></h3>
+<p>DCC team members who need to run <code class="docutils literal notranslate"><span class="pre">test_import_db</span></code> will need to obtain test database files. You can either copy existing files from another PIE developer, or create a new version of the files. The script that creates these test database files is located in the <code class="docutils literal notranslate"><span class="pre">topmed_pheno_database</span></code> repository at <code class="docutils literal notranslate"><span class="pre">R_code/make_phenotype_inventory_test_data.R</span></code>. The test database files should be saved to the <code class="docutils literal notranslate"><span class="pre">trait_browser/source_db_test_data</span></code> directory.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Copy files from another location</span>
+<span class="n">cp</span> <span class="o">-</span><span class="n">R</span> <span class="n">other_copy_of_pie_repo</span><span class="o">/</span><span class="n">trait_browser</span><span class="o">/</span><span class="n">source_db_test_data</span> <span class="n">my_copy_of_pie_repo</span>
+
+<span class="c1"># Make new files</span>
+<span class="n">workon</span> <span class="n">topmed_pheno_database</span>
+<span class="n">source</span> <span class="o">/</span><span class="n">projects</span><span class="o">/</span><span class="n">topmed</span><span class="o">/</span><span class="n">working_code</span><span class="o">/</span><span class="n">phenotype_harmonization</span><span class="o">/</span><span class="n">env</span><span class="o">/</span><span class="n">activate_pheno_env</span>
+<span class="o">./</span><span class="n">make_phenotype_inventory_test_data</span><span class="o">.</span><span class="n">R</span> <span class="n">my_copy_of_topmed_pheno_database_repo</span> <span class="n">my_copy_of_pie_repo</span><span class="o">/</span><span class="n">trait_browser</span><span class="o">/</span><span class="n">source_db_test_data</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="running-test-import-db">
+<h3>Running <code class="docutils literal notranslate"><span class="pre">test_import_db</span></code><a class="headerlink" href="#running-test-import-db" title="Permalink to this headline">¶</a></h3>
+<p>Once you have your test source db files set up, you are ready to run the <code class="docutils literal notranslate"><span class="pre">import_db</span></code> tests, in part or in full.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Run a subset of test classes from test_import_db to find failures quickly</span>
+<span class="c1"># Should take &lt;30 min to run</span>
+<span class="o">./</span><span class="n">manage</span><span class="o">.</span><span class="n">py</span> <span class="n">test</span> <span class="n">trait_browser</span><span class="o">.</span><span class="n">management</span><span class="o">.</span><span class="n">commands</span><span class="o">.</span><span class="n">test_import_db</span><span class="o">.</span><span class="n">GetSourceDbTest</span> <span class="o">--</span><span class="n">verbosity</span><span class="o">=</span><span class="mi">2</span>
+<span class="o">./</span><span class="n">manage</span><span class="o">.</span><span class="n">py</span> <span class="n">test</span> <span class="n">trait_browser</span><span class="o">.</span><span class="n">management</span><span class="o">.</span><span class="n">commands</span><span class="o">.</span><span class="n">test_import_db</span><span class="o">.</span><span class="n">DbFixersTest</span> <span class="o">--</span><span class="n">verbosity</span><span class="o">=</span><span class="mi">2</span>
+<span class="o">./</span><span class="n">manage</span><span class="o">.</span><span class="n">py</span> <span class="n">test</span> <span class="n">trait_browser</span><span class="o">.</span><span class="n">management</span><span class="o">.</span><span class="n">commands</span><span class="o">.</span><span class="n">test_import_db</span><span class="o">.</span><span class="n">BackupTest</span> <span class="o">--</span><span class="n">verbosity</span><span class="o">=</span><span class="mi">2</span>
+<span class="o">./</span><span class="n">manage</span><span class="o">.</span><span class="n">py</span> <span class="n">test</span> <span class="n">trait_browser</span><span class="o">.</span><span class="n">management</span><span class="o">.</span><span class="n">commands</span><span class="o">.</span><span class="n">test_import_db</span><span class="o">.</span><span class="n">ImportHelperTest</span> <span class="o">--</span><span class="n">verbosity</span><span class="o">=</span><span class="mi">2</span>
+<span class="o">./</span><span class="n">manage</span><span class="o">.</span><span class="n">py</span> <span class="n">test</span> <span class="n">trait_browser</span><span class="o">.</span><span class="n">management</span><span class="o">.</span><span class="n">commands</span><span class="o">.</span><span class="n">test_import_db</span><span class="o">.</span><span class="n">UpdateHelperTest</span> <span class="o">--</span><span class="n">verbosity</span><span class="o">=</span><span class="mi">2</span>
+<span class="o">./</span><span class="n">manage</span><span class="o">.</span><span class="n">py</span> <span class="n">test</span> <span class="n">trait_browser</span><span class="o">.</span><span class="n">management</span><span class="o">.</span><span class="n">commands</span><span class="o">.</span><span class="n">test_import_db</span><span class="o">.</span><span class="n">IntegrationTest</span><span class="o">.</span><span class="n">test_imported_ids_match_source_ids</span> <span class="o">--</span><span class="n">verbosity</span><span class="o">=</span><span class="mi">2</span>
+
+<span class="c1"># Run all of the test of import_db</span>
+<span class="c1"># This may take up to 2 hours to run</span>
+<span class="o">./</span><span class="n">manage</span><span class="o">.</span><span class="n">py</span> <span class="n">test</span> <span class="n">trait_browser</span><span class="o">.</span><span class="n">management</span><span class="o">.</span><span class="n">commands</span><span class="o">.</span><span class="n">test_import_db</span> <span class="o">--</span><span class="n">verbosity</span><span class="o">=</span><span class="mi">2</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="tests-that-are-skipped-by-default">
+<h2>Tests that are skipped by default<a class="headerlink" href="#tests-that-are-skipped-by-default" title="Permalink to this headline">¶</a></h2>
+<p>Currently, two test methods from the test module <code class="docutils literal notranslate"><span class="pre">trait_browser/management/commands/test_import_db.py</span></code> are skipped by default during test runs.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">trait_browser</span><span class="o">.</span><span class="n">management</span><span class="o">.</span><span class="n">commands</span><span class="o">.</span><span class="n">test_import_db</span><span class="o">.</span><span class="n">LockSourceDbTest</span><span class="o">.</span><span class="n">test_locks_all_tables_production</span>
+<span class="n">trait_browser</span><span class="o">.</span><span class="n">management</span><span class="o">.</span><span class="n">commands</span><span class="o">.</span><span class="n">test_import_db</span><span class="o">.</span><span class="n">UnlockSourceDbTest</span><span class="o">.</span><span class="n">test_unlocks_all_tables_production</span>
+</pre></div>
+</div>
+<p>These tests are skipped by default because they test the ability of the <code class="docutils literal notranslate"><span class="pre">import_db</span></code> management command to lock and unlock the production deployment of the DCC’s phenotype harmonization database. Locking and unlocking this database is disruptive to DCC phenotype harmonization work, so while these test methods can be run by commenting out the <code class="docutils literal notranslate"><span class="pre">&#64;skip</span></code> decorator, this should happen very sparingly. A good rule of thumb is to run these test methods only when a finished branch is about to be merged into the <code class="docutils literal notranslate"><span class="pre">devel</span></code> or <code class="docutils literal notranslate"><span class="pre">master</span></code> branch.</p>
+</div>
+<div class="section" id="selenium-tests">
+<h2>Selenium tests<a class="headerlink" href="#selenium-tests" title="Permalink to this headline">¶</a></h2>
+<p>Tests found at <code class="docutils literal notranslate"><span class="pre">selenium_tests/test_selenium_development.py</span></code> use the <a class="reference external" href="https://selenium.dev/projects/">Selenium webdriver</a> to test the overall PIE site interface by automating control of a web browser. Selenium tests check that expected menu items exist on the pages where they are intended, clicking on menus and links works as expected, and search results are displayed as expected. Very few Selenium tests have been added so far, so many aspects of the site interface remain untested.</p>
+<div class="section" id="chromedriver-setup">
+<h3>Chromedriver setup<a class="headerlink" href="#chromedriver-setup" title="Permalink to this headline">¶</a></h3>
+<p>In order to run the Selenium tests using Google Chrome, you will need to download the latest version of <code class="docutils literal notranslate"><span class="pre">chromedriver</span></code> from <a class="reference external" href="https://sites.google.com/a/chromium.org/chromedriver/">Google’s documentation site</a>. Then save the file to the <code class="docutils literal notranslate"><span class="pre">selenium_tests</span></code> directory within your PIE project. Now you should be able to run the Selenium tests.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># This is only tested on macOS with Chrome so far</span>
+<span class="c1"># Run Selenium tests</span>
+<span class="o">./</span><span class="n">manage</span><span class="o">.</span><span class="n">py</span> <span class="n">test</span> <span class="n">selenium_tests</span><span class="o">.</span><span class="n">test_selenium_development</span> <span class="o">--</span><span class="n">verbosity</span><span class="o">=</span><span class="mi">2</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="browser-and-os-compatibility">
+<h3>Browser and OS compatibility<a class="headerlink" href="#browser-and-os-compatibility" title="Permalink to this headline">¶</a></h3>
+<p>So far, Selenium tests for PIE have only been run in macOS using the Google Chrome browser. The original project configuration used Firefox on macOS to run Selenium tests, but Firefox testing failed after some changes in Selenium. At this point, testing was switched to using Google Chrome.</p>
+</div>
+<div class="section" id="selenium-server-jar-file">
+<h3>Selenium server <code class="docutils literal notranslate"><span class="pre">.jar</span></code> file<a class="headerlink" href="#selenium-server-jar-file" title="Permalink to this headline">¶</a></h3>
+<p>The most-recently-tested version of Selenium server used in running the Selenium tests is checked in to this repository and can be found at <code class="docutils literal notranslate"><span class="pre">selenium_tests/selenium-server-standalone-2.53.0.jar</span></code>. In the future, we may reconsider the decision to keep this file version controlled.</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="admin.html" title="Admin interface"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">PIE 2.13 documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2019, Leslie S. Emery, Adrienne Stilp.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.5.
+    </div>
+  </body>
+</html>

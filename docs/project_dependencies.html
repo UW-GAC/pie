@@ -1,0 +1,176 @@
+
+
+<!doctype html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Project dependencies &#8212; PIE 2.13 documentation</title>
+    <link rel="stylesheet" href="_static/bizstyle.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <script type="text/javascript" src="_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Custom management commands" href="management_commands.html" />
+    <link rel="prev" title="Django project configuration" href="project_settings.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <!--[if lt IE 9]>
+    <script type="text/javascript" src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="management_commands.html" title="Custom management commands"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="project_settings.html" title="Django project configuration"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">PIE 2.13 documentation</a> &#187;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Project dependencies</a><ul>
+<li><a class="reference internal" href="#overview-of-project-dependencies">Overview of project dependencies</a></li>
+<li><a class="reference internal" href="#using-pip-tools-to-manage-dependencies">Using <code class="docutils literal notranslate"><span class="pre">pip-tools</span></code> to manage dependencies</a><ul>
+<li><a class="reference internal" href="#update-all-packages-in-the-requirements">Update all packages in the requirements</a></li>
+<li><a class="reference internal" href="#update-a-specific-package-in-the-requirements">Update a specific package in the requirements</a></li>
+<li><a class="reference internal" href="#update-the-currently-active-virtualenv-to-match-the-project-s-requirements">Update the currently active <code class="docutils literal notranslate"><span class="pre">virtualenv</span></code> to match the project’s requirements</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="project_settings.html"
+                        title="previous chapter">Django project configuration</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="management_commands.html"
+                        title="next chapter">Custom management commands</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/project_dependencies.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="project-dependencies">
+<h1>Project dependencies<a class="headerlink" href="#project-dependencies" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="overview-of-project-dependencies">
+<h2>Overview of project dependencies<a class="headerlink" href="#overview-of-project-dependencies" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">Django==1.11.22</span></code> is the currently required Django version for this project.</li>
+<li><code class="docutils literal notranslate"><span class="pre">coverage</span></code> produces testing coverage reports.</li>
+<li><code class="docutils literal notranslate"><span class="pre">django-authtools</span></code> customizes the Django user model. Customization of the user model include using email instead of username, replacing separate first and last name fields with a single name field, and setting default passwords upon account creation. <a class="reference external" href="https://github.com/fusionbox/django-authtools">on GitHub</a></li>
+<li><code class="docutils literal notranslate"><span class="pre">django-autocomplete-light</span></code> is used for auto-complete functionality within form fields. <a href="#id11"><span class="problematic" id="id12">`on GitHub &lt;https://github.com/yourlabs/django-autocomplete-light`_</span></a></li>
+<li><code class="docutils literal notranslate"><span class="pre">django-braces</span></code> provides Mixins for Django’s class-based views. <a class="reference external" href="https://github.com/brack3t/django-braces">on GitHub</a></li>
+<li><code class="docutils literal notranslate"><span class="pre">django-crispy-forms</span></code> provides advanced form customization and templating. <a class="reference external" href="https://github.com/django-crispy-forms/django-crispy-forms">on GitHub</a></li>
+<li><code class="docutils literal notranslate"><span class="pre">django-dbbackup</span></code> creates database backups (SQL dump files) and restores from backups, all from a Django command. <a class="reference external" href="https://github.com/django-dbbackup/django-dbbackup">on GitHub</a></li>
+<li><code class="docutils literal notranslate"><span class="pre">django-debug-toolbar==1.9.1</span></code> provides a toolbar for advanced debugging on local development and staging sites. <a class="reference external" href="https://github.com/jazzband/django-debug-toolbar">on GitHub</a></li>
+<li><code class="docutils literal notranslate"><span class="pre">django-extensions</span></code> provides many useful utility extensions to Django, including making schema diagrams, validating templates, an enhanced shell, and much more. <a class="reference external" href="https://github.com/django-extensions/django-extensions">on GitHub</a></li>
+<li><code class="docutils literal notranslate"><span class="pre">django-maintenance-mode</span></code> provides a management command to put the site into “maintenance mode” during code updates, when a custom 503 error page will be shown to users who try to access the site <a class="reference external" href="https://github.com/fabiocaccamo/django-maintenance-mode">on GitHub</a></li>
+<li><code class="docutils literal notranslate"><span class="pre">django-tables2</span></code> provides classes used to make customized html tables from the project’s data models. <a class="reference external" href="https://github.com/jieter/django-tables2">on GitHub</a></li>
+<li><code class="docutils literal notranslate"><span class="pre">django-watson</span></code> is used to build text search of study variables and datasets. <a class="reference external" href="https://github.com/etianen/django-watson">on GitHub</a></li>
+<li><code class="docutils literal notranslate"><span class="pre">docutils</span></code> is required by the <code class="docutils literal notranslate"><span class="pre">admindocs</span></code> app to produce documentation that is available in the site’s admin interface. <a class="reference external" href="https://docs.djangoproject.com/en/1.11/ref/contrib/admin/admindocs/">Django documentation of admindocs</a></li>
+<li><code class="docutils literal notranslate"><span class="pre">factory-boy</span></code> is used extensively in tests to generate fake data for each Django model. <a class="reference external" href="https://github.com/FactoryBoy/factory_boy">on GitHub</a></li>
+<li><code class="docutils literal notranslate"><span class="pre">flake8</span></code> checks for PEP 8 inconsistencies.</li>
+<li><code class="docutils literal notranslate"><span class="pre">flake8-docstrings</span></code> checks for PEP 257 inconsistencies.</li>
+<li><code class="docutils literal notranslate"><span class="pre">mysql-connector-python-rf</span></code> is an API for connecting to MySQL/MariaDB databases. Used in <code class="docutils literal notranslate"><span class="pre">import_db</span></code> for connecting to the DCC’s phenotype harmonization database.</li>
+<li><code class="docutils literal notranslate"><span class="pre">mysqlclient==1.3.12</span></code> might be required by <code class="docutils literal notranslate"><span class="pre">mysql-connector-rf</span></code> or Django itself. It’s unclear.</li>
+<li><code class="docutils literal notranslate"><span class="pre">pygraphviz==1.3.1</span></code> is used by <code class="docutils literal notranslate"><span class="pre">django-extensions</span></code> for graphing the database schema. Unless you use that command in <code class="docutils literal notranslate"><span class="pre">django-extensions</span></code>, this dependency is not required.</li>
+<li><code class="docutils literal notranslate"><span class="pre">pytz</span></code> is used for timezone support.</li>
+<li><code class="docutils literal notranslate"><span class="pre">selenium</span></code> provides automated browser-based interface testing. <a class="reference external" href="https://selenium.dev/">Selenium project</a></li>
+<li><code class="docutils literal notranslate"><span class="pre">sphinx</span></code> generates Python documentation pages. <a class="reference external" href="http://www.sphinx-doc.org/en/master/">Sphinx</a></li>
+<li><code class="docutils literal notranslate"><span class="pre">pip-tools</span></code> provides advanced options for managing dependencies in the project <code class="docutils literal notranslate"><span class="pre">virtualenv</span></code>. <a class="reference external" href="https://github.com/jazzband/pip-tools">on GitHub</a></li>
+</ul>
+</div>
+<div class="section" id="using-pip-tools-to-manage-dependencies">
+<h2>Using <code class="xref py py-obj docutils literal notranslate"><span class="pre">pip-tools</span></code> to manage dependencies<a class="headerlink" href="#using-pip-tools-to-manage-dependencies" title="Permalink to this headline">¶</a></h2>
+<p>This project uses <code class="docutils literal notranslate"><span class="pre">pip-tools</span></code> to manage dependencies. A common practice is to store a static set of package dependencies in the <code class="docutils literal notranslate"><span class="pre">requirements.txt</span></code> file. But this method doesn’t allow for very flexible control of versions in the requirements. <code class="docutils literal notranslate"><span class="pre">pip-tools</span></code> instead uses a <code class="docutils literal notranslate"><span class="pre">requirements.in</span></code> file that is compiled to a <code class="docutils literal notranslate"><span class="pre">requirements.txt</span></code> file with pinned version numbers for each package. <code class="docutils literal notranslate"><span class="pre">pip-tools</span></code> should be used any time a package in PIE’s requirements is updated.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Compile the project&#39;s requirements.in file</span>
+<span class="n">pip</span><span class="o">-</span><span class="nb">compile</span> <span class="n">env_requirements</span><span class="o">/</span><span class="n">requirements</span><span class="o">.</span><span class="ow">in</span>
+</pre></div>
+</div>
+<div class="section" id="update-all-packages-in-the-requirements">
+<h3>Update all packages in the requirements<a class="headerlink" href="#update-all-packages-in-the-requirements" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span><span class="o">-</span><span class="nb">compile</span> <span class="o">--</span><span class="n">upgrade</span> <span class="n">env_requirements</span><span class="o">/</span><span class="n">requirements</span><span class="o">.</span><span class="ow">in</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="update-a-specific-package-in-the-requirements">
+<h3>Update a specific package in the requirements<a class="headerlink" href="#update-a-specific-package-in-the-requirements" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span><span class="o">-</span><span class="nb">compile</span> <span class="o">--</span><span class="n">upgrade</span><span class="o">-</span><span class="n">package</span> <span class="n">django</span><span class="o">==</span><span class="mf">1.11</span><span class="o">.</span><span class="mi">30</span> <span class="n">env_requirements</span><span class="o">/</span><span class="n">requirements</span><span class="o">.</span><span class="ow">in</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="update-the-currently-active-virtualenv-to-match-the-project-s-requirements">
+<h3>Update the currently active <code class="docutils literal notranslate"><span class="pre">virtualenv</span></code> to match the project’s requirements<a class="headerlink" href="#update-the-currently-active-virtualenv-to-match-the-project-s-requirements" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span><span class="o">-</span><span class="n">sync</span> <span class="n">env_requirements</span><span class="o">/</span><span class="n">requirements</span><span class="o">.</span><span class="n">txt</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="management_commands.html" title="Custom management commands"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="project_settings.html" title="Django project configuration"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">PIE 2.13 documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2019, Leslie S. Emery, Adrienne Stilp.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.5.
+    </div>
+  </body>
+</html>

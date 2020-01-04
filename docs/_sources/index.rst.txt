@@ -10,6 +10,16 @@ Welcome to PIE's documentation!
    :maxdepth: 2
    :caption: Contents:
 
+   quick_start
+   project_organization
+   project_settings
+   project_dependencies
+   management_commands
+   tests
+   design_strategies
+   getting_study_phenotypes
+   tagging
+   documentation
 
 
 Indices and tables
