@@ -19,6 +19,9 @@ Welcome to PIE's documentation!
    tests
    design_strategies
    getting_study_phenotypes
+   user_permissions
+   tagging
+   documentation
 
 
 Indices and tables

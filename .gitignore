@@ -15,3 +15,5 @@ phenotype_inventory/settings/maintenance_mode_state.txt
 phenotype_inventory/settings/ssl_certs
 trait_browser/source_db_test_data
 doc_source/_build
+doc_source/_static
+doc_source/_templates

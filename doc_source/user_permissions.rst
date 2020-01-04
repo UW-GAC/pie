@@ -1,0 +1,5 @@
+- dcc_developers
+- phenotype_taggers
+- recipe_submitters
+- dcc_analysts
+- Don't add groups in admin, they are established in the code with version control
