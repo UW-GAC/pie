@@ -1,0 +1,135 @@
+
+
+<!doctype html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Custom management commands &#8212; PIE 2.13 documentation</title>
+    <link rel="stylesheet" href="_static/bizstyle.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <script type="text/javascript" src="_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Tests" href="tests.html" />
+    <link rel="prev" title="Project dependencies" href="project_dependencies.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <!--[if lt IE 9]>
+    <script type="text/javascript" src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="tests.html" title="Tests"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="project_dependencies.html" title="Project dependencies"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">PIE 2.13 documentation</a> &#187;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Custom management commands</a><ul>
+<li><a class="reference internal" href="#increment-version">increment_version</a></li>
+<li><a class="reference internal" href="#export-tagging">export_tagging</a></li>
+<li><a class="reference internal" href="#fill-fields">fill_fields</a></li>
+<li><a class="reference internal" href="#import-db">import_db</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="project_dependencies.html"
+                        title="previous chapter">Project dependencies</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="tests.html"
+                        title="next chapter">Tests</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/management_commands.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="custom-management-commands">
+<h1>Custom management commands<a class="headerlink" href="#custom-management-commands" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="increment-version">
+<h2>increment_version<a class="headerlink" href="#increment-version" title="Permalink to this headline">¶</a></h2>
+<p>Sets the version numbers (major and minor) in the <code class="docutils literal notranslate"><span class="pre">version.json</span></code> file. Used when finalizing a release branch.</p>
+</div>
+<div class="section" id="export-tagging">
+<h2>export_tagging<a class="headerlink" href="#export-tagging" title="Permalink to this headline">¶</a></h2>
+<p>Exports tagging data in the format that has been distributed to collaborators.</p>
+</div>
+<div class="section" id="fill-fields">
+<h2>fill_fields<a class="headerlink" href="#fill-fields" title="Permalink to this headline">¶</a></h2>
+<p>Saves a field to the <code class="docutils literal notranslate"><span class="pre">HarmonizedTrait</span></code> model that includes the component trait information in formatted html for display on the <code class="docutils literal notranslate"><span class="pre">HarmonizedTraitDetail</span></code> page.</p>
+</div>
+<div class="section" id="import-db">
+<h2>import_db<a class="headerlink" href="#import-db" title="Permalink to this headline">¶</a></h2>
+<p>Copies phenotype metadata (both study phenotypes and harmonized phenotypes) from the DCC’s phenotype harmonization database to the PIE backend database.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="tests.html" title="Tests"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="project_dependencies.html" title="Project dependencies"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">PIE 2.13 documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2019, Leslie S. Emery, Adrienne Stilp.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.5.
+    </div>
+  </body>
+</html>

@@ -1,40 +1,154 @@
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<!doctype html>
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <title>Welcome to PIE’s documentation! &#8212; PIE 2.13 documentation</title>
-    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/bizstyle.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
     <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
     <script type="text/javascript" src="_static/language_data.js"></script>
+    <script type="text/javascript" src="_static/bizstyle.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-   
-  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
-  
-  
-  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
-
+    <link rel="next" title="PIE quick start guide" href="quick_start.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <!--[if lt IE 9]>
+    <script type="text/javascript" src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
   </head><body>
-  
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="quick_start.html" title="PIE quick start guide"
+             accesskey="N">next</a> |</li>
+        <li class="nav-item nav-item-0"><a href="#">PIE 2.13 documentation</a> &#187;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="#">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Welcome to PIE’s documentation!</a></li>
+<li><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
+</ul>
+
+  <h4>Next topic</h4>
+  <p class="topless"><a href="quick_start.html"
+                        title="next chapter">PIE quick start guide</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/index.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
 
     <div class="document">
       <div class="documentwrapper">
         <div class="bodywrapper">
-          
-
           <div class="body" role="main">
             
   <div class="section" id="welcome-to-pie-s-documentation">
 <h1>Welcome to PIE’s documentation!<a class="headerlink" href="#welcome-to-pie-s-documentation" title="Permalink to this headline">¶</a></h1>
 <div class="toctree-wrapper compound">
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="quick_start.html">PIE quick start guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="quick_start.html#clone-the-git-repository">1. Clone the git repository</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quick_start.html#set-up-a-python-virtual-environment-using-virtualenv">2. Set up a Python virtual environment using <code class="docutils literal notranslate"><span class="pre">virtualenv</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="quick_start.html#activate-the-virtual-environment-and-install-required-packages">3. Activate the virtual environment and install required packages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quick_start.html#choose-settings-and-database">4. Choose settings and database</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quick_start.html#reactivate-virtualenv-with-new-settings">5. Reactivate <code class="docutils literal notranslate"><span class="pre">virtualenv</span></code> with new settings</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quick_start.html#set-up-the-database-tables">6. Set up the database tables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quick_start.html#make-sure-your-database-connection-works">7. Make sure your database connection works</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quick_start.html#running-tests">8. Running tests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quick_start.html#create-a-superuser-account-for-login">9. Create a superuser account for login</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quick_start.html#make-some-fake-data-to-fill-your-development-site-with">10. Make some fake data to fill your development site with</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quick_start.html#run-a-development-server">11. Run a development server</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quick_start.html#deactivate-the-virtual-environment-when-you-re-done-working-on-pie">12. Deactivate the virtual environment when you’re done working on PIE</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="project_organization.html">Project organization</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="project_organization.html#project-directory-structure">Project directory structure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="project_organization.html#builtin-django-apps-in-use">Builtin Django apps in use</a></li>
+<li class="toctree-l2"><a class="reference internal" href="project_organization.html#installed-3rd-party-django-apps">Installed 3rd-party Django apps</a></li>
+<li class="toctree-l2"><a class="reference internal" href="project_organization.html#custom-django-apps">Custom Django apps</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="project_settings.html">Django project configuration</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="project_settings.html#django-settings-files">Django settings files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="project_settings.html#django-secrets">Django secrets</a></li>
+<li class="toctree-l2"><a class="reference internal" href="project_settings.html#database-backend">Database backend</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="project_dependencies.html">Project dependencies</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="project_dependencies.html#overview-of-project-dependencies">Overview of project dependencies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="project_dependencies.html#using-pip-tools-to-manage-dependencies">Using <code class="docutils literal notranslate"><span class="pre">pip-tools</span></code> to manage dependencies</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="management_commands.html">Custom management commands</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="management_commands.html#increment-version">increment_version</a></li>
+<li class="toctree-l2"><a class="reference internal" href="management_commands.html#export-tagging">export_tagging</a></li>
+<li class="toctree-l2"><a class="reference internal" href="management_commands.html#fill-fields">fill_fields</a></li>
+<li class="toctree-l2"><a class="reference internal" href="management_commands.html#import-db">import_db</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="tests.html">Tests</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tests.html#organization-of-tests">Organization of tests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tests.html#inventory-of-current-tests">Inventory of current tests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tests.html#running-all-of-the-tests">Running all of the tests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tests.html#running-selected-tests">Running selected tests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tests.html#prioritizing-which-tests-to-run">Prioritizing which tests to run</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tests.html#assessing-test-coverage">Assessing test coverage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tests.html#tests-of-import-db">Tests of <code class="docutils literal notranslate"><span class="pre">import_db</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="tests.html#tests-that-are-skipped-by-default">Tests that are skipped by default</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tests.html#selenium-tests">Selenium tests</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="design_strategies.html">Design strategies</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="design_strategies.html#project-style-guidelines">Project style guidelines</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="getting_study_phenotypes.html">Getting study phenotype metadata</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="getting_study_phenotypes.html#study-phenotypes">Study phenotypes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="getting_study_phenotypes.html#harmonized-phenotypes">Harmonized phenotypes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="getting_study_phenotypes.html#more-complicated-cases">More complicated cases</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="tagging.html">Tagging process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="documentation.html">Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="documentation.html#built-with-sphinx">Built with Sphinx</a></li>
+<li class="toctree-l2"><a class="reference internal" href="documentation.html#updating-the-build">Updating the build</a></li>
+<li class="toctree-l2"><a class="reference internal" href="documentation.html#deployment-on-github-pages">Deployment on GitHub Pages</a></li>
+</ul>
+</li>
+</ul>
 </div>
 </div>
 <div class="section" id="indices-and-tables">
@@ -48,67 +162,25 @@
 
 
           </div>
-          
-        </div>
-      </div>
-      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
-        <div class="sphinxsidebarwrapper">
-<h1 class="logo"><a href="#">PIE</a></h1>
-
-
-
-
-
-
-
-
-<h3>Navigation</h3>
-
-<div class="relations">
-<h3>Related Topics</h3>
-<ul>
-  <li><a href="#">Documentation overview</a><ul>
-  </ul></li>
-</ul>
-</div>
-<div id="searchbox" style="display: none" role="search">
-  <h3>Quick search</h3>
-    <div class="searchformwrapper">
-    <form class="search" action="search.html" method="get">
-      <input type="text" name="q" />
-      <input type="submit" value="Go" />
-      <input type="hidden" name="check_keywords" value="yes" />
-      <input type="hidden" name="area" value="default" />
-    </form>
-    </div>
-</div>
-<script type="text/javascript">$('#searchbox').show(0);</script>
-
-
-
-
-
-
-
-
         </div>
       </div>
       <div class="clearer"></div>
     </div>
-    <div class="footer">
-      &copy;2019, Leslie S. Emery, Adrienne Stilp.
-      
-      |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.8.5</a>
-      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
-      
-      |
-      <a href="_sources/index.rst.txt"
-          rel="nofollow">Page source</a>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="quick_start.html" title="PIE quick start guide"
+             >next</a> |</li>
+        <li class="nav-item nav-item-0"><a href="#">PIE 2.13 documentation</a> &#187;</li> 
+      </ul>
     </div>
-
-    
-
-    
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2019, Leslie S. Emery, Adrienne Stilp.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.5.
+    </div>
   </body>
 </html>

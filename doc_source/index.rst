@@ -15,11 +15,9 @@ Welcome to PIE's documentation!
    project_settings
    project_dependencies
    management_commands
-   admin
    tests
    design_strategies
    getting_study_phenotypes
-   user_permissions
    tagging
    documentation
 

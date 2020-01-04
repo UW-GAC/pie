@@ -1,0 +1,150 @@
+
+
+<!doctype html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Documentation &#8212; PIE 2.13 documentation</title>
+    <link rel="stylesheet" href="_static/bizstyle.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <script type="text/javascript" src="_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Tagging process" href="tagging.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <!--[if lt IE 9]>
+    <script type="text/javascript" src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="tagging.html" title="Tagging process"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">PIE 2.13 documentation</a> &#187;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Documentation</a><ul>
+<li><a class="reference internal" href="#built-with-sphinx">Built with Sphinx</a><ul>
+<li><a class="reference internal" href="#resources-on-sphinx">Resources on Sphinx</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#updating-the-build">Updating the build</a></li>
+<li><a class="reference internal" href="#deployment-on-github-pages">Deployment on GitHub Pages</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="tagging.html"
+                        title="previous chapter">Tagging process</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/documentation.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="documentation">
+<h1>Documentation<a class="headerlink" href="#documentation" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="built-with-sphinx">
+<h2>Built with Sphinx<a class="headerlink" href="#built-with-sphinx" title="Permalink to this headline">¶</a></h2>
+<p>The documentation is built with Sphinx. Source files are stored in <code class="docutils literal notranslate"><span class="pre">doc_source</span></code> and a GitHub Pages-compatible deployment is stored in <code class="docutils literal notranslate"><span class="pre">docs</span></code>. The GitHub Pages site is served from the <code class="docutils literal notranslate"><span class="pre">master</span></code> branch <code class="docutils literal notranslate"><span class="pre">docs</span></code> directory. The <code class="docutils literal notranslate"><span class="pre">conf.py</span></code> file store the code information, Sphinx settings including build directory, etc. <code class="docutils literal notranslate"><span class="pre">Makefile</span></code> determines the deployed <code class="docutils literal notranslate"><span class="pre">docs</span></code> directory.</p>
+<div class="section" id="resources-on-sphinx">
+<h3>Resources on Sphinx<a class="headerlink" href="#resources-on-sphinx" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><a class="reference external" href="http://www.sphinx-doc.org/en/master/usage/restructuredtext/basics.html#internal-links">http://www.sphinx-doc.org/en/master/usage/restructuredtext/basics.html#internal-links</a></li>
+<li><a class="reference external" href="http://www.sphinx-doc.org/en/master/usage/restructuredtext/roles.html#ref-role">http://www.sphinx-doc.org/en/master/usage/restructuredtext/roles.html#ref-role</a></li>
+<li><a class="reference external" href="https://pythonhosted.org/an_example_pypi_project/sphinx.html">https://pythonhosted.org/an_example_pypi_project/sphinx.html</a></li>
+</ul>
+</div>
+</div>
+<div class="section" id="updating-the-build">
+<h2>Updating the build<a class="headerlink" href="#updating-the-build" title="Permalink to this headline">¶</a></h2>
+<p>To build a new version of the html pages for local preview:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">make</span> <span class="n">html</span>
+</pre></div>
+</div>
+<p>To build a new version of the html pages for deploying to GitHub:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">make</span> <span class="n">github</span>
+</pre></div>
+</div>
+</div>
+<hr class="docutils" />
+<div class="section" id="deployment-on-github-pages">
+<h2>Deployment on GitHub Pages<a class="headerlink" href="#deployment-on-github-pages" title="Permalink to this headline">¶</a></h2>
+<p>The following resources were used for setting up the deployment on GitHub Pages:</p>
+<ul class="simple">
+<li><a class="reference external" href="https://www.scivision.dev/sphinx-python-quickstart/">https://www.scivision.dev/sphinx-python-quickstart/</a></li>
+<li><dl class="first docutils">
+<dt><a class="reference external" href="https://www.docslikecode.com/articles/github-pages-python-sphinx/">https://www.docslikecode.com/articles/github-pages-python-sphinx/</a></dt>
+<dd><ul class="first last">
+<li>Followed directions from this link to add <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">github</span></code> option to Makefile</li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="tagging.html" title="Tagging process"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">PIE 2.13 documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2019, Leslie S. Emery, Adrienne Stilp.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.5.
+    </div>
+  </body>
+</html>
