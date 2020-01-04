@@ -5,6 +5,7 @@
 #    pip-compile env_requirements/requirements.in
 #
 alabaster==0.7.12         # via sphinx
+asgiref==3.2.3            # via django
 babel==2.7.0              # via sphinx
 certifi==2019.11.28       # via requests
 chardet==3.0.4            # via requests
@@ -20,7 +21,7 @@ django-extensions==2.2.1
 django-maintenance-mode==0.13.3
 django-tables2==2.1.0
 django-watson==1.5.2
-django==1.11.27
+django==3.0.2
 docutils==0.14
 entrypoints==0.3          # via flake8
 factory-boy==2.12.0
@@ -51,10 +52,9 @@ six==1.11.0               # via django-dbbackup, django-extensions, faker, packa
 snowballstemmer==1.2.1    # via pydocstyle, sphinx
 sphinx==1.8.5
 sphinxcontrib-websupport==1.1.2  # via sphinx
-sqlparse==0.2.4           # via django-debug-toolbar
+sqlparse==0.2.4           # via django, django-debug-toolbar
 text-unidecode==1.2       # via faker
-typing==3.6.4             # via django-extensions, flake8, sphinx
 urllib3==1.24.3           # via requests, selenium
 
 # The following packages are considered to be unsafe in a requirements file:
-# setuptools==42.0.2        # via sphinx
+# setuptools
